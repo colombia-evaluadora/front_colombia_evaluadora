@@ -96,6 +96,19 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     const instrumentoId = await resolveInstrumentoEvaluacionId(actividad.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
+  // `RECUPERACION` (JSONB) — `fn_actividad_recuperacion_configurar` exige
+  // `fkActividadRecuperar` sii `destino: "ACTIVIDAD"` y `valorPonderacion`
+  // (0-100) sii `tipoCalculo: "PONDERADO"`; el form ya solo deja esos
+  // campos cargados cuando corresponde (ver `RecuperacionSection`).
+  if (actividad.esEvaluativa && actividad.esRecuperacion) {
+    body.RECUPERACION = {
+      destino: actividad.recuperacionDestino,
+      fkActividadRecuperar: actividad.recuperacionActividadId,
+      tipoAplicacion: actividad.recuperacionTipoAplicacion,
+      tipoCalculo: actividad.recuperacionTipoCalculo,
+      valorPonderacion: actividad.recuperacionValorPonderacion,
+    }
+  }
   // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
   // primer (y único) campo de la fila (mismo contrato que `POST /unidades`,
   // confirmado en la colección Postman `planeador-flujo-unidad-actividad`).

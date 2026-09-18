@@ -214,9 +214,9 @@ export interface Actividad {
    * `POST /planeador/actividades` (no confirmado en ese body): siempre es
    * `POST .../actividades/:id/criterios` aparte, con la actividad ya creada
    * (ver `agregar-criterio-unidad-actividad.ts`). Igual que `evidenciasIds`,
-   * no hay forma confirmada de saber cuáles ya estaban relacionadas al abrir
-   * el detalle real, así que siempre arranca en `[]` — el checklist del form
-   * solo puede AGREGAR, no reflejar lo ya guardado.
+   * se precarga con lo ya relacionado (`fn_actividad_buscar_por_pk`, columna
+   * `criterios`, ver `use-actividad-detalle-query.ts`) al reabrir el detalle
+   * real — el checklist del form solo puede AGREGAR, no quitar por acá.
    */
   criteriosUnidadIds: number[]
   asignatura: string
@@ -355,6 +355,75 @@ export interface Actividad {
       instrumentosPermitidos: string[]
     }
     ponderacion: { visible: boolean; requerido: boolean; motivo: string; modo: string | null }
+    /**
+     * La sección "Es una recuperación" del formulario — depende de DOS
+     * gates: referente EVALUATIVO y `ES_EVALUATIVA <> 'N'` (una actividad de
+     * recuperación debe ser evaluativa, `fn_actividad_recuperacion_
+     * campos_disponibles`, V214.2/V440). `catalogos` va como
+     * `{pk, valor, nombre}`: se decide por `valor` (`ACTIVIDAD`/
+     * `NOTA_FINAL`, `PONDERADO`/…), los `pk` de `TLISTA_VALOR` no son
+     * estables entre entornos. `reglas` expone las condicionales que valida
+     * `fn_actividad_recuperacion_configurar` para no descubrirlas a base de
+     * 400: actividad a recuperar obligatoria sii `destino = ACTIVIDAD`,
+     * `valorPonderacion` obligatorio y 0-100 sii `tipoCalculo = PONDERADO`.
+     */
+    recuperacion: {
+      visible: boolean
+      requerido: boolean
+      motivo: string
+      catalogos: {
+        destino: ListaValorOption[]
+        tipoAplicacion: ListaValorOption[]
+        tipoCalculo: ListaValorOption[]
+      }
+      reglas: {
+        actividadRecuperarRequeridaSi: string
+        valorPonderacionRequeridoSi: string
+        valorPonderacionRango: { min: number; max: number }
+      }
+    }
+  }
+  /**
+   * Config de "Es una recuperación" — solo aplica con `esRecuperacion:
+   * true`. Se manda como `RECUPERACION` JSONB al crear/editar
+   * (`fn_actividad_recuperacion_configurar`); `destino/actividadId` son
+   * obligatorios juntos (`destino: "ACTIVIDAD"` exige `actividadId`),
+   * `tipoCalculo: "PONDERADO"` exige `valorPonderacion` (0-100).
+   */
+  recuperacionDestino: string
+  recuperacionActividadId: number | undefined
+  recuperacionTipoAplicacion: string
+  recuperacionTipoCalculo: string
+  recuperacionValorPonderacion: number | undefined
+}
+
+/** `{pk, valor, nombre}` — mismo shape que `instrumentosPermitidos`: se
+ *  decide por `valor` (código estable de `TLISTA_VALOR`), `nombre` es solo
+ *  para mostrar. */
+export interface ListaValorOption {
+  pk: number
+  valor: string
+  nombre: string
+}
+
+/**
+ * Placeholder cuando la respuesta todavía no trae el bloque `recuperacion`
+ * de `campos_disponibles` (endpoint viejo, o mock sin el campo) — oculto y
+ * sin catálogos, en vez de reventar por un `undefined`.
+ */
+export function defaultRecuperacionCampoDisponible(): NonNullable<
+  Actividad["camposDisponibles"]
+>["recuperacion"] {
+  return {
+    visible: false,
+    requerido: false,
+    motivo: "",
+    catalogos: { destino: [], tipoAplicacion: [], tipoCalculo: [] },
+    reglas: {
+      actividadRecuperarRequeridaSi: "destino = ACTIVIDAD",
+      valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
+      valorPonderacionRango: { min: 0, max: 100 },
+    },
   }
 }
 

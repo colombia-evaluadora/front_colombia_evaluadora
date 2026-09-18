@@ -24,6 +24,7 @@ import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
+import { useSetEstudiantesActividad } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
 import {
   tieneDefinicionInstrumento,
   useUpdateInstrumentoActividad,
@@ -192,6 +193,18 @@ function EditarActividadPageContent({
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
+  // `PUT .../estudiantes` — endpoint suelto de "Estudiantes", igual que
+  // materiales/adaptaciones (ver `set-estudiantes-actividad.ts`). Se llama
+  // solo si el docente eligió alguien a mano ESTA vez (`matriculasIds`
+  // siempre arranca en `[]` al abrir el form, ver el comentario de
+  // `Actividad.matriculasIds`): sin este chequeo, guardar sin tocar
+  // "Estudiantes" mandaría `ASIGNAR_TODO_EL_GRUPO` y resetearía una
+  // actividad que ya tenía estudiantes puntuales asignados.
+  const setEstudiantes = useSetEstudiantesActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
   // Solo AGREGA criterios nuevos — mismo criterio que `agregarEvidencia`
   // (ver el comentario de `Actividad.criteriosUnidadIds`).
   const agregarCriterio = useAgregarCriterioUnidadActividad({
@@ -269,6 +282,16 @@ function EditarActividadPageContent({
     )
     for (const criterioUnidadId of criteriosNuevos) {
       agregarCriterio.mutate({ actividadId: actividad.id, criterioUnidadId })
+    }
+
+    // "Estudiantes": solo si el docente eligió alguien a mano esta vez (ver
+    // el comentario de `setEstudiantes` arriba).
+    if (values.matriculasIds.length > 0) {
+      setEstudiantes.mutate({
+        actividadId: actividad.id,
+        matriculasIds: values.matriculasIds,
+        asignarTodoElGrupo: false,
+      })
     }
   }
 
