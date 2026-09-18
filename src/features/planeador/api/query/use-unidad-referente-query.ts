@@ -24,13 +24,28 @@ import { api } from "@/lib/api-client"
  * `PATCH /planeador/unidades/enunciados/:pkTunidadEnunciado` para
  * desvincular uno cuando el docente lo saca del picker de "Derechos
  * Básicos de Aprendizaje" al editar la unidad (`unlink-enunciado-unidad.ts`).
- * El árbol de EVIDENCIAS para marcar en la actividad NO sale de acá: sale
- * de `GET /planeador/referente-curricular` (grado + asignatura), confirmado
- * con una respuesta real — ver `use-referente-curricular-query.ts`.
+ *
+ * El árbol de EVIDENCIAS (nivel 2) para marcar en la actividad, y los
+ * rótulos `nivel_1_etiqueta`/`nivel_2_etiqueta` ("Propósito"/"Imprescindible"
+ * en Preescolar, "Enunciado"/"Evidencia" en Primaria), SÍ vienen en esta
+ * misma respuesta — confirmados contra una respuesta real (cada enunciado
+ * trae su propio array `evidencias`, y la fila trae ambas etiquetas). Antes
+ * se pedían aparte, por GRADO + ASIGNATURA (`GET /planeador/referente-
+ * curricular`, ver `use-referente-curricular-query.ts`) y se cruzaban
+ * contra `unidad.enunciadosDba` para quedarse solo con los enunciados YA
+ * adoptados — acá el propio `relacionadoConUnidad` de cada fila ya hace ese
+ * filtro del lado del backend, así que no hace falta ni la segunda query ni
+ * el cruce manual.
  */
+interface UnidadReferenteEvidenciaRow {
+  pk: number
+  texto: string
+}
+
 interface UnidadReferenteEnunciadoRow {
   pk: number
   texto: string
+  evidencias?: UnidadReferenteEvidenciaRow[]
   relacionadoConUnidad?: boolean
   pkTunidadEnunciado?: number | null
 }
@@ -38,6 +53,7 @@ interface UnidadReferenteEnunciadoRow {
 interface UnidadReferenteRow {
   referente?: { id: number } | null
   fk_referente_curricular?: number | null
+  pk_referente_curricular?: number | null
   /** Nombre y finalidad del referente, tal como los captura Referente
    *  Curricular ("DBA", "Garantizar aprendizajes estructurantes…"). Los
    *  devuelve `fn_unidad_referente_detalle` (V255) desde siempre; es lo que
@@ -47,12 +63,23 @@ interface UnidadReferenteRow {
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   es_evaluativo?: boolean | null
   tipo_evaluacion_valor?: string | null
+  /** Rótulo dinámico de cada nivel del árbol — nunca hardcodear, ver el
+   *  comentario de `ReferenteCurricularRow.nivel_1_etiqueta` en
+   *  `use-referente-curricular-query.ts`. */
+  nivel_1_etiqueta?: string | null
+  nivel_2_etiqueta?: string | null
   enunciados?: UnidadReferenteEnunciadoRow[]
+}
+
+export interface UnidadReferenteEvidencia {
+  id: number
+  text: string
 }
 
 export interface UnidadReferenteEnunciado {
   id: number
   text: string
+  evidencias: UnidadReferenteEvidencia[]
   /** `pkTunidadEnunciado` — el pk de la RELACIÓN unidad↔enunciado, no el
    *  del enunciado. Es lo que pide el `PATCH` de desvincular. */
   pkRelacion: number
@@ -66,6 +93,15 @@ export interface UnidadReferente {
    *  vigente: ahí la UI cae a su texto por defecto. */
   nombre: string | null
   descripcion: string | null
+  /** `pk_referente_curricular` — mismo dato y mismo uso que
+   *  `ReferenteCurricular.id` (`use-referente-curricular-query.ts`):
+   *  resolver el instrumento real (`instrumentoLabelFromReferente`) sin
+   *  volver a pedir grado+asignatura. */
+  id: number | null
+  /** Default "Enunciado"/"Evidencia" cuando el backend no los manda — nunca
+   *  un literal hardcodeado en la UI. */
+  nivel1Etiqueta: string
+  nivel2Etiqueta: string
   /** Solo los YA relacionados (`relacionadoConUnidad`) — los demás no
    *  tienen `pkTunidadEnunciado` con qué desvincularlos. */
   enunciados: UnidadReferenteEnunciado[]
@@ -77,6 +113,9 @@ const SIN_REFERENTE: UnidadReferente = {
   tipoEvaluacion: null,
   nombre: null,
   descripcion: null,
+  id: null,
+  nivel1Etiqueta: "Enunciado",
+  nivel2Etiqueta: "Evidencia",
   enunciados: [],
 }
 
@@ -102,9 +141,17 @@ function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente
     tipoEvaluacion: row!.tipo_evaluacion_valor ?? null,
     nombre: row!.referente_nombre ?? null,
     descripcion: row!.referente_descripcion ?? null,
+    id: row!.pk_referente_curricular ?? row!.referente?.id ?? null,
+    nivel1Etiqueta: row!.nivel_1_etiqueta ?? "Enunciado",
+    nivel2Etiqueta: row!.nivel_2_etiqueta ?? "Evidencia",
     enunciados: (row!.enunciados ?? [])
       .filter((e) => e.relacionadoConUnidad && e.pkTunidadEnunciado != null)
-      .map((e) => ({ id: e.pk, text: e.texto, pkRelacion: e.pkTunidadEnunciado! })),
+      .map((e) => ({
+        id: e.pk,
+        text: e.texto,
+        evidencias: (e.evidencias ?? []).map((evidencia) => ({ id: evidencia.pk, text: evidencia.texto })),
+        pkRelacion: e.pkTunidadEnunciado!,
+      })),
   }
 }
 
