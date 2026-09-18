@@ -821,6 +821,18 @@ function UnidadAsociadaSection({
   // aplicable (a diferencia de las pestañas, que muestran TODOS los que
   // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
   const { data: unidadTabs } = useUnidadesTabsQuery()
+  // "¿Es formativa?" de la unidad la decide el referente curricular de
+  // GRADO + ASIGNATURA, no `UnidadTematica.enfoquePedagogico`: ese campo
+  // SIEMPRE llega "Evaluativo" desde `useUnidadesQuery` (el backend real no
+  // guarda un enfoque propio por unidad — ver el comentario de
+  // `toUnidadTematica` en `use-unidades-query.ts`), así que comparar contra
+  // ese campo (versión anterior de este handler) nunca detectaba una unidad
+  // Formativa. Todas las unidades de `unidadesDelGrado` comparten el MISMO
+  // grado+asignatura, así que comparten el mismo enfoque — un solo query acá
+  // alcanza, no hace falta uno por unidad.
+  const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
+  const { data: referenteActual } = useReferenteCurricularQuery(gradoIdSel, asignaturaIdSel)
 
   return (
     <>
@@ -910,7 +922,10 @@ function UnidadAsociadaSection({
                           // mismo —no queda esperando a que la reabra— para que
                           // el resto del form (ponderación, lista de cotejo/
                           // rúbrica, "Es una recuperación") reaccione de una.
-                          if (next.enfoquePedagogico === "Formativo") {
+                          // `referenteActual` (no `next.enfoquePedagogico`, ver
+                          // el comentario de arriba) es el enfoque real del
+                          // grado+asignatura compartido por toda `unidadesDelGrado`.
+                          if (referenteActual?.esFormativo) {
                             form.setFieldValue("esEvaluativa", false)
                           }
                           // `ponderacion`/`notaMaxima` son alternativos y
