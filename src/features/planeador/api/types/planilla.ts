@@ -19,6 +19,8 @@ export interface PlanillaColumna {
   ponderacion: number | null
   notaMaxima: number | null
   esEvaluativa: boolean
+  esFormativa: boolean
+  metodoValoracion: string | null
   /** `yyyy-MM-dd`. */
   fechaInicio: string
   /** `yyyy-MM-dd`. */
@@ -35,6 +37,15 @@ export type EstadoCelda = "NO_CALIFICABLE" | "SIN_CALIFICAR" | (string & {})
 /** Una celda (estudiante × actividad) de `GET /planeador/planilla/calificaciones`.
  *  El backend ya la devuelve en camelCase (a diferencia del resto del sobre,
  *  que es snake_case) — confirmado contra la respuesta real. */
+/** Imagen adjunta a la observación de un estudiante (`TACTIVIDAD_SOPORTE`).
+ *  El binario no viaja acá: `fkTarchivo` lo resuelve `ArchivoImage`. */
+export interface CeldaEvidencia {
+  pk: number
+  fkTarchivo: number
+  nombre: string | null
+  fecha: string | null
+}
+
 export interface PlanillaCelda {
   ordenColumna: number
   pkTactividad: number
@@ -61,6 +72,7 @@ export interface PlanillaCelda {
   /** `false` → la celda se pinta gris: no se puede calificar hasta que se
    *  registre asistencia. Es una foto del momento de la lectura. */
   tieneAsistencia: boolean
+  evidencias: CeldaEvidencia[]
 }
 
 export interface PlanillaFila {

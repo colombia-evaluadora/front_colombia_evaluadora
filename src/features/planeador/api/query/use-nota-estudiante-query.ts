@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import type { InstrumentoTipo } from "@/features/planeador/api/types/planilla"
+import type { CeldaEvidencia, InstrumentoTipo } from "@/features/planeador/api/types/planilla"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 
 /** `GET /planeador/actividades/estudiantes/:id/nota` (confirmado real, ver
@@ -16,6 +16,7 @@ interface NotaEstudianteRow {
   calificable: "S" | "N" | null
   observacion: string | null
   detalle: unknown
+  evidencias?: CeldaEvidencia[] | null
 }
 
 export interface NotaEstudiante {
@@ -24,6 +25,9 @@ export interface NotaEstudiante {
   calificable: boolean
   observacion: string | null
   notas: NotaCriterio[]
+  /** Imágenes de la observación (actividades formativas) — vacío en una
+   *  actividad con nota. */
+  evidencias: CeldaEvidencia[]
 }
 
 interface DetalleRubricaEntry {
@@ -55,6 +59,7 @@ function toNotaEstudiante(row: NotaEstudianteRow | undefined): NotaEstudiante {
     calificable: row?.calificable === "S",
     observacion: row?.observacion ?? null,
     notas: toNotas(row?.instrumento ?? null, row?.detalle),
+    evidencias: row?.evidencias ?? [],
   }
 }
 

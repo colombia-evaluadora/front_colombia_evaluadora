@@ -15,6 +15,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
+import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
@@ -454,7 +455,13 @@ export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
   const [anio, mes] = fecha.split("-").map(Number)
 
-  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery({ SEDE: sede, ANIO: anio, MES: mes })
+  const esDocente = useEsDocente()
+  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery({
+    SEDE: sede,
+    ANIO: anio,
+    MES: mes,
+    MIAS: esDocente,
+  })
 
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
     const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)

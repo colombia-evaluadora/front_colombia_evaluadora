@@ -194,6 +194,36 @@ export function mergeOverride(
   setOverride(actividadId, estudianteId, next)
 }
 
+/**
+ * Observaciones en memoria — el equivalente formativo de `overrides`, para
+ * que `PUT .../observar` y `POST .../observar-grupal` tengan un efecto real
+ * que la grilla refleje después. Una sola observación viva por
+ * estudiante-actividad, igual que el real: la individual pisa a la grupal.
+ */
+const observaciones = new Map<string, string>()
+
+export function getObservacion(actividadId: number, estudianteId: number): string | undefined {
+  return observaciones.get(key(actividadId, estudianteId))
+}
+
+export function setObservacion(
+  actividadId: number,
+  estudianteId: number,
+  observacion: string,
+): void {
+  observaciones.set(key(actividadId, estudianteId), observacion)
+}
+
+/**
+ * El mock no modela el referente curricular, que es lo que decide de verdad
+ * (`fn_actividad_es_formativa`, V243: unidad con enfoque NO evaluativo). Se
+ * aproxima con lo que sí tiene, respetando la parte de la regla que no es
+ * aproximable: **sin unidad nunca es formativa**.
+ */
+export function esFormativaMock(actividad: Actividad): boolean {
+  return Boolean(actividad.unidad.id) && !actividad.esEvaluativa
+}
+
 /** Traduce el `CALIFICACION` que manda `PUT .../calificar` (una de las 4
  *  formas según instrumento) a `NotaCriterio[]` — la misma estructura que ya
  *  usa `porcentajeFinal`/`notaDefinitiva` para computar el % de la celda. */

@@ -54,6 +54,14 @@ export type CalificacionEstudiante = Estudiante & {
    *  por criterio, que el real no siempre trae acá). `undefined` en mock,
    *  donde sí alcanza con `notas` + `porcentajeFinal`. */
   calificacion?: number | null
+  /** Observación del docente (`nota_observacion`) — en una actividad de
+   *  referente FORMATIVO reemplaza a la nota, que viene siempre `null`. */
+  observacion?: string | null
+  /** `yyyy-MM-dd` — `fecha_asistencia` (V442/V443): el día con asistencia
+   *  válida de ESE estudiante, que es el que hay que mandar en `BODY.FECHA`
+   *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en
+   *  mock. */
+  fechaAsistencia?: string | null
 }
 
 /** Un criterio de rúbrica, ítem de lista de cotejo, o el único "ítem
