@@ -182,8 +182,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         </div>
       </div>
 
-      <NoticeOutlet />
-
       <DataTable
         table={table}
         isPending={isPending}
@@ -204,6 +202,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
           )
           return (
             <div className="-m-4 flex flex-col gap-4 bg-background p-4">
+              <NoticeOutlet />
               <AssignmentTransfer
                 available={available}
                 assigned={assigned}

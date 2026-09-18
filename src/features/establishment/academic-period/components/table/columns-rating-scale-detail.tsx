@@ -1,3 +1,4 @@
+import type { RefObject } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
@@ -55,7 +56,7 @@ export function toScaleDraft(scale: RatingScale): EditableScale {
   }
 }
 
-interface CreateColumnsOptions {
+export interface CreateRatingScaleDetailColumnsOptions {
   range: GradingRange
   symbols: RatingSymbol[]
   tipoOptions: RatingScaleTypeOption[]
@@ -78,20 +79,16 @@ function numberValue(n: number): number | "" {
   return Number.isNaN(n) ? "" : n
 }
 
-export function createRatingScaleDetailColumns({
-  range,
-  symbols,
-  tipoOptions,
-  levelId,
-  editingCodigo,
-  draft,
-  patchDraft,
-  onStartEdit,
-  onSave,
-  onCancel,
-  isSaving,
-}: CreateColumnsOptions): ColumnDef<RatingScale>[] {
-  const isEditing = (scale: RatingScale) => editingCodigo === scale.codigo && draft !== null
+/** Las opciones entran por ref y las columnas se construyen una sola vez: si el
+ *  `cell` cambiara de identidad en cada render, `flexRender` lo trataría como
+ *  otro componente y remontaría el input, perdiendo el foco en cada tecla. */
+export function createRatingScaleDetailColumns(
+  optionsRef: RefObject<CreateRatingScaleDetailColumnsOptions>,
+): ColumnDef<RatingScale>[] {
+  const isEditing = (scale: RatingScale) => {
+    const { editingCodigo, draft } = optionsRef.current
+    return editingCodigo === scale.codigo && draft !== null
+  }
 
   /** Las tres notas comparten input, rango y ancho: solo cambia el campo. */
   function gradeColumn(
@@ -106,6 +103,7 @@ export function createRatingScaleDetailColumns({
       cell: ({ row }) => {
         const scale = row.original
         if (!isEditing(scale)) return <span className="tabular-nums">{scale[id]}</span>
+        const { range, draft, patchDraft } = optionsRef.current
         return (
           <Input
             aria-label={title}
@@ -163,6 +161,7 @@ export function createRatingScaleDetailColumns({
       cell: ({ row }) => {
         const scale = row.original
         if (!isEditing(scale)) return <span className="font-medium">{scale.nombre}</span>
+        const { draft, patchDraft } = optionsRef.current
         return (
           <Input
             aria-label="Nombre"
@@ -184,6 +183,7 @@ export function createRatingScaleDetailColumns({
       cell: ({ row }) => {
         const scale = row.original
         if (!isEditing(scale)) return scale.abreviacion
+        const { draft, patchDraft } = optionsRef.current
         return (
           <Input
             aria-label="Abreviación"
@@ -211,6 +211,7 @@ export function createRatingScaleDetailColumns({
           const label = scale.tipoName ?? scale.tipo
           return <Badge {...RATING_SCALE_TYPE_BADGE[label]}>{label}</Badge>
         }
+        const { draft, patchDraft, tipoOptions } = optionsRef.current
         return (
           <ComboboxField
             value={draft!.tipo}
@@ -245,6 +246,7 @@ export function createRatingScaleDetailColumns({
         if (!isEditing(scale)) {
           return <RatingSymbolView value={scale.iconografia} className="text-lg" />
         }
+        const { draft, patchDraft, symbols } = optionsRef.current
         return (
           <RatingSymbolSelect
             symbols={symbols}
@@ -261,6 +263,8 @@ export function createRatingScaleDetailColumns({
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const scale = row.original
+        const { editingCodigo, levelId, isSaving, onStartEdit, onSave, onCancel } =
+          optionsRef.current
 
         // En edición los botones son guardar/cancelar; `DataTable` mantiene el
         // overlay visible para esta fila (`isRowActive`), así que no dependen
