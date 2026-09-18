@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { postMultipart } from "@/lib/files"
+import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
 import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { resolveTipoRecursoId } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
@@ -12,17 +14,37 @@ interface UpdateMaterialesInput {
 }
 
 /**
- * `PUT /planeador/actividades/:id/materiales` (confirmado real, colección
- * Postman `planeador-guia-completa`, 4.7): reemplazo COMPLETO de los
+ * `PUT /planeador/actividades/:id/materiales`: reemplazo COMPLETO de los
  * materiales de apoyo de la actividad — un array vacío los deja todos.
- * `MATERIALES` viaja como STRING serializado (regla de los campos `JSONB`
- * del motor), no como array anidado.
  *
- * Un recurso de tipo "Archivo" trae el binario real (el form lo guarda como
- * blob URL en `Recurso.url`, ver `RecursoForm`): el request completo va como
- * `multipart/form-data` en vez de JSON — cada archivo se adjunta bajo
- * `archivo_<i>`, y su entrada en `MATERIALES` lleva `archivoIndex: i` en vez
- * de `url` para que el backend lo correlacione con la parte del multipart.
+ * El backend (`fn_actividad_material_reemplazar`) exige que **cada material
+ * traiga exactamente uno** de `url` o `fkTarchivo`. Los de tipo URL y unidad
+ * virtual cumplen con `url`; los de tipo "Archivo" necesitan un `fkTarchivo`,
+ * y ese id **no** sale de esta llamada: hay que subir el binario antes.
+ *
+ * ### Por qué son dos pasos
+ *
+ * Este PUT no recibe archivos. Para subirlos hay un endpoint aparte, uno por
+ * archivo (V451):
+ *
+ * ```
+ * POST /files/eval-col/planeador/actividades/<id>/materiales/archivo
+ *      multipart, campo ARCHIVO  →  { fk_tarchivo }
+ * ```
+ *
+ * Va por el prefijo `/files` porque el que tiene que interceptarlo es
+ * `file-service`: guarda el binario, lo registra en `TARCHIVO` y recién
+ * entonces reenvía la petición con el id ya resuelto. Es un archivo por
+ * llamada porque el catálogo de queries no puede declarar un campo
+ * multi-archivo (no existe `FILE[]`), el mismo patrón que ya usan el soporte
+ * de asistencia y los documentos de matrícula.
+ *
+ * REV — antes esto mandaba el PUT como `multipart/form-data` con partes
+ * `archivo_<i>` y un `archivoIndex` dentro del JSON. Nunca funcionó, y no
+ * "a medias": `archivoIndex` no lo lee nadie, `file-service` no intercepta
+ * `/eval-col/**` y `query-service` no procesa multipart. El backend
+ * rechazaba la llamada ENTERA por el material sin `url` ni `fkTarchivo`, así
+ * que se perdían también los materiales de URL que iban en el mismo guardado.
  */
 export interface UpdateMaterialesResult {
   /** Recursos "Archivo" sin un blob URL válido (no debería pasar desde el
@@ -30,14 +52,40 @@ export interface UpdateMaterialesResult {
   recursosOmitidos: string[]
 }
 
+/** Fila que devuelve el endpoint de subida (V451). */
+interface ArchivoSubidoRow {
+  fk_tarchivo: number
+}
+
+/**
+ * Sube UN archivo y devuelve su `pk_tarchivo`.
+ *
+ * El `Blob` se recupera del blob URL acá, al armar la petición, y no se
+ * guarda el `File` en el estado del formulario: un `File` no serializa a
+ * JSON y rompería el borrador de `actividad-form-draft.ts`.
+ */
+async function subirArchivoMaterial(
+  actividadId: number,
+  recurso: Recurso,
+): Promise<number> {
+  const blob = await fetch(recurso.url).then((r) => r.blob())
+  const nombre = recurso.fuente || "archivo"
+  // `postMultipart` antepone `/files`, que es lo que hace que la petición
+  // pase por `file-service` en vez de ir directo al query-service.
+  const respuesta = await postMultipart<RowsEnvelope<ArchivoSubidoRow> | ArchivoSubidoRow>(
+    `/eval-col/planeador/actividades/${actividadId}/materiales/archivo`,
+    {},
+    { ARCHIVO: new File([blob], nombre, { type: blob.type }) },
+  )
+  return unwrapRow<ArchivoSubidoRow>(respuesta).fk_tarchivo
+}
+
 async function updateMaterialesActividad({
   actividadId,
   recursos,
 }: UpdateMaterialesInput): Promise<UpdateMaterialesResult> {
-  const formData = new FormData()
   const materiales: Record<string, unknown>[] = []
   const recursosOmitidos: string[] = []
-  let archivoIndex = 0
 
   for (const recurso of recursos) {
     const tipoRecurso = await resolveTipoRecursoId(recurso.tipo)
@@ -47,24 +95,34 @@ async function updateMaterialesActividad({
       continue
     }
 
+    // Un archivo YA guardado se reenvía por id, sin volver a subir nada.
+    // Esto no es una optimización: el PUT es de REEMPLAZO TOTAL, así que un
+    // material que no vaya en la lista se borra. Sin esta rama, reabrir una
+    // actividad y guardar cualquier otro campo se llevaba puestos sus
+    // archivos.
+    if (recurso.archivoId !== undefined && !recurso.url.startsWith("blob:")) {
+      materiales.push({ tipoRecurso, fkTarchivo: recurso.archivoId, descripcion: recurso.descripcion })
+      continue
+    }
+
+    // Sin blob URL y sin id no hay nada que enlazar: ni bytes que subir ni
+    // archivo al que apuntar. Se informa al caller en vez de mandar un
+    // material que el backend va a rechazar entero.
     if (!recurso.url) {
       recursosOmitidos.push(recurso.titulo || recurso.fuente || "Recurso sin nombre")
       continue
     }
 
-    // El input de tipo "file" guarda el binario como blob URL (ver
-    // `RecursoForm`) — se recupera el `Blob` real acá, al armar el request,
-    // en vez de cargar `File` en el estado del form (no serializa a JSON, lo
-    // que rompería el borrador de `actividad-form-draft.ts`).
-    const index = archivoIndex++
-    const blob = await fetch(recurso.url).then((r) => r.blob())
-    formData.append(`archivo_${index}`, blob, recurso.fuente || `archivo_${index}`)
-    materiales.push({ tipoRecurso, descripcion: recurso.descripcion, archivoIndex: index })
+    const fkTarchivo = await subirArchivoMaterial(actividadId, recurso)
+    materiales.push({ tipoRecurso, fkTarchivo, descripcion: recurso.descripcion })
   }
 
-  formData.append("MATERIALES", JSON.stringify(materiales))
-
-  await api.put(`/eval-col/planeador/actividades/${actividadId}/materiales`, formData)
+  // `MATERIALES` es JSONB y por la regla del motor viaja como STRING
+  // serializado, no como array anidado — mismo trato que `DEFINICION` del
+  // instrumento o `ADAPTACIONES`.
+  await api.put(`/eval-col/planeador/actividades/${actividadId}/materiales`, {
+    MATERIALES: JSON.stringify(materiales),
+  })
   return { recursosOmitidos }
 }
 

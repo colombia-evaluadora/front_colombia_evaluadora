@@ -107,5 +107,12 @@ export const planeadorRecursoPreviewSearchSchema = z.object({
   fuente: z.string().optional().catch(undefined),
   titulo: z.string().optional().catch(undefined),
   descripcion: z.string().optional().catch(undefined),
+  /**
+   * `PK_TARCHIVO` de un material de tipo "Archivo" ya guardado. Va como
+   * número: es lo que la vista previa le pasa a `useArchivoViewUrl` para
+   * acuñar el token con el que se puede leer el binario. Un recurso recién
+   * elegido en el formulario no lo trae — ese viaja por `url` como blob.
+   */
+  archivoId: z.coerce.number().optional().catch(undefined),
 })
 export type PlaneadorRecursoPreviewSearch = z.infer<typeof planeadorRecursoPreviewSearchSchema>
