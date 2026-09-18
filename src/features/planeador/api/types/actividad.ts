@@ -287,6 +287,7 @@ export interface Actividad {
   modalidad: Modalidad
   /** Si la actividad es sumativa (pondera/suma a la nota final) o no. */
   esEvaluativa: boolean
+  esFormativa?: boolean
   instrumento: string
   /** Peso de la actividad en la nota final (0-100). Solo aplica —y solo se
    *  muestra en el form— cuando `esEvaluativa` es `true` Y la unidad calcula

@@ -1,11 +1,13 @@
 import * as React from "react"
 
+import { useNotify } from "@/components/notice/notice-context"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-import { CheckIcon, InfoIcon } from "@/components/ui/icons"
+import { BrainIcon, CheckIcon, InfoIcon } from "@/components/ui/icons"
 
+import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
 
 const MAX_CARACTERES = 5000
@@ -15,19 +17,50 @@ function iniciales(nombreCompleto: string): string {
   return ((partes[0]?.[0] ?? "") + (partes[1]?.[0] ?? "")).toUpperCase()
 }
 
+/** El borrador que devolvió la IA, para reenviarlo tal cual al guardar. */
+interface Borrador {
+  texto: string
+  observacionesOrigen: number
+}
+
 interface ObservacionSheetProps {
   fila: FilaInforme | null
   guardando?: boolean
   onOpenChange: (open: boolean) => void
-  onGuardar: (fila: FilaInforme, texto: string) => void
+  onGuardar: (fila: FilaInforme, texto: string, borrador: Borrador | null) => void
 }
 
 export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: ObservacionSheetProps) {
+  const { notify } = useNotify()
   const [texto, setTexto] = React.useState("")
+  const [borrador, setBorrador] = React.useState<Borrador | null>(null)
+  const generar = useGenerarObservacionMutation()
 
   React.useEffect(() => {
-    if (fila) setTexto(fila.observacion ?? "")
+    if (!fila) return
+    setTexto(fila.observacion ?? "")
+    setBorrador(null)
   }, [fila])
+
+  async function handleGenerar() {
+    if (!fila) return
+    try {
+      const generada = await generar.mutateAsync({
+        matriculaId: fila.matriculaId,
+        periodoId: fila.periodoId,
+      })
+      if (generada.texto.trim() === "") {
+        notify("El docente no dejó observaciones que resumir en este período.", {
+          variant: "info",
+        })
+        return
+      }
+      setTexto(generada.texto)
+      setBorrador({ texto: generada.texto, observacionesOrigen: generada.observacionesOrigen })
+    } catch {
+      notify("No se pudo generar la observación.", { variant: "error" })
+    }
+  }
 
   return (
     <Sheet open={fila != null} onOpenChange={onOpenChange}>
@@ -72,16 +105,28 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
 
           <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
-            Guardar con el texto vacío elimina la observación de este período.
+            {borrador
+              ? "Borrador generado a partir de las observaciones del docente. Editalo si hace falta: se guarda como modificado."
+              : "Guardar con el texto vacío elimina la observación de este período."}
           </div>
         </div>
 
         <SheetFooter className="flex-row justify-end gap-2">
           <Button
             type="button"
+            variant="outline"
+            color="neutral"
+            disabled={guardando || generar.isPending}
+            onClick={handleGenerar}
+          >
+            <BrainIcon data-icon="inline-start" />
+            {generar.isPending ? "Generando…" : borrador ? "Regenerar" : "Generar con IA"}
+          </Button>
+          <Button
+            type="button"
             color="primary"
-            disabled={guardando}
-            onClick={() => fila && onGuardar(fila, texto)}
+            disabled={guardando || generar.isPending}
+            onClick={() => fila && onGuardar(fila, texto, borrador)}
           >
             <CheckIcon data-icon="inline-start" />
             Guardar

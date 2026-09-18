@@ -199,32 +199,39 @@ export function ActividadCard({
           "group-focus-within/actividad:pointer-events-auto group-focus-within/actividad:opacity-100",
         )}
       >
-        {acciones.map(({ label, Icon, onClick }) => (
-          <Tooltip key={label}>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  disabled={!onClick}
-                  aria-label={label}
-                  className="size-6"
-                  // `stopPropagation` para que el click del action no se propague
-                  // al `<button>` invisible que cubre toda la card y termine
-                  // disparando `onSelect` (selección de la actividad).
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onClick?.()
-                  }}
-                />
-              }
-            >
-              <Icon />
-            </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
-          </Tooltip>
-        ))}
+        {acciones.map(({ label, Icon, onClick }) => {
+          // `label` sola ("Editar"/"Marcar"/"Aprobar") no distingue de cuál
+          // actividad es el botón cuando hay varias cards a la vista (mismo
+          // texto en las dos) — se le suma el nombre, mismo criterio que ya
+          // usan "Exportar"/"Eliminar" acá abajo.
+          const labelConNombre = `${label} ${actividad.nombre}`
+          return (
+            <Tooltip key={label}>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    disabled={!onClick}
+                    aria-label={labelConNombre}
+                    className="size-6"
+                    // `stopPropagation` para que el click del action no se propague
+                    // al `<button>` invisible que cubre toda la card y termine
+                    // disparando `onSelect` (selección de la actividad).
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onClick?.()
+                    }}
+                  />
+                }
+              >
+                <Icon />
+              </TooltipTrigger>
+              <TooltipContent>{labelConNombre}</TooltipContent>
+            </Tooltip>
+          )
+        })}
 
         {/* Descargar: un solo click, sin diálogo de formato — ver la nota
             de "Descargar" en el docstring de arriba. */}

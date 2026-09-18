@@ -44,7 +44,9 @@ import {
   type AgrupacionPlanillaKey,
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import { ObservarActividadGrupal } from "@/features/planeador/components/planilla/observar-actividad-grupal"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
+import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
@@ -119,6 +121,22 @@ export function PlaneadorPlanillaPage() {
       })),
     [filas, columnaIds],
   )
+
+  // La observación grupal manda UNA sola fecha para todo el grupo, así que se
+  // propone la que más estudiantes comparten: el backend omite a quien no
+  // tenga asistencia válida ese día.
+  const fechaSugeridaBulk = useMemo(() => {
+    if (!columnaEnBulk) return ""
+    const conteo = new Map<string, number>()
+    for (const fila of filas) {
+      const fecha = fila.celdas.find(
+        (c) => c.pkTactividad === columnaEnBulk.pkTactividad,
+      )?.fechaAsistencia
+      if (fecha) conteo.set(fecha, (conteo.get(fecha) ?? 0) + 1)
+    }
+    const masComun = [...conteo.entries()].sort((a, b) => b[1] - a[1])[0]
+    return masComun?.[0] ?? columnaEnBulk.fechaInicio
+  }, [columnaEnBulk, filas])
 
   const estudiantesEnBulk = filas.map((fila) => ({
     id: fila.pkTestudiante,
@@ -229,7 +247,17 @@ export function PlaneadorPlanillaPage() {
             />
           )}
 
-          {filtro && columnaEnBulk && (
+          {filtro && columnaEnBulk && esColumnaFormativa(columnaEnBulk) && (
+            <ObservarActividadGrupal
+              actividadId={columnaEnBulk.pkTactividad}
+              titulo={columnaEnBulk.titulo}
+              fechaSugerida={fechaSugeridaBulk}
+              totalEstudiantes={columnaEnBulk.estudiantesAsignados}
+              onVolver={() => setColumnaEnBulk(null)}
+            />
+          )}
+
+          {filtro && columnaEnBulk && !esColumnaFormativa(columnaEnBulk) && (
             <CalificarActividadBulk
               actividadId={columnaEnBulk.pkTactividad}
               titulo={columnaEnBulk.titulo}
