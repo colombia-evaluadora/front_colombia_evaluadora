@@ -117,6 +117,10 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
   }
 
   const grupos = verPor === "unidad" ? agruparPorUnidad(columnas) : null
+  // El backend manda `definitiva_proyectada` en null hasta que el estudiante
+  // tiene algo calificado — con la columna entera en null (grupo recién
+  // creado, o ningún estudiante calificado todavía) no aporta nada mostrarla.
+  const mostrarDefinitiva = filas.some((fila) => fila.definitivaProyectada !== null)
 
   return (
     <div className="border-input overflow-auto rounded-md border">
@@ -128,9 +132,11 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                 <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
                   Nombres
                 </th>
-                <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
-                  Definit. Proy.
-                </th>
+                {mostrarDefinitiva && (
+                  <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+                    Definit. Proy.
+                  </th>
+                )}
                 {grupos.map((grupo) => (
                   <th
                     key={grupo.fkTunidad ?? "sin-unidad"}
@@ -160,7 +166,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
           ) : (
             <tr>
               <th className="px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-              <th className="px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
+              {mostrarDefinitiva && (
+                <th className="px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
+              )}
               {columnas.map((columna) => (
                 <ColumnaHeader
                   key={columna.pkTactividad}
@@ -180,21 +188,21 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                 <td className="px-4 py-3 align-middle font-medium whitespace-nowrap">
                   {fila.nombreEstudiante}
                 </td>
-                <td className="px-4 py-3 align-middle">
-                  {definitiva !== null ? (
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-0.5 font-semibold",
-                        definitiva >= NOTA_MINIMA_APROBATORIA ? "text-green" : "text-red",
-                      )}
-                    >
-                      {definitiva >= NOTA_MINIMA_APROBATORIA ? <CaretUpIcon /> : <CaretDownIcon />}
-                      {definitiva.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Agregar</span>
-                  )}
-                </td>
+                {mostrarDefinitiva && (
+                  <td className="px-4 py-3 align-middle">
+                    {definitiva !== null && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-0.5 font-semibold",
+                          definitiva >= NOTA_MINIMA_APROBATORIA ? "text-green" : "text-red",
+                        )}
+                      >
+                        {definitiva >= NOTA_MINIMA_APROBATORIA ? <CaretUpIcon /> : <CaretDownIcon />}
+                        {definitiva.toFixed(2)}
+                      </span>
+                    )}
+                  </td>
+                )}
                 {columnas.map((columna) => {
                   const celda = celdaDe(fila, columna)
 
