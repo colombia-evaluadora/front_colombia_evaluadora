@@ -71,6 +71,7 @@ export interface GrupoPeriodo {
 export interface PeriodoInforme {
   id: number
   nombre: string
+  abreviacion: string | null
   fechaInicio: string
   fechaFin: string
   /** Es la misma condición con la que el backend arma la alerta roja — no
@@ -106,11 +107,11 @@ export interface AsignaturaInforme {
 
 export interface FilaInforme {
   matriculaId: number
-  estudianteId: number
   nombreCompleto: string
   documento: string
   periodoId: number
   periodoNombre: string
+  periodoAbreviacion: string | null
   /** Junto con `formato` deciden cómo renderizar. En preescolar
    *  `asignaturas` llega con filas en `null`, así que mirar si viene vacío
    *  no sirve para distinguirlo. */
@@ -160,10 +161,8 @@ export interface CambioPendiente {
 export interface HistorialDetalle {
   matriculaId: number
   estudiante: string
-  documento: string
-  /** El del momento del guardado — no se recalcula al consultar. */
-  promedio: number | null
-  asignaturas: number
+  guardadas: number
+  actualizadas: number
 }
 
 export interface HistorialCambio {
@@ -174,8 +173,11 @@ export interface HistorialCambio {
    *  desde la planilla. */
   asignaturaId: number | null
   asignaturaNombre: string | null
+  /** `informe` = guardado completo; el otro origen es la planilla. */
+  origen: string | null
   periodoId: number
   periodoNombre: string
+  periodoAbreviacion: string | null
   usuario: string | null
   fecha: string
   momento: string

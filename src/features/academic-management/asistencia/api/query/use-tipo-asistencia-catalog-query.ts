@@ -11,6 +11,9 @@ export interface TipoAsistenciaOption {
 
 const VALORES_VALIDOS: TipoAsistencia[] = [1, 2, 3, 5, 6]
 
+/** Los "trajo justificación": `es_justificado` en el backend (VALOR 3 y 6). */
+export const TIPOS_JUSTIFICADOS: TipoAsistencia[] = [3, 6]
+
 async function fetchTipoAsistenciaOptions(): Promise<TipoAsistenciaOption[]> {
   const rows = await fetchSelectCategory("TIPO_ASISTENCIA")
   return rows

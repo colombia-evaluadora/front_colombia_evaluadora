@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import { texto } from "@/features/academic-management/reports/api/columnas"
-
 import type {
   CambioPendiente,
   PlanillaPendiente,
@@ -11,14 +9,12 @@ import type {
 
 interface AlertaRow {
   fk_tgrupo: number
-  grupo?: string
-  grupo_nombre?: string
+  grupo_nombre: string | null
   fk_tasignatura: number
-  asignatura?: string
-  asignatura_nombre?: string
+  asignatura_nombre: string | null
   fk_tperiodo_evaluacion: number
-  periodo?: string
-  periodo_nombre?: string
+  periodo_nombre: string | null
+  periodo_abreviacion: string | null
   fk_tfuncionario: number | null
   docente: string | null
   docentes_asignados: number | null
@@ -29,11 +25,11 @@ interface AlertaRow {
 function toPlanillaPendiente(row: AlertaRow): PlanillaPendiente {
   return {
     grupoId: row.fk_tgrupo,
-    grupoNombre: texto(row.grupo, row.grupo_nombre),
+    grupoNombre: row.grupo_nombre ?? "",
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
+    asignaturaNombre: row.asignatura_nombre ?? "",
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: texto(row.periodo, row.periodo_nombre),
+    periodoNombre: row.periodo_nombre ?? "",
     funcionarioId: row.fk_tfuncionario,
     docente: row.docente,
     actividades: row.actividades ?? 0,
@@ -44,11 +40,11 @@ function toPlanillaPendiente(row: AlertaRow): PlanillaPendiente {
 function toCambioPendiente(row: AlertaRow): CambioPendiente {
   return {
     grupoId: row.fk_tgrupo,
-    grupoNombre: texto(row.grupo, row.grupo_nombre),
+    grupoNombre: row.grupo_nombre ?? "",
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
+    asignaturaNombre: row.asignatura_nombre ?? "",
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: texto(row.periodo, row.periodo_nombre),
+    periodoNombre: row.periodo_nombre ?? "",
     funcionarioId: row.fk_tfuncionario,
     docente: row.docente,
     estudiantesAfectados: row.estudiantes_afectados ?? 0,

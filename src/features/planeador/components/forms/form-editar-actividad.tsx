@@ -1907,6 +1907,17 @@ function useCamposEvaluacionEfectivos(
     !camposDisponiblesAplica && unidadId != null ? unidadId : undefined,
     esEvaluativaValue,
   )
+  // Señal PURA de "¿el referente de la unidad es Evaluativo?", sin mezclar
+  // el `esEvaluativa` que el usuario tenga elegido AHORA en el toggle: se
+  // pide siempre con `ES_EVALUATIVA=S`, que en la fórmula del backend
+  // (`visible = referente_evaluativo AND ES_EVALUATIVA <> 'N'`) deja
+  // `visible` igual a "es evaluativo". Sin esto, una actividad que arranca
+  // (o quedó guardada) con `esEvaluativa: false` bloqueaba su propio
+  // selector "¿Es evaluación sumativa?" — nunca se podía poner en "Sí" —
+  // aunque el referente de la unidad fuera Evaluativo: `camposEfectivos`
+  // abajo ya viene calculado CON ese `false`, así que usarlo también para
+  // decidir si el referente es formativo era un candado, no una detección.
+  const { data: configuracionReferente } = useConfiguracionActividadQuery(unidadId, true)
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
@@ -1928,9 +1939,16 @@ function useCamposEvaluacionEfectivos(
   // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
   const camposEfectivos = camposDisponiblesAplica ? camposDisponibles : configuracionEnVivo
 
-  const esFormativa = camposEfectivos
-    ? camposEfectivos.evaluacion.visible === false
-    : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
+  // Con unidad, `esFormativa` sale de `configuracionReferente` (fijo en
+  // `ES_EVALUATIVA=S`, ver arriba) — NUNCA de `camposEfectivos`, que sí
+  // varía con el `esEvaluativa` actual del form y por eso no sirve para
+  // decidir si el referente ADMITE ponerlo en "Sí". Sin unidad (huérfana o
+  // alta sin unidad todavía), `referenteDeGradoAsignatura?.esFormativo` ya
+  // es independiente del toggle.
+  const esFormativa =
+    unidadId != null
+      ? configuracionReferente != null && configuracionReferente.evaluacion.visible === false
+      : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
 
   return { camposEfectivos, esFormativa, tipoEvaluacion }
 }
@@ -3892,6 +3910,7 @@ function CrearUnidadPopover({
     enunciados: enunciadosDisponibles,
     nombre: referenteNombre,
     descripcion: referenteDescripcion,
+    nivel1Etiqueta,
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
@@ -4039,7 +4058,10 @@ function CrearUnidadPopover({
             <ListaAgregableCajaSelect
               title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
               description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
-              columnLabel="Enunciados"
+              // Mismo motivo que en `UnidadInfoGeneralFields`: nunca el
+              // literal fijo "Enunciados" — este popover también crea
+              // unidades de Preescolar, donde el nivel 1 real es "Propósito".
+              columnLabel={`${nivel1Etiqueta}s`}
               items={enunciadosDba}
               options={enunciadosDisponibles}
               onChange={setEnunciadosDba}

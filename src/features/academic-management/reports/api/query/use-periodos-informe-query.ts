@@ -5,32 +5,39 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
 
 interface PeriodoRow {
-  /** El resto del módulo nombra esta columna `fk_tperiodo_evaluacion`
-   *  (`/informes/grupo`); se aceptan las dos porque la doc no trae un ejemplo
-   *  de respuesta de este endpoint y con la clave equivocada el id llega
-   *  `undefined` y todos los checkboxes salen marcados. */
-  fk_tperiodo_evaluacion?: number
-  pk_tperiodo_evaluacion?: number
+  fk_tperiodo_evaluacion: number
+  codigo: string | null
   nombre: string
+  /** Acá se llama `abreviacion` a secas; en `/informes/grupo`, `/informes/historial`
+   *  y las dos alertas la misma columna es `periodo_abreviacion`. */
+  abreviacion: string | null
   fecha_inicio: string
   fecha_fin: string
+  porcentaje: number | null
+  estado: string | null
   termino: boolean
   en_curso: boolean
   calificable: boolean
-  sede: string | null
+  fk_tperiodo_academico: number
+  periodo_academico: string | null
+  fk_tsede: number
+  sede_nombre: string | null
+  fk_tlv_jornada: number
   jornada: string | null
+  anio: number
 }
 
 function toPeriodo(row: PeriodoRow): PeriodoInforme {
   return {
-    id: row.fk_tperiodo_evaluacion ?? row.pk_tperiodo_evaluacion ?? 0,
+    id: row.fk_tperiodo_evaluacion,
     nombre: row.nombre,
+    abreviacion: row.abreviacion,
     fechaInicio: row.fecha_inicio,
     fechaFin: row.fecha_fin,
     termino: row.termino,
     enCurso: row.en_curso,
     calificable: row.calificable,
-    sede: row.sede,
+    sede: row.sede_nombre,
     jornada: row.jornada,
   }
 }

@@ -129,9 +129,9 @@ function EntradaHistorial({ cambio }: { cambio: HistorialCambio }) {
                   >
                     <span className="min-w-0 truncate">{detalle.estudiante}</span>
                     <span className="shrink-0 text-muted-foreground">
-                      {detalle.promedio != null
-                        ? detalle.promedio.toLocaleString("es-CO", { minimumFractionDigits: 1 })
-                        : "—"}
+                      {detalle.actualizadas > 0
+                        ? `${detalle.guardadas} guardadas · ${detalle.actualizadas} actualizadas`
+                        : `${detalle.guardadas} guardadas`}
                     </span>
                   </li>
                 ))}

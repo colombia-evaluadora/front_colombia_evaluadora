@@ -59,7 +59,7 @@ interface DataTableProps {
   isPending: boolean
   isError: boolean
   onRetry: () => void
-  emptyMessage?: string
+  emptyMessage?: ReactNode
   errorMessage?: string
   /**
    * Fila expandible bajo cada fila: se renderiza en un `<tr>` propio a todo el
