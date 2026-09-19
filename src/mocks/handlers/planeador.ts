@@ -1126,16 +1126,100 @@ export const planeadorHandlers = [
                   : esEvaluativa
                     ? "La actividad es sumativa: hace falta un instrumento de evaluación."
                     : "La actividad no es sumativa: no hace falta instrumento.",
-                // `{pk, valor, etiqueta}`, no strings sueltos — mismo shape
-                // que `fn_actividad_instrumentos_permitidos` real (ver
-                // `toInstrumentosPermitidos` en `use-instrumento-evaluacion-
-                // catalog.ts`, que hace el mapeo a los strings que compara
-                // el resto del form).
+                // `{pk, valor, etiqueta, nombre, variantes, campos}`, no
+                // strings sueltos — mismo shape que `fn_actividad_
+                // instrumentos_permitidos` real, `campos` incluido para
+                // "OTRO" (ver `normalizeInstrumentosPermitidos` en
+                // `use-instrumento-evaluacion-catalog.ts`, que hace el mapeo
+                // a los strings que compara el resto del form).
                 instrumentosPermitidos: [
-                  { pk: 51998, valor: "RUBRICA", etiqueta: "Rúbrica" },
-                  { pk: 52008, valor: "LISTA_COTEJO", etiqueta: "Lista de cotejo" },
-                  { pk: 51983, valor: "ESCALA_VALORACION", etiqueta: "Escala de valoración" },
-                  { pk: 52007, valor: "OTRO", etiqueta: "Otro (personalizado)" },
+                  {
+                    pk: 51998,
+                    valor: "RUBRICA",
+                    etiqueta: "Rúbrica",
+                    nombre: "Rúbrica",
+                    variantes: [],
+                    campos: null,
+                  },
+                  {
+                    pk: 52008,
+                    valor: "LISTA_COTEJO",
+                    etiqueta: "Lista de cotejo",
+                    nombre: "Lista de cotejo",
+                    variantes: [],
+                    campos: null,
+                  },
+                  {
+                    pk: 51983,
+                    valor: "ESCALA_VALORACION",
+                    etiqueta: "Escala de valoración",
+                    nombre: "Escala de valoración",
+                    variantes: [{ pk: 52016, valor: "NUMERICA", nombre: "Numérica" }],
+                    campos: null,
+                  },
+                  {
+                    pk: 52007,
+                    valor: "OTRO",
+                    etiqueta: "Otro (personalizado)",
+                    nombre: "Otro (personalizado)",
+                    variantes: [],
+                    campos: {
+                      tipoEvidencia: {
+                        motivo: "Tipo de evidencia esperada del instrumento personalizado",
+                        requerido: true,
+                        catalogo: [
+                          { pk: 52020, valor: "ARCHIVO", nombre: "Archivo" },
+                          { pk: 52019, valor: "ENLACE", nombre: "Enlace" },
+                          { pk: 52017, valor: "OBSERVACION_DIRECTA", nombre: "Observación directa" },
+                          { pk: 52018, valor: "REGISTRO_CAMPO", nombre: "Registro en campo" },
+                        ],
+                      },
+                      metodoValoracion: {
+                        motivo:
+                          "Instrumento con el que se califica el personalizado; se ofrecen los que admite el tipo de evaluacion del referente",
+                        requerido: true,
+                        catalogo: [
+                          {
+                            pk: 51983,
+                            valor: "ESCALA_VALORACION",
+                            nombre: "Escala de valoración",
+                            variantes: [{ pk: 52016, valor: "NUMERICA", nombre: "Numérica" }],
+                          },
+                        ],
+                      },
+                      definicion: {
+                        motivo:
+                          "Misma forma que el metodoValoracion elegido; se envia en PUT /planeador/actividades/:ID/instrumento como {tipoEvidencia, metodoValoracion, definicion}",
+                        requerido: true,
+                        formaPorMetodo: {
+                          RUBRICA: "[{nombre, descripcion?, niveles:[{etiqueta?, descripcion, ponderacion}]}]",
+                          LISTA_COTEJO: "[{descripcion, ponderacion?}]",
+                          ESCALA_VALORACION:
+                            "{tipoEscala, criteriosGenerales?, interpretacionRangos?, valorMin?, valorMax?, niveles?}",
+                        },
+                      },
+                      requiereTexto: {
+                        campo: "REQUIERE_TEXTO",
+                        motivo: "Si el estudiante debe escribir una respuesta en texto",
+                        default: "N",
+                        valores: ["S", "N"],
+                        requerido: false,
+                      },
+                      requiereArchivo: {
+                        campo: "REQUIERE_ARCHIVO",
+                        motivo: "Si el estudiante debe adjuntar un archivo",
+                        default: "N",
+                        valores: ["S", "N"],
+                        requerido: false,
+                      },
+                      descripcionInstrumento: {
+                        campo: "DESCRIPCION_INSTRUMENTO",
+                        motivo: "Descripcion libre del instrumento; va en el POST/PATCH de la actividad",
+                        maxLength: 4000,
+                        requerido: false,
+                      },
+                    },
+                  },
                 ],
               },
               ponderacion: {

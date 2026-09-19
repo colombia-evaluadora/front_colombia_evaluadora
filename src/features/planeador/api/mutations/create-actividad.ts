@@ -70,12 +70,23 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     GENERA_EVIDENCIAS: actividad.generaEvidencias ? "S" : "N",
     OBSERVACIONES_DOCENTE: actividad.observaciones,
   }
-  // Pendientes, a propósito: `actividad.tipoEvidencia` (→
+  // Pendiente, a propósito: `actividad.tipoEvidencia` (→
   // `FK_TLV_TIPO_EVIDENCIA`, necesita una categoría de catálogo sin
-  // confirmar) y `actividad.requiereValidacion` (→ el campo `REQUIERE_*`
-  // que la doc no nombra exacto) — mandarlos a ciegas arriesga un valor que
-  // el backend rechace, a diferencia de `resolveModalidadId` (que si falla
-  // resuelve `undefined` y simplemente no se manda nada).
+  // confirmar) — mandarlo a ciegas arriesga un valor que el backend
+  // rechace, a diferencia de `resolveModalidadId` (que si falla resuelve
+  // `undefined` y simplemente no se manda nada).
+  //
+  // `REQUIERE_ARCHIVO`/`REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO` SÍ tienen
+  // nombre confirmado (`campos_disponibles.evaluacion.instrumentosPermitidos
+  // [valor=OTRO].campos`, `GET /planeador/actividades/configuracion`): solo
+  // aplican con el instrumento personalizado ("Otro") — los otros tres
+  // instrumentos no tienen esta ficha.
+  if (actividad.instrumento === "Otro") {
+    const { instrumentoPersonalizado } = actividad
+    body.REQUIERE_ARCHIVO = instrumentoPersonalizado.requiereArchivo ? "S" : "N"
+    body.REQUIERE_TEXTO = instrumentoPersonalizado.requiereRespuestaTexto ? "S" : "N"
+    if (instrumentoPersonalizado.descripcion) body.DESCRIPCION_INSTRUMENTO = instrumentoPersonalizado.descripcion
+  }
   // "Duración estimada"/"Semana del cronograma" (sección Programación) se
   // capturaban en el form pero nunca viajaban acá — se perdían en silencio
   // al guardar. `DURACION_ESTIMADA` es siempre un número (el form ya lo
