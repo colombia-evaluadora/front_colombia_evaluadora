@@ -254,7 +254,7 @@ function PlaneadorPageContent() {
       list.push({
         id: a.id,
         code: a.gradoGrupo ?? String(a.id).slice(-3),
-        label: a.label,
+        label: a.titulo,
         status: a.status,
       })
       map.set(day, list)
