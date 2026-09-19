@@ -86,6 +86,15 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
+  // `REQUIERE_ARCHIVO`/`REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO` — mismo
+  // nombre confirmado que `create-actividad.ts` (ver su comentario), solo
+  // aplican con el instrumento personalizado ("Otro").
+  if (data.instrumento === "Otro") {
+    const { instrumentoPersonalizado } = data
+    body.REQUIERE_ARCHIVO = instrumentoPersonalizado.requiereArchivo ? "S" : "N"
+    body.REQUIERE_TEXTO = instrumentoPersonalizado.requiereRespuestaTexto ? "S" : "N"
+    if (instrumentoPersonalizado.descripcion) body.DESCRIPCION_INSTRUMENTO = instrumentoPersonalizado.descripcion
+  }
   // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
   // normal) son excluyentes — mismo contrato que `p_recuperacion`/
   // `p_quitar_recuperacion` de `fn_actividad_actualizar`. `recuperacionDestino`

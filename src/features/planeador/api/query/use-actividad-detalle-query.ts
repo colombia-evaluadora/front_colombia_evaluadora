@@ -6,6 +6,7 @@ import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado
 import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
 import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
+import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
   defaultRecuperacionCampoDisponible,
   type Actividad,
@@ -197,7 +198,11 @@ interface RecuperacionCampoDisponibleRow {
 
 interface CamposDisponiblesRow {
   criterio: CampoDisponibleRow
-  evaluacion: CampoDisponibleRow & { instrumentosPermitidos: string[] }
+  /** `instrumentosPermitidos` viene como `{pk, valor, etiqueta, nombre,
+   *  variantes, campos}[]`, no `string[]` — ver `normalizeInstrumentosPermitidos`. */
+  evaluacion: CampoDisponibleRow & {
+    instrumentosPermitidos: Parameters<typeof normalizeInstrumentosPermitidos>[0]
+  }
   ponderacion: CampoDisponibleRow & { modo: string | null }
   recuperacion?: RecuperacionCampoDisponibleRow
 }
@@ -228,10 +233,19 @@ function criteriosUnidadIdsFromRow(raw: CriterioRelacionadoRow[] | null): number
 }
 
 /** Completa `recuperacion` con el placeholder oculto cuando la fila no lo
- *  trae (ver `defaultRecuperacionCampoDisponible`). */
+ *  trae (ver `defaultRecuperacionCampoDisponible`), y normaliza
+ *  `instrumentosPermitidos` a la forma rica del form (ver
+ *  `normalizeInstrumentosPermitidos`). */
 function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["camposDisponibles"] {
   if (!raw) return undefined
-  return { ...raw, recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible() }
+  return {
+    ...raw,
+    evaluacion: {
+      ...raw.evaluacion,
+      instrumentosPermitidos: normalizeInstrumentosPermitidos(raw.evaluacion.instrumentosPermitidos),
+    },
+    recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible(),
+  }
 }
 
 /**
