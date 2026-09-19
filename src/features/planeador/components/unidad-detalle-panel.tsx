@@ -28,7 +28,7 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
-import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
+import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
@@ -320,12 +320,17 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
  * tal cual, para no mantener dos editores de criterios distintos.
  */
 export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
-  // Nombres (y cantidad) reales de los niveles de desempeño, si la unidad
-  // tiene una escala de valoración configurada para su nivel educativo —
-  // mismos nombres que usa `DialogAgregarCriterio`, para que la tabla y el
-  // modal de alta no queden con nombres/cantidad de niveles distinta para
-  // lo mismo.
-  const { nombres: nombresNiveles } = useNivelesDesempenoNombres(unidad.grado)
+  // Nombres (y cantidad) reales de los niveles de desempeño de la unidad —
+  // MISMA query que `DialogAgregarCriterio` (`GET /planeador/unidades/:id/
+  // valoraciones`, confirmado real), para que la tabla y el modal de alta
+  // queden con la MISMA cantidad de columnas/campos. Antes la tabla sacaba
+  // sus nombres de `useNivelesDesempenoNombres` (derivado por nivel
+  // educativo, con default fijo de 4 bandas) mientras el modal ya usaba
+  // esta query por unidad — cuando la escala real de la unidad no
+  // coincidía con ese derivado (más o menos bandas, nombres distintos), la
+  // tabla mostraba menos columnas que niveles tenía cada criterio guardado.
+  const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
+  const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
   const columns = React.useMemo(
     () => createUnidadCriteriosColumns(nombresNiveles),
     [nombresNiveles],

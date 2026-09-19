@@ -60,12 +60,15 @@ interface DialogAgregarCriterioProps {
  * criterio) — sin niveles intermedios opcionales como en la rúbrica de
  * Actividad: acá la tabla siempre muestra todas las columnas completas.
  *
- * "Bajo"/"Básico"/"Alto"/"Superior" son los nombres por default
- * (`NIVELES_DESEMPENO_DEFAULT_NOMBRES`): si el nivel educativo de la
- * unidad tiene una escala de valoración configurada en Establecimiento, se
- * usan esos nombres y esa CANTIDAD de niveles en su lugar (ver
- * `useNivelesDesempenoNombres`) — el TEXTO de cada nivel lo sigue
- * escribiendo el docente, solo cambian los nombres/cantidad de campos.
+ * Los nombres/cantidad de niveles salen de `useUnidadValoracionesQuery`
+ * (`GET /planeador/unidades/:id/valoraciones`, confirmado real) — las
+ * valoraciones activas de la escala que aplica a ESTA unidad puntual, no
+ * un número fijo de 4 (Bajo/Básico/Alto/Superior). Mismos nombres/misma
+ * cantidad que usa la tabla "Criterios de la unidad"
+ * (`createUnidadCriteriosColumns` en `unidad-detalle-panel.tsx`), para que
+ * la tabla y el modal de alta no queden con nombres ni cantidad de niveles
+ * distinta para lo mismo. El TEXTO de cada nivel lo sigue escribiendo el
+ * docente, solo cambian los nombres/cantidad de campos.
  *
  * Dos formas de confirmar: "Vincular y agregar otro" persiste el
  * criterio actual y deja el modal abierto con el form limpio para
