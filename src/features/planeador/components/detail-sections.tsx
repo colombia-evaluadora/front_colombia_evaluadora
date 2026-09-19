@@ -180,7 +180,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term="Fecha de entrega o cierre">
             {formatDate(actividad.fechaCierre)}
           </Definition>
-          <Definition term="Duración estimada (minutos)">
+          <Definition term="Duración estimada (bloques)">
             {actividad.duracionEstimada}
           </Definition>
           <Definition term="Semana del cronograma">

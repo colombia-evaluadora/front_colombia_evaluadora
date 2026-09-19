@@ -2281,13 +2281,22 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
         <form.Field name="duracionEstimada">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Duración estimada (minutos)</FieldLabel>
+              {/* La unidad real ("bloques", confirmado real —
+                  `programacion.duracionEstimada.unidad`/`.motivo`, ver la
+                  `FieldDescription` de abajo) la decide el backend según la
+                  intensidad horaria de la asignatura — no es fija ni es
+                  "minutos"/"horas": se lee del mismo `programacion` que ya
+                  resuelve min/max, con "bloques" de respaldo mientras esa
+                  query no cargó (mismo fallback que la descripción). */}
+              <FieldLabel htmlFor={field.name}>
+                {`Duración estimada (${(programacion?.duracionEstimada.unidad ?? "bloques").toLowerCase()})`}
+              </FieldLabel>
               {/* `type="text"` + `inputMode="numeric"` y no `type="number"`:
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
-                  un conteo simple. Solo dígitos, sin la unidad ("minutos")
-                  mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
+                  un conteo simple. Solo dígitos, sin la unidad mezclada en
+                  el valor, a lo sumo 3 (hasta 999) y sin `0`
+                  (`toPositiveDigitsInput`): "0 bloques" no es una duración
                   válida. */}
               <Input
                 id={field.name}
