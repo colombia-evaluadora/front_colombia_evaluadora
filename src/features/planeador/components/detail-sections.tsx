@@ -341,7 +341,12 @@ function UnidadFichaYEvidenciasDetalle({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={handleToggle}
-          disabledIds={seleccionadas}
+          // "Ver actividad" es de solo lectura: TODAS las evidencias quedan
+          // deshabilitadas (no solo las ya tildadas) — marcar una nueva
+          // evidencia se hace desde "Editar", no desde acá.
+          disabledIds={referente.enunciados.flatMap((enunciado) =>
+            enunciado.evidencias.map((evidencia) => evidencia.id),
+          )}
           pendingId={pendingId}
         />
       )}
