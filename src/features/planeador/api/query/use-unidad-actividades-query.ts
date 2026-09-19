@@ -4,20 +4,14 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 
 /**
- * `GET /planeador/unidades/:id/actividades` (real, colección Postman
- * `planeador-guia-completa`, 2.8) — actividades ya vinculadas a la unidad,
- * con su `PONDERACION` (columna visible de la pantalla "Actividades" del
- * panel de unidad).
+ * `GET /planeador/unidades/:id/actividades` (real —
+ * `fn_unidad_actividades_listar`, V216/V245 en el repo del SSO, confirmado
+ * contra la definición de la función) — actividades ya vinculadas a la
+ * unidad, con su `PONDERACION` (columna visible de la pantalla
+ * "Actividades" del panel de unidad).
  *
- * SIN captura real confirmada todavía — la colección solo describe el
- * contenido en prosa ("ACTIVIDAD / TIPO / INSTRUMENTO / GRUPO / %", orden
- * por `actividad|tipo|instrumento|grupo|porcentaje"). Los nombres de campo
- * de abajo son la mejor aproximación, siguiendo el patrón ya confirmado en
- * otros endpoints de este módulo (`pk_tactividad`, `titulo`…) — pueden no
- * coincidir 1:1. Revisar contra una respuesta real cuanto antes.
- *
- * `PK_TACTIVIDAD_UNIDAD` (el id de la relación) tampoco está confirmado, y
- * no hace falta: `PATCH /unidades/actividades/:ACT` (desvincular) y
+ * `PK_TACTIVIDAD_UNIDAD` (el id de la relación) no lo trae esta fila, y no
+ * hace falta: `PATCH /unidades/actividades/:ACT` (desvincular) y
  * `PUT .../ponderacion` (2.10/2.11, ya cableados en
  * `unlink-actividad-unidad.ts`/`update-ponderacion-actividad-unidad.ts`)
  * toman el `PK_TACTIVIDAD` directo en el path, no un id de relación — por
@@ -26,11 +20,10 @@ import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tema
 interface UnidadActividadRow {
   pk_tactividad: number
   titulo: string
-  tipo_actividad?: string | null
-  es_evaluativa?: "S" | "N"
-  instrumento_evaluacion?: string | null
-  grupo?: string | null
-  ponderacion?: number | null
+  tipo_actividad: string | null
+  instrumento_evaluacion: string | null
+  grupo: string | null
+  ponderacion: number | null
 }
 
 function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
@@ -38,10 +31,12 @@ function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
     id: row.pk_tactividad,
     actividadId: row.pk_tactividad,
     nombre: row.titulo,
-    // "Formativa"/"Sumativa" se deriva de `es_evaluativa` si viene (mismo
-    // criterio que el resto del front); si no, cae al texto libre del
-    // catálogo `TIPO_ACTIVIDAD`.
-    tipo: row.es_evaluativa != null ? (row.es_evaluativa === "S" ? "Sumativa" : "Formativa") : (row.tipo_actividad ?? ""),
+    // Columna "TIPO" de la tabla — es el catálogo TIPO_ACTIVIDAD
+    // (`tipo_actividad`), el mismo que "Tipo de actividad" en el form de
+    // alta/edición ("Trabajo en clase", "Otro"...). NO es "Sumativa"/
+    // "Formativa" (eso se deriva de `ES_EVALUATIVA`, un campo distinto que
+    // esta fila ni siquiera trae).
+    tipo: row.tipo_actividad ?? "",
     instrumento: row.instrumento_evaluacion ?? "",
     grupo: row.grupo ?? "",
     ponderacion: row.ponderacion ?? 0,
