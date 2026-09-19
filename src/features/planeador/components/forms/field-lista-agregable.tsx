@@ -124,6 +124,12 @@ export function ListaAgregableField({
             agregar()
           }
         }}
+        // Sin esto, un texto tipeado que ni se confirma con Enter ni con el
+        // "+" se pierde en silencio: es un estado local (`draft`) que
+        // "Guardar" (afuera de este componente) no conoce. Salir del campo
+        // (click en otro lado, tab, o el propio "Guardar") lo confirma
+        // igual que Enter, sin exigir un paso extra.
+        onBlur={agregar}
       />
 
       {items.length > 0 && (
@@ -310,6 +316,10 @@ export function ListaAgregableCaja({
               agregar()
             }
           }}
+          // Mismo motivo que en `ListaAgregableField`: sin esto, tipear y
+          // pasar a "Guardar" sin pasar por Enter o el botón "Agregar…"
+          // perdía el texto en silencio.
+          onBlur={agregar}
           disabled={disabled}
         />
         {draft.trim() && (
