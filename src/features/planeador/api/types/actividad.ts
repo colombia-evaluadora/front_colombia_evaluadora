@@ -368,7 +368,7 @@ export interface Actividad {
       visible: boolean
       requerido: boolean
       motivo: string
-      instrumentosPermitidos: string[]
+      instrumentosPermitidos: InstrumentoPermitido[]
     }
     ponderacion: { visible: boolean; requerido: boolean; motivo: string; modo: string | null }
     /**
@@ -420,6 +420,86 @@ export interface ListaValorOption {
   pk: number
   valor: string
   nombre: string
+}
+
+/** Sub-opción de un instrumento permitido (p. ej. el `tipoEscala` que admite
+ *  ese `ESCALA_VALORACION` puntual) — mismo shape que `ListaValorOption`. */
+export interface InstrumentoPermitidoVariante {
+  pk: number
+  valor: string
+  nombre: string
+}
+
+export interface InstrumentoPermitidoCampoCatalogo {
+  motivo: string
+  requerido: boolean
+  catalogo: ListaValorOption[]
+}
+
+/** Igual que `InstrumentoPermitidoCampoCatalogo`, pero cada opción del
+ *  catálogo puede traer sus propias `variantes` (confirmado real:
+ *  `metodoValoracion.catalogo[].variantes` — p. ej. `ESCALA_VALORACION`
+ *  solo admite `NUMERICA` para un referente CUANTITATIVA). */
+export interface InstrumentoPermitidoCampoMetodoValoracion {
+  motivo: string
+  requerido: boolean
+  catalogo: (ListaValorOption & { variantes?: InstrumentoPermitidoVariante[] })[]
+}
+
+export interface InstrumentoPermitidoCampoTexto {
+  campo: string
+  motivo: string
+  maxLength: number
+  requerido: boolean
+}
+
+export interface InstrumentoPermitidoCampoBooleano {
+  campo: string
+  motivo: string
+  default: "S" | "N"
+  valores: ("S" | "N")[]
+  requerido: boolean
+}
+
+export interface InstrumentoPermitidoCampoDefinicion {
+  motivo: string
+  requerido: boolean
+  /** Forma esperada de `definicion` según el `metodoValoracion` elegido —
+   *  claves `RUBRICA`/`LISTA_COTEJO`/`ESCALA_VALORACION`, valor: descripción
+   *  de la forma (no un schema ejecutable, solo texto informativo). */
+  formaPorMetodo: Record<string, string>
+}
+
+/**
+ * Ficha dinámica del instrumento "Otro (personalizado)" (`valor: "OTRO"`,
+ * confirmado real contra `GET /planeador/actividades/configuracion`) — los
+ * demás instrumentos (Rúbrica/Lista de cotejo/Escala de valoración) no
+ * tienen ficha propia, por eso `InstrumentoPermitido.campos` es `null` en
+ * esos casos.
+ */
+export interface InstrumentoPermitidoCampos {
+  tipoEvidencia: InstrumentoPermitidoCampoCatalogo
+  metodoValoracion: InstrumentoPermitidoCampoMetodoValoracion
+  definicion: InstrumentoPermitidoCampoDefinicion
+  requiereArchivo: InstrumentoPermitidoCampoBooleano
+  requiereTexto: InstrumentoPermitidoCampoBooleano
+  descripcionInstrumento: InstrumentoPermitidoCampoTexto
+}
+
+/**
+ * Una fila de `campos_disponibles.evaluacion.instrumentosPermitidos`
+ * (confirmado real): YA NO es un array de strings — es un array de estos
+ * objetos. Se decide por `valor` (código estable de `TLISTA_VALOR`,
+ * "RUBRICA"/"LISTA_COTEJO"/"ESCALA_VALORACION"/"OTRO"), no por `etiqueta`/
+ * `nombre` (ver `instrumentoPermitidoLabel`).
+ */
+export interface InstrumentoPermitido {
+  pk: number
+  valor: string
+  nombre: string
+  etiqueta: string
+  variantes: InstrumentoPermitidoVariante[]
+  campos: InstrumentoPermitidoCampos | null
 }
 
 /**

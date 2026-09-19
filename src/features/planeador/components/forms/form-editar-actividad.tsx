@@ -50,7 +50,10 @@ import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/es
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
-import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import {
+  useInstrumentoEvaluacionCatalogQuery,
+  instrumentoPermitidoLabel,
+} from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
   ListaAgregableField,
   ListaAgregableCajaSelect,
@@ -89,6 +92,7 @@ import type {
   Criterio,
   EscalaValoracion,
   EscalaValoracionTipo,
+  InstrumentoPermitidoCampos,
   InstrumentoPersonalizado,
   ListaCotejo,
   ListaCotejoItem,
@@ -187,6 +191,27 @@ const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {
   "Observación directa": "Observación directa",
   "Registro en campo": "Registro en campo",
 }
+
+/**
+ * Catálogos de respaldo de `InstrumentoPersonalizadoSection` — solo se usan
+ * mientras `campos_disponibles.evaluacion.instrumentosPermitidos[valor=OTRO]
+ * .campos` no resolvió todavía (foto vieja, endpoint viejo): el backend real
+ * ya manda ese catálogo acotado al referente (ver el comentario de
+ * `InstrumentoPersonalizadoSection`), este es solo el piso para no dejar los
+ * selects sin opciones mientras carga.
+ */
+const TIPO_EVIDENCIA_ESPERADA_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: string }[] = [
+  { pk: -1, valor: "ARCHIVO", nombre: "Archivo" },
+  { pk: -2, valor: "ENLACE", nombre: "Enlace" },
+  { pk: -3, valor: "OBSERVACION_DIRECTA", nombre: "Observación directa" },
+  { pk: -4, valor: "REGISTRO_CAMPO", nombre: "Registro en campo" },
+]
+
+const METODO_VALORACION_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: string }[] = [
+  { pk: -1, valor: "RUBRICA", nombre: "Rúbrica" },
+  { pk: -2, valor: "LISTA_COTEJO", nombre: "Lista de cotejo" },
+  { pk: -3, valor: "ESCALA_VALORACION", nombre: "Escala de valoración" },
+]
 
 interface EditarActividadFormProps {
   actividad: Actividad
@@ -2525,9 +2550,10 @@ function EvaluacionSection({
   // de dejar el select sin opciones.
   const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
   const instrumentosPermitidos = camposEfectivos?.evaluacion.instrumentosPermitidos
+  const instrumentosPermitidosLabels = instrumentosPermitidos?.map(instrumentoPermitidoLabel)
   const instrumentosDisponibles =
-    instrumentosPermitidos && instrumentosPermitidos.length > 0
-      ? instrumentos.filter((instrumento) => instrumentosPermitidos.includes(instrumento))
+    instrumentosPermitidosLabels && instrumentosPermitidosLabels.length > 0
+      ? instrumentos.filter((instrumento) => instrumentosPermitidosLabels.includes(instrumento))
       : instrumentos
 
   return (
@@ -2606,6 +2632,7 @@ function EvaluacionSection({
             form={form}
             unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
+            camposEfectivos={camposEfectivos}
             disabled={disabled}
           />
 
@@ -2708,11 +2735,16 @@ function InstrumentoEvaluacionSection({
   form,
   unidades,
   tipoEvaluacion,
+  camposEfectivos,
   disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  /** Ver `useCamposEvaluacionEfectivos` — solo se usa acá para llegarle a
+   *  `InstrumentoPersonalizadoSection` la ficha dinámica de "Otro"
+   *  (`evaluacion.instrumentosPermitidos[].campos`). */
+  camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   disabled: boolean
 }) {
   return (
@@ -2736,6 +2768,10 @@ function InstrumentoEvaluacionSection({
             form={form}
             unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
+            camposOtro={
+              camposEfectivos?.evaluacion.instrumentosPermitidos.find((item) => item.valor === "OTRO")?.campos ??
+              null
+            }
             disabled={disabled}
           />
         ) : (
@@ -3350,13 +3386,32 @@ function InstrumentoPersonalizadoSection({
   form,
   unidades,
   tipoEvaluacion,
+  camposOtro,
   disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  /** Ficha dinámica de "Otro (personalizado)" (`campos_disponibles.
+   *  evaluacion.instrumentosPermitidos[valor=OTRO].campos`, confirmado
+   *  real) — trae los catálogos de "Tipo de evidencia esperada"/"Método de
+   *  valoración" que admite el referente puntual, en vez de las mismas 4/3
+   *  opciones fijas para cualquier grado/asignatura/tipo de evaluación.
+   *  `null` mientras no resuelve (foto vieja, endpoint viejo): cae a un
+   *  catálogo fijo para no dejar el form sin nada que elegir. */
+  camposOtro: InstrumentoPermitidoCampos | null
   disabled: boolean
 }) {
+  const tipoEvidenciaCatalogo =
+    camposOtro?.tipoEvidencia.catalogo && camposOtro.tipoEvidencia.catalogo.length > 0
+      ? camposOtro.tipoEvidencia.catalogo
+      : TIPO_EVIDENCIA_ESPERADA_CATALOGO_DEFAULT
+  const metodoValoracionCatalogo =
+    camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
+      ? camposOtro.metodoValoracion.catalogo
+      : METODO_VALORACION_CATALOGO_DEFAULT
+  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 4000
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición del instrumento personalizado</h3>
@@ -3376,7 +3431,7 @@ function InstrumentoPersonalizadoSection({
                 <Input
                   id="instrumentoPersonalizado-descripcion"
                   placeholder="Agregar descripción breve"
-                  maxLength={50}
+                  maxLength={descripcionMaxLength}
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
@@ -3395,14 +3450,15 @@ function InstrumentoPersonalizadoSection({
                   >
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
                       <SelectValue placeholder="Seleccione">
-                        {(v) => TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? "Seleccione"}
+                        {(v) => TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? (v as string) ?? "Seleccione"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Archivo">Archivo (PDF, Word, imagen, otro)</SelectItem>
-                      <SelectItem value="Enlace">Enlace (video, blog, presentación)</SelectItem>
-                      <SelectItem value="Observación directa">Observación directa</SelectItem>
-                      <SelectItem value="Registro en campo">Registro en campo</SelectItem>
+                      {tipoEvidenciaCatalogo.map((opcion) => (
+                        <SelectItem key={opcion.pk} value={opcion.nombre}>
+                          {TIPO_EVIDENCIA_ESPERADA_LABELS[opcion.nombre] ?? opcion.nombre}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -3425,9 +3481,11 @@ function InstrumentoPersonalizadoSection({
                       <SelectValue placeholder="Seleccione" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Rúbrica">Rúbrica</SelectItem>
-                      <SelectItem value="Lista de cotejo">Lista de cotejo</SelectItem>
-                      <SelectItem value="Escala de valoración">Escala de valoración</SelectItem>
+                      {metodoValoracionCatalogo.map((opcion) => (
+                        <SelectItem key={opcion.pk} value={opcion.nombre}>
+                          {opcion.nombre}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>

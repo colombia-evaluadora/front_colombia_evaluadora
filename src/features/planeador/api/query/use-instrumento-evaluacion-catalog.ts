@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import type { InstrumentoPermitido } from "@/features/planeador/api/types/actividad"
 
 // Catálogo global `INSTRUMENTO_EVALUACION` de `TLISTA_VALOR`
 // (`GET /eval-col/select/INSTRUMENTO_EVALUACION`) — resuelve
@@ -43,36 +44,60 @@ export interface InstrumentoEvaluacionOption {
 }
 
 /**
+ * Label con el que el resto del form compara un instrumento permitido
+ * (`EvaluacionSection`'s `instrumentos.filter(...)`) — se resuelve por
+ * `valor` (código estable de `TLISTA_VALOR`) contra el mismo diccionario
+ * que ya usa el catálogo (`INSTRUMENTO_EVALUACION_POR_CODIGO`), no por
+ * `etiqueta`: el backend real manda `etiqueta: "Otro (personalizado)"`
+ * para `OTRO`, pero el resto del form compara contra el literal corto
+ * `"Otro"`.
+ */
+export function instrumentoPermitidoLabel(
+  item: Pick<InstrumentoPermitido, "valor" | "etiqueta" | "nombre">,
+): string {
+  return INSTRUMENTO_EVALUACION_POR_CODIGO[item.valor] ?? item.etiqueta ?? item.nombre
+}
+
+type InstrumentoPermitidoRaw = {
+  pk?: number
+  valor?: string
+  etiqueta?: string
+  nombre?: string
+  variantes?: InstrumentoPermitido["variantes"]
+  campos?: InstrumentoPermitido["campos"]
+}
+
+/**
  * `campos_disponibles.evaluacion.instrumentosPermitidos` (`fn_actividad_
  * instrumentos_permitidos`/`fn_unidad_configuracion_actividad`, confirmado
- * real contra el servidor de test) NO es un array de strings — es un array
- * de `{pk, valor, etiqueta}`, con `valor` el código estable de
- * `TLISTA_VALOR` ("RUBRICA", "LISTA_COTEJO", …). Se resuelve por `valor`
- * contra el mismo diccionario que ya usa el catálogo (`INSTRUMENTO_
- * EVALUACION_POR_CODIGO`), no por `etiqueta`, para que el string resultante
- * sea IDÉNTICO al que compara `EvaluacionSection` (`instrumentos.filter(...)`
- * en `form-editar-actividad.tsx`) — el backend real manda `etiqueta: "Otro
- * (personalizado)"` para `OTRO`, pero el resto del form compara contra el
- * literal corto `"Otro"`. Tolera además un array ya en forma de strings
- * (el mock, `src/mocks/handlers/planeador.ts`), para no duplicar esta
- * función en dos shapes distintas según el origen de los datos.
+ * real contra el servidor de test, incluido el bloque `campos` de "Otro
+ * (personalizado)" — ver `InstrumentoPermitido`) NO es un array de strings
+ * — es un array de objetos ricos. Tolera además un array ya en forma de
+ * strings (el mock viejo), para no duplicar esta función en dos shapes
+ * distintas según el origen de los datos — en ese caso `campos`/`variantes`
+ * quedan vacíos, sin ficha dinámica que armar.
  *
  * Desde que las tres configuraciones de `campos_disponibles` se unificaron
  * (V440), la fila trae `etiqueta` Y `nombre` con el mismo texto — se cae a
  * `nombre` cuando falte `etiqueta` (o venga de un endpoint viejo que solo
- * mande una de las dos) para no filtrar filas válidas por quedarse con
+ * mande una de las dos) para no perder filas válidas por quedarse con
  * `undefined`.
  */
-export function toInstrumentosPermitidos(
-  rows: (string | { pk?: number; valor?: string; etiqueta?: string; nombre?: string })[] | undefined,
-): string[] {
-  return (rows ?? [])
-    .map((row) =>
-      typeof row === "string"
-        ? row
-        : (INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor ?? ""] ?? row.etiqueta ?? row.nombre),
-    )
-    .filter((nombre): nombre is string => !!nombre)
+export function normalizeInstrumentosPermitidos(
+  rows: (string | InstrumentoPermitidoRaw)[] | undefined,
+): InstrumentoPermitido[] {
+  return (rows ?? []).map((row, index) =>
+    typeof row === "string"
+      ? { pk: index, valor: row, nombre: row, etiqueta: row, variantes: [], campos: null }
+      : {
+          pk: row.pk ?? index,
+          valor: row.valor ?? "",
+          nombre: row.nombre ?? row.etiqueta ?? row.valor ?? "",
+          etiqueta: row.etiqueta ?? row.nombre ?? row.valor ?? "",
+          variantes: row.variantes ?? [],
+          campos: row.campos ?? null,
+        },
+  )
 }
 
 /** No es un hook: se llama directo desde las mutaciones de crear/editar
