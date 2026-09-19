@@ -1701,12 +1701,28 @@ function RecursosSection({
               lista. Antes había uno por item agregado, lo que duplicaba el
               form N veces y rompía la lectura visual de "estoy agregando
               un nuevo recurso". */}
-          <RecursoForm
-            draft={draft}
-            onChange={updateDraft}
-            onAdd={handleAddDraft}
-            disabled={disabled}
-          />
+          {/* `onBlur` en el contenedor (no en cada input): si el foco se
+              va de TODO este bloque —no solo entre sus propios campos,
+              gracias al chequeo de `relatedTarget`— se agrega el
+              borrador solo, igual que ya hace `ListaAgregableField`
+              (Objetivos/Contenidos) con `onBlur={agregar}`. Cubre el
+              caso de saltar directo al "Guardar" real del form sin
+              pasar por "Agregar a la lista": sin esto, ese recurso
+              tipeado se perdía en silencio. `handleAddDraft` ya no hace
+              nada si el borrador está vacío, así que no agrega filas
+              fantasma solo por tabular de un campo a otro. */}
+          <div
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
+            }}
+          >
+            <RecursoForm
+              draft={draft}
+              onChange={updateDraft}
+              onAdd={handleAddDraft}
+              disabled={disabled}
+            />
+          </div>
 
           <form.Field name="recursos">
             {(field) => {
@@ -1964,7 +1980,15 @@ function RecursoForm({
             disabled={disabled}
           >
             <PlusIcon data-icon="inline-start" />
-            Guardar
+            {/* NO "Guardar" — este botón no guarda la actividad, solo
+                agrega el borrador a "Recursos agregados" (ver el
+                comentario de `RecursoDraft` más arriba). Con el mismo
+                texto que el "Guardar" real del form, el docente lo
+                confundía con haber guardado de verdad: llenaba este
+                recurso, apretaba el "Guardar" de ABAJO del form entero
+                (creyendo que ya había guardado este) y el borrador se
+                perdía en silencio — nunca llegó a `form.recursos`. */}
+            Agregar a la lista
           </Button>
         </div>
       )}
