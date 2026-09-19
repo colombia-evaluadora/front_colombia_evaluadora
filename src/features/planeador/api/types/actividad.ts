@@ -287,7 +287,7 @@ export interface Actividad {
   totalEstudiantes: number
   materiales: string
   recursos: Recurso[]
-  /** Cantidad de horas o sesiones (solo dígitos, sin la unidad). */
+  /** Cantidad de minutos (solo dígitos, sin la unidad). */
   duracionEstimada: string
   /**
    * Semana del cronograma en la que corre la actividad. Es `string` y no
