@@ -42,10 +42,10 @@ export interface ActividadCalendario {
   fechaInicio: string
   fechaCierre: string
   id: number
+  /** Título de la actividad — lo que se lista en la celda del mes (antes se
+   *  mostraba `asignatura`/`area` ahí por error: la celda repetía la
+   *  asignatura, nunca decía QUÉ actividad era). */
   titulo: string
-  /** `asignatura` para actividades normales; `area` para las que solo
-   *  tienen área general (ver la fila cruda) — nunca los dos a la vez. */
-  label: string
   status: ActividadStatus
   /** Ver `ActividadCalendarioRow.grado_grupo` — `undefined` solo si el
    *  backend real todavía no lo manda para esta fila. */
@@ -67,7 +67,6 @@ function toActividadCalendario(row: ActividadCalendarioRow): ActividadCalendario
     fechaCierre: toDateOnly(row.fecha_cierre),
     id: row.pk_tactividad,
     titulo: row.titulo,
-    label: row.asignatura ?? row.area ?? "",
     status: estadoDerivadoToStatus(row.estado),
     gradoGrupo: row.grado_grupo ?? undefined,
   }
