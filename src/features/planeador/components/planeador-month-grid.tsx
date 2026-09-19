@@ -66,6 +66,13 @@ interface PlaneadorMonthGridProps {
    *  Actividad con esa fecha preseleccionada como inicio/cierre. Opcional:
    *  sin esto la celda vuelve a ser puramente decorativa, como antes. */
   onDayClick?: (date: Date) => void
+  /** Click en una actividad YA LISTADA dentro de la celda — abre ESA
+   *  actividad (`planeador-page.tsx` la usa para abrir el panel de
+   *  detalle/edición), a diferencia de `onDayClick` que crea una nueva.
+   *  Independiente del click de la celda: sin esto, el badge heredaba el
+   *  comportamiento del día entero y clickear una actividad ya existente
+   *  abría por error el alta de una nueva en esa fecha. */
+  onEventClick?: (id: number) => void
   locale?: Locale
 }
 
@@ -85,6 +92,7 @@ export function PlaneadorMonthGrid({
   events,
   onMonthChange,
   onDayClick,
+  onEventClick,
   locale = es,
 }: PlaneadorMonthGridProps) {
   const defaultClassNames = getDefaultClassNames()
@@ -252,8 +260,38 @@ export function PlaneadorMonthGrid({
                       {items.slice(0, MAX_ROWS).map(({ id, code, label, status }) => (
                         <li
                           key={id}
-                          className="flex min-w-0 items-center gap-1 text-xs leading-tight"
+                          role={onEventClick ? "button" : undefined}
+                          tabIndex={onEventClick ? 0 : undefined}
                           title={`${code} · ${label}`}
+                          aria-label={onEventClick ? `Ver actividad ${code} · ${label}` : undefined}
+                          onClick={
+                            onEventClick
+                              ? (e) => {
+                                  // Corta la propagación: sin esto, el click
+                                  // también dispara `onDayClick` del `div`
+                                  // contenedor (crear una actividad NUEVA)
+                                  // en vez de solo abrir esta.
+                                  e.stopPropagation()
+                                  onEventClick(id)
+                                }
+                              : undefined
+                          }
+                          onKeyDown={
+                            onEventClick
+                              ? (e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    onEventClick(id)
+                                  }
+                                }
+                              : undefined
+                          }
+                          className={cn(
+                            "flex min-w-0 items-center gap-1 text-xs leading-tight",
+                            onEventClick &&
+                              "cursor-pointer rounded-sm hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                          )}
                         >
                           {/* Barra de color del estado: reemplaza al badge —
                               el color queda como pista y el código se lee
