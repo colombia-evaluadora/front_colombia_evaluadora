@@ -15,6 +15,7 @@ import {
 } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
+import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
   EnunciadosEvidenciasChecklist,
@@ -101,6 +102,13 @@ interface DetailSectionsProps {
  * fechas, rúbricas y seguimiento.
  */
 export function DetailSections({ actividad }: DetailSectionsProps) {
+  // Regla de negocio confirmada (misma que `EvaluacionSection` en
+  // `form-editar-actividad.tsx`, ver el comentario de `esFormativa` ahí):
+  // "una unidad formativa nunca lleva instrumentos, ponderación,
+  // adaptaciones ni seguimiento" — el detalle de solo lectura mostraba
+  // "Evaluación"/"Seguimiento" siempre, aunque el form de edición de esa
+  // MISMA actividad ya las escondiera.
+  const formativa = esActividadFormativa(actividad)
   return (
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
@@ -194,24 +202,26 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         </DefinitionGrid>
       </Section>
 
-      {/* 6) Evaluación */}
-      <EvaluacionDetalle actividad={actividad} />
+      {/* 6) Evaluación — no aplica en una unidad formativa. */}
+      {!formativa && <EvaluacionDetalle actividad={actividad} />}
 
-      {/* 8) Seguimiento */}
-      <Section title="Seguimiento">
-        <DefinitionGrid cols={3}>
-          <Definition term="¿Genera evidencias?">
-            {actividad.generaEvidencias ? "Sí" : "No"}
+      {/* 8) Seguimiento — mismo gate que Evaluación. */}
+      {!formativa && (
+        <Section title="Seguimiento">
+          <DefinitionGrid cols={3}>
+            <Definition term="¿Genera evidencias?">
+              {actividad.generaEvidencias ? "Sí" : "No"}
+            </Definition>
+            <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
+            <Definition term="¿Requiere validación del coordinador?">
+              {actividad.requiereValidacion ? "Sí" : "No"}
+            </Definition>
+          </DefinitionGrid>
+          <Definition term="Observaciones del docente" className="mt-4">
+            {actividad.observaciones}
           </Definition>
-          <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
-          <Definition term="¿Requiere validación del coordinador?">
-            {actividad.requiereValidacion ? "Sí" : "No"}
-          </Definition>
-        </DefinitionGrid>
-        <Definition term="Observaciones del docente" className="mt-4">
-          {actividad.observaciones}
-        </Definition>
-      </Section>
+        </Section>
+      )}
     </div>
   )
 }
