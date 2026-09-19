@@ -287,10 +287,10 @@ export interface Actividad {
   totalEstudiantes: number
   materiales: string
   recursos: Recurso[]
-  /** Cantidad de bloques (confirmado real, `ProgramacionActividad.
-   *  duracionEstimada.unidad` — el label del form igual lee esa unidad en
-   *  vivo en vez de asumirla fija, por si varía entre asignaturas). Solo
-   *  dígitos, sin la unidad. */
+  /** Cantidad de minutos. `ProgramacionActividad.duracionEstimada.unidad`
+   *  (`"BLOQUES"`) es la unidad de los TOPES de validación de ese otro
+   *  endpoint, no la de este campo — no se usa para el label. Solo dígitos,
+   *  sin la unidad. */
   duracionEstimada: string
   /**
    * Semana del cronograma en la que corre la actividad. Es `string` y no
