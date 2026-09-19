@@ -11,8 +11,10 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import {
   instrumentoLabelFromReferente,
+  resolveInstrumentoLabel,
   useUnidadesTabsQuery,
 } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
@@ -109,6 +111,14 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
   // "Evaluación"/"Seguimiento" siempre, aunque el form de edición de esa
   // MISMA actividad ya las escondiera.
   const formativa = esActividadFormativa(actividad)
+  // Mismos dos rótulos dinámicos que ya usa el form de edición —antes acá
+  // quedaban fijos ("Unidad temática asociada"/"Asignatura / materia") aunque
+  // el form de esa MISMA actividad ya dijera "Proyecto pedagógico"/
+  // "Dimensión" para un grado de Preescolar (`UnidadAsociadaSection`/
+  // `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const unidadLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const subjectLabel = useStudyPlanSubjectLabel(actividad.gradoId, false)
   return (
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
@@ -116,7 +126,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         <DefinitionGrid cols={3}>
           <Definition term="Nombre de la actividad">{actividad.nombre}</Definition>
           <Definition term="Tipo de actividad">{actividad.tipo}</Definition>
-          <Definition term="Unidad temática asociada">{actividad.unidad.nombre}</Definition>
+          <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
@@ -128,7 +138,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         )}
 
         <DefinitionGrid cols={2} className="mt-4">
-          <Definition term="Asignatura / materia">{actividad.asignatura}</Definition>
+          <Definition term={`${subjectLabel} / materia`}>{actividad.asignatura}</Definition>
           <Definition term="Grado / Grupo">
             {actividad.grado} {actividad.grupo}
           </Definition>
