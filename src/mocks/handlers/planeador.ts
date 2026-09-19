@@ -1340,7 +1340,7 @@ export const planeadorHandlers = [
     const rows = unidad.actividades.map((a) => ({
       pk_tactividad: a.actividadId,
       titulo: a.nombre,
-      es_evaluativa: a.tipo === "Sumativa" ? "S" : "N",
+      tipo_actividad: a.tipo,
       instrumento_evaluacion: a.instrumento,
       grupo: a.grupo,
       ponderacion: a.ponderacion,
