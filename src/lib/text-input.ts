@@ -16,7 +16,7 @@ export function toDigitsOnly(value: string, maxLength?: number): string {
 /**
  * Como `toDigitsOnly`, pero además descarta los ceros a la izquierda: para
  * campos numéricos donde `0`/`00...` no es un valor válido (ej. "Duración
- * estimada" de una actividad — cero horas/sesiones no significa nada), así
+ * estimada" de una actividad — cero minutos no significa nada), así
  * que tipear un `0` a secas deja el campo vacío en vez de mostrar un cero
  * inválido. Los ceros se descartan ANTES de recortar a `maxLength`, para no
  * perder dígitos de más a la derecha (p. ej. "0007" con `maxLength: 3` debe
