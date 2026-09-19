@@ -47,7 +47,9 @@ export interface DayEvent {
   id: number
   /** Código corto de la actividad (3 dígitos). */
   code: string
-  /** Texto a la derecha del código — hoy la asignatura. */
+  /** Texto a la derecha del código — el título de la actividad (antes se
+   *  mostraba la asignatura ahí por error: la celda repetía la asignatura
+   *  sin decir QUÉ actividad era). */
   label: string
   /** Define el color de la barra izquierda vía `STATUS_RING`. */
   status: ActividadStatus
