@@ -2281,14 +2281,14 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
         <form.Field name="duracionEstimada">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Duración estimada (horas o sesiones)</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Duración estimada (minutos)</FieldLabel>
               {/* `type="text"` + `inputMode="numeric"` y no `type="number"`:
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
-                  un conteo simple. Solo dígitos, sin la unidad ("horas")
+                  un conteo simple. Solo dígitos, sin la unidad ("minutos")
                   mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 horas/sesiones" no es una
-                  duración válida. */}
+                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
+                  válida. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
