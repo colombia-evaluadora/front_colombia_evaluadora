@@ -77,7 +77,10 @@ export interface UnidadActividad {
   /** Referencia a `Actividad.id` — ver el comentario de arriba. */
   actividadId: number
   nombre: string
-  /** "Formativa" | "Sumativa" — no es el `ActividadTipo` del otro modelo. */
+  /** Catálogo `TIPO_ACTIVIDAD` (`ActividadTipo`) — "Trabajo en clase",
+   *  "Otro", etc. Confirmado contra `fn_unidad_actividades_listar`
+   *  (V216/V245): la columna real es `tipo_actividad`, no algo derivado
+   *  de `es_evaluativa`. */
   tipo: string
   instrumento: string
   grupo: string
