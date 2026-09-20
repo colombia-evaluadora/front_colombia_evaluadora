@@ -11,9 +11,13 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import {
   instrumentoLabelFromReferente,
+  resolveInstrumentoLabel,
   useUnidadesTabsQuery,
 } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
+import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
+import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
   EnunciadosEvidenciasChecklist,
@@ -100,6 +104,21 @@ interface DetailSectionsProps {
  * fechas, rúbricas y seguimiento.
  */
 export function DetailSections({ actividad }: DetailSectionsProps) {
+  // Regla de negocio confirmada (misma que `EvaluacionSection` en
+  // `form-editar-actividad.tsx`, ver el comentario de `esFormativa` ahí):
+  // "una unidad formativa nunca lleva instrumentos, ponderación,
+  // adaptaciones ni seguimiento" — el detalle de solo lectura mostraba
+  // "Evaluación"/"Seguimiento" siempre, aunque el form de edición de esa
+  // MISMA actividad ya las escondiera.
+  const formativa = esActividadFormativa(actividad)
+  // Mismos dos rótulos dinámicos que ya usa el form de edición —antes acá
+  // quedaban fijos ("Unidad temática asociada"/"Asignatura / materia") aunque
+  // el form de esa MISMA actividad ya dijera "Proyecto pedagógico"/
+  // "Dimensión" para un grado de Preescolar (`UnidadAsociadaSection`/
+  // `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const unidadLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const subjectLabel = useStudyPlanSubjectLabel(actividad.gradoId, false)
   return (
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
@@ -107,7 +126,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         <DefinitionGrid cols={3}>
           <Definition term="Nombre de la actividad">{actividad.nombre}</Definition>
           <Definition term="Tipo de actividad">{actividad.tipo}</Definition>
-          <Definition term="Unidad temática asociada">{actividad.unidad.nombre}</Definition>
+          <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
@@ -119,7 +138,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         )}
 
         <DefinitionGrid cols={2} className="mt-4">
-          <Definition term="Asignatura / materia">{actividad.asignatura}</Definition>
+          <Definition term={`${subjectLabel} / materia`}>{actividad.asignatura}</Definition>
           <Definition term="Grado / Grupo">
             {actividad.grado} {actividad.grupo}
           </Definition>
@@ -180,7 +199,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term="Fecha de entrega o cierre">
             {formatDate(actividad.fechaCierre)}
           </Definition>
-          <Definition term="Duración estimada (horas o sesiones)">
+          <Definition term="Duración estimada (minutos)">
             {actividad.duracionEstimada}
           </Definition>
           <Definition term="Semana del cronograma">
@@ -193,64 +212,236 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         </DefinitionGrid>
       </Section>
 
-      {/* 6) Evaluación */}
-      <Section title="Evaluación">
-        <DefinitionGrid cols={2}>
-          <Definition term="¿Es actividad evaluativa?">
-            {actividad.esEvaluativa ? "Sí" : "No"}
-          </Definition>
-          <Definition term="Instrumento de evaluación">{actividad.instrumento}</Definition>
-        </DefinitionGrid>
+      {/* 6) Evaluación — no aplica en una unidad formativa. */}
+      {!formativa && <EvaluacionDetalle actividad={actividad} />}
 
-        {/* 7) Definición de Rúbricas: va dentro de Evaluación —es el
-            instrumento que se acaba de nombrar arriba— y no como card
-            hermana. */}
-        <Section title="Definición de Rubricas" className="mt-4">
-          {actividad.rubrica.criterios.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Esta actividad no tiene criterios definidos.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-4">
-              {actividad.rubrica.criterios.map((criterio, index) => (
-                <li key={criterio.id}>
-                  <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
-                  <div className="mt-2 space-y-3">
-                    <Definition term="Nombre del criterio">{criterio.nombre}</Definition>
-                    {/* "Excelente" va al lado de su descripción, no encima:
-                        es una etiqueta corta con un texto largo al costado. */}
-                    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-                      <span className="text-sm font-semibold">Excelente</span>
-                      <span className="text-sm">{criterio.excelente}</span>
-                    </div>
-                    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-                      <span className="text-sm font-semibold">Ponderación</span>
-                      <span className="text-sm">{criterio.ponderacion}%</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      {/* 8) Seguimiento — mismo gate que Evaluación. */}
+      {!formativa && (
+        <Section title="Seguimiento">
+          <DefinitionGrid cols={3}>
+            <Definition term="¿Genera evidencias?">
+              {actividad.generaEvidencias ? "Sí" : "No"}
+            </Definition>
+            <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
+            <Definition term="¿Requiere validación del coordinador?">
+              {actividad.requiereValidacion ? "Sí" : "No"}
+            </Definition>
+          </DefinitionGrid>
+          <Definition term="Observaciones del docente" className="mt-4">
+            {actividad.observaciones}
+          </Definition>
         </Section>
-      </Section>
-
-      {/* 8) Seguimiento */}
-      <Section title="Seguimiento">
-        <DefinitionGrid cols={3}>
-          <Definition term="¿Genera evidencias?">
-            {actividad.generaEvidencias ? "Sí" : "No"}
-          </Definition>
-          <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
-          <Definition term="¿Requiere validación del coordinador?">
-            {actividad.requiereValidacion ? "Sí" : "No"}
-          </Definition>
-        </DefinitionGrid>
-        <Definition term="Observaciones del docente" className="mt-4">
-          {actividad.observaciones}
-        </Definition>
-      </Section>
+      )}
     </div>
+  )
+}
+
+/**
+ * "Evaluación" del panel de "Ver actividad" — antes SIEMPRE mostraba
+ * "Definición de Rubricas" leyendo `actividad.rubrica`, sin importar qué
+ * instrumento se hubiera elegido de verdad (Lista de cotejo/Escala de
+ * valoración/Otro personalizado quedaban sin su propia ficha), y encima
+ * `actividad.rubrica`/`listaCotejo`/`escalaValoracion`/
+ * `instrumentoPersonalizado` vienen SIEMPRE vacíos en el detalle real
+ * (`GET .../actividades/:id` no trae esa definición — ver el comentario de
+ * `ActividadDetalleRow` en `use-actividad-detalle-query.ts`), así que el
+ * mensaje "no tiene criterios definidos" salía incluso con una rúbrica ya
+ * guardada.
+ *
+ * La definición real vive en `GET .../actividades/:id/instrumento` — el
+ * MISMO endpoint que ya precarga `EditarActividadForm` al editar
+ * (`useInstrumentoActividadFormQuery`) — así que acá se pide igual y se
+ * ramifica por `actividad.instrumento`, igual que `InstrumentoEvaluacionSection`
+ * en `form-editar-actividad.tsx`.
+ */
+function EvaluacionDetalle({ actividad }: { actividad: Actividad }) {
+  const { data: instrumentoData } = useInstrumentoActividadFormQuery(actividad.id, actividad.esEvaluativa)
+  const rubrica = instrumentoData?.rubrica ?? actividad.rubrica
+  const listaCotejo = instrumentoData?.listaCotejo ?? actividad.listaCotejo
+  const escalaValoracion = instrumentoData?.escalaValoracion ?? actividad.escalaValoracion
+  const instrumentoPersonalizado = instrumentoData?.instrumentoPersonalizado ?? actividad.instrumentoPersonalizado
+
+  return (
+    <Section title="Evaluación">
+      <DefinitionGrid cols={2}>
+        <Definition term="¿Es actividad evaluativa?">
+          {actividad.esEvaluativa ? "Sí" : "No"}
+        </Definition>
+        <Definition term="Instrumento de evaluación">
+          {actividad.instrumento === "Otro"
+            ? "Otro (personalizado)"
+            : actividad.instrumento || "—"}
+        </Definition>
+      </DefinitionGrid>
+
+      {/* Misma ramificación que `InstrumentoEvaluacionSection` (form de
+          edición): cada instrumento monta su propia ficha, no siempre la
+          de Rúbrica. */}
+      {actividad.instrumento === "Lista de cotejo" ? (
+        <ListaCotejoDetalle listaCotejo={listaCotejo} />
+      ) : actividad.instrumento === "Escala de valoración" ? (
+        <EscalaValoracionDetalle escala={escalaValoracion} />
+      ) : actividad.instrumento === "Otro" ? (
+        <InstrumentoPersonalizadoDetalle
+          instrumentoPersonalizado={instrumentoPersonalizado}
+          rubrica={rubrica}
+          listaCotejo={listaCotejo}
+          escalaValoracion={escalaValoracion}
+        />
+      ) : (
+        <RubricaDetalle rubrica={rubrica} />
+      )}
+    </Section>
+  )
+}
+
+function RubricaDetalle({ rubrica }: { rubrica: Actividad["rubrica"] }) {
+  return (
+    <Section title="Definición de Rúbrica" className="mt-4">
+      {rubrica.criterios.length === 0 ? (
+        <p className="text-muted-foreground text-sm">Esta actividad no tiene criterios definidos.</p>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {rubrica.criterios.map((criterio, index) => (
+            <li key={criterio.id}>
+              <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
+              <div className="mt-2 space-y-3">
+                <Definition term="Nombre del criterio">{criterio.nombre}</Definition>
+                {/* "Excelente" y cada nivel intermedio van al lado de su
+                    descripción, no encima: son etiquetas cortas con un
+                    texto largo al costado. */}
+                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span className="text-sm font-semibold">Excelente</span>
+                  <span className="text-sm">{criterio.excelente}</span>
+                </div>
+                {criterio.niveles.map((nivel) => (
+                  <div key={nivel.id} className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                    <span className="text-sm font-semibold">{nivel.nombre}</span>
+                    <span className="text-sm">{nivel.descripcion}</span>
+                  </div>
+                ))}
+                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span className="text-sm font-semibold">Ponderación</span>
+                  <span className="text-sm">{criterio.ponderacion}%</span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  )
+}
+
+function ListaCotejoDetalle({ listaCotejo }: { listaCotejo: Actividad["listaCotejo"] }) {
+  return (
+    <Section title="Definición de Lista de Cotejo" className="mt-4">
+      {listaCotejo.items.length === 0 ? (
+        <p className="text-muted-foreground text-sm">Esta actividad no tiene ítems definidos.</p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {listaCotejo.items.map((item, index) => (
+            <li key={item.id}>
+              <h4 className="text-sm font-semibold">Ítem {index + 1}</h4>
+              <div className="mt-2 space-y-3">
+                <Definition term="Descripción">{item.descripcion}</Definition>
+                {item.ponderacion != null && <Definition term="Puntaje">{item.ponderacion}%</Definition>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  )
+}
+
+function EscalaValoracionDetalle({ escala }: { escala: Actividad["escalaValoracion"] }) {
+  const vacia = !escala.criteriosGenerales.trim() &&
+    (escala.tipo === "Numérica"
+      ? escala.valorMinimo == null && escala.valorMaximo == null
+      : escala.niveles.length === 0)
+  return (
+    <Section title="Definición de Escala de Valoración" className="mt-4">
+      {vacia ? (
+        <p className="text-muted-foreground text-sm">
+          Esta actividad no tiene escala de valoración definida.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <Definition term="Criterios generales">{escala.criteriosGenerales}</Definition>
+          <Definition term="Tipo de escala">{escala.tipo}</Definition>
+          {escala.tipo === "Numérica" ? (
+            <>
+              <Definition term="Rango">
+                {escala.valorMinimo != null || escala.valorMaximo != null
+                  ? `${escala.valorMinimo ?? "…"} – ${escala.valorMaximo ?? "…"}`
+                  : "—"}
+              </Definition>
+              <Definition term="Interpretación de rangos">{escala.interpretacionRangos}</Definition>
+            </>
+          ) : (
+            escala.niveles.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {escala.niveles.map((nivel) => (
+                  <li key={nivel.id} className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                    <span className="text-sm font-semibold">{nivel.nombre}</span>
+                    <span className="text-sm">{nivel.descripcion}</span>
+                    {nivel.ponderacion != null && (
+                      <span className="text-muted-foreground text-sm">{nivel.ponderacion}%</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+        </div>
+      )}
+    </Section>
+  )
+}
+
+function InstrumentoPersonalizadoDetalle({
+  instrumentoPersonalizado,
+  rubrica,
+  listaCotejo,
+  escalaValoracion,
+}: {
+  instrumentoPersonalizado: Actividad["instrumentoPersonalizado"]
+  rubrica: Actividad["rubrica"]
+  listaCotejo: Actividad["listaCotejo"]
+  escalaValoracion: Actividad["escalaValoracion"]
+}) {
+  return (
+    <Section title="Definición del instrumento personalizado" className="mt-4">
+      <DefinitionGrid cols={2}>
+        <Definition term="Descripción del instrumento">
+          {instrumentoPersonalizado.descripcion || "—"}
+        </Definition>
+        <Definition term="Tipo de evidencia esperada">
+          {instrumentoPersonalizado.tipoEvidenciaEsperada || "—"}
+        </Definition>
+        <Definition term="Método de valoración" className="mt-4">
+          {instrumentoPersonalizado.metodoValoracion || "—"}
+        </Definition>
+      </DefinitionGrid>
+      <div className="mt-4 flex flex-col gap-1 text-sm">
+        <span>{instrumentoPersonalizado.requiereArchivo ? "Sí" : "No"} requiere adjuntar un archivo.</span>
+        <span>
+          {instrumentoPersonalizado.requiereRespuestaTexto ? "Sí" : "No"} requiere una respuesta escrita.
+        </span>
+      </div>
+
+      {/* Mismo criterio que `InstrumentoPersonalizadoSection` (form de
+          edición): el método de valoración elegido monta la MISMA ficha
+          que si fuera el instrumento directo. */}
+      {instrumentoPersonalizado.metodoValoracion === "Rúbrica" ? (
+        <RubricaDetalle rubrica={rubrica} />
+      ) : instrumentoPersonalizado.metodoValoracion === "Lista de cotejo" ? (
+        <ListaCotejoDetalle listaCotejo={listaCotejo} />
+      ) : instrumentoPersonalizado.metodoValoracion === "Escala de valoración" ? (
+        <EscalaValoracionDetalle escala={escalaValoracion} />
+      ) : null}
+    </Section>
   )
 }
 
@@ -341,7 +532,12 @@ function UnidadFichaYEvidenciasDetalle({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={handleToggle}
-          disabledIds={seleccionadas}
+          // "Ver actividad" es de solo lectura: TODAS las evidencias quedan
+          // deshabilitadas (no solo las ya tildadas) — marcar una nueva
+          // evidencia se hace desde "Editar", no desde acá.
+          disabledIds={referente.enunciados.flatMap((enunciado) =>
+            enunciado.evidencias.map((evidencia) => evidencia.id),
+          )}
           pendingId={pendingId}
         />
       )}

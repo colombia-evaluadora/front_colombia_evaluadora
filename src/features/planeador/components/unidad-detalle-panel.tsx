@@ -27,7 +27,8 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
-import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
+import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
+import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
@@ -319,20 +320,29 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
  * tal cual, para no mantener dos editores de criterios distintos.
  */
 export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
-  // Nombres (y cantidad) reales de los niveles de desempeño, si la unidad
-  // tiene una escala de valoración configurada para su nivel educativo —
-  // mismos nombres que usa `DialogAgregarCriterio`, para que la tabla y el
-  // modal de alta no queden con nombres/cantidad de niveles distinta para
-  // lo mismo.
-  const { nombres: nombresNiveles } = useNivelesDesempenoNombres(unidad.grado)
+  // Nombres (y cantidad) reales de los niveles de desempeño de la unidad —
+  // MISMA query que `DialogAgregarCriterio` (`GET /planeador/unidades/:id/
+  // valoraciones`, confirmado real), para que la tabla y el modal de alta
+  // queden con la MISMA cantidad de columnas/campos. Antes la tabla sacaba
+  // sus nombres de `useNivelesDesempenoNombres` (derivado por nivel
+  // educativo, con default fijo de 4 bandas) mientras el modal ya usaba
+  // esta query por unidad — cuando la escala real de la unidad no
+  // coincidía con ese derivado (más o menos bandas, nombres distintos), la
+  // tabla mostraba menos columnas que niveles tenía cada criterio guardado.
+  const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
+  const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
   const columns = React.useMemo(
     () => createUnidadCriteriosColumns(nombresNiveles),
     [nombresNiveles],
   )
-  const { sorted, sorting, setSorting } = useSortedRows(unidad.criterios)
+  // `GET /planeador/unidades/:id/criterios` (real) — no se lee `unidad.criterios`
+  // del detalle: ese campo queda siempre vacío contra el backend real (viven
+  // en este endpoint aparte, mismo criterio que `Actividades` más abajo).
+  const { data: criterios = [], isPending, isError, refetch } = useUnidadCriteriosQuery(unidad.id)
+  const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
-  // Sin `Pagination`: los criterios vienen enteros dentro del detalle y son
+  // Sin `Pagination`: los criterios vienen enteros en una sola llamada y son
   // pocos, así que entran todos en una sola página.
   const { table } = useDataTable({
     columns,
@@ -354,13 +364,11 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         actionLabel="Agregar criterio"
         onAction={() => setDialogOpen(true)}
       />
-      {/* `isPending`/`isError` en falso: las filas llegan dentro del detalle
-          de la unidad, así que su carga y su error ya los maneja el panel. */}
       <DataTable
         table={table}
-        isPending={false}
-        isError={false}
-        onRetry={() => {}}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
       <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />

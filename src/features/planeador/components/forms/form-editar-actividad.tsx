@@ -30,6 +30,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import {
   instrumentoLabelFromReferente,
@@ -49,7 +50,10 @@ import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/es
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
-import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import {
+  useInstrumentoEvaluacionCatalogQuery,
+  instrumentoPermitidoLabel,
+} from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
   ListaAgregableField,
   ListaAgregableCajaSelect,
@@ -88,6 +92,7 @@ import type {
   Criterio,
   EscalaValoracion,
   EscalaValoracionTipo,
+  InstrumentoPermitidoCampos,
   InstrumentoPersonalizado,
   ListaCotejo,
   ListaCotejoItem,
@@ -186,6 +191,27 @@ const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {
   "Observación directa": "Observación directa",
   "Registro en campo": "Registro en campo",
 }
+
+/**
+ * Catálogos de respaldo de `InstrumentoPersonalizadoSection` — solo se usan
+ * mientras `campos_disponibles.evaluacion.instrumentosPermitidos[valor=OTRO]
+ * .campos` no resolvió todavía (foto vieja, endpoint viejo): el backend real
+ * ya manda ese catálogo acotado al referente (ver el comentario de
+ * `InstrumentoPersonalizadoSection`), este es solo el piso para no dejar los
+ * selects sin opciones mientras carga.
+ */
+const TIPO_EVIDENCIA_ESPERADA_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: string }[] = [
+  { pk: -1, valor: "ARCHIVO", nombre: "Archivo" },
+  { pk: -2, valor: "ENLACE", nombre: "Enlace" },
+  { pk: -3, valor: "OBSERVACION_DIRECTA", nombre: "Observación directa" },
+  { pk: -4, valor: "REGISTRO_CAMPO", nombre: "Registro en campo" },
+]
+
+const METODO_VALORACION_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: string }[] = [
+  { pk: -1, valor: "RUBRICA", nombre: "Rúbrica" },
+  { pk: -2, valor: "LISTA_COTEJO", nombre: "Lista de cotejo" },
+  { pk: -3, valor: "ESCALA_VALORACION", nombre: "Escala de valoración" },
+]
 
 interface EditarActividadFormProps {
   actividad: Actividad
@@ -509,7 +535,21 @@ function RecuperacionSection({
                           </FieldLabel>
                           <Select
                             value={field.state.value || "__none__"}
-                            onValueChange={(v) => field.handleChange(!v || v === "__none__" ? "" : v)}
+                            onValueChange={(v) => {
+                              field.handleChange(!v || v === "__none__" ? "" : v)
+                              // Cambiar "¿Esta recuperación aplica para?"
+                              // invalida TODO lo que dependía del valor
+                              // anterior (la actividad puntual elegida,
+                              // cómo se aplica, cómo se calcula, el %) —
+                              // sin este reset quedaban valores viejos
+                              // guardados pero ocultos, que podían
+                              // reaparecer con datos de otra combinación al
+                              // volver a elegir la misma opción de antes.
+                              form.setFieldValue("recuperacionActividadId", undefined)
+                              form.setFieldValue("recuperacionTipoAplicacion", "")
+                              form.setFieldValue("recuperacionTipoCalculo", "")
+                              form.setFieldValue("recuperacionValorPonderacion", undefined)
+                            }}
                             disabled={disabled}
                           >
                             <SelectTrigger id={field.name}>
@@ -548,7 +588,16 @@ function RecuperacionSection({
                                 <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
                                 <ActividadRecuperarCascada
                                   value={field.state.value}
-                                  onChange={field.handleChange}
+                                  onChange={(v) => {
+                                    field.handleChange(v)
+                                    // Mismo motivo que el reset de
+                                    // "¿Esta recuperación aplica para?":
+                                    // cambiar LA actividad a recuperar
+                                    // invalida cómo se aplica/calcula.
+                                    form.setFieldValue("recuperacionTipoAplicacion", "")
+                                    form.setFieldValue("recuperacionTipoCalculo", "")
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                   excludeActividadId={actividadId}
                                   disabled={disabled}
                                 />
@@ -559,15 +608,24 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* Igual que "Actividad a recuperar" (gateada por
-                        `destino`) o "Valor de ponderación" (gateada por
+                    {/* Igual que "Valor de ponderación" (gateada por
                         `tipoCalculo`): sin elegir "¿Esta recuperación aplica
                         para?" todavía no hay nada que aplicar/calcular, así
                         que el resto de la cascada se oculta en vez de
-                        mostrarse vacío. */}
-                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) =>
-                        !destino ? null : (
+                        mostrarse vacío. Con `destino = ACTIVIDAD` además hay
+                        que esperar a que se elija LA actividad puntual
+                        (`recuperacionActividadId`) — mismo criterio que
+                        "Actividad a recuperar" arriba: hasta no saber sobre
+                        qué actividad se está recuperando, tampoco hay nada
+                        que aplicar/calcular todavía. */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        destino: state.values.recuperacionDestino,
+                        actividadId: state.values.recuperacionActividadId,
+                      })}
+                    >
+                      {({ destino, actividadId }) =>
+                        !destino || (destino === "ACTIVIDAD" && !actividadId) ? null : (
                           <form.Field name="recuperacionTipoAplicacion">
                             {(field) => (
                               <Field variant="outlined">
@@ -576,7 +634,17 @@ function RecuperacionSection({
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
-                                  onValueChange={field.handleChange}
+                                  onValueChange={(v) => {
+                                    field.handleChange(v)
+                                    // "Reemplazar" no calcula nada (la nota
+                                    // anterior se descarta entera) — si
+                                    // había un "Promediado"/"Ponderado" +
+                                    // % elegidos con "Computar", quedan sin
+                                    // sentido y tienen que limpiarse, no
+                                    // solo ocultarse.
+                                    form.setFieldValue("recuperacionTipoCalculo", "")
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                 >
                                   {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
@@ -607,9 +675,27 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) =>
-                        !destino ? null : (
+                    {/* Mismo gate que "¿Cómo se aplicará la nota de
+                        recuperación?" arriba, más esperar a que se elija esa
+                        opción. NO se oculta con `tipoAplicacion = REEMPLAZAR`
+                        a pesar de que en ese caso el cálculo no se USE
+                        (fn_actividad_recuperacion_aplicar, V408, ignora el
+                        tipo de cálculo con REEMPLAZAR): el backend real
+                        (fn_actividad_recuperacion_configurar, V224) exige
+                        SIEMPRE destino + tipoAplicacion + tipoCalculo, sin
+                        excepción — ocultarlo dejaría un PUT/POST sin un
+                        campo obligatorio y el guardado fallaría con 22023
+                        "La recuperacion requiere destino, tipoAplicacion y
+                        tipoCalculo". */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        destino: state.values.recuperacionDestino,
+                        actividadId: state.values.recuperacionActividadId,
+                        tipoAplicacion: state.values.recuperacionTipoAplicacion,
+                      })}
+                    >
+                      {({ destino, actividadId, tipoAplicacion }) =>
+                        !destino || (destino === "ACTIVIDAD" && !actividadId) || !tipoAplicacion ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
                               <Field variant="outlined">
@@ -621,7 +707,14 @@ function RecuperacionSection({
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
-                                  onValueChange={field.handleChange}
+                                  onValueChange={(v) => {
+                                    field.handleChange(v)
+                                    // Un % de ponderación de otro modo (o
+                                    // de "Promediado", que ni lo pide) no
+                                    // aplica al elegir de nuevo — mismo
+                                    // criterio que los resets de arriba.
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                 >
                                   {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
@@ -1094,6 +1187,10 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
+  // `unidad.criterios` queda siempre vacío contra el backend real —viven en
+  // `GET /unidades/:id/criterios`, aparte del detalle— mismo motivo que
+  // `useUnidadCriteriosQuery` en `unidad-detalle-panel.tsx`.
+  const { data: criterios = [] } = useUnidadCriteriosQuery(unidadId)
   // El árbol de nivel 1 (enunciados) + nivel 2 (evidencias), YA acotado a
   // los enunciados que esta UNIDAD relacionó (`relacionadoConUnidad`,
   // resuelto del lado del backend), sale directo de `GET /planeador/
@@ -1131,9 +1228,9 @@ function UnidadFichaYEvidencias({
           disabledIds={disabledIds}
         />
       )}
-      {unidad && unidad.criterios.length > 0 && (
+      {criterios.length > 0 && (
         <CriteriosUnidadChecklist
-          criterios={unidad.criterios}
+          criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
           disabledIds={criteriosDisabledIds}
@@ -1604,12 +1701,28 @@ function RecursosSection({
               lista. Antes había uno por item agregado, lo que duplicaba el
               form N veces y rompía la lectura visual de "estoy agregando
               un nuevo recurso". */}
-          <RecursoForm
-            draft={draft}
-            onChange={updateDraft}
-            onAdd={handleAddDraft}
-            disabled={disabled}
-          />
+          {/* `onBlur` en el contenedor (no en cada input): si el foco se
+              va de TODO este bloque —no solo entre sus propios campos,
+              gracias al chequeo de `relatedTarget`— se agrega el
+              borrador solo, igual que ya hace `ListaAgregableField`
+              (Objetivos/Contenidos) con `onBlur={agregar}`. Cubre el
+              caso de saltar directo al "Guardar" real del form sin
+              pasar por "Agregar a la lista": sin esto, ese recurso
+              tipeado se perdía en silencio. `handleAddDraft` ya no hace
+              nada si el borrador está vacío, así que no agrega filas
+              fantasma solo por tabular de un campo a otro. */}
+          <div
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
+            }}
+          >
+            <RecursoForm
+              draft={draft}
+              onChange={updateDraft}
+              onAdd={handleAddDraft}
+              disabled={disabled}
+            />
+          </div>
 
           <form.Field name="recursos">
             {(field) => {
@@ -1867,7 +1980,15 @@ function RecursoForm({
             disabled={disabled}
           >
             <PlusIcon data-icon="inline-start" />
-            Guardar
+            {/* NO "Guardar" — este botón no guarda la actividad, solo
+                agrega el borrador a "Recursos agregados" (ver el
+                comentario de `RecursoDraft` más arriba). Con el mismo
+                texto que el "Guardar" real del form, el docente lo
+                confundía con haber guardado de verdad: llenaba este
+                recurso, apretaba el "Guardar" de ABAJO del form entero
+                (creyendo que ya había guardado este) y el borrador se
+                perdía en silencio — nunca llegó a `form.recursos`. */}
+            Agregar a la lista
           </Button>
         </div>
       )}
@@ -2184,14 +2305,19 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
         <form.Field name="duracionEstimada">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Duración estimada (horas o sesiones)</FieldLabel>
+              {/* Pedido explícito: el campo se captura y se lee en MINUTOS,
+                  aunque `programacion.duracionEstimada.unidad`/`.motivo`
+                  (`FieldDescription` de abajo) venga en "bloques" — esos son
+                  los topes de validación que expone ese otro endpoint, no la
+                  unidad en la que el docente carga el dato acá. */}
+              <FieldLabel htmlFor={field.name}>Duración estimada (minutos)</FieldLabel>
               {/* `type="text"` + `inputMode="numeric"` y no `type="number"`:
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
-                  un conteo simple. Solo dígitos, sin la unidad ("horas")
-                  mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 horas/sesiones" no es una
-                  duración válida. */}
+                  un conteo simple. Solo dígitos, sin la unidad mezclada en
+                  el valor, a lo sumo 3 (hasta 999) y sin `0`
+                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
+                  válida. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
@@ -2453,9 +2579,10 @@ function EvaluacionSection({
   // de dejar el select sin opciones.
   const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
   const instrumentosPermitidos = camposEfectivos?.evaluacion.instrumentosPermitidos
+  const instrumentosPermitidosLabels = instrumentosPermitidos?.map(instrumentoPermitidoLabel)
   const instrumentosDisponibles =
-    instrumentosPermitidos && instrumentosPermitidos.length > 0
-      ? instrumentos.filter((instrumento) => instrumentosPermitidos.includes(instrumento))
+    instrumentosPermitidosLabels && instrumentosPermitidosLabels.length > 0
+      ? instrumentos.filter((instrumento) => instrumentosPermitidosLabels.includes(instrumento))
       : instrumentos
 
   return (
@@ -2534,6 +2661,7 @@ function EvaluacionSection({
             form={form}
             unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
+            camposEfectivos={camposEfectivos}
             disabled={disabled}
           />
 
@@ -2636,11 +2764,16 @@ function InstrumentoEvaluacionSection({
   form,
   unidades,
   tipoEvaluacion,
+  camposEfectivos,
   disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  /** Ver `useCamposEvaluacionEfectivos` — solo se usa acá para llegarle a
+   *  `InstrumentoPersonalizadoSection` la ficha dinámica de "Otro"
+   *  (`evaluacion.instrumentosPermitidos[].campos`). */
+  camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   disabled: boolean
 }) {
   return (
@@ -2664,6 +2797,10 @@ function InstrumentoEvaluacionSection({
             form={form}
             unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
+            camposOtro={
+              camposEfectivos?.evaluacion.instrumentosPermitidos.find((item) => item.valor === "OTRO")?.campos ??
+              null
+            }
             disabled={disabled}
           />
         ) : (
@@ -3278,13 +3415,32 @@ function InstrumentoPersonalizadoSection({
   form,
   unidades,
   tipoEvaluacion,
+  camposOtro,
   disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  /** Ficha dinámica de "Otro (personalizado)" (`campos_disponibles.
+   *  evaluacion.instrumentosPermitidos[valor=OTRO].campos`, confirmado
+   *  real) — trae los catálogos de "Tipo de evidencia esperada"/"Método de
+   *  valoración" que admite el referente puntual, en vez de las mismas 4/3
+   *  opciones fijas para cualquier grado/asignatura/tipo de evaluación.
+   *  `null` mientras no resuelve (foto vieja, endpoint viejo): cae a un
+   *  catálogo fijo para no dejar el form sin nada que elegir. */
+  camposOtro: InstrumentoPermitidoCampos | null
   disabled: boolean
 }) {
+  const tipoEvidenciaCatalogo =
+    camposOtro?.tipoEvidencia.catalogo && camposOtro.tipoEvidencia.catalogo.length > 0
+      ? camposOtro.tipoEvidencia.catalogo
+      : TIPO_EVIDENCIA_ESPERADA_CATALOGO_DEFAULT
+  const metodoValoracionCatalogo =
+    camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
+      ? camposOtro.metodoValoracion.catalogo
+      : METODO_VALORACION_CATALOGO_DEFAULT
+  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 4000
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición del instrumento personalizado</h3>
@@ -3304,7 +3460,7 @@ function InstrumentoPersonalizadoSection({
                 <Input
                   id="instrumentoPersonalizado-descripcion"
                   placeholder="Agregar descripción breve"
-                  maxLength={50}
+                  maxLength={descripcionMaxLength}
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
@@ -3323,14 +3479,15 @@ function InstrumentoPersonalizadoSection({
                   >
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
                       <SelectValue placeholder="Seleccione">
-                        {(v) => TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? "Seleccione"}
+                        {(v) => TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? (v as string) ?? "Seleccione"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Archivo">Archivo (PDF, Word, imagen, otro)</SelectItem>
-                      <SelectItem value="Enlace">Enlace (video, blog, presentación)</SelectItem>
-                      <SelectItem value="Observación directa">Observación directa</SelectItem>
-                      <SelectItem value="Registro en campo">Registro en campo</SelectItem>
+                      {tipoEvidenciaCatalogo.map((opcion) => (
+                        <SelectItem key={opcion.pk} value={opcion.nombre}>
+                          {TIPO_EVIDENCIA_ESPERADA_LABELS[opcion.nombre] ?? opcion.nombre}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -3353,9 +3510,11 @@ function InstrumentoPersonalizadoSection({
                       <SelectValue placeholder="Seleccione" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Rúbrica">Rúbrica</SelectItem>
-                      <SelectItem value="Lista de cotejo">Lista de cotejo</SelectItem>
-                      <SelectItem value="Escala de valoración">Escala de valoración</SelectItem>
+                      {metodoValoracionCatalogo.map((opcion) => (
+                        <SelectItem key={opcion.pk} value={opcion.nombre}>
+                          {opcion.nombre}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>

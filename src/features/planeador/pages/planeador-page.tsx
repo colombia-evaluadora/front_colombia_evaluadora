@@ -254,7 +254,7 @@ function PlaneadorPageContent() {
       list.push({
         id: a.id,
         code: a.gradoGrupo ?? String(a.id).slice(-3),
-        label: a.label,
+        label: a.titulo,
         status: a.status,
       })
       map.set(day, list)
@@ -560,6 +560,11 @@ function PlaneadorPageContent() {
                       search: { fechaInicio: fecha, fechaCierre: fecha },
                     })
                   }}
+                  // Click en una actividad ya listada en la celda: abre ESA
+                  // actividad (mismo panel que `onSelect` de la fila en la
+                  // lista, más arriba) en vez de crear una nueva en esa
+                  // fecha.
+                  onEventClick={(id) => setActividadId(String(id))}
                 />
                 {/* viewOption no se usa en la UI todavía; se deja armado para
                     cuando llegue la implementación de "Ver por Unidad" / etc. */}

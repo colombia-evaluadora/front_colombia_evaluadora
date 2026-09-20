@@ -23,10 +23,11 @@ import { api } from "@/lib/api-client"
  * unidad puede acotar la ventana más todavía (su propia vigencia, dentro
  * del periodo académico del grado) — confirmado en vivo, sin `UNIDAD` la
  * respuesta sigue trayendo los topes genéricos de grado+asignatura, sin
- * angostarlos a la unidad puntual. `ES_EVALUATIVA` sí sigue sin pedirse
- * acá: sirve para otros bloques de `campos_disponibles` (evaluación/
- * ponderación), que ya resuelven `useConfiguracionActividadQuery`/
- * `useReferenteCurricularQuery` por su cuenta.
+ * angostarlos a la unidad puntual. `ES_EVALUATIVA`/`ES_SUMATIVO` sí siguen
+ * sin pedirse acá: sirven para otros bloques de `campos_disponibles`
+ * (evaluación/ponderación), que ya resuelven `useConfiguracionActividadQuery`
+ * (con `ES_SUMATIVO`, ver su propio comentario)/`useReferenteCurricularQuery`
+ * por su cuenta.
  */
 interface DiaHabil {
   valor: number

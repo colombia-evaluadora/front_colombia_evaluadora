@@ -15,15 +15,16 @@ import { NivelTexto } from "@/features/planeador/components/table/criterio-nivel
  * escala de valoración configurada, no un número fijo (antes eran siempre
  * 4: Bajo/Básico/Alto/Superior).
  *
- * `nombresNiveles` es esa lista de nombres — por default
- * `NIVELES_DESEMPENO_DEFAULT_NOMBRES`, pero el caller (`Rubricas` en
- * `unidad-detalle-panel.tsx`) le pasa los nombres reales de la escala
- * configurada para el nivel educativo de la unidad, si hay una
- * (`useNivelesDesempenoNombres`) — mismos nombres que ya usa
- * `DialogAgregarCriterio` para que la tabla y el modal de alta no queden
- * con nombres ni cantidad de niveles distinta para lo mismo. Cada columna
- * de nivel lee `criterio.niveles[index]` posicionalmente: el índice `i`
- * de `nombresNiveles` es el mismo nivel (banda) en toda la unidad.
+ * `nombresNiveles` es esa lista de nombres — el caller (`Rubricas` en
+ * `unidad-detalle-panel.tsx`) le pasa los nombres reales de la escala de
+ * valoración de la unidad (`useUnidadValoracionesQuery`, `GET /planeador/
+ * unidades/:id/valoraciones`) — MISMA query que ya usa
+ * `DialogAgregarCriterio`, para que la tabla y el modal de alta no queden
+ * con nombres ni cantidad de niveles distinta para lo mismo. Cae a
+ * `NIVELES_DESEMPENO_DEFAULT_NOMBRES` (4 bandas fijas) solo mientras esa
+ * query no resolvió todavía. Cada columna de nivel lee
+ * `criterio.niveles[index]` posicionalmente: el índice `i` de
+ * `nombresNiveles` es el mismo nivel (banda) en toda la unidad.
  *
  * Sin columna `select`: la tabla vive dentro del panel de detalle y no tiene
  * operaciones en lote que justifiquen los checkboxes. La columna `actions` sí
@@ -31,9 +32,8 @@ import { NivelTexto } from "@/features/planeador/components/table/criterio-nivel
  * revela al pasar el puntero por la fila— con los botones `disabled`, como el
  * resto de las acciones de esta iteración.
  */
-export function createUnidadCriteriosColumns(
-  nombresNiveles: string[] = NIVELES_DESEMPENO_DEFAULT_NOMBRES,
-): ColumnDef<CriterioUnidad>[] {
+export function createUnidadCriteriosColumns(nombresNiveles: string[]): ColumnDef<CriterioUnidad>[] {
+  const niveles = nombresNiveles.length > 0 ? nombresNiveles : NIVELES_DESEMPENO_DEFAULT_NOMBRES
   return [
     {
       id: "nombre",
@@ -46,7 +46,7 @@ export function createUnidadCriteriosColumns(
         </span>
       ),
     },
-    ...nombresNiveles.map(
+    ...niveles.map(
       (nombreNivel, index): ColumnDef<CriterioUnidad> => ({
         id: `nivel-${index}`,
         accessorFn: (row) => row.niveles[index]?.descripcion ?? "",

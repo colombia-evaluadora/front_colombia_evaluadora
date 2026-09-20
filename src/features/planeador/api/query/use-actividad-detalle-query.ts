@@ -6,6 +6,7 @@ import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado
 import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
 import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
+import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
   defaultRecuperacionCampoDisponible,
   type Actividad,
@@ -105,6 +106,12 @@ interface ActividadDetalleRow {
   // `PATCH .../evidencias/:id` / `PATCH .../criterios/:id` para quitarlos.
   evidencias: EvidenciaRelacionadaRow[] | null
   criterios: CriterioRelacionadoRow[] | null
+  // `fn_actividad_buscar_por_pk` (V452, confirmado real): las matrículas YA
+  // asignadas (`TACTIVIDAD_ESTUDIANTE` activas), con `pkTmatricula` — el
+  // mismo id que `matriculasIds`/`EstudiantesMultiSelect` manejan. Antes se
+  // asumía que no había forma de leer esto de vuelta y el form arrancaba
+  // siempre en "Todo el grupo" al editar (ver `toActividad` abajo).
+  estudiantes: EstudianteAsignadoRow[] | null
   campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
@@ -124,6 +131,20 @@ interface CriterioRelacionadoRow {
   descripcion: string
   codigo: string | null
   orden: number
+}
+
+/** Confirmado contra una respuesta real de test (actividad 23):
+ *  `{estudiante, calificable, observacion, calificacion, pkTmatricula,
+ *  fkTestudiante, pkTactividadEstudiante}` — acá solo hace falta
+ *  `pkTmatricula`, el resto lo maneja la planilla de calificación. */
+interface EstudianteAsignadoRow {
+  pkTactividadEstudiante: number
+  pkTmatricula: number
+  fkTestudiante: number
+  estudiante: string | null
+  calificacion: number | null
+  calificable: "S" | "N"
+  observacion: string | null
 }
 
 /**
@@ -177,7 +198,11 @@ interface RecuperacionCampoDisponibleRow {
 
 interface CamposDisponiblesRow {
   criterio: CampoDisponibleRow
-  evaluacion: CampoDisponibleRow & { instrumentosPermitidos: string[] }
+  /** `instrumentosPermitidos` viene como `{pk, valor, etiqueta, nombre,
+   *  variantes, campos}[]`, no `string[]` — ver `normalizeInstrumentosPermitidos`. */
+  evaluacion: CampoDisponibleRow & {
+    instrumentosPermitidos: Parameters<typeof normalizeInstrumentosPermitidos>[0]
+  }
   ponderacion: CampoDisponibleRow & { modo: string | null }
   recuperacion?: RecuperacionCampoDisponibleRow
 }
@@ -208,10 +233,19 @@ function criteriosUnidadIdsFromRow(raw: CriterioRelacionadoRow[] | null): number
 }
 
 /** Completa `recuperacion` con el placeholder oculto cuando la fila no lo
- *  trae (ver `defaultRecuperacionCampoDisponible`). */
+ *  trae (ver `defaultRecuperacionCampoDisponible`), y normaliza
+ *  `instrumentosPermitidos` a la forma rica del form (ver
+ *  `normalizeInstrumentosPermitidos`). */
 function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["camposDisponibles"] {
   if (!raw) return undefined
-  return { ...raw, recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible() }
+  return {
+    ...raw,
+    evaluacion: {
+      ...raw.evaluacion,
+      instrumentosPermitidos: normalizeInstrumentosPermitidos(raw.evaluacion.instrumentosPermitidos),
+    },
+    recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible(),
+  }
 }
 
 /**
@@ -432,14 +466,18 @@ function toActividadDetalle(
     adaptaciones: row.adaptaciones.map((raw) => adaptacionFromRaw(raw, tipoAdaptacionOptions, aplicaAOptions)),
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
-    // El detalle real no trae de vuelta CUÁLES matrículas quedaron
-    // asignadas (solo el conteo, `estudiantes_asignados`) — no hay endpoint
-    // confirmado para leer la selección, solo para escribirla (ver el
-    // comentario de `Actividad.matriculasIds`). Guardar de nuevo sin tocar
-    // "Estudiantes" no cambia nada: `update-actividad.ts` solo manda
-    // `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO` si el docente lo toca.
-    matriculasIds: [],
-    asignarTodoElGrupo: true,
+    // `row.estudiantes` (V452, confirmado real) trae de vuelta CUÁLES
+    // matrículas quedaron asignadas — antes se asumía que no había forma de
+    // leer esto y el form arrancaba siempre en "Todo el grupo" al editar,
+    // aunque la actividad tuviera una selección puntual guardada (se veía
+    // como si se hubiera perdido, aunque `update-actividad.ts` nunca la
+    // tocaba sin que el docente la volviera a elegir). No hay una bandera
+    // real de "todo el grupo" en la respuesta —`asignarTodoElGrupo` queda
+    // en `false` y la lista explícita, que es funcionalmente idéntica
+    // (misma gente asignada) aunque el grupo crezca después no se auto-
+    // incluye a los nuevos hasta que el docente vuelva a tocar "Estudiantes".
+    matriculasIds: (row.estudiantes ?? []).map((e) => e.pkTmatricula),
+    asignarTodoElGrupo: false,
     camposDisponibles: toCamposDisponibles(row.campos_disponibles),
   }
 }

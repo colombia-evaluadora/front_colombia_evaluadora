@@ -989,6 +989,34 @@ export const planeadorHandlers = [
     })
   }),
 
+  // Criterios de la rúbrica de la unidad — endpoint aparte del detalle
+  // (`GET /planeador/unidades/:id` real nunca los trae, ver
+  // `use-unidad-criterios-query.ts`). Responde con la forma real
+  // (`pk_tcriterio_unidad`, `niveles[].indicador`...), no con
+  // `CriterioUnidad` tal cual vive en `unidadesTematicasDb`.
+  http.get(UNIDAD_CRITERIO_CREATE_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const rows = unidad.criterios.map((criterio, index) => ({
+      pk_tcriterio_unidad: criterio.id,
+      orden: index + 1,
+      descripcion: criterio.nombre,
+      niveles: criterio.niveles.map((nivel, nivelIndex) => ({
+        pk: nivelIndex + 1,
+        orden: nivelIndex + 1,
+        fkTescalaValoracion: nivel.valoracionId ?? nivelIndex + 1,
+        valoracion: nivel.nombre,
+        indicador: nivel.descripcion,
+      })),
+      active: true,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
   // Agregar criterio a la rúbrica de una unidad. El diálogo manda los
   // campos de texto (sin id); acá se le asigna uno y se empuja al array en
   // memoria de la unidad. 404 si la unidad no existe.
@@ -1063,9 +1091,10 @@ export const planeadorHandlers = [
   // elegida pero SIN actividad todavía (colección Postman
   // `planeador-flujo-unidad-actividad`, paso 6) — mismo `campos_disponibles`
   // que ya trae el detalle real de actividad, para que `EvaluacionSection`
-  // use la misma fuente de verdad al crear que al editar. `ES_EVALUATIVA`
-  // es lo único que no sale de la unidad: lo que el usuario acaba de marcar
-  // en el `<Select>` de "¿Es evaluación sumativa?".
+  // use la misma fuente de verdad al crear que al editar. `ES_SUMATIVO`
+  // (no `ES_EVALUATIVA` — ver el comentario de `use-configuracion-
+  // actividad-query.ts`) es lo único que no sale de la unidad: lo que el
+  // usuario acaba de marcar en el `<Select>` de "¿Es evaluación sumativa?".
   http.get(UNIDAD_CONFIGURACION_ACTIVIDAD_URL, async ({ params, request }) => {
     await delay(150)
     const id = Number(params.id)
@@ -1073,7 +1102,7 @@ export const planeadorHandlers = [
     if (!unidad) {
       return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
     }
-    const esEvaluativa = new URL(request.url).searchParams.get("ES_EVALUATIVA") === "S"
+    const esEvaluativa = new URL(request.url).searchParams.get("ES_SUMATIVO") === "S"
     const esFormativa = unidad.enfoquePedagogico === "Formativo"
     const evaluacionVisible = esEvaluativa && !esFormativa
     const ponderacionVisible = evaluacionVisible && unidad.metodoCalculo !== "Promedio simple"
@@ -1097,16 +1126,100 @@ export const planeadorHandlers = [
                   : esEvaluativa
                     ? "La actividad es sumativa: hace falta un instrumento de evaluación."
                     : "La actividad no es sumativa: no hace falta instrumento.",
-                // `{pk, valor, etiqueta}`, no strings sueltos — mismo shape
-                // que `fn_actividad_instrumentos_permitidos` real (ver
-                // `toInstrumentosPermitidos` en `use-instrumento-evaluacion-
-                // catalog.ts`, que hace el mapeo a los strings que compara
-                // el resto del form).
+                // `{pk, valor, etiqueta, nombre, variantes, campos}`, no
+                // strings sueltos — mismo shape que `fn_actividad_
+                // instrumentos_permitidos` real, `campos` incluido para
+                // "OTRO" (ver `normalizeInstrumentosPermitidos` en
+                // `use-instrumento-evaluacion-catalog.ts`, que hace el mapeo
+                // a los strings que compara el resto del form).
                 instrumentosPermitidos: [
-                  { pk: 51998, valor: "RUBRICA", etiqueta: "Rúbrica" },
-                  { pk: 52008, valor: "LISTA_COTEJO", etiqueta: "Lista de cotejo" },
-                  { pk: 51983, valor: "ESCALA_VALORACION", etiqueta: "Escala de valoración" },
-                  { pk: 52007, valor: "OTRO", etiqueta: "Otro (personalizado)" },
+                  {
+                    pk: 51998,
+                    valor: "RUBRICA",
+                    etiqueta: "Rúbrica",
+                    nombre: "Rúbrica",
+                    variantes: [],
+                    campos: null,
+                  },
+                  {
+                    pk: 52008,
+                    valor: "LISTA_COTEJO",
+                    etiqueta: "Lista de cotejo",
+                    nombre: "Lista de cotejo",
+                    variantes: [],
+                    campos: null,
+                  },
+                  {
+                    pk: 51983,
+                    valor: "ESCALA_VALORACION",
+                    etiqueta: "Escala de valoración",
+                    nombre: "Escala de valoración",
+                    variantes: [{ pk: 52016, valor: "NUMERICA", nombre: "Numérica" }],
+                    campos: null,
+                  },
+                  {
+                    pk: 52007,
+                    valor: "OTRO",
+                    etiqueta: "Otro (personalizado)",
+                    nombre: "Otro (personalizado)",
+                    variantes: [],
+                    campos: {
+                      tipoEvidencia: {
+                        motivo: "Tipo de evidencia esperada del instrumento personalizado",
+                        requerido: true,
+                        catalogo: [
+                          { pk: 52020, valor: "ARCHIVO", nombre: "Archivo" },
+                          { pk: 52019, valor: "ENLACE", nombre: "Enlace" },
+                          { pk: 52017, valor: "OBSERVACION_DIRECTA", nombre: "Observación directa" },
+                          { pk: 52018, valor: "REGISTRO_CAMPO", nombre: "Registro en campo" },
+                        ],
+                      },
+                      metodoValoracion: {
+                        motivo:
+                          "Instrumento con el que se califica el personalizado; se ofrecen los que admite el tipo de evaluacion del referente",
+                        requerido: true,
+                        catalogo: [
+                          {
+                            pk: 51983,
+                            valor: "ESCALA_VALORACION",
+                            nombre: "Escala de valoración",
+                            variantes: [{ pk: 52016, valor: "NUMERICA", nombre: "Numérica" }],
+                          },
+                        ],
+                      },
+                      definicion: {
+                        motivo:
+                          "Misma forma que el metodoValoracion elegido; se envia en PUT /planeador/actividades/:ID/instrumento como {tipoEvidencia, metodoValoracion, definicion}",
+                        requerido: true,
+                        formaPorMetodo: {
+                          RUBRICA: "[{nombre, descripcion?, niveles:[{etiqueta?, descripcion, ponderacion}]}]",
+                          LISTA_COTEJO: "[{descripcion, ponderacion?}]",
+                          ESCALA_VALORACION:
+                            "{tipoEscala, criteriosGenerales?, interpretacionRangos?, valorMin?, valorMax?, niveles?}",
+                        },
+                      },
+                      requiereTexto: {
+                        campo: "REQUIERE_TEXTO",
+                        motivo: "Si el estudiante debe escribir una respuesta en texto",
+                        default: "N",
+                        valores: ["S", "N"],
+                        requerido: false,
+                      },
+                      requiereArchivo: {
+                        campo: "REQUIERE_ARCHIVO",
+                        motivo: "Si el estudiante debe adjuntar un archivo",
+                        default: "N",
+                        valores: ["S", "N"],
+                        requerido: false,
+                      },
+                      descripcionInstrumento: {
+                        campo: "DESCRIPCION_INSTRUMENTO",
+                        motivo: "Descripcion libre del instrumento; va en el POST/PATCH de la actividad",
+                        maxLength: 4000,
+                        requerido: false,
+                      },
+                    },
+                  },
                 ],
               },
               ponderacion: {
@@ -1227,7 +1340,7 @@ export const planeadorHandlers = [
     const rows = unidad.actividades.map((a) => ({
       pk_tactividad: a.actividadId,
       titulo: a.nombre,
-      es_evaluativa: a.tipo === "Sumativa" ? "S" : "N",
+      tipo_actividad: a.tipo,
       instrumento_evaluacion: a.instrumento,
       grupo: a.grupo,
       ponderacion: a.ponderacion,
