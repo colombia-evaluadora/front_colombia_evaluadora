@@ -20,9 +20,10 @@ interface TabStudyPlanProps {
   academicPeriodId?: number
   gradeId?: number
   isPreescolar?: boolean
+  isFormativo?: boolean
 }
 
-export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStudyPlanProps) {
+export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar, isFormativo }: TabStudyPlanProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -45,8 +46,8 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
   const subjectLabel = useStudyPlanSubjectLabel(gradeId, Boolean(isPreescolar))
 
   const columns = useMemo(
-    () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar, subjectLabel }),
-    [academicPeriodId, gradeId, isPreescolar, subjectLabel],
+    () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar, isFormativo, subjectLabel }),
+    [academicPeriodId, gradeId, isPreescolar, isFormativo, subjectLabel],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -96,6 +97,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
               academicPeriodId={academicPeriodId}
               gradeId={gradeId}
               isPreescolar={isPreescolar}
+              isFormativo={isFormativo}
               subjectLabel={subjectLabel}
             />
             <ExportStudyPlanDialog academicPeriodId={academicPeriodId} />
