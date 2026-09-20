@@ -62,6 +62,16 @@ function nombreSesion(sesion: Pick<SesionTab, "esFormativa" | "actividad" | "asi
   return sesion.esFormativa ? (sesion.actividad ?? "Actividad") : sesion.asignatura
 }
 
+/** Por hora de inicio (ISO, ordena bien como string) — la agenda del docente
+ *  es cronológica, no alfabética por nombre de asignatura. Sin hora (toma
+ *  suelta o sesión formativa sin horario real) va al final. */
+function compararPorHora(a: Pick<SesionTab, "horaInicio">, b: Pick<SesionTab, "horaInicio">): number {
+  if (a.horaInicio == null && b.horaInicio == null) return 0
+  if (a.horaInicio == null) return 1
+  if (b.horaInicio == null) return -1
+  return a.horaInicio.localeCompare(b.horaInicio)
+}
+
 function formatFechaLarga(fecha: string): string {
   const [anio, mes, dia] = fecha.split("-").map(Number)
   return new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", { day: "numeric", month: "long" })
@@ -467,25 +477,27 @@ export function AsistenciaManualPage() {
 
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
     const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)
-    return agruparPorBloquesContinuos(delDia).map((b) => ({
-      // Una actividad no tiene bloque -- se identifica sola, distinta de
-      // cualquier otra sesión del mismo grupo/asignatura ese día.
-      id: b.esFormativa ? `${b.fkGrupo}-actividad-${b.fkActividad}` : `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
-      fkGrupo: b.fkGrupo,
-      grado: b.grado,
-      grupo: b.grupo,
-      jornada: b.jornada,
-      fkAsignatura: b.fkAsignatura,
-      asignatura: b.asignatura,
-      bloque: b.bloque,
-      bloques: b.bloques,
-      esFormativa: b.esFormativa,
-      fkActividad: b.fkActividad,
-      actividad: b.actividad,
-      horasPorBloque: b.horasPorBloque,
-      horaInicio: b.horaInicio,
-      horaFin: b.horaFin,
-    }))
+    return agruparPorBloquesContinuos(delDia)
+      .sort(compararPorHora)
+      .map((b) => ({
+        // Una actividad no tiene bloque -- se identifica sola, distinta de
+        // cualquier otra sesión del mismo grupo/asignatura ese día.
+        id: b.esFormativa ? `${b.fkGrupo}-actividad-${b.fkActividad}` : `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
+        fkGrupo: b.fkGrupo,
+        grado: b.grado,
+        grupo: b.grupo,
+        jornada: b.jornada,
+        fkAsignatura: b.fkAsignatura,
+        asignatura: b.asignatura,
+        bloque: b.bloque,
+        bloques: b.bloques,
+        esFormativa: b.esFormativa,
+        fkActividad: b.fkActividad,
+        actividad: b.actividad,
+        horasPorBloque: b.horasPorBloque,
+        horaInicio: b.horaInicio,
+        horaFin: b.horaFin,
+      }))
   }, [sesiones, fecha])
 
   const [activeTab, setActiveTab] = React.useState<string | undefined>(undefined)
