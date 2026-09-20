@@ -288,7 +288,7 @@ export function CalificacionesAprobacionView({
                 <th className="px-4 py-3 text-left font-semibold uppercase">
                   Apellidos y nombres
                 </th>
-                <th className="border-border border-l px-3 py-3 text-left font-semibold uppercase">
+                <th className="px-3 py-3 text-left font-semibold uppercase">
                   Observación
                 </th>
               </tr>
@@ -302,7 +302,7 @@ export function CalificacionesAprobacionView({
                     <td className="px-4 py-3 align-top font-medium whitespace-nowrap uppercase">
                       {nombreCompleto}
                     </td>
-                    <td className="border-border border-l px-3 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <div className="flex items-center gap-1.5">
                         <Tooltip>
                           <TooltipTrigger
