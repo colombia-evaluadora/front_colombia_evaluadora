@@ -1,6 +1,7 @@
+import { cn } from "@/lib/utils"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -18,8 +19,10 @@ import { SubjectLabelSelect } from "@/features/academic-management/curricular-re
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-const TEXTAREA_OUTLINE_CLASS =
-  "field-sizing-fixed max-w-full rounded-md border border-input px-3 py-2 break-all hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
+// `Textarea` no trae la variante `outlined` sola (a diferencia de `Input`):
+// `TEXTAREA_OUTLINED` la iguala a mano, acá sumada al ajuste de tamaño fijo
+// que necesitan estos textareas largos.
+const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full break-all")
 
 interface CurricularReferenceDetailsFormProps {
   value: CurricularReferenceDraft
