@@ -38,7 +38,9 @@ interface CalificarActividadBulkProps {
  *  llenó varios criterios de la rúbrica en el form, se dispara un request
  *  por cada uno, todos con la misma lista de estudiantes/fecha (ver nota en
  *  `use-calificar-bulk.ts`). */
-function buildBulkInputs(
+// Exportada: la reusa `CalificacionesAprobacionView`, que arma el mismo bulk
+// desde el panel de aprobación.
+export function buildBulkInputs(
   instrumento: InstrumentoActividad,
   value: NotaCriterio[],
   actividadId: number,
