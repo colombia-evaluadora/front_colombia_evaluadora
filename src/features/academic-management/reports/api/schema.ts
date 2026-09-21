@@ -11,6 +11,9 @@ export const informesSearchSchema = z.object({
   anio: z.coerce.number().optional(),
   jornada: z.coerce.number().optional(),
   periodos: z.array(z.coerce.number()).optional(),
+  /** El checkbox "Final", que no es un período: pide la fila con la nota
+   *  del año. Va en la URL como los demás para que sobreviva al refresh. */
+  final: z.boolean().optional(),
   /** Las pestañas de grado/grupo abiertas, en orden. */
   grupos: z.array(z.coerce.number()).optional(),
   tab: z.coerce.number().optional(),

@@ -96,54 +96,62 @@ export function ObservacionesTable({
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
                     <div key={fila.periodoId} className={cn(SUBFILA_CLASS, "max-w-md gap-1.5 px-3")}>
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              color={fila.observacion ? "primary" : "neutral"}
-                              size="icon-xs"
-                              className="shrink-0"
-                              aria-label={
-                                fila.observacion
-                                  ? `Ver observación de ${estudiante.nombreCompleto}`
-                                  : `Agregar observación de ${estudiante.nombreCompleto}`
-                              }
-                              onClick={() => onAbrirObservacion(fila)}
-                            />
-                          }
-                        >
-                          {fila.observacion ? <EyeIcon /> : <PlusIcon />}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {fila.observacion ? "Ver observación" : "Sin observación"}
-                        </TooltipContent>
-                      </Tooltip>
-                      <button
-                        type="button"
-                        className="min-w-0 flex-1 truncate text-left hover:underline"
-                        onClick={() => onAbrirObservacion(fila)}
-                        title={fila.observacion ?? undefined}
-                      >
-                        {fila.observacion ? (
-                          <span className="text-foreground">{fila.observacion}</span>
-                        ) : (
-                          <span className="text-muted-foreground">Sin observación</span>
-                        )}
-                      </button>
-                      {fila.observacionDesactualizada && (
+                      {/* La fila Final no es un período: no tiene actividades que
+                          resumir, así que no se ofrece generar ni abrir nada. */}
+                      {fila.modoPeriodo === "final" ? (
+                        <span className="text-muted-foreground">Sin observación</span>
+                      ) : (
+                        <>
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <Badge variant="soft" color="warning" className="shrink-0 cursor-default" />
+                              <Button
+                                variant="ghost"
+                                color={fila.observacion ? "primary" : "neutral"}
+                                size="icon-xs"
+                                className="shrink-0"
+                                aria-label={
+                                  fila.observacion
+                                    ? `Ver observación de ${estudiante.nombreCompleto}`
+                                    : `Agregar observación de ${estudiante.nombreCompleto}`
+                                }
+                                onClick={() => onAbrirObservacion(fila)}
+                              />
                             }
                           >
-                            Desactualizada
+                            {fila.observacion ? <EyeIcon /> : <PlusIcon />}
                           </TooltipTrigger>
                           <TooltipContent>
-                            El docente dejó observaciones nuevas después de guardar este texto.
+                            {fila.observacion ? "Ver observación" : "Sin observación"}
                           </TooltipContent>
                         </Tooltip>
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 truncate text-left hover:underline"
+                          onClick={() => onAbrirObservacion(fila)}
+                          title={fila.observacion ?? undefined}
+                        >
+                          {fila.observacion ? (
+                            <span className="text-foreground">{fila.observacion}</span>
+                          ) : (
+                            <span className="text-muted-foreground">Sin observación</span>
+                          )}
+                        </button>
+                        {fila.observacionDesactualizada && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Badge variant="soft" color="warning" className="shrink-0 cursor-default" />
+                              }
+                            >
+                              Desactualizada
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              El docente dejó observaciones nuevas después de guardar este texto.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        </>
                       )}
                     </div>
                   ))}

@@ -80,6 +80,7 @@ function coincide(fila: FilaInforme, busqueda: string): boolean {
 interface GrupoTabContentProps {
   grupoId: number
   periodos: number[]
+  incluirFinal: boolean
   seleccionados: Set<number>
   onToggleEstudiante: (matriculaId: number) => void
   onSeleccionarTodos: (matriculaIds: number[]) => void
@@ -91,6 +92,7 @@ interface GrupoTabContentProps {
 function GrupoTabContent({
   grupoId,
   periodos,
+  incluirFinal,
   seleccionados,
   onToggleEstudiante,
   onSeleccionarTodos,
@@ -99,7 +101,9 @@ function GrupoTabContent({
   onAbrirObservacion,
 }: GrupoTabContentProps) {
   const [busqueda, setBusqueda] = React.useState("")
-  const informe = useInformeGrupoQuery(periodos.length > 0 ? { grupoId, periodos } : null)
+  const informe = useInformeGrupoQuery(
+    periodos.length > 0 ? { grupoId, periodos, incluirFinal } : null,
+  )
 
   const filas = React.useMemo(
     () => (informe.data ?? []).filter((fila) => coincide(fila, busqueda)),
@@ -246,11 +250,18 @@ function ReportsPageContent() {
   const gruposQuery = useGruposPeriodoQuery(filtros)
 
   const periodos = React.useMemo(() => search.periodos ?? [], [search.periodos])
+  const incluirFinal = search.final ?? false
   const gruposAbiertosIds = React.useMemo(() => search.grupos ?? [], [search.grupos])
   const activeTab = search.tab != null ? String(search.tab) : ""
 
   const setPeriodos = React.useCallback(
     (ids: number[]) => setSearch({ periodos: ids.length > 0 ? ids : undefined }),
+    [setSearch],
+  )
+  // `undefined` y no `false`: así el parámetro desaparece de la URL en vez
+  // de ensuciarla con el valor por defecto.
+  const setIncluirFinal = React.useCallback(
+    (valor: boolean) => setSearch({ final: valor || undefined }),
     [setSearch],
   )
   const setActiveTab = React.useCallback(
@@ -307,9 +318,12 @@ function ReportsPageContent() {
   const alertasParams = { grupos: gruposAbiertosIds, periodos }
   const planillasPendientes = usePlanillasPendientesQuery(alertasParams)
   const cambiosPendientes = useCambiosPendientesQuery(alertasParams)
+  // El historial es del grupo que se está viendo, no de todas las pestañas
+  // abiertas: acompaña al informe que hay en pantalla, así que sigue a la
+  // pestaña activa y se vuelve a pedir al cambiarla.
   const historial = useHistorialQuery(
-    { grupos: gruposAbiertosIds, periodos },
-    historialAbierto && gruposAbiertosIds.length > 0,
+    { grupos: grupoActivoId > 0 ? [grupoActivoId] : [], periodos },
+    historialAbierto && grupoActivoId > 0,
   )
 
   const guardarInforme = useGuardarInformeMutation()
@@ -448,6 +462,8 @@ function ReportsPageContent() {
             periodos={periodosDisponibles}
             seleccionados={periodos}
             onChange={setPeriodos}
+            final={incluirFinal}
+            onFinalChange={setIncluirFinal}
             cargando={cascadaCompleta && periodosQuery.isPending}
             mensajeVacio={
               cascadaCompleta
@@ -492,6 +508,7 @@ function ReportsPageContent() {
             <DialogExportInforme
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
+              incluirFinal={incluirFinal}
             />
           </div>
         </div>
@@ -606,6 +623,7 @@ function ReportsPageContent() {
                   <GrupoTabContent
                     grupoId={grupo.grupoId}
                     periodos={periodos}
+                    incluirFinal={incluirFinal}
                     seleccionados={seleccionActiva}
                     onToggleEstudiante={toggleEstudiante}
                     onSeleccionarTodos={seleccionarTodos}
