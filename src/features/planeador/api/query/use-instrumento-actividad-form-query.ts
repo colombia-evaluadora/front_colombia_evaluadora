@@ -147,7 +147,14 @@ function listaCotejoDesdeRaw(items: RawCotejoItem[]): ListaCotejo {
 }
 
 function escalaDesdeRaw(raw: RawEscala): EscalaValoracion {
-  if (raw.tipoEscala === "NUMERICA") {
+  // Comparación tolerante a mayúsculas/espacios — mismo motivo que el
+  // matcheo por `valor` en `use-tipo-escala-catalog.ts`: si esta fila viene
+  // con otro casing ("Numerica" en vez de "NUMERICA"), el `===` estricto
+  // caía siempre a la rama Cualitativa y se perdían valorMin/valorMax/
+  // interpretacionRangos sin ningún error — el docente los guardaba bien
+  // (confirmado contra el PUT real) pero al reabrir la actividad la
+  // pantalla mostraba "Cualitativa" con esos tres campos vacíos.
+  if (String(raw.tipoEscala).trim().toUpperCase() === "NUMERICA") {
     return {
       id: 0,
       criteriosGenerales: raw.criteriosGenerales ?? "",
