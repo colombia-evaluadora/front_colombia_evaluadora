@@ -89,3 +89,80 @@ export function useConfiguracionActividadQuery(unidadId: number | undefined, esE
     staleTime: 1000 * 60,
   })
 }
+
+/**
+ * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=&ES_SUMATIVO=`
+ * (`fn_actividad_configuracion_contexto`) — el mismo `campos_disponibles`
+ * que `useConfiguracionActividadQuery`, pero para una actividad SIN unidad
+ * (huérfana o recién creada sin vincular): ese otro endpoint exige
+ * `:unidadId` en el path y no sirve acá. `GRUPO`/`ASIGNATURA` son
+ * obligatorios para el backend — sin los dos, ni se llama.
+ *
+ * La fila viene envuelta bajo `configuracion` — mismo shape ya CONFIRMADO
+ * EN VIVO contra este mismo endpoint por `use-programacion-actividad-
+ * query.ts` (que lee `configuracion.programacion`, no `programacion`
+ * suelto): `{configuracion: {programacion, campos_disponibles}}`.
+ */
+interface ConfiguracionContextoRow {
+  configuracion: { campos_disponibles: CamposDisponiblesRaw }
+}
+
+function firstRowContexto(body: unknown): ConfiguracionContextoRow | undefined {
+  if (Array.isArray(body)) return body[0] as ConfiguracionContextoRow | undefined
+  if (body != null && typeof body === "object" && "rows" in body) {
+    const rows = (body as { rows?: unknown }).rows
+    return Array.isArray(rows) ? (rows[0] as ConfiguracionContextoRow | undefined) : undefined
+  }
+  return body as ConfiguracionContextoRow | undefined
+}
+
+async function fetchConfiguracionContexto(
+  grupoId: number,
+  asignaturaId: number,
+  esEvaluativa: boolean,
+): Promise<CamposDisponibles | undefined> {
+  const params = new URLSearchParams({
+    GRUPO: String(grupoId),
+    ASIGNATURA: String(asignaturaId),
+    ES_SUMATIVO: esEvaluativa ? "S" : "N",
+  })
+  const body = await api.get(`/eval-col/planeador/actividades/configuracion?${params}`)
+  const campos = firstRowContexto(body)?.configuracion?.campos_disponibles
+  if (!campos) return undefined
+  return {
+    ...campos,
+    evaluacion: {
+      ...campos.evaluacion,
+      instrumentosPermitidos: normalizeInstrumentosPermitidos(campos.evaluacion.instrumentosPermitidos),
+    },
+    recuperacion: campos.recuperacion ?? defaultRecuperacionCampoDisponible(),
+  }
+}
+
+export const configuracionContextoActividadQueryKey = (
+  grupoId: number,
+  asignaturaId: number,
+  esEvaluativa: boolean,
+) => ["planeador", "actividad", "configuracion-contexto", grupoId, asignaturaId, esEvaluativa] as const
+
+/**
+ * Igual que `useConfiguracionActividadQuery`, para cuando la actividad
+ * TODAVÍA no tiene (ni va a tener) una unidad asociada — por ejemplo, al
+ * elegir la actividad a recuperar y autocompletar Grado/Grupo/Asignatura
+ * (`useRecuperacionAutoFill`) sin pasar por "Unidad temática asociada".
+ */
+export function useConfiguracionContextoActividadQuery(
+  grupoId: number | undefined,
+  asignaturaId: number | undefined,
+  esEvaluativa: boolean,
+) {
+  const enabled = grupoId != null && asignaturaId != null
+  return useQuery({
+    queryKey: enabled
+      ? configuracionContextoActividadQueryKey(grupoId, asignaturaId, esEvaluativa)
+      : (["planeador", "actividad", "configuracion-contexto", "none", esEvaluativa] as const),
+    queryFn: () => fetchConfiguracionContexto(grupoId!, asignaturaId!, esEvaluativa),
+    enabled,
+    staleTime: 1000 * 60,
+  })
+}
