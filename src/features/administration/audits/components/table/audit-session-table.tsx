@@ -54,6 +54,7 @@ export function AuditSessionDataTable() {
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "audit-session-table-column-visibility",
   })
 
   return (

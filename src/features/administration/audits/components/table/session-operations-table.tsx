@@ -58,6 +58,7 @@ export function SessionOperationsDataTable({
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "session-operations-table-column-visibility",
   })
 
   return (

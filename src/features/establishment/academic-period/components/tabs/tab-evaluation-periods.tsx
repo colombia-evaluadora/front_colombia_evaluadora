@@ -54,6 +54,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-evaluation-periods-column-visibility",
   })
 
 

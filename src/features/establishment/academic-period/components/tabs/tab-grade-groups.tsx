@@ -55,6 +55,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-grade-groups-column-visibility",
   })
 
   const idByCodigo = useMemo(

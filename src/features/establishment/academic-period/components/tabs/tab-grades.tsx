@@ -56,6 +56,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-grades-column-visibility",
   })
 
   const selectedGradeIds = useMemo(() => selectedIds.map(Number), [selectedIds])

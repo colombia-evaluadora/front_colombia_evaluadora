@@ -57,6 +57,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-area-subject-column-visibility",
   })
 
   const namesById = useMemo(
