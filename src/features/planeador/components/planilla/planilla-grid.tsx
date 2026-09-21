@@ -206,6 +206,26 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                 {columnas.map((columna) => {
                   const celda = celdaDe(fila, columna)
 
+                  // Va ANTES que cualquier otro estado: un estudiante sin
+                  // asignar a la actividad también llega con
+                  // `tieneAsistencia: false` (el backend ni siquiera resuelve
+                  // la fecha para él), así que sin este chequeo caía en la
+                  // rama de "sin asistencia" — un mensaje que no explica el
+                  // motivo real y sugiere que alcanza con registrar la
+                  // asistencia para poder calificarlo.
+                  if (celda?.estado === "NO_ASIGNADA") {
+                    return (
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                        <span
+                          className="text-muted-foreground"
+                          title="Este estudiante no está asignado a esta actividad."
+                        >
+                          No asignado
+                        </span>
+                      </td>
+                    )
+                  }
+
                   // El caso formativo va ANTES que `NO_CALIFICABLE`: una
                   // actividad sin nota llega siempre con ese estado y
                   // `calificable: "N"` —es su normalidad, no un bloqueo—, así

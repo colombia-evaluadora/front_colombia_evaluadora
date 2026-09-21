@@ -26,7 +26,7 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
   return (
     <button
       type="button"
-      aria-label="Ver soporte"
+      aria-label="Ver justificación"
       disabled={!puedeVer || isPending}
       className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
       onClick={handleVer}
@@ -139,8 +139,8 @@ export function buildColumnsAsistenciaManual({
     },
     {
       id: "soporte",
-      meta: { label: "Soporte" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Soporte" />,
+      meta: { label: "Justificación" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Justificación" />,
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
@@ -174,14 +174,14 @@ export function buildColumnsAsistenciaManual({
                 }
               >
                 <PaperclipIcon className="size-4 shrink-0" />
-                <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin soporte"}</span>
+                <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin justificación"}</span>
               </FileUploadTrigger>
             </FileUpload>
             {hayArchivo && <VerSoporteButton archivoLocal={archivo} fkSoporteArchivo={fkSoporteExistente} />}
             {hayArchivo && (
               <button
                 type="button"
-                aria-label="Quitar soporte"
+                aria-label="Quitar justificación"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => onSoporteEliminar(fkMatricula)}
               >

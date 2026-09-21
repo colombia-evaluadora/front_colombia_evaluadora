@@ -52,7 +52,7 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
         render={
           <button
             type="button"
-            aria-label="Ver soporte"
+            aria-label="Ver justificación"
             disabled={!puedeVer || isPending}
             className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
             onClick={handleVer}
@@ -61,7 +61,7 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
       >
         <EyeIcon className="size-3.5 shrink-0" />
       </TooltipTrigger>
-      <TooltipContent>Ver soporte</TooltipContent>
+      <TooltipContent>Ver justificación</TooltipContent>
     </Tooltip>
   )
 }
@@ -198,7 +198,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
           </Field>
 
           <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel>Soporte de justificación</FieldLabel>
+            <FieldLabel>Justificación</FieldLabel>
             <div className="flex items-center gap-1.5 rounded-md border border-input px-3 py-2">
               <FileUpload
                 value={soporteNuevo ? [soporteNuevo] : []}
@@ -223,7 +223,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
                 >
                   <PaperclipIcon className="size-4 shrink-0" />
                   <span className="max-w-56 truncate">
-                    {soporteNuevo?.name ?? soporteExistenteNombre ?? "Sin soporte"}
+                    {soporteNuevo?.name ?? soporteExistenteNombre ?? "Sin justificación"}
                   </span>
                 </FileUploadTrigger>
               </FileUpload>
@@ -234,7 +234,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
                     render={
                       <button
                         type="button"
-                        aria-label="Quitar soporte"
+                        aria-label="Quitar justificación"
                         className="text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setSoporteNuevo(null)
@@ -245,7 +245,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
                   >
                     <XIcon className="size-3.5 shrink-0" />
                   </TooltipTrigger>
-                  <TooltipContent>Quitar soporte</TooltipContent>
+                  <TooltipContent>Quitar justificación</TooltipContent>
                 </Tooltip>
               )}
             </div>

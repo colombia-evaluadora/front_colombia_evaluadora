@@ -12,6 +12,7 @@ interface CreateStudyPlanColumnsOptions {
   academicPeriodId?: number
   gradeId?: number
   isPreescolar?: boolean
+  isFormativo?: boolean
   subjectLabel?: string
 }
 
@@ -19,10 +20,11 @@ export function createStudyPlanColumns({
   academicPeriodId,
   gradeId,
   isPreescolar,
+  isFormativo,
   subjectLabel = "Asignatura",
 }: CreateStudyPlanColumnsOptions = {}): ColumnDef<StudyPlanItem>[] {
   const subjectColumnLabel = pluralizeSubjectLabel(subjectLabel)
-  return [
+  const columns: ColumnDef<StudyPlanItem>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -67,22 +69,28 @@ export function createStudyPlanColumns({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Influencia área" />,
       cell: ({ row }) => <span>{row.original.influenciaArea}%</span>,
     },
-    {
-      id: "numeroCreditos",
-      accessorKey: "numeroCreditos",
-      meta: { label: "Número de créditos" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Número de créditos" />,
-      cell: ({ row }) => <span>{row.original.numeroCreditos}</span>,
-    },
-    {
-      id: "influyeDesempeno",
-      accessorKey: "influyeDesempeno",
-      meta: { label: "Influye en el desempeño académico" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Influye en el desempeño académico" />
-      ),
-      cell: ({ row }) => <span>{row.original.influyeDesempeno ? "S" : "N"}</span>,
-    },
+    // En preescolar no aplican: no hay créditos ni desempeño académico que
+    // influenciar, la asignatura ahí es una dimensión formativa.
+    ...(isPreescolar
+      ? []
+      : ([
+          {
+            id: "numeroCreditos",
+            accessorKey: "numeroCreditos",
+            meta: { label: "Número de créditos" },
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Número de créditos" />,
+            cell: ({ row }) => <span>{row.original.numeroCreditos}</span>,
+          },
+          {
+            id: "influyeDesempeno",
+            accessorKey: "influyeDesempeno",
+            meta: { label: "Influye en el desempeño académico" },
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Influye en el desempeño académico" />
+            ),
+            cell: ({ row }) => <span>{row.original.influyeDesempeno ? "S" : "N"}</span>,
+          },
+        ] satisfies ColumnDef<StudyPlanItem>[])),
     {
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
@@ -93,6 +101,7 @@ export function createStudyPlanColumns({
             academicPeriodId={academicPeriodId}
             gradeId={gradeId}
             isPreescolar={isPreescolar}
+            isFormativo={isFormativo}
             subjectLabel={subjectLabel}
           />
           <DeleteStudyPlanDialog item={row.original} subjectLabel={subjectLabel} />
@@ -103,6 +112,7 @@ export function createStudyPlanColumns({
       size: 96,
     },
   ]
+  return columns
 }
 
 export type StudyPlanTable = Table<StudyPlanItem>

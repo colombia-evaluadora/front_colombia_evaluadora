@@ -122,6 +122,21 @@ export function PlaneadorPlanillaPage() {
     [filas, columnaIds],
   )
 
+  // fn_actividad_observar_grupal (backend) no distingue: pisa la
+  // OBSERVACION de TODOS los estudiantes activos de la actividad, incluidos
+  // los que ya tienen una nota individual escrita a mano. Sin una separación
+  // real en el backend (pendiente), se avisa acá cuántos se van a perder si
+  // se guarda.
+  const estudiantesConObservacionPrevia = useMemo(() => {
+    if (!columnaEnBulk) return 0
+    let total = 0
+    for (const fila of filas) {
+      const celda = fila.celdas.find((c) => c.pkTactividad === columnaEnBulk.pkTactividad)
+      if (celda?.observacion?.trim()) total++
+    }
+    return total
+  }, [columnaEnBulk, filas])
+
   // La observación grupal manda UNA sola fecha para todo el grupo, así que se
   // propone la que más estudiantes comparten: el backend omite a quien no
   // tenga asistencia válida ese día.
@@ -253,6 +268,7 @@ export function PlaneadorPlanillaPage() {
               titulo={columnaEnBulk.titulo}
               fechaSugerida={fechaSugeridaBulk}
               totalEstudiantes={columnaEnBulk.estudiantesAsignados}
+              estudiantesConObservacionPrevia={estudiantesConObservacionPrevia}
               onVolver={() => setColumnaEnBulk(null)}
             />
           )}

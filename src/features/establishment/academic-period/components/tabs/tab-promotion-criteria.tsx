@@ -14,7 +14,9 @@ import { useSubjectsQuery, type SubjectOption } from "@/features/establishment/a
 import { usePeriodAreasQuery, type AreaOption } from "@/features/establishment/academic-period/api/query/use-period-areas"
 import { useCurriculumNodesQuery } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
-import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
+import { SelectItemsDialog } from "@/components/select-items-dialog"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
 import {
   promotionApprovalSchema,
   type PromotionApprovalValues,
@@ -95,6 +97,7 @@ interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
   academicPeriodId?: number
   gradeId?: number
+  isPreescolar?: boolean
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6
 }
 
@@ -105,10 +108,11 @@ export interface PromotionCriteriaHandle {
 
 export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromotionCriteriaProps>(
   function TabPromotionCriteria(
-    { hideSubmit = false, academicPeriodId, gradeId, headingLevel = 3 },
+    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, headingLevel = 3 },
     ref,
   ) {
     const isGradeScope = gradeId != null
+    const subjectLabel = useStudyPlanSubjectLabel(gradeId, Boolean(isPreescolar))
 
     const { data: periodCriteria, isPending: periodLoading } =
       usePromotionCriteriaQuery(academicPeriodId)
@@ -156,6 +160,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
         subjectOptions={subjectOptions}
         areaOptions={areaOptions}
         curriculumNodes={curriculumNodes}
+        subjectLabel={subjectLabel}
       />
     )
   },
@@ -170,6 +175,7 @@ interface PromotionCriteriaFormProps {
   subjectOptions: SubjectOption[]
   areaOptions: AreaOption[]
   curriculumNodes: CurriculumNodeOption[]
+  subjectLabel: string
 }
 
 const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCriteriaFormProps>(
@@ -183,10 +189,12 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       subjectOptions,
       areaOptions,
       curriculumNodes,
+      subjectLabel,
     },
     ref,
   ) {
     const HeadingTag = `h${headingLevel}` as const
+    const subjectLabelPlural = pluralizeSubjectLabel(subjectLabel)
     const isGradeScope = gradeId != null
     const { notify } = useNotify()
 
@@ -245,13 +253,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       }),
       [updatePromotionCriteria, form, academicPeriodId],
     )
-
-    const maxFailedRecovery = useSelector(form.store, (state) => state.values.maxFailedRecovery)
-    useEffect(() => {
-      if (form.state.values.maxLeveledSubjects > maxFailedRecovery) {
-        form.setFieldValue("maxLeveledSubjects", maxFailedRecovery)
-      }
-    }, [maxFailedRecovery, form])
 
     const applyAverageApproval = useSelector(
       form.store,
@@ -338,36 +339,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
               </Field>
             )}
           </form.Field>
-
-          <form.Field name="maxLeveledSubjects">
-            {(field) => (
-              <Field variant="outlined">
-                <FieldLabel className="flex-1">
-                  Máximo de Áreas/Asignaturas niveladas para ser promovido*
-                </FieldLabel>
-
-                <Input
-                  type="number"
-                  min={0}
-                  max={maxFailedRecovery}
-                  step={1}
-                  placeholder="Agregar"
-                  value={field.state.value}
-                  onKeyDown={(e) => {
-                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
-                  }}
-                  onChange={(e) => {
-                    const raw = e.target.value
-                    const parsed = Number(raw)
-                    if (raw === "" || !Number.isNaN(parsed)) {
-                      field.handleChange(Math.min(parsed, maxFailedRecovery))
-                    }
-                  }}
-                  className="h-11"
-                />
-              </Field>
-            )}
-          </form.Field>
         </div>
 
         <HeadingTag className="mt-8 mb-4 text-lg font-semibold">Aprobación por promedio</HeadingTag>
@@ -424,51 +395,27 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
               </Field>
             )}
           </form.Field>
-
-          <form.Field name="maxFailedForAverage">
-            {(field) => (
-              <Field variant="outlined">
-                <FieldLabel className="flex-1">
-                  Cantidad máxima de asignaturas reprobadas para considerar la aprobación por
-                  promedio*
-                </FieldLabel>
-
-                <Input
-                  type="number"
-                  min={0}
-                  max={99}
-                  step={1}
-                  placeholder="Agregar"
-                  value={field.state.value}
-                  disabled={!applyAverageApproval}
-                  onKeyDown={(e) => {
-                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
-                  }}
-                  onChange={(e) => {
-                    const raw = e.target.value
-                    const parsed = Number(raw)
-                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(Math.min(parsed, 99))
-                  }}
-                  className="h-11"
-                />
-              </Field>
-            )}
-          </form.Field>
         </div>
 
         <HeadingTag className="mt-8 mb-4 text-lg font-semibold">
-          Áreas/Asignaturas obligatorias para aprobación
+          Área/{subjectLabelPlural} obligatorias para aprobación
         </HeadingTag>
 
         <form.Field name="requiredSubjects">
           {(field) => (
             <form.Subscribe selector={(state) => state.values.curriculumNode}>
-              {(curriculumNode) => (
-                <RequiredSubjectsField
-                  field={field}
-                  options={curriculumNode === "AR" ? areaOptions : subjectOptions}
-                />
-              )}
+              {(curriculumNode) => {
+                const esArea = curriculumNode === "AR"
+                return (
+                  <RequiredSubjectsField
+                    field={field}
+                    options={esArea ? areaOptions : subjectOptions}
+                    subjectLabelPlural={subjectLabelPlural}
+                    noun={esArea ? "área" : subjectLabel.toLowerCase()}
+                    nounPlural={esArea ? "áreas" : subjectLabelPlural.toLowerCase()}
+                  />
+                )
+              }}
             </form.Subscribe>
           )}
         </form.Field>
@@ -494,9 +441,20 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
 interface RequiredSubjectsFieldProps {
   field: AnyFieldApi
   options: SubjectOption[] | AreaOption[]
+  subjectLabelPlural: string
+  /** Singular/plural del nodo curricular actualmente elegido ("área"/"áreas"
+   *  o la palabra dinámica del referente) — rotula el modal, no el campo. */
+  noun: string
+  nounPlural: string
 }
 
-function RequiredSubjectsField({ field, options }: RequiredSubjectsFieldProps) {
+function RequiredSubjectsField({
+  field,
+  options,
+  subjectLabelPlural,
+  noun,
+  nounPlural,
+}: RequiredSubjectsFieldProps) {
   useEffect(() => {
     const validIds = new Set(options.map((o) => o.id))
     const current = field.state.value as number[]
@@ -508,11 +466,15 @@ function RequiredSubjectsField({ field, options }: RequiredSubjectsFieldProps) {
 
   return (
     <Field variant="outlined" className="max-w-xl">
-      <FieldLabel>Áreas/Asignaturas obligatorias para la aprobación</FieldLabel>
-      <SubjectsMultiSelect
-        options={options}
+      <FieldLabel>Área/{subjectLabelPlural} obligatorias para la aprobación</FieldLabel>
+      <SelectItemsDialog
+        items={options}
         value={field.state.value}
         onChange={(values) => field.handleChange(values)}
+        dialogTitle={`Seleccionar ${nounPlural}`}
+        searchPlaceholder={`Buscar ${noun}...`}
+        emptyMessage={`No se encontraron ${nounPlural}.`}
+        selectedCountLabel={(count) => `${count} ${count === 1 ? noun : nounPlural} seleccionada${count === 1 ? "" : "s"}`}
       />
     </Field>
   )
