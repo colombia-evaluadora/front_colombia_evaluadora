@@ -443,7 +443,18 @@ function toActividadDetalle(
     modalidad: (row.modalidad ?? "Presencial") as Actividad["modalidad"],
     esEvaluativa: row.es_evaluativa === "S",
     esFormativa: row.es_formativa === true,
-    instrumento: row.instrumento_evaluacion ?? "",
+    // "Otro (personalizado)" se normaliza al código corto "Otro": el resto
+    // del form (InstrumentoEvaluacionSection, la propia SelectItem de este
+    // campo) compara `instrumento === "Otro"`, no el nombre completo que
+    // manda el backend (`instrumento_evaluacion`). Rúbrica/Lista de cotejo/
+    // Escala de valoración no necesitan este ajuste porque, a diferencia de
+    // "Otro", su nombre completo YA es igual al código corto interno — acá
+    // el desajuste hacía que una actividad con instrumento "Otro" recién
+    // abierta cayera siempre en la sección de Rúbrica genérica (el `else`
+    // por defecto), sin mostrar "Definición del instrumento personalizado"
+    // ni el método/definición ya guardados, aunque el detalle sí los
+    // trajera completos.
+    instrumento: row.instrumento_evaluacion?.startsWith("Otro") ? "Otro" : (row.instrumento_evaluacion ?? ""),
     ponderacion: row.ponderacion ?? 0,
     notaMaxima: row.nota_maxima ?? undefined,
     generaEvidencias: row.genera_evidencias === "S",
