@@ -127,6 +127,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     setPageSize: () => {},
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-rating-scales-column-visibility",
   })
 
   const selectedScaleCodigos = useMemo(() => {
@@ -402,6 +403,7 @@ function ScalesSubTable({
     setPageSize: () => {},
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-rating-scales-detail-column-visibility",
   })
 
   const selectedValoracionIds = useMemo(

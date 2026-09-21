@@ -60,6 +60,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-matricula-column-visibility",
   })
 
   const rows = data?.rows ?? []

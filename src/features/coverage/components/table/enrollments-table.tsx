@@ -51,6 +51,7 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "enrollments-table-column-visibility",
   })
 
   return (

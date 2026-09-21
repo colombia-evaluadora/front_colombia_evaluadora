@@ -82,6 +82,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-employees-column-visibility",
   })
 
   const rows = data?.rows ?? []

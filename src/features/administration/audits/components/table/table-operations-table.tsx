@@ -71,6 +71,7 @@ export function TableOperationsDataTable({ title, action }: TableOperationsDataT
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-operations-table-column-visibility",
   })
 
   return (
