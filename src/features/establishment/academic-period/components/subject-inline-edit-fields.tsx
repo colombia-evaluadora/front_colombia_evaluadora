@@ -174,6 +174,7 @@ export const SubjectInlineEditFields = forwardRef<
             value={asignaturaGeneral}
             onChange={setAsignaturaGeneral}
             invalid={submitted && !asignaturaGeneral}
+            allowDelete={false}
           />
         </Field>
       )}

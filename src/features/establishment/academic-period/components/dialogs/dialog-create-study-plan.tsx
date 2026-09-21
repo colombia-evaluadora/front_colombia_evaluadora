@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm, useSelector } from "@tanstack/react-form"
@@ -88,6 +88,7 @@ interface CreateStudyPlanDialogProps {
   gradeId?: number
   item?: StudyPlanItem
   isPreescolar?: boolean
+  isFormativo?: boolean
   subjectLabel?: string
 }
 
@@ -96,6 +97,7 @@ export function CreateStudyPlanDialog({
   gradeId,
   item,
   isPreescolar,
+  isFormativo,
   subjectLabel = "Asignatura",
 }: CreateStudyPlanDialogProps) {
   const isEditing = item != null
@@ -137,6 +139,16 @@ export function CreateStudyPlanDialog({
       ?.label ?? ""
   const esCriterioPorcentaje = areaCriteriaLabel.toLowerCase().includes("porcentaje")
   const showInfluenciaArea = !isPreescolar && esCriterioPorcentaje
+  // Preescolar no maneja créditos: la asignatura ahí es una dimensión
+  // formativa, sin equivalente al crédito de primaria/secundaria.
+  const showNumeroCreditos = !isPreescolar
+  const camposNumericosVisibles = 1 + Number(showInfluenciaArea) + Number(showNumeroCreditos)
+  const camposNumericosGridCols =
+    camposNumericosVisibles >= 3
+      ? "sm:grid-cols-3"
+      : camposNumericosVisibles === 2
+        ? "sm:grid-cols-2"
+        : "sm:grid-cols-1"
 
   const defaultValues: StudyPlanFormValues = item
     ? {
@@ -231,6 +243,21 @@ export function CreateStudyPlanDialog({
   })
 
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+
+  // Mientras no se personaliza, el combobox muestra `formatoHeredado`/
+  // `criterioHeredado` (línea de abajo), no el valor del campo — pero ese
+  // valor del campo es justo lo que se ve al prender "Personalizar". Sin
+  // esto quedaba en el default con el que se montó el formulario ("" para
+  // una asignatura nueva, o lo que hubiera cuando `criteria` todavía no
+  // había resuelto), así que activar el switch parecía "borrar" un
+  // contenido que en realidad nunca se había guardado ahí.
+  useEffect(() => {
+    if (!personalizar) form.setFieldValue("formatoCalificacion", formatoHeredado)
+  }, [formatoHeredado, personalizar, form])
+
+  useEffect(() => {
+    if (!personalizar) form.setFieldValue("criterioNota", criterioHeredado)
+  }, [criterioHeredado, personalizar, form])
 
   async function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
     await queryClient.invalidateQueries({
@@ -494,7 +521,7 @@ export function CreateStudyPlanDialog({
                     if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
                   }}
                 >
-                  <div className={cn("grid gap-4", showInfluenciaArea ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+                  <div className={cn("grid gap-4", camposNumericosGridCols)}>
                     <form.Field name="intensidadHoraria">
                       {(field) => {
                         const isInvalid =
@@ -574,40 +601,42 @@ export function CreateStudyPlanDialog({
                       </form.Field>
                     )}
 
-                    <form.Field name="numeroCreditos">
-                      {(field) => {
-                        const isInvalid =
-                          (field.state.meta.isTouched || submissionAttempts > 0) &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
-                            <Input
-                              id={field.name}
-                              type="number"
-                              min={0}
-                              step={1}
-                              placeholder="Agregar"
-                              aria-invalid={isInvalid}
-                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                              onBlur={field.handleBlur}
-                              onKeyDown={(e) => {
-                                if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                                  e.preventDefault()
-                                }
-                              }}
-                              onChange={(e) => {
-                                const value = e.target.valueAsNumber
-                                if (e.target.value === "" || !Number.isNaN(value)) {
-                                  field.handleChange(value)
-                                }
-                              }}
-                            />
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                          </Field>
-                        )
-                      }}
-                    </form.Field>
+                    {showNumeroCreditos && (
+                      <form.Field name="numeroCreditos">
+                        {(field) => {
+                          const isInvalid =
+                            (field.state.meta.isTouched || submissionAttempts > 0) &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field variant="outlined" data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
+                              <Input
+                                id={field.name}
+                                type="number"
+                                min={0}
+                                step={1}
+                                placeholder="Agregar"
+                                aria-invalid={isInvalid}
+                                value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                                onBlur={field.handleBlur}
+                                onKeyDown={(e) => {
+                                  if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                                    e.preventDefault()
+                                  }
+                                }}
+                                onChange={(e) => {
+                                  const value = e.target.valueAsNumber
+                                  if (e.target.value === "" || !Number.isNaN(value)) {
+                                    field.handleChange(value)
+                                  }
+                                }}
+                              />
+                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            </Field>
+                          )
+                        }}
+                      </form.Field>
+                    )}
                   </div>
                 </SubjectInlineEditFields>
               )
@@ -629,51 +658,61 @@ export function CreateStudyPlanDialog({
               !personalizar && "pointer-events-none opacity-50",
             )}
           >
-            <form.Field name="influyeDesempeno">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel>Influye en el desempeño académico</FieldLabel>
-                  <RadioGroup
-                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                    disabled={!personalizar}
-                    value={field.state.value ? "si" : "no"}
-                    onValueChange={(value) => field.handleChange(value === "si")}
-                  >
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="si" />
-                      Sí
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="no" />
-                      No
-                    </label>
-                  </RadioGroup>
-                </Field>
-              )}
-            </form.Field>
+            {/* No aplica en preescolar (no hay evaluación de desempeño que
+                influenciar) ni en niveles formativos (no reprueban, no hay
+                nada que "influir en el desempeño académico"). */}
+            {!isPreescolar && !isFormativo && (
+              <form.Field name="influyeDesempeno">
+                {(field) => (
+                  <Field variant="outlined">
+                    <FieldLabel>Influye en el desempeño académico</FieldLabel>
+                    <RadioGroup
+                      className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
+                      disabled={!personalizar}
+                      value={field.state.value ? "si" : "no"}
+                      onValueChange={(value) => field.handleChange(value === "si")}
+                    >
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="si" />
+                        Sí
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="no" />
+                        No
+                      </label>
+                    </RadioGroup>
+                  </Field>
+                )}
+              </form.Field>
+            )}
 
-            <form.Field name="matriculaObligatoria">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel>Matrícula obligatoria</FieldLabel>
-                  <RadioGroup
-                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                    disabled={!personalizar}
-                    value={field.state.value ? "si" : "no"}
-                    onValueChange={(value) => field.handleChange(value === "si")}
-                  >
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="si" />
-                      Sí
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="no" />
-                      No
-                    </label>
-                  </RadioGroup>
-                </Field>
-              )}
-            </form.Field>
+            {/* Acta 19-sep-2026: en niveles formativos solo aplica "Aprobación
+                obligatoria" — no hay matrícula/formato/criterio de nota que
+                personalizar porque no se califica numéricamente. */}
+            {!isFormativo && (
+              <form.Field name="matriculaObligatoria">
+                {(field) => (
+                  <Field variant="outlined">
+                    <FieldLabel>Matrícula obligatoria</FieldLabel>
+                    <RadioGroup
+                      className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
+                      disabled={!personalizar}
+                      value={field.state.value ? "si" : "no"}
+                      onValueChange={(value) => field.handleChange(value === "si")}
+                    >
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="si" />
+                        Sí
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="no" />
+                        No
+                      </label>
+                    </RadioGroup>
+                  </Field>
+                )}
+              </form.Field>
+            )}
 
             <form.Field name="aprobacionObligatoria">
               {(field) => (
@@ -698,67 +737,71 @@ export function CreateStudyPlanDialog({
               )}
             </form.Field>
 
-            <form.Field name="formatoCalificacion">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
-                  <ComboboxField
-                    value={personalizar ? field.state.value : formatoHeredado}
-                    disabled={!personalizar}
-                    onValueChange={(value) => value && field.handleChange(value)}
-                  >
-                    <ComboboxFieldTrigger id={field.name}>
-                      <ComboboxFieldValue>
-                        {(value) =>
-                          formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                        }
-                      </ComboboxFieldValue>
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {formatoOptions.map((option) => (
-                          <ComboboxFieldItem key={option.key} value={option.key}>
-                            {option.label}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                </Field>
-              )}
-            </form.Field>
+            {!isFormativo && (
+              <form.Field name="formatoCalificacion">
+                {(field) => (
+                  <Field variant="outlined">
+                    <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
+                    <ComboboxField
+                      value={personalizar ? field.state.value : formatoHeredado}
+                      disabled={!personalizar}
+                      onValueChange={(value) => value && field.handleChange(value)}
+                    >
+                      <ComboboxFieldTrigger id={field.name}>
+                        <ComboboxFieldValue>
+                          {(value) =>
+                            formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                          }
+                        </ComboboxFieldValue>
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
+                          {formatoOptions.map((option) => (
+                            <ComboboxFieldItem key={option.key} value={option.key}>
+                              {option.label}
+                            </ComboboxFieldItem>
+                          ))}
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
+                  </Field>
+                )}
+              </form.Field>
+            )}
 
-            <form.Field name="criterioNota">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>
-                    Criterio para calcular la nota de la asignatura
-                  </FieldLabel>
-                  <ComboboxField
-                    value={personalizar ? field.state.value : criterioHeredado}
-                    disabled={!personalizar}
-                    onValueChange={(value) => value && field.handleChange(value)}
-                  >
-                    <ComboboxFieldTrigger id={field.name}>
-                      <ComboboxFieldValue>
-                        {(value) =>
-                          criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                        }
-                      </ComboboxFieldValue>
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {criterioOptions.map((option) => (
-                          <ComboboxFieldItem key={option.key} value={option.key}>
-                            {option.label}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                </Field>
-              )}
-            </form.Field>
+            {!isFormativo && (
+              <form.Field name="criterioNota">
+                {(field) => (
+                  <Field variant="outlined">
+                    <FieldLabel htmlFor={field.name}>
+                      Criterio para calcular la nota de la asignatura
+                    </FieldLabel>
+                    <ComboboxField
+                      value={personalizar ? field.state.value : criterioHeredado}
+                      disabled={!personalizar}
+                      onValueChange={(value) => value && field.handleChange(value)}
+                    >
+                      <ComboboxFieldTrigger id={field.name}>
+                        <ComboboxFieldValue>
+                          {(value) =>
+                            criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                          }
+                        </ComboboxFieldValue>
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
+                          {criterioOptions.map((option) => (
+                            <ComboboxFieldItem key={option.key} value={option.key}>
+                              {option.label}
+                            </ComboboxFieldItem>
+                          ))}
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
+                  </Field>
+                )}
+              </form.Field>
+            )}
           </div>
         </form>
         </div>

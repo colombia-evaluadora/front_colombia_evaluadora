@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { CheckIcon, ImageIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import { ArchivoImage } from "@/features/files/components/archivo-image"
@@ -31,8 +32,10 @@ interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
   /** Subtítulo del encabezado: la actividad sobre la que se observa. */
   contexto: string
-  /** Imágenes ya adjuntas. Solo lectura: subirlas necesita el empalme con
-   *  el file-service, que todavía no está. */
+  /** Imágenes ya adjuntas. Solo lectura: subir una nueva necesita un
+   *  endpoint de backend que registre el archivo y devuelva su
+   *  `pk_tarchivo` (mismo patrón que V426 para materiales de apoyo), que
+   *  todavía no existe — el botón de agregar queda deshabilitado. */
   evidencias?: CeldaEvidencia[]
   guardando?: boolean
   onOpenChange: (open: boolean) => void
@@ -59,9 +62,19 @@ export function ObservacionEstudianteSheet({
 }: ObservacionEstudianteSheetProps) {
   const [texto, setTexto] = useState("")
 
+  // OJO: la dependencia es el `id`, no el objeto `estudiante` completo. El
+  // caller (`CeldaObservacionTrigger`) arma ese objeto de nuevo en cada
+  // render mientras el panel está abierto (p. ej. cuando `notaActual`
+  // refresca en segundo plano — cualquier guardado en OTRA celda invalida
+  // el mismo prefijo de query). Con `[estudiante]` como dependencia, cada
+  // una de esas referencias nuevas disparaba el efecto y pisaba lo que el
+  // docente estaba escribiendo, todavía sin guardar, con el valor viejo del
+  // servidor. Sincronizar solo al abrir (o al cambiar de estudiante) evita
+  // perder texto a mitad de escritura.
   useEffect(() => {
     if (estudiante) setTexto(estudiante.observacion ?? "")
-  }, [estudiante])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estudiante?.id])
 
   const sinAsistencia = estudiante?.fecha == null
   const puedeGuardar = Boolean(texto.trim()) && !sinAsistencia && !guardando
@@ -105,21 +118,41 @@ export function ObservacionEstudianteSheet({
             </span>
           </Field>
 
-          {evidencias.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-semibold uppercase">Evidencias</p>
-              <div className="flex flex-wrap gap-2">
-                {evidencias.map((evidencia) => (
-                  <ArchivoImage
-                    key={evidencia.pk}
-                    archivoId={evidencia.fkTarchivo}
-                    alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
-                    className="size-20"
-                  />
-                ))}
-              </div>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-semibold uppercase">Evidencias</p>
+            <div className="flex flex-wrap items-start gap-2">
+              {evidencias.map((evidencia) => (
+                <ArchivoImage
+                  key={evidencia.pk}
+                  archivoId={evidencia.fkTarchivo}
+                  alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
+                  className="size-20"
+                />
+              ))}
+              <Tooltip>
+                {/* El trigger va en un `span`, no en el propio Button: un
+                    <button disabled> nativo no dispara los eventos de hover
+                    que necesita el Tooltip para abrirse. */}
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon"
+                    className="size-20 flex-col gap-1 text-xs"
+                    disabled
+                  >
+                    <ImageIcon className="size-5" />
+                    Agregar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Subir una nueva evidencia todavía no está disponible: falta el endpoint del
+                  backend para registrar el archivo.
+                </TooltipContent>
+              </Tooltip>
             </div>
-          )}
+          </div>
 
           <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <InfoIcon className="mt-0.5 size-3.5 shrink-0" />

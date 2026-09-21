@@ -25,7 +25,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   CheckIcon,
   ClockCountdownIcon,
-  FileDownloadOutlinedIcon,
   FileTextIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
@@ -60,6 +59,7 @@ import {
   InformeFiltros,
   type FiltrosInforme,
 } from "@/features/academic-management/reports/components/informe-filtros"
+import { DialogExportInforme } from "@/features/academic-management/reports/components/dialog-export-informe"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
 import {
@@ -318,6 +318,13 @@ function ReportsPageContent() {
 
   const seleccionActiva = seleccionPorGrupo[grupoActivoId] ?? new Set<number>()
 
+  // Acta 19-sep-2026, punto 20.3: "para no reprocesar la tabla" el filtro de
+  // arriba se deja multi-select como está (sirve para ver/consolidar varios
+  // periodos a la vez) — pero un boletín es de UN periodo y UN estudiante.
+  // Este cálculo queda listo para cuando exista el endpoint de generación:
+  // ahí el botón pasa de `disabled` fijo a `disabled={!listoParaBoletin}`.
+  const listoParaBoletin = periodos.length === 1 && seleccionActiva.size === 1
+
   function toggleEstudiante(matriculaId: number) {
     setSeleccionPorGrupo((prev) => {
       const next = new Set(prev[grupoActivoId] ?? [])
@@ -450,17 +457,22 @@ function ReportsPageContent() {
           />
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              color="primary"
-              size="sm"
-              onClick={() =>
-                notify("La generación de boletines todavía no está disponible.", { variant: "info" })
-              }
-            >
-              <FileTextIcon data-icon="inline-start" />
-              Generar boletines
-            </Button>
+            <Tooltip>
+              {/* El trigger va en un `span`, no en el propio Button: un
+                  <button disabled> nativo no dispara los eventos de hover
+                  que necesita el Tooltip para abrirse. */}
+              <TooltipTrigger render={<span className="inline-flex" />}>
+                <Button variant="outline" color="primary" size="sm" disabled>
+                  <FileTextIcon data-icon="inline-start" />
+                  Generar boletines
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {listoParaBoletin
+                  ? "La generación de boletines en PDF todavía no está disponible."
+                  : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."}
+              </TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -477,26 +489,10 @@ function ReportsPageContent() {
               </TooltipTrigger>
               <TooltipContent>Historial de cambios</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    color="neutral"
-                    size="icon-sm"
-                    aria-label="Descargar informe consolidado"
-                    onClick={() =>
-                      notify("La descarga del consolidado todavía no está disponible.", {
-                        variant: "info",
-                      })
-                    }
-                  />
-                }
-              >
-                <FileDownloadOutlinedIcon />
-              </TooltipTrigger>
-              <TooltipContent>Descargar informe consolidado</TooltipContent>
-            </Tooltip>
+            <DialogExportInforme
+              grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
+              periodos={periodos}
+            />
           </div>
         </div>
 

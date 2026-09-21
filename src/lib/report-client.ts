@@ -45,6 +45,7 @@ export type ReportKey =
   | "asignaciones"
   | "asistencia"
   | "matricula"
+  | "informes"
   | "planeador-actividades"
   | "auditoria-sesiones"
   | "auditoria-tabla-operaciones"

@@ -223,6 +223,7 @@ export function QuickCreateSubjectDialog({
                 value={asignaturaGeneral}
                 onChange={setAsignaturaGeneral}
                 invalid={submitted && !asignaturaGeneral}
+                allowDelete={false}
               />
             </Field>
           )}

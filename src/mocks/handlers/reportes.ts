@@ -59,6 +59,7 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   asignaciones: "asignaciones",
   asistencia: "asistencia",
   matricula: "matricula",
+  informes: "informes",
 }
 
 function fecha() {

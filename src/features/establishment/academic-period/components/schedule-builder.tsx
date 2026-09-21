@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
-import { MinusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { MinusIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
@@ -176,6 +176,11 @@ export const ScheduleBuilder = forwardRef<
 
   const cells = useMemo(() => computeCells(schedule, runs), [schedule, runs])
 
+  const hasScheduleEntries = useMemo(
+    () => Object.values(schedule).some((day) => Object.values(day).some(Boolean)),
+    [schedule],
+  )
+
   const placedCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const day of Object.values(schedule)) {
@@ -200,6 +205,14 @@ export const ScheduleBuilder = forwardRef<
         },
       }
     })
+  }
+
+  // Acta 19-sep-2026: si el automático (o el usuario) llenó el horario y no
+  // convence, hay que poder borrarlo entero de una — antes solo se podía
+  // quitar bloque por bloque.
+  function clearAllSlots() {
+    if (!gradeGroup) return
+    setSchedulesByGroup((prev) => ({ ...prev, [gradeGroup]: {} }))
   }
 
   function clearSlots(dayId: string, slotIds: string[]) {
@@ -312,19 +325,34 @@ export const ScheduleBuilder = forwardRef<
           </ComboboxField>
         </Field>
 
-        {isDirty && (
-          <Button
-            size="sm"
-            type="button"
-            color="primary"
-            onClick={handleSaveClick}
-            disabled={saving}
-            aria-busy={saving}
-          >
-            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            Guardar
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {gradeGroup && hasScheduleEntries && (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              color="destructive"
+              onClick={clearAllSlots}
+              disabled={saving}
+            >
+              <TrashIcon data-icon="inline-start" />
+              Limpiar todo el horario
+            </Button>
+          )}
+          {isDirty && (
+            <Button
+              size="sm"
+              type="button"
+              color="primary"
+              onClick={handleSaveClick}
+              disabled={saving}
+              aria-busy={saving}
+            >
+              {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+              Guardar
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -380,7 +408,9 @@ export const ScheduleBuilder = forwardRef<
                 (subject) => (placedCounts[subject.id] ?? 0) >= subject.blocks
               ) && (
                 <p className="text-xs text-muted-foreground">
-                  Todas las materias fueron asignadas.
+                  {/* No dice "materias"/"asignaturas": en preescolar el plan
+                      de estudio son dimensiones, no asignaturas. */}
+                  Ya se asignó todo lo disponible.
                 </p>
               )}
           </>

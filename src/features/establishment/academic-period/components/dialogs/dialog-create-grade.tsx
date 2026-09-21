@@ -4,6 +4,7 @@ import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cleanErrorMessage } from "@/lib/api-client"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -140,6 +141,13 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     .trim()
     .toLowerCase()
     .includes("preescolar")
+
+  // Acta 19-sep-2026: un nivel formativo (enfoque pedagógico "FORMATIVO" del
+  // referente curricular) no reprueba, así que Criterios de promoción no le
+  // aplica — el mismo flag que usa Planeador para decidir si una actividad
+  // se califica o se observa, leído acá por grado/asignatura.
+  const { data: referenteCurricular } = useReferenteCurricularQuery(gradeId ?? undefined, undefined)
+  const isFormativo = referenteCurricular?.esFormativo ?? false
 
   const { data: gradosCatalog = [] } = useGradosCatalogQuery()
   const gradoOptions = gradosCatalog
@@ -509,7 +517,9 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           <Tabs defaultValue="grupo" className="w-full min-w-0">
             <TabsList variant="folder">
               <TabsTrigger value="grupo">Grupo</TabsTrigger>
-              <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
+              {!isFormativo && (
+                <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
+              )}
               <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
               <TabsTrigger value="horario">Horario</TabsTrigger>
             </TabsList>
@@ -520,15 +530,18 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
               </NoticeProvider>
             </TabsContent>
 
-            <TabsContent value="promocion" keepMounted className={PANEL}>
-              <NoticeProvider>
-                <TabPromotionCriteria
-                  ref={promotionRef}
-                  gradeId={gradeId}
-                  academicPeriodId={academicPeriodId}
-                />
-              </NoticeProvider>
-            </TabsContent>
+            {!isFormativo && (
+              <TabsContent value="promocion" keepMounted className={PANEL}>
+                <NoticeProvider>
+                  <TabPromotionCriteria
+                    ref={promotionRef}
+                    gradeId={gradeId}
+                    academicPeriodId={academicPeriodId}
+                    isPreescolar={isPreescolar}
+                  />
+                </NoticeProvider>
+              </TabsContent>
+            )}
 
             <TabsContent value="plan" className={PANEL}>
               <NoticeProvider>
@@ -536,6 +549,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                   academicPeriodId={academicPeriodId}
                   gradeId={gradeId}
                   isPreescolar={isPreescolar}
+                  isFormativo={isFormativo}
                 />
               </NoticeProvider>
             </TabsContent>
