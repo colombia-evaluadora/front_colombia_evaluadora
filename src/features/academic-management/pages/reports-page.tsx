@@ -25,7 +25,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   CheckIcon,
   ClockCountdownIcon,
-  FileTextIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -59,7 +58,10 @@ import {
   InformeFiltros,
   type FiltrosInforme,
 } from "@/features/academic-management/reports/components/informe-filtros"
-import { DialogExportInforme } from "@/features/academic-management/reports/components/dialog-export-informe"
+import {
+  DialogDescargarTabla,
+  DialogGenerarBoletin,
+} from "@/features/academic-management/reports/components/dialog-export-informe"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
 import {
@@ -81,6 +83,8 @@ interface GrupoTabContentProps {
   grupoId: number
   periodos: number[]
   incluirFinal: boolean
+  busqueda: string
+  onBusquedaChange: (texto: string) => void
   seleccionados: Set<number>
   onToggleEstudiante: (matriculaId: number) => void
   onSeleccionarTodos: (matriculaIds: number[]) => void
@@ -93,6 +97,8 @@ function GrupoTabContent({
   grupoId,
   periodos,
   incluirFinal,
+  busqueda,
+  onBusquedaChange,
   seleccionados,
   onToggleEstudiante,
   onSeleccionarTodos,
@@ -100,7 +106,6 @@ function GrupoTabContent({
   guardando,
   onAbrirObservacion,
 }: GrupoTabContentProps) {
-  const [busqueda, setBusqueda] = React.useState("")
   const informe = useInformeGrupoQuery(
     periodos.length > 0 ? { grupoId, periodos, incluirFinal } : null,
   )
@@ -147,7 +152,7 @@ function GrupoTabContent({
               autoComplete="off"
               placeholder="Buscar por"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => onBusquedaChange(e.target.value)}
               className="min-w-32 [&::-webkit-search-cancel-button]:appearance-none"
             />
             <InputGroupAddon align="inline-end" className="mr-1 gap-1">
@@ -157,7 +162,7 @@ function GrupoTabContent({
                   variant="ghost"
                   color="muted"
                   aria-label="Limpiar búsqueda"
-                  onClick={() => setBusqueda("")}
+                  onClick={() => onBusquedaChange("")}
                 >
                   <XIcon />
                 </InputGroupButton>
@@ -275,6 +280,10 @@ function ReportsPageContent() {
   )
 
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
+  // Una sola búsqueda para todas las pestañas, y no una por pestaña: el
+  // botón de descargar vive en la cabecera y tiene que mandar el MISMO
+  // texto que está filtrando la tabla, o el archivo no sería lo que se ve.
+  const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
 
@@ -396,19 +405,22 @@ function ReportsPageContent() {
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
     const limpio = texto.trim()
+    // La fila Final va contra su propio endpoint: `null` es lo que lo elige.
+    // No es un período, así que su texto no vive en la tabla de períodos.
+    const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
       if (limpio === "") {
         if (fila.observacion) {
           await eliminarObservacion.mutateAsync({
             matriculaId: fila.matriculaId,
-            periodoId: fila.periodoId,
+            periodoId,
           })
           notify("Observación eliminada.")
         }
       } else {
         await guardarObservacion.mutateAsync({
           matriculaId: fila.matriculaId,
-          periodoId: fila.periodoId,
+          periodoId,
           observacion: limpio,
           observacionIa: borrador?.texto,
           observacionesOrigen: borrador?.observacionesOrigen,
@@ -473,22 +485,13 @@ function ReportsPageContent() {
           />
 
           <div className="flex items-center gap-2">
-            <Tooltip>
-              {/* El trigger va en un `span`, no en el propio Button: un
-                  <button disabled> nativo no dispara los eventos de hover
-                  que necesita el Tooltip para abrirse. */}
-              <TooltipTrigger render={<span className="inline-flex" />}>
-                <Button variant="outline" color="primary" size="sm" disabled>
-                  <FileTextIcon data-icon="inline-start" />
-                  Generar boletines
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {listoParaBoletin
-                  ? "La generación de boletines en PDF todavía no está disponible."
-                  : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."}
-              </TooltipContent>
-            </Tooltip>
+            <DialogGenerarBoletin
+              grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
+              periodos={periodos}
+              matriculas={[...seleccionActiva]}
+              incluirFinal={incluirFinal}
+              listo={listoParaBoletin}
+            />
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -505,9 +508,10 @@ function ReportsPageContent() {
               </TooltipTrigger>
               <TooltipContent>Historial de cambios</TooltipContent>
             </Tooltip>
-            <DialogExportInforme
+            <DialogDescargarTabla
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
+              search={busqueda}
               incluirFinal={incluirFinal}
             />
           </div>
@@ -624,6 +628,8 @@ function ReportsPageContent() {
                     grupoId={grupo.grupoId}
                     periodos={periodos}
                     incluirFinal={incluirFinal}
+                    busqueda={busqueda}
+                    onBusquedaChange={setBusqueda}
                     seleccionados={seleccionActiva}
                     onToggleEstudiante={toggleEstudiante}
                     onSeleccionarTodos={seleccionarTodos}

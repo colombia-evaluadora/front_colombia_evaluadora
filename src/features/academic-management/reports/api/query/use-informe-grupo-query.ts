@@ -49,6 +49,7 @@ interface FilaInformeRow {
   observacion_estado: ObservacionEstado | null
   observacion_desactualizada: boolean | null
   tiene_cambios_propuestos: boolean | null
+  evidencias: number | null
 }
 
 function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
@@ -92,6 +93,7 @@ function toFila(row: FilaInformeRow): FilaInforme {
     observacionEstado: row.observacion_estado,
     observacionDesactualizada: row.observacion_desactualizada ?? false,
     tieneCambiosPropuestos: row.tiene_cambios_propuestos ?? false,
+    evidencias: row.evidencias ?? 0,
   }
 }
 

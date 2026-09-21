@@ -135,6 +135,25 @@ export interface FilaInforme {
   observacionEstado: ObservacionEstado | null
   observacionDesactualizada: boolean
   tieneCambiosPropuestos: boolean
+  /** Cuántas imágenes adjuntas a observaciones tiene la fila. En la fila
+   *  Final, las de todo el año. Viene en el listado para no pedir las
+   *  evidencias solo para saber si hay que dibujar la sección. */
+  evidencias: number
+}
+
+/** Una imagen adjunta a la observación de una actividad (preescolar). */
+export interface EvidenciaInforme {
+  id: number
+  archivoId: number
+  nombre: string | null
+  peso: number | null
+  etiqueta: string | null
+  fecha: string | null
+  periodoId: number
+  periodoNombre: string
+  actividadId: number
+  actividadTitulo: string | null
+  observacion: string | null
 }
 
 export interface PlanillaPendiente {
