@@ -119,64 +119,66 @@ interface DialogGenerarBoletinProps {
   grupoId: number | null
   /** Un solo período: un boletín es de un período. */
   periodos: number[]
-  /** Las matrículas seleccionadas en la tabla. Vacío = el grupo entero. */
+  /** Las matrículas seleccionadas en la tabla: un boletín es de un estudiante. */
   matriculas: number[]
-  incluirFinal: boolean
   /** Falso mientras no haya exactamente un período y un estudiante. */
   listo: boolean
 }
 
 /**
- * EL BOLETÍN. Solo lo consolidado: las proyecciones y las notas requeridas se
- * quedan fuera, porque impresas se leen como calificaciones reales.
+ * EL BOLETÍN. No es la tabla exportada: es el PDF armado aparte —una página
+ * por (estudiante, asignatura/dimensión), con foto, evidencias y fondo
+ * institucional— que arma `/reportes/boletin-preescolar` (ver
+ * `boletin-preescolar.md`). Por eso no comparte el diálogo de PDF/Excel de
+ * `DialogDescarga`: solo hay un formato, así que el botón dispara directo.
  */
-export function DialogGenerarBoletin({
-  grupoId,
-  periodos,
-  matriculas,
-  incluirFinal,
-  listo,
-}: DialogGenerarBoletinProps) {
-  const [open, setOpen] = useState(false)
+export function DialogGenerarBoletin({ grupoId, periodos, matriculas, listo }: DialogGenerarBoletinProps) {
   const { notify } = useNotify()
 
   const exportar = useExportBoletin({
     mutationConfig: {
       onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(result.message)
-        setOpen(false)
+        notify(result.message, { variant: result.status === "error" ? "error" : undefined })
       },
     },
   })
 
+  const puede = listo && grupoId != null
+
+  function handleClick() {
+    if (!puede || grupoId == null) return
+    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaId: matriculas[0] })
+  }
+
   return (
-    <DialogDescarga
-      abierto={open}
-      onAbrirChange={setOpen}
-      onCerrar={() => setOpen(false)}
-      trigger={
-        <Button variant="outline" color="primary" size="sm" disabled={!listo || grupoId == null}>
-          <FileTextIcon data-icon="inline-start" />
-          Generar boletines
+    <Tooltip>
+      {/* El trigger va en un `span`, no en el propio Button: un
+          <button disabled> nativo no dispara los eventos de hover que el
+          Tooltip necesita para abrirse. */}
+      <TooltipTrigger render={<span className="inline-flex" />}>
+        <Button
+          type="button"
+          variant="outline"
+          color="primary"
+          size="sm"
+          disabled={!puede || exportar.isPending}
+          aria-busy={exportar.isPending}
+          onClick={handleClick}
+        >
+          {exportar.isPending ? (
+            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+          ) : (
+            <FileTextIcon data-icon="inline-start" />
+          )}
+          Generar boletín
         </Button>
-      }
-      tooltip={
-        listo
+      </TooltipTrigger>
+      <TooltipContent>
+        {listo
           ? "Generar el boletín del estudiante seleccionado"
-          : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."
-      }
-      titulo="Generar boletín"
-      descripcion="El boletín imprime únicamente lo que ya está consolidado. Las notas proyectadas y las que faltan para aprobar quedan fuera: impresas se leerían como calificaciones reales."
-      pendiente={exportar.isPending ? exportar.variables?.format : undefined}
-      exportar={async (format) => {
-        if (grupoId == null) return { status: "error", message: "Sin grupo." }
-        return exportar.mutateAsync({ format, grupoId, periodos, matriculas, incluirFinal })
-      }}
-    />
+          : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
