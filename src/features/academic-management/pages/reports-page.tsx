@@ -125,6 +125,11 @@ interface GrupoTabContentProps {
   onGuardar: () => void
   guardando: boolean
   onAbrirObservacion: (fila: FilaInforme) => void
+  /** El botón "Generar boletín" vive en la cabecera, fuera de este
+   *  componente, pero solo el informe sabe si el grupo salió cualitativo
+   *  (el boletín en PDF, por `boletin-preescolar.md`, solo imprime
+   *  preescolar). */
+  onEsCualitativoChange: (esCualitativo: boolean) => void
 }
 
 function GrupoTabContent({
@@ -139,6 +144,7 @@ function GrupoTabContent({
   onGuardar,
   guardando,
   onAbrirObservacion,
+  onEsCualitativoChange,
 }: GrupoTabContentProps) {
   const informe = useInformeGrupoQuery(
     periodos.length > 0 ? { grupoId, periodos, incluirFinal } : null,
@@ -154,6 +160,10 @@ function GrupoTabContent({
   // Preescolar se decide por `formato`, no por el grupo: un grupo mixto sigue
   // siendo numérico y sus dimensiones cualitativas salen por asignatura.
   const esCualitativo = filas.length > 0 && filas.every((fila) => fila.formato === "cualitativo")
+
+  React.useEffect(() => {
+    onEsCualitativoChange(esCualitativo)
+  }, [esCualitativo, onEsCualitativoChange])
 
   const haySinConsolidar = filas.some(
     (fila) =>
@@ -329,6 +339,7 @@ function ReportsPageContent() {
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
+  const [esCualitativoActivo, setEsCualitativoActivo] = React.useState(false)
 
   const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
@@ -546,6 +557,7 @@ function ReportsPageContent() {
               periodos={periodos}
               matriculas={[...seleccionActiva]}
               listo={listoParaBoletin}
+              esPreescolar={esCualitativoActivo}
             />
             <Tooltip>
               <TooltipTrigger
@@ -691,6 +703,7 @@ function ReportsPageContent() {
                     onGuardar={handleGuardar}
                     guardando={guardarInforme.isPending}
                     onAbrirObservacion={setObservacionAbierta}
+                    onEsCualitativoChange={setEsCualitativoActivo}
                   />
                 )}
               </TabsContent>

@@ -123,6 +123,10 @@ interface DialogGenerarBoletinProps {
   matriculas: number[]
   /** Falso mientras no haya exactamente un período y un estudiante. */
   listo: boolean
+  /** El boletín en PDF solo sabe imprimir dimensiones cualitativas (ver
+   *  `boletin-preescolar.md`): sobre un grupo numérico el backend igual
+   *  respondería 200 con un PDF vacío, así que se corta antes en la UI. */
+  esPreescolar: boolean
 }
 
 /**
@@ -132,7 +136,13 @@ interface DialogGenerarBoletinProps {
  * `boletin-preescolar.md`). Por eso no comparte el diálogo de PDF/Excel de
  * `DialogDescarga`: solo hay un formato, así que el botón dispara directo.
  */
-export function DialogGenerarBoletin({ grupoId, periodos, matriculas, listo }: DialogGenerarBoletinProps) {
+export function DialogGenerarBoletin({
+  grupoId,
+  periodos,
+  matriculas,
+  listo,
+  esPreescolar,
+}: DialogGenerarBoletinProps) {
   const { notify } = useNotify()
 
   const exportar = useExportBoletin({
@@ -143,7 +153,7 @@ export function DialogGenerarBoletin({ grupoId, periodos, matriculas, listo }: D
     },
   })
 
-  const puede = listo && grupoId != null
+  const puede = listo && esPreescolar && grupoId != null
 
   function handleClick() {
     if (!puede || grupoId == null) return
@@ -174,9 +184,11 @@ export function DialogGenerarBoletin({ grupoId, periodos, matriculas, listo }: D
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {listo
-          ? "Generar el boletín del estudiante seleccionado"
-          : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."}
+        {!listo
+          ? "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."
+          : !esPreescolar
+            ? "El boletín en PDF solo está disponible para preescolar."
+            : "Generar el boletín del estudiante seleccionado"}
       </TooltipContent>
     </Tooltip>
   )
