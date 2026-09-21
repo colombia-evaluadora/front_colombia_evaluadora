@@ -546,6 +546,7 @@ export function CreateStudyPlanDialog({
                                 }
                               }}
                               onChange={(e) => {
+                                if (e.target.value.length > 2) return
                                 const value = e.target.valueAsNumber
                                 if (e.target.value === "" || !Number.isNaN(value)) {
                                   field.handleChange(value)
@@ -686,14 +687,38 @@ export function CreateStudyPlanDialog({
               </form.Field>
             )}
 
-            {/* Acta 19-sep-2026: en niveles formativos solo aplica "Aprobación
-                obligatoria" — no hay matrícula/formato/criterio de nota que
-                personalizar porque no se califica numéricamente. */}
+            {/* Acta 19-sep-2026: en niveles formativos solo aplica "Matrícula
+                obligatoria" (sí se matricula) — no hay aprobación/formato/
+                criterio de nota que personalizar porque no se califica
+                numéricamente. */}
+            <form.Field name="matriculaObligatoria">
+              {(field) => (
+                <Field variant="outlined">
+                  <FieldLabel>Matrícula obligatoria</FieldLabel>
+                  <RadioGroup
+                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
+                    disabled={!personalizar}
+                    value={field.state.value ? "si" : "no"}
+                    onValueChange={(value) => field.handleChange(value === "si")}
+                  >
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="si" />
+                      Sí
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="no" />
+                      No
+                    </label>
+                  </RadioGroup>
+                </Field>
+              )}
+            </form.Field>
+
             {!isFormativo && (
-              <form.Field name="matriculaObligatoria">
+              <form.Field name="aprobacionObligatoria">
                 {(field) => (
                   <Field variant="outlined">
-                    <FieldLabel>Matrícula obligatoria</FieldLabel>
+                    <FieldLabel>Aprobación obligatoria</FieldLabel>
                     <RadioGroup
                       className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                       disabled={!personalizar}
@@ -713,29 +738,6 @@ export function CreateStudyPlanDialog({
                 )}
               </form.Field>
             )}
-
-            <form.Field name="aprobacionObligatoria">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel>Aprobación obligatoria</FieldLabel>
-                  <RadioGroup
-                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                    disabled={!personalizar}
-                    value={field.state.value ? "si" : "no"}
-                    onValueChange={(value) => field.handleChange(value === "si")}
-                  >
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="si" />
-                      Sí
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="no" />
-                      No
-                    </label>
-                  </RadioGroup>
-                </Field>
-              )}
-            </form.Field>
 
             {!isFormativo && (
               <form.Field name="formatoCalificacion">

@@ -24,13 +24,20 @@ import { ArrowLeftIcon, CheckIcon, SpinnerIcon, WarningCircleIcon, XIcon } from 
 
 import { useObservarGrupalMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
 import { OBSERVACION_MAX_CARACTERES } from "@/features/planeador/lib/observacion"
+import { parseLocalDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 
 interface ObservarActividadGrupalProps {
   actividadId: number
   titulo: string
   /** `yyyy-MM-dd` — fecha propuesta: el día con asistencia válida que
-   *  comparte la mayoría del grupo (`PlanillaCelda.fechaAsistencia`). */
+   *  comparte la mayoría del grupo (`PlanillaCelda.fechaAsistencia`); si
+   *  nadie tiene asistencia todavía, el caller cae a `fechaInicio` de la
+   *  actividad, que puede ser a futuro (ver `actividadSinComenzar`). */
   fechaSugerida: string
+  /** `true` si la ventana de la actividad todavía no empieza — no puede
+   *  existir asistencia de un día que no llegó, así que no tiene sentido
+   *  ofrecer el formulario todavía. */
+  actividadSinComenzar?: boolean
   /** Cuántos estudiantes tiene la actividad asignados, para contrastar con
    *  los que el backend termina observando. */
   totalEstudiantes: number
@@ -61,12 +68,17 @@ export function ObservarActividadGrupal({
   actividadId,
   titulo,
   fechaSugerida,
+  actividadSinComenzar,
   totalEstudiantes,
   estudiantesConObservacionPrevia,
   onVolver,
 }: ObservarActividadGrupalProps) {
+  const hoy = todayDateOnly()
+  // `fechaSugerida` puede venir a futuro (el caller cae a `fechaInicio`
+  // cuando nadie tiene asistencia todavía) — no tiene sentido preseleccionar
+  // una fecha que el backend va a rechazar seguro.
   const [observacion, setObservacion] = useState("")
-  const [fecha, setFecha] = useState(fechaSugerida)
+  const [fecha, setFecha] = useState(fechaSugerida > hoy ? hoy : fechaSugerida)
   const [confirmando, setConfirmando] = useState(false)
   const { notify } = useNotify()
 
@@ -129,86 +141,98 @@ export function ObservarActividadGrupal({
         </div>
       </div>
 
-      {estudiantesConObservacionPrevia > 0 && (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-800 after:bg-amber-500 [&>svg]:text-amber-600">
-          <WarningCircleIcon />
-          <AlertDescription>
-            {estudiantesConObservacionPrevia === 1
-              ? "1 estudiante de este grupo ya tiene una observación individual guardada."
-              : `${estudiantesConObservacionPrevia} estudiantes de este grupo ya tienen una observación individual guardada.`}{" "}
-            Guardar acá se la reemplaza a todos por este mismo texto — no hay forma de conservarla
-            aparte todavía.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Field variant="outlined">
-        <FieldLabel htmlFor="observacion-grupal">Observación</FieldLabel>
-        <Textarea
-          id="observacion-grupal"
-          value={observacion}
-          maxLength={OBSERVACION_MAX_CARACTERES}
-          onChange={(event) => setObservacion(event.target.value)}
-          placeholder="Qué se observó en el desempeño del grupo"
-          rows={6}
-          className={TEXTAREA_OUTLINED}
-        />
-        <span className="text-muted-foreground self-end text-xs">
-          {observacion.length}/{OBSERVACION_MAX_CARACTERES}
-        </span>
-      </Field>
-
-      <Field variant="outlined">
-        <FieldLabel htmlFor="fecha-observacion-grupal">Fecha</FieldLabel>
-        <DatePicker
-          id="fecha-observacion-grupal"
-          value={parseDateValue(fecha)}
-          onChange={(date) => setFecha(formatDateValue(date))}
-        />
-      </Field>
-
-      <div className="mt-auto flex items-center justify-between rounded-md border bg-card px-4 py-3">
-        <p className="text-muted-foreground text-sm">
-          Se aplicará a los {totalEstudiantes} estudiantes asignados con asistencia registrada ese
-          día.
+      {actividadSinComenzar ? (
+        <p className="text-muted-foreground rounded-md border bg-card px-4 py-3 text-sm">
+          Esta actividad todavía no comienza: no puede haber asistencia registrada de un día que
+          no ha llegado, así que todavía no se puede observar al grupo.
         </p>
-        <Button
-          variant="fill"
-          color="primary"
-          size="sm"
-          disabled={!observacion.trim() || !fecha || observarGrupal.isPending}
-          onClick={intentarGuardar}
-        >
-          {observarGrupal.isPending && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
-          Guardar
-        </Button>
-      </div>
+      ) : (
+        <>
+          {estudiantesConObservacionPrevia > 0 && (
+            <Alert className="border-amber-200 bg-amber-50 text-amber-800 after:bg-amber-500 [&>svg]:text-amber-600">
+              <WarningCircleIcon />
+              <AlertDescription>
+                {estudiantesConObservacionPrevia === 1
+                  ? "1 estudiante de este grupo ya tiene una observación individual guardada."
+                  : `${estudiantesConObservacionPrevia} estudiantes de este grupo ya tienen una observación individual guardada.`}{" "}
+                Guardar acá se la reemplaza a todos por este mismo texto — no hay forma de
+                conservarla aparte todavía.
+              </AlertDescription>
+            </Alert>
+          )}
 
-      <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Reemplazar observaciones individuales?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {estudiantesConObservacionPrevia === 1
-                ? "1 estudiante"
-                : `${estudiantesConObservacionPrevia} estudiantes`}{" "}
-              de este grupo ya tiene{estudiantesConObservacionPrevia === 1 ? "" : "n"} una
-              observación individual guardada. Al guardar la observación grupal se pierde ese texto
-              y queda reemplazado por el mismo para todos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction color="destructive" onClick={guardar}>
-              <CheckIcon data-icon="inline-start" />
-              Reemplazar de todas formas
-            </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral">
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="observacion-grupal">Observación</FieldLabel>
+            <Textarea
+              id="observacion-grupal"
+              value={observacion}
+              maxLength={OBSERVACION_MAX_CARACTERES}
+              onChange={(event) => setObservacion(event.target.value)}
+              placeholder="Qué se observó en el desempeño del grupo"
+              rows={6}
+              className={TEXTAREA_OUTLINED}
+            />
+            <span className="text-muted-foreground self-end text-xs">
+              {observacion.length}/{OBSERVACION_MAX_CARACTERES}
+            </span>
+          </Field>
+
+          <Field variant="outlined">
+            <FieldLabel htmlFor="fecha-observacion-grupal">Fecha</FieldLabel>
+            <DatePicker
+              id="fecha-observacion-grupal"
+              value={parseDateValue(fecha)}
+              onChange={(date) => setFecha(formatDateValue(date))}
+              maxDate={parseLocalDate(hoy)}
+            />
+          </Field>
+
+          <div className="mt-auto flex items-center justify-between rounded-md border bg-card px-4 py-3">
+            <p className="text-muted-foreground text-sm">
+              Se aplicará a los {totalEstudiantes} estudiantes asignados con asistencia registrada
+              ese día.
+            </p>
+            <Button
+              variant="fill"
+              color="primary"
+              size="sm"
+              disabled={!observacion.trim() || !fecha || observarGrupal.isPending}
+              onClick={intentarGuardar}
+            >
+              {observarGrupal.isPending && (
+                <SpinnerIcon className="animate-spin" data-icon="inline-start" />
+              )}
+              Guardar
+            </Button>
+          </div>
+
+          <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Reemplazar observaciones individuales?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {estudiantesConObservacionPrevia === 1
+                    ? "1 estudiante"
+                    : `${estudiantesConObservacionPrevia} estudiantes`}{" "}
+                  de este grupo ya tiene{estudiantesConObservacionPrevia === 1 ? "" : "n"} una
+                  observación individual guardada. Al guardar la observación grupal se pierde ese
+                  texto y queda reemplazado por el mismo para todos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction color="destructive" onClick={guardar}>
+                  <CheckIcon data-icon="inline-start" />
+                  Reemplazar de todas formas
+                </AlertDialogAction>
+                <AlertDialogCancel variant="fill" color="neutral">
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   )
 }

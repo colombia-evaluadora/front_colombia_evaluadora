@@ -38,6 +38,7 @@ import type {
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date"
 import { hashString } from "@/mocks/handlers/planeador/docentes"
+import { grupoIdDe } from "@/mocks/db/planilla"
 
 /**
  * Emula el `grado_grupo` real (colección Postman `planeador-delta-cambios`,
@@ -600,6 +601,43 @@ export const planeadorHandlers = [
     // en `form-editar-actividad.tsx`, que es lo que ejercita este endpoint
     // en mock).
     const esEvaluativa = url.searchParams.get("ES_SUMATIVO") === "S"
+    // Solo se calcula con `?RECUPERAR=S` — mismo contrato que el real:
+    // `null` en cualquier otra consulta, no `[]` (`defaultRecuperacionCampoDisponible`
+    // ya cubre ese default). Mismas cuatro reglas que filtra el backend real
+    // (guía `planeador-recuperacion-actividad`, paso 2): sumativa, no es
+    // ella misma una recuperación, y sin otra recuperación activa
+    // apuntándole — "activa" no hace falta chequearla aparte: este mock
+    // borra de verdad (splice) en vez de marcar inactivo, así que cualquier
+    // fila presente en `planeadorDb` ya está activa.
+    const grupoIdParam = Number(url.searchParams.get("GRUPO"))
+    const asignaturaIdParam = Number(url.searchParams.get("ASIGNATURA"))
+    const actividadesRecuperables =
+      url.searchParams.get("RECUPERAR") === "S"
+        ? planeadorDb
+            .filter(
+              (row) =>
+                grupoIdDe(row.grado, row.grupo) === grupoIdParam &&
+                asignaturaIdMock(row.asignatura) === asignaturaIdParam &&
+                row.esEvaluativa &&
+                !row.esRecuperacion &&
+                !planeadorDb.some(
+                  (otra) =>
+                    otra.esRecuperacion &&
+                    otra.recuperacionDestino === "ACTIVIDAD" &&
+                    otra.recuperacionActividadId === row.id,
+                ),
+            )
+            .map((row) => ({
+              pk: row.id,
+              titulo: row.nombre,
+              fkTgrupo: grupoIdParam,
+              fkTunidad: row.unidad.id || null,
+              unidad: row.unidad.nombre || null,
+              fechaInicio: row.fechaInicio,
+              fechaCierre: row.fechaCierre,
+              estudiantesAsignados: row.totalEstudiantes,
+            }))
+        : null
     return HttpResponse.json({
       rows: [
         {
@@ -675,6 +713,7 @@ export const planeadorHandlers = [
                   valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
                   valorPonderacionRango: { min: 0, max: 100 },
                 },
+                actividadesRecuperables,
               },
             },
           },
@@ -1373,6 +1412,7 @@ export const planeadorHandlers = [
                   valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
                   valorPonderacionRango: { min: 0, max: 100 },
                 },
+                actividadesRecuperables: null,
               },
             },
           },

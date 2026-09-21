@@ -47,6 +47,7 @@ import { CalificarActividadBulk } from "@/features/planeador/components/planilla
 import { ObservarActividadGrupal } from "@/features/planeador/components/planilla/observar-actividad-grupal"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
+import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
@@ -267,6 +268,7 @@ export function PlaneadorPlanillaPage() {
               actividadId={columnaEnBulk.pkTactividad}
               titulo={columnaEnBulk.titulo}
               fechaSugerida={fechaSugeridaBulk}
+              actividadSinComenzar={columnaEnBulk.fechaInicio > todayDateOnly()}
               totalEstudiantes={columnaEnBulk.estudiantesAsignados}
               estudiantesConObservacionPrevia={estudiantesConObservacionPrevia}
               onVolver={() => setColumnaEnBulk(null)}

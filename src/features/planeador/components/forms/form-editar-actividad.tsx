@@ -370,6 +370,14 @@ export function EditarActividadForm({
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
+  // A diferencia de `bloqueadoPorRecuperacion` (que exige `destino =
+  // ACTIVIDAD` + origen elegido, porque ahí es cuando hay un valor real que
+  // heredar), esto es la regla de negocio simple de la guía: "una actividad
+  // de recuperación siempre es sumativa" — aplica apenas se marca "Es una
+  // recuperación", sea cual sea el destino. Unidad, en cambio, sí usa
+  // `bloqueadoPorRecuperacion`: mismo criterio que Grado/Asignatura/Nombre,
+  // que solo se heredan (y bloquean) una vez elegida la actividad origen.
+  const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   useRecuperacionAutoFill(form)
 
   return (
@@ -412,7 +420,7 @@ export function EditarActividadForm({
             form={form}
             unidades={unidades}
             onCrearUnidad={crearUnidad}
-            disabled={disabled}
+            disabled={disabled || bloqueadoPorRecuperacion}
           />
           <IdentificacionSection
             form={form}
@@ -440,6 +448,7 @@ export function EditarActividadForm({
         unidades={unidades}
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
+        esRecuperacion={esRecuperacion}
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />
@@ -2718,6 +2727,7 @@ function EvaluacionSection({
   unidades,
   camposEfectivos,
   esFormativa,
+  esRecuperacion,
   tipoEvaluacion,
   disabled,
 }: {
@@ -2727,6 +2737,10 @@ function EvaluacionSection({
    *  `EditarActividadForm`. */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   esFormativa: boolean
+  /** Regla de la guía de recuperación: una actividad de recuperación
+   *  siempre es sumativa — bloquea el select y fuerza el valor a "Sí",
+   *  igual que `esFormativa` hace lo opuesto. */
+  esRecuperacion: boolean
   /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
   tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
   disabled: boolean
@@ -2741,6 +2755,15 @@ function EvaluacionSection({
   useEffect(() => {
     if (esFormativa) form.setFieldValue("esEvaluativa", false)
   }, [esFormativa, form])
+
+  // Mismo criterio, regla inversa: "recuperación siempre sumativa". No
+  // compiten entre sí — `RecuperacionSection` ya oculta "Es una
+  // recuperación" cuando el referente es formativo (mismo `campos_
+  // disponibles.recuperacion.visible` de la guía), así que las dos nunca
+  // están en `true` a la vez.
+  useEffect(() => {
+    if (esRecuperacion) form.setFieldValue("esEvaluativa", true)
+  }, [esRecuperacion, form])
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
   // acá mismo. Filtrado por `camposEfectivos.evaluacion.instrumentosPermitidos`
@@ -2767,7 +2790,7 @@ function EvaluacionSection({
               <Select
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={esFormativa || disabled}
+                disabled={esFormativa || esRecuperacion || disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>

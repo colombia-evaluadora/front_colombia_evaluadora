@@ -3,6 +3,7 @@ import { hashString } from "@/mocks/handlers/planeador/docentes"
 import type { Actividad, Criterio } from "@/features/planeador/api/types/actividad"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type {
+  CeldaEvidencia,
   InstrumentoActividad,
   InstrumentoNivel,
   InstrumentoTipo,
@@ -212,6 +213,52 @@ export function setObservacion(
   observacion: string,
 ): void {
   observaciones.set(key(actividadId, estudianteId), observacion)
+}
+
+/**
+ * Evidencias en memoria (`TACTIVIDAD_SOPORTE`, V461) — el equivalente de
+ * `observaciones` para las imágenes adjuntas: guarda/quita/lista sin
+ * persistir nada de verdad, solo para que agregar/quitar en el mock tenga
+ * un efecto real que `GET .../nota` y la planilla reflejen después.
+ */
+const evidenciasPorEstudiante = new Map<string, CeldaEvidencia[]>()
+let siguientePkSoporte = 900000
+
+export function getEvidencias(actividadId: number, estudianteId: number): CeldaEvidencia[] {
+  return evidenciasPorEstudiante.get(key(actividadId, estudianteId)) ?? []
+}
+
+/** Idempotente: el mismo `fkTarchivo` ya adjunto devuelve la fila existente
+ *  en vez de duplicarla — mismo criterio que el real. */
+export function addEvidencia(
+  actividadId: number,
+  estudianteId: number,
+  fkTarchivo: number,
+  nombre: string,
+  fecha: string,
+): CeldaEvidencia {
+  const actuales = getEvidencias(actividadId, estudianteId)
+  const existente = actuales.find((e) => e.fkTarchivo === fkTarchivo)
+  if (existente) return existente
+  const nueva: CeldaEvidencia = { pk: siguientePkSoporte++, fkTarchivo, nombre, fecha }
+  evidenciasPorEstudiante.set(key(actividadId, estudianteId), [...actuales, nueva])
+  return nueva
+}
+
+/** `true` si encontró y quitó el soporte; `false` si el pk no existe (o ya
+ *  se había quitado) — mismo P0002 que el real. */
+export function removeEvidencia(pkSoporte: number): boolean {
+  for (const [llave, lista] of evidenciasPorEstudiante) {
+    const encontrada = lista.some((e) => e.pk === pkSoporte)
+    if (encontrada) {
+      evidenciasPorEstudiante.set(
+        llave,
+        lista.filter((e) => e.pk !== pkSoporte),
+      )
+      return true
+    }
+  }
+  return false
 }
 
 /**
