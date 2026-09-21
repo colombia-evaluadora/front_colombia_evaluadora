@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from "react"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
@@ -82,6 +93,8 @@ export function ObservacionEstudianteSheet({
   actividadSinComenzar,
 }: ObservacionEstudianteSheetProps) {
   const [texto, setTexto] = useState("")
+  const [evidenciaAmpliada, setEvidenciaAmpliada] = useState<CeldaEvidencia | null>(null)
+  const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const inputArchivoRef = useRef<HTMLInputElement>(null)
   const { notify } = useNotify()
 
@@ -156,11 +169,18 @@ export function ObservacionEstudianteSheet({
             <div className="flex flex-wrap items-start gap-2">
               {evidencias.map((evidencia) => (
                 <div key={evidencia.pk} className="group relative">
-                  <ArchivoImage
-                    archivoId={evidencia.fkTarchivo}
-                    alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
-                    className="size-20"
-                  />
+                  <button
+                    type="button"
+                    className="block cursor-zoom-in rounded-md"
+                    aria-label="Ver evidencia en grande"
+                    onClick={() => setEvidenciaAmpliada(evidencia)}
+                  >
+                    <ArchivoImage
+                      archivoId={evidencia.fkTarchivo}
+                      alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
+                      className="size-20"
+                    />
+                  </button>
                   {onQuitarEvidencia && (
                     <Button
                       type="button"
@@ -170,7 +190,7 @@ export function ObservacionEstudianteSheet({
                       className="absolute -top-1.5 -right-1.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
                       aria-label="Quitar esta evidencia"
                       disabled={quitandoEvidenciaPk === evidencia.pk}
-                      onClick={() => onQuitarEvidencia(evidencia)}
+                      onClick={() => setEvidenciaAEliminar(evidencia)}
                     >
                       {quitandoEvidenciaPk === evidencia.pk ? (
                         <SpinnerIcon className="animate-spin" />
@@ -255,6 +275,50 @@ export function ObservacionEstudianteSheet({
           </Button>
         </SheetFooter>
       </SheetContent>
+
+      <Dialog open={evidenciaAmpliada != null} onOpenChange={(open) => !open && setEvidenciaAmpliada(null)}>
+        <DialogContent className="max-w-2xl p-2 sm:max-w-2xl">
+          <DialogTitle className="sr-only">
+            {evidenciaAmpliada?.nombre ?? "Evidencia ampliada"}
+          </DialogTitle>
+          {evidenciaAmpliada && (
+            <ArchivoImage
+              archivoId={evidenciaAmpliada.fkTarchivo}
+              alt={evidenciaAmpliada.nombre ?? "Evidencia"}
+              className="max-h-[80vh] w-full"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={evidenciaAEliminar != null}
+        onOpenChange={(open) => !open && setEvidenciaAEliminar(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar esta evidencia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La imagen se quita de la observación de este estudiante. No se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              color="destructive"
+              onClick={() => {
+                if (evidenciaAEliminar) onQuitarEvidencia?.(evidenciaAEliminar)
+                setEvidenciaAEliminar(null)
+              }}
+            >
+              <XIcon data-icon="inline-start" />
+              Quitar
+            </AlertDialogAction>
+            <AlertDialogCancel variant="fill" color="neutral">
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   )
 }
