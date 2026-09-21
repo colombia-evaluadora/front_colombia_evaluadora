@@ -120,12 +120,17 @@ async function fetchConfiguracionContexto(
   grupoId: number,
   asignaturaId: number,
   esEvaluativa: boolean,
+  recuperar = false,
 ): Promise<CamposDisponibles | undefined> {
   const params = new URLSearchParams({
     GRUPO: String(grupoId),
     ASIGNATURA: String(asignaturaId),
     ES_SUMATIVO: esEvaluativa ? "S" : "N",
   })
+  // Solo se agrega si hace falta: mandar `RECUPERAR=N` explícito es
+  // equivalente al default del backend, pero infla la query key (y por lo
+  // tanto el caché) con una variante idéntica a la de sin el param.
+  if (recuperar) params.set("RECUPERAR", "S")
   const body = await api.get(`/eval-col/planeador/actividades/configuracion?${params}`)
   const campos = firstRowContexto(body)?.configuracion?.campos_disponibles
   if (!campos) return undefined
@@ -164,5 +169,40 @@ export function useConfiguracionContextoActividadQuery(
     queryFn: () => fetchConfiguracionContexto(grupoId!, asignaturaId!, esEvaluativa),
     enabled,
     staleTime: 1000 * 60,
+  })
+}
+
+export const actividadesRecuperablesQueryKey = (grupoId: number, asignaturaId: number) =>
+  ["planeador", "actividad", "actividades-recuperables", grupoId, asignaturaId] as const
+
+/**
+ * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=&ES_SUMATIVO=S&RECUPERAR=S`
+ * (guía `planeador-recuperacion-actividad`, paso 2: "¿Qué desea recuperar?")
+ * — la lista de actividades recuperables YA filtrada por el backend
+ * (sumativa, no es ella misma una recuperación, activa, sin otra
+ * recuperación activa apuntándole).
+ *
+ * `ES_SUMATIVO=S` fijo porque no hay otro caso de uso real: una actividad
+ * de recuperación siempre es sumativa (ver el bloqueo del mismo nombre en
+ * `EvaluacionSection`), así que preguntar por recuperables de una NO
+ * sumativa no tiene sentido.
+ *
+ * Antes `ActividadRecuperarCascada` usaba `useActividadesMiasQuery`
+ * (`/actividades/mias`, el listado genérico del rail) y filtraba en el
+ * cliente solo por `esEvaluativa` — dejaba elegir una actividad que YA es
+ * una recuperación, o que YA tiene otra recuperación activa apuntándole,
+ * ninguna de las dos visible en ese listado; el guardado terminaba
+ * rechazándolas con 422/23505 sin que la UI lo hubiera anticipado.
+ */
+export function useActividadesRecuperablesQuery(grupoId: number | undefined, asignaturaId: number | undefined) {
+  const enabled = grupoId != null && asignaturaId != null
+  return useQuery({
+    queryKey: enabled
+      ? actividadesRecuperablesQueryKey(grupoId, asignaturaId)
+      : (["planeador", "actividad", "actividades-recuperables", "none"] as const),
+    queryFn: () => fetchConfiguracionContexto(grupoId!, asignaturaId!, true, true),
+    select: (campos) => campos?.recuperacion.actividadesRecuperables ?? [],
+    enabled,
+    staleTime: 1000 * 30,
   })
 }

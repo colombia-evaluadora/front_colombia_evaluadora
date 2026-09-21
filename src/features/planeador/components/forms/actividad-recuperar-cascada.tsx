@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
-import { useActividadesMiasQuery } from "@/features/planeador/api/query/use-actividades-mias-query"
+import { useActividadesRecuperablesQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { FiltroColumna } from "@/features/planeador/components/forms/filtro-planilla-cascada"
 
@@ -38,7 +38,14 @@ interface ActividadRecuperarCascadaProps {
  * primeras fuentes (`docentes/grupos`/`docentes/grado-asignatura`) que
  * `FiltroPlanillaCascada`, reusando su `FiltroColumna`; la última columna
  * cambia: en vez de un catálogo fijo de periodos, lista las actividades
- * reales de ese (grupo, asignatura) vía `useActividadesMiasQuery`.
+ * recuperables de ese (grupo, asignatura) vía `useActividadesRecuperablesQuery`
+ * (`GET /planeador/actividades/configuracion?RECUPERAR=S`, guía
+ * `planeador-recuperacion-actividad`) — YA filtradas por el backend
+ * (sumativa, no es ella misma una recuperación, activa, sin otra
+ * recuperación activa apuntándole). Antes usaba `useActividadesMiasQuery`
+ * (el listado genérico del rail) con un filtro de cliente que solo cubría
+ * "sumativa": dejaba elegir actividades que el guardado terminaba
+ * rechazando con 422/23505.
  */
 export function ActividadRecuperarCascada({
   value,
@@ -72,25 +79,21 @@ export function ActividadRecuperarCascada({
     [docenteGradoAsignatura, gradoIdDraft],
   )
 
-  const { data: actividadesResult } = useActividadesMiasQuery({
-    grupo: grupoIdDraft ?? undefined,
-    asignatura: asignaturaIdDraft ?? undefined,
-    size: 100,
-  })
-  // Una actividad formativa (`esEvaluativa: false`) no pondera nota — no
-  // hay nada que "recuperar" ahí. Sin este filtro aparecían en la lista
-  // igual, y elegir una terminaba en un 22023 al guardar ("una actividad
-  // de recuperación debe ser sumativa").
-  const actividades = (actividadesResult?.rows ?? []).filter(
-    (a) => a.id !== excludeActividadId && a.esEvaluativa,
+  const { data: actividadesRecuperables = [] } = useActividadesRecuperablesQuery(
+    grupoIdDraft ?? undefined,
+    asignaturaIdDraft ?? undefined,
   )
+  // El backend ya excluye "no sumativa", "ya es una recuperación" y "tiene
+  // otra recuperación activa apuntándole" — acá solo queda sacar la propia
+  // actividad que se está editando, que el backend no conoce.
+  const actividades = actividadesRecuperables.filter((a) => a.pk !== excludeActividadId)
 
   // Nombre a mostrar en el trigger cuando ya hay un `value` guardado (venía
   // de reabrir la actividad) pero todavía no se recorrió la cascada en esta
   // sesión — sin esto el trigger mostraba "Seleccione" con una recuperación
   // ya configurada.
   const { data: actividadGuardada } = useActividadDetalleQuery(value)
-  const nombreSeleccionado = actividades.find((a) => a.id === value)?.nombre ?? actividadGuardada?.nombre
+  const nombreSeleccionado = actividades.find((a) => a.pk === value)?.titulo ?? actividadGuardada?.nombre
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -165,7 +168,7 @@ export function ActividadRecuperarCascada({
 
         {gradoIdDraft != null && grupoIdDraft != null && asignaturaIdDraft != null && (
           <FiltroColumna
-            items={actividades.map((actividad) => ({ key: actividad.id, label: actividad.nombre }))}
+            items={actividades.map((actividad) => ({ key: actividad.pk, label: actividad.titulo }))}
             selectedKey={value ?? null}
             onSelect={elegirActividad}
             showCaret={false}

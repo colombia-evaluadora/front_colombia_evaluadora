@@ -14,6 +14,7 @@ import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
+import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 
 interface PlanillaGridProps {
@@ -253,6 +254,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                               estudianteNombre={fila.nombreEstudiante}
                               observacionActual={celda.observacion}
                               evidenciasActuales={celda.evidencias}
+                              actividadSinComenzar={columna.fechaInicio > todayDateOnly()}
                             />
                           )}
                         </div>
