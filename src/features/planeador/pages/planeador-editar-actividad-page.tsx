@@ -123,22 +123,14 @@ function EditarActividadPageContent({
   const actividadParaForm =
     actividad && (!esEvaluativa || instrumentoForm) ? { ...actividad, ...(instrumentoForm ?? {}) } : undefined
 
-  const updateMutation = useUpdateActividad({
-    mutationConfig: {
-      onSuccess: () => {
-        // `onClose` navega de vuelta al Planeador: un `notify()` acá
-        // actualizaría el `NoticeProvider` de ESTA pantalla, que se
-        // desmonta antes de que el aviso llegue a pintarse. `queueNotice`
-        // lo deja para que lo muestre el `NoticeProvider` del Planeador.
-        queueNotice("Actividad actualizada correctamente.")
-        setIsDirty(false)
-        onClose()
-      },
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
-    },
-  })
+  // El "éxito"/navegación ya NO vive en `onSuccess` de esta mutación en
+  // particular — ver el comentario grande en `handleSubmit`, que explica
+  // por qué: antes navegaba apenas ESTA PUT terminaba, sin esperar a que
+  // las demás (instrumento, materiales, adaptaciones, estudiantes) hubieran
+  // siquiera terminado de mandarse, así que un error ahí quedaba mudo (la
+  // pantalla ya se había ido) y el docente veía "actividad actualizada"
+  // aunque la definición del instrumento no se hubiera guardado.
+  const updateMutation = useUpdateActividad()
 
   // `update-actividad.ts` (`PUT /actividades/:id`) nunca manda `FK_TUNIDAD`:
   // reasignar la unidad de una actividad ya vinculada se delega acá, en las
@@ -157,15 +149,14 @@ function EditarActividadPageContent({
   // evidenciasIds`): no hay endpoint confirmado para desvincular una ya
   // relacionada, así que el checklist del form las deja tildadas y
   // deshabilitadas — nunca aparecen en el diff de `handleSubmit`.
-  const agregarEvidencia = useAgregarEvidenciaActividad({
-    mutationConfig: {
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-    },
-  })
+  const agregarEvidencia = useAgregarEvidenciaActividad()
   // Reemplazo completo (`PUT .../materiales`) — se llama solo cuando la
   // lista de recursos cambió (ver `handleSubmit`), no en cada guardado.
   const updateMateriales = useUpdateMaterialesActividad({
     mutationConfig: {
+      // Éxito PARCIAL, no un error — `recursosOmitidos` no aborta el resto
+      // de `handleSubmit`, así que se avisa acá mismo en vez de por la
+      // excepción del try/catch grande.
       onSuccess: ({ recursosOmitidos }) => {
         if (recursosOmitidos.length > 0) {
           notify(
@@ -174,43 +165,26 @@ function EditarActividadPageContent({
           )
         }
       },
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
   // Igual que `updateMateriales`: se llama solo cuando HAY algo que definir
   // (ver `tieneDefinicionInstrumento` — el detalle real no precarga la
   // rúbrica/lista de cotejo/escala ya guardada, así que "vacío" acá
   // significa "el docente no tocó esta sección", no "la borró a propósito").
-  const updateInstrumento = useUpdateInstrumentoActividad({
-    mutationConfig: {
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-    },
-  })
+  const updateInstrumento = useUpdateInstrumentoActividad()
   // Reemplazo completo (`PUT .../adaptaciones`) — mismo criterio que
   // `updateMateriales`: solo se llama si la lista cambió.
-  const updateAdaptaciones = useUpdateAdaptacionesActividad({
-    mutationConfig: {
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-    },
-  })
+  const updateAdaptaciones = useUpdateAdaptacionesActividad()
   // `PUT .../estudiantes` — endpoint suelto de "Estudiantes", igual que
   // materiales/adaptaciones (ver `set-estudiantes-actividad.ts`). Se llama
   // solo si la selección de verdad cambió frente a lo que ya traía el
   // detalle (`matriculasIds` arranca con la selección REAL, V452 — ver
   // `use-actividad-detalle-query.ts`), mismo criterio de "solo si cambió"
   // que `updateMateriales`/`updateAdaptaciones` más abajo.
-  const setEstudiantes = useSetEstudiantesActividad({
-    mutationConfig: {
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-    },
-  })
+  const setEstudiantes = useSetEstudiantesActividad()
   // Solo AGREGA criterios nuevos — mismo criterio que `agregarEvidencia`
   // (ver el comentario de `Actividad.criteriosUnidadIds`).
-  const agregarCriterio = useAgregarCriterioUnidadActividad({
-    mutationConfig: {
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-    },
-  })
+  const agregarCriterio = useAgregarCriterioUnidadActividad()
   const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
 
   async function handleSubmit(values: Actividad) {
@@ -246,59 +220,98 @@ function EditarActividadPageContent({
       }
     }
 
-    updateMutation.mutate({ actividadId: actividad.id, data: values })
+    // De acá para abajo, TODO se encadena con `await` dentro de un único
+    // try/catch — antes cada mutación se disparaba con `.mutate()` (sin
+    // esperar) e `onSuccess`/`onClose` de `updateMutation` navegaba de
+    // vuelta al Planeador apenas ESA PUT terminaba, sin importar si las
+    // demás (instrumento, materiales, adaptaciones, estudiantes) habían
+    // siquiera empezado. Eso rompía de dos formas confirmadas en producción:
+    //
+    // 1. `PUT .../instrumento` exige que `TACTIVIDAD.FK_TLV_INSTRUMENTO_
+    //    EVALUACION` YA esté fijado al instrumento que se está definiendo
+    //    (ver `update-instrumento-actividad.ts`) — y quien fija ese campo
+    //    es justamente `updateMutation`, EN LA MISMA PUT que antes no se
+    //    esperaba. Cambiar de instrumento al editar (ej. a "Escala de
+    //    valoración") disparaba las dos PUT casi a la vez y la de
+    //    instrumento le ganaba la carrera a la del campo que necesitaba:
+    //    el backend la rechazaba con el error del instrumento VIEJO
+    //    ("p_items debe ser...", "p_criterios debe ser..." — los nombres
+    //    de parámetro de rúbrica/lista de cotejo, no de escala).
+    // 2. El error de CUALQUIERA de las otras mutaciones (`notify()`, no
+    //    `queueNotice()`) se perdía: `onClose()` ya había desmontado esta
+    //    pantalla (y su `NoticeProvider`) para cuando esa mutación
+    //    resolvía, así que el docente veía "Actividad actualizada
+    //    correctamente" y volvía al Planeador aunque, por ejemplo, el
+    //    instrumento hubiera fallado con "valorMin debe ser menor que
+    //    valorMax" y NUNCA se hubiera guardado.
+    //
+    // Ahora nada de esto navega ni avisa éxito hasta que TODO lo que tenía
+    // algo que guardar terminó bien; el primer error frena el resto y se
+    // avisa con la pantalla todavía montada.
+    try {
+      await updateMutation.mutateAsync({ actividadId: actividad.id, data: values })
 
-    // Evidencias marcadas en este submit que todavía no estaban
-    // relacionadas — cada una es su propio `POST`, no hay bulk confirmado.
-    const evidenciasNuevas = values.evidenciasIds.filter(
-      (id) => !actividad.evidenciasIds.includes(id),
-    )
-    for (const evidenciaId of evidenciasNuevas) {
-      agregarEvidencia.mutate({ actividadId: actividad.id, evidenciaId })
-    }
+      // Evidencias marcadas en este submit que todavía no estaban
+      // relacionadas — cada una es su propio `POST`, no hay bulk confirmado.
+      const evidenciasNuevas = values.evidenciasIds.filter(
+        (id) => !actividad.evidenciasIds.includes(id),
+      )
+      for (const evidenciaId of evidenciasNuevas) {
+        await agregarEvidencia.mutateAsync({ actividadId: actividad.id, evidenciaId })
+      }
 
-    // `PUT .../materiales` reemplaza TODA la lista — solo se llama si de
-    // verdad cambió, para no pegarle al backend en cada guardado cuando el
-    // docente tocó otro campo (ej. fechas) y dejó los recursos intactos.
-    if (JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)) {
-      updateMateriales.mutate({ actividadId: actividad.id, recursos: values.recursos })
-    }
+      // `PUT .../materiales` reemplaza TODA la lista — solo se llama si de
+      // verdad cambió, para no pegarle al backend en cada guardado cuando el
+      // docente tocó otro campo (ej. fechas) y dejó los recursos intactos.
+      if (JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)) {
+        await updateMateriales.mutateAsync({ actividadId: actividad.id, recursos: values.recursos })
+      }
 
-    if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
-      updateInstrumento.mutate({ actividadId: actividad.id, actividad: values })
-    }
+      if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
+        await updateInstrumento.mutateAsync({ actividadId: actividad.id, actividad: values })
+      }
 
-    // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
-    // "solo si cambió" que `updateMateriales`.
-    if (JSON.stringify(values.adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
-      updateAdaptaciones.mutate({ actividadId: actividad.id, adaptaciones: values.adaptaciones })
-    }
+      // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
+      // "solo si cambió" que `updateMateriales`.
+      if (JSON.stringify(values.adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
+        await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones: values.adaptaciones })
+      }
 
-    // Criterios de la unidad marcados en este submit que todavía no estaban
-    // relacionados — mismo criterio que las evidencias nuevas de arriba.
-    const criteriosNuevos = values.criteriosUnidadIds.filter(
-      (id) => !actividad.criteriosUnidadIds.includes(id),
-    )
-    for (const criterioUnidadId of criteriosNuevos) {
-      agregarCriterio.mutate({ actividadId: actividad.id, criterioUnidadId })
-    }
+      // Criterios de la unidad marcados en este submit que todavía no estaban
+      // relacionados — mismo criterio que las evidencias nuevas de arriba.
+      const criteriosNuevos = values.criteriosUnidadIds.filter(
+        (id) => !actividad.criteriosUnidadIds.includes(id),
+      )
+      for (const criterioUnidadId of criteriosNuevos) {
+        await agregarCriterio.mutateAsync({ actividadId: actividad.id, criterioUnidadId })
+      }
 
-    // "Estudiantes": solo si de verdad cambió (ver el comentario de
-    // `setEstudiantes` arriba) — cubre tanto puntualizar a un subconjunto
-    // como volver a "Todo el grupo" (`asignarTodoElGrupo` pasa de `false` a
-    // `true`, que antes nunca se mandaba porque `matriculasIds` quedaba
-    // vacío en ese caso).
-    const estudiantesCambiaron =
-      values.asignarTodoElGrupo !== actividad.asignarTodoElGrupo ||
-      (!values.asignarTodoElGrupo &&
-        JSON.stringify([...values.matriculasIds].sort((a, b) => a - b)) !==
-          JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
-    if (estudiantesCambiaron) {
-      setEstudiantes.mutate({
-        actividadId: actividad.id,
-        matriculasIds: values.matriculasIds,
-        asignarTodoElGrupo: values.asignarTodoElGrupo,
-      })
+      // "Estudiantes": solo si de verdad cambió (ver el comentario de
+      // `setEstudiantes` arriba) — cubre tanto puntualizar a un subconjunto
+      // como volver a "Todo el grupo" (`asignarTodoElGrupo` pasa de `false` a
+      // `true`, que antes nunca se mandaba porque `matriculasIds` quedaba
+      // vacío en ese caso).
+      const estudiantesCambiaron =
+        values.asignarTodoElGrupo !== actividad.asignarTodoElGrupo ||
+        (!values.asignarTodoElGrupo &&
+          JSON.stringify([...values.matriculasIds].sort((a, b) => a - b)) !==
+            JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
+      if (estudiantesCambiaron) {
+        await setEstudiantes.mutateAsync({
+          actividadId: actividad.id,
+          matriculasIds: values.matriculasIds,
+          asignarTodoElGrupo: values.asignarTodoElGrupo,
+        })
+      }
+
+      // `queueNotice`, no `notify`: recién ahora se navega, así que el
+      // aviso lo tiene que mostrar el `NoticeProvider` del Planeador, no el
+      // de esta pantalla (que está a punto de desmontarse).
+      queueNotice("Actividad actualizada correctamente.")
+      setIsDirty(false)
+      onClose()
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     }
   }
 
