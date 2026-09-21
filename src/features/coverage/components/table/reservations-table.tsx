@@ -52,6 +52,7 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "reservations-table-column-visibility",
   })
 
   return (

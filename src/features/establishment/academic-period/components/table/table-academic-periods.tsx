@@ -55,6 +55,7 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-academic-periods-column-visibility",
   })
 
   // Año lectivo + sede en vez del `name`: dos periodos de la misma sede se

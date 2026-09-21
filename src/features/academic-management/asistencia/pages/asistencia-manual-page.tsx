@@ -321,16 +321,9 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setPageSize: handleSetPageSize,
     sorting: [],
     setSorting: () => {},
+    columnVisibilityStorageKey: "asistencia-manual-column-visibility",
   })
 
-  /**
-   * Guardado PARCIAL: no hace falta terminar de marcar todo el tab para que
-   * lo ya marcado se guarde — solo se excluye "Llegó tarde" sin bloque de
-   * llegada elegido todavía (en sesiones de varios bloques), porque sin ese
-   * dato `registrosPorBloque` no sabe qué registro armar y tendría que
-   * adivinar. Ese caso puntual sigue esperando a que el docente elija el
-   * bloque; el resto se guarda solo.
-   */
   const seleccionLista = React.useMemo(() => {
     const listos = Object.entries(seleccion).filter(([fkMatriculaStr, tipo]) => {
       if (tipo !== LLEGO_TARDE || sesion.bloques.length <= 1) return true
@@ -358,17 +351,6 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
 
   const [autoguardando, setAutoguardando] = React.useState(false)
 
-  /**
-   * Guarda lo YA LISTO (`seleccionLista`, ver arriba) — la comparten el
-   * botón "Guardar" (con aviso si no hay nada listo), el autoguardado con
-   * debounce (silencioso: no tener nada listo todavía es normal mientras el
-   * docente sigue marcando) y el volcado al salir del tab (ver el
-   * `useEffect` de cleanup más abajo, que llama a esto mismo desde el
-   * unmount para no perder lo marcado si el docente cambia de tab antes de
-   * que el debounce dispare). No exige que el tab esté completo: guarda
-   * cada estudiante apenas su marca es inequívoca, y deja esperando solo a
-   * quien tiene "Llegó tarde" sin bloque elegido.
-   */
   async function guardar(avisarSiNada: boolean): Promise<void> {
     if (!hayAlgoQueGuardar) {
       if (avisarSiNada) {
@@ -393,17 +375,12 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
             GRUPO: sesion.fkGrupo,
             FECHA: fecha,
             REGISTROS: registros,
-            // Sesión formativa: ACTIVIDAD y sin BLOQUE (no cuelga del
-            // horario) -- sesión normal: ASIGNATURA + BLOQUE de siempre.
             ...(sesion.esFormativa
               ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
               : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
           }),
         ),
       )
-      // Merge, no reemplazo: un "Llegó tarde" todavía sin bloque no entró en
-      // `seleccionGuardada`, así que su baseline sigue sin tocar y `esDirty`
-      // lo vuelve a detectar en cuanto el docente elija el bloque.
       baseline.current = { ...baseline.current, ...seleccionGuardada }
       bloqueTardeBaseline.current = {
         ...bloqueTardeBaseline.current,
@@ -432,11 +409,6 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     await guardar(true)
   }
 
-  // Autoguardado: dispara solo -- sin que el docente tenga que acordarse de
-  // apretar "Guardar", y sin esperar a que el tab quede completo -- cuando
-  // hay algo YA LISTO para mandar (`hayAlgoQueGuardar`), con un pequeño
-  // debounce para no mandar una petición por cada click mientras sigue
-  // marcando estudiantes.
   React.useEffect(() => {
     if (!hayAlgoQueGuardar) return
     const temporizador = setTimeout(() => {
@@ -446,13 +418,6 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccion, bloqueTarde, soporte, soporteEliminado, hayAlgoQueGuardar])
 
-  // Volcado al salir del tab: `TabsContent` desmonta el panel inactivo (no
-  // lo oculta, ver `src/components/ui/tabs.tsx`), así que sin esto lo
-  // marcado que el debounce todavía no alcanzó a guardar se perdía en
-  // silencio al cambiar de tab. `guardarRef` siempre apunta a la versión de
-  // `guardar` del último render (mismo truco que un event handler "vivo"),
-  // para que el cleanup -- que solo corre una vez, al desmontar -- vea el
-  // estado más reciente y no uno viejo capturado en el primer render.
   const guardarRef = React.useRef(guardar)
   guardarRef.current = guardar
   React.useEffect(() => {

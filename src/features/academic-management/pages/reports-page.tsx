@@ -71,6 +71,40 @@ import { PeriodoFilter } from "@/features/academic-management/reports/components
 const PANEL_CLASS =
   "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
+interface GruposAbiertosState {
+  grupos: number[]
+  tab?: number
+}
+
+function gruposAbiertosStorageKey(filtros: FiltrosInforme): string | null {
+  if (filtros.sedeId == null || filtros.anio == null || filtros.jornadaId == null) return null
+  return `informes-grupos-abiertos:${filtros.sedeId}:${filtros.anio}:${filtros.jornadaId}`
+}
+
+function leerGruposAbiertosGuardados(filtros: FiltrosInforme): GruposAbiertosState | null {
+  const key = gruposAbiertosStorageKey(filtros)
+  if (!key) return null
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed.grupos)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function guardarGruposAbiertos(filtros: FiltrosInforme, estado: GruposAbiertosState): void {
+  const key = gruposAbiertosStorageKey(filtros)
+  if (!key) return
+  try {
+    localStorage.setItem(key, JSON.stringify(estado))
+  } catch {
+    // localStorage no disponible (modo privado, cuota, etc.): se ignora.
+  }
+}
+
 function coincide(fila: FilaInforme, busqueda: string): boolean {
   const texto = busqueda.trim().toLowerCase()
   if (!texto) return true
@@ -265,13 +299,21 @@ function ReportsPageContent() {
     [setSearch],
   )
   const setActiveTab = React.useCallback(
-    (id: number | undefined) => setSearch({ tab: id }),
-    [setSearch],
+    (id: number | undefined) => {
+      setSearch({ tab: id })
+      guardarGruposAbiertos(filtros, { grupos: gruposAbiertosIds, tab: id })
+    },
+    [setSearch, filtros, gruposAbiertosIds],
   )
   const setGruposAbiertos = React.useCallback(
-    (ids: number[], tab?: number) =>
-      setSearch({ grupos: ids.length > 0 ? ids : undefined, ...(tab != null && { tab }) }),
-    [setSearch],
+    (ids: number[], tab?: number) => {
+      setSearch({ grupos: ids.length > 0 ? ids : undefined, ...(tab != null && { tab }) })
+      guardarGruposAbiertos(filtros, {
+        grupos: ids,
+        tab: tab ?? (activeTab !== "" ? Number(activeTab) : undefined),
+      })
+    },
+    [setSearch, filtros, activeTab],
   )
 
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
@@ -297,13 +339,28 @@ function ReportsPageContent() {
   React.useEffect(() => {
     if (grupos.length === 0) return
     const vigentes = gruposAbiertosIds.filter((id) => grupos.some((g) => g.grupoId === id))
-    const abiertos = vigentes.length > 0 ? vigentes : [grupos[0].grupoId]
-    const tabVigente = abiertos.includes(Number(activeTab)) ? undefined : abiertos[0]
+    // Sin nada en la URL: se intenta recordar lo que quedó abierto la última
+    // vez para esta misma sede/año/jornada antes de caer al primer grupo.
+    const guardados =
+      gruposAbiertosIds.length === 0 ? leerGruposAbiertosGuardados(filtros) : null
+    const guardadosVigentes =
+      guardados?.grupos.filter((id) => grupos.some((g) => g.grupoId === id)) ?? []
+    const abiertos =
+      vigentes.length > 0
+        ? vigentes
+        : guardadosVigentes.length > 0
+          ? guardadosVigentes
+          : [grupos[0].grupoId]
+    const tabGuardado =
+      guardados?.tab != null && abiertos.includes(guardados.tab) ? guardados.tab : undefined
+    const tabVigente = abiertos.includes(Number(activeTab))
+      ? undefined
+      : (tabGuardado ?? abiertos[0])
     if (vigentes.length === gruposAbiertosIds.length && vigentes.length > 0 && tabVigente == null) {
       return
     }
     setGruposAbiertos(abiertos, tabVigente)
-  }, [grupos, gruposAbiertosIds, activeTab, setGruposAbiertos])
+  }, [grupos, gruposAbiertosIds, activeTab, filtros, setGruposAbiertos])
 
   // La terna resuelve el período académico: sin ella los endpoints responden
   // 403/404, así que las queries van `enabled: false` — y una query apagada

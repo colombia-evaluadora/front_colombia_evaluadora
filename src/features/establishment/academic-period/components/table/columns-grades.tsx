@@ -65,6 +65,15 @@ export function createGradeColumns({
       ),
     },
     {
+      id: "gradoSiguienteName",
+      accessorKey: "gradoSiguienteName",
+      meta: { label: "Grado siguiente" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado siguiente" />,
+      cell: ({ row }) => (
+        <span className="font-medium uppercase">{row.original.gradoSiguienteName ?? "—"}</span>
+      ),
+    },
+    {
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (
