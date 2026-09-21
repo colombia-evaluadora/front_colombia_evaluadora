@@ -61,6 +61,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar, isFormat
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-study-plan-column-visibility",
   })
 
   const selectedItemIds = useMemo(() => selectedIds.map(Number), [selectedIds])

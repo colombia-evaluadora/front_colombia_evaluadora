@@ -93,6 +93,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-establishments-column-visibility",
   })
 
   const rows = data?.rows ?? []

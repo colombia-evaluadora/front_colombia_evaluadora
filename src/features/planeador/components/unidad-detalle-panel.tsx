@@ -355,6 +355,7 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
     setPageSize: () => {},
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "unidad-detalle-panel-column-visibility",
   })
 
   return (
@@ -406,6 +407,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     setPageSize: () => {},
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "unidad-detalle-panel-actividades-column-visibility",
   })
 
   return (

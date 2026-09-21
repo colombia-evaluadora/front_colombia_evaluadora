@@ -72,6 +72,7 @@ export function PreMatriculaPage() {
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "pre-matricula-column-visibility",
   })
 
   /**

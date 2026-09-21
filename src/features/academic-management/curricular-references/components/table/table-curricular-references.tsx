@@ -71,6 +71,7 @@ export function CurricularReferencesDataTable() {
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-curricular-references-column-visibility",
   })
 
   return (

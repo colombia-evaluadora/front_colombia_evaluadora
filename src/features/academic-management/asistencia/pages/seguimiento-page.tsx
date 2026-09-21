@@ -160,6 +160,7 @@ function SeguimientoTable({ sede }: { sede: number }) {
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "seguimiento-column-visibility",
   })
 
   return (
