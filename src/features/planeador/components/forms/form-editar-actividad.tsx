@@ -558,6 +558,32 @@ function useRecuperacionAutoFill(form: FormActividad) {
  * `destino = ACTIVIDAD`, % obligatorio y 0-100 sii `tipoCalculo =
  * PONDERADO`) para no descubrirlas a base de 400.
  */
+/**
+ * Catálogo por default de "¿Esta recuperación aplica para?" — mismos
+ * `valor`/`nombre` que ya devuelve el backend real (confirmado contra
+ * `campos_disponibles.recuperacion.catalogos.destino`), para cuando
+ * TODAVÍA no se puede pedir esa fila (sin Grado/Asignatura ni Unidad, ver
+ * `catalogosDisponibles` en `RecuperacionSection`). El texto real del
+ * backend termina reemplazando este placeholder apenas
+ * `useConfiguracionContextoActividadQuery`/`useConfiguracionActividadQuery`
+ * resuelven — no antes de eso el docente ya pudo elegir "Una actividad" y
+ * arrancar `useRecuperacionAutoFill`, así que el `valor` (lo único que
+ * de verdad importa para la lógica) tiene que coincidir con el real desde
+ * el primer render.
+ */
+const DESTINO_RECUPERACION_FALLBACK = [
+  { valor: "ACTIVIDAD", nombre: "Recuperar una actividad" },
+  { valor: "NOTA_FINAL", nombre: "Recuperar la nota final" },
+]
+const TIPO_APLICACION_RECUPERACION_FALLBACK = [
+  { valor: "COMPUTAR", nombre: "Computar con la nota anterior" },
+  { valor: "REEMPLAZAR", nombre: "Reemplazar la nota actual" },
+]
+const TIPO_CALCULO_RECUPERACION_FALLBACK = [
+  { valor: "PROMEDIADO", nombre: "Promediado" },
+  { valor: "PONDERADO", nombre: "Ponderado" },
+]
+
 function RecuperacionSection({
   form,
   disabled,
@@ -570,15 +596,23 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
-  // `campos_disponibles.recuperacion` (catálogos destino/tipoAplicacion/
-  // tipoCalculo + `reglas`) es real desde V458 — confirmado contra
-  // `docs/planeador/contrato-configuracion-y-detalle-actividad.md` del repo
-  // sso (§3.4). Este chequeo queda igual como salvaguarda genérica: si
-  // algún día la fila cae al placeholder oculto
-  // (`defaultRecuperacionCampoDisponible`, por ejemplo por un servidor
-  // desactualizado), los catálogos quedan vacíos y el toggle se ofrece
-  // solo, en vez de abrir `<Select>`s sin ninguna opción para elegir.
-  const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
+  // "¿Esta recuperación aplica para?" tiene que aparecer SIEMPRE primero,
+  // apenas se prende el toggle — sin esperar a Grado/Asignatura/Unidad
+  // (`campos_disponibles.recuperacion.catalogos` no se puede pedir sin
+  // eso, ver `useCamposEvaluacionEfectivos`). Mientras el catálogo real no
+  // llegue, se usa el de respaldo (mismos `valor` que el real, así que la
+  // lógica — `destino === "ACTIVIDAD"`, etc. — no distingue uno de otro);
+  // el real lo reemplaza solo apenas resuelve, sin que el docente note el
+  // cambio salvo por el asterisco de "obligatorio" si aplica.
+  const destinoOpciones = recuperacion?.catalogos.destino.length
+    ? recuperacion.catalogos.destino
+    : DESTINO_RECUPERACION_FALLBACK
+  const tipoAplicacionOpciones = recuperacion?.catalogos.tipoAplicacion.length
+    ? recuperacion.catalogos.tipoAplicacion
+    : TIPO_APLICACION_RECUPERACION_FALLBACK
+  const tipoCalculoOpciones = recuperacion?.catalogos.tipoCalculo.length
+    ? recuperacion.catalogos.tipoCalculo
+    : TIPO_CALCULO_RECUPERACION_FALLBACK
 
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
@@ -603,46 +637,9 @@ function RecuperacionSection({
               )}
             </form.Field>
 
-            {/* Atajo: sin Grado/Asignatura todavía, `campos_disponibles.
-                recuperacion` (destino/tipoAplicación/tipoCalculo) no se
-                puede pedir — el endpoint real los exige como parámetros
-                obligatorios (`catalogosDisponibles` en falso) — así que el
-                bloque completo de abajo no tiene nada que ofrecer todavía.
-                Elegir acá la actividad a recuperar dispara
-                `useRecuperacionAutoFill`, que llena Grado/Asignatura solo;
-                una vez lleno, `catalogosDisponibles` pasa a verdadero y
-                este atajo se reemplaza por el bloque completo de abajo
-                (que ya trae destino=ACTIVIDAD y la actividad elegida). */}
-            <form.Subscribe
-              selector={(state) => ({
-                esRecuperacion: state.values.esRecuperacion,
-                recuperacionActividadId: state.values.recuperacionActividadId,
-              })}
-            >
-              {({ esRecuperacion: esRecuperacionValue, recuperacionActividadId }) =>
-                !esRecuperacionValue || catalogosDisponibles ? null : (
-                  <Field variant="outlined">
-                    <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
-                    <ActividadRecuperarCascada
-                      value={recuperacionActividadId}
-                      onChange={(v) => {
-                        form.setFieldValue("recuperacionActividadId", v)
-                        form.setFieldValue("recuperacionDestino", "ACTIVIDAD")
-                      }}
-                      excludeActividadId={actividadId}
-                      disabled={disabled}
-                    />
-                    <FieldDescription>
-                      El resto de la configuración de recuperación aparece apenas se elige.
-                    </FieldDescription>
-                  </Field>
-                )
-              }
-            </form.Subscribe>
-
             <form.Subscribe selector={(state) => state.values.esRecuperacion}>
               {(esRecuperacionValue) =>
-                !esRecuperacionValue || !catalogosDisponibles ? null : (
+                !esRecuperacionValue ? null : (
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
@@ -674,14 +671,13 @@ function RecuperacionSection({
                                 {(v) =>
                                   v === "__none__"
                                     ? "Seleccione"
-                                    : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
-                                      (v as string))
+                                    : (destinoOpciones.find((o) => o.valor === v)?.nombre ?? (v as string))
                                 }
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">Seleccione</SelectItem>
-                              {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
+                              {destinoOpciones.map((opcion) => (
                                 <SelectItem key={opcion.valor} value={opcion.valor}>
                                   {opcion.nombre}
                                 </SelectItem>
@@ -763,7 +759,7 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                 >
-                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                  {tipoAplicacionOpciones.map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
                                       <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
                                       {opcion.nombre}
@@ -833,7 +829,7 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                 >
-                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                  {tipoCalculoOpciones.map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
                                       <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
                                       {opcion.nombre}
