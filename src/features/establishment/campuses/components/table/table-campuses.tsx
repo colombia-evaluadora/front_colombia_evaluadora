@@ -76,6 +76,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     setPageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "table-campuses-column-visibility",
   })
 
   const rows = data?.rows ?? []

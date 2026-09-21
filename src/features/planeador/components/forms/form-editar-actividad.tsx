@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
+import { useQueries } from "@tanstack/react-query"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,7 +47,10 @@ import {
   useConfiguracionContextoActividadQuery,
 } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
-import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
+import {
+  useReferenteCurricularQuery,
+  referenteCurricularQueryOptions,
+} from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
@@ -370,6 +374,14 @@ export function EditarActividadForm({
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
+  // A diferencia de `bloqueadoPorRecuperacion` (que exige `destino =
+  // ACTIVIDAD` + origen elegido, porque ahí es cuando hay un valor real que
+  // heredar), esto es la regla de negocio simple de la guía: "una actividad
+  // de recuperación siempre es sumativa" — aplica apenas se marca "Es una
+  // recuperación", sea cual sea el destino. Unidad, en cambio, sí usa
+  // `bloqueadoPorRecuperacion`: mismo criterio que Grado/Asignatura/Nombre,
+  // que solo se heredan (y bloquean) una vez elegida la actividad origen.
+  const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   useRecuperacionAutoFill(form)
 
   return (
@@ -412,7 +424,7 @@ export function EditarActividadForm({
             form={form}
             unidades={unidades}
             onCrearUnidad={crearUnidad}
-            disabled={disabled}
+            disabled={disabled || bloqueadoPorRecuperacion}
           />
           <IdentificacionSection
             form={form}
@@ -440,6 +452,7 @@ export function EditarActividadForm({
         unidades={unidades}
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
+        esRecuperacion={esRecuperacion}
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />
@@ -790,16 +803,16 @@ function RecuperacionSection({
 
                     {/* Mismo gate que "¿Cómo se aplicará la nota de
                         recuperación?" arriba, más esperar a que se elija esa
-                        opción. NO se oculta con `tipoAplicacion = REEMPLAZAR`
-                        a pesar de que en ese caso el cálculo no se USE
-                        (fn_actividad_recuperacion_aplicar, V408, ignora el
-                        tipo de cálculo con REEMPLAZAR): el backend real
-                        (fn_actividad_recuperacion_configurar, V224) exige
-                        SIEMPRE destino + tipoAplicacion + tipoCalculo, sin
-                        excepción — ocultarlo dejaría un PUT/POST sin un
-                        campo obligatorio y el guardado fallaría con 22023
-                        "La recuperacion requiere destino, tipoAplicacion y
-                        tipoCalculo". */}
+                        opción — y oculto con `tipoAplicacion = REEMPLAZAR`
+                        (regla `tipoCalculoOcultoSi` de `campos_disponibles.
+                        recuperacion.reglas`, confirmada real): "Reemplazar"
+                        no calcula nada, la nota anterior se descarta entera.
+                        `fn_actividad_recuperacion_configurar` (V224) tolera
+                        el campo ausente con REEMPLAZAR — si no viene, guarda
+                        PROMEDIADO por default (la columna es NOT NULL), no
+                        lo exige. El reset a `""` en el `onValueChange` de
+                        arriba ya limpiaba el valor al cambiar a REEMPLAZAR;
+                        acá faltaba ocultar el control. */}
                     <form.Subscribe
                       selector={(state) => ({
                         destino: state.values.recuperacionDestino,
@@ -808,7 +821,10 @@ function RecuperacionSection({
                       })}
                     >
                       {({ destino, actividadId, tipoAplicacion }) =>
-                        !destino || (destino === "ACTIVIDAD" && !actividadId) || !tipoAplicacion ? null : (
+                        !destino ||
+                        (destino === "ACTIVIDAD" && !actividadId) ||
+                        !tipoAplicacion ||
+                        tipoAplicacion === "REEMPLAZAR" ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
                               <Field variant="outlined">
@@ -1399,6 +1415,48 @@ function AsignaturaGradoSection({
 }) {
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
+
+  // Con `destino = NOTA_FINAL` no hay actividad de origen de la que heredar
+  // Grado/Asignatura (a diferencia de `destino = ACTIVIDAD`, donde
+  // `useRecuperacionAutoFill` ya los llena y `bloqueadoPorRecuperacion` los
+  // bloquea) — el docente los elige a mano acá mismo, así que hace falta
+  // achicar las opciones a solo referentes EVALUATIVOS: una recuperación
+  // nunca puede caer en un referente formativo (mismo motivo que bloquea
+  // "¿Es evaluación sumativa?" en `EvaluacionSection`). No hay un endpoint
+  // que devuelva "qué grado/asignatura son evaluativos" de una, así que se
+  // sondea cada par (grado, asignatura) del docente EN PARALELO con
+  // `useQueries` — mismo patrón que `ActividadRecuperarCascada`.
+  const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
+  const recuperacionDestino = useSelector(form.store, (state) => state.values.recuperacionDestino)
+  const filtrarSoloEvaluativas = esRecuperacion && recuperacionDestino === "NOTA_FINAL"
+
+  const referentes = useQueries({
+    queries: docenteGradoAsignatura.map((par) => ({
+      ...referenteCurricularQueryOptions(par.gradoId, par.asignaturaId),
+      enabled: filtrarSoloEvaluativas,
+    })),
+  })
+
+  // Mientras la sonda de un par no resuelve, se trata como "todavía no se
+  // sabe" (no evaluativo) en vez de asumir que sí — la opción aparece apenas
+  // se confirma, no antes.
+  const paresEvaluativos = useMemo(() => {
+    const ids = new Set<number>()
+    docenteGradoAsignatura.forEach((par, i) => {
+      if (referentes[i]?.data?.esFormativo === false) ids.add(par.gradoId * 1_000_000 + par.asignaturaId)
+    })
+    return ids
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `referentes` cambia de referencia en cada resolución; `docenteGradoAsignatura` ya la representa indirectamente.
+  }, [docenteGradoAsignatura, referentes])
+
+  const gradosEvaluativosIds = useMemo(() => {
+    const ids = new Set<number>()
+    docenteGradoAsignatura.forEach((par) => {
+      if (paresEvaluativos.has(par.gradoId * 1_000_000 + par.asignaturaId)) ids.add(par.gradoId)
+    })
+    return ids
+  }, [docenteGradoAsignatura, paresEvaluativos])
+
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   // El backend real de una actividad no siempre trae `fk_tgrado`/el id no
@@ -1489,6 +1547,15 @@ function AsignaturaGradoSection({
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
+  // Ver el comentario de `filtrarSoloEvaluativas` más arriba: sin filtro
+  // (el caso normal) estas dos son las mismas listas de siempre.
+  const gruposVisibles = filtrarSoloEvaluativas
+    ? docenteGrupos.filter((g) => gradosEvaluativosIds.has(g.gradoId))
+    : docenteGrupos
+  const asignaturasVisibles = filtrarSoloEvaluativas
+    ? asignaturas.filter((a) => paresEvaluativos.has(a.gradoId * 1_000_000 + a.asignaturaId))
+    : asignaturas
+
   return (
     <>
         {/* Grado/Grupo primero: Asignatura (y "Unidad temática asociada" en
@@ -1552,7 +1619,7 @@ function AsignaturaGradoSection({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Seleccione</SelectItem>
-              {docenteGrupos.map((g) => (
+              {gruposVisibles.map((g) => (
                 <SelectItem key={g.grupoId} value={String(g.grupoId)}>
                   {g.gradoNombre}/{grupoLabel(g)}
                 </SelectItem>
@@ -1621,7 +1688,7 @@ function AsignaturaGradoSection({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">Seleccione</SelectItem>
-                  {asignaturas.map((a) => (
+                  {asignaturasVisibles.map((a) => (
                     <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
                       {a.asignaturaNombre}
                     </SelectItem>
@@ -2718,6 +2785,7 @@ function EvaluacionSection({
   unidades,
   camposEfectivos,
   esFormativa,
+  esRecuperacion,
   tipoEvaluacion,
   disabled,
 }: {
@@ -2727,6 +2795,10 @@ function EvaluacionSection({
    *  `EditarActividadForm`. */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   esFormativa: boolean
+  /** Regla de la guía de recuperación: una actividad de recuperación
+   *  siempre es sumativa — bloquea el select y fuerza el valor a "Sí",
+   *  igual que `esFormativa` hace lo opuesto. */
+  esRecuperacion: boolean
   /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
   tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
   disabled: boolean
@@ -2741,6 +2813,15 @@ function EvaluacionSection({
   useEffect(() => {
     if (esFormativa) form.setFieldValue("esEvaluativa", false)
   }, [esFormativa, form])
+
+  // Mismo criterio, regla inversa: "recuperación siempre sumativa". No
+  // compiten entre sí — `RecuperacionSection` ya oculta "Es una
+  // recuperación" cuando el referente es formativo (mismo `campos_
+  // disponibles.recuperacion.visible` de la guía), así que las dos nunca
+  // están en `true` a la vez.
+  useEffect(() => {
+    if (esRecuperacion) form.setFieldValue("esEvaluativa", true)
+  }, [esRecuperacion, form])
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
   // acá mismo. Filtrado por `camposEfectivos.evaluacion.instrumentosPermitidos`
@@ -2767,7 +2848,7 @@ function EvaluacionSection({
               <Select
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={esFormativa || disabled}
+                disabled={esFormativa || esRecuperacion || disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>

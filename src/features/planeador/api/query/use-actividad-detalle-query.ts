@@ -10,6 +10,7 @@ import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/
 import {
   defaultRecuperacionCampoDisponible,
   type Actividad,
+  type ActividadRecuperable,
   type Adaptacion,
   type ListaValorOption,
   type Recurso,
@@ -194,6 +195,11 @@ interface RecuperacionCampoDisponibleRow {
     valorPonderacionRequeridoSi: string
     valorPonderacionRango: { min: number; max: number }
   }
+  /** Este endpoint (detalle de una actividad existente) nunca manda
+   *  `?RECUPERAR=S` — no hay "¿qué desea recuperar?" que pintar acá,
+   *  siempre `null`/ausente. Ver `ActividadRecuperable` en
+   *  `use-configuracion-actividad-query.ts`, que sí lo trae. */
+  actividadesRecuperables?: ActividadRecuperable[] | null
 }
 
 interface CamposDisponiblesRow {
@@ -244,7 +250,9 @@ function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["campo
       ...raw.evaluacion,
       instrumentosPermitidos: normalizeInstrumentosPermitidos(raw.evaluacion.instrumentosPermitidos),
     },
-    recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible(),
+    recuperacion: raw.recuperacion
+      ? { ...raw.recuperacion, actividadesRecuperables: raw.recuperacion.actividadesRecuperables ?? null }
+      : defaultRecuperacionCampoDisponible(),
   }
 }
 

@@ -27,9 +27,12 @@ import type {
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { agruparPorBloquesContinuos, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { agruparPorBloquesContinuos, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
+/** Espera esto sin más marcas antes de guardar solo — evita una petición por
+ *  cada click mientras el docente sigue recorriendo la lista. */
+const AUTOGUARDADO_DEBOUNCE_MS = 900
 const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
@@ -318,24 +321,23 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setPageSize: handleSetPageSize,
     sorting: [],
     setSorting: () => {},
+    columnVisibilityStorageKey: "asistencia-manual-column-visibility",
   })
 
-  const faltantes = roster_.filter((est) => seleccion[est.fk_tmatricula] == null).length
-  const faltaBloqueTarde =
-    sesion.bloques.length > 1 &&
-    roster_.some(
-      (est) => seleccion[est.fk_tmatricula] === LLEGO_TARDE && bloqueTarde[est.fk_tmatricula] == null,
-    )
-  const puedeGuardar = roster_.length > 0 && faltantes === 0 && !faltaBloqueTarde
-  const esDirty =
-    Object.keys(soporte).length > 0 ||
-    Object.keys(soporteEliminado).length > 0 ||
-    roster_.some(
-      (est) =>
-        seleccion[est.fk_tmatricula] !== baseline.current[est.fk_tmatricula] ||
-        bloqueTarde[est.fk_tmatricula] !== bloqueTardeBaseline.current[est.fk_tmatricula],
-    )
-  const mostrarGuardar = puedeGuardar && esDirty
+  const seleccionLista = React.useMemo(() => {
+    const listos = Object.entries(seleccion).filter(([fkMatriculaStr, tipo]) => {
+      if (tipo !== LLEGO_TARDE || sesion.bloques.length <= 1) return true
+      return bloqueTarde[Number(fkMatriculaStr)] != null
+    })
+    return Object.fromEntries(listos) as Record<number, TipoAsistencia>
+  }, [seleccion, bloqueTarde, sesion.bloques.length])
+  const pendientesPorBloqueTarde = Object.keys(seleccion).length - Object.keys(seleccionLista).length
+
+  const hayAlgoQueGuardar =
+    Object.entries(seleccionLista).some(([fk, tipo]) => tipo !== baseline.current[Number(fk)]) ||
+    Object.keys(soporte).some((fk) => Number(fk) in seleccionLista) ||
+    Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista)
+  const mostrarGuardar = hayAlgoQueGuardar
 
 
   function handleMarcarTodoAsistio() {
@@ -347,24 +349,25 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setSoporteEliminado({})
   }
 
-  async function handleGuardar() {
-    if (!puedeGuardar) {
-      notify(
-        faltaBloqueTarde
-          ? "Selecciona en qué bloque llegó cada estudiante marcado como Llegó tarde."
-          : "Marca la asistencia de todos los estudiantes antes de guardar.",
-        { variant: "error" },
-      )
+  const [autoguardando, setAutoguardando] = React.useState(false)
+
+  async function guardar(avisarSiNada: boolean): Promise<void> {
+    if (!hayAlgoQueGuardar) {
+      if (avisarSiNada) {
+        notify("Marca la asistencia de al menos un estudiante antes de guardar.", { variant: "error" })
+      }
       return
     }
     const porBloque = registrosPorBloque(
       sesion.bloques,
-      seleccion,
+      seleccionLista,
       bloqueTarde,
       soporte,
       soporteEliminado,
       rosterPorBloque,
     )
+    const seleccionGuardada = seleccionLista
+    setAutoguardando(true)
     try {
       await Promise.all(
         [...porBloque.entries()].map(([bloque, registros]) =>
@@ -372,23 +375,56 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
             GRUPO: sesion.fkGrupo,
             FECHA: fecha,
             REGISTROS: registros,
-            // Sesión formativa: ACTIVIDAD y sin BLOQUE (no cuelga del
-            // horario) -- sesión normal: ASIGNATURA + BLOQUE de siempre.
             ...(sesion.esFormativa
               ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
               : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
           }),
         ),
       )
-      notify("Asistencia guardada.")
-      baseline.current = seleccion
-      bloqueTardeBaseline.current = bloqueTarde
-      setSoporte({})
-      setSoporteEliminado({})
+      baseline.current = { ...baseline.current, ...seleccionGuardada }
+      bloqueTardeBaseline.current = {
+        ...bloqueTardeBaseline.current,
+        ...Object.fromEntries(
+          Object.entries(bloqueTarde).filter(([fk]) => Number(fk) in seleccionGuardada),
+        ),
+      }
+      setSoporte((prev) => {
+        const next = { ...prev }
+        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        return next
+      })
+      setSoporteEliminado((prev) => {
+        const next = { ...prev }
+        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        return next
+      })
     } catch {
       notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
+    } finally {
+      setAutoguardando(false)
     }
   }
+
+  async function handleGuardar() {
+    await guardar(true)
+  }
+
+  React.useEffect(() => {
+    if (!hayAlgoQueGuardar) return
+    const temporizador = setTimeout(() => {
+      void guardar(false)
+    }, AUTOGUARDADO_DEBOUNCE_MS)
+    return () => clearTimeout(temporizador)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccion, bloqueTarde, soporte, soporteEliminado, hayAlgoQueGuardar])
+
+  const guardarRef = React.useRef(guardar)
+  guardarRef.current = guardar
+  React.useEffect(() => {
+    return () => {
+      void guardarRef.current(false)
+    }
+  }, [])
 
   return (
     <div className="flex flex-col gap-3">
@@ -438,9 +474,30 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       )}
 
       <div className="flex items-center justify-between gap-4">
-        <span className="text-xs text-muted-foreground">
-          {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
+          </span>
+          {autoguardando ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <SpinnerIcon className="size-3 animate-spin" /> Guardando…
+            </span>
+          ) : (
+            !hayAlgoQueGuardar &&
+            Object.keys(seleccionLista).length > 0 && (
+              <span className="flex items-center gap-1 text-xs text-emerald-600">
+                <CheckIcon className="size-3" /> Guardado
+              </span>
+            )
+          )}
+          {pendientesPorBloqueTarde > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {pendientesPorBloqueTarde === 1
+                ? "1 estudiante espera el bloque de llegada"
+                : `${pendientesPorBloqueTarde} estudiantes esperan el bloque de llegada`}
+            </span>
+          )}
+        </div>
         {mostrarGuardar && (
           <Button
             type="button"
@@ -535,13 +592,19 @@ export function AsistenciaManualPage() {
 
         {isPending && <Skeleton className="h-64 w-full" />}
 
-        {!isPending && sesionesDelDia.length === 0 && (
+        {esFechaFutura(fecha) && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Todavía no se puede tomar asistencia: {formatFechaLarga(fecha)} es una fecha futura.
+          </p>
+        )}
+
+        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No hay sesiones programadas para este día.
           </p>
         )}
 
-        {!isPending && sesionesDelDia.length > 0 && (
+        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
           <Tabs value={currentTab} onValueChange={setActiveTab}>
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (

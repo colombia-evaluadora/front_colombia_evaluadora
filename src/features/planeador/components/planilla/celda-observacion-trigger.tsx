@@ -8,6 +8,10 @@ import { ChatCircleDotsIcon, ChatCircleTextIcon } from "@/components/ui/icons"
 
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
 import { useObservarEstudianteMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
+import {
+  useAgregarObservacionSoporteMutation,
+  useQuitarObservacionSoporteMutation,
+} from "@/features/planeador/api/mutations/use-observacion-soporte"
 import { ObservacionEstudianteSheet } from "@/features/planeador/components/planilla/observacion-estudiante-sheet"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
@@ -24,6 +28,9 @@ interface CeldaObservacionTriggerProps {
    *  el estudiante tiene o no observación. */
   observacionActual: string | null
   evidenciasActuales: CeldaEvidencia[]
+  /** `true` si la ventana de la actividad todavía no empieza — matiza el
+   *  aviso de "sin asistencia" en el panel. */
+  actividadSinComenzar?: boolean
   /** Para las vistas que no viven de la query de la Planilla (la de detalle
    *  de una actividad) — la invalidación propia de la mutación no las
    *  alcanza. */
@@ -43,6 +50,7 @@ export function CeldaObservacionTrigger({
   contexto,
   observacionActual,
   evidenciasActuales,
+  actividadSinComenzar,
   onGuardado,
 }: CeldaObservacionTriggerProps) {
   const [abierto, setAbierto] = useState(false)
@@ -60,6 +68,19 @@ export function CeldaObservacionTrigger({
       onError: (error) => {
         notify(getErrorMessage(error), { variant: "error" })
       },
+    },
+  })
+
+  const agregarEvidencia = useAgregarObservacionSoporteMutation({
+    mutationConfig: {
+      onSuccess: () => onGuardado?.(),
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+  const quitarEvidencia = useQuitarObservacionSoporteMutation({
+    mutationConfig: {
+      onSuccess: () => onGuardado?.(),
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
 
@@ -104,6 +125,7 @@ export function CeldaObservacionTrigger({
         }
         contexto={contexto}
         evidencias={notaActual?.evidencias.length ? notaActual.evidencias : evidenciasActuales}
+        actividadSinComenzar={actividadSinComenzar}
         guardando={observar.isPending}
         onOpenChange={(open) => {
           if (!open) setAbierto(false)
@@ -112,6 +134,18 @@ export function CeldaObservacionTrigger({
           if (!fecha) return
           observar.mutate({ pkTactividadEstudiante: estudiante.id, observacion: texto.trim(), fecha })
         }}
+        onAgregarEvidencia={(archivo) => {
+          if (!fecha) return
+          agregarEvidencia.mutate({ pkTactividadEstudiante, archivo, fecha })
+        }}
+        agregandoEvidencia={agregarEvidencia.isPending}
+        onQuitarEvidencia={(evidencia) => {
+          if (!fecha) return
+          quitarEvidencia.mutate({ pkTactividadSoporte: evidencia.pk, pkTactividadEstudiante, fecha })
+        }}
+        quitandoEvidenciaPk={
+          quitarEvidencia.isPending ? (quitarEvidencia.variables?.pkTactividadSoporte ?? null) : null
+        }
       />
     </>
   )

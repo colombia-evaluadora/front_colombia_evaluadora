@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, esFechaFutura, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
@@ -18,6 +18,7 @@ export interface AsistenciaDayEntry {
   fecha: string
   /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
   bloque: number | null
+  bloques: (number | null)[]
   fkGrupo: number
   grupo: string
   grado: string
@@ -269,6 +270,7 @@ function DayCellPopover({
 }: DayCellPopoverProps) {
   const [open, setOpen] = React.useState(false)
   const fecha = items[0]?.fecha
+  const futura = Boolean(fecha) && esFechaFutura(fecha)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -290,58 +292,66 @@ function DayCellPopover({
           </button>
         </div>
 
-        <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {items.map((item) => {
-            const marcado = markedEntryIds.has(item.id)
-            const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
-            return (
-              <li key={item.id} className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {item.grado}{item.grupo} ({item.jornada})
-                </span>
-                <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                  <span className="text-sm font-medium">{nombreSesion(item)}</span>
-                  {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
-                </div>
-                <button
-                  type="button"
-                  disabled={markingEntryId !== null}
-                  onClick={() => onMarkAllPresent(item)}
-                  className={cn(
-                    "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",
-                    marcado ? "text-green" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {markingEntryId === item.id ? (
-                    <SpinnerIcon className="size-3.5 animate-spin" />
-                  ) : marcado ? (
-                    <CheckCircleFillIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                  ) : (
-                    <span className="size-3.5 shrink-0 rounded-full border border-border" aria-hidden="true" />
-                  )}
-                  Marcar todo como Asistió
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+        {futura ? (
+          <p className="text-xs text-muted-foreground">
+            Todavía no se puede tomar asistencia: es una fecha futura.
+          </p>
+        ) : (
+          <>
+            <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {items.map((item) => {
+                const marcado = markedEntryIds.has(item.id)
+                const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
+                return (
+                  <li key={item.id} className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {item.grado}{item.grupo} ({item.jornada})
+                    </span>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                      <span className="text-sm font-medium">{nombreSesion(item)}</span>
+                      {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={markingEntryId !== null}
+                      onClick={() => onMarkAllPresent(item)}
+                      className={cn(
+                        "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",
+                        marcado ? "text-green" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {markingEntryId === item.id ? (
+                        <SpinnerIcon className="size-3.5 animate-spin" />
+                      ) : marcado ? (
+                        <CheckCircleFillIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <span className="size-3.5 shrink-0 rounded-full border border-border" aria-hidden="true" />
+                      )}
+                      Marcar todo como Asistió
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
 
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="xs"
-          className="justify-start gap-2 px-0"
-          render={
-            <Link
-              to={paths.app.asistenciaManual.getHref()}
-              search={{ fecha, sede: manualSede }}
-            />
-          }
-          nativeButton={false}
-        >
-          <ClipboardTextIcon className="size-4" />
-          Asistencia manual
-        </Button>
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              className="justify-start gap-2 px-0"
+              render={
+                <Link
+                  to={paths.app.asistenciaManual.getHref()}
+                  search={{ fecha, sede: manualSede }}
+                />
+              }
+              nativeButton={false}
+            >
+              <ClipboardTextIcon className="size-4" />
+              Asistencia manual
+            </Button>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   )

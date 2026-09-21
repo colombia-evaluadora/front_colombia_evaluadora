@@ -26,6 +26,19 @@ interface UseDataTableOptions<TData> extends DataTableFilters {
   data: TData[]
   pageCount: number
   getRowId: (row: TData) => string
+  // Si se define, la visibilidad de columnas se persiste en localStorage
+  // bajo esta clave, para recordarla entre sesiones.
+  columnVisibilityStorageKey?: string
+}
+
+function readStoredVisibility(storageKey: string | undefined): VisibilityState {
+  if (!storageKey) return {}
+  try {
+    const raw = localStorage.getItem(storageKey)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
 }
 
 interface UseDataTableResult<TData> {
@@ -46,9 +59,26 @@ export function useDataTable<TData>({
   setPageSize,
   sorting,
   setSorting,
+  columnVisibilityStorageKey,
 }: UseDataTableOptions<TData>): UseDataTableResult<TData> {
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
+    readStoredVisibility(columnVisibilityStorageKey),
+  )
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+
+  const onColumnVisibilityChange = (updater: Updater<VisibilityState>) => {
+    setColumnVisibility((current) => {
+      const next = typeof updater === "function" ? updater(current) : updater
+      if (columnVisibilityStorageKey) {
+        try {
+          localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(next))
+        } catch {
+          // localStorage no disponible (modo privado, cuota, etc.): se ignora.
+        }
+      }
+      return next
+    })
+  }
 
   const onSortingChange = (updater: Updater<SortingState>) => {
     const next = typeof updater === "function" ? updater(sorting) : updater
@@ -76,7 +106,7 @@ export function useDataTable<TData>({
       pagination: { pageIndex, pageSize },
     },
     onSortingChange,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange,
     getCoreRowModel: getCoreRowModel(),

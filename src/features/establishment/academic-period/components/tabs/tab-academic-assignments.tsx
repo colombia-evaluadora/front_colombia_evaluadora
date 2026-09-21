@@ -137,6 +137,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     setPageSize: changePageSize,
     sorting,
     setSorting,
+    columnVisibilityStorageKey: "tab-academic-assignments-column-visibility",
   })
 
   function assign(employeeId: number, ids: string[]) {

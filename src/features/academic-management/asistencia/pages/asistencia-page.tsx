@@ -6,6 +6,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { Button } from "@/components/ui/button"
 import { ClipboardCheckIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
@@ -100,6 +101,7 @@ function AsistenciaPageContent() {
             : `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
           fecha: b.fecha,
           bloque: b.bloque,
+          bloques: b.bloques,
           fkGrupo: b.fkGrupo,
           grupo: b.grupo,
           grado: b.grado,
@@ -122,25 +124,31 @@ function AsistenciaPageContent() {
   const [markingEntryId, setMarkingEntryId] = React.useState<string | null>(null)
   const [markedEntryIds, setMarkedEntryIds] = React.useState<Set<string>>(new Set())
 
-  function handleMarkAllPresent(entry: AsistenciaDayEntry) {
+  async function handleMarkAllPresent(entry: AsistenciaDayEntry) {
     setMarkingEntryId(entry.id)
-    registrar.mutate(
-      {
-        GRUPO: entry.fkGrupo,
-        FECHA: entry.fecha,
-        MARCAR_TODOS: 1,
-        ...(entry.esFormativa
-          ? { ACTIVIDAD: entry.fkActividad ?? undefined }
-          : { ASIGNATURA: entry.fkAsignatura, BLOQUE: entry.bloque }),
-      },
-      {
-        onSuccess: () => {
-          notify(`Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`)
-          setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
-        },
-        onSettled: () => setMarkingEntryId(null),
-      },
-    )
+    try {
+      // Una clase de varios bloques continuos es UNA sola sesión en la
+      // grilla, pero cada bloque es su propia fila de TASISTENCIA -- marcar
+      // solo `entry.bloque` (el primero) dejaba el resto sin registrar.
+      await Promise.all(
+        entry.bloques.map((bloque) =>
+          registrar.mutateAsync({
+            GRUPO: entry.fkGrupo,
+            FECHA: entry.fecha,
+            MARCAR_TODOS: 1,
+            ...(entry.esFormativa
+              ? { ACTIVIDAD: entry.fkActividad ?? undefined }
+              : { ASIGNATURA: entry.fkAsignatura, BLOQUE: bloque }),
+          }),
+        ),
+      )
+      notify(`Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`)
+      setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setMarkingEntryId(null)
+    }
   }
 
   return (

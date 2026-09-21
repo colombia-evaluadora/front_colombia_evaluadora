@@ -5,19 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   EyeIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  SpinnerIcon,
 } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -27,14 +21,28 @@ import {
   useCalificacionesQuery,
 } from "@/features/planeador/api/query/use-calificaciones-query"
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
+import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
+import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useObservarEstudianteMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
+import {
+  useAgregarObservacionSoporteMutation,
+  useQuitarObservacionSoporteMutation,
+} from "@/features/planeador/api/mutations/use-observacion-soporte"
+import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use-calificar-bulk"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
+import {
+  buildBulkInputs,
+} from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import {
+  InstrumentoGradingFields,
+  instrumentoCompletitud,
+} from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import {
   ObservacionEstudianteSheet,
   type EstudianteObservable,
 } from "@/features/planeador/components/planilla/observacion-estudiante-sheet"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import type { CalificacionEstudiante } from "@/features/planeador/api/types/calificacion"
+import type { CalificacionEstudiante, NotaCriterio } from "@/features/planeador/api/types/calificacion"
 
 interface CalificacionesAprobacionViewProps {
   actividad: Actividad
@@ -48,10 +56,9 @@ interface CalificacionesAprobacionViewProps {
  *   la asistencia de la sesión (grupo, actividad, fecha) y abre un panel
  *   lateral por estudiante para escribir SU observación — la asistencia va
  *   primero porque observar la exige.
- * - **Evaluativa**: sigue la maqueta de aprobación (Diseño/Modalidad).
- *   No tiene backend detrás todavía — ver
- *   `docs/planeador-pendientes-integracion.md`, bloqueo #1 —, así que su
- *   `Guardar` avisa en vez de simular que guardó.
+ * - **Evaluativa**: mismo instrumento real y mismo bulk que `CalificarActividadBulk`
+ *   (`InstrumentoGradingFields` + `buildBulkInputs` + `useCalificarBulkMutation`),
+ *   aplicado a los estudiantes tildados en esta lista en vez de a todo el curso.
  *
  * La contraparte nota-por-criterio es `CalificacionesView` (chulito "Marcar").
  */
@@ -97,8 +104,7 @@ export function CalificacionesAprobacionView({
   // abierto no lo desbloqueaba — se quedaba con el "sin registrar" de cuando
   // se abrió.
   const [observandoId, setObservandoId] = useState<number | null>(null)
-  const [diseno, setDiseno] = useState("excelente")
-  const [modalidad, setModalidad] = useState("presencial")
+  const [nota, setNota] = useState<NotaCriterio[]>([])
   const [filtro, setFiltro] = useState("")
   const [dirty, setDirty] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -142,6 +148,36 @@ export function CalificacionesAprobacionView({
         return estudiante ? aObservable(estudiante) : null
       })()
     : null
+
+  // `useCalificacionesQuery` no trae evidencias (GET .../calificaciones no
+  // las expone) -- se piden aparte, mismo patrón que `CeldaObservacionTrigger`.
+  const { data: notaObservando } = useNotaEstudianteQuery(observandoId ?? undefined)
+  const agregarEvidencia = useAgregarObservacionSoporteMutation({
+    mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+  })
+  const quitarEvidencia = useQuitarObservacionSoporteMutation({
+    mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+  })
+  const calificarBulk = useCalificarBulkMutation()
+  const completitud = instrumentoCompletitud(instrumento, nota)
+
+  /** Mismo bulk que `CalificarActividadBulk`: un `PUT .../calificar-bulk/<tipo>`
+   *  por cada criterio/ítem/nivel llenado, aplicado a los estudiantes tildados. */
+  async function guardarCalificacionBulk() {
+    if (!instrumento) return
+    const inputs = buildBulkInputs(instrumento, nota, actividad.id, [...seleccionados], actividad.fechaInicio)
+    if (inputs.length === 0) return
+    setGuardando(true)
+    try {
+      await Promise.all(inputs.map((input) => calificarBulk.mutateAsync(input)))
+      notify("Calificación en bloque guardada.")
+      setDirty(false)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   /** Un `PUT .../observar` por estudiante, con SU texto y SU fecha de
    *  asistencia — el gate del backend la exige por estudiante, que es por lo
@@ -220,48 +256,14 @@ export function CalificacionesAprobacionView({
       )}
 
       {formativa || sinSalida ? null : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field variant="outlined">
-            <FieldLabel>Diseño</FieldLabel>
-            <Select
-              value={diseno}
-              onValueChange={(value) => {
-                setDirty(true)
-                setDiseno(value ?? "")
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="excelente">Excelente</SelectItem>
-                <SelectItem value="bueno">Bueno</SelectItem>
-                <SelectItem value="aceptable">Aceptable</SelectItem>
-                <SelectItem value="bajo">Bajo</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field variant="outlined">
-            <FieldLabel>Modalidad</FieldLabel>
-            <Select
-              value={modalidad}
-              onValueChange={(value) => {
-                setDirty(true)
-                setModalidad(value ?? "")
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="presencial">Presencial</SelectItem>
-                <SelectItem value="virtual">Virtual</SelectItem>
-                <SelectItem value="mixta">Mixta</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+        <InstrumentoGradingFields
+          actividadId={actividad.id}
+          value={nota}
+          onChange={(next) => {
+            setDirty(true)
+            setNota(next)
+          }}
+        />
       )}
 
       <Field variant="outlined">
@@ -371,30 +373,45 @@ export function CalificacionesAprobacionView({
       <ObservacionEstudianteSheet
         estudiante={observando}
         contexto={actividad.nombre}
+        evidencias={notaObservando?.evidencias ?? []}
+        actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
         guardando={guardando}
         onOpenChange={(open) => {
           if (!open) setObservandoId(null)
         }}
         onGuardar={guardarObservacion}
+        onAgregarEvidencia={(archivo) => {
+          if (observandoId == null || !observando?.fecha) return
+          agregarEvidencia.mutate({ pkTactividadEstudiante: observandoId, archivo, fecha: observando.fecha })
+        }}
+        agregandoEvidencia={agregarEvidencia.isPending}
+        onQuitarEvidencia={(evidencia) => {
+          if (observandoId == null || !observando?.fecha) return
+          quitarEvidencia.mutate({
+            pkTactividadSoporte: evidencia.pk,
+            pkTactividadEstudiante: observandoId,
+            fecha: observando.fecha,
+          })
+        }}
+        quitandoEvidenciaPk={
+          quitarEvidencia.isPending ? (quitarEvidencia.variables?.pkTactividadSoporte ?? null) : null
+        }
       />
 
       {formativa ? null : (
         dirty && (
           <div className="flex items-center justify-between rounded-md border bg-card px-4 py-3">
-            <p className="text-sm">
-              Se detectaron cambios. Guarda para conservar la información.
+            <p className="text-muted-foreground text-sm">
+              {completitud.mensaje ?? "Se aplicará a los estudiantes tildados."}
             </p>
             <Button
               variant="fill"
               color="primary"
               size="sm"
-              onClick={() =>
-                notify(
-                  "La aprobación de calificaciones todavía no tiene endpoint: los cambios no se guardaron.",
-                  { variant: "error" },
-                )
-              }
+              disabled={seleccionados.size === 0 || !completitud.completo || guardando}
+              onClick={guardarCalificacionBulk}
             >
+              {guardando && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
               Guardar
             </Button>
           </div>
