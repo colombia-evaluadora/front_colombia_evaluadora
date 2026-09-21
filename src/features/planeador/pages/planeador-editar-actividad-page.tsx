@@ -120,8 +120,30 @@ function EditarActividadPageContent({
     esEvaluativa,
   )
   const isPendingCompleto = isPending || (esEvaluativa && isPendingInstrumento)
+  // `{...actividad, ...instrumentoForm}` a secas pisaba `instrumentoPersonalizado`
+  // ENTERO: `instrumentoForm` (GET .../instrumento) resuelve `metodoValoracion`/
+  // `tipoEvidenciaEsperada`, pero no conoce `requiereArchivo`/`requiereRespuestaTexto`/
+  // `descripcion` — esos viven en el detalle real de la actividad (`REQUIERE_ARCHIVO`/
+  // `REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO`, campos de la actividad misma, no del
+  // instrumento — ver `campos_disponibles...descripcionInstrumento.motivo`: "va en el
+  // POST/PATCH de la actividad"), así que `toInstrumentoActividadParaForm` los rellena
+  // con `false`/`""` a falta de otra cosa. El spread superficial dejaba esos tres
+  // placeholders ganando sobre el valor real ya guardado: el docente marcaba "El
+  // estudiante debe adjuntar un archivo", guardaba bien (confirmado: el backend sí lo
+  // persiste), pero al reabrir la actividad el checkbox volvía a aparecer destildado.
   const actividadParaForm =
-    actividad && (!esEvaluativa || instrumentoForm) ? { ...actividad, ...(instrumentoForm ?? {}) } : undefined
+    actividad && (!esEvaluativa || instrumentoForm)
+      ? {
+          ...actividad,
+          ...(instrumentoForm ?? {}),
+          instrumentoPersonalizado: {
+            ...(instrumentoForm?.instrumentoPersonalizado ?? actividad.instrumentoPersonalizado),
+            requiereArchivo: actividad.instrumentoPersonalizado.requiereArchivo,
+            requiereRespuestaTexto: actividad.instrumentoPersonalizado.requiereRespuestaTexto,
+            descripcion: actividad.instrumentoPersonalizado.descripcion,
+          },
+        }
+      : undefined
 
   // El "éxito"/navegación ya NO vive en `onSuccess` de esta mutación en
   // particular — ver el comentario grande en `handleSubmit`, que explica
