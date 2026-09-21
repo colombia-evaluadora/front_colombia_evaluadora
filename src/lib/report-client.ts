@@ -46,6 +46,7 @@ export type ReportKey =
   | "asistencia"
   | "matricula"
   | "informes"
+  | "informes-tabla"
   | "boletin-preescolar"
   | "planeador-actividades"
   | "auditoria-sesiones"

@@ -12,6 +12,9 @@ import {
   deleteObservacion,
   estaConsolidado,
   getObservacion,
+  getObservacionAnio,
+  setObservacionAnio,
+  deleteObservacionAnio,
   historialInforme,
   notaDe,
   registrarHistorial,
@@ -131,6 +134,8 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
         observacion_estado: grupo.cualitativo && getObservacion(estudiante.matriculaId, periodoId) ? "APROBADA" : null,
         observacion_desactualizada: false,
         tiene_cambios_propuestos: detalle.some((d) => d.estado === "cambio_propuesto"),
+        // Solo preescolar adjunta imágenes a las observaciones.
+        evidencias: grupo.cualitativo ? EVIDENCIAS_MOCK.length : 0,
       }
     })
 }
@@ -198,10 +203,13 @@ function filasFinalDeGrupo(grupoId: number, search: string | null) {
         aprobadas: detalle.filter((d) => d.aprobada).length,
         reprobadas: detalle.filter((d) => !d.aprobada).length,
         asignaturas: detalle,
-        observacion: null,
-        observacion_estado: null,
+        // Lo GUARDADO, no el borrador: el concatenado es lo que devuelve
+        // generar, y la fila arranca vacía hasta que alguien lo acepte.
+        observacion: getObservacionAnio(estudiante.matriculaId),
+        observacion_estado: getObservacionAnio(estudiante.matriculaId) ? "APROBADA" : null,
         observacion_desactualizada: false,
         tiene_cambios_propuestos: false,
+        evidencias: grupo.cualitativo ? EVIDENCIAS_MOCK.length : 0,
       }
     })
 
@@ -214,6 +222,27 @@ function filasFinalDeGrupo(grupoId: number, search: string | null) {
     fila.puesto = i >= 0 ? i + 1 : null
   }
   return filas
+}
+/** Las evidencias que la demo adjunta a las observaciones de preescolar. Los
+ *  `archivoId` no existen en el file-service simulado: `ArchivoImage` cae a su
+ *  propio placeholder, que es justo lo que hace en producción con un archivo
+ *  que ya no está. */
+const EVIDENCIAS_MOCK = [
+  { pk: 9001, archivo: 5001, nombre: "ronda-de-la-manana.jpg", actividad: "Ronda de la mañana" },
+  { pk: 9002, archivo: 5002, nombre: "torre-de-bloques.jpg", actividad: "Torre de bloques" },
+  { pk: 9003, archivo: 5003, nombre: "pintura-libre.jpg", actividad: "Pintura libre" },
+]
+
+/** La observación de la fila Final: los resúmenes YA consolidados de cada
+ *  período, encadenados y prefijados con el nombre del período. No es lo mismo
+ *  que `/informes/observacion/generar`, que concatena las observaciones por
+ *  actividad dentro de un período. */
+function observacionFinalDe(matriculaId: number): string | null {
+  const partes = PERIODOS_INFORME.map((periodo) => {
+    const texto = getObservacion(matriculaId, periodo.id)
+    return texto ? `${periodo.nombre}: ${texto}` : null
+  }).filter((parte): parte is string => parte !== null)
+  return partes.length > 0 ? partes.join(" ") : null
 }
 export const informesHandlers = [
   // --- Cascada del filtro: sede -> año -> jornada/período académico --------
@@ -560,5 +589,64 @@ export const informesHandlers = [
       },
     ]
     return HttpResponse.json({ rows })
+  }),
+  /** `POST /informes/evidencias`. Con FK_TPERIODO_EVALUACION nulo, las de todo
+   *  el año — que es lo que pide la fila Final. */
+  http.post(URL("evidencias"), async ({ request }) => {
+    await delay(120)
+    const body = (await request.json()) as {
+      FK_TMATRICULA: number
+      FK_TPERIODO_EVALUACION: number | null
+    }
+    const periodos = body.FK_TPERIODO_EVALUACION
+      ? PERIODOS_INFORME.filter((p) => p.id === body.FK_TPERIODO_EVALUACION)
+      : PERIODOS_INFORME
+    const rows = periodos.flatMap((periodo) =>
+      EVIDENCIAS_MOCK.map((evidencia) => ({
+        pk_tactividad_soporte: evidencia.pk + periodo.id,
+        fk_tarchivo: evidencia.archivo,
+        nombre: evidencia.nombre,
+        urls3: `actividad/${evidencia.archivo}.jpg`,
+        peso: 180_000,
+        etiqueta: null,
+        fecha: null,
+        fk_tperiodo_evaluacion: periodo.id,
+        periodo_nombre: periodo.nombre,
+        fk_tactividad: evidencia.pk,
+        actividad_titulo: evidencia.actividad,
+        observacion: null,
+      })),
+    )
+    return HttpResponse.json({ rows })
+  }),
+
+  /** `POST /informes/observacion/final`. GENERA el borrador del año y no
+   *  escribe nada; lo que devuelve se reenvía tal cual al guardar. */
+  http.post(URL("observacion/final"), async ({ request }) => {
+    await delay(120)
+    const body = (await request.json()) as { FK_TMATRICULA: number }
+    const borrador = observacionFinalDe(body.FK_TMATRICULA)
+    return HttpResponse.json({
+      rows: [
+        {
+          observacion_ia: borrador,
+          periodos_origen: borrador ? borrador.split(":").length - 1 : 0,
+        },
+      ],
+    })
+  }),
+
+  http.post(URL("observacion/final/guardar"), async ({ request }) => {
+    await delay(150)
+    const body = (await request.json()) as { FK_TMATRICULA: number; OBSERVACION: string }
+    setObservacionAnio(body.FK_TMATRICULA, body.OBSERVACION)
+    return HttpResponse.json({ rows: [{ pk_testudiante_anio_observacion: body.FK_TMATRICULA }] })
+  }),
+
+  http.post(URL("observacion/final/eliminar"), async ({ request }) => {
+    await delay(150)
+    const body = (await request.json()) as { FK_TMATRICULA: number }
+    deleteObservacionAnio(body.FK_TMATRICULA)
+    return HttpResponse.json({ rows: [{ pk_testudiante_anio_observacion: body.FK_TMATRICULA }] })
   }),
 ]

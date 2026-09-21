@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { BrainIcon, CheckIcon, InfoIcon } from "@/components/ui/icons"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
 
 import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
+import { useEvidenciasInformeQuery } from "@/features/academic-management/reports/api/query/use-evidencias-informe-query"
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
 
 const MAX_CARACTERES = 5000
@@ -38,6 +40,20 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
   const [borrador, setBorrador] = React.useState<Borrador | null>(null)
   const generar = useGenerarObservacionMutation()
 
+  // La fila Final tiene el mismo ciclo que un período —generar, revisar,
+  // guardar— pero contra otra tabla y otro endpoint: su borrador encadena los
+  // resúmenes YA consolidados, no las observaciones por actividad. El `null`
+  // como periodoId es lo que elige ese camino en las mutaciones.
+  const esFinal = fila?.modoPeriodo === "final"
+  const periodoIdOnull = esFinal ? null : (fila?.periodoId ?? null)
+
+  // Las evidencias del período; en el Final, las de todo el año. La cuenta ya
+  // viene en el listado, así que no se pide nada cuando no hay ninguna.
+  const evidencias = useEvidenciasInformeQuery(
+    fila ? { matriculaId: fila.matriculaId, periodoId: esFinal ? null : fila.periodoId } : null,
+    (fila?.evidencias ?? 0) > 0,
+  )
+
   React.useEffect(() => {
     if (!fila) return
     setTexto(fila.observacion ?? "")
@@ -49,12 +65,15 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
     try {
       const generada = await generar.mutateAsync({
         matriculaId: fila.matriculaId,
-        periodoId: fila.periodoId,
+        periodoId: periodoIdOnull,
       })
       if (generada.texto.trim() === "") {
-        notify("El docente no dejó observaciones que resumir en este período.", {
-          variant: "info",
-        })
+        notify(
+          esFinal
+            ? "Todavía no hay ningún período con su observación consolidada."
+            : "El docente no dejó observaciones que resumir en este período.",
+          { variant: "info" },
+        )
         return
       }
       setTexto(generada.texto)
@@ -97,7 +116,11 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
               value={texto}
               maxLength={MAX_CARACTERES}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder="Escribe la observación de este estudiante para este período…"
+              placeholder={
+                esFinal
+                  ? "Genera el comentario del año y revísalo antes de guardarlo…"
+                  : "Escribe la observación de este estudiante para este período…"
+              }
               className={cn(TEXTAREA_OUTLINED, "min-h-40 resize-y")}
             />
             <span className="self-end text-xs text-muted-foreground">
@@ -105,11 +128,38 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
             </span>
           </div>
 
+          {(fila?.evidencias ?? 0) > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold uppercase">
+                Evidencias{esFinal ? " del año" : ""}
+              </p>
+              {evidencias.isPending ? (
+                <p className="text-xs text-muted-foreground">Cargando evidencias…</p>
+              ) : (
+                <div className="flex flex-wrap items-start gap-2">
+                  {(evidencias.data ?? []).map((evidencia) => (
+                    <ArchivoImage
+                      key={evidencia.id}
+                      archivoId={evidencia.archivoId}
+                      alt={
+                        evidencia.nombre ??
+                        `Evidencia de ${evidencia.actividadTitulo ?? fila?.nombreCompleto ?? ""}`
+                      }
+                      className="size-20"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
             {borrador
-              ? "Borrador generado a partir de las observaciones del docente. Editalo si hace falta: se guarda como modificado."
-              : "Guardar con el texto vacío elimina la observación de este período."}
+              ? "Borrador generado; editalo si hace falta, que se guarda como modificado."
+              : esFinal
+                ? "El borrador del año se arma con las observaciones ya consolidadas de cada período. Guardar con el texto vacío lo elimina."
+                : "Guardar con el texto vacío elimina la observación de este período."}
           </div>
         </div>
 

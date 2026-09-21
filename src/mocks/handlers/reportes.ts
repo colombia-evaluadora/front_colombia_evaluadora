@@ -60,6 +60,7 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   asistencia: "asistencia",
   matricula: "matricula",
   informes: "informes",
+  "informes-tabla": "informe-tabla",
 }
 
 function fecha() {
