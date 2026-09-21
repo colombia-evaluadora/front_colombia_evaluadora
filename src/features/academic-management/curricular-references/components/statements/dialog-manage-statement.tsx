@@ -9,10 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
+import { cn } from "@/lib/utils"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -154,7 +155,7 @@ export function ManageStatementDialog({
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
-              className="field-sizing-fixed max-w-full min-h-32 rounded-md border border-input px-3 py-2 break-all"
+              className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />
             <CharacterCounter value={text} max={400} />
             <FieldError>{error}</FieldError>

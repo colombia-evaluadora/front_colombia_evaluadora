@@ -90,8 +90,8 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
   {
     id: "soporte",
     enableHiding: false,
-    meta: { label: "Soporte" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Soporte" />,
+    meta: { label: "Justificación" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Justificación" />,
     enableSorting: false,
     cell: ({ row }) => {
       if (row.original.tipo_asistencia_valor === 1) return null
@@ -103,7 +103,7 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
           )}
         >
           <PaperclipIcon className="size-4 shrink-0" />
-          {row.original.tiene_soporte ? row.original.soporte_nombre : "Sin soporte"}
+          {row.original.tiene_soporte ? row.original.soporte_nombre : "Sin justificación"}
         </span>
       )
     },

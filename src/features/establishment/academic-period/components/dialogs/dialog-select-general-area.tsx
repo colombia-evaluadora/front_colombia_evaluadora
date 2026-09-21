@@ -63,6 +63,11 @@ interface SelectGeneralAreaDialogProps {
   onChange: (nombre: string) => void
   id?: string
   invalid?: boolean
+  /** Acta 19-sep-2026: al elegir la asignatura general de una asignatura
+   *  (a diferencia del área general) no se puede borrar del catálogo — es
+   *  una lista predefinida de ley. Default `true` para no tocar el
+   *  comportamiento existente del selector de área. */
+  allowDelete?: boolean
 }
 
 export function SelectGeneralAreaDialog({
@@ -70,6 +75,7 @@ export function SelectGeneralAreaDialog({
   onChange,
   id,
   invalid,
+  allowDelete = true,
 }: SelectGeneralAreaDialogProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -217,12 +223,14 @@ export function SelectGeneralAreaDialog({
                                   {selected && <CheckIcon className="size-4 shrink-0" />}
                                   <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
                                 </button>
-                                <ConfirmRemoveButton
-                                  label={`Eliminar ${area.nombre}`}
-                                  description={`Se eliminará permanentemente el área ${area.nombre}. Esta acción no se puede deshacer.`}
-                                  className="mr-1 shrink-0 text-muted-foreground hover:text-foreground"
-                                  onConfirm={() => handleDelete(area)}
-                                />
+                                {allowDelete && (
+                                  <ConfirmRemoveButton
+                                    label={`Eliminar ${area.nombre}`}
+                                    description={`Se eliminará permanentemente el área ${area.nombre}. Esta acción no se puede deshacer.`}
+                                    className="mr-1 shrink-0 text-muted-foreground hover:text-foreground"
+                                    onConfirm={() => handleDelete(area)}
+                                  />
+                                )}
                               </div>
                             </TableCell>
                           )

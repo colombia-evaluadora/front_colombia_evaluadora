@@ -2,10 +2,11 @@ import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { BrainIcon, CheckIcon, InfoIcon } from "@/components/ui/icons"
 
 import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
@@ -97,7 +98,7 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
               maxLength={MAX_CARACTERES}
               onChange={(e) => setTexto(e.target.value)}
               placeholder="Escribe la observación de este estudiante para este período…"
-              className="min-h-40 resize-y rounded-md border border-input px-3 py-2"
+              className={cn(TEXTAREA_OUTLINED, "min-h-40 resize-y")}
             />
             <span className="self-end text-xs text-muted-foreground">
               {texto.length}/{MAX_CARACTERES}

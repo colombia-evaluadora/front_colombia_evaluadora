@@ -90,6 +90,7 @@ export function SubjectRowFields({
           value={draft.asignaturaGeneral}
           onChange={(value) => onPatch({ asignaturaGeneral: value })}
           invalid={invalidFields?.has("asignaturaGeneral")}
+          allowDelete={false}
         />
       </TableCell>
       <TableCell>
