@@ -151,7 +151,13 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
       destino: actividad.recuperacionDestino,
       fkActividadRecuperar: actividad.recuperacionActividadId,
       tipoAplicacion: actividad.recuperacionTipoAplicacion,
-      tipoCalculo: actividad.recuperacionTipoCalculo,
+      // Regla `tipoCalculoOcultoSi` de `campos_disponibles.recuperacion.
+      // reglas`: con REEMPLAZAR el campo se omite del todo (no se manda
+      // `""`) — la guía dice "si no viene se guarda PROMEDIADO", no "si
+      // viene vacío"; un string vacío no es un valor del catálogo y el
+      // backend podría rechazarlo en vez de aplicar el default.
+      tipoCalculo:
+        actividad.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : actividad.recuperacionTipoCalculo,
       valorPonderacion: actividad.recuperacionValorPonderacion,
     }
   }
