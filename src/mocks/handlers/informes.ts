@@ -135,6 +135,86 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
     })
 }
 
+/** La fila "Final" de `INCLUIR_FINAL`: el promedio del AÑO, no de los
+ *  períodos marcados, y un período sin nota guardada vale cero. Se calcula
+ *  al vuelo igual que en el backend, y llega con `fk_tperiodo_evaluacion:
+ *  -1` — un centinela, no un identificador. */
+function filasFinalDeGrupo(grupoId: number, search: string | null) {
+  const grupo = grupoDe(grupoId)
+  if (!grupo) return []
+
+  const asignaturas = asignaturasDe(grupoId)
+  const totalPeriodos = PERIODOS_INFORME.length
+
+  const filas = estudiantesDe(grupoId)
+    .filter((e) => coincide(`${e.nombre} ${e.documento}`, search))
+    .map((estudiante) => {
+      // Preescolar no promedia observaciones: la fila existe, vacía.
+      const detalle = grupo.cualitativo
+        ? []
+        : asignaturas.map((asignatura) => {
+            const bruta = notaDe(estudiante.matriculaId, asignatura.id)
+            const suma = PERIODOS_INFORME.reduce(
+              (acc, periodo) => acc + (estaConsolidado(grupoId, periodo.id) ? bruta : 0),
+              0,
+            )
+            const nota = Math.round((suma / totalPeriodos) * 10) / 10
+            return {
+              asignatura: asignatura.id,
+              nombre: asignatura.nombre,
+              abreviacion: asignatura.abreviacion,
+              area: asignatura.area,
+              orden: asignatura.orden,
+              estado: "final",
+              es_numerico: true,
+              nota,
+              nota_propuesta: null,
+              valoracion: null,
+              simbolo: null,
+              aprobada: nota >= 3,
+              ya_asegurado: false,
+              alcanzable: true,
+            }
+          })
+
+      const promedio = detalle.length
+        ? Math.round((detalle.reduce((acc, d) => acc + d.nota, 0) / detalle.length) * 10) / 10
+        : null
+
+      return {
+        fk_tmatricula: estudiante.matriculaId,
+        estudiante: estudiante.nombre,
+        documento: estudiante.documento,
+        fk_tperiodo_evaluacion: -1,
+        periodo_nombre: "Final",
+        periodo_abreviacion: "FIN",
+        modo_periodo: "final",
+        formato: grupo.cualitativo ? "cualitativo" : "numerico",
+        es_cualitativo: grupo.cualitativo,
+        consolidado: false,
+        promedio_guardado: promedio,
+        promedio_proyectado: promedio,
+        puesto: null as number | null,
+        aprobadas: detalle.filter((d) => d.aprobada).length,
+        reprobadas: detalle.filter((d) => !d.aprobada).length,
+        asignaturas: detalle,
+        observacion: null,
+        observacion_estado: null,
+        observacion_desactualizada: false,
+        tiene_cambios_propuestos: false,
+      }
+    })
+
+  // El puesto se reparte sobre el promedio del Final, como en el backend.
+  const orden = [...filas]
+    .filter((f) => f.promedio_guardado != null)
+    .sort((a, b) => (b.promedio_guardado ?? 0) - (a.promedio_guardado ?? 0))
+  for (const fila of filas) {
+    const i = orden.indexOf(fila)
+    fila.puesto = i >= 0 ? i + 1 : null
+  }
+  return filas
+}
 export const informesHandlers = [
   // --- Cascada del filtro: sede -> año -> jornada/período académico --------
   http.post(URL("sedes"), async () => {
@@ -211,6 +291,7 @@ export const informesHandlers = [
       FK_TGRUPO: number
       PERIODOS: number[] | null
       SEARCH: string | null
+      INCLUIR_FINAL: boolean | null
     }
     const pedidos = body.PERIODOS?.length ? body.PERIODOS : [PERIODOS_INFORME[0].id]
     // Ordenados por período, no por el orden en que llegaron: `PERIODOS` viene
@@ -221,6 +302,7 @@ export const informesHandlers = [
     const rows = periodos.flatMap((periodoId) =>
       filasDeGrupoPeriodo(body.FK_TGRUPO, periodoId, body.SEARCH),
     )
+    if (body.INCLUIR_FINAL) rows.push(...filasFinalDeGrupo(body.FK_TGRUPO, body.SEARCH))
     return HttpResponse.json({ rows })
   }),
 
