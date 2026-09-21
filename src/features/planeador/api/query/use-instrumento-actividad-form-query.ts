@@ -67,9 +67,17 @@ interface RawEscala {
 
 interface RawOtro {
   pk?: number
-  tipoEvidencia: string | null
+  /** Id numérico de `TLISTA_VALOR` — mismo patrón que `RawEscala.tipoEscala`:
+   *  el código de texto no viaja acá, solo en `tipoEvidenciaNombre` (que
+   *  además ya es lo único que usa `tipoEvidenciaEsperadaDesdeNombre`, por
+   *  eso este campo numérico nunca se leyó mal). */
+  tipoEvidencia: number | null
   tipoEvidenciaNombre?: string | null
-  metodoValoracion: "RUBRICA" | "LISTA_COTEJO" | "ESCALA_VALORACION" | null
+  /** Id numérico — el código real está en `metodoValoracionValor`, no acá.
+   *  Confirmado real: `{metodoValoracion: 51983, metodoValoracionValor:
+   *  "ESCALA_VALORACION", ...}`. */
+  metodoValoracion: number | null
+  metodoValoracionValor: "RUBRICA" | "LISTA_COTEJO" | "ESCALA_VALORACION" | null
   metodoValoracionNombre?: string | null
   definicion: RawCriterio[] | RawCotejoItem[] | RawEscala
 }
@@ -96,7 +104,7 @@ function tipoEvidenciaEsperadaDesdeNombre(nombre: string | null | undefined): st
 }
 
 function metodoValoracionDesdeCodigo(
-  codigo: RawOtro["metodoValoracion"],
+  codigo: RawOtro["metodoValoracionValor"],
 ): InstrumentoPersonalizado["metodoValoracion"] {
   if (codigo === "RUBRICA") return "Rúbrica"
   if (codigo === "LISTA_COTEJO") return "Lista de cotejo"
@@ -234,10 +242,10 @@ function toInstrumentoActividadParaForm(row: RawInstrumentoActividadRow | undefi
   // `listaCotejo`/`escalaValoracion`) que si fuera el instrumento directo.
   const otro = row.definicion
   if (!otro) return base
-  const metodoValoracion = metodoValoracionDesdeCodigo(otro.metodoValoracion)
+  const metodoValoracion = metodoValoracionDesdeCodigo(otro.metodoValoracionValor)
   const instrumentoPersonalizado: InstrumentoPersonalizado = {
     descripcion: "",
-    tipoEvidenciaEsperada: tipoEvidenciaEsperadaDesdeNombre(otro.tipoEvidenciaNombre ?? otro.tipoEvidencia),
+    tipoEvidenciaEsperada: tipoEvidenciaEsperadaDesdeNombre(otro.tipoEvidenciaNombre),
     metodoValoracion,
     requiereArchivo: false,
     requiereRespuestaTexto: false,
