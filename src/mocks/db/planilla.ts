@@ -100,11 +100,23 @@ export function instrumentoActividadDe(actividad: Actividad): InstrumentoActivid
     }
   }
   if (tipo === "ESCALA_VALORACION") {
+    // Mismos ids que la categoría TIPO_ESCALA del mock (`select-catalog.ts`:
+    // Numérica=1, Cualitativa=2) — `tipoEscala` es el id numérico, NO el
+    // código; el código va aparte en `tipoEscalaValor` (confirmado real,
+    // ver `escalaDesdeRaw` en use-instrumento-actividad-form-query.ts).
+    const esNumerica = actividad.escalaValoracion.tipo === "Numérica"
     return {
       instrumento: "ESCALA_VALORACION",
       instrumentoNombre: actividad.instrumento,
       definicion: {
         pk: actividad.escalaValoracion.id,
+        tipoEscala: esNumerica ? 1 : 2,
+        tipoEscalaValor: esNumerica ? "NUMERICA" : "CUALITATIVA",
+        tipoEscalaNombre: esNumerica ? "Numérica" : "Cualitativa",
+        criteriosGenerales: actividad.escalaValoracion.criteriosGenerales || null,
+        valorMin: esNumerica ? (actividad.escalaValoracion.valorMinimo ?? null) : null,
+        valorMax: esNumerica ? (actividad.escalaValoracion.valorMaximo ?? null) : null,
+        interpretacionRangos: esNumerica ? actividad.escalaValoracion.interpretacionRangos || null : null,
         niveles: actividad.escalaValoracion.niveles.map((nivel) => ({
           pk: nivel.id,
           etiqueta: nivel.nombre,
