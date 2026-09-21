@@ -113,7 +113,13 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
       destino: data.recuperacionDestino,
       fkActividadRecuperar: data.recuperacionActividadId,
       tipoAplicacion: data.recuperacionTipoAplicacion,
-      tipoCalculo: data.recuperacionTipoCalculo,
+      // Regla `tipoCalculoOcultoSi` de `campos_disponibles.recuperacion.
+      // reglas`: con REEMPLAZAR el campo se omite del todo (no se manda
+      // `""`) — la guía dice "si no viene se guarda PROMEDIADO", no "si
+      // viene vacío"; un string vacío no es un valor del catálogo y el
+      // backend podría rechazarlo en vez de aplicar el default.
+      tipoCalculo:
+        data.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : data.recuperacionTipoCalculo,
       valorPonderacion: data.recuperacionValorPonderacion,
     }
   }

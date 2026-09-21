@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
 import { CaretDownIcon } from "@/components/ui/icons"
+import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
-import { useActividadesRecuperablesQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import { actividadesRecuperablesQueryOptions } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { FiltroColumna } from "@/features/planeador/components/forms/filtro-planilla-cascada"
 
@@ -36,16 +38,20 @@ interface ActividadRecuperarCascadaProps {
  * Cascada Grado → Grupo → Asignatura → Actividad para elegir "¿Qué
  * actividad deseas recuperar?" — mismo patrón visual y las mismas dos
  * primeras fuentes (`docentes/grupos`/`docentes/grado-asignatura`) que
- * `FiltroPlanillaCascada`, reusando su `FiltroColumna`; la última columna
- * cambia: en vez de un catálogo fijo de periodos, lista las actividades
- * recuperables de ese (grupo, asignatura) vía `useActividadesRecuperablesQuery`
- * (`GET /planeador/actividades/configuracion?RECUPERAR=S`, guía
- * `planeador-recuperacion-actividad`) — YA filtradas por el backend
- * (sumativa, no es ella misma una recuperación, activa, sin otra
- * recuperación activa apuntándole). Antes usaba `useActividadesMiasQuery`
- * (el listado genérico del rail) con un filtro de cliente que solo cubría
- * "sumativa": dejaba elegir actividades que el guardado terminaba
- * rechazando con 422/23505.
+ * `FiltroPlanillaCascada`, reusando su `FiltroColumna`.
+ *
+ * Las CUATRO columnas se filtran con el mismo endpoint (`GET /planeador/
+ * actividades/configuracion?RECUPERAR=S`, guía `planeador-recuperacion-
+ * actividad`), no solo la última: no tiene sentido dejar elegir un Grado o
+ * un Grupo que no tiene NADA recuperable debajo, para recién decírselo al
+ * usuario en la última columna vacía. No existe un endpoint que devuelva
+ * el árbol completo de una, así que se sondea cada combinación (grupo,
+ * asignatura) del docente EN PARALELO con `useQueries` — el mismo
+ * `actividadesRecuperablesQueryOptions` que ya usa la columna final, solo
+ * que acá se dispara una vez por combinación para decidir qué ramas
+ * mostrar. Se sondea TODO el árbol del docente de una sola vez (no por
+ * nivel) porque además evita volver a pedir la combinación elegida al
+ * llegar a la última columna: ya está en caché.
  */
 export function ActividadRecuperarCascada({
   value,
@@ -69,20 +75,96 @@ export function ActividadRecuperarCascada({
     return [...porId.values()]
   }, [docenteGradoAsignatura])
 
-  const grupos = useMemo(
-    () => docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft),
-    [docenteGrupos, gradoIdDraft],
+  // Cruce (grupo × asignatura) del mismo grado — el docente no necesariamente
+  // dicta esa asignatura EN ese grupo puntual (el backend es quien decide de
+  // verdad, acá solo se arman las combinaciones candidatas a sondear), mismo
+  // supuesto que ya usaba el resto de la cascada (Grupo y Asignatura salen de
+  // dos catálogos separados, sin una tercera lista docente-grupo-asignatura).
+  const combos = useMemo(() => {
+    const result: { gradoId: number; grupoId: number; asignaturaId: number }[] = []
+    for (const grado of grados) {
+      const gruposDelGrado = docenteGrupos.filter((g) => g.gradoId === grado.id)
+      const asignaturasDelGrado = docenteGradoAsignatura.filter((a) => a.gradoId === grado.id)
+      for (const grupo of gruposDelGrado) {
+        for (const asignatura of asignaturasDelGrado) {
+          result.push({ gradoId: grado.id, grupoId: grupo.grupoId, asignaturaId: asignatura.asignaturaId })
+        }
+      }
+    }
+    return result
+  }, [grados, docenteGrupos, docenteGradoAsignatura])
+
+  // Solo se sondea mientras el popover está abierto — no tiene sentido
+  // disparar esto (hasta docenteGrupos.length * docenteGradoAsignatura.length
+  // pedidos) en cada render de la página con el form cerrado.
+  const sondas = useQueries({
+    queries: combos.map((combo) => ({
+      ...actividadesRecuperablesQueryOptions(combo.grupoId, combo.asignaturaId),
+      enabled: open,
+    })),
+  })
+
+  /** `true` si esa combinación YA se supo con algo recuperable. Mientras la
+   *  sonda sigue cargando se trata como "todavía no", no como "sí" — la
+   *  rama aparece apenas la sonda resuelve, no antes (evita mostrar y
+   *  después ocultar). */
+  function comboTieneAlgo(index: number): boolean {
+    return (sondas[index]?.data?.length ?? 0) > 0
+  }
+
+  const gradosConAlgo = useMemo(() => {
+    const ids = new Set<number>()
+    combos.forEach((combo, i) => {
+      if (comboTieneAlgo(i)) ids.add(combo.gradoId)
+    })
+    return ids
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `sondas` cambia de referencia en cada resolución; `combos` ya la representa indirectamente.
+  }, [combos, sondas])
+
+  const gruposConAlgo = useMemo(() => {
+    const ids = new Set<number>()
+    combos.forEach((combo, i) => {
+      if (combo.gradoId === gradoIdDraft && comboTieneAlgo(i)) ids.add(combo.grupoId)
+    })
+    return ids
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combos, sondas, gradoIdDraft])
+
+  const asignaturasConAlgo = useMemo(() => {
+    const ids = new Set<number>()
+    combos.forEach((combo, i) => {
+      if (combo.gradoId === gradoIdDraft && combo.grupoId === grupoIdDraft && comboTieneAlgo(i)) {
+        ids.add(combo.asignaturaId)
+      }
+    })
+    return ids
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combos, sondas, gradoIdDraft, grupoIdDraft])
+
+  const gradosVisibles = useMemo(() => grados.filter((g) => gradosConAlgo.has(g.id)), [grados, gradosConAlgo])
+
+  const gruposVisibles = useMemo(
+    () => docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft && gruposConAlgo.has(grupo.grupoId)),
+    [docenteGrupos, gradoIdDraft, gruposConAlgo],
   )
 
-  const asignaturas = useMemo(
-    () => docenteGradoAsignatura.filter((par) => par.gradoId === gradoIdDraft),
-    [docenteGradoAsignatura, gradoIdDraft],
+  const asignaturasVisibles = useMemo(
+    () =>
+      docenteGradoAsignatura.filter(
+        (par) => par.gradoId === gradoIdDraft && asignaturasConAlgo.has(par.asignaturaId),
+      ),
+    [docenteGradoAsignatura, gradoIdDraft, asignaturasConAlgo],
   )
 
-  const { data: actividadesRecuperables = [] } = useActividadesRecuperablesQuery(
-    grupoIdDraft ?? undefined,
-    asignaturaIdDraft ?? undefined,
+  // La combinación elegida ya se sondeó como parte de `combos` — reusar ese
+  // resultado en vez de volver a pedirlo es justamente el punto de sondear
+  // TODO el árbol de una (ver el comentario de arriba del componente).
+  const comboElegidoIndex = combos.findIndex(
+    (c) => c.gradoId === gradoIdDraft && c.grupoId === grupoIdDraft && c.asignaturaId === asignaturaIdDraft,
   )
+  const cargandoActividades = comboElegidoIndex >= 0 && sondas[comboElegidoIndex]?.isPending
+  const actividadesRecuperables =
+    comboElegidoIndex >= 0 ? (sondas[comboElegidoIndex]?.data ?? []) : []
   // El backend ya excluye "no sumativa", "ya es una recuperación" y "tiene
   // otra recuperación activa apuntándole" — acá solo queda sacar la propia
   // actividad que se está editando, que el backend no conoce.
@@ -142,14 +224,14 @@ export function ActividadRecuperarCascada({
 
       <PopoverContent align="start" className="w-auto flex-row gap-0 p-0">
         <FiltroColumna
-          items={grados.map((grado) => ({ key: grado.id, label: grado.nombre }))}
+          items={gradosVisibles.map((grado) => ({ key: grado.id, label: grado.nombre }))}
           selectedKey={gradoIdDraft}
           onSelect={elegirGrado}
         />
 
         {gradoIdDraft != null && (
           <FiltroColumna
-            items={grupos.map((grupo) => ({ key: grupo.grupoId, label: grupoLabel(grupo) }))}
+            items={gruposVisibles.map((grupo) => ({ key: grupo.grupoId, label: grupoLabel(grupo) }))}
             selectedKey={grupoIdDraft}
             onSelect={elegirGrupo}
           />
@@ -157,7 +239,7 @@ export function ActividadRecuperarCascada({
 
         {gradoIdDraft != null && grupoIdDraft != null && (
           <FiltroColumna
-            items={asignaturas.map((asignatura) => ({
+            items={asignaturasVisibles.map((asignatura) => ({
               key: asignatura.asignaturaId,
               label: asignatura.asignaturaNombre,
             }))}
@@ -167,13 +249,21 @@ export function ActividadRecuperarCascada({
         )}
 
         {gradoIdDraft != null && grupoIdDraft != null && asignaturaIdDraft != null && (
-          <FiltroColumna
-            items={actividades.map((actividad) => ({ key: actividad.pk, label: actividad.titulo }))}
-            selectedKey={value ?? null}
-            onSelect={elegirActividad}
-            showCaret={false}
-            className="border-r-0"
-          />
+          <div className="border-r-0">
+            {cargandoActividades ? (
+              <div className="flex min-w-40 items-center justify-center p-4">
+                <Spinner className="size-5" />
+              </div>
+            ) : (
+              <FiltroColumna
+                items={actividades.map((actividad) => ({ key: actividad.pk, label: actividad.titulo }))}
+                selectedKey={value ?? null}
+                onSelect={elegirActividad}
+                showCaret={false}
+                className="border-r-0"
+              />
+            )}
+          </div>
         )}
       </PopoverContent>
     </Popover>
