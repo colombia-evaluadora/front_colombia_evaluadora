@@ -18,6 +18,7 @@ export interface AsistenciaDayEntry {
   fecha: string
   /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
   bloque: number | null
+  bloques: (number | null)[]
   fkGrupo: number
   grupo: string
   grado: string
