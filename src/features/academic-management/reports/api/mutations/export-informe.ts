@@ -9,6 +9,9 @@ interface ExportInformeInput {
   grupoId: number
   /** Vacío = todos los períodos del período académico del grupo. */
   periodos?: number[]
+  /** Incluye la fila con la nota del año. En preescolar el backend la
+   *  descarta: una línea sin notas no es nada que imprimir. */
+  incluirFinal?: boolean
 }
 
 /** Mismos binds que `/informes/grupo` (`use-informe-grupo-query.ts`): el
@@ -19,6 +22,7 @@ function exportInforme(input: ExportInformeInput): Promise<ExportResult> {
     filters: {
       FK_TGRUPO: input.grupoId,
       PERIODOS: input.periodos?.length ? input.periodos : null,
+      INCLUIR_FINAL: input.incluirFinal ?? false,
     },
   })
 }

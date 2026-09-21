@@ -22,11 +22,18 @@ import type { ExportFormat } from "@/features/academic-management/reports/api/ty
 interface DialogExportInformeProps {
   grupoId: number | null
   periodos: number[]
+  /** El checkbox "Final" de la pantalla: el boletín imprime la misma fila
+   *  que se está viendo. En preescolar el backend la descarta. */
+  incluirFinal: boolean
 }
 
 /** Descarga el informe consolidado del grupo/períodos activos en la pantalla
  *  — el mismo listado de `/informes/grupo`, sin paginar. */
-export function DialogExportInforme({ grupoId, periodos }: DialogExportInformeProps) {
+export function DialogExportInforme({
+  grupoId,
+  periodos,
+  incluirFinal,
+}: DialogExportInformeProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -47,7 +54,7 @@ export function DialogExportInforme({ grupoId, periodos }: DialogExportInformePr
 
   function handleExport(format: ExportFormat) {
     if (grupoId == null) return
-    exportar.mutate({ format, grupoId, periodos })
+    exportar.mutate({ format, grupoId, periodos, incluirFinal })
   }
 
   const pendingFormat = exportar.isPending ? exportar.variables?.format : undefined
