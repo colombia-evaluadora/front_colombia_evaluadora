@@ -244,6 +244,23 @@ export function deleteObservacion(matriculaId: number, periodoId: number): void 
   observaciones.delete(observacionKey(matriculaId, periodoId))
 }
 
+/** El comentario del AÑO — la fila Final. Va en su propio mapa, igual que en
+ *  el backend va en su propia tabla: la llave es solo la matrícula, sin
+ *  período, porque la matrícula ya determina el año. */
+const observacionesAnio = new Map<number, string>()
+
+export function getObservacionAnio(matriculaId: number): string | null {
+  return observacionesAnio.get(matriculaId) ?? null
+}
+
+export function setObservacionAnio(matriculaId: number, texto: string): void {
+  observacionesAnio.set(matriculaId, texto)
+}
+
+export function deleteObservacionAnio(matriculaId: number): void {
+  observacionesAnio.delete(matriculaId)
+}
+
 /** Informes ya consolidados: `<grupo>-<periodo>`. Lo que NO está acá se
  *  muestra en gris (proyectado) hasta que se guarde. */
 const consolidados = new Set<string>(["501-201", "502-201"])
