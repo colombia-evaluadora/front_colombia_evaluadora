@@ -27,9 +27,12 @@ import type {
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { agruparPorBloquesContinuos, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { agruparPorBloquesContinuos, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
+/** Espera esto sin más marcas antes de guardar solo — evita una petición por
+ *  cada click mientras el docente sigue recorriendo la lista. */
+const AUTOGUARDADO_DEBOUNCE_MS = 900
 const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
@@ -320,22 +323,28 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setSorting: () => {},
   })
 
-  const faltantes = roster_.filter((est) => seleccion[est.fk_tmatricula] == null).length
-  const faltaBloqueTarde =
-    sesion.bloques.length > 1 &&
-    roster_.some(
-      (est) => seleccion[est.fk_tmatricula] === LLEGO_TARDE && bloqueTarde[est.fk_tmatricula] == null,
-    )
-  const puedeGuardar = roster_.length > 0 && faltantes === 0 && !faltaBloqueTarde
-  const esDirty =
-    Object.keys(soporte).length > 0 ||
-    Object.keys(soporteEliminado).length > 0 ||
-    roster_.some(
-      (est) =>
-        seleccion[est.fk_tmatricula] !== baseline.current[est.fk_tmatricula] ||
-        bloqueTarde[est.fk_tmatricula] !== bloqueTardeBaseline.current[est.fk_tmatricula],
-    )
-  const mostrarGuardar = puedeGuardar && esDirty
+  /**
+   * Guardado PARCIAL: no hace falta terminar de marcar todo el tab para que
+   * lo ya marcado se guarde — solo se excluye "Llegó tarde" sin bloque de
+   * llegada elegido todavía (en sesiones de varios bloques), porque sin ese
+   * dato `registrosPorBloque` no sabe qué registro armar y tendría que
+   * adivinar. Ese caso puntual sigue esperando a que el docente elija el
+   * bloque; el resto se guarda solo.
+   */
+  const seleccionLista = React.useMemo(() => {
+    const listos = Object.entries(seleccion).filter(([fkMatriculaStr, tipo]) => {
+      if (tipo !== LLEGO_TARDE || sesion.bloques.length <= 1) return true
+      return bloqueTarde[Number(fkMatriculaStr)] != null
+    })
+    return Object.fromEntries(listos) as Record<number, TipoAsistencia>
+  }, [seleccion, bloqueTarde, sesion.bloques.length])
+  const pendientesPorBloqueTarde = Object.keys(seleccion).length - Object.keys(seleccionLista).length
+
+  const hayAlgoQueGuardar =
+    Object.entries(seleccionLista).some(([fk, tipo]) => tipo !== baseline.current[Number(fk)]) ||
+    Object.keys(soporte).some((fk) => Number(fk) in seleccionLista) ||
+    Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista)
+  const mostrarGuardar = hayAlgoQueGuardar
 
 
   function handleMarcarTodoAsistio() {
@@ -347,24 +356,36 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setSoporteEliminado({})
   }
 
-  async function handleGuardar() {
-    if (!puedeGuardar) {
-      notify(
-        faltaBloqueTarde
-          ? "Selecciona en qué bloque llegó cada estudiante marcado como Llegó tarde."
-          : "Marca la asistencia de todos los estudiantes antes de guardar.",
-        { variant: "error" },
-      )
+  const [autoguardando, setAutoguardando] = React.useState(false)
+
+  /**
+   * Guarda lo YA LISTO (`seleccionLista`, ver arriba) — la comparten el
+   * botón "Guardar" (con aviso si no hay nada listo), el autoguardado con
+   * debounce (silencioso: no tener nada listo todavía es normal mientras el
+   * docente sigue marcando) y el volcado al salir del tab (ver el
+   * `useEffect` de cleanup más abajo, que llama a esto mismo desde el
+   * unmount para no perder lo marcado si el docente cambia de tab antes de
+   * que el debounce dispare). No exige que el tab esté completo: guarda
+   * cada estudiante apenas su marca es inequívoca, y deja esperando solo a
+   * quien tiene "Llegó tarde" sin bloque elegido.
+   */
+  async function guardar(avisarSiNada: boolean): Promise<void> {
+    if (!hayAlgoQueGuardar) {
+      if (avisarSiNada) {
+        notify("Marca la asistencia de al menos un estudiante antes de guardar.", { variant: "error" })
+      }
       return
     }
     const porBloque = registrosPorBloque(
       sesion.bloques,
-      seleccion,
+      seleccionLista,
       bloqueTarde,
       soporte,
       soporteEliminado,
       rosterPorBloque,
     )
+    const seleccionGuardada = seleccionLista
+    setAutoguardando(true)
     try {
       await Promise.all(
         [...porBloque.entries()].map(([bloque, registros]) =>
@@ -380,15 +401,65 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
           }),
         ),
       )
-      notify("Asistencia guardada.")
-      baseline.current = seleccion
-      bloqueTardeBaseline.current = bloqueTarde
-      setSoporte({})
-      setSoporteEliminado({})
+      // Merge, no reemplazo: un "Llegó tarde" todavía sin bloque no entró en
+      // `seleccionGuardada`, así que su baseline sigue sin tocar y `esDirty`
+      // lo vuelve a detectar en cuanto el docente elija el bloque.
+      baseline.current = { ...baseline.current, ...seleccionGuardada }
+      bloqueTardeBaseline.current = {
+        ...bloqueTardeBaseline.current,
+        ...Object.fromEntries(
+          Object.entries(bloqueTarde).filter(([fk]) => Number(fk) in seleccionGuardada),
+        ),
+      }
+      setSoporte((prev) => {
+        const next = { ...prev }
+        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        return next
+      })
+      setSoporteEliminado((prev) => {
+        const next = { ...prev }
+        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        return next
+      })
     } catch {
       notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
+    } finally {
+      setAutoguardando(false)
     }
   }
+
+  async function handleGuardar() {
+    await guardar(true)
+  }
+
+  // Autoguardado: dispara solo -- sin que el docente tenga que acordarse de
+  // apretar "Guardar", y sin esperar a que el tab quede completo -- cuando
+  // hay algo YA LISTO para mandar (`hayAlgoQueGuardar`), con un pequeño
+  // debounce para no mandar una petición por cada click mientras sigue
+  // marcando estudiantes.
+  React.useEffect(() => {
+    if (!hayAlgoQueGuardar) return
+    const temporizador = setTimeout(() => {
+      void guardar(false)
+    }, AUTOGUARDADO_DEBOUNCE_MS)
+    return () => clearTimeout(temporizador)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccion, bloqueTarde, soporte, soporteEliminado, hayAlgoQueGuardar])
+
+  // Volcado al salir del tab: `TabsContent` desmonta el panel inactivo (no
+  // lo oculta, ver `src/components/ui/tabs.tsx`), así que sin esto lo
+  // marcado que el debounce todavía no alcanzó a guardar se perdía en
+  // silencio al cambiar de tab. `guardarRef` siempre apunta a la versión de
+  // `guardar` del último render (mismo truco que un event handler "vivo"),
+  // para que el cleanup -- que solo corre una vez, al desmontar -- vea el
+  // estado más reciente y no uno viejo capturado en el primer render.
+  const guardarRef = React.useRef(guardar)
+  guardarRef.current = guardar
+  React.useEffect(() => {
+    return () => {
+      void guardarRef.current(false)
+    }
+  }, [])
 
   return (
     <div className="flex flex-col gap-3">
@@ -438,9 +509,30 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       )}
 
       <div className="flex items-center justify-between gap-4">
-        <span className="text-xs text-muted-foreground">
-          {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
+          </span>
+          {autoguardando ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <SpinnerIcon className="size-3 animate-spin" /> Guardando…
+            </span>
+          ) : (
+            !hayAlgoQueGuardar &&
+            Object.keys(seleccionLista).length > 0 && (
+              <span className="flex items-center gap-1 text-xs text-emerald-600">
+                <CheckIcon className="size-3" /> Guardado
+              </span>
+            )
+          )}
+          {pendientesPorBloqueTarde > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {pendientesPorBloqueTarde === 1
+                ? "1 estudiante espera el bloque de llegada"
+                : `${pendientesPorBloqueTarde} estudiantes esperan el bloque de llegada`}
+            </span>
+          )}
+        </div>
         {mostrarGuardar && (
           <Button
             type="button"
@@ -535,13 +627,19 @@ export function AsistenciaManualPage() {
 
         {isPending && <Skeleton className="h-64 w-full" />}
 
-        {!isPending && sesionesDelDia.length === 0 && (
+        {esFechaFutura(fecha) && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Todavía no se puede tomar asistencia: {formatFechaLarga(fecha)} es una fecha futura.
+          </p>
+        )}
+
+        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No hay sesiones programadas para este día.
           </p>
         )}
 
-        {!isPending && sesionesDelDia.length > 0 && (
+        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
           <Tabs value={currentTab} onValueChange={setActiveTab}>
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (
