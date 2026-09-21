@@ -154,6 +154,7 @@ function GrupoTabContent({
   // Preescolar se decide por `formato`, no por el grupo: un grupo mixto sigue
   // siendo numérico y sus dimensiones cualitativas salen por asignatura.
   const esCualitativo = filas.length > 0 && filas.every((fila) => fila.formato === "cualitativo")
+
   const haySinConsolidar = filas.some(
     (fila) =>
       seleccionados.has(fila.matriculaId) &&
@@ -401,8 +402,6 @@ function ReportsPageContent() {
   // Acta 19-sep-2026, punto 20.3: "para no reprocesar la tabla" el filtro de
   // arriba se deja multi-select como está (sirve para ver/consolidar varios
   // periodos a la vez) — pero un boletín es de UN periodo y UN estudiante.
-  // Este cálculo queda listo para cuando exista el endpoint de generación:
-  // ahí el botón pasa de `disabled` fijo a `disabled={!listoParaBoletin}`.
   const listoParaBoletin = periodos.length === 1 && seleccionActiva.size === 1
 
   function toggleEstudiante(matriculaId: number) {
@@ -546,7 +545,6 @@ function ReportsPageContent() {
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
               matriculas={[...seleccionActiva]}
-              incluirFinal={incluirFinal}
               listo={listoParaBoletin}
             />
             <Tooltip>

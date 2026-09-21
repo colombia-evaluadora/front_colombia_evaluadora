@@ -7,9 +7,10 @@ import type { ExportFormat, ExportResult } from "@/features/academic-management/
 /**
  * Dos descargas distintas, y la diferencia es toda la gracia.
  *
- * El BOLETÍN (`/reportes/informes`) filtra: solo sale lo consolidado. Una
- * proyección o una nota requerida, impresas, se leen como calificaciones
- * reales en cuanto el archivo sale del sistema.
+ * El BOLETÍN (`/reportes/boletin-preescolar`) no es la tabla en otro formato:
+ * es un PDF armado aparte, una página por (estudiante, asignatura/dimensión),
+ * con foto, evidencias y fondo institucional — ver `boletin-preescolar.md`.
+ * Por eso solo acepta `pdf` y un único (período, estudiante) a la vez.
  *
  * El DESCARGAR (`/reportes/informes-tabla`) no filtra nada: es la tabla como
  * se está viendo, con la búsqueda aplicada, y cada número viene dicho con
@@ -17,23 +18,20 @@ import type { ExportFormat, ExportResult } from "@/features/academic-management/
  */
 
 interface ExportBoletinInput {
-  format: ExportFormat
   grupoId: number
-  /** Vacío = todos los períodos del período académico del grupo. */
-  periodos?: number[]
-  /** Un boletín es de un estudiante. Vacío = el grupo entero. */
-  matriculas?: number[]
-  incluirFinal?: boolean
+  /** Un boletín es de un único período. */
+  periodoId: number
+  /** Un boletín es de un único estudiante. */
+  matriculaId: number
 }
 
 function exportBoletin(input: ExportBoletinInput): Promise<ExportResult> {
-  return downloadReport("informes", {
-    format: input.format,
+  return downloadReport("boletin-preescolar", {
+    format: "pdf",
     filters: {
       FK_TGRUPO: input.grupoId,
-      PERIODOS: input.periodos?.length ? input.periodos : null,
-      MATRICULAS: input.matriculas?.length ? input.matriculas : null,
-      INCLUIR_FINAL: input.incluirFinal ?? false,
+      FK_TPERIODO_EVALUACION: input.periodoId,
+      FK_TMATRICULAS: [input.matriculaId],
     },
   })
 }
