@@ -128,6 +128,10 @@ const ACTIVIDAD_MATERIAL_ARCHIVO_URL =
   "*/api/files/eval-col/planeador/actividades/:id/materiales/archivo"
 const ACTIVIDAD_MATERIAL_ARCHIVOS_URL =
   "/api/eval-col/planeador/actividades/:id/materiales/archivos"
+// Biblioteca: los archivos subidos en OTRAS actividades, para reusarlos.
+// Biblioteca: ancla por ACTIVIDAD (al editar) o por GRUPO (al crear), las
+// dos por query string — ver V429.
+const MATERIALES_REUTILIZABLES_URL = "/api/eval-col/planeador/materiales-reutilizables"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
 const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
@@ -703,6 +707,47 @@ export const planeadorHandlers = [
       return HttpResponse.json({ message: "Falta el archivo." }, { status: 400 })
     }
     return HttpResponse.json({ fk_tarchivo: registrarArchivoMaterial(archivo) })
+  }),
+
+  // Biblioteca de recursos: los materiales CON ARCHIVO de las demás
+  // actividades. El real (`fn_actividad_materiales_reutilizables_listar`)
+  // excluye la actividad pedida, filtra por nombre de archivo y pagina del
+  // lado del servidor; acá se replica eso mismo sobre la db en memoria.
+  //
+  // Solo entran los que tienen `archivoId`: un enlace no se "reutiliza", se
+  // copia y ya — misma regla que el backend (`m.FK_TARCHIVO IS NOT NULL`).
+  http.get(MATERIALES_REUTILIZABLES_URL, async ({ request }) => {
+    await delay(200)
+    const url = new URL(request.url)
+    // 0 = sin actividad todavia (alta): no hay nada que excluir.
+    const id = Number(url.searchParams.get("ACTIVIDAD") ?? 0)
+    const search = (url.searchParams.get("SEARCH") ?? "").trim().toLowerCase()
+    const pagina = Number(url.searchParams.get("PAGINA") ?? 1)
+    const size = Number(url.searchParams.get("SIZE") ?? 18)
+
+    const todos = planeadorDb
+      .filter((act) => act.id !== id)
+      .flatMap((act) =>
+        act.recursos
+          .filter((recurso) => recurso.archivoId !== undefined)
+          .map((recurso) => ({
+            fk_tarchivo: recurso.archivoId!,
+            nombre_archivo: nombreArchivoMaterial(recurso.archivoId!),
+            peso: 0,
+            pk_tactividad_origen: act.id,
+            titulo_actividad_origen: act.nombre,
+            fk_tlv_tipo_recurso: 0,
+            tipo_recurso: "Archivo en PC",
+            descripcion: recurso.descripcion,
+          })),
+      )
+      .filter((row) => !search || row.nombre_archivo.toLowerCase().includes(search))
+
+    const desde = Math.max(0, (pagina - 1) * size)
+    const pagina_ = todos.slice(desde, desde + size)
+    return HttpResponse.json(
+      pagina_.map((row) => ({ ...row, total_count: todos.length })),
+    )
   }),
 
   // Nombre y extensión de los archivos de los materiales (V427). El real los
