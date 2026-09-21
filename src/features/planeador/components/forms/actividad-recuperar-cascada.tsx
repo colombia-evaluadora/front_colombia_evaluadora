@@ -77,7 +77,13 @@ export function ActividadRecuperarCascada({
     asignatura: asignaturaIdDraft ?? undefined,
     size: 100,
   })
-  const actividades = (actividadesResult?.rows ?? []).filter((a) => a.id !== excludeActividadId)
+  // Una actividad formativa (`esEvaluativa: false`) no pondera nota — no
+  // hay nada que "recuperar" ahí. Sin este filtro aparecían en la lista
+  // igual, y elegir una terminaba en un 22023 al guardar ("una actividad
+  // de recuperación debe ser sumativa").
+  const actividades = (actividadesResult?.rows ?? []).filter(
+    (a) => a.id !== excludeActividadId && a.esEvaluativa,
+  )
 
   // Nombre a mostrar en el trigger cuando ya hay un `value` guardado (venía
   // de reabrir la actividad) pero todavía no se recorrió la cascada en esta
