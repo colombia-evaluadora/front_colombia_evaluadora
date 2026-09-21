@@ -400,6 +400,14 @@ export interface Actividad {
         valorPonderacionRequeridoSi: string
         valorPonderacionRango: { min: number; max: number }
       }
+      /**
+       * Solo llega con `?RECUPERAR=S` — la lista de "¿Qué desea recuperar?"
+       * YA filtrada por el backend (sumativa, no es ella misma una
+       * recuperación, activa, sin otra recuperación activa apuntándole).
+       * `null` en cualquier otra consulta (sin `RECUPERAR=S`), no `[]`: así
+       * se distingue "no se pidió" de "no hay ninguna recuperable".
+       */
+      actividadesRecuperables: ActividadRecuperable[] | null
     }
   }
   /**
@@ -505,6 +513,19 @@ export interface InstrumentoPermitido {
   campos: InstrumentoPermitidoCampos | null
 }
 
+/** Una fila de `campos_disponibles.recuperacion.actividadesRecuperables`
+ *  (guía `planeador-recuperacion-actividad`, paso 2). */
+export interface ActividadRecuperable {
+  pk: number
+  titulo: string
+  fkTgrupo: number
+  fkTunidad: number | null
+  unidad: string | null
+  fechaInicio: string
+  fechaCierre: string
+  estudiantesAsignados: number
+}
+
 /**
  * Placeholder cuando la respuesta todavía no trae el bloque `recuperacion`
  * de `campos_disponibles` (endpoint viejo, o mock sin el campo) — oculto y
@@ -523,6 +544,7 @@ export function defaultRecuperacionCampoDisponible(): NonNullable<
       valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
       valorPonderacionRango: { min: 0, max: 100 },
     },
+    actividadesRecuperables: null,
   }
 }
 
