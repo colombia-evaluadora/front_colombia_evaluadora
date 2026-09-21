@@ -541,7 +541,7 @@ function ReportsPageContent() {
                       role="button"
                       tabIndex={0}
                       aria-label={`Cerrar pestaña ${grupo.grupoEtiqueta}`}
-                      className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                      className="ml-2 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation()
