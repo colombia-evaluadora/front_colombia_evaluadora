@@ -100,6 +100,9 @@ export interface InformeGrupoParams {
   /** Vacío = todos los del período académico del grupo. */
   periodos?: number[]
   search?: string
+  /** Agrega a cada estudiante la fila con la nota del año. El backend la
+   *  calcula sobre TODOS los períodos, no sobre los de `periodos`. */
+  incluirFinal?: boolean
 }
 
 async function fetchInformeGrupo(params: InformeGrupoParams): Promise<FilaInforme[]> {
@@ -107,6 +110,7 @@ async function fetchInformeGrupo(params: InformeGrupoParams): Promise<FilaInform
     FK_TGRUPO: params.grupoId,
     PERIODOS: params.periodos?.length ? params.periodos : null,
     SEARCH: params.search?.trim() || null,
+    INCLUIR_FINAL: params.incluirFinal ?? false,
   })
   return rows.map(toFila)
 }
