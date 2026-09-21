@@ -48,7 +48,16 @@ interface RawCotejoItem {
 
 interface RawEscala {
   pk?: number
-  tipoEscala: "NUMERICA" | "CUALITATIVA"
+  /** El id numérico de `TLISTA_VALOR` (ej. 52016) — NO el código. Confirmado
+   *  real: el código de texto viaja aparte, en `tipoEscalaValor`. Antes este
+   *  campo se tipaba (y se comparaba) como si trajera "NUMERICA"/
+   *  "CUALITATIVA" directo — nunca podía matchear un `number`, así que la
+   *  escala se leía siempre como Cualitativa y perdía valorMin/valorMax/
+   *  interpretacionRangos al reabrir la actividad, aunque el guardado
+   *  hubiera sido correcto. */
+  tipoEscala: number
+  tipoEscalaValor: "NUMERICA" | "CUALITATIVA"
+  tipoEscalaNombre?: string | null
   criteriosGenerales?: string | null
   valorMin?: number | null
   valorMax?: number | null
@@ -147,14 +156,12 @@ function listaCotejoDesdeRaw(items: RawCotejoItem[]): ListaCotejo {
 }
 
 function escalaDesdeRaw(raw: RawEscala): EscalaValoracion {
-  // Comparación tolerante a mayúsculas/espacios — mismo motivo que el
-  // matcheo por `valor` en `use-tipo-escala-catalog.ts`: si esta fila viene
-  // con otro casing ("Numerica" en vez de "NUMERICA"), el `===` estricto
-  // caía siempre a la rama Cualitativa y se perdían valorMin/valorMax/
-  // interpretacionRangos sin ningún error — el docente los guardaba bien
-  // (confirmado contra el PUT real) pero al reabrir la actividad la
-  // pantalla mostraba "Cualitativa" con esos tres campos vacíos.
-  if (String(raw.tipoEscala).trim().toUpperCase() === "NUMERICA") {
+  // `tipoEscalaValor`, NO `tipoEscala` — ese es el id numérico de
+  // `TLISTA_VALOR` (confirmado real: `{tipoEscala: 52016, tipoEscalaValor:
+  // "NUMERICA", ...}`). Comparación tolerante a mayúsculas/espacios por las
+  // dudas, mismo criterio que el matcheo por `valor` en
+  // `use-tipo-escala-catalog.ts`.
+  if (String(raw.tipoEscalaValor).trim().toUpperCase() === "NUMERICA") {
     return {
       id: 0,
       criteriosGenerales: raw.criteriosGenerales ?? "",
