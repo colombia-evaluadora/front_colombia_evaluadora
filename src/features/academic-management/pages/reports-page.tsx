@@ -29,11 +29,13 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  SpinnerIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { gestionAcademicaInformesRoute } from "@/router"
 
+import { useBoletinPreescolar } from "@/features/academic-management/reports/api/mutations/use-boletin-preescolar"
 import { useGuardarInformeMutation } from "@/features/academic-management/reports/api/mutations/use-guardar-informe"
 import {
   useEliminarObservacionMutation,
@@ -121,6 +123,10 @@ interface GrupoTabContentProps {
   onGuardar: () => void
   guardando: boolean
   onAbrirObservacion: (fila: FilaInforme) => void
+  /** El botón "Generar boletín" vive en la barra superior, fuera de este
+   *  componente, pero solo el informe sabe si el grupo salió cualitativo
+   *  (el boletín en PDF, por ahora, solo sabe imprimir preescolar). */
+  onEsCualitativoChange: (esCualitativo: boolean) => void
 }
 
 function GrupoTabContent({
@@ -133,6 +139,7 @@ function GrupoTabContent({
   onGuardar,
   guardando,
   onAbrirObservacion,
+  onEsCualitativoChange,
 }: GrupoTabContentProps) {
   const [busqueda, setBusqueda] = React.useState("")
   const informe = useInformeGrupoQuery(
@@ -149,6 +156,11 @@ function GrupoTabContent({
   // Preescolar se decide por `formato`, no por el grupo: un grupo mixto sigue
   // siendo numérico y sus dimensiones cualitativas salen por asignatura.
   const esCualitativo = filas.length > 0 && filas.every((fila) => fila.formato === "cualitativo")
+
+  React.useEffect(() => {
+    onEsCualitativoChange(esCualitativo)
+  }, [esCualitativo, onEsCualitativoChange])
+
   const haySinConsolidar = filas.some(
     (fila) =>
       seleccionados.has(fila.matriculaId) &&
@@ -319,6 +331,7 @@ function ReportsPageContent() {
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
+  const [esCualitativoActivo, setEsCualitativoActivo] = React.useState(false)
 
   const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
@@ -386,15 +399,33 @@ function ReportsPageContent() {
   const guardarInforme = useGuardarInformeMutation()
   const guardarObservacion = useGuardarObservacionMutation()
   const eliminarObservacion = useEliminarObservacionMutation()
+  const generarBoletin = useBoletinPreescolar({
+    mutationConfig: {
+      onSuccess: (result) => {
+        notify(result.message, { variant: result.status === "error" ? "error" : undefined })
+      },
+    },
+  })
 
   const seleccionActiva = seleccionPorGrupo[grupoActivoId] ?? new Set<number>()
 
   // Acta 19-sep-2026, punto 20.3: "para no reprocesar la tabla" el filtro de
   // arriba se deja multi-select como está (sirve para ver/consolidar varios
   // periodos a la vez) — pero un boletín es de UN periodo y UN estudiante.
-  // Este cálculo queda listo para cuando exista el endpoint de generación:
-  // ahí el botón pasa de `disabled` fijo a `disabled={!listoParaBoletin}`.
   const listoParaBoletin = periodos.length === 1 && seleccionActiva.size === 1
+  // El boletín en PDF por ahora solo sabe imprimir dimensiones cualitativas
+  // (ver boletin-preescolar.md): sobre un grupo numérico el backend responde
+  // 200 con un PDF vacío, así que se corta antes de pedirlo.
+  const puedeGenerarBoletin = esCualitativoActivo && listoParaBoletin
+
+  function handleGenerarBoletin() {
+    if (!puedeGenerarBoletin) return
+    generarBoletin.mutate({
+      grupoId: grupoActivoId,
+      periodoId: periodos[0],
+      matriculaId: Array.from(seleccionActiva)[0],
+    })
+  }
 
   function toggleEstudiante(matriculaId: number) {
     setSeleccionPorGrupo((prev) => {
@@ -535,15 +566,29 @@ function ReportsPageContent() {
                   <button disabled> nativo no dispara los eventos de hover
                   que necesita el Tooltip para abrirse. */}
               <TooltipTrigger render={<span className="inline-flex" />}>
-                <Button variant="outline" color="primary" size="sm" disabled>
-                  <FileTextIcon data-icon="inline-start" />
-                  Generar boletines
+                <Button
+                  type="button"
+                  variant="outline"
+                  color="primary"
+                  size="sm"
+                  disabled={!puedeGenerarBoletin || generarBoletin.isPending}
+                  aria-busy={generarBoletin.isPending}
+                  onClick={handleGenerarBoletin}
+                >
+                  {generarBoletin.isPending ? (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <FileTextIcon data-icon="inline-start" />
+                  )}
+                  Generar boletín
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {listoParaBoletin
-                  ? "La generación de boletines en PDF todavía no está disponible."
-                  : "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."}
+                {!listoParaBoletin
+                  ? "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."
+                  : !esCualitativoActivo
+                    ? "El boletín en PDF por ahora solo está disponible para preescolar."
+                    : "Genera el boletín en PDF del estudiante seleccionado."}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -687,6 +732,7 @@ function ReportsPageContent() {
                     onGuardar={handleGuardar}
                     guardando={guardarInforme.isPending}
                     onAbrirObservacion={setObservacionAbierta}
+                    onEsCualitativoChange={setEsCualitativoActivo}
                   />
                 )}
               </TabsContent>
