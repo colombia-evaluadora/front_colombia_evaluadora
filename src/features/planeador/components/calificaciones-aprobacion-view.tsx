@@ -27,7 +27,13 @@ import {
   useCalificacionesQuery,
 } from "@/features/planeador/api/query/use-calificaciones-query"
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
+import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
+import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useObservarEstudianteMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
+import {
+  useAgregarObservacionSoporteMutation,
+  useQuitarObservacionSoporteMutation,
+} from "@/features/planeador/api/mutations/use-observacion-soporte"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import {
   ObservacionEstudianteSheet,
@@ -142,6 +148,16 @@ export function CalificacionesAprobacionView({
         return estudiante ? aObservable(estudiante) : null
       })()
     : null
+
+  // `useCalificacionesQuery` no trae evidencias (GET .../calificaciones no
+  // las expone) -- se piden aparte, mismo patrón que `CeldaObservacionTrigger`.
+  const { data: notaObservando } = useNotaEstudianteQuery(observandoId ?? undefined)
+  const agregarEvidencia = useAgregarObservacionSoporteMutation({
+    mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+  })
+  const quitarEvidencia = useQuitarObservacionSoporteMutation({
+    mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+  })
 
   /** Un `PUT .../observar` por estudiante, con SU texto y SU fecha de
    *  asistencia — el gate del backend la exige por estudiante, que es por lo
@@ -371,11 +387,29 @@ export function CalificacionesAprobacionView({
       <ObservacionEstudianteSheet
         estudiante={observando}
         contexto={actividad.nombre}
+        evidencias={notaObservando?.evidencias ?? []}
+        actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
         guardando={guardando}
         onOpenChange={(open) => {
           if (!open) setObservandoId(null)
         }}
         onGuardar={guardarObservacion}
+        onAgregarEvidencia={(archivo) => {
+          if (observandoId == null || !observando?.fecha) return
+          agregarEvidencia.mutate({ pkTactividadEstudiante: observandoId, archivo, fecha: observando.fecha })
+        }}
+        agregandoEvidencia={agregarEvidencia.isPending}
+        onQuitarEvidencia={(evidencia) => {
+          if (observandoId == null || !observando?.fecha) return
+          quitarEvidencia.mutate({
+            pkTactividadSoporte: evidencia.pk,
+            pkTactividadEstudiante: observandoId,
+            fecha: observando.fecha,
+          })
+        }}
+        quitandoEvidenciaPk={
+          quitarEvidencia.isPending ? (quitarEvidencia.variables?.pkTactividadSoporte ?? null) : null
+        }
       />
 
       {formativa ? null : (

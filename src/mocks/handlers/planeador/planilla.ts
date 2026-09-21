@@ -1,12 +1,14 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { planeadorDb } from "@/mocks/db/planeador"
+import { planeadorDb, registrarArchivoMaterial } from "@/mocks/db/planeador"
 import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
 import {
+  addEvidencia,
   asignaturaIdDe,
   calificacionANotas,
   decodePkTactividadEstudiante,
   esFormativaMock,
+  getEvidencias,
   getObservacion,
   getOverride,
   gradoIdDe,
@@ -17,6 +19,7 @@ import {
   ponderacionItemCotejo,
   ponderacionNivelEscala,
   ponderacionNivelRubrica,
+  removeEvidencia,
   setObservacion,
   setOverride,
   tipoInstrumentoDe,
@@ -44,6 +47,10 @@ const CALIFICAR_BULK_URL = "/api/eval-col/planeador/actividades/:id/calificar-bu
 const NOTA_ESTUDIANTE_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/nota"
 const OBSERVAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/observar"
 const OBSERVAR_GRUPAL_URL = "/api/eval-col/planeador/actividades/:id/observar-grupal"
+// Va por /files/**, igual que el paso 1 de materiales de apoyo: es file-service
+// quien intercepta el multipart antes de que llegue al query-service.
+const SOPORTE_AGREGAR_URL = "*/api/files/eval-col/planeador/actividades/estudiantes/:id/soportes"
+const SOPORTE_QUITAR_URL = "/api/eval-col/planeador/actividades/estudiantes/soportes/:id"
 
 /** Actividades del (grado, grupo, asignatura) pedidos — mismos ids
  *  hasheados que ya devuelve `/planeador/docentes/grupos` y
@@ -156,7 +163,7 @@ export const planeadorPlanillaHandlers = [
           esFormativa: esFormativaMock(actividad),
           fechaAsistencia: noAsistio ? null : actividad.fechaInicio.slice(0, 10),
           tieneAsistencia: !noAsistio,
-          evidencias: [],
+          evidencias: getEvidencias(actividad.id, estudiante.id),
         }
       })
 
@@ -341,10 +348,59 @@ export const planeadorPlanillaHandlers = [
             base?.asistencia.justificacion ??
             null,
           detalle,
-          evidencias: [],
+          evidencias: getEvidencias(actividadId, estudianteId),
         },
       ],
     })
+  }),
+
+  // Agregar UNA evidencia (paso único, via file-service): multipart, campo
+  // FK_TARCHIVO con el binario -- mismo gate de asistencia que observar.
+  http.post(SOPORTE_AGREGAR_URL, async ({ params, request }) => {
+    await delay(200)
+    const pk = Number(params.id)
+    const { actividadId, estudianteId } = decodePkTactividadEstudiante(pk)
+    const actividad = planeadorDb.find((a) => a.id === actividadId)
+    if (!actividad) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const form = await request.formData()
+    const archivo = form.get("FK_TARCHIVO")
+    if (!(archivo instanceof File)) {
+      return HttpResponse.json(
+        { error: "No llego ningun archivo: la peticion debe ir como multipart con el campo FK_TARCHIVO" },
+        { status: 400 },
+      )
+    }
+    const fecha = String(form.get("FECHA") ?? actividad.fechaInicio.slice(0, 10))
+    const asistencia = getCalificacionesByActividad(actividadId, planeadorDb).find(
+      (e) => e.id === estudianteId,
+    )?.asistencia
+    if (asistencia?.estado === "no-asistio") {
+      return HttpResponse.json(
+        {
+          error: `No se puede observar: no hay asistencia registrada para esta asignatura el ${fecha}`,
+          sqlState: "22023",
+        },
+        { status: 400 },
+      )
+    }
+    const fkTarchivo = registrarArchivoMaterial(archivo)
+    const soporte = addEvidencia(actividadId, estudianteId, fkTarchivo, archivo.name, fecha)
+    return HttpResponse.json({ rows: [{ pk_tactividad_soporte: soporte.pk }] })
+  }),
+
+  // Quitar UNA evidencia (baja lógica) por su pk de relación.
+  http.put(SOPORTE_QUITAR_URL, async ({ params }) => {
+    await delay(150)
+    const pk = Number(params.id)
+    if (!removeEvidencia(pk)) {
+      return HttpResponse.json(
+        { error: "No se encontro el soporte de observacion solicitado (o ya fue retirado)" },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ rows: [{ pk_tactividad_soporte: pk }] })
   }),
 
   // Observar a UN estudiante (actividad formativa): mismo gate de asistencia
