@@ -115,6 +115,20 @@ export interface InstrumentoCotejoItem {
 export interface InstrumentoEscala {
   pk: number
   niveles: InstrumentoNivel[]
+  /** El resto de los campos de una escala NUMÉRICA (`tipoEscala` — el ID
+   *  numérico, no el código —, `tipoEscalaValor`, `valorMin`/`valorMax`,
+   *  etc.) también vienen en la respuesta real, pero esta interfaz solo
+   *  modela lo que necesita CALIFICAR (`pk`/`niveles`, usados con
+   *  CUALITATIVA). El resto lo tipa aparte `RawEscala` en
+   *  use-instrumento-actividad-form-query.ts, que sí los usa para
+   *  precargar el form de edición. */
+  tipoEscala?: number
+  tipoEscalaValor?: "NUMERICA" | "CUALITATIVA"
+  tipoEscalaNombre?: string | null
+  criteriosGenerales?: string | null
+  valorMin?: number | null
+  valorMax?: number | null
+  interpretacionRangos?: string | null
 }
 
 /**
