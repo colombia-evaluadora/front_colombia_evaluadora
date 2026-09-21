@@ -41,7 +41,10 @@ import {
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import {
+  useConfiguracionActividadQuery,
+  useConfiguracionContextoActividadQuery,
+} from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
@@ -599,6 +602,43 @@ function RecuperacionSection({
                 </label>
               )}
             </form.Field>
+
+            {/* Atajo: sin Grado/Asignatura todavía, `campos_disponibles.
+                recuperacion` (destino/tipoAplicación/tipoCalculo) no se
+                puede pedir — el endpoint real los exige como parámetros
+                obligatorios (`catalogosDisponibles` en falso) — así que el
+                bloque completo de abajo no tiene nada que ofrecer todavía.
+                Elegir acá la actividad a recuperar dispara
+                `useRecuperacionAutoFill`, que llena Grado/Asignatura solo;
+                una vez lleno, `catalogosDisponibles` pasa a verdadero y
+                este atajo se reemplaza por el bloque completo de abajo
+                (que ya trae destino=ACTIVIDAD y la actividad elegida). */}
+            <form.Subscribe
+              selector={(state) => ({
+                esRecuperacion: state.values.esRecuperacion,
+                recuperacionActividadId: state.values.recuperacionActividadId,
+              })}
+            >
+              {({ esRecuperacion: esRecuperacionValue, recuperacionActividadId }) =>
+                !esRecuperacionValue || catalogosDisponibles ? null : (
+                  <Field variant="outlined">
+                    <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                    <ActividadRecuperarCascada
+                      value={recuperacionActividadId}
+                      onChange={(v) => {
+                        form.setFieldValue("recuperacionActividadId", v)
+                        form.setFieldValue("recuperacionDestino", "ACTIVIDAD")
+                      }}
+                      excludeActividadId={actividadId}
+                      disabled={disabled}
+                    />
+                    <FieldDescription>
+                      El resto de la configuración de recuperación aparece apenas se elige.
+                    </FieldDescription>
+                  </Field>
+                )
+              }
+            </form.Subscribe>
 
             <form.Subscribe selector={(state) => state.values.esRecuperacion}>
               {(esRecuperacionValue) =>
@@ -2580,6 +2620,7 @@ function useCamposEvaluacionEfectivos(
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const esEvaluativaValue = useSelector(form.store, (state) => state.values.esEvaluativa)
 
@@ -2628,6 +2669,19 @@ function useCamposEvaluacionEfectivos(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
+  // `campos_disponibles` (con `recuperacion`, el bloque que `RecuperacionSection`
+  // necesita para ofrecer destino/tipoAplicación/tipoCalculo) para una
+  // actividad SIN unidad — `useConfiguracionActividadQuery` de arriba exige
+  // `unidadId` y acá no hay. Sin esto, una actividad huérfana (o una
+  // recuperación recién autocompletada por `useRecuperacionAutoFill`, que
+  // no toca "Unidad temática asociada") se quedaba sin `camposEfectivos`
+  // para siempre, así que el bloque de recuperación nunca terminaba de
+  // aparecer aunque Grado/Grupo/Asignatura ya estuvieran resueltos.
+  const { data: configuracionContexto } = useConfiguracionContextoActividadQuery(
+    sinUnidadNiDetalle ? grupoId : undefined,
+    sinUnidadNiDetalle ? asignaturaId : undefined,
+    esEvaluativaValue,
+  )
 
   // `TIPO_EVALUACION` del referente (CUANTITATIVA / CUALITATIVA /
   // CUANTITATIVA_CUALITATIVA) — con unidad elegida sale de su referente
@@ -2643,7 +2697,11 @@ function useCamposEvaluacionEfectivos(
   // detalle si sigue aplicando, si no la configuración en vivo por unidad
   // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
   // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
-  const camposEfectivos = camposDisponiblesAplica ? camposDisponibles : configuracionEnVivo
+  const camposEfectivos = camposDisponiblesAplica
+    ? camposDisponibles
+    : unidadId != null
+      ? configuracionEnVivo
+      : configuracionContexto
 
   // Con unidad, `esFormativa` sale de `configuracionReferente` (fijo en
   // `ES_EVALUATIVA=S`, ver arriba) — NUNCA de `camposEfectivos`, que sí
