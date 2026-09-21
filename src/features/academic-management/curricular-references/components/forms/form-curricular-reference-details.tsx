@@ -288,7 +288,11 @@ export function CurricularReferenceDetailsForm({
             id="curricular-reference-instrument-description"
             maxLength={400}
             value={value.instrumentDescription}
-            onChange={(event) => onChange({ ...value, instrumentDescription: event.target.value })}
+            onChange={(event) => {
+              const raw = event.target.value
+              const next = raw.trim() === "" ? "" : raw
+              onChange({ ...value, instrumentDescription: next })
+            }}
             placeholder="Describe qué incluye este instrumento y cómo se utiliza..."
             className={TEXTAREA_OUTLINE_CLASS}
           />

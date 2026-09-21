@@ -10,6 +10,28 @@ import type {
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 
+/**
+ * Hoy, como `yyyy-MM-dd` local — sin pasar por UTC (`toISOString` corre el
+ * día en husos horarios negativos cerca de medianoche). Mismo criterio que
+ * `todayDateOnly` del Planeador (`src/features/planeador/lib/format-date.ts`),
+ * copiado acá en vez de importado cruzado entre features.
+ */
+export function hoyDateOnly(): string {
+  const ahora = new Date()
+  const mes = String(ahora.getMonth() + 1).padStart(2, "0")
+  const dia = String(ahora.getDate()).padStart(2, "0")
+  return `${ahora.getFullYear()}-${mes}-${dia}`
+}
+
+/** Una sesión de un día que todavía no llega — no tiene sentido tomarle
+ *  asistencia todavía (no hubo clase). Mismo criterio semántico que
+ *  `EstadoSesion.PENDIENTE` ("Fechas futuras"), pero por comparación directa
+ *  de fecha en vez de depender de que el backend ya haya resuelto el estado
+ *  — sirve también para un acceso directo por URL sin pasar por el calendario. */
+export function esFechaFutura(fecha: string): boolean {
+  return fecha > hoyDateOnly()
+}
+
 export const ESTADO_SESION_ICON: Record<EstadoSesion, ComponentType<{ className?: string }>> = {
   REGISTRADA: CheckCircleFillIcon,
   RETRASADA: XCircleIcon,
