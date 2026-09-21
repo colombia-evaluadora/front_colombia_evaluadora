@@ -1,6 +1,9 @@
 /** Tipos de los endpoints `POST /api/eval-col/informes/...`. */
 
-export type ModoPeriodo = "real" | "requerido"
+/** `final` no es un período del calendario: es la fila que el backend
+ *  calcula al vuelo con la nota del año cuando se pide `INCLUIR_FINAL`.
+ *  Llega con `periodoId: -1`. */
+export type ModoPeriodo = "real" | "requerido" | "final"
 
 /** Sin criterio de evaluación configurado el backend responde `cualitativo`
  *  — esa es la vía normal de preescolar, no un hueco de datos. */
@@ -16,6 +19,9 @@ export type EstadoNota =
   | "cambio_propuesto"
   /** Lo que le falta sacar (solo en `modo_periodo: "requerido"`). */
   | "requerido"
+  /** Promedio del año, calculado al imprimir: no lo guardó nadie
+   *  (solo en `modo_periodo: "final"`). */
+  | "final"
 
 export type ObservacionEstado = "APROBADA" | "MODIFICADA"
 
