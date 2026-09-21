@@ -23,7 +23,10 @@ import {
 } from "@/components/ui/pagination"
 
 import type { Recurso } from "@/features/planeador/api/types/actividad"
-import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
+import {
+  useMaterialesReutilizablesQuery,
+  type MaterialReutilizable,
+} from "@/features/planeador/api/query/use-materiales-reutilizables-query"
 
 const COLUMNS = 3
 const ROWS = 6
@@ -45,13 +48,17 @@ function buildPageRange(current: number, total: number): (number | "ellipsis")[]
   return items
 }
 
-interface RecursoGaleriaItem extends Recurso {
-  /** Nombre de la actividad de la que proviene este recurso (para que el
-   *  usuario sepa de dónde lo está trayendo). */
-  actividadNombre: string
-}
+/** Lo que la galería pinta: el material del endpoint, tal cual. */
+type RecursoGaleriaItem = MaterialReutilizable
 
 interface DialogBibliotecaRecursosProps {
+  /** La actividad que se está editando, o 0 si todavía se está creando.
+   *  Cuando existe, el backend la EXCLUYE de la galería (no tiene sentido
+   *  reusar un archivo de sí misma) y la usa para resolver el alcance. */
+  actividadId: number
+  /** El grupo del formulario. Es el ancla del alcance mientras la
+   *  actividad no exista; sin ninguno de los dos el backend responde 400. */
+  grupoId: number
   /** Recursos ya en el form actual — se excluyen de la galería para no
    *  mostrar duplicados. */
   recursosActuales: Recurso[]
@@ -79,6 +86,8 @@ interface DialogBibliotecaRecursosProps {
  * agrega el recurso y cierra el modal.
  */
 export function DialogBibliotecaRecursos({
+  actividadId,
+  grupoId,
   recursosActuales,
   onSelect,
   open,
@@ -87,61 +96,37 @@ export function DialogBibliotecaRecursos({
   const [search, setSearch] = useState("")
   const [pageIndex, setPageIndex] = useState(0)
 
-  // Trae TODAS las actividades del docente. Acá no paginamos contra el
-  // backend porque la lista mock es chica (~12) y la galería se arma en
-  // el cliente; cuando llegue el endpoint real con paginación se ajusta.
+  // Búsqueda y paginación van CONTRA EL SERVIDOR: el endpoint recibe
+  // SEARCH/PAGINA/SIZE y devuelve `total_count`. Antes esto traía todas las
+  // actividades del docente y filtraba en el cliente — con el listado real,
+  // que no devuelve materiales, la galería salía vacía siempre.
   //
-  // `enabled: open` — este modal vive siempre montado (el padre solo
-  // alterna `open`, no lo desmonta) para poder abrirse sin remontar, así
-  // que sin este gate el `GET .../actividades` completo (`size=500`) se
-  // disparaba cada vez que se abría el form de una actividad, aunque el
-  // docente nunca tocara "Biblioteca de recursos".
-  const { data: actividades = [] } = useActividadesQuery(open)
+  // `open` como `enabled`: el modal vive montado junto al formulario, así
+  // que sin ese gate consultaría al abrir cualquier actividad.
+  const { data, isPending, isError } = useMaterialesReutilizablesQuery(
+    { actividadId, grupoId, search, pagina: pageIndex + 1, size: PAGE_SIZE },
+    open,
+  )
 
-  // Aplana: de cada actividad, todos sus `recursos`. Cada item queda
-  // etiquetado con el nombre de la actividad de origen para que el
-  // usuario sepa de dónde viene cuando lo ve en la grilla.
-  const biblioteca = useMemo<RecursoGaleriaItem[]>(() => {
-    const items: RecursoGaleriaItem[] = []
-    for (const act of actividades) {
-      for (const r of act.recursos) {
-        items.push({ ...r, actividadNombre: act.nombre })
-      }
-    }
-    return items
-  }, [actividades])
+  // Los que ya están en el form no se ofrecen de nuevo. La comparación es
+  // por `archivoId` y no por URL: la biblioteca son ARCHIVOS, y el mismo
+  // archivo puede estar en dos actividades con descripciones distintas.
+  const yaAgregados = useMemo(
+    () => new Set(recursosActuales.map((r) => r.archivoId).filter((id): id is number => id != null)),
+    [recursosActuales],
+  )
 
-  // Excluye los que ya están en el form actual — agregarlos de nuevo
-  // no aporta (el docente ya los ve abajo en "Recursos agregados").
-  // La dedupe es por URL: si dos actividades tienen el mismo enlace,
-  // cuentan como uno solo, lo que matchea el comportamiento de "ya
-  // tengo este recurso, no lo quiero dos veces".
-  const bibliotecaDisponible = useMemo(() => {
-    const urlsActuales = new Set(recursosActuales.map((r) => r.url).filter(Boolean))
-    return biblioteca.filter((r) => !urlsActuales.has(r.url))
-  }, [biblioteca, recursosActuales])
+  const items = useMemo(
+    () => (data?.items ?? []).filter((item) => !yaAgregados.has(item.archivoId)),
+    [data, yaAgregados],
+  )
 
-  // Filtra por query: contra título, descripción, fuente, nombre de
-  // actividad de origen y url. Sin acentos es lo justo para que
-  // "actividad" matchee "actividad" sin depender del locale del
-  // navegador.
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (!query) return bibliotecaDisponible
-    return bibliotecaDisponible.filter((r) => {
-      const haystack = [r.titulo, r.descripcion, r.fuente, r.url, r.actividadNombre]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-      return haystack.includes(query)
-    })
-  }, [bibliotecaDisponible, search])
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  // Si el filtro reduce las páginas, clampeamos para no quedar en una
-  // página que ya no existe (mismo patrón que `DialogSelectGeneralAreas`).
+  // El total lo da el servidor y NO se descuenta lo filtrado acá: sería
+  // mentir sobre cuántas páginas hay. En el peor caso una página muestra
+  // menos tarjetas porque alguna ya estaba agregada.
+  const totalCount = data?.totalCount ?? 0
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const page = Math.min(pageIndex, pageCount - 1)
-  const pageItems = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   function handleSearch(next: string) {
     setSearch(next)
@@ -149,18 +134,22 @@ export function DialogBibliotecaRecursos({
   }
 
   function handleSelect(item: RecursoGaleriaItem) {
-    // Devolvemos el recurso SIN `id` y SIN `actividadNombre` (esos son
-    // metadata de la galería, no del recurso). El padre genera el id
-    // nuevo al insertarlo en el form.
-    const { actividadNombre: _omit, ...recursoSinId } = item
-    onSelect(recursoSinId)
+    // Se arma un recurso de tipo "Archivo" que apunta al MISMO archivo, por
+    // su id. No se copia ningún binario: `PUT .../materiales` acepta
+    // `fkTarchivo` y dos actividades pueden referenciar el mismo TARCHIVO.
+    onSelect({
+      titulo: item.nombreArchivo,
+      fuente: item.nombreArchivo,
+      tipo: "Archivo",
+      // Sin blob: el archivo ya está guardado del lado del servidor.
+      url: "",
+      descripcion: item.descripcion,
+      archivoId: item.archivoId,
+    })
     onOpenChange(false)
-    // Reset al cerrar para que la próxima apertura arranque limpia
-    // (mismo patrón que `DialogSelectGeneralAreas.handleOpenChange`).
     setSearch("")
     setPageIndex(0)
   }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -188,26 +177,30 @@ export function DialogBibliotecaRecursos({
           <Input
             id="biblioteca-search"
             autoFocus
-            placeholder="Buscar por título, descripción, actividad..."
+            placeholder="Buscar por nombre de archivo..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </Field>
 
-        {filtered.length === 0 ? (
+        {isPending || isError || items.length === 0 ? (
           <div className="text-muted-foreground rounded-md border border-dashed py-12 text-center text-sm">
-            {bibliotecaDisponible.length === 0
-              ? "No tenés recursos guardados en otras actividades todavía."
-              : "Sin recursos que coincidan con la búsqueda."}
+            {isPending
+              ? "Buscando…"
+              : isError
+                ? "No se pudo cargar la biblioteca."
+                : search.trim()
+                  ? "Sin archivos que coincidan con la búsqueda."
+                  : "No hay archivos guardados en tus otras actividades todavía."}
           </div>
         ) : (
           <div
             className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${COLUMNS}, minmax(0, 1fr))` }}
           >
-            {pageItems.map((item) => (
+            {items.map((item) => (
               <RecursoGaleriaCard
-                key={`${item.actividadNombre}-${item.url}-${item.id}`}
+                key={`${item.actividadOrigenId}-${item.archivoId}`}
                 item={item}
                 onSelect={() => handleSelect(item)}
               />
@@ -215,7 +208,7 @@ export function DialogBibliotecaRecursos({
           </div>
         )}
 
-        {filtered.length > 0 && (
+        {items.length > 0 && pageCount > 1 && (
           <div className="flex items-center justify-center">
             <UIPagination className="mx-0 w-auto justify-center">
               <PaginationContent>
@@ -305,13 +298,6 @@ function RecursoGaleriaCard({
   item: RecursoGaleriaItem
   onSelect: () => void
 }) {
-  const tipoLabel =
-    item.tipo === "URL"
-      ? "URL / Sitio web"
-      : item.tipo === "Unidad virtual"
-        ? "Unidad virtual / repositorio"
-        : "Archivo en PC"
-
   return (
     <button
       type="button"
@@ -320,23 +306,23 @@ function RecursoGaleriaCard({
     >
       <div className="flex w-full items-center justify-between gap-2">
         <span className="truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          {tipoLabel}
+          {item.tipoRecurso || "Archivo en PC"}
         </span>
         <CheckIcon className="size-4 shrink-0 text-primary opacity-0 transition-opacity group-hover/card:opacity-100" />
       </div>
-      <p className="line-clamp-2 text-sm font-medium" title={item.url || item.fuente}>
-        {item.titulo || item.url || item.fuente || "(sin título)"}
+      <p className="line-clamp-2 text-sm font-medium" title={item.nombreArchivo}>
+        {item.nombreArchivo}
       </p>
       {item.descripcion && (
-        <p
-          className="text-muted-foreground line-clamp-2 text-xs"
-          title={item.descripcion}
-        >
+        <p className="text-muted-foreground line-clamp-2 text-xs" title={item.descripcion}>
           {item.descripcion}
         </p>
       )}
-      <p className="text-muted-foreground mt-auto line-clamp-1 text-xs italic" title={item.actividadNombre}>
-        de: {item.actividadNombre}
+      <p
+        className="text-muted-foreground mt-auto line-clamp-1 text-xs italic"
+        title={item.actividadOrigenTitulo}
+      >
+        de: {item.actividadOrigenTitulo}
       </p>
     </button>
   )

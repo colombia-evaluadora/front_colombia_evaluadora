@@ -128,6 +128,10 @@ const ACTIVIDAD_MATERIAL_ARCHIVO_URL =
   "*/api/files/eval-col/planeador/actividades/:id/materiales/archivo"
 const ACTIVIDAD_MATERIAL_ARCHIVOS_URL =
   "/api/eval-col/planeador/actividades/:id/materiales/archivos"
+// Biblioteca: los archivos subidos en OTRAS actividades, para reusarlos.
+// Biblioteca: ancla por ACTIVIDAD (al editar) o por GRUPO (al crear), las
+// dos por query string — ver V429.
+const MATERIALES_REUTILIZABLES_URL = "/api/eval-col/planeador/materiales-reutilizables"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
 const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
@@ -589,6 +593,13 @@ export const planeadorHandlers = [
       diasHabiles,
       motivo: null,
     }
+    // `ES_SUMATIVO` gatea `campos_disponibles.recuperacion`/`.ponderacion`
+    // igual que en `UNIDAD_CONFIGURACION_ACTIVIDAD_URL` — acá no hay unidad
+    // de la que leer `enfoquePedagogico`, así que se asume Evaluativo (el
+    // caso común de una actividad sin unidad, ver `useRecuperacionAutoFill`
+    // en `form-editar-actividad.tsx`, que es lo que ejercita este endpoint
+    // en mock).
+    const esEvaluativa = url.searchParams.get("ES_SUMATIVO") === "S"
     return HttpResponse.json({
       rows: [
         {
@@ -612,6 +623,59 @@ export const planeadorHandlers = [
               fechaCierre: rangoFecha,
               semanaCronograma: { min: 1, max: 20, motivo: null },
               duracionEstimada: { min: 1, max: 76, unidad: "BLOQUES", motivo: null },
+            },
+            // Mismo `campos_disponibles` que `UNIDAD_CONFIGURACION_ACTIVIDAD_URL`
+            // más abajo — acá simplificado (sin unidad, no hay
+            // criterio/ponderación reales que ofrecer) porque lo único que
+            // este endpoint necesita alimentar en mock es "Es una
+            // recuperación" (`RecuperacionSection`) para una actividad SIN
+            // unidad (`useConfiguracionContextoActividadQuery`).
+            campos_disponibles: {
+              criterio: {
+                visible: false,
+                requerido: false,
+                motivo: "Los criterios pertenecen a la rúbrica de una unidad; la actividad aún no tiene unidad.",
+              },
+              evaluacion: {
+                visible: esEvaluativa,
+                requerido: esEvaluativa,
+                motivo: esEvaluativa
+                  ? "La actividad es sumativa: hace falta un instrumento de evaluación."
+                  : "La actividad no es sumativa: no hace falta instrumento.",
+                instrumentosPermitidos: [],
+              },
+              ponderacion: {
+                visible: false,
+                requerido: false,
+                modo: null,
+                motivo: "La actividad aún no pertenece a una unidad; la ponderación la define el método de cálculo de la unidad.",
+              },
+              recuperacion: {
+                visible: esEvaluativa,
+                requerido: false,
+                motivo: esEvaluativa
+                  ? "Opcional: la actividad puede registrarse como recuperación de otra actividad o de la nota final."
+                  : "La actividad no es sumativa: no hay nota que recuperar.",
+                catalogos: {
+                  destino: [
+                    { pk: 61001, valor: "ACTIVIDAD", nombre: "Una actividad" },
+                    { pk: 61002, valor: "NOTA_FINAL", nombre: "La nota final" },
+                  ],
+                  tipoAplicacion: [
+                    { pk: 61011, valor: "COMPUTAR", nombre: "Computar con la nota anterior" },
+                    { pk: 61012, valor: "REEMPLAZAR", nombre: "Reemplazar la nota actual" },
+                  ],
+                  tipoCalculo: [
+                    { pk: 61021, valor: "PROMEDIADO", nombre: "Promediado" },
+                    { pk: 61022, valor: "PONDERADO", nombre: "Ponderado" },
+                  ],
+                },
+                reglas: {
+                  actividadRecuperarRequeridaSi: "destino = ACTIVIDAD",
+                  valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
+                  valorPonderacionRango: { min: 0, max: 100 },
+                },
+              },
             },
           },
         },
@@ -703,6 +767,47 @@ export const planeadorHandlers = [
       return HttpResponse.json({ message: "Falta el archivo." }, { status: 400 })
     }
     return HttpResponse.json({ fk_tarchivo: registrarArchivoMaterial(archivo) })
+  }),
+
+  // Biblioteca de recursos: los materiales CON ARCHIVO de las demás
+  // actividades. El real (`fn_actividad_materiales_reutilizables_listar`)
+  // excluye la actividad pedida, filtra por nombre de archivo y pagina del
+  // lado del servidor; acá se replica eso mismo sobre la db en memoria.
+  //
+  // Solo entran los que tienen `archivoId`: un enlace no se "reutiliza", se
+  // copia y ya — misma regla que el backend (`m.FK_TARCHIVO IS NOT NULL`).
+  http.get(MATERIALES_REUTILIZABLES_URL, async ({ request }) => {
+    await delay(200)
+    const url = new URL(request.url)
+    // 0 = sin actividad todavia (alta): no hay nada que excluir.
+    const id = Number(url.searchParams.get("ACTIVIDAD") ?? 0)
+    const search = (url.searchParams.get("SEARCH") ?? "").trim().toLowerCase()
+    const pagina = Number(url.searchParams.get("PAGINA") ?? 1)
+    const size = Number(url.searchParams.get("SIZE") ?? 18)
+
+    const todos = planeadorDb
+      .filter((act) => act.id !== id)
+      .flatMap((act) =>
+        act.recursos
+          .filter((recurso) => recurso.archivoId !== undefined)
+          .map((recurso) => ({
+            fk_tarchivo: recurso.archivoId!,
+            nombre_archivo: nombreArchivoMaterial(recurso.archivoId!),
+            peso: 0,
+            pk_tactividad_origen: act.id,
+            titulo_actividad_origen: act.nombre,
+            fk_tlv_tipo_recurso: 0,
+            tipo_recurso: "Archivo en PC",
+            descripcion: recurso.descripcion,
+          })),
+      )
+      .filter((row) => !search || row.nombre_archivo.toLowerCase().includes(search))
+
+    const desde = Math.max(0, (pagina - 1) * size)
+    const pagina_ = todos.slice(desde, desde + size)
+    return HttpResponse.json(
+      pagina_.map((row) => ({ ...row, total_count: todos.length })),
+    )
   }),
 
   // Nombre y extensión de los archivos de los materiales (V427). El real los

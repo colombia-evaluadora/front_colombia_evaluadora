@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import {
   instrumentoLabelFromReferente,
   resolveInstrumentoLabel,
@@ -40,7 +41,10 @@ import {
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import {
+  useConfiguracionActividadQuery,
+  useConfiguracionContextoActividadQuery,
+} from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
@@ -365,6 +369,8 @@ export function EditarActividadForm({
   // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
+  const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
+  useRecuperacionAutoFill(form)
 
   return (
     <form
@@ -380,8 +386,12 @@ export function EditarActividadForm({
           normal, es su recuperación"), así que se responde antes de
           completar cualquier otro campo. */}
       <RecuperacionSection
+        // NO el `disabled` de Grado/Asignatura: acá es al revés. Con
+        // `destino = ACTIVIDAD` elegir la actividad de origen es lo que
+        // TERMINA llenando Grado/Asignatura (`useRecuperacionAutoFill`),
+        // así que exigirlos antes sería un candado sin salida.
         form={form}
-        disabled={disabled}
+        disabled={false}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
@@ -397,14 +407,18 @@ export function EditarActividadForm({
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Identificación de la actividad</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <AsignaturaGradoSection form={form} />
+          <AsignaturaGradoSection form={form} bloqueadoPorRecuperacion={bloqueadoPorRecuperacion} />
           <UnidadAsociadaSection
             form={form}
             unidades={unidades}
             onCrearUnidad={crearUnidad}
             disabled={disabled}
           />
-          <IdentificacionSection form={form} disabled={disabled} />
+          <IdentificacionSection
+            form={form}
+            disabled={disabled}
+            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
+          />
         </div>
       </Card>
       <UnidadSection
@@ -414,7 +428,12 @@ export function EditarActividadForm({
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} disabled={disabled} />
-      <RecursosSection form={form} draftKey={draftKey} disabled={disabled} />
+      <RecursosSection
+        form={form}
+        draftKey={draftKey}
+        disabled={disabled}
+        actividadId={actividad.id}
+      />
       <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
@@ -455,6 +474,69 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
 }
 
 /**
+ * `true` cuando la actividad NUEVA toma su identidad de OTRA actividad que
+ * está recuperando (`destino = ACTIVIDAD`, con la actividad ya elegida) —
+ * Grado/Grupo, Asignatura, Nombre y Estudiantes se llenan solos desde esa
+ * actividad original (ver `useRecuperacionAutoFill`) y quedan bloqueados
+ * mientras esto sea `true`: no tiene sentido que el docente los reescriba a
+ * mano si la actividad de recuperación DEBE coincidir con la que recupera.
+ * Con `destino = NOTA_FINAL` (no hay una actividad puntual de origen) o sin
+ * actividad elegida todavía, no aplica — el resto del form sigue su regla
+ * normal (bloqueado solo por Grado/Asignatura sin elegir, como cualquier
+ * actividad nueva).
+ */
+function useRecuperacionBloqueaCampos(form: FormActividad): boolean {
+  const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
+  const destino = useSelector(form.store, (state) => state.values.recuperacionDestino)
+  const recuperacionActividadId = useSelector(form.store, (state) => state.values.recuperacionActividadId)
+  return esRecuperacion && destino === "ACTIVIDAD" && recuperacionActividadId != null
+}
+
+/**
+ * Cuando se elige QUÉ actividad se está recuperando, trae su detalle real
+ * (`GET /planeador/actividades/:id`, ya con `matriculasIds` reales desde
+ * V452) y copia Grado/Grupo, Asignatura, Nombre (con el sufijo `" (R)"`, la
+ * marca visual de que es una recuperación) y la selección de estudiantes —
+ * la actividad de recuperación hereda ese contexto de la actividad
+ * original, no se vuelve a elegir a mano (ver `useRecuperacionBloqueaCampos`,
+ * que bloquea esos mismos campos mientras esto aplica).
+ *
+ * `aplicadoRef` evita repetir la copia en cada render mientras se sigue
+ * mirando la MISMA actividad de origen — sin esto, cualquier render (p. ej.
+ * al tipear en otro campo del form) volvería a pisar "Nombre" con el valor
+ * recién copiado, incluso si el campo no estuviera bloqueado por algún otro
+ * motivo. Sí se vuelve a copiar si el docente cambia a OTRA actividad de
+ * origen (`recuperacionActividadId` distinto).
+ */
+function useRecuperacionAutoFill(form: FormActividad) {
+  const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
+  const destino = useSelector(form.store, (state) => state.values.recuperacionDestino)
+  const recuperacionActividadId = useSelector(form.store, (state) => state.values.recuperacionActividadId)
+  const activo = esRecuperacion && destino === "ACTIVIDAD" && recuperacionActividadId != null
+  const { data: original } = useActividadDetalleQuery(activo ? recuperacionActividadId : undefined)
+  const aplicadoRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    if (!activo || !original) return
+    if (aplicadoRef.current === recuperacionActividadId) return
+    aplicadoRef.current = recuperacionActividadId
+    form.setFieldValue("gradoId", original.gradoId)
+    form.setFieldValue("grado", original.grado)
+    form.setFieldValue("grupoId", original.grupoId)
+    form.setFieldValue("grupo", original.grupo)
+    form.setFieldValue("asignaturaId", original.asignaturaId)
+    form.setFieldValue("asignatura", original.asignatura)
+    form.setFieldValue("nombre", `${original.nombre} (R)`)
+    // Solo quedan marcados los estudiantes que YA tenían la actividad
+    // original — el resto del grupo no participó de lo que se está
+    // recuperando, así que no arranca marcado (y queda inactivo mientras
+    // el bloqueo siga activo, ver `useRecuperacionBloqueaCampos`).
+    form.setFieldValue("matriculasIds", original.matriculasIds)
+    form.setFieldValue("asignarTodoElGrupo", false)
+  }, [activo, recuperacionActividadId, original, form])
+}
+
+/**
  * Toggle "Es una recuperación" + su configuración, arriba de todo el form.
  * Solo tiene sentido para una actividad sumativa —una formativa no pondera
  * nota, así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
@@ -476,6 +558,32 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
  * `destino = ACTIVIDAD`, % obligatorio y 0-100 sii `tipoCalculo =
  * PONDERADO`) para no descubrirlas a base de 400.
  */
+/**
+ * Catálogo por default de "¿Esta recuperación aplica para?" — mismos
+ * `valor`/`nombre` que ya devuelve el backend real (confirmado contra
+ * `campos_disponibles.recuperacion.catalogos.destino`), para cuando
+ * TODAVÍA no se puede pedir esa fila (sin Grado/Asignatura ni Unidad, ver
+ * `catalogosDisponibles` en `RecuperacionSection`). El texto real del
+ * backend termina reemplazando este placeholder apenas
+ * `useConfiguracionContextoActividadQuery`/`useConfiguracionActividadQuery`
+ * resuelven — no antes de eso el docente ya pudo elegir "Una actividad" y
+ * arrancar `useRecuperacionAutoFill`, así que el `valor` (lo único que
+ * de verdad importa para la lógica) tiene que coincidir con el real desde
+ * el primer render.
+ */
+const DESTINO_RECUPERACION_FALLBACK = [
+  { valor: "ACTIVIDAD", nombre: "Recuperar una actividad" },
+  { valor: "NOTA_FINAL", nombre: "Recuperar la nota final" },
+]
+const TIPO_APLICACION_RECUPERACION_FALLBACK = [
+  { valor: "COMPUTAR", nombre: "Computar con la nota anterior" },
+  { valor: "REEMPLAZAR", nombre: "Reemplazar la nota actual" },
+]
+const TIPO_CALCULO_RECUPERACION_FALLBACK = [
+  { valor: "PROMEDIADO", nombre: "Promediado" },
+  { valor: "PONDERADO", nombre: "Ponderado" },
+]
+
 function RecuperacionSection({
   form,
   disabled,
@@ -488,17 +596,23 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
-  // Mientras el backend no mande `campos_disponibles.recuperacion` (todavía
-  // no desplegado en producción a la fecha de este comentario — confirmado
-  // contra una respuesta real de `GET .../configuracion-actividad`, que
-  // solo trae `criterio`/`evaluacion`/`ponderacion`), `recuperacion` cae al
-  // placeholder oculto (`defaultRecuperacionCampoDisponible`) y sus
-  // catálogos quedan vacíos. Sin este chequeo, prender el toggle abría los
-  // `<Select>` de destino/tipo de aplicación/tipo de cálculo sin ninguna
-  // opción para elegir — parecía roto en vez de simplemente no disponible
-  // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
-  // toggle queda solo, igual que antes de que este bloque existiera.
-  const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
+  // "¿Esta recuperación aplica para?" tiene que aparecer SIEMPRE primero,
+  // apenas se prende el toggle — sin esperar a Grado/Asignatura/Unidad
+  // (`campos_disponibles.recuperacion.catalogos` no se puede pedir sin
+  // eso, ver `useCamposEvaluacionEfectivos`). Mientras el catálogo real no
+  // llegue, se usa el de respaldo (mismos `valor` que el real, así que la
+  // lógica — `destino === "ACTIVIDAD"`, etc. — no distingue uno de otro);
+  // el real lo reemplaza solo apenas resuelve, sin que el docente note el
+  // cambio salvo por el asterisco de "obligatorio" si aplica.
+  const destinoOpciones = recuperacion?.catalogos.destino.length
+    ? recuperacion.catalogos.destino
+    : DESTINO_RECUPERACION_FALLBACK
+  const tipoAplicacionOpciones = recuperacion?.catalogos.tipoAplicacion.length
+    ? recuperacion.catalogos.tipoAplicacion
+    : TIPO_APLICACION_RECUPERACION_FALLBACK
+  const tipoCalculoOpciones = recuperacion?.catalogos.tipoCalculo.length
+    ? recuperacion.catalogos.tipoCalculo
+    : TIPO_CALCULO_RECUPERACION_FALLBACK
 
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
@@ -525,7 +639,7 @@ function RecuperacionSection({
 
             <form.Subscribe selector={(state) => state.values.esRecuperacion}>
               {(esRecuperacionValue) =>
-                !esRecuperacionValue || !catalogosDisponibles ? null : (
+                !esRecuperacionValue ? null : (
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
@@ -557,14 +671,13 @@ function RecuperacionSection({
                                 {(v) =>
                                   v === "__none__"
                                     ? "Seleccione"
-                                    : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
-                                      (v as string))
+                                    : (destinoOpciones.find((o) => o.valor === v)?.nombre ?? (v as string))
                                 }
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">Seleccione</SelectItem>
-                              {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
+                              {destinoOpciones.map((opcion) => (
                                 <SelectItem key={opcion.valor} value={opcion.valor}>
                                   {opcion.nombre}
                                 </SelectItem>
@@ -646,7 +759,7 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                 >
-                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                  {tipoAplicacionOpciones.map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
                                       <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
                                       {opcion.nombre}
@@ -716,7 +829,7 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                 >
-                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                  {tipoCalculoOpciones.map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
                                       <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
                                       {opcion.nombre}
@@ -814,7 +927,18 @@ function RecuperacionSection({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormActividad = ReturnType<typeof useForm<Actividad, any, any, any, any, any, any, any, any, any, any, any>>
 
-function IdentificacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function IdentificacionSection({
+  form,
+  disabled,
+  bloqueadoPorRecuperacion,
+}: {
+  form: FormActividad
+  disabled: boolean
+  /** Ver `useRecuperacionBloqueaCampos` — "Nombre" queda bloqueado (ya lo
+   *  llenó `useRecuperacionAutoFill` con el de la actividad original + el
+   *  sufijo " (R)") mientras esto sea `true`. */
+  bloqueadoPorRecuperacion: boolean
+}) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
 
@@ -832,7 +956,7 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
-                disabled={disabled}
+                disabled={disabled || bloqueadoPorRecuperacion}
               />
             </Field>
           )}
@@ -1263,7 +1387,16 @@ function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string
   return grupo.grupoCodigo || grupo.grupoNombre
 }
 
-function AsignaturaGradoSection({ form }: { form: FormActividad }) {
+function AsignaturaGradoSection({
+  form,
+  bloqueadoPorRecuperacion,
+}: {
+  form: FormActividad
+  /** Ver `useRecuperacionBloqueaCampos` — Grado/Grupo, Asignatura y
+   *  Estudiantes quedan bloqueados (ya los llenó `useRecuperacionAutoFill`
+   *  con los de la actividad original) mientras esto sea `true`. */
+  bloqueadoPorRecuperacion: boolean
+}) {
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
@@ -1405,6 +1538,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               form.setFieldValue("matriculasIds", [])
               form.setFieldValue("asignarTodoElGrupo", true)
             }}
+            disabled={bloqueadoPorRecuperacion}
           >
             <SelectTrigger id="grado-grupo">
               <SelectValue placeholder="Seleccione">
@@ -1466,7 +1600,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   form.setFieldValue("matriculasIds", [])
                   form.setFieldValue("asignarTodoElGrupo", true)
                 }}
-                disabled={!hasGradoGrupo}
+                disabled={!hasGradoGrupo || bloqueadoPorRecuperacion}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue
@@ -1517,7 +1651,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   field.handleChange(matriculaIds)
                   form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
-                disabled={!hasGradoAsignatura}
+                disabled={!hasGradoAsignatura || bloqueadoPorRecuperacion}
                 // `isPending` de una query DESHABILITADA (`enabled: false`)
                 // queda en `true` para siempre —react-query nunca la corre,
                 // así que nunca sale de "pending"—, así que solo cuenta como
@@ -1586,11 +1720,20 @@ function RecursosSection({
   form,
   draftKey,
   disabled,
+  actividadId,
 }: {
   form: FormActividad
   draftKey: ActividadFormDraftKey
   disabled: boolean
+  /** 0 mientras la actividad no se guardo: la biblioteca no se puede
+   *  consultar sin una actividad existente (ver el boton mas abajo). */
+  actividadId: number
 }) {
+  // El grupo elegido en el formulario. Es lo que le permite a la biblioteca
+  // resolver el alcance del usuario mientras la actividad no existe (al
+  // crear); editando manda la actividad y esto queda de respaldo.
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1656,13 +1799,21 @@ function RecursosSection({
                   type="button"
                   onClick={() => setBibliotecaOpen(true)}
                   aria-label="Adjuntar desde biblioteca"
-                  disabled={disabled}
+                  // La biblioteca necesita un ancla para resolver el alcance:
+                  // la actividad al editar, el grupo al crear (V429). Sin
+                  // ninguna de las dos el backend responde 400, así que el
+                  // botón espera a que se elija el grupo.
+                  disabled={disabled || (actividadId <= 0 && !grupoId)}
                 />
               }
             >
               <FolderOpenIcon />
             </TooltipTrigger>
-            <TooltipContent>Adjuntar desde biblioteca</TooltipContent>
+            <TooltipContent>
+              {actividadId > 0 || grupoId
+                ? "Adjuntar desde biblioteca"
+                : "Elegí el grupo para ver los archivos de otras actividades"}
+            </TooltipContent>
           </Tooltip>
           {/* Toggle colapsar/expandir. El ícono cambia entre los dos
               estados: `+` outline (expandir) cuando está colapsado, `-`
@@ -1776,6 +1927,8 @@ function RecursosSection({
           <DialogBibliotecaRecursos
             open={bibliotecaOpen}
             onOpenChange={setBibliotecaOpen}
+            actividadId={actividadId}
+            grupoId={grupoId ?? 0}
             recursosActuales={recursos as Recurso[]}
             onSelect={handlePickFromBiblioteca}
           />
@@ -2463,6 +2616,7 @@ function useCamposEvaluacionEfectivos(
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const esEvaluativaValue = useSelector(form.store, (state) => state.values.esEvaluativa)
 
@@ -2511,6 +2665,19 @@ function useCamposEvaluacionEfectivos(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
+  // `campos_disponibles` (con `recuperacion`, el bloque que `RecuperacionSection`
+  // necesita para ofrecer destino/tipoAplicación/tipoCalculo) para una
+  // actividad SIN unidad — `useConfiguracionActividadQuery` de arriba exige
+  // `unidadId` y acá no hay. Sin esto, una actividad huérfana (o una
+  // recuperación recién autocompletada por `useRecuperacionAutoFill`, que
+  // no toca "Unidad temática asociada") se quedaba sin `camposEfectivos`
+  // para siempre, así que el bloque de recuperación nunca terminaba de
+  // aparecer aunque Grado/Grupo/Asignatura ya estuvieran resueltos.
+  const { data: configuracionContexto } = useConfiguracionContextoActividadQuery(
+    sinUnidadNiDetalle ? grupoId : undefined,
+    sinUnidadNiDetalle ? asignaturaId : undefined,
+    esEvaluativaValue,
+  )
 
   // `TIPO_EVALUACION` del referente (CUANTITATIVA / CUALITATIVA /
   // CUANTITATIVA_CUALITATIVA) — con unidad elegida sale de su referente
@@ -2526,7 +2693,11 @@ function useCamposEvaluacionEfectivos(
   // detalle si sigue aplicando, si no la configuración en vivo por unidad
   // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
   // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
-  const camposEfectivos = camposDisponiblesAplica ? camposDisponibles : configuracionEnVivo
+  const camposEfectivos = camposDisponiblesAplica
+    ? camposDisponibles
+    : unidadId != null
+      ? configuracionEnVivo
+      : configuracionContexto
 
   // Con unidad, `esFormativa` sale de `configuracionReferente` (fijo en
   // `ES_EVALUATIVA=S`, ver arriba) — NUNCA de `camposEfectivos`, que sí

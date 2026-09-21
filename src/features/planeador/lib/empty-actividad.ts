@@ -52,7 +52,10 @@ export function crearActividadVacia(): Actividad {
     duracionEstimada: "",
     semana: "",
     modalidad: "Presencial",
-    esEvaluativa: false,
+    // La mayoría de las actividades SÍ son sumativas — arrancar en "No"
+    // obligaba a tocar el selector en el caso común solo para llegar al
+    // valor que casi siempre se termina eligiendo.
+    esEvaluativa: true,
     instrumento: "Rúbrica",
     ponderacion: 0,
     generaEvidencias: false,
