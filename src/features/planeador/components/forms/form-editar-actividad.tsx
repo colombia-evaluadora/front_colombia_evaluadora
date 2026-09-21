@@ -488,16 +488,14 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
-  // Mientras el backend no mande `campos_disponibles.recuperacion` (todavía
-  // no desplegado en producción a la fecha de este comentario — confirmado
-  // contra una respuesta real de `GET .../configuracion-actividad`, que
-  // solo trae `criterio`/`evaluacion`/`ponderacion`), `recuperacion` cae al
-  // placeholder oculto (`defaultRecuperacionCampoDisponible`) y sus
-  // catálogos quedan vacíos. Sin este chequeo, prender el toggle abría los
-  // `<Select>` de destino/tipo de aplicación/tipo de cálculo sin ninguna
-  // opción para elegir — parecía roto en vez de simplemente no disponible
-  // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
-  // toggle queda solo, igual que antes de que este bloque existiera.
+  // `campos_disponibles.recuperacion` (catálogos destino/tipoAplicacion/
+  // tipoCalculo + `reglas`) es real desde V458 — confirmado contra
+  // `docs/planeador/contrato-configuracion-y-detalle-actividad.md` del repo
+  // sso (§3.4). Este chequeo queda igual como salvaguarda genérica: si
+  // algún día la fila cae al placeholder oculto
+  // (`defaultRecuperacionCampoDisponible`, por ejemplo por un servidor
+  // desactualizado), los catálogos quedan vacíos y el toggle se ofrece
+  // solo, en vez de abrir `<Select>`s sin ninguna opción para elegir.
   const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
 
   return (
