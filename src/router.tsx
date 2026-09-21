@@ -15,6 +15,7 @@ import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
 import {
+  activateSearchSchema,
   checkEmailSearchSchema,
   loginSearchSchema,
   restorePasswordSearchSchema,
@@ -78,6 +79,10 @@ const CheckEmailPage = lazyRouteComponent(
 const RestorePasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/restore-password-page"),
   "RestorePasswordPage",
+)
+const ActivatePage = lazyRouteComponent(
+  () => import("@/features/auth/pages/activate-page"),
+  "ActivatePage",
 )
 const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
 const ProtectedLayout = lazyRouteComponent(
@@ -317,6 +322,19 @@ const restorePasswordRoute = createRoute({
     ],
   }),
   component: RestorePasswordPage,
+})
+
+const activateRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.activate.path,
+  validateSearch: activateSearchSchema,
+  head: () => ({
+    meta: [
+      { title: `Activa tu cuenta · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: ActivatePage,
 })
 
 const appLayoutRoute = createRoute({
@@ -874,6 +892,7 @@ const routeTree = rootRoute.addChildren([
     forgotUsernameRoute,
     checkEmailRoute,
     restorePasswordRoute,
+    activateRoute,
   ]),
   appLayoutRoute.addChildren([
     appIndexRoute,
