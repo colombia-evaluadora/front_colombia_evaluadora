@@ -425,7 +425,12 @@ export function EditarActividadForm({
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} disabled={disabled} />
-      <RecursosSection form={form} draftKey={draftKey} disabled={disabled} />
+      <RecursosSection
+        form={form}
+        draftKey={draftKey}
+        disabled={disabled}
+        actividadId={actividad.id}
+      />
       <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
@@ -1679,11 +1684,20 @@ function RecursosSection({
   form,
   draftKey,
   disabled,
+  actividadId,
 }: {
   form: FormActividad
   draftKey: ActividadFormDraftKey
   disabled: boolean
+  /** 0 mientras la actividad no se guardo: la biblioteca no se puede
+   *  consultar sin una actividad existente (ver el boton mas abajo). */
+  actividadId: number
 }) {
+  // El grupo elegido en el formulario. Es lo que le permite a la biblioteca
+  // resolver el alcance del usuario mientras la actividad no existe (al
+  // crear); editando manda la actividad y esto queda de respaldo.
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1749,13 +1763,21 @@ function RecursosSection({
                   type="button"
                   onClick={() => setBibliotecaOpen(true)}
                   aria-label="Adjuntar desde biblioteca"
-                  disabled={disabled}
+                  // La biblioteca necesita un ancla para resolver el alcance:
+                  // la actividad al editar, el grupo al crear (V429). Sin
+                  // ninguna de las dos el backend responde 400, así que el
+                  // botón espera a que se elija el grupo.
+                  disabled={disabled || (actividadId <= 0 && !grupoId)}
                 />
               }
             >
               <FolderOpenIcon />
             </TooltipTrigger>
-            <TooltipContent>Adjuntar desde biblioteca</TooltipContent>
+            <TooltipContent>
+              {actividadId > 0 || grupoId
+                ? "Adjuntar desde biblioteca"
+                : "Elegí el grupo para ver los archivos de otras actividades"}
+            </TooltipContent>
           </Tooltip>
           {/* Toggle colapsar/expandir. El ícono cambia entre los dos
               estados: `+` outline (expandir) cuando está colapsado, `-`
@@ -1869,6 +1891,8 @@ function RecursosSection({
           <DialogBibliotecaRecursos
             open={bibliotecaOpen}
             onOpenChange={setBibliotecaOpen}
+            actividadId={actividadId}
+            grupoId={grupoId ?? 0}
             recursosActuales={recursos as Recurso[]}
             onSelect={handlePickFromBiblioteca}
           />
