@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { queryOptions, useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
@@ -146,6 +146,21 @@ async function fetchReferenteCurricular(
   if (asignaturaId != null) query.set("asignatura", String(asignaturaId))
   const body = await api.get(`/eval-col/planeador/referente-curricular?${query}`)
   return toReferente(firstRow(body))
+}
+
+/** Expuesta aparte de `useReferenteCurricularQuery` para poder sondear
+ *  varios pares (grado, asignatura) EN PARALELO con `useQueries` — ver
+ *  `AsignaturaGradoSection`, que filtra sus opciones a solo evaluativas
+ *  cuando `esRecuperacion && recuperacionDestino === "NOTA_FINAL"` (no hay
+ *  actividad de origen de la que heredar grado/asignatura en ese caso, así
+ *  que el docente elige a mano — y una recuperación no puede caer en un
+ *  referente formativo). Mismo patrón que `actividadesRecuperablesQueryOptions`. */
+export function referenteCurricularQueryOptions(gradoId: number, asignaturaId: number | undefined) {
+  return queryOptions({
+    queryKey: referenteCurricularQueryKey(gradoId, asignaturaId),
+    queryFn: () => fetchReferenteCurricular(gradoId, asignaturaId),
+    staleTime: 1000 * 60,
+  })
 }
 
 /**
