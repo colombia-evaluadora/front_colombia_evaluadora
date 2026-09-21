@@ -18,24 +18,49 @@ interface UpdateAdaptacionesInput {
  * adaptaciones curriculares — un array vacío las quita todas. `ADAPTACIONES`
  * viaja como STRING serializado (regla de los `JSONB` del motor).
  *
- * El body confirmado solo trae `tipoAdaptacion`/`descripcion`/
- * `usaVersionModificada`/`aplicaA` — NO hay campo confirmado para la
- * referencia de la versión modificada (`Adaptacion.versionModificadaRef`:
- * archivo, enlace o plantilla de biblioteca) ni para los estudiantes
- * puntuales cuando `aplicaA === "Estudiantes específicos"`
- * (`Adaptacion.estudiantesIds`) — ambos se guardan en el form pero no
- * viajan todavía a este PUT; se necesita una captura real que confirme esos
- * campos antes de mandarlos (ver el aviso a la actividad de dónde salió
- * este comentario).
+ * `formatoAdaptacion` — confirmado real contra el mensaje de error del
+ * backend ("Con usaVersionModificada = 'S' se debe indicar formatoAdaptacion
+ * (ARCHIVO, ENLACE o BIBLIOTECA)"): faltaba del todo en este body, así que
+ * CUALQUIER adaptación con `versionModificada` distinto de "no" tumbaba el
+ * PUT entero (las demás adaptaciones de la lista incluidas, por ser
+ * reemplazo completo). Se deriva 1:1 de `Adaptacion.versionModificada`
+ * ("archivo"/"enlace"/"biblioteca" → "ARCHIVO"/"ENLACE"/"BIBLIOTECA"),
+ * mismo valor que ya decide qué campo de `versionModificadaRef` llenar en
+ * el form (ver el comentario de `Adaptacion` en `types/actividad.ts`).
+ *
+ * El body confirmado trae `tipoAdaptacion`/`descripcion`/
+ * `usaVersionModificada`/`formatoAdaptacion`/`aplicaA` — NO hay campo
+ * confirmado para la referencia de la versión modificada
+ * (`Adaptacion.versionModificadaRef`: el archivo/enlace/plantilla en sí,
+ * distinto del FORMATO que ya se manda) ni para los estudiantes puntuales
+ * cuando `aplicaA === "Estudiantes específicos"` (`Adaptacion.estudiantesIds`)
+ * — los dos se guardan en el form pero no viajan todavía a este PUT; se
+ * necesita una captura real que confirme esos campos antes de mandarlos.
  */
+function formatoAdaptacionDe(versionModificada: Adaptacion["versionModificada"]): string | undefined {
+  if (versionModificada === "archivo") return "ARCHIVO"
+  if (versionModificada === "enlace") return "ENLACE"
+  if (versionModificada === "biblioteca") return "BIBLIOTECA"
+  return undefined
+}
+
 async function updateAdaptacionesActividad({ actividadId, adaptaciones }: UpdateAdaptacionesInput): Promise<void> {
   const cuerpo = await Promise.all(
-    adaptaciones.map(async (adaptacion) => ({
-      tipoAdaptacion: await resolveTipoAdaptacionId(adaptacion.tipo),
-      descripcion: adaptacion.descripcion,
-      usaVersionModificada: adaptacion.versionModificada && adaptacion.versionModificada !== "no" ? "S" : "N",
-      aplicaA: await resolveAplicaAId(adaptacion.aplicaA),
-    })),
+    adaptaciones.map(async (adaptacion) => {
+      const usaVersionModificada = adaptacion.versionModificada && adaptacion.versionModificada !== "no" ? "S" : "N"
+      return {
+        tipoAdaptacion: await resolveTipoAdaptacionId(adaptacion.tipo),
+        descripcion: adaptacion.descripcion,
+        usaVersionModificada,
+        // Solo se manda si aplica — con "N" el backend lo rechaza igual que
+        // con "S" y sin él, así que omitirlo (en vez de `null`) es el único
+        // valor válido en ese caso.
+        ...(usaVersionModificada === "S"
+          ? { formatoAdaptacion: formatoAdaptacionDe(adaptacion.versionModificada) }
+          : {}),
+        aplicaA: await resolveAplicaAId(adaptacion.aplicaA),
+      }
+    }),
   )
   await api.put(`/eval-col/planeador/actividades/${actividadId}/adaptaciones`, {
     ADAPTACIONES: JSON.stringify(cuerpo),
