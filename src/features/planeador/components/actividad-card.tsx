@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import { statusAccentFor, statusIconFor, statusRingFor } from "@/features/planeador/api/ui-mappings"
+import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { downloadJson } from "@/features/planeador/lib/download-json"
@@ -109,7 +110,12 @@ export function ActividadCard({
   // Eliminar tienen sus propios widgets (Dialog y AlertDialog) que
   // también renderean el botón del trigger, así que se excluyen de este
   // loop para no duplicar el control visual.
-  const acciones: Accion[] = ACCIONES_BASE.map((accion) => {
+  //
+  // "Aprobar" (bulk) no aplica en preescolar: ahí no hay reporte masivo,
+  // "Marcar" ya cubre observación + asistencia de a un estudiante por vez.
+  const acciones: Accion[] = ACCIONES_BASE.filter(
+    (accion) => accion.label !== "Aprobar" || !esActividadFormativa(actividad),
+  ).map((accion) => {
     if (accion.label === "Editar" && onEdit) return { ...accion, onClick: onEdit }
     if (accion.label === "Marcar" && onShowGrades) return { ...accion, onClick: onShowGrades }
     if (accion.label === "Aprobar" && onShowApproval) return { ...accion, onClick: onShowApproval }
