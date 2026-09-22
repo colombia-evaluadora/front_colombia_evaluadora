@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { BookOpenIcon, PencilIcon } from "@/components/ui/icons"
+// BookOpenIcon -- solo el ícono del botón de Asignaturas, comentado abajo.
+import { PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
@@ -35,11 +36,13 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
           Modificar
         </Button>
       )}
-      {/* Todavía no hay pantalla de asignaturas para matrícula. */}
+      {/* Todavía no hay pantalla de asignaturas para matrícula -- no se va
+          a mostrar de momento.
       <Button type="button" variant="outline" color="neutral" size="sm" disabled>
         <BookOpenIcon data-icon="inline-start" />
         Asignaturas
       </Button>
+      */}
       <RetirarMatriculaDialog matricula={matricula} trigger="button" />
       <ReingresarMatriculaDialog matricula={matricula} trigger="button" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable} />
