@@ -22,6 +22,7 @@ import {
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  resolverInstrumentoEfectivo,
   splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
@@ -50,23 +51,31 @@ export function buildCalificarCeldaInput(
   pkTactividadEstudiante: number,
   fecha: string,
 ): CalificarCeldaInput | null {
-  if (instrumento.instrumento === "RUBRICA") {
+  // "Otro (personalizado)" con método configurado se resuelve al MISMO tipo
+  // efectivo que su instrumento equivalente directo — el backend
+  // (`fn_actividad_nota_calificar`, V241) delega en el MISMO
+  // fn_actividad_nota_calificar_rubrica/_cotejo/_escala con el MISMO
+  // payload. Antes esto se ignoraba y "Otro" siempre mandaba
+  // `{valorNumerico}` sin importar el método, perdiendo la estructura real.
+  const efectivo = resolverInstrumentoEfectivo(instrumento)
+
+  if (efectivo.tipo === "RUBRICA") {
     // Solo criterios que SIGUEN activos: `value` puede traer una nota
     // precargada (`toNotas`) de un criterio ya borrado/desactivado después
     // de que el estudiante fue calificado la primera vez. Mandarla junto
     // con la elegida ahora hace que el backend rechace el guardado con
     // "La rúbrica tiene N criterio(s) activo(s) pero se calificaron M" —
     // mismo filtro que `instrumentoCompletitud`.
-    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
+    const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     const niveles = value
       .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
       .map((n) => ({ pkCriterio: n.criterioId, pkNivel: n.nivelId! }))
     if (niveles.length === 0) return null
     return { pkTactividadEstudiante, fecha, tipo: "RUBRICA", niveles }
   }
-  if (instrumento.instrumento === "LISTA_COTEJO") {
+  if (efectivo.tipo === "LISTA_COTEJO") {
     // Mismo criterio que RUBRICA: solo ítems que siguen en la lista actual.
-    const itemsActivos = new Set(instrumento.definicion.map((i) => i.pk))
+    const itemsActivos = new Set(efectivo.definicion.map((i) => i.pk))
     const marcados = value.filter((n) => itemsActivos.has(n.criterioId))
     if (marcados.length === 0) return null
     return {
@@ -76,14 +85,14 @@ export function buildCalificarCeldaInput(
       itemsMarcados: marcados.map((n) => n.criterioId),
     }
   }
-  if (instrumento.instrumento === "ESCALA_VALORACION") {
+  if (efectivo.tipo === "ESCALA_VALORACION") {
     // 2+ criterios generales (V472): un valor POR criterio, `criterioId` =
     // posición (0-based) — mismo criterio que `instrumentoCompletitud` y
     // `EscalaValoracionFields` para derivar cuántos criterios tiene la
     // escala (partir `criteriosGenerales` por coma, sin filtrar vacíos).
-    const criterios = splitCriteriosGenerales(instrumento.definicion.criteriosGenerales)
+    const criterios = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
     if (criterios.length > 1) {
-      const esCualitativa = instrumento.definicion.niveles.length > 0
+      const esCualitativa = efectivo.definicion.niveles.length > 0
       const cuerpo = value
         .filter((n) => n.criterioId < criterios.length && (esCualitativa ? n.nivelId != null : n.valor != null))
         .map((n) =>
@@ -94,7 +103,7 @@ export function buildCalificarCeldaInput(
       if (cuerpo.length === 0) return null
       return { pkTactividadEstudiante, fecha, tipo: "ESCALA_CRITERIOS", criterios: cuerpo }
     }
-    if (instrumento.definicion.niveles.length > 0) {
+    if (efectivo.definicion.niveles.length > 0) {
       const nivelId = value[0]?.nivelId
       if (nivelId == null) return null
       return { pkTactividadEstudiante, fecha, tipo: "ESCALA_CUALITATIVA", pkNivel: nivelId }
@@ -103,10 +112,16 @@ export function buildCalificarCeldaInput(
     if (valor == null) return null
     return { pkTactividadEstudiante, fecha, tipo: "VALOR_NUMERICO", valorNumerico: valor }
   }
-  if (instrumento.instrumento === "OTRO") {
+  if (efectivo.tipo === "VALOR_NUMERICO") {
+    // "Otro" SIN método configurado: texto libre real, el backend
+    // (`fn_actividad_nota_calificar_otro`) espera `{porcentaje}` — una
+    // clave DISTINTA de `valorNumerico` (esa es de la escala). Antes esto
+    // mandaba `valorNumerico` siempre, que solo por coincidencia funcionaba
+    // cuando "Otro" delegaba en una escala numérica (misma clave); para
+    // "Otro" genuinamente sin método, el backend nunca recibía el % real.
     const valor = value[0]?.valor
     if (valor == null) return null
-    return { pkTactividadEstudiante, fecha, tipo: "VALOR_NUMERICO", valorNumerico: valor }
+    return { pkTactividadEstudiante, fecha, tipo: "OTRO_PORCENTAJE", porcentaje: valor }
   }
   return null
 }
