@@ -12,6 +12,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
+import { toSafeTextInput } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -105,7 +106,10 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         // No es un catálogo real: es texto libre con la forma de
                         // `CatalogItem` para reusar el tipo de `address`. El `id`
                         // no se lee en ningún otro lado, así que un 0 fijo alcanza.
-                        onChange={(event) => onChange({ ...value, district: { id: 0, code: event.target.value, name: event.target.value } })}
+                        onChange={(event) => {
+                            const clean = toSafeTextInput(event.target.value, 130)
+                            onChange({ ...value, district: { id: 0, code: clean, name: clean } })
+                        }}
                     />
                 </Field>
             </div>

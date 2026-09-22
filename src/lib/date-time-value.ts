@@ -28,7 +28,11 @@ export function formatDateTimeValue(date: Date | undefined): string {
  * picker muestre el placeholder en lugar de "1 ene 1970".
  */
 export function parseDateValue(value: string | null | undefined): Date | undefined {
-  return value ? parseISO(value) : undefined
+  if (!value) {
+    return undefined
+  }
+
+  return parseISO(value.slice(0, 10))
 }
 
 /**
