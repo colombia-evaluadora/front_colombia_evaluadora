@@ -79,6 +79,10 @@ export function CalificacionesAprobacionView({
   // estado real —una actividad de preescolar sin unidad— y mostrarle el form
   // de aprobación seria prometerle algo que ningun endpoint acepta.
   const sinSalida = !formativa && instrumento?.instrumento == null
+  // Sin la ventana empezada no puede existir asistencia de ningun estudiante
+  // -- el sheet lo explica igual (`ObservacionEstudianteSheet`), pero no
+  // tiene sentido dejarlo abrir primero para recien ahi avisar.
+  const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
 
   const queryClient = useQueryClient()
   const { notify } = useNotify()
@@ -314,6 +318,7 @@ export function CalificacionesAprobacionView({
                                 color={observacion ? "primary" : "neutral"}
                                 size="icon-xs"
                                 className="shrink-0"
+                                disabled={actividadSinComenzar}
                                 aria-label={
                                   observacion
                                     ? `Ver observación de ${nombreCompleto}`
@@ -326,12 +331,17 @@ export function CalificacionesAprobacionView({
                             {observacion ? <EyeIcon /> : <PlusIcon />}
                           </TooltipTrigger>
                           <TooltipContent>
-                            {observacion ? "Ver observación" : "Sin observación"}
+                            {actividadSinComenzar
+                              ? "Esta actividad todavía no comienza."
+                              : observacion
+                                ? "Ver observación"
+                                : "Sin observación"}
                           </TooltipContent>
                         </Tooltip>
                         <button
                           type="button"
-                          className="min-w-0 flex-1 truncate text-left hover:underline"
+                          disabled={actividadSinComenzar}
+                          className="min-w-0 flex-1 truncate text-left hover:underline disabled:pointer-events-none disabled:opacity-50"
                           onClick={() => setObservandoId(estudiante.id)}
                           title={observacion}
                         >
@@ -374,7 +384,7 @@ export function CalificacionesAprobacionView({
         estudiante={observando}
         contexto={actividad.nombre}
         evidencias={notaObservando?.evidencias ?? []}
-        actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
+        actividadSinComenzar={actividadSinComenzar}
         guardando={guardando}
         onOpenChange={(open) => {
           if (!open) setObservandoId(null)

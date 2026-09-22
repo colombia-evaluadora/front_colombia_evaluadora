@@ -12,20 +12,27 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckCircleIcon,
   ClockIcon,
   PaperclipIcon,
   RemoveCircleOutlineIcon,
+  SpinnerIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
+
+import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
 import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
-import { formatDate } from "@/features/planeador/lib/format-date"
+import { formatDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
@@ -53,7 +60,43 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
     useCalificacionesQuery(actividad.id, actividad.fechaInicio)
   const queryClient = useQueryClient()
+  const { notify } = useNotify()
   const formativa = esActividadFormativa(actividad)
+  const registrarAsistencia = useAsistenciaRegistrarMutation()
+  // Sin la ventana empezada no puede existir una clase que asistir todavía
+  // -- el backend la rechaza igual (fn_asistencia_registrar_bulk, V464),
+  // pero se corta acá para no dejar clickear el Select y recién ahí fallar.
+  const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
+
+  /** Toma la asistencia de UN estudiante directo desde el Marcar del
+   *  Planeador -- mismo endpoint que usa el módulo de Asistencia
+   *  (`POST /asistencias/registrar`), sin bloque de horario (actividad
+   *  evaluativa) o por la actividad misma (formativa, igual que el gate que
+   *  ya usa observar). */
+  function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
+    if (actividadSinComenzar) return
+    if (!actividad.grupoId) {
+      notify("Falta el grupo de la actividad para registrar asistencia.", { variant: "error" })
+      return
+    }
+    registrarAsistencia.mutate(
+      {
+        GRUPO: actividad.grupoId,
+        FECHA: actividad.fechaInicio,
+        REGISTROS: [{ fkMatricula: matriculaId, tipoAsistencia: tipo }],
+        ...(formativa
+          ? { ACTIVIDAD: actividad.id }
+          : { ASIGNATURA: actividad.asignaturaId, BLOQUE: null }),
+      },
+      {
+        onSuccess: () => {
+          notify("Asistencia registrada.")
+          queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
+        },
+        onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+      },
+    )
+  }
 
   if (isPending) {
     return (
@@ -88,7 +131,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
         <thead className="bg-muted/10 border-b">
           <tr>
             <th className="px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-            <th className="px-4 py-3 text-left">
+            <th className="w-72 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
                 Fecha: {formatDate(actividad.fechaInicio)}
@@ -110,6 +153,13 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
               onGuardado={() =>
                 queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
               }
+              onGuardarAsistencia={guardarAsistencia}
+              guardandoAsistenciaMatriculaId={
+                registrarAsistencia.isPending
+                  ? (registrarAsistencia.variables?.REGISTROS?.[0]?.fkMatricula ?? null)
+                  : null
+              }
+              actividadSinComenzar={actividadSinComenzar}
             />
           ))}
         </tbody>
@@ -125,9 +175,20 @@ interface CalificacionRowProps {
   formativa: boolean
   estudiante: CalificacionEstudiante
   onGuardado: () => void
+  onGuardarAsistencia: (matriculaId: number, tipo: TipoAsistencia) => void
+  guardandoAsistenciaMatriculaId: number | null
+  actividadSinComenzar: boolean
 }
 
-function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: CalificacionRowProps) {
+function CalificacionRow({
+  actividad,
+  formativa,
+  estudiante,
+  onGuardado,
+  onGuardarAsistencia,
+  guardandoAsistenciaMatriculaId,
+  actividadSinComenzar,
+}: CalificacionRowProps) {
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const mostrarJustificacion =
@@ -138,9 +199,20 @@ function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: Calif
   return (
     <tr className="transition-colors">
       <td className="px-4 py-3 align-middle font-medium">{nombreCompleto}</td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <AsistenciaSelect estado={estudiante.asistencia.estado} />
+      <td className="w-72 max-w-72 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <AsistenciaSelect
+            estado={estudiante.asistencia.estado}
+            guardando={
+              estudiante.matriculaId != null && guardandoAsistenciaMatriculaId === estudiante.matriculaId
+            }
+            actividadSinComenzar={actividadSinComenzar}
+            onChange={
+              estudiante.matriculaId != null && !actividadSinComenzar
+                ? (tipo) => onGuardarAsistencia(estudiante.matriculaId!, tipo)
+                : undefined
+            }
+          />
           {mostrarJustificacion && (
             <JustificacionField
               value={estudiante.asistencia.justificacion ?? ""}
@@ -173,6 +245,7 @@ function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: Calif
             estudianteNombre={nombreCompleto}
             observacionActual={estudiante.observacion ?? null}
             evidenciasActuales={[]}
+            actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
             onGuardado={onGuardado}
           />
         ) : (
@@ -192,20 +265,50 @@ function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: Calif
   )
 }
 
+/** `EstadoAsistencia` seleccionable → `TipoAsistencia` real que exige
+ *  `POST /asistencias/registrar`. "sin-registrar" no tiene equivalente: es
+ *  la ausencia de fila, no un estado que se pueda mandar. */
+const ESTADO_A_TIPO: Partial<Record<EstadoAsistencia, TipoAsistencia>> = {
+  asistio: 1,
+  "llego-tarde": 5,
+  "no-asistio": 2,
+}
+
 /**
  * Select de asistencia envuelto en un `Field` outlined con label flotante.
  * El label "Asistencia" se monta sobre el borde superior y queda anclado
  * aunque el select cambie de valor, igual que en el resto de los campos
  * outlined-floating del design system.
+ *
+ * Editable desde acá: toma la asistencia de este estudiante con el mismo
+ * endpoint que usa el módulo de Asistencia, para no obligar al docente a
+ * saltar de pantalla solo para poder calificar/observar. `onChange`
+ * ausente (mock, o sin `matriculaId`) cae al viejo comportamiento
+ * read-only.
  */
-function AsistenciaSelect({ estado }: { estado: EstadoAsistencia }) {
+function AsistenciaSelect({
+  estado,
+  onChange,
+  guardando,
+  actividadSinComenzar,
+}: {
+  estado: EstadoAsistencia
+  onChange?: (tipo: TipoAsistencia) => void
+  guardando?: boolean
+  actividadSinComenzar?: boolean
+}) {
   const id = useId()
-  return (
+  const campo = (
     <Field variant="outlined" className="min-w-36">
       <FieldLabel htmlFor={id}>Asistencia</FieldLabel>
-      {/* Refleja lo registrado en Asistencia; no se edita desde acá (la
-          asistencia se toma en su propio módulo), de ahí el `disabled`. */}
-      <Select value={estado} onValueChange={() => {}} disabled>
+      <Select
+        value={estado}
+        onValueChange={(next) => {
+          const tipo = next ? ESTADO_A_TIPO[next as EstadoAsistencia] : undefined
+          if (tipo != null) onChange?.(tipo)
+        }}
+        disabled={!onChange || guardando}
+      >
         <SelectTrigger id={id}>
           <SelectValue>
             {(value) => {
@@ -213,7 +316,11 @@ function AsistenciaSelect({ estado }: { estado: EstadoAsistencia }) {
               if (!opt) return null
               return (
                 <span className="flex items-center gap-2">
-                  <opt.Icon className={cn("size-4", opt.iconClass)} />
+                  {guardando ? (
+                    <SpinnerIcon className="size-4 animate-spin" />
+                  ) : (
+                    <opt.Icon className={cn("size-4", opt.iconClass)} />
+                  )}
                   {opt.label}
                 </span>
               )
@@ -221,7 +328,7 @@ function AsistenciaSelect({ estado }: { estado: EstadoAsistencia }) {
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {ASISTENCIA_OPTIONS.map((opt) => (
+          {ASISTENCIA_OPTIONS.filter((opt) => opt.value !== "sin-registrar").map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               <span className="flex items-center gap-2">
                 <opt.Icon className={cn("size-4", opt.iconClass)} />
@@ -232,6 +339,17 @@ function AsistenciaSelect({ estado }: { estado: EstadoAsistencia }) {
         </SelectContent>
       </Select>
     </Field>
+  )
+
+  if (!actividadSinComenzar) return campo
+
+  return (
+    <Tooltip>
+      {/* El trigger va en un `span`, no en el propio Select: un control
+          disabled no dispara los eventos de hover que necesita el Tooltip. */}
+      <TooltipTrigger render={<span className="inline-flex min-w-36" />}>{campo}</TooltipTrigger>
+      <TooltipContent>Esta actividad todavía no comienza: no se puede tomar asistencia.</TooltipContent>
+    </Tooltip>
   )
 }
 

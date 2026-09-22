@@ -52,6 +52,10 @@ interface ActividadMiaRow {
   /** Nuevo en el listado (antes había que abrir el detalle para saberlo) —
    *  opcional para tolerar una respuesta vieja sin la columna. */
   es_recuperacion?: "S" | "N"
+  /** `fn_actividad_es_formativa` (V243/V472) -- opcional para tolerar una
+   *  respuesta vieja sin la columna; sin ella se asume NO formativa, mismo
+   *  default que `esActividadFormativa` en `actividad-formativa.ts`. */
+  es_formativa?: boolean
   estudiantes_asignados: number
   estudiantes_evaluados: number
   total_count: number
@@ -107,6 +111,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     semana: "",
     modalidad: "Presencial",
     esEvaluativa: row.es_evaluativa === "S",
+    esFormativa: row.es_formativa === true,
     instrumento: row.instrumento_evaluacion ?? "",
     ponderacion: row.ponderacion ?? 0,
     generaEvidencias: false,

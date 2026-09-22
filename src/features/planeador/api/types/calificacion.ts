@@ -46,6 +46,11 @@ export type NotaCriterio = {
 
 /** Calificación completa de un estudiante en una actividad. */
 export type CalificacionEstudiante = Estudiante & {
+  /** `FK_TMATRICULA` -- distinto de `id` (`PK_TACTIVIDAD_ESTUDIANTE`, el que
+   *  pide calificar/observar). Hace falta aparte para poder tomar asistencia
+   *  desde acá (`POST /asistencias/registrar` exige la matrícula, no la
+   *  actividad-estudiante). `undefined` en mock. */
+  matriculaId?: number
   asistencia: Asistencia
   notas: NotaCriterio[]
   /** Porcentaje 0-100 YA CALCULADO por el backend real (`calificacion` de

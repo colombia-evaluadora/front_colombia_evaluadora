@@ -108,7 +108,11 @@ export function CeldaObservacionTrigger({
           <Icono className="size-3.5" />
         </TooltipTrigger>
         <TooltipContent>
-          {fecha === null ? `Sin asistencia registrada para ${estudianteNombre}` : etiqueta}
+          {fecha === null
+            ? actividadSinComenzar
+              ? "Esta actividad todavía no comienza: no se puede observar todavía."
+              : `Sin asistencia registrada para ${estudianteNombre}`
+            : etiqueta}
         </TooltipContent>
       </Tooltip>
 
