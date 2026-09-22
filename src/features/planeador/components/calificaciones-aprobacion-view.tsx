@@ -36,6 +36,8 @@ import {
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  resolverInstrumentoEfectivo,
+  splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import {
   ObservacionEstudianteSheet,
@@ -164,6 +166,24 @@ export function CalificacionesAprobacionView({
   })
   const calificarBulk = useCalificarBulkMutation()
   const completitud = instrumentoCompletitud(instrumento, nota)
+  // Numérica (sin niveles) o con 2+ criterios generales (V472, un valor
+  // por criterio): ninguna de las dos tiene bulk propio todavía
+  // (`calificar-bulk/escala` solo aplica UN nivel a varios estudiantes) —
+  // mismo criterio que `CalificarActividadBulk`. Sin este chequeo,
+  // `completitud.completo` daba `true` apenas se llenaban los campos (son
+  // válidos, uno por uno) y el botón "Guardar" quedaba habilitado aunque
+  // `buildBulkInputs` fuera a devolver `[]` — clic sin ningún efecto ni
+  // aviso, confirmado en vivo con una escala de 2 criterios.
+  // Por tipo EFECTIVO (resuelve "Otro" con método al instrumento
+  // equivalente) — un "Otro" que delega en RUBRICA/LISTA_COTEJO sí tiene
+  // bulk; solo VALOR_NUMERICO (escala numérica u "Otro" sin método) y la
+  // escala con 2+ criterios (V472, sin bulk propio todavía) quedan afuera.
+  const efectivoBulk = resolverInstrumentoEfectivo(instrumento)
+  const escalaSinBulk =
+    efectivoBulk.tipo === "VALOR_NUMERICO" ||
+    (efectivoBulk.tipo === "ESCALA_VALORACION" &&
+      (efectivoBulk.definicion.niveles.length === 0 ||
+        splitCriteriosGenerales(efectivoBulk.definicion.criteriosGenerales).length > 1))
 
   /** Mismo bulk que `CalificarActividadBulk`: un `PUT .../calificar-bulk/<tipo>`
    *  por cada criterio/ítem/nivel llenado, aplicado a los estudiantes tildados. */
@@ -275,6 +295,13 @@ export function CalificacionesAprobacionView({
             setNota(next)
           }}
         />
+      )}
+
+      {escalaSinBulk && (
+        <p className="text-muted-foreground text-xs">
+          Este instrumento no admite calificación en bloque — califique estudiante por estudiante
+          desde la grilla ("Marcar").
+        </p>
       )}
 
       <Field variant="outlined">
@@ -425,7 +452,7 @@ export function CalificacionesAprobacionView({
               variant="fill"
               color="primary"
               size="sm"
-              disabled={seleccionados.size === 0 || !completitud.completo || guardando}
+              disabled={seleccionados.size === 0 || !completitud.completo || guardando || escalaSinBulk}
               onClick={guardarCalificacionBulk}
             >
               {guardando && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}

@@ -157,4 +157,27 @@ export type InstrumentoActividad =
       instrumentoNombre: string | null
       definicion: InstrumentoEscala
     }
-  | { instrumento: "OTRO"; instrumentoNombre: string | null; definicion: unknown }
+  | { instrumento: "OTRO"; instrumentoNombre: string | null; definicion: InstrumentoOtroDefinicion }
+
+/**
+ * `GET .../instrumento` para "Otro (personalizado)" — confirmado real
+ * contra producción: `{pk, metodoValoracionValor:"ESCALA_VALORACION",
+ * definicion:{pk,niveles:[],valorMax,valorMin,...}, tipoEvidencia, ...}`.
+ * `definicion.definicion` es el MISMO objeto/array que trae el instrumento
+ * DIRECTO equivalente (RUBRICA/LISTA_COTEJO/ESCALA_VALORACION) — el backend
+ * (V240/V241) delega en fn_actividad_rubrica_definir/_cotejo_definir/
+ * _escala_definir y fn_actividad_nota_calificar_rubrica/_cotejo/_escala
+ * tal cual, así que calificar "Otro" con método configurado usa EXACTAMENTE
+ * el mismo payload/UI que su instrumento equivalente — antes esto se
+ * ignoraba (`definicion: unknown`) y "Otro" siempre caía a un campo
+ * numérico plano, perdiendo la rúbrica/lista de cotejo/escala real
+ * definida debajo.
+ *
+ * `metodoValoracionValor: null` es "Otro" sin método configurado (texto
+ * libre real): ahí sí se sigue calificando con un porcentaje manual.
+ */
+export type InstrumentoOtroDefinicion =
+  | { metodoValoracionValor: "RUBRICA"; definicion: InstrumentoCriterio[] }
+  | { metodoValoracionValor: "LISTA_COTEJO"; definicion: InstrumentoCotejoItem[] }
+  | { metodoValoracionValor: "ESCALA_VALORACION"; definicion: InstrumentoEscala }
+  | { metodoValoracionValor: null; definicion: null }

@@ -127,7 +127,14 @@ export function instrumentoActividadDe(actividad: Actividad): InstrumentoActivid
     }
   }
   if (tipo === "OTRO") {
-    return { instrumento: "OTRO", instrumentoNombre: actividad.instrumento, definicion: null }
+    // El mock no modela el método de valoración configurado para "Otro"
+    // (fuera de alcance del mock actual) — cae al caso "sin método", igual
+    // que antes de que `InstrumentoOtroDefinicion` existiera.
+    return {
+      instrumento: "OTRO",
+      instrumentoNombre: actividad.instrumento,
+      definicion: { metodoValoracionValor: null, definicion: null },
+    }
   }
   return { instrumento: null, instrumentoNombre: null, definicion: null }
 }
