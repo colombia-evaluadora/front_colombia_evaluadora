@@ -200,7 +200,10 @@ export const evaluationPeriodFormSchema = z
     nombre: z
       .string()
       .min(1, "El nombre es obligatorio")
-      .max(130, "El nombre no puede superar los 130 caracteres"),
+      .max(130, "El nombre no puede superar los 130 caracteres")
+      .refine((value) => value.trim().toLowerCase() !== "final", {
+        message: "\"Final\" es un nombre reservado; usa otro para este período.",
+      }),
     abreviacion: z
       .string()
       .min(1, "La abreviación es obligatoria")

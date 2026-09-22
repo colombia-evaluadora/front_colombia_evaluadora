@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
-import { toDigitsOnly } from "@/lib/text-input"
+import { toDigitsOnly, toLettersOnly } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -35,6 +35,12 @@ type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
  * que ser una cadena no vacía para no chocar con `@NotBlank` del lado Java.
  */
 export const PASSWORD_PLACEHOLDER = "••••••••"
+
+function getMaxBirthDate(): Date {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() - 18)
+  return date
+}
 
 interface UserFormProps {
     role?: EmployeeRoleCode
@@ -219,14 +225,6 @@ export function UserDetailsForm({
                 password: "",
                 id: undefined,
                 photoArchivoId: null,
-                firstName: "",
-                middleName: "",
-                lastName: "",
-                secondLastName: "",
-                birthDate: "",
-                gender: null,
-                phone: "",
-                email: "",
             })
             setConfirmPassword("")
             onMatched?.(null)
@@ -385,7 +383,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ firstName: toLettersOnly(event.target.value).toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
@@ -397,7 +395,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
-                        onChange={(event) => emitChange({ middleName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ middleName: toLettersOnly(event.target.value).toUpperCase() })}
                     />
                 </Field>
 
@@ -409,7 +407,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ lastName: toLettersOnly(event.target.value).toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
@@ -421,7 +419,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
-                        onChange={(event) => emitChange({ secondLastName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ secondLastName: toLettersOnly(event.target.value).toUpperCase() })}
                     />
                 </Field>
             </div>
@@ -514,8 +512,7 @@ export function UserDetailsForm({
                         id="birth-date"
                         mode="date"
                         size="sm"
-                        // No tiene sentido nacer en el futuro.
-                        maxDate={new Date()}
+                        maxDate={getMaxBirthDate()}
                         value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                         onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}

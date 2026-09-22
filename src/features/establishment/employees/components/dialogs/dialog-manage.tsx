@@ -308,6 +308,16 @@ const employeePersonSchema = z
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
+    if (!isBlankValue(person.birthDate)) {
+      const birthDate = new Date(person.birthDate as string)
+      const cutoff = new Date()
+      cutoff.setFullYear(cutoff.getFullYear() - 18)
+
+      if (Number.isNaN(birthDate.getTime()) || birthDate > cutoff) {
+        ctx.addIssue({ code: "custom", path: ["birthDate"], message: "La persona debe ser mayor de edad." })
+      }
+    }
+
     // Persona SIN `id` todavía: va a `POST /register/cval/funcionario`, que
     // exige `@NotBlank` en email/password (mismo criterio que rector/
     // secretaria en `makePersonSchema`, ver ese archivo). Persona CON `id`

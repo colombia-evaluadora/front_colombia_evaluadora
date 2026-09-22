@@ -300,7 +300,7 @@ function DayCellPopover({
           <>
             <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {items.map((item) => {
-                const marcado = markedEntryIds.has(item.id)
+                const marcado = item.estado === "REGISTRADA" || markedEntryIds.has(item.id)
                 const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
                 return (
                   <li key={item.id} className="flex flex-col gap-1">

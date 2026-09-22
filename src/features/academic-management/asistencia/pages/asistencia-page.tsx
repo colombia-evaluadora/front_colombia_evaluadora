@@ -25,7 +25,7 @@ import {
   nombreSesion,
   type AsistenciaDayEntry,
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
-import { agruparPorBloquesContinuos } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 function toIsoDate(date: Date) {
@@ -95,26 +95,31 @@ function AsistenciaPageContent() {
     for (const [day, lista] of porDia) {
       map.set(
         day,
-        agruparPorBloquesContinuos(lista).map((b) => ({
-          id: b.esFormativa
-            ? `${b.fkGrupo}-actividad-${b.fkActividad}-${b.fecha}`
-            : `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
-          fecha: b.fecha,
-          bloque: b.bloque,
-          bloques: b.bloques,
-          fkGrupo: b.fkGrupo,
-          grupo: b.grupo,
-          grado: b.grado,
-          jornada: b.jornada,
-          fkAsignatura: b.fkAsignatura,
-          asignatura: b.asignatura,
-          horaInicio: b.horaInicio,
-          horaFin: b.horaFin,
-          estado: b.estado,
-          esFormativa: b.esFormativa,
-          fkActividad: b.fkActividad,
-          actividad: b.actividad,
-        })),
+        // Mismo orden que "Asistencia manual": cronológico por hora de
+        // inicio, no el orden de agrupación por asignatura/actividad que
+        // devuelve `agruparPorBloquesContinuos`.
+        agruparPorBloquesContinuos(lista)
+          .sort(compararPorHora)
+          .map((b) => ({
+            id: b.esFormativa
+              ? `${b.fkGrupo}-actividad-${b.fkActividad}-${b.fecha}`
+              : `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
+            fecha: b.fecha,
+            bloque: b.bloque,
+            bloques: b.bloques,
+            fkGrupo: b.fkGrupo,
+            grupo: b.grupo,
+            grado: b.grado,
+            jornada: b.jornada,
+            fkAsignatura: b.fkAsignatura,
+            asignatura: b.asignatura,
+            horaInicio: b.horaInicio,
+            horaFin: b.horaFin,
+            estado: b.estado,
+            esFormativa: b.esFormativa,
+            fkActividad: b.fkActividad,
+            actividad: b.actividad,
+          })),
       )
     }
     return map
