@@ -49,8 +49,12 @@ export function buildBulkInputs(
 ) {
   const base = { actividadId, estudianteIds, fecha } as const
   if (instrumento.instrumento === "RUBRICA") {
+    // Solo criterios que siguen activos en la rúbrica actual — mismo
+    // filtro que `buildCalificarCeldaInput`/`instrumentoCompletitud`, por
+    // si el instrumento cambió entre que se cargó este form y se guardó.
+    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
     return value
-      .filter((n) => n.nivelId != null)
+      .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
       .map((n) => ({
         ...base,
         tipo: "RUBRICA" as const,
@@ -59,12 +63,15 @@ export function buildBulkInputs(
       }))
   }
   if (instrumento.instrumento === "LISTA_COTEJO") {
-    return value.map((n) => ({
-      ...base,
-      tipo: "LISTA_COTEJO" as const,
-      pkItem: n.criterioId,
-      cumplido: true,
-    }))
+    const itemsActivos = new Set(instrumento.definicion.map((i) => i.pk))
+    return value
+      .filter((n) => itemsActivos.has(n.criterioId))
+      .map((n) => ({
+        ...base,
+        tipo: "LISTA_COTEJO" as const,
+        pkItem: n.criterioId,
+        cumplido: true,
+      }))
   }
   if (
     instrumento.instrumento === "ESCALA_VALORACION" &&
