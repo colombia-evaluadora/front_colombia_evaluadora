@@ -2,7 +2,14 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import type { InstrumentoActividad, InstrumentoTipo } from "@/features/planeador/api/types/planilla"
+import type {
+  InstrumentoActividad,
+  InstrumentoCotejoItem,
+  InstrumentoCriterio,
+  InstrumentoEscala,
+  InstrumentoOtroDefinicion,
+  InstrumentoTipo,
+} from "@/features/planeador/api/types/planilla"
 
 /** `GET /planeador/actividades/:id/instrumento` (confirmado real, ver
  *  colección Postman `planeador-planilla-flujo-completo`, paso 3.1). Un 200
@@ -20,8 +27,36 @@ const SIN_DEFINIR: InstrumentoActividad = {
   definicion: null,
 }
 
+/** Shape cruda de `definicion` cuando `instrumento === "OTRO"` — confirmado
+ *  real contra producción (ver el comentario de `InstrumentoOtroDefinicion`). */
+interface OtroDefinicionRaw {
+  metodoValoracionValor?: string | null
+  definicion?: unknown
+}
+
+function toOtroDefinicion(raw: unknown): InstrumentoOtroDefinicion {
+  const item = (raw ?? {}) as OtroDefinicionRaw
+  if (item.metodoValoracionValor === "RUBRICA") {
+    return { metodoValoracionValor: "RUBRICA", definicion: (item.definicion ?? []) as InstrumentoCriterio[] }
+  }
+  if (item.metodoValoracionValor === "LISTA_COTEJO") {
+    return { metodoValoracionValor: "LISTA_COTEJO", definicion: (item.definicion ?? []) as InstrumentoCotejoItem[] }
+  }
+  if (item.metodoValoracionValor === "ESCALA_VALORACION" && item.definicion) {
+    return { metodoValoracionValor: "ESCALA_VALORACION", definicion: item.definicion as InstrumentoEscala }
+  }
+  return { metodoValoracionValor: null, definicion: null }
+}
+
 function toInstrumentoActividad(row: InstrumentoActividadRow | undefined): InstrumentoActividad {
   if (!row || !row.instrumento) return SIN_DEFINIR
+  if (row.instrumento === "OTRO") {
+    return {
+      instrumento: "OTRO",
+      instrumentoNombre: row.instrumento_nombre,
+      definicion: toOtroDefinicion(row.definicion),
+    }
+  }
   return {
     instrumento: row.instrumento,
     instrumentoNombre: row.instrumento_nombre,
