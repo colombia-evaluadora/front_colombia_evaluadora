@@ -70,6 +70,15 @@ interface UserFormProps {
     onPhotoChange?: (file: File | null) => void
     onRemovePhoto?: () => void
     /**
+     * La foto que ACABA de subirse al crear el funcionario. Al guardar, el
+     * `File` se limpia —ya se subió, y dejarlo marcaría el formulario como
+     * sucio para siempre— pero el alta no devuelve el `pk_tarchivo`, así que
+     * `photoArchivoId` sigue en `null` y la vista previa se quedaba vacía:
+     * parecía que la foto no se había guardado. Se muestra esta hasta que el
+     * diálogo se reabra en edición y llegue la de verdad.
+     */
+    uploadedPhoto?: File | null
+    /**
      * Se dispara con el patch crudo que devolvió `findPersonByDocument`
      * (antes de mezclarlo con `PASSWORD_PLACEHOLDER`) cada vez que el
      * autocompletado encuentra o pierde una coincidencia — `null` cuando el
@@ -98,6 +107,24 @@ function createEmptyPerson(): Person {
     }
 }
 
+/**
+ * Vista previa de un `File` que ya está subido: el mismo object URL que hace
+ * `ImageUploadField` para el archivo elegido, pero para el hueco de la foto
+ * ya existente. Se revoca al cambiar de archivo o al desmontar.
+ */
+function LocalImage({ file, alt }: { file: File; alt: string }) {
+    const [url, setUrl] = useState<string | null>(null)
+
+    useEffect(() => {
+        const next = URL.createObjectURL(file)
+        setUrl(next)
+        return () => URL.revokeObjectURL(next)
+    }, [file])
+
+    if (!url) return null
+    return <img src={url} alt={alt} className="size-full object-cover" />
+}
+
 export function UserDetailsForm({
     role,
     fieldPrefix = "principal",
@@ -111,6 +138,7 @@ export function UserDetailsForm({
     photo: photoProp,
     onPhotoChange,
     onRemovePhoto,
+    uploadedPhoto,
     onMatched,
 }: UserFormProps) {
     // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
@@ -299,15 +327,17 @@ export function UserDetailsForm({
                     error={errorFor(`${fieldPrefix}.photo`)}
                     className="md:row-span-3"
                     existingPreview={
-                        person.photoArchivoId == null ? undefined : (
+                        person.photoArchivoId != null ? (
                             <ArchivoImage
                                 archivoId={person.photoArchivoId}
                                 alt="Foto de perfil"
                             />
-                        )
+                        ) : uploadedPhoto ? (
+                            <LocalImage file={uploadedPhoto} alt="Foto de perfil" />
+                        ) : undefined
                     }
                     onRemoveExisting={
-                        person.photoArchivoId == null
+                        person.photoArchivoId == null && !uploadedPhoto
                             ? undefined
                             : () => {
                                   emitChange({ photoArchivoId: null })

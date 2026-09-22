@@ -461,6 +461,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // del multipart, tanto en el alta (/register/cval/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoRemoved, setPhotoRemoved] = useState(false)
+  // La foto que ya se subió al crear. `photo` se limpia tras guardar —si no,
+  // el formulario queda sucio para siempre— pero el alta no devuelve el
+  // `pk_tarchivo`, así que sin esto la vista previa se vacía y parece que la
+  // foto no se guardó. Se reemplaza por la de verdad al reabrir en edición.
+  const [uploadedPhoto, setUploadedPhoto] = useState<File | null>(null)
   // PK_TFUNCIONARIO que devolvió el autocompletado por documento cuando la
   // persona YA es funcionario activo (`fn_fun_activo_por_usuario`, V51 REV5
   // — ver `use-user-by-document.ts`). Dispara el efecto de abajo, que carga
@@ -566,9 +571,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     setPersonErrors({})
     setConfirmPassword(PASSWORD_PLACEHOLDER)
     // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
-    // solo se manda si el usuario carga una nueva.
+    // solo se manda si el usuario carga una nueva. Acá sí llega el
+    // `photoArchivoId`, así que la vista previa local ya no hace falta.
     setPhoto(null)
     setPhotoRemoved(false)
+    setUploadedPhoto(null)
     // Lo que llega del backend ya está guardado: los botones arrancan con
     // el ícono de editar, sin pedir un Guardar que no aplica.
     setPermissionsSaved(employee.permissions.length > 0)
@@ -603,6 +610,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   }
 
   function resetDraft() {
+    setUploadedPhoto(null)
     setPerson(createEmptyPerson())
     setPermissions([])
     setAdditionalInfo(createInitialAdditionalInfo())
@@ -823,6 +831,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
           // el botón "Guardar" quedaba habilitado para siempre después de
           // crear, aunque no hubiera ningún cambio nuevo sin guardar.
           cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+          setUploadedPhoto(photo)
           setPhoto(null)
           setPhotoRemoved(false)
           notify(SUCCESS_MESSAGES.employee.created)
@@ -884,6 +893,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       // Mismo criterio que en el alta real: deja el snapshot al día para
       // que "Guardar" se oculte hasta que haya un cambio de verdad.
       cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+      setUploadedPhoto(photo)
       setPhoto(null)
       setPhotoRemoved(false)
       notify(
@@ -1131,11 +1141,15 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               confirmPassword={confirmPassword}
               onConfirmPasswordChange={setConfirmPassword}
               photo={photo}
+              uploadedPhoto={uploadedPhoto}
               onPhotoChange={(file) => {
                 setPhoto(file)
                 if (file) setPhotoRemoved(false)
               }}
-              onRemovePhoto={() => setPhotoRemoved(true)}
+              onRemovePhoto={() => {
+                setPhotoRemoved(true)
+                setUploadedPhoto(null)
+              }}
               onMatched={(found) => {
                 if (found?.id) {
                   // Ya es funcionario activo -- el efecto de arriba
