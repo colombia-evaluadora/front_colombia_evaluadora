@@ -25,7 +25,7 @@ export type CalificarCeldaInput = {
   fecha: string
 } & (
   | { tipo: "RUBRICA"; niveles: { pkCriterio: number; pkNivel: number }[] }
-  | { tipo: "LISTA_COTEJO"; items: { pkItem: number; cumplido: boolean }[] }
+  | { tipo: "LISTA_COTEJO"; itemsMarcados: number[] }
   | { tipo: "ESCALA_CUALITATIVA"; pkNivel: number }
   | { tipo: "VALOR_NUMERICO"; valorNumerico: number }
 )
@@ -34,8 +34,13 @@ function buildCalificacion(input: CalificarCeldaInput): unknown {
   switch (input.tipo) {
     case "RUBRICA":
       return { niveles: input.niveles }
+    // Confirmado real contra `instrumentos-por-tipo-evaluacion.md` (§5,
+    // tabla de payloads de PUT .../calificar): `{"itemsMarcados":[pk,…]}`,
+    // solo los pk de los ítems marcados -- NO `{items:[{pkItem,cumplido}]}`
+    // (lo que mandaba este archivo antes). Con la forma vieja el backend no
+    // reconocía el campo `items` y la lista de cotejo no se guardaba.
     case "LISTA_COTEJO":
-      return { items: input.items.map((i) => ({ pkItem: i.pkItem, cumplido: i.cumplido ? "S" : "N" })) }
+      return { itemsMarcados: input.itemsMarcados }
     case "ESCALA_CUALITATIVA":
       return { pkNivel: input.pkNivel }
     case "VALOR_NUMERICO":
