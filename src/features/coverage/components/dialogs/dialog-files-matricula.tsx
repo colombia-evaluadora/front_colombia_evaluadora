@@ -11,8 +11,9 @@ import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matri
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
 import { addMatriculaDocumento } from "@/features/coverage/api/mutations/add-matricula-documento"
-import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
+import { buildMatriculaFieldSettings, isFieldVisible } from "@/features/coverage/utils/matricula-field-settings"
 import {
+  SUPPORT_FILE_FIELDS,
   SupportFilesSheet,
   groupExistingFilesByKey,
   type MatriculaSupportFiles,
@@ -55,6 +56,12 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],
+  )
+  // Sin ningún archivo visible en la configuración de parámetro, el botón
+  // solo abriría un sheet vacío -- ni el trigger tiene sentido. Sin config
+  // cargada todavía se asume visible (mismo default que `isFieldVisible`).
+  const hayArchivoVisible = SUPPORT_FILE_FIELDS.some((field) =>
+    isFieldVisible(fieldSettings, field.fieldId),
   )
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
@@ -137,6 +144,8 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
       setIsSaving(false)
     }
   }
+
+  if (!hayArchivoVisible) return null
 
   return (
     <>
