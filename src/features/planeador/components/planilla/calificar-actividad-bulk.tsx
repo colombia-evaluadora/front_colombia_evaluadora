@@ -14,6 +14,7 @@ import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  resolverInstrumentoEfectivo,
   splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
@@ -49,11 +50,17 @@ export function buildBulkInputs(
   fecha: string,
 ) {
   const base = { actividadId, estudianteIds, fecha } as const
-  if (instrumento.instrumento === "RUBRICA") {
+  // "Otro (personalizado)" con método configurado se resuelve al MISMO tipo
+  // efectivo que su instrumento equivalente directo (fn_actividad_nota_
+  // calificar_rubrica_bulk/_cotejo_bulk/_escala_bulk ya aceptan OTRO+método
+  // sin cambios, confirmado en la cabecera de V241 — solo faltaba que el
+  // FRONT lo supiera).
+  const efectivo = resolverInstrumentoEfectivo(instrumento)
+  if (efectivo.tipo === "RUBRICA") {
     // Solo criterios que siguen activos en la rúbrica actual — mismo
     // filtro que `buildCalificarCeldaInput`/`instrumentoCompletitud`, por
     // si el instrumento cambió entre que se cargó este form y se guardó.
-    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
+    const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     return value
       .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
       .map((n) => ({
@@ -63,8 +70,8 @@ export function buildBulkInputs(
         pkNivel: n.nivelId!,
       }))
   }
-  if (instrumento.instrumento === "LISTA_COTEJO") {
-    const itemsActivos = new Set(instrumento.definicion.map((i) => i.pk))
+  if (efectivo.tipo === "LISTA_COTEJO") {
+    const itemsActivos = new Set(efectivo.definicion.map((i) => i.pk))
     return value
       .filter((n) => itemsActivos.has(n.criterioId))
       .map((n) => ({
@@ -75,22 +82,22 @@ export function buildBulkInputs(
       }))
   }
   if (
-    instrumento.instrumento === "ESCALA_VALORACION" &&
-    instrumento.definicion.niveles.length > 0 &&
+    efectivo.tipo === "ESCALA_VALORACION" &&
+    efectivo.definicion.niveles.length > 0 &&
     // 2+ criterios generales (V472): el bulk (`calificar-bulk/escala`) solo
     // sabe aplicar UN nivel a varios estudiantes, no un valor por criterio
     // — mismo motivo que la escala NUMÉRICA de abajo, se califica celda a
     // celda desde el popover (`escalaSinBulk` ya se lo avisa al docente).
-    splitCriteriosGenerales(instrumento.definicion.criteriosGenerales).length <= 1
+    splitCriteriosGenerales(efectivo.definicion.criteriosGenerales).length <= 1
   ) {
     const nivelId = value[0]?.nivelId
     if (nivelId == null) return []
     return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
   }
-  // Escala NUMÉRICA / OTRO / escala con 2+ criterios: el backend real no
-  // admite bulk para estos (400 documentado, o directamente sin endpoint
-  // para "un valor por criterio") — se califica celda a celda desde el
-  // popover.
+  // Escala NUMÉRICA / "Otro" sin método / escala con 2+ criterios: el
+  // backend real no admite bulk para estos (400 documentado, o
+  // directamente sin endpoint para "un valor por criterio") — se califica
+  // celda a celda desde el popover.
   return []
 }
 
@@ -137,13 +144,16 @@ export function CalificarActividadBulk({
   }
 
   const completitud = instrumentoCompletitud(instrumento, nota)
+  // Por tipo EFECTIVO (resuelve "Otro" con método al instrumento
+  // equivalente) — un "Otro" que delega en RUBRICA/LISTA_COTEJO sí tiene
+  // bulk; solo VALOR_NUMERICO (escala numérica u "Otro" sin método) y la
+  // escala con 2+ criterios (V472, sin bulk propio todavía) quedan afuera.
+  const efectivoBulk = resolverInstrumentoEfectivo(instrumento)
   const escalaSinBulk =
-    instrumento?.instrumento === "OTRO" ||
-    (instrumento?.instrumento === "ESCALA_VALORACION" &&
-      // Numérica (sin niveles) O con 2+ criterios generales (V472, un
-      // valor por criterio) — ninguna de las dos tiene bulk propio todavía.
-      (instrumento.definicion.niveles.length === 0 ||
-        splitCriteriosGenerales(instrumento.definicion.criteriosGenerales).length > 1))
+    efectivoBulk.tipo === "VALOR_NUMERICO" ||
+    (efectivoBulk.tipo === "ESCALA_VALORACION" &&
+      (efectivoBulk.definicion.niveles.length === 0 ||
+        splitCriteriosGenerales(efectivoBulk.definicion.criteriosGenerales).length > 1))
 
   async function guardar() {
     if (!instrumento || seleccionados.size === 0) return
