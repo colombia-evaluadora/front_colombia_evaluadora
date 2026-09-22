@@ -30,8 +30,9 @@ import { paths } from "@/config/paths"
 import { planeadorRoute } from "@/router"
 
 import { useUpdatePonderacionActividadUnidad } from "@/features/planeador/api/mutations/update-ponderacion-actividad-unidad"
+import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
-import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
+import type { MetodoCalculo, UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 
 /** Celda "(%)" editable en línea — clic muestra el input, Enter/blur
  *  guarda, Escape descarta. Solo tiene sentido con cálculo "Ponderado": el
@@ -128,6 +129,83 @@ function CeldaPonderacion({
   )
 }
 
+/** Celda "Puntaje" editable en línea — mismo patrón que `CeldaPonderacion`
+ *  (clic muestra el input, Enter/blur guarda, Escape descarta), pero para
+ *  unidades "Suma de puntos": no hay tope de 100, el backend deriva el %
+ *  de forma proporcional sobre el total de puntajes del (unidad, grupo). */
+function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; unidadId: number }) {
+  const [editando, setEditando] = useState(false)
+  const [valor, setValor] = useState(String(actividad.notaMaxima ?? ""))
+  const { notify } = useNotify()
+  const mutation = useUpdatePuntajeActividadUnidad({
+    unidadId,
+    mutationConfig: {
+      onSuccess: () => {
+        notify("Puntaje actualizado.")
+        setEditando(false)
+      },
+      onError: () => notify("No se pudo actualizar el puntaje.", { variant: "error" }),
+    },
+  })
+
+  if (!editando) {
+    return (
+      <button
+        type="button"
+        className="hover:bg-muted-22 -mx-2 rounded px-2 py-1 text-left"
+        onClick={() => {
+          setValor(String(actividad.notaMaxima ?? ""))
+          setEditando(true)
+        }}
+      >
+        {actividad.notaMaxima ?? "—"}
+      </button>
+    )
+  }
+
+  function guardar() {
+    const next = Number(valor)
+    if (Number.isNaN(next) || next < 0) return
+    mutation.mutate({ actividadId: actividad.actividadId, puntaje: next })
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        variant="outlined"
+        type="number"
+        min={0}
+        autoFocus
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") guardar()
+          if (e.key === "Escape") setEditando(false)
+        }}
+        disabled={mutation.isPending}
+        className="w-16"
+      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              color="primary"
+              size="icon-xs"
+              disabled={mutation.isPending}
+              onClick={guardar}
+              aria-label="Guardar puntaje"
+            />
+          }
+        >
+          {mutation.isPending ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
+        </TooltipTrigger>
+        <TooltipContent>Guardar puntaje</TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
 function BotonDesvincular({
   actividad,
   unidadId,
@@ -205,20 +283,57 @@ function BotonDesvincular({
  * Columnas de las actividades vinculadas a una unidad, con su peso dentro de
  * ella.
  *
- * `unidadId` (para invalidar su detalle) y `esPonderado` (la columna "(%)"
- * solo se edita en línea cuando la unidad calcula por "Ponderado" — con
- * "Promedio simple"/"Suma de puntos" el backend rechaza que se mande) viajan
- * como parámetros porque las celdas necesitan ambos. `totalPonderacion` es
- * la suma de `ponderacion` de TODAS las actividades ya vinculadas (la pasa
- * el caller, que ya tiene la lista completa) — de ahí sale el tope real de
- * cada fila (`100 - totalPonderacion + actividad.ponderacion`, sumando de
- * vuelta lo que la fila YA aporta al total).
+ * `unidadId` (para invalidar su detalle) y `metodoCalculo` viajan como
+ * parámetros porque la columna de peso CAMBIA según el método de cálculo de
+ * la unidad (pedido explícito, antes se veía igual sin importar el método):
+ *   - "Ponderado": columna "(%)", editable en línea (`CeldaPonderacion`).
+ *   - "Suma de puntos": columna "Puntaje", editable en línea
+ *     (`CeldaPuntaje`, `TACTIVIDAD.NOTA_MAXIMA`) — el "(%)" en este modo es
+ *     un DERIVADO que calcula el backend, no algo que el docente edite.
+ *   - "Promedio simple": sin columna de peso — cada actividad pesa lo
+ *     mismo, no hay nada que editar (el caller muestra un banner explicando
+ *     esto arriba de la tabla, ver `UnidadDetallePanel`).
+ * `totalPonderacion` es la suma de `ponderacion` de TODAS las actividades ya
+ * vinculadas (la pasa el caller, que ya tiene la lista completa) — de ahí
+ * sale el tope real de cada fila en modo Ponderado (`100 - totalPonderacion
+ * + actividad.ponderacion`, sumando de vuelta lo que la fila YA aporta al
+ * total). No aplica en Suma de puntos: el puntaje no tiene tope, el reparto
+ * proporcional lo hace el backend.
  */
 export function createUnidadActividadesColumns(
   unidadId: number,
-  esPonderado: boolean,
+  metodoCalculo: MetodoCalculo,
   totalPonderacion: number,
 ): ColumnDef<UnidadActividad>[] {
+  const columnaPeso: ColumnDef<UnidadActividad>[] =
+    metodoCalculo === "Ponderado"
+      ? [
+          {
+            id: "ponderacion",
+            accessorKey: "ponderacion",
+            meta: { label: "(%)" },
+            header: ({ column }) => <DataTableColumnHeader column={column} title="(%)" />,
+            cell: ({ row }) => (
+              <CeldaPonderacion
+                actividad={row.original}
+                unidadId={unidadId}
+                maxDisponible={Math.max(0, 100 - totalPonderacion + row.original.ponderacion)}
+              />
+            ),
+          },
+        ]
+      : metodoCalculo === "Suma de puntos"
+        ? [
+            {
+              id: "puntaje",
+              accessorKey: "notaMaxima",
+              meta: { label: "Puntaje" },
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Puntaje" />,
+              cell: ({ row }) => <CeldaPuntaje actividad={row.original} unidadId={unidadId} />,
+            },
+          ]
+        : []
+
   return [
     {
       id: "nombre",
@@ -248,22 +363,7 @@ export function createUnidadActividadesColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Grupo" />,
       cell: ({ row }) => <span>{row.original.grupo}</span>,
     },
-    {
-      id: "ponderacion",
-      accessorKey: "ponderacion",
-      meta: { label: "(%)" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="(%)" />,
-      cell: ({ row }) =>
-        esPonderado ? (
-          <CeldaPonderacion
-            actividad={row.original}
-            unidadId={unidadId}
-            maxDisponible={Math.max(0, 100 - totalPonderacion + row.original.ponderacion)}
-          />
-        ) : (
-          <span>{row.original.ponderacion}</span>
-        ),
-    },
+    ...columnaPeso,
     {
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
