@@ -4492,6 +4492,11 @@ function AdaptacionItem({
               disabled={disabled}
             />
           </div>
+          {adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef && (
+            <FieldDescription>
+              Ya hay una plantilla cargada. Elegí un archivo solo si querés reemplazarla.
+            </FieldDescription>
+          )}
         </Field>
       )}
 

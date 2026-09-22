@@ -72,7 +72,16 @@ const DOC_EXTS = new Set([
 
 function safeParseUrl(value: string): URL | null {
   try {
-    return new URL(value)
+    // La URL de un archivo ya guardado (`fetchArchivoViewUrl`) es "absoluta
+    // desde la raíz" (`/api/files/view/:id?token=...`), pensada para ir
+    // directo a un `<img src>` -- pero `new URL` sin base la rechaza por no
+    // traer esquema/host, y eso hacía caer TODO archivo guardado al estado
+    // "no reconocido" sin llegar siquiera a mirar `fuente`. Se resuelve
+    // contra `location.origin`, igual que hace el navegador con un
+    // `<img src="/algo">`; para una URL ya absoluta (un enlace externo que
+    // tipeó el usuario) la base se ignora, así que no cambia nada para ese
+    // caso.
+    return new URL(value, window.location.origin)
   } catch {
     return null
   }
