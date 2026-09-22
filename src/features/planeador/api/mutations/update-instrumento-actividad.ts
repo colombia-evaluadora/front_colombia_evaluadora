@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { instrumentoActividadQueryKey } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveTipoEscalaId } from "@/features/planeador/api/query/use-tipo-escala-catalog"
 import { resolveTipoEvidenciaOtroId } from "@/features/planeador/api/query/use-tipo-evidencia-otro-catalog"
@@ -237,6 +238,14 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
       }),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      // Sin esto, "Marcar"/"Aprobar" (InstrumentoGradingFields, vía
+      // useInstrumentoActividadQuery) seguían mostrando la rúbrica/lista/
+      // escala VIEJA después de editarla -- confirmado en vivo: un criterio
+      // que se acababa de desactivar seguía ofreciéndose para calificar, y
+      // el backend rechazaba el guardado con "La rúbrica tiene N
+      // criterio(s) activo(s) pero se calificaron M" en cuanto el docente
+      // marcaba ese criterio de más.
+      queryClient.invalidateQueries({ queryKey: instrumentoActividadQueryKey(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,
