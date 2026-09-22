@@ -70,6 +70,16 @@ import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunci
 import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+  ComboboxEmpty,
+} from "@/components/ui/combobox"
+import { useAdaptacionesReutilizablesQuery } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
+import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
   UnidadFicha,
@@ -187,11 +197,6 @@ const VERSION_MODIFICADA_LABELS: Record<string, string> = {
   archivo: "Sí, Adjuntar plantilla (archivo)",
   enlace: "Sí, Adjuntar plantilla (enlace)",
   biblioteca: "Sí, Adjuntar plantilla (biblioteca)",
-}
-
-const PLANTILLA_BIBLIOTECA_LABELS: Record<string, string> = {
-  "plantilla-a": "Biblioteca - Plantilla A",
-  "plantilla-b": "Biblioteca - Plantilla B",
 }
 
 const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {
@@ -466,7 +471,7 @@ export function EditarActividadForm({
           para no triplicar las queries de `campos_disponibles`. */}
       {!esFormativa && (
         <>
-          <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} />
+          <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} actividadId={actividad.id} />
           <SeguimientoSection form={form} disabled={disabled} />
         </>
       )}
@@ -4229,11 +4234,14 @@ function AdaptacionesSection({
   form,
   estudiantes,
   disabled,
+  actividadId,
 }: {
   form: FormActividad
   estudiantes: Estudiante[]
   disabled: boolean
+  actividadId: number
 }) {
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -4298,6 +4306,8 @@ function AdaptacionesSection({
                       adaptacion={adapt}
                       estudiantes={estudiantes}
                       disabled={disabled}
+                      actividadId={actividadId}
+                      grupoId={grupoId ?? 0}
                       onChange={(next) => {
                         const list = adaptaciones.slice()
                         list[aIndex] = next
@@ -4361,6 +4371,91 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
 }
 
 /**
+ * "Seleccionar desde biblioteca institucional" — combobox con lo que ya se
+ * subió como plantilla de adaptación en OTRAS actividades (propias o de un
+ * colega del mismo establecimiento), `fn_actividad_adaptaciones_
+ * reutilizables_listar` (V471). Reemplaza el combo de dos opciones fijas
+ * ("Biblioteca - Plantilla A/B") que no tenía datos reales detrás.
+ *
+ * Mismo backend/idea que la "Biblioteca de recursos" de materiales
+ * (`DialogBibliotecaRecursos`), pero como COMBOBOX en vez de modal —así lo
+ * pidió el docente para este campo puntual— y con una sola página de hasta
+ * 100 resultados: el filtrado por texto lo hace el propio `ComboboxField`
+ * del lado del cliente (mismo patrón que el resto de los combobox de la
+ * app), así que no hace falta ida y vuelta al servidor por cada letra
+ * tecleada. Una biblioteca institucional de plantillas no espera miles de
+ * archivos; si algún día lo necesita, ahí sí vale la pena paginar en
+ * servidor como hace el modal de materiales.
+ */
+function AdaptacionBibliotecaField({
+  actividadId,
+  grupoId,
+  adaptacion,
+  onChange,
+  disabled,
+}: {
+  actividadId: number
+  grupoId: number
+  adaptacion: Adaptacion
+  onChange: (next: Adaptacion) => void
+  disabled: boolean
+}) {
+  const tieneAncla = actividadId > 0 || grupoId > 0
+  const { data, isPending } = useAdaptacionesReutilizablesQuery(
+    { actividadId, grupoId, search: "", pagina: 1, size: 100 },
+    tieneAncla,
+  )
+  const items = data?.items ?? []
+  const seleccionado = items.find((item) => item.archivoId === adaptacion.archivoId)
+
+  function handleChange(value: string | null) {
+    const item = items.find((it) => String(it.archivoId) === value)
+    onChange({
+      ...adaptacion,
+      archivoId: item?.archivoId,
+      archivoNombre: item?.nombreArchivo,
+      // Sin blob: el archivo ya está guardado del lado del servidor, igual
+      // que al reusar un material desde su biblioteca.
+      versionModificadaRef: "",
+    })
+  }
+
+  return (
+    <ComboboxField
+      items={Object.fromEntries(
+        items.map((item) => [String(item.archivoId), `${item.nombreArchivo} — de: ${item.actividadOrigenTitulo}`]),
+      )}
+      value={adaptacion.archivoId != null ? String(adaptacion.archivoId) : null}
+      onValueChange={handleChange}
+      disabled={disabled || !tieneAncla}
+    >
+      <ComboboxFieldTrigger className="w-full">
+        <ComboboxFieldValue placeholder={!tieneAncla ? "Elegí un grupo primero" : "Seleccione"}>
+          {() => (seleccionado ? seleccionado.nombreArchivo : "Seleccione")}
+        </ComboboxFieldValue>
+      </ComboboxFieldTrigger>
+      <ComboboxFieldContent>
+        <ComboboxGroup>
+          {items.map((item) => (
+            <ComboboxFieldItem key={item.archivoId} value={String(item.archivoId)}>
+              <span className="flex flex-col">
+                <span>{item.nombreArchivo}</span>
+                <span className="text-muted-foreground text-xs">de: {item.actividadOrigenTitulo}</span>
+              </span>
+            </ComboboxFieldItem>
+          ))}
+        </ComboboxGroup>
+        <ComboboxEmpty>
+          {isPending
+            ? "Buscando…"
+            : "No hay plantillas guardadas en tus otras actividades todavía."}
+        </ComboboxEmpty>
+      </ComboboxFieldContent>
+    </ComboboxField>
+  )
+}
+
+/**
  * Bloque de una adaptación curricular. Mismo patrón que `CriterioItem`:
  * título con índice y tachito, luego los cuatro campos del mockup.
  *
@@ -4374,6 +4469,8 @@ function AdaptacionItem({
   adaptacion,
   estudiantes,
   disabled,
+  actividadId,
+  grupoId,
   onChange,
   onRemove,
 }: {
@@ -4381,6 +4478,8 @@ function AdaptacionItem({
   adaptacion: Adaptacion
   estudiantes: Estudiante[]
   disabled: boolean
+  actividadId: number
+  grupoId: number
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
@@ -4471,9 +4570,11 @@ function AdaptacionItem({
               ...adaptacion,
               versionModificada: (value ?? "") as Adaptacion["versionModificada"],
               // Al cambiar de modo se limpia el auxiliar para no arrastrar
-              // una URL de un archivo anterior o viceversa.
+              // una URL de un archivo anterior, un id de la biblioteca, o
+              // viceversa.
               versionModificadaRef: "",
               archivoNombre: undefined,
+              archivoId: undefined,
             })
           }
           disabled={disabled}
@@ -4553,24 +4654,13 @@ function AdaptacionItem({
       {adaptacion.versionModificada === "biblioteca" && (
         <Field variant="outlined" className="mt-4">
           <FieldLabel>Seleccionar desde biblioteca institucional</FieldLabel>
-          <Select
-            value={adaptacion.versionModificadaRef as never}
-            onValueChange={(value) =>
-              onChange({ ...adaptacion, versionModificadaRef: (value ?? "") as string })
-            }
+          <AdaptacionBibliotecaField
+            actividadId={actividadId}
+            grupoId={grupoId}
+            adaptacion={adaptacion}
+            onChange={onChange}
             disabled={disabled}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccione">
-                {(value) => PLANTILLA_BIBLIOTECA_LABELS[value as string] ?? "Seleccione"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">Seleccione</SelectItem>
-              <SelectItem value="plantilla-a">Biblioteca - Plantilla A</SelectItem>
-              <SelectItem value="plantilla-b">Biblioteca - Plantilla B</SelectItem>
-            </SelectContent>
-          </Select>
+          />
         </Field>
       )}
 
