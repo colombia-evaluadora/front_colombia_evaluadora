@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
   TableScreen,
@@ -13,7 +13,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
@@ -26,9 +26,6 @@ import {
 import { MatriculaFormSection } from "@/features/coverage/components/forms/form-create-matricula"
 import type { MatriculaConfigCampo, MatriculaConfigSeccion } from "@/features/coverage/api/types/matricula"
 
-// Switch redondo — mismo criterio que el toggle "Habilitar reserva de
-// cupos" del formulario de periodo académico (el `Switch` base es
-// rectangular; acá se redondea a mano vía clases).
 const ROUND_SWITCH_CLASSNAME = "rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
 
 interface FieldConfigBoxProps {
@@ -116,6 +113,7 @@ function MatriculaFieldConfigPageContent() {
   const { data, isPending, isError, error } = useMatriculaFieldConfigQuery()
   const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
   const { notify } = useNotify()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (data && secciones === null) {
@@ -131,7 +129,8 @@ function MatriculaFieldConfigPageContent() {
     mutationConfig: {
       onSuccess: (result) => {
         setSecciones(result.secciones)
-        notify("Configuración guardada.")
+        queueNotice("Configuración guardada.")
+        navigate({ to: paths.app.coberturaMatricula.getHref() })
       },
       onError: (error) => {
         notify(getErrorMessage(error), { variant: "error" })

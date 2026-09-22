@@ -5,6 +5,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { BrainIcon, CheckIcon, InfoIcon } from "@/components/ui/icons"
@@ -12,7 +13,7 @@ import { ArchivoImage } from "@/features/files/components/archivo-image"
 
 import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
 import { useEvidenciasInformeQuery } from "@/features/academic-management/reports/api/query/use-evidencias-informe-query"
-import type { FilaInforme } from "@/features/academic-management/reports/api/types"
+import type { EvidenciaInforme, FilaInforme } from "@/features/academic-management/reports/api/types"
 
 const MAX_CARACTERES = 5000
 
@@ -29,15 +30,19 @@ interface Borrador {
 
 interface ObservacionSheetProps {
   fila: FilaInforme | null
+  etiqueta: string
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   onGuardar: (fila: FilaInforme, texto: string, borrador: Borrador | null) => void
 }
 
-export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: ObservacionSheetProps) {
+export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGuardar }: ObservacionSheetProps) {
   const { notify } = useNotify()
   const [texto, setTexto] = React.useState("")
   const [borrador, setBorrador] = React.useState<Borrador | null>(null)
+  // Mismo patrón que `ObservacionEstudianteSheet` en Planeador: clic en la
+  // miniatura abre la misma imagen más grande en un diálogo aparte.
+  const [evidenciaAmpliada, setEvidenciaAmpliada] = React.useState<EvidenciaInforme | null>(null)
   const generar = useGenerarObservacionMutation()
 
   // La fila Final tiene el mismo ciclo que un período —generar, revisar,
@@ -58,6 +63,7 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
     if (!fila) return
     setTexto(fila.observacion ?? "")
     setBorrador(null)
+    setEvidenciaAmpliada(null)
   }, [fila])
 
   async function handleGenerar() {
@@ -84,10 +90,11 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
   }
 
   return (
+    <>
     <Sheet open={fila != null} onOpenChange={onOpenChange}>
       <SheetContent className="gap-0 p-0">
         <SheetHeader className="pb-4">
-          <SheetTitle className="sr-only">Observación individual</SheetTitle>
+          <SheetTitle className="sr-only">{etiqueta} individual</SheetTitle>
           {fila && (
             <>
               <div className="flex items-center gap-3">
@@ -109,7 +116,7 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-8">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="observacion-individual" className="text-xs font-semibold uppercase">
-              Observación
+              {etiqueta}
             </label>
             <Textarea
               id="observacion-individual"
@@ -138,15 +145,22 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
               ) : (
                 <div className="flex flex-wrap items-start gap-2">
                   {(evidencias.data ?? []).map((evidencia) => (
-                    <ArchivoImage
+                    <button
                       key={evidencia.id}
-                      archivoId={evidencia.archivoId}
-                      alt={
-                        evidencia.nombre ??
-                        `Evidencia de ${evidencia.actividadTitulo ?? fila?.nombreCompleto ?? ""}`
-                      }
-                      className="size-20"
-                    />
+                      type="button"
+                      className="block cursor-zoom-in rounded-md"
+                      aria-label="Ver evidencia en grande"
+                      onClick={() => setEvidenciaAmpliada(evidencia)}
+                    >
+                      <ArchivoImage
+                        archivoId={evidencia.archivoId}
+                        alt={
+                          evidencia.nombre ??
+                          `Evidencia de ${evidencia.actividadTitulo ?? fila?.nombreCompleto ?? ""}`
+                        }
+                        className="size-20"
+                      />
+                    </button>
                   ))}
                 </div>
               )}
@@ -186,5 +200,24 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
         </SheetFooter>
       </SheetContent>
     </Sheet>
+
+    <Dialog
+      open={evidenciaAmpliada != null}
+      onOpenChange={(open) => !open && setEvidenciaAmpliada(null)}
+    >
+      <DialogContent className="max-w-2xl p-2 sm:max-w-2xl">
+        <DialogTitle className="sr-only">
+          {evidenciaAmpliada?.nombre ?? "Evidencia ampliada"}
+        </DialogTitle>
+        {evidenciaAmpliada && (
+          <ArchivoImage
+            archivoId={evidenciaAmpliada.archivoId}
+            alt={evidenciaAmpliada.nombre ?? "Evidencia"}
+            className="max-h-[80vh] w-full"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

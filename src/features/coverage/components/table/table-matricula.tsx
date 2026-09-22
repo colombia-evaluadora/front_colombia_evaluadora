@@ -14,7 +14,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
 import { useMatriculaFilters } from "@/features/coverage/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/api/query/use-matricula-query"
@@ -27,12 +27,7 @@ import { ClearSelectionDialog } from "@/features/establishment/employees/compone
 
 interface MatriculaDataTableProps {
   title: ReactNode
-  // Acción principal de la página ("Agregar estudiante"). Se renderiza en la
-  // barra de herramientas, junto al buscador — mismo criterio que la tabla de
-  // establecimientos.
   action?: ReactNode
-  // Acción que va en la misma fila que el título (ej. el ícono de
-  // configuración) — distinto de `action`, que va junto al buscador.
   titleAction?: ReactNode
 }
 
@@ -77,11 +72,6 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     table.getRow(id)?.toggleSelected(false)
   }
 
-  // Columnas visibles de la tabla EN ESE MOMENTO, traducidas a las claves que
-  // espera el reporte -- así "Exportar" saca exactamente lo que se ve en
-  // pantalla, ni una columna oculta de más. `getVisibleLeafColumns` ya
-  // respeta el orden de `columnsMatricula` (no el de cuándo se activó cada
-  // una), que es el mismo orden en que aparecen como encabezados de la tabla.
   const exportColumns = table
     .getVisibleLeafColumns()
     .map((column) => MATRICULA_EXPORT_COLUMN_KEYS[column.id])
@@ -92,6 +82,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
       <TableScreen>
         <TableScreenHeader>
           <TableScreenTitle action={titleAction}>{title}</TableScreenTitle>
+          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
           <TableScreenToolbar>
             <SearchMatricula
               filters={filters}

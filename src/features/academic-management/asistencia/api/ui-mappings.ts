@@ -68,6 +68,18 @@ export function peorEstado(estados: EstadoSesion[]): EstadoSesion {
   )
 }
 
+/** Por hora de inicio (ISO, ordena bien como string) — la agenda del docente
+ *  es cronológica, no alfabética por nombre de asignatura. Sin hora (toma
+ *  suelta o sesión formativa sin horario real) va al final. Compartido entre
+ *  "Asistencia manual" y el popover del calendario, que deben listar las
+ *  sesiones del día en el mismo orden. */
+export function compararPorHora(a: { horaInicio: string | null }, b: { horaInicio: string | null }): number {
+  if (a.horaInicio == null && b.horaInicio == null) return 0
+  if (a.horaInicio == null) return 1
+  if (b.horaInicio == null) return -1
+  return a.horaInicio.localeCompare(b.horaInicio)
+}
+
 export interface BloqueContinuo {
   fecha: string
   fkGrupo: number

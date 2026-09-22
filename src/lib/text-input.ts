@@ -58,3 +58,13 @@ export function toDigitsOrRangeInput(value: string): string {
   const tail = rest.join("")
   return tail ? `${first}-${tail}` : first
 }
+
+export function toLettersOnly(value: string, maxLength?: number): string {
+  const letters = value.replace(/[^\p{L}\s]/gu, "")
+  return maxLength ? letters.slice(0, maxLength) : letters
+}
+
+export function toSafeTextInput(value: string, maxLength?: number): string {
+  const cleaned = value.replace(/[^\p{L}\p{N}\s.,'()&#/-]/gu, "")
+  return maxLength ? cleaned.slice(0, maxLength) : cleaned
+}
