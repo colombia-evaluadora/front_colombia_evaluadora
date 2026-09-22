@@ -199,7 +199,8 @@ interface DialogDescargarTablaProps {
   periodos: number[]
   /** El texto del buscador: lo que se ve es lo que baja. */
   search: string
-  incluirFinal: boolean
+  /** El resumen con nombres para el membrete del archivo. */
+  filtersLabel: string
 }
 
 /**
@@ -211,7 +212,7 @@ export function DialogDescargarTabla({
   grupoId,
   periodos,
   search,
-  incluirFinal,
+  filtersLabel,
 }: DialogDescargarTablaProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
@@ -253,7 +254,7 @@ export function DialogDescargarTabla({
       pendiente={exportar.isPending ? exportar.variables?.format : undefined}
       exportar={async (format) => {
         if (grupoId == null) return { status: "error", message: "Sin grupo." }
-        return exportar.mutateAsync({ format, grupoId, periodos, search, incluirFinal })
+        return exportar.mutateAsync({ format, grupoId, periodos, search, filtersLabel })
       }}
     />
   )

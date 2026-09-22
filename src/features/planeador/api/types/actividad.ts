@@ -195,6 +195,26 @@ export interface Adaptacion {
   versionModificadaRef: string
   aplicaA: string
   estudiantesIds: number[]
+  /**
+   * `PK_TARCHIVO` de una adaptación con `versionModificada === "archivo"` YA
+   * GUARDADA — mismo rol que `Recurso.archivoId` y misma razón: `PUT
+   * .../adaptaciones` es de reemplazo total y exige `fkTarchivo` cuando
+   * `formatoAdaptacion = ARCHIVO`, así que sin este id el archivo se cae en
+   * el siguiente guardado si el usuario no vuelve a elegirlo.
+   */
+  archivoId?: number
+  /**
+   * Nombre original del archivo recién elegido en el formulario (con
+   * extensión) — `versionModificadaRef` es un `blob:` URL y no lo trae.
+   *
+   * Sin esto, la subida (`subirArchivoAdaptacion`) no tenía de dónde sacar
+   * un nombre y mandaba uno fijo sin extensión ("plantilla"): el backend
+   * infiere el `Content-Type` real del archivo por la extensión del
+   * nombre, así que cualquier plantilla terminaba sirviéndose como
+   * `application/octet-stream` — el navegador la descargaba en vez de
+   * mostrarla, sin importar qué binario fuera.
+   */
+  archivoNombre?: string
 }
 
 export interface Actividad {

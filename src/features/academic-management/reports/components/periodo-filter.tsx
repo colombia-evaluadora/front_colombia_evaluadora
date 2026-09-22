@@ -1,17 +1,15 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 
-import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
+import {
+  PERIODO_FINAL_ID,
+  type PeriodoInforme,
+} from "@/features/academic-management/reports/api/types"
 
 interface PeriodoFilterProps {
   periodos: PeriodoInforme[]
   seleccionados: number[]
   onChange: (periodos: number[]) => void
-  /** El checkbox "Final". No es un período del calendario: pide la fila
-   *  con la nota del año, que el backend calcula al vuelo sobre TODOS los
-   *  períodos — no sobre los que estén marcados acá. */
-  final: boolean
-  onFinalChange: (valor: boolean) => void
   cargando?: boolean
   mensajeVacio?: string
 }
@@ -20,8 +18,6 @@ export function PeriodoFilter({
   periodos,
   seleccionados,
   onChange,
-  final,
-  onFinalChange,
   cargando,
   mensajeVacio = "No hay períodos de evaluación para esta combinación.",
 }: PeriodoFilterProps) {
@@ -52,10 +48,15 @@ export function PeriodoFilter({
           </Label>
         </div>
       ))}
-      {/* No va dentro del map: existe siempre, incluso mientras los
-          períodos cargan, porque no depende del catálogo. */}
+      {/* No va dentro del map: existe siempre, incluso mientras los períodos
+          cargan, porque no depende del catálogo. Y entra al MISMO arreglo que
+          los demás, que es lo que permite dejar marcado solo el Final. */}
       <div className="flex items-center gap-2">
-        <Checkbox id="periodo-final" checked={final} onCheckedChange={() => onFinalChange(!final)} />
+        <Checkbox
+          id="periodo-final"
+          checked={seleccionados.includes(PERIODO_FINAL_ID)}
+          onCheckedChange={() => toggle(PERIODO_FINAL_ID)}
+        />
         <Label htmlFor="periodo-final" className="font-normal text-foreground">
           Final
         </Label>

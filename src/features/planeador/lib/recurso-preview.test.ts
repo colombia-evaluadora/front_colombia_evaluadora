@@ -122,3 +122,31 @@ describe("resolveRecursoPreview — repositorios", () => {
     expect(resuelto?.value).not.toContain("dl=0")
   })
 })
+
+/**
+ * La URL de un archivo ya guardado (`fetchArchivoViewUrl`,
+ * `ArchivoGuardadoPreview`) es "absoluta desde la raíz" (sin esquema/host,
+ * pensada para un `<img src>` directo) y su path es un id, no un nombre de
+ * archivo: no trae extensión. Dos bugs reales, uno tapando al otro:
+ * - `new URL` sin base rechaza una URL relativa por completo.
+ * - Aunque parseara, el path (`/api/files/view/324`) no trae extensión —
+ *   hay que sacarla de `fuente`, igual que con un `blob:`.
+ */
+describe("resolveRecursoPreview — archivo guardado (URL relativa sin extensión)", () => {
+  const URL_ARCHIVO = "/api/files/view/324?token=abc.def"
+
+  it("resuelve una URL relativa (sin tirar) y usa la extensión de `fuente`", () => {
+    expect(resolveRecursoPreview(URL_ARCHIVO, "JORGE_SANCHEZ.pdf")).toEqual({
+      kind: "documento",
+      value: expect.stringContaining("/api/files/view/324?token=abc.def"),
+      fileType: ".pdf",
+    })
+  })
+
+  it("sigue sin reconocer nada si tampoco `fuente` trae extensión", () => {
+    expect(resolveRecursoPreview(URL_ARCHIVO, "JORGE_SANCHEZ")).toEqual({
+      kind: "web",
+      value: URL_ARCHIVO,
+    })
+  })
+})

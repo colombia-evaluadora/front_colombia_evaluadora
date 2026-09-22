@@ -47,7 +47,10 @@ import { useHistorialQuery } from "@/features/academic-management/reports/api/qu
 import { useInformeGrupoQuery } from "@/features/academic-management/reports/api/query/use-informe-grupo-query"
 import { usePeriodosInformeQuery } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
 import type { InformesSearch } from "@/features/academic-management/reports/api/schema"
-import type { FilaInforme } from "@/features/academic-management/reports/api/types"
+import {
+  PERIODO_FINAL_ID,
+  type FilaInforme,
+} from "@/features/academic-management/reports/api/types"
 import {
   agruparPorEstudiante,
   columnasDeFilas,
@@ -116,7 +119,6 @@ function coincide(fila: FilaInforme, busqueda: string): boolean {
 interface GrupoTabContentProps {
   grupoId: number
   periodos: number[]
-  incluirFinal: boolean
   busqueda: string
   onBusquedaChange: (texto: string) => void
   seleccionados: Set<number>
@@ -135,7 +137,6 @@ interface GrupoTabContentProps {
 function GrupoTabContent({
   grupoId,
   periodos,
-  incluirFinal,
   busqueda,
   onBusquedaChange,
   seleccionados,
@@ -147,7 +148,7 @@ function GrupoTabContent({
   onEsCualitativoChange,
 }: GrupoTabContentProps) {
   const informe = useInformeGrupoQuery(
-    periodos.length > 0 ? { grupoId, periodos, incluirFinal } : null,
+    periodos.length > 0 ? { grupoId, periodos } : null,
   )
 
   const filas = React.useMemo(
@@ -300,7 +301,13 @@ function ReportsPageContent() {
   const gruposQuery = useGruposPeriodoQuery(filtros)
 
   const periodos = React.useMemo(() => search.periodos ?? [], [search.periodos])
-  const incluirFinal = search.final ?? false
+  // El Final es un id más de `periodos`, no una bandera aparte: por eso se
+  // puede dejar marcado solo él. Los reales se separan donde hace falta,
+  // porque el boletín es de UN período del calendario y el Final no lo es.
+  const periodosReales = React.useMemo(
+    () => periodos.filter((id) => id !== PERIODO_FINAL_ID),
+    [periodos],
+  )
   const gruposAbiertosIds = React.useMemo(() => search.grupos ?? [], [search.grupos])
   const activeTab = search.tab != null ? String(search.tab) : ""
 
@@ -308,12 +315,7 @@ function ReportsPageContent() {
     (ids: number[]) => setSearch({ periodos: ids.length > 0 ? ids : undefined }),
     [setSearch],
   )
-  // `undefined` y no `false`: así el parámetro desaparece de la URL en vez
-  // de ensuciarla con el valor por defecto.
-  const setIncluirFinal = React.useCallback(
-    (valor: boolean) => setSearch({ final: valor || undefined }),
-    [setSearch],
-  )
+
   const setActiveTab = React.useCallback(
     (id: number | undefined) => {
       setSearch({ tab: id })
@@ -348,7 +350,12 @@ function ReportsPageContent() {
   // la lista; si se vacía, el arranque vuelve a sembrar.
   React.useEffect(() => {
     if (periodosDisponibles.length === 0) return
-    const validos = periodos.filter((id) => periodosDisponibles.some((p) => p.id === id))
+    // El Final se da por válido siempre: no está en el catálogo de períodos
+    // y sin esto la re-siembra lo barría, que es lo que hacía imposible
+    // dejarlo marcado solo a él.
+    const validos = periodos.filter(
+      (id) => id === PERIODO_FINAL_ID || periodosDisponibles.some((p) => p.id === id),
+    )
     if (validos.length === periodos.length && validos.length > 0) return
     // Si no queda ninguno vigente se siembra el período en curso.
     const enCurso = periodosDisponibles.filter((p) => p.enCurso).map((p) => p.id)
@@ -399,8 +406,19 @@ function ReportsPageContent() {
   // El historial es del grupo que se está viendo, no de todas las pestañas
   // abiertas: acompaña al informe que hay en pantalla, así que sigue a la
   // pestaña activa y se vuelve a pedir al cambiarla.
+  // `periodosReales`: el historial guarda por período del calendario, así que
+  // el centinela del Final no coincide con ninguna fila. Mandándolo, dejar
+  // marcado solo el Final devolvía un historial vacío sin explicar por qué.
+  //
+  // Y el AÑO tiene que ir: la función lo usa para acotar el año lectivo y, si
+  // no llega, cae al año CALENDARIO actual. Mirando 2025 —o en enero— el
+  // historial salía vacío en silencio.
   const historial = useHistorialQuery(
-    { grupos: grupoActivoId > 0 ? [grupoActivoId] : [], periodos },
+    {
+      grupos: grupoActivoId > 0 ? [grupoActivoId] : [],
+      periodos: periodosReales,
+      anio: filtros.anio ?? undefined,
+    },
     historialAbierto && grupoActivoId > 0,
   )
 
@@ -410,10 +428,32 @@ function ReportsPageContent() {
 
   const seleccionActiva = seleccionPorGrupo[grupoActivoId] ?? new Set<number>()
 
+  // El membrete del archivo. Los filtros que viajan al backend son ids --son
+  // los binds de la consulta-- y ahí saldrían como "Fk Tgrupo: 11474", que
+  // nadie puede interpretar; los nombres están acá, así que la línea se manda
+  // escrita. Se omite a propósito lo que es de la mecánica y no del
+  // contenido: si el Final va incluido, se ve en la tabla.
+  const etiquetaFiltros = React.useMemo(() => {
+    const grupo = grupos.find((g) => g.grupoId === grupoActivoId)
+    const nombres = periodos.map((id) =>
+      id === PERIODO_FINAL_ID
+        ? "Final"
+        : (periodosDisponibles.find((p) => p.id === id)?.nombre ?? String(id)),
+    )
+    const partes: string[] = []
+    if (grupo) partes.push(`Grupo: ${grupo.grupoEtiqueta}`)
+    if (nombres.length > 0) partes.push(`Períodos: ${nombres.join(", ")}`)
+    if (busqueda.trim()) partes.push(`Búsqueda: ${busqueda.trim()}`)
+    return partes.join("   ·   ")
+  }, [grupos, grupoActivoId, periodos, periodosDisponibles, busqueda])
+
   // Acta 19-sep-2026, punto 20.3: "para no reprocesar la tabla" el filtro de
   // arriba se deja multi-select como está (sirve para ver/consolidar varios
   // periodos a la vez) — pero un boletín es de UN periodo y UN estudiante.
-  const listoParaBoletin = periodos.length === 1 && seleccionActiva.size === 1
+  // Períodos REALES: el boletín lo arma /reportes/boletin-preescolar por
+  // (grupo, período, estudiante), y el Final no es un período que ese PDF
+  // sepa imprimir. Marcarlo no habilita ni deshabilita el botón.
+  const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size === 1
 
   function toggleEstudiante(matriculaId: number) {
     setSeleccionPorGrupo((prev) => {
@@ -541,8 +581,6 @@ function ReportsPageContent() {
             periodos={periodosDisponibles}
             seleccionados={periodos}
             onChange={setPeriodos}
-            final={incluirFinal}
-            onFinalChange={setIncluirFinal}
             cargando={cascadaCompleta && periodosQuery.isPending}
             mensajeVacio={
               cascadaCompleta
@@ -554,7 +592,7 @@ function ReportsPageContent() {
           <div className="flex items-center gap-2">
             <DialogGenerarBoletin
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
-              periodos={periodos}
+              periodos={periodosReales}
               matriculas={[...seleccionActiva]}
               listo={listoParaBoletin}
               esPreescolar={esCualitativoActivo}
@@ -579,7 +617,7 @@ function ReportsPageContent() {
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
               search={busqueda}
-              incluirFinal={incluirFinal}
+              filtersLabel={etiquetaFiltros}
             />
           </div>
         </div>
@@ -694,7 +732,6 @@ function ReportsPageContent() {
                   <GrupoTabContent
                     grupoId={grupo.grupoId}
                     periodos={periodos}
-                    incluirFinal={incluirFinal}
                     busqueda={busqueda}
                     onBusquedaChange={setBusqueda}
                     seleccionados={seleccionActiva}

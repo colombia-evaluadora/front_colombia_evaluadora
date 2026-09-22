@@ -72,7 +72,16 @@ const DOC_EXTS = new Set([
 
 function safeParseUrl(value: string): URL | null {
   try {
-    return new URL(value)
+    // La URL de un archivo ya guardado (`fetchArchivoViewUrl`) es "absoluta
+    // desde la raíz" (`/api/files/view/:id?token=...`), pensada para ir
+    // directo a un `<img src>` -- pero `new URL` sin base la rechaza por no
+    // traer esquema/host, y eso hacía caer TODO archivo guardado al estado
+    // "no reconocido" sin llegar siquiera a mirar `fuente`. Se resuelve
+    // contra `location.origin`, igual que hace el navegador con un
+    // `<img src="/algo">`; para una URL ya absoluta (un enlace externo que
+    // tipeó el usuario) la base se ignora, así que no cambia nada para ese
+    // caso.
+    return new URL(value, window.location.origin)
   } catch {
     return null
   }
@@ -219,7 +228,12 @@ export function resolveRecursoPreview(
   const esDropbox = host === "dropbox.com" || host.endsWith(".dropbox.com")
   const effectiveUrl = esDropbox ? normalizeDropboxUrl(url) : url
 
-  const ext = getExtension(effectiveUrl.pathname)
+  // La URL firmada de un archivo ya guardado (`GET /files/view/:id?token=…`,
+  // ver `ArchivoGuardadoPreview`) no trae el nombre original en el path —es
+  // un id, no un filename— así que ahí no hay extensión que sacar de acá.
+  // Mismo caso que un `blob:`: si `fuente` trae el nombre real, se usa esa
+  // extensión en vez de rendirse.
+  const ext = getExtension(effectiveUrl.pathname) || getExtension(fuente ?? "")
 
   // El repositorio se consulta ANTES de caer a `web`, pero DESPUÉS de mirar
   // la extensión: si la URL ya dice que es un `.pdf`, nuestro propio visor es
