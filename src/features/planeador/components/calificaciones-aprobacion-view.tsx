@@ -170,6 +170,13 @@ export function CalificacionesAprobacionView({
     setGuardando(true)
     try {
       await Promise.all(inputs.map((input) => calificarBulk.mutateAsync(input)))
+      // `useCalificarBulkMutation` solo invalida la Planilla
+      // (`planillaCalificacionesQueryKeyPrefix`) -- sin esto, la propia
+      // tabla de este panel y la de "Marcar" (misma query,
+      // `calificacionesQueryKey`) seguían mostrando la nota VIEJA hasta un
+      // refresh completo. Mismo criterio que ya usa `guardarObservacion`
+      // más abajo.
+      queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
       notify("Calificación en bloque guardada.")
       setDirty(false)
     } catch (error) {
