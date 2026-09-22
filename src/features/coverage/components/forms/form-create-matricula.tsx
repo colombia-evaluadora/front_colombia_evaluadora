@@ -1922,6 +1922,7 @@ export function MatriculaSupportFilesSection({
 }: SupportFilesSectionProps) {
   const [open, setOpen] = useState(false)
   const visibleFields = SUPPORT_FILE_FIELDS.filter((field) => isFieldVisible(fieldSettings, field.fieldId))
+  if (visibleFields.length === 0) return null
 
   return (
     <MatriculaFormSection title="Archivo de soporte" columns={2}>
