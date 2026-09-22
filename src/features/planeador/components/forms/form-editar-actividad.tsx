@@ -4473,10 +4473,21 @@ function AdaptacionItem({
             <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="file"
-              value={adaptacion.versionModificadaRef}
-              onChange={(e) =>
-                onChange({ ...adaptacion, versionModificadaRef: e.target.value })
-              }
+              // `<input type="file">` no acepta `value` programático (el
+              // browser tira `InvalidStateError` con cualquier valor que no
+              // sea `""`) — el archivo se lee de `e.target.files`, no de un
+              // `value` controlado. Mismo criterio que el file picker de
+              // "Recursos" (`RecursosSection`, más arriba en este archivo).
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (adaptacion.versionModificadaRef.startsWith("blob:")) {
+                  URL.revokeObjectURL(adaptacion.versionModificadaRef)
+                }
+                onChange({
+                  ...adaptacion,
+                  versionModificadaRef: file ? URL.createObjectURL(file) : "",
+                })
+              }}
               className="pl-9"
               disabled={disabled}
             />
