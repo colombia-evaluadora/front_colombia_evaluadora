@@ -13,6 +13,7 @@ import {
   addCriterioToUnidad,
   addUnidad,
   deleteUnidadById,
+  setPuntajeActividadUnidad,
   unidadesTematicasDb,
   unlinkActividadFromUnidad,
   updatePonderacionActividad,
@@ -751,7 +752,13 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
-    const body = (await request.json()) as Actividad
+    const body = (await request.json()) as Actividad & { NOTA_MAXIMA?: number }
+    // Edición inline del "Puntaje" (columna de la tabla de Actividades de
+    // una unidad "Suma de puntos", `useUpdatePuntajeActividadUnidad`): esa
+    // mutación reusa este mismo PUT con `{NOTA_MAXIMA}` — el mock replica
+    // el espejo, actualizando la copia que vive en `unidadesTematicasDb`
+    // (no `planeadorDb`, que es donde cae el resto del body).
+    if (body.NOTA_MAXIMA != null) setPuntajeActividadUnidad(id, body.NOTA_MAXIMA)
     planeadorDb[index] = { ...planeadorDb[index], ...body, id }
     return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
   }),

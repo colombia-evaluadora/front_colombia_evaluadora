@@ -24,6 +24,7 @@ import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/compo
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
+import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 interface DialogAgregarActividadProps {
@@ -43,26 +44,42 @@ interface DialogAgregarActividadProps {
  * que acá no hace falta filtrar de nuevo. `search` viaja al servidor
  * (parámetro `search` del endpoint), no se filtra en el cliente.
  *
- * El campo de porcentaje SOLO se pide cuando `metodoCalculo ===
- * "Ponderado"` —con "Promedio simple" o "Suma de puntos" cada actividad
- * vinculada pesa lo mismo (o suma sus puntos), no hay nada que repartir—.
- * En ese caso, el botón "Vincular" de una fila permanece oculto hasta
- * que se tipea un valor mayor a 0: no tiene sentido vincular con un peso
- * en blanco. `porcentajeDisponible` viene YA CALCULADO por fila (unidad +
- * grupo de esa actividad), no hace falta pedirlo aparte (1.5).
+ * El campo de peso CAMBIA según `metodoCalculo` (pedido explícito, antes se
+ * veía siempre igual sin importar el método):
+ *   - "Ponderado": input de "(%)" — el docente reparte el 100% a mano.
+ *   - "Suma de puntos": input de "Puntaje" (`TACTIVIDAD.NOTA_MAXIMA`) — sin
+ *     tope, el backend deriva el % de forma proporcional sobre el total del
+ *     grupo (`fn_unidad_ponderacion_recalcular_sumatoria`). El vínculo en sí
+ *     NO acepta puntaje (`fn_unidad_actividad_vincular` solo conoce
+ *     PONDERACION): se vincula primero con `omitirPonderacion` y, si el
+ *     docente tipeó un puntaje, se guarda con un segundo request
+ *     (`useUpdatePuntajeActividadUnidad`, el mismo PUT que ya usa la
+ *     columna "Puntaje" de la tabla).
+ *   - "Promedio simple": sin input — cada actividad vinculada pesa lo
+ *     mismo, no hay nada que repartir. El botón "Vincular" queda siempre
+ *     visible (a diferencia de los otros dos modos, donde permanece oculto
+ *     hasta que se tipea un valor mayor a 0: no tiene sentido vincular con
+ *     un peso/puntaje en blanco).
+ * `porcentajeDisponible` viene YA CALCULADO por fila (unidad + grupo de esa
+ * actividad), no hace falta pedirlo aparte (1.5).
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  // Borrador de porcentaje por actividad — vive acá, no en el form de la
-  // fila: cada tecleo no debe disparar nada hasta que se confirma con
-  // "Vincular". Se limpia por completo al cerrar el popover.
+  // Borrador de peso por actividad — vive acá, no en el form de la fila:
+  // cada tecleo no debe disparar nada hasta que se confirma con "Vincular".
+  // Mismo estado sirve para "(%)" (Ponderado) y "Puntaje" (Suma de puntos):
+  // nunca coexisten, el método de la unidad decide cuál se está tipeando.
+  // Se limpia por completo al cerrar el popover.
   const [pesos, setPesos] = useState<Record<string, string>>({})
 
   const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
   const linkActividad = useLinkActividadUnidad()
+  const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
 
   const esPonderado = unidad.metodoCalculo === "Ponderado"
+  const esSumatoria = unidad.metodoCalculo === "Suma de puntos"
+  const pideValor = esPonderado || esSumatoria
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -73,19 +90,22 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   }
 
   function handleVincular(actividadId: number) {
-    const pesoRaw = pesos[actividadId]?.trim()
-    const ponderacion = esPonderado ? Number(pesoRaw) || 0 : 0
+    const valorRaw = pesos[actividadId]?.trim()
+    const valor = pideValor ? Number(valorRaw) || 0 : 0
 
     linkActividad.mutate(
       {
         unidadId: unidad.id,
         actividadId,
-        ponderacion,
-        omitirPonderacion: unidad.metodoCalculo !== "Ponderado",
+        ponderacion: esPonderado ? valor : 0,
+        omitirPonderacion: !esPonderado,
       },
       {
         onSuccess: (data) => {
           if (data.status === "error") return
+          // Suma de puntos: el vínculo no acepta el puntaje (ver el
+          // docstring de arriba) — se guarda aparte, ya vinculada.
+          if (esSumatoria && valor > 0) updatePuntaje.mutate({ actividadId, puntaje: valor })
           setPesos((prev) => {
             const next = { ...prev }
             delete next[actividadId]
@@ -187,9 +207,11 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                   <TableHead className="w-[13%]">Tipo</TableHead>
                   <TableHead className="w-[18%]">Instrumento</TableHead>
                   <TableHead className="w-[11%]">Grupo</TableHead>
-                  {esPonderado && (
+                  {pideValor && (
                     <>
-                      <TableHead className="w-[10%] text-right">(%)</TableHead>
+                      <TableHead className="w-[10%] text-right">
+                        {esPonderado ? "(%)" : "Puntaje"}
+                      </TableHead>
                       {/* Header vacío a propósito: esta columna solo muestra
                           "Disponible para asignar" o el botón "Vincular" —
                           ninguno de los dos es un encabezado real. Separarla
@@ -204,7 +226,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 {disponibles.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={esPonderado ? 6 : 4}
+                      colSpan={pideValor ? 6 : 4}
                       className="h-20 text-center text-muted-foreground"
                     >
                       {search
@@ -229,25 +251,32 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                         <TableCell className="whitespace-normal">{actividad.tipo}</TableCell>
                         <TableCell className="whitespace-normal">{actividad.instrumento}</TableCell>
                         <TableCell className="whitespace-normal">{actividad.grupo}</TableCell>
-                        {esPonderado && (
+                        {pideValor && (
                           <>
                             <TableCell>
                               <Input
                                 variant="outlined"
                                 type="number"
                                 min={0}
-                                max={disponible}
+                                // Suma de puntos no tiene tope: el % lo deriva
+                                // el backend de forma proporcional, no hay
+                                // "100% de la unidad" que repartir a mano.
+                                max={esPonderado ? disponible : undefined}
                                 placeholder="0"
                                 value={peso}
                                 onChange={(e) => {
                                   const raw = e.target.value
-                                  // Recorta al disponible de la fila: sin esto
-                                  // se podía tipear (o pegar) un % que sumado
-                                  // al resto de la unidad pasara de 100 —
-                                  // `max` del input HTML no bloquea el tecleo,
-                                  // solo marca `:invalid`.
+                                  // Recorta al disponible SOLO en Ponderado:
+                                  // sin esto se podía tipear (o pegar) un %
+                                  // que sumado al resto de la unidad pasara
+                                  // de 100 — `max` del input HTML no bloquea
+                                  // el tecleo, solo marca `:invalid`.
                                   const clamped =
-                                    raw === "" ? "" : String(Math.min(Number(raw) || 0, disponible))
+                                    raw === ""
+                                      ? ""
+                                      : esPonderado
+                                        ? String(Math.min(Number(raw) || 0, disponible))
+                                        : raw
                                   setPesos((prev) => ({
                                     ...prev,
                                     [actividad.id]: clamped,
@@ -261,12 +290,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                                 antes compartían celda y la fila crecía más
                                 de lo que el input necesitaba. */}
                             <TableCell className="whitespace-normal">
-                              {/* El botón "Vincular" solo aparece con un peso
-                                  tipeado — sin eso, vincular no tiene sentido
-                                  (quedaría en 0%, indistinguible de "no
-                                  vinculada"). Mientras tanto se ve el
-                                  disponible restante, para que el docente sepa
-                                  cuánto le queda por repartir. */}
+                              {/* El botón "Vincular" solo aparece con un
+                                  valor tipeado — sin eso, vincular no tiene
+                                  sentido (quedaría en 0%/sin puntaje,
+                                  indistinguible de "no vinculada"). Mientras
+                                  tanto, en Ponderado se ve el disponible
+                                  restante, para que el docente sepa cuánto le
+                                  queda por repartir (en Suma de puntos no hay
+                                  tope que mostrar). */}
                               {tienePeso ? (
                                 <Button
                                   variant="outline"
@@ -279,15 +310,15 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                                   <PlusCircleIcon data-icon="inline-start" />
                                   Vincular
                                 </Button>
-                              ) : (
+                              ) : esPonderado ? (
                                 <span className="text-muted-foreground text-xs">
                                   Disponible para asignar: {disponible}%
                                 </span>
-                              )}
+                              ) : null}
                             </TableCell>
                           </>
                         )}
-                        {!esPonderado && (
+                        {!pideValor && (
                           <TableCell className="text-right">
                             <Button
                               variant="outline"
@@ -315,6 +346,30 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 <p>
                   Esta unidad temática utiliza cálculo ponderado. Al vincular una actividad, debes
                   asignar el porcentaje que tendrá dentro de la unidad.
+                </p>
+              </div>
+            )}
+            {esSumatoria && (
+              <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
+                <InfoIcon className="size-5 shrink-0" />
+                <p>
+                  Esta unidad temática suma los puntajes de sus actividades. Al vincular una
+                  actividad, asigná el puntaje que tendrá — el sistema calcula el porcentaje que le
+                  corresponde dentro de la unidad.
+                </p>
+              </div>
+            )}
+            {/* Mismo aviso que la tabla de "Actividades" (ver
+                `UnidadDetallePanel`): con "Promedio simple" no hay nada que
+                repartir, así que acá también hace falta aclararlo — sin
+                columna de peso, el popover podía leerse como que algo
+                faltaba por cargar. */}
+            {unidad.metodoCalculo === "Promedio simple" && (
+              <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
+                <InfoIcon className="size-5 shrink-0" />
+                <p>
+                  Esta unidad temática promedia sus actividades: todas cuentan por igual, no hay un
+                  peso ni un puntaje que asignar.
                 </p>
               </div>
             )}
