@@ -52,6 +52,7 @@ import {
   useAvailableStudyPlanSubjectsQuery,
 } from "../../api/query/use-available-study-plan-subjects-query"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
+import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
 import { QuickCreateSubjectDialog } from "./dialog-quick-create-subject"
 import {
   SubjectInlineEditFields,
@@ -177,6 +178,20 @@ export function CreateStudyPlanDialog({
 
   const { data: subjectDetails = [] } = useSubjectDetailsQuery(academicPeriodId)
 
+  // Todo el plan del grado, sin paginar (mismo criterio que `otherPeriods` en
+  // `dialog-create-evaluation-period.tsx`): hace falta la suma REAL de
+  // `influenciaArea` entre todas las asignaturas de la misma área, no solo
+  // la página que esté mostrando la tabla en ese momento.
+  const { data: allStudyPlanItemsData } = useStudyPlansQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 1000,
+    academicPeriodId,
+    gradeId,
+    enabled: open,
+  })
+
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
   const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
 
@@ -243,6 +258,21 @@ export function CreateStudyPlanDialog({
   })
 
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const selectedAsignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+
+  // Área de la asignatura elegida (viene de `subjectDetails`, que cubre
+  // TODAS las asignaturas del periodo, no solo las disponibles para agregar
+  // — a diferencia de `asignaturaOptions`/`useAvailableStudyPlanSubjectsQuery`,
+  // que excluye justamente las que ya están en el plan).
+  const selectedAreaId = subjectDetails.find((s) => s.id === selectedAsignaturaId)?.areaId
+  const otherAreaInfluenciaSum = (allStudyPlanItemsData?.rows ?? [])
+    .filter((row) => {
+      if (isEditing && row.codigo === item.codigo) return false
+      const rowAreaId = subjectDetails.find((s) => s.id === row.asignaturaId)?.areaId
+      return selectedAreaId != null && rowAreaId === selectedAreaId
+    })
+    .reduce((sum, row) => sum + (row.influenciaArea ?? 0), 0)
+  const maxAllowedInfluenciaArea = Math.max(0, 100 - otherAreaInfluenciaSum)
 
   // Mientras no se personaliza, el combobox muestra `formatoHeredado`/
   // `criterioHeredado` (línea de abajo), no el valor del campo — pero ese
@@ -560,7 +590,20 @@ export function CreateStudyPlanDialog({
                     </form.Field>
 
                     {showInfluenciaArea && (
-                      <form.Field name="influenciaArea">
+                      <form.Field
+                        name="influenciaArea"
+                        validators={{
+                          onChange: ({ value }) => {
+                            if (Number.isNaN(value)) return undefined
+                            if (value > maxAllowedInfluenciaArea) {
+                              return {
+                                message: `La suma de la influencia del área no puede superar el 100%. Disponible: ${maxAllowedInfluenciaArea}%.`,
+                              }
+                            }
+                            return undefined
+                          },
+                        }}
+                      >
                         {(field) => {
                           const isInvalid =
                             (field.state.meta.isTouched || submissionAttempts > 0) &&
