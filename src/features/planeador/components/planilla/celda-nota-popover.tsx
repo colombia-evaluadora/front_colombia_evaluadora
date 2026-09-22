@@ -72,7 +72,7 @@ export function buildCalificarCeldaInput(
       pkTactividadEstudiante,
       fecha,
       tipo: "LISTA_COTEJO",
-      items: marcados.map((n) => ({ pkItem: n.criterioId, cumplido: true })),
+      itemsMarcados: marcados.map((n) => n.criterioId),
     }
   }
   if (instrumento.instrumento === "ESCALA_VALORACION") {
