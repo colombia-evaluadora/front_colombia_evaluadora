@@ -63,7 +63,16 @@ export function instrumentoCompletitud(
   }
   if (instrumento.instrumento === "RUBRICA") {
     const total = instrumento.definicion.length
-    const cubiertos = value.filter((n) => n.nivelId != null).length
+    // Solo cuenta contra criterios que SIGUEN activos en la rúbrica de
+    // ahora — `value` puede traer una nota precargada (`toNotas`) de un
+    // criterio que ya se borró/desactivó después de que el estudiante fue
+    // calificado la primera vez. Sin este filtro, esa nota vieja se sumaba
+    // a la elegida ahora y "completaba" de más: el backend terminaba
+    // rechazando el guardado con "La rúbrica tiene N criterio(s) activo(s)
+    // pero se calificaron M" en cuanto el docente elegía el único criterio
+    // vigente.
+    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
+    const cubiertos = value.filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId)).length
     if (total === 0) return { completo: false, mensaje: "La rúbrica no tiene criterios activos." }
     if (cubiertos < total) {
       return {
@@ -168,7 +177,14 @@ function EscalaValoracionFields({
   // calificar celda a celda con `valorNumerico`, no con `calificar-bulk`
   // (ver el 400 documentado: "use PUT .../calificar con valorNumerico").
   if (escala.niveles.length === 0) {
-    return <ValorNumericoField value={value} onChange={onChange} />
+    return (
+      <ValorNumericoField
+        value={value}
+        onChange={onChange}
+        min={escala.valorMin ?? undefined}
+        max={escala.valorMax ?? undefined}
+      />
+    )
   }
   return (
     <NivelSelectField
@@ -180,27 +196,43 @@ function EscalaValoracionFields({
   )
 }
 
-/** Único campo numérico 0-100 — cubre la escala NUMÉRICA y el instrumento
- *  "OTRO" (shape no confirmado contra el backend real todavía): mismo
- *  criterio conservador que `use-nota-estudiante-query.ts`, no se asume una
- *  forma más rica sin haberla visto en una respuesta real. */
+/**
+ * Único campo numérico — cubre la escala NUMÉRICA (rango real
+ * `valorMin`-`valorMax` de la escala, confirmado real en
+ * `GET .../instrumento`: `definicion.valorMin`/`valorMax`) y el instrumento
+ * "OTRO" (shape no confirmado contra el backend real todavía, sin rango
+ * propio que mostrar — cae al 0-100 de siempre, mismo criterio conservador
+ * que `use-nota-estudiante-query.ts`).
+ *
+ * El backend califica con el valor CRUDO (`valorNumerico`, la escala
+ * 1-5/3-15/etc., NO un porcentaje ya calculado — % = valor / valorMax * 100,
+ * ver V469) — antes el campo decía "Nota (0-100)" y no validaba contra el
+ * rango real de la escala, así que un docente podía cargar un valor fuera
+ * de rango sin aviso hasta que el backend lo rechazara (o, peor, uno DENTRO
+ * de 0-100 pero fuera del rango real de la escala, que el backend sí acepta
+ * sin quejarse aunque no tenga sentido para esa escala puntual).
+ */
 function ValorNumericoField({
   value,
   onChange,
+  min = 0,
+  max = 100,
 }: {
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
+  min?: number
+  max?: number
 }) {
   const id = useId()
   const actual = notaDe(value, 0)?.valor
   return (
     <Field variant="outlined">
-      <FieldLabel htmlFor={id}>Nota (0-100)</FieldLabel>
+      <FieldLabel htmlFor={id}>{`Nota (${min}-${max})`}</FieldLabel>
       <Input
         id={id}
         type="number"
-        min={0}
-        max={100}
+        min={min}
+        max={max}
         placeholder="Agregar"
         value={actual ?? ""}
         onChange={(e) => {
@@ -209,7 +241,7 @@ function ValorNumericoField({
             onChange(quitarNota(value, 0))
             return
           }
-          onChange(setNota(value, 0, Math.min(100, Math.max(0, raw))))
+          onChange(setNota(value, 0, Math.min(max, Math.max(min, raw))))
         }}
       />
     </Field>
