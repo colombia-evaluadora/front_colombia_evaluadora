@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckIcon,
-  ClockCountdownIcon,
+  // ClockCountdownIcon, -- solo el ícono del botón de Historial de cambios, comentado abajo.
   FunnelIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -597,6 +597,7 @@ function ReportsPageContent() {
               listo={listoParaBoletin}
               esPreescolar={esCualitativoActivo}
             />
+            {/* Historial de cambios: no se va a mostrar de momento.
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -613,6 +614,7 @@ function ReportsPageContent() {
               </TooltipTrigger>
               <TooltipContent>Historial de cambios</TooltipContent>
             </Tooltip>
+            */}
             <DialogDescargarTabla
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
