@@ -68,6 +68,15 @@ interface ReportInput {
    * todas las configuradas (comportamiento de siempre).
    */
   columns?: string[]
+  /**
+   * El resumen de filtros para el membrete del archivo, ya escrito. `filters`
+   * son los binds de la consulta, así que ahí los filtros son ids: impresos
+   * salen como "Fk Tgrupo: 11474" en vez de "Grupo: 5°01", que es lo único
+   * que el lector del archivo puede interpretar. Acá están los nombres, así
+   * que la línea se manda hecha. Sin esto, el servicio la arma de `filters`
+   * como siempre.
+   */
+  filtersLabel?: string
 }
 
 const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
@@ -83,7 +92,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
  */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting, columns }: ReportInput,
+  { format, filters, sorting, columns, filtersLabel }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // El genérico explícito NO es decorativo: `api-client` tiene un
@@ -98,6 +107,7 @@ export async function downloadReport(
       filters,
       sorting,
       columns,
+      filtersLabel,
     })
 
     const blob = response.data as Blob

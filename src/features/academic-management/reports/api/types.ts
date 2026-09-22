@@ -1,8 +1,16 @@
 /** Tipos de los endpoints `POST /api/eval-col/informes/...`. */
 
+/**
+ * El id con el que se pide —y con el que llega— la fila Final. No es un PK:
+ * es un centinela. Va dentro del mismo arreglo `PERIODOS` que los períodos
+ * reales, y por eso se puede pedir el Final solo (`[-1]`), que con una
+ * bandera aparte era imposible: un arreglo vacío significa *todos*.
+ */
+export const PERIODO_FINAL_ID = -1
+
 /** `final` no es un período del calendario: es la fila que el backend
- *  calcula al vuelo con la nota del año cuando se pide `INCLUIR_FINAL`.
- *  Llega con `periodoId: -1`. */
+ *  calcula al vuelo con la nota del año. Llega con
+ *  `periodoId: PERIODO_FINAL_ID`. */
 export type ModoPeriodo = "real" | "requerido" | "final"
 
 /** Sin criterio de evaluación configurado el backend responde `cualitativo`
