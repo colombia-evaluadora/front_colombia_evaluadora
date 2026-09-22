@@ -230,21 +230,72 @@ function AbrirAparte({ url, etiqueta }: { url: string; etiqueta: string }) {
   )
 }
 
-/** PDF: el browser lo renderiza nativamente dentro del iframe si el servidor
- *  lo expone con `Content-Type: application/pdf`. Si no, el iframe queda en
- *  blanco o muestra el error del browser — preferible a un placeholder que
- *  mienta sobre el contenido. */
+/**
+ * PDF: el browser lo renderiza nativamente dentro del iframe si el servidor
+ * lo expone con `Content-Type: application/pdf`. Si no, el iframe queda en
+ * blanco o muestra el error del browser — preferible a un placeholder que
+ * mienta sobre el contenido.
+ *
+ * La URL firmada de un archivo ya guardado (`fetchArchivoViewUrl`) trae
+ * `X-Frame-Options: DENY` — es un header parejo del api-gateway, pensado
+ * para bloquear que OTRO sitio embeba nuestros endpoints, pero de paso
+ * bloquea que NOSOTROS la metamos en un `<iframe>`, aunque sea del mismo
+ * origen: el navegador la rechaza (`ERR_BLOCKED_BY_RESPONSE`, "rechazó la
+ * conexión"). No pasa con `<img>`/`<audio>`/`<video>` porque `X-Frame-
+ * Options` solo se evalúa al FRAMEAR, y confirmado en producción: el
+ * archivo se descarga bien (200, `Content-Type: application/pdf`), el
+ * problema es puntual del `<iframe>`.
+ *
+ * La salida no es tocar el header (es del gateway, compartido con todos los
+ * endpoints) sino no dejar que el iframe dispare esa petición: se trae el
+ * PDF con `fetch` (sin el chequeo de framing, es una descarga normal) y se
+ * arma un `blob:` local para el `src` del iframe — un archivo YA elegido en
+ * el formulario llega así de entrada, así que ese caso no necesita el
+ * fetch.
+ */
 function PdfPreview({ url }: { url: string }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+  const esLocal = url.startsWith("blob:")
+
+  useEffect(() => {
+    if (esLocal) return
+    let cancelled = false
+    let objectUrl: string | null = null
+    setBlobUrl(null)
+    setError(false)
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.blob()
+      })
+      .then((blob) => {
+        if (cancelled) return
+        objectUrl = URL.createObjectURL(blob)
+        setBlobUrl(objectUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [url, esLocal])
+
+  if (!esLocal && error) return <EnlaceExterno url={url} />
+  if (!esLocal && blobUrl === null) return <RecursoPreviewCargando />
+
   return (
     <div className="mx-auto w-full max-w-4xl">
       <div className="bg-card overflow-hidden rounded-md border">
         <iframe
-          src={url}
+          src={esLocal ? url : (blobUrl ?? undefined)}
           title="Vista previa del PDF"
           className="h-[80vh] w-full"
         />
       </div>
-      {!url.startsWith("blob:") && <AbrirAparte url={url} etiqueta="Abrir el PDF aparte" />}
+      {!esLocal && <AbrirAparte url={url} etiqueta="Abrir el PDF aparte" />}
     </div>
   )
 }
