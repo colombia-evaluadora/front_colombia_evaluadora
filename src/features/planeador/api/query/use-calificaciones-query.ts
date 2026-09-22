@@ -70,6 +70,7 @@ function toEstadoAsistencia(tipoAsistencia: string | null): EstadoAsistencia {
 function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante {
   return {
     id: row.pk_tactividad_estudiante,
+    matriculaId: row.pk_tmatricula,
     nombres: row.nombre_estudiante,
     // El real no separa nombres/apellidos — viene un solo `nombre_estudiante`.
     apellidos: "",
