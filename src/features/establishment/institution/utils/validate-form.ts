@@ -33,6 +33,31 @@ function requiredText(message: string) {
     .refine((value) => value !== "", { message })
 }
 
+function requiredPattern(requiredMessage: string, regex: RegExp, formatMessage: string) {
+  return z
+    .string()
+    .transform((value) => value?.trim() ?? "")
+    .superRefine((value, ctx) => {
+      if (value === "") {
+        ctx.addIssue({ code: "custom", message: requiredMessage })
+        return
+      }
+      if (!regex.test(value)) {
+        ctx.addIssue({ code: "custom", message: formatMessage })
+      }
+    })
+}
+
+/** Campo de texto opcional, válido en blanco o si cumple `regex`. */
+function optionalPattern(regex: RegExp, message: string) {
+  return z.string().refine((value) => isBlank(value) || regex.test(value.trim()), { message })
+}
+
+/** Campo de texto opcional, válido en blanco o si `check` acepta el valor. */
+function optionalCheck(check: (value: string) => boolean, message: string) {
+  return z.string().refine((value) => isBlank(value) || check(value.trim()), { message })
+}
+
 /**
  * Ítem de catálogo obligatorio. El `select` guarda el objeto completo, así
  * que lo que se exige es que tenga `id` — no `name`: en real, lo que carga
@@ -55,12 +80,27 @@ function requiredCatalogItem(message: string) {
 const establishmentSchema = z.object({
   basicInfo: z.object({
     name: requiredText("Ingresa el nombre del establecimiento."),
-    dane: requiredText("Ingresa el código DANE."),
-    nit: requiredText("Ingresa el NIT."),
+    dane: requiredPattern(
+      "Ingresa el código DANE.",
+      /^\d{12}$/,
+      "El código DANE debe tener 12 dígitos."
+    ),
+    nit: requiredPattern("Ingresa el NIT.", /^\d{6,9}-\d$/, "Ingresa un NIT válido."),
     ownershipType: requiredCatalogItem("Selecciona la propiedad jurídica."),
   }),
   address: z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
+  }),
+  contact: z.object({
+    email: optionalPattern(
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      "Ingresa un correo electrónico válido."
+    ),
+    website: optionalCheck(
+      (value) => z.string().url().safeParse(value).success,
+      "Ingresa una página web válida (ej. https://ejemplo.com)."
+    ),
+    phone: optionalPattern(/^\d{1,10}$/, "El teléfono no debe superar los 10 dígitos."),
   }),
 })
 
@@ -85,17 +125,11 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "basicInfo.nit": "NIT",
   "basicInfo.ownershipType": "Propiedad jurídica",
   "address.municipality": "Municipio",
+  "contact.email": "Correo electrónico",
+  "contact.website": "Página web",
+  "contact.phone": "Teléfono",
 }
 
-/**
- * Etiqueta para el resumen, por campo de persona (se prefija con el rol).
- * Fecha de nacimiento sigue sin validarse acá (columna nullable de verdad,
- * ni la base ni Java la exigen). Género SÍ vuelve a ser obligatorio al
- * crear (REV: se había sacado, el negocio cambió de opinión) — coincide
- * con que ni `fn_usu_crear` ni `RegisterUsuarioRequest` (Java) dejaron de
- * exigirlo nunca en el backend, así que esto solo estaba desalineado del
- * lado del front.
- */
 const PERSON_LABELS: Record<string, string> = {
   documentType: "tipo de documento",
   identification: "número de documento",
@@ -103,9 +137,13 @@ const PERSON_LABELS: Record<string, string> = {
   lastName: "primer apellido",
   email: "correo electrónico",
   gender: "género",
+  birthDate: "fecha de nacimiento",
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
+
+/** Edad mínima exigida a rector/secretaria (mayoría de edad en Colombia). */
+const MINIMUM_PERSON_AGE_YEARS = 18
 
 function isBlank(value: string | null | undefined): boolean {
   return value == null || value.trim() === ""
@@ -182,6 +220,20 @@ function makePersonSchema(required: boolean) {
       require("identification", p.identification, "Ingresa el número de documento.")
       require("firstName", p.firstName, "Ingresa el primer nombre.")
       require("lastName", p.lastName, "Ingresa el primer apellido.")
+
+      if (!isBlank(p.birthDate)) {
+        const birthDate = new Date(p.birthDate as string)
+        const cutoff = new Date()
+        cutoff.setFullYear(cutoff.getFullYear() - MINIMUM_PERSON_AGE_YEARS)
+
+        if (Number.isNaN(birthDate.getTime()) || birthDate > cutoff) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["birthDate"],
+            message: "La persona debe ser mayor de edad.",
+          })
+        }
+      }
 
       // Formato, no obligatoriedad: eso ya lo cubre `require("email", ...)`
       // más abajo (solo para persona nueva). Acá se valida cualquier correo

@@ -21,11 +21,9 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckIcon,
   // ClockCountdownIcon, -- solo el ícono del botón de Historial de cambios, comentado abajo.
-  FunnelIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   XIcon,
@@ -67,6 +65,7 @@ import {
 } from "@/features/academic-management/reports/components/dialog-export-informe"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
   PendingChangesBanners,
   type DestinoPlanilla,
@@ -118,6 +117,10 @@ function coincide(fila: FilaInforme, busqueda: string): boolean {
 
 interface GrupoTabContentProps {
   grupoId: number
+  /** Título de la columna/sección de observación — viene del referente
+   *  curricular del grado (ver `useStudyPlanSubjectLabel`), nunca un
+   *  literal fijo. */
+  observacionLabel: string
   periodos: number[]
   busqueda: string
   onBusquedaChange: (texto: string) => void
@@ -136,6 +139,7 @@ interface GrupoTabContentProps {
 
 function GrupoTabContent({
   grupoId,
+  observacionLabel,
   periodos,
   busqueda,
   onBusquedaChange,
@@ -213,14 +217,6 @@ function GrupoTabContent({
                   <XIcon />
                 </InputGroupButton>
               )}
-              <Tooltip>
-                <TooltipTrigger
-                  render={<InputGroupButton size="icon-xs" variant="ghost" color="muted" aria-label="Filtrar" />}
-                >
-                  <FunnelIcon />
-                </TooltipTrigger>
-                <TooltipContent>Filtrar</TooltipContent>
-              </Tooltip>
             </InputGroupAddon>
           </InputGroup>
         </Field>
@@ -245,6 +241,7 @@ function GrupoTabContent({
         (esCualitativo ? (
           <ObservacionesTable
             estudiantes={estudiantes}
+            columnaLabel={observacionLabel}
             seleccionados={seleccionados}
             onToggleEstudiante={onToggleEstudiante}
             onToggleTodos={() => onSeleccionarTodos(estudiantes.map((e) => e.matriculaId))}
@@ -268,8 +265,6 @@ function ReportsPageContent() {
   const navigate = gestionAcademicaInformesRoute.useNavigate()
   const search = gestionAcademicaInformesRoute.useSearch()
 
-  // `replace`: marcar un período o cambiar de pestaña no es un paso de
-  // navegación, y con `push` el botón atrás tendría que deshacer clic por clic.
   const setSearch = React.useCallback(
     (cambios: Partial<InformesSearch>) => {
       navigate({ search: (prev) => ({ ...prev, ...cambios }), replace: true })
@@ -301,9 +296,6 @@ function ReportsPageContent() {
   const gruposQuery = useGruposPeriodoQuery(filtros)
 
   const periodos = React.useMemo(() => search.periodos ?? [], [search.periodos])
-  // El Final es un id más de `periodos`, no una bandera aparte: por eso se
-  // puede dejar marcado solo él. Los reales se separan donde hace falta,
-  // porque el boletín es de UN período del calendario y el Final no lo es.
   const periodosReales = React.useMemo(
     () => periodos.filter((id) => id !== PERIODO_FINAL_ID),
     [periodos],
@@ -335,9 +327,6 @@ function ReportsPageContent() {
   )
 
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
-  // Una sola búsqueda para todas las pestañas, y no una por pestaña: el
-  // botón de descargar vive en la cabecera y tiene que mandar el MISMO
-  // texto que está filtrando la tabla, o el archivo no sería lo que se ve.
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
@@ -346,18 +335,12 @@ function ReportsPageContent() {
   const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
 
-  // Cambiar de sede/año/jornada deja seleccionados períodos que ya no están en
-  // la lista; si se vacía, el arranque vuelve a sembrar.
   React.useEffect(() => {
     if (periodosDisponibles.length === 0) return
-    // El Final se da por válido siempre: no está en el catálogo de períodos
-    // y sin esto la re-siembra lo barría, que es lo que hacía imposible
-    // dejarlo marcado solo a él.
     const validos = periodos.filter(
       (id) => id === PERIODO_FINAL_ID || periodosDisponibles.some((p) => p.id === id),
     )
     if (validos.length === periodos.length && validos.length > 0) return
-    // Si no queda ninguno vigente se siembra el período en curso.
     const enCurso = periodosDisponibles.filter((p) => p.enCurso).map((p) => p.id)
     setPeriodos(
       validos.length > 0 ? validos : enCurso.length > 0 ? enCurso : [periodosDisponibles[0].id],
@@ -367,8 +350,6 @@ function ReportsPageContent() {
   React.useEffect(() => {
     if (grupos.length === 0) return
     const vigentes = gruposAbiertosIds.filter((id) => grupos.some((g) => g.grupoId === id))
-    // Sin nada en la URL: se intenta recordar lo que quedó abierto la última
-    // vez para esta misma sede/año/jornada antes de caer al primer grupo.
     const guardados =
       gruposAbiertosIds.length === 0 ? leerGruposAbiertosGuardados(filtros) : null
     const guardadosVigentes =
@@ -390,29 +371,18 @@ function ReportsPageContent() {
     setGruposAbiertos(abiertos, tabVigente)
   }, [grupos, gruposAbiertosIds, activeTab, filtros, setGruposAbiertos])
 
-  // La terna resuelve el período académico: sin ella los endpoints responden
-  // 403/404, así que las queries van `enabled: false` — y una query apagada
-  // queda en `isPending`, que sin este corte se vería como "cargando" eterno.
   const cascadaCompleta =
     filtros.sedeId != null && filtros.anio != null && filtros.jornadaId != null
 
   const gruposAbiertos = grupos.filter((g) => gruposAbiertosIds.includes(g.grupoId))
   const gruposDisponibles = grupos.filter((g) => !gruposAbiertosIds.includes(g.grupoId))
   const grupoActivoId = Number(activeTab)
+  const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
+  const observacionLabel = useStudyPlanSubjectLabel(gradoActivoId, esCualitativoActivo)
 
   const alertasParams = { grupos: gruposAbiertosIds, periodos }
   const planillasPendientes = usePlanillasPendientesQuery(alertasParams)
   const cambiosPendientes = useCambiosPendientesQuery(alertasParams)
-  // El historial es del grupo que se está viendo, no de todas las pestañas
-  // abiertas: acompaña al informe que hay en pantalla, así que sigue a la
-  // pestaña activa y se vuelve a pedir al cambiarla.
-  // `periodosReales`: el historial guarda por período del calendario, así que
-  // el centinela del Final no coincide con ninguna fila. Mandándolo, dejar
-  // marcado solo el Final devolvía un historial vacío sin explicar por qué.
-  //
-  // Y el AÑO tiene que ir: la función lo usa para acotar el año lectivo y, si
-  // no llega, cae al año CALENDARIO actual. Mirando 2025 —o en enero— el
-  // historial salía vacío en silencio.
   const historial = useHistorialQuery(
     {
       grupos: grupoActivoId > 0 ? [grupoActivoId] : [],
@@ -428,11 +398,6 @@ function ReportsPageContent() {
 
   const seleccionActiva = seleccionPorGrupo[grupoActivoId] ?? new Set<number>()
 
-  // El membrete del archivo. Los filtros que viajan al backend son ids --son
-  // los binds de la consulta-- y ahí saldrían como "Fk Tgrupo: 11474", que
-  // nadie puede interpretar; los nombres están acá, así que la línea se manda
-  // escrita. Se omite a propósito lo que es de la mecánica y no del
-  // contenido: si el Final va incluido, se ve en la tabla.
   const etiquetaFiltros = React.useMemo(() => {
     const grupo = grupos.find((g) => g.grupoId === grupoActivoId)
     const nombres = periodos.map((id) =>
@@ -447,12 +412,6 @@ function ReportsPageContent() {
     return partes.join("   ·   ")
   }, [grupos, grupoActivoId, periodos, periodosDisponibles, busqueda])
 
-  // Acta 19-sep-2026, punto 20.3: "para no reprocesar la tabla" el filtro de
-  // arriba se deja multi-select como está (sirve para ver/consolidar varios
-  // periodos a la vez) — pero un boletín es de UN periodo y UN estudiante.
-  // Períodos REALES: el boletín lo arma /reportes/boletin-preescolar por
-  // (grupo, período, estudiante), y el Final no es un período que ese PDF
-  // sepa imprimir. Marcarlo no habilita ni deshabilita el botón.
   const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size === 1
 
   function toggleEstudiante(matriculaId: number) {
@@ -512,8 +471,6 @@ function ReportsPageContent() {
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
     const limpio = texto.trim()
-    // La fila Final va contra su propio endpoint: `null` es lo que lo elige.
-    // No es un período, así que su texto no vive en la tabla de períodos.
     const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
       if (limpio === "") {
@@ -639,6 +596,7 @@ function ReportsPageContent() {
 
         <ObservacionSheet
           fila={observacionAbierta}
+          etiqueta={observacionLabel}
           guardando={guardarObservacion.isPending || eliminarObservacion.isPending}
           onOpenChange={(open) => !open && setObservacionAbierta(null)}
           onGuardar={handleGuardarObservacion}
@@ -733,6 +691,7 @@ function ReportsPageContent() {
                 {String(grupo.grupoId) === activeTab && (
                   <GrupoTabContent
                     grupoId={grupo.grupoId}
+                    observacionLabel={observacionLabel}
                     periodos={periodos}
                     busqueda={busqueda}
                     onBusquedaChange={setBusqueda}
