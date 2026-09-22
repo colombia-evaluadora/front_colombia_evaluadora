@@ -255,7 +255,7 @@ export function ObservacionEstudianteSheet({
               ? actividadSinComenzar
                 ? "Esta actividad todavía no comienza: se podrá observar a este estudiante cuando empiece."
                 : "Este estudiante no tiene asistencia registrada en la ventana de la actividad. Regístrala desde Asistencia para poder observarlo."
-              : "Reemplaza la observación anterior. Guardar con el texto vacío no la borra."}
+              : "La observacion que se añada se utilizara para construir el informe del periodo en el estudiante."}
           </div>
         </div>
 
