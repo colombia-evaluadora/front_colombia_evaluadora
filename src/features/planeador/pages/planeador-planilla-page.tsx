@@ -193,6 +193,9 @@ export function PlaneadorPlanillaPage() {
                     <DotsThreeIcon />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem render={<Link to={paths.app.planeadorActividades.getHref()} />}>
+                      Planeador
+                    </DropdownMenuItem>
                     <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
                     <DropdownMenuItem disabled>Importar</DropdownMenuItem>
                   </DropdownMenuContent>

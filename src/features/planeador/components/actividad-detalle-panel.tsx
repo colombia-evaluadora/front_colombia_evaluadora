@@ -15,6 +15,7 @@ import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-act
 import { CalificacionesAprobacionView } from "@/features/planeador/components/calificaciones-aprobacion-view"
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
+import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 
 const ACCIONES = [
   { label: "Editar", Icon: PencilIcon },
@@ -148,7 +149,13 @@ export function ActividadDetallePanel({
             </TooltipTrigger>
             <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
           </Tooltip>
-          {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => {
+          {ACCIONES.filter(
+            (a) =>
+              a.label !== "Editar" &&
+              // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
+              // observación + asistencia de a un estudiante por vez.
+              (a.label !== "Aprobar" || !actividad || !esActividadFormativa(actividad)),
+          ).map(({ label, Icon }) => {
             const handler =
               label === "Marcar"
                 ? onShowGrades
