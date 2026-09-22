@@ -395,8 +395,19 @@ function ReportsPageContent() {
   // El historial es del grupo que se está viendo, no de todas las pestañas
   // abiertas: acompaña al informe que hay en pantalla, así que sigue a la
   // pestaña activa y se vuelve a pedir al cambiarla.
+  // `periodosReales`: el historial guarda por período del calendario, así que
+  // el centinela del Final no coincide con ninguna fila. Mandándolo, dejar
+  // marcado solo el Final devolvía un historial vacío sin explicar por qué.
+  //
+  // Y el AÑO tiene que ir: la función lo usa para acotar el año lectivo y, si
+  // no llega, cae al año CALENDARIO actual. Mirando 2025 —o en enero— el
+  // historial salía vacío en silencio.
   const historial = useHistorialQuery(
-    { grupos: grupoActivoId > 0 ? [grupoActivoId] : [], periodos },
+    {
+      grupos: grupoActivoId > 0 ? [grupoActivoId] : [],
+      periodos: periodosReales,
+      anio: filtros.anio ?? undefined,
+    },
     historialAbierto && grupoActivoId > 0,
   )
 
