@@ -28,17 +28,16 @@ interface UpdateAdaptacionesInput {
  * `usaVersionModificada = "S"`.
  *
  * `fkTarchivo`/`url` — la referencia de la versión modificada en sí (el
- * archivo, el enlace, o la plantilla de biblioteca), antes NO confirmada:
+ * archivo, el enlace, o la plantilla de biblioteca):
  * - ARCHIVO: se sube primero por `POST /files/eval-col/planeador/
  *   actividades/:id/adaptaciones/archivo` (V470, mismo patrón que
  *   `subirArchivoMaterial` — un binario por petición, file-service en el
  *   medio) y se manda el `fk_tarchivo` resultante.
  * - ENLACE: `versionModificadaRef` YA es la URL, se manda tal cual.
- * - BIBLIOTECA: el picker de plantillas (`PLANTILLA_BIBLIOTECA_LABELS`) es
- *   un placeholder sin catálogo real detrás todavía — ninguna de sus
- *   opciones es un `PK_TARCHIVO` que el backend pueda validar, así que se
- *   rechaza ACÁ con un mensaje claro en vez de mandar un id inventado y
- *   dejar que el backend lo rebote con un error crudo.
+ * - BIBLIOTECA: el picker (`AdaptacionBibliotecaField`, V471) elige un
+ *   `PK_TARCHIVO` que YA existe (de otra actividad) — no hay nada que
+ *   subir, se manda directo como `fkTarchivo`, igual que reusar un archivo
+ *   ya guardado.
  */
 /**
  * El nombre viaja con su extensión real (`adaptacion.archivoNombre`, el
@@ -79,11 +78,16 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
       if (adaptacion.versionModificada === "enlace") {
         return { ...base, formatoAdaptacion, url: adaptacion.versionModificadaRef }
       }
+      // BIBLIOTECA: el archivo elegido ya existe (subido en otra
+      // actividad, `AdaptacionBibliotecaField`) — se manda directo, sin
+      // subir nada.
       if (adaptacion.versionModificada === "biblioteca") {
-        throw new Error(
-          "Adjuntar una plantilla desde la biblioteca institucional todavía no está disponible. " +
-            "Usá \"Archivo\" o \"Enlace\" por ahora.",
-        )
+        if (adaptacion.archivoId === undefined) {
+          throw new Error(
+            "Elegí una plantilla de la biblioteca institucional para la adaptación marcada como \"Biblioteca\".",
+          )
+        }
+        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
       }
       // "archivo" — el único caso que sube un binario.
       //
