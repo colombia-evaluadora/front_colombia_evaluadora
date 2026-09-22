@@ -196,6 +196,14 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       "Nivel de desempeño",
       "Otro",
     ].map((nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null })),
+  // Catálogo `FORMATO_ADAPTACION` real — resuelve `formatoAdaptacion` de la
+  // misma ruta cuando `usaVersionModificada = "S"` (seed real: V224).
+  FORMATO_ADAPTACION: () =>
+    [
+      { nombre: "Archivo", valor: "ARCHIVO" },
+      { nombre: "Enlace", valor: "ENLACE" },
+      { nombre: "Biblioteca", valor: "BIBLIOTECA" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
   // Catálogo `APLICA_A` real — resuelve `aplicaA` de la misma ruta.
   APLICA_A: () =>
     [

@@ -134,6 +134,8 @@ const ACTIVIDAD_MATERIAL_ARCHIVOS_URL =
 // dos por query string — ver V429.
 const MATERIALES_REUTILIZABLES_URL = "/api/eval-col/planeador/materiales-reutilizables"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
+const ACTIVIDAD_ADAPTACION_ARCHIVO_URL =
+  "*/api/files/eval-col/planeador/actividades/:id/adaptaciones/archivo"
 const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
@@ -799,6 +801,20 @@ export const planeadorHandlers = [
   // archivo y reemplaza el campo por el id; acá alcanza con acuñar uno y
   // recordar el nombre, que es lo único que el paso 2 pierde.
   http.post(ACTIVIDAD_MATERIAL_ARCHIVO_URL, async ({ request }) => {
+    await delay(200)
+    const form = await request.formData()
+    const archivo = form.get("ARCHIVO")
+    if (!(archivo instanceof File)) {
+      return HttpResponse.json({ message: "Falta el archivo." }, { status: 400 })
+    }
+    return HttpResponse.json({ fk_tarchivo: registrarArchivoMaterial(archivo) })
+  }),
+
+  // Paso 1 de "Adjuntar plantilla (archivo)" en Adaptaciones curriculares
+  // (V470): mismo patrón que el paso 1 de materiales de arriba — sube UN
+  // binario y devuelve su `pk_tarchivo` (reusa el mismo registro en
+  // memoria, no hace falta uno propio).
+  http.post(ACTIVIDAD_ADAPTACION_ARCHIVO_URL, async ({ request }) => {
     await delay(200)
     const form = await request.formData()
     const archivo = form.get("ARCHIVO")
