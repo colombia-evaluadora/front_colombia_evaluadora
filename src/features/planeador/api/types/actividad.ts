@@ -195,6 +195,14 @@ export interface Adaptacion {
   versionModificadaRef: string
   aplicaA: string
   estudiantesIds: number[]
+  /**
+   * `PK_TARCHIVO` de una adaptación con `versionModificada === "archivo"` YA
+   * GUARDADA — mismo rol que `Recurso.archivoId` y misma razón: `PUT
+   * .../adaptaciones` es de reemplazo total y exige `fkTarchivo` cuando
+   * `formatoAdaptacion = ARCHIVO`, así que sin este id el archivo se cae en
+   * el siguiente guardado si el usuario no vuelve a elegirlo.
+   */
+  archivoId?: number
 }
 
 export interface Actividad {

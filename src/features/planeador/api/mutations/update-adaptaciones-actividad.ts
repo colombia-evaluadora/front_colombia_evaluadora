@@ -75,9 +75,17 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
             "Usá \"Archivo\" o \"Enlace\" por ahora.",
         )
       }
-      // "archivo" — el único caso que sube un binario. Un blob URL vacío
-      // (el docente eligió "Sí, adjuntar plantilla (archivo)" pero no llegó
-      // a elegir un archivo) tampoco tiene con qué armar el fkTarchivo.
+      // "archivo" — el único caso que sube un binario.
+      //
+      // Una adaptación YA guardada se reenvía por `archivoId`, sin volver a
+      // subir nada — mismo motivo que `subirArchivoMaterial`: el PUT es de
+      // REEMPLAZO TOTAL, así que reabrir la actividad y guardar cualquier
+      // otro campo (sin tocar la plantilla) se llevaba puesto el archivo.
+      if (adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef.startsWith("blob:")) {
+        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
+      }
+      // Sin blob URL y sin id no hay nada que enlazar: el docente eligió
+      // "Sí, adjuntar plantilla (archivo)" pero no llegó a elegir un archivo.
       if (!adaptacion.versionModificadaRef.startsWith("blob:")) {
         throw new Error("Elegí un archivo de plantilla para la adaptación marcada como \"Archivo\".")
       }
