@@ -14,6 +14,7 @@ import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
@@ -75,14 +76,21 @@ export function buildBulkInputs(
   }
   if (
     instrumento.instrumento === "ESCALA_VALORACION" &&
-    instrumento.definicion.niveles.length > 0
+    instrumento.definicion.niveles.length > 0 &&
+    // 2+ criterios generales (V472): el bulk (`calificar-bulk/escala`) solo
+    // sabe aplicar UN nivel a varios estudiantes, no un valor por criterio
+    // — mismo motivo que la escala NUMÉRICA de abajo, se califica celda a
+    // celda desde el popover (`escalaSinBulk` ya se lo avisa al docente).
+    splitCriteriosGenerales(instrumento.definicion.criteriosGenerales).length <= 1
   ) {
     const nivelId = value[0]?.nivelId
     if (nivelId == null) return []
     return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
   }
-  // Escala NUMÉRICA / OTRO: el backend real no admite bulk por nivel para
-  // estos dos (400 documentado) — se califica celda a celda desde el popover.
+  // Escala NUMÉRICA / OTRO / escala con 2+ criterios: el backend real no
+  // admite bulk para estos (400 documentado, o directamente sin endpoint
+  // para "un valor por criterio") — se califica celda a celda desde el
+  // popover.
   return []
 }
 
@@ -129,10 +137,13 @@ export function CalificarActividadBulk({
   }
 
   const completitud = instrumentoCompletitud(instrumento, nota)
-  const escalaNumericaOOtro =
+  const escalaSinBulk =
     instrumento?.instrumento === "OTRO" ||
     (instrumento?.instrumento === "ESCALA_VALORACION" &&
-      instrumento.definicion.niveles.length === 0)
+      // Numérica (sin niveles) O con 2+ criterios generales (V472, un
+      // valor por criterio) — ninguna de las dos tiene bulk propio todavía.
+      (instrumento.definicion.niveles.length === 0 ||
+        splitCriteriosGenerales(instrumento.definicion.criteriosGenerales).length > 1))
 
   async function guardar() {
     if (!instrumento || seleccionados.size === 0) return
@@ -179,7 +190,7 @@ export function CalificarActividadBulk({
 
       <InstrumentoGradingFields actividadId={actividadId} value={nota} onChange={setNota} />
 
-      {escalaNumericaOOtro && (
+      {escalaSinBulk && (
         <p className="text-muted-foreground text-xs">
           Este instrumento no admite calificación en bloque — califique estudiante por estudiante
           desde la grilla.
@@ -229,7 +240,7 @@ export function CalificarActividadBulk({
           color="primary"
           size="sm"
           disabled={
-            seleccionados.size === 0 || !completitud.completo || guardando || escalaNumericaOOtro
+            seleccionados.size === 0 || !completitud.completo || guardando || escalaSinBulk
           }
           onClick={guardar}
         >

@@ -78,6 +78,16 @@ function toNotas(instrumento: InstrumentoTipo | null, detalle: unknown): NotaCri
       .filter((d) => d.cumplido === "S")
       .map((d) => ({ criterioId: d.pkItem, valor: 100 }))
   }
+  // 2+ criterios generales (V472): `detalle` es un array, uno por
+  // `criterioIndex` — `fn_actividad_nota_obtener` solo devuelve esta forma
+  // para ESCALA_VALORACION (nunca para OTRO, que sigue siempre plano).
+  if (instrumento === "ESCALA_VALORACION" && Array.isArray(detalle)) {
+    return (detalle as (DetalleEscalaEntry & { criterioIndex: number })[]).map((d) =>
+      d.pkNivel != null
+        ? { criterioId: d.criterioIndex, nivelId: d.pkNivel, valor: d.ponderacion ?? undefined }
+        : { criterioId: d.criterioIndex, valor: d.valor ?? undefined },
+    )
+  }
   if ((instrumento === "ESCALA_VALORACION" || instrumento === "OTRO") && detalle && typeof detalle === "object") {
     const d = detalle as DetalleEscalaEntry
     // Variante CUALITATIVA de la escala: shape inferido por simetría con la
