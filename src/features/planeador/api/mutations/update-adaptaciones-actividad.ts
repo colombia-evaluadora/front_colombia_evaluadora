@@ -40,12 +40,22 @@ interface UpdateAdaptacionesInput {
  *   rechaza ACÁ con un mensaje claro en vez de mandar un id inventado y
  *   dejar que el backend lo rebote con un error crudo.
  */
-async function subirArchivoAdaptacion(actividadId: number, blobUrl: string): Promise<number> {
-  const blob = await fetch(blobUrl).then((r) => r.blob())
+/**
+ * El nombre viaja con su extensión real (`adaptacion.archivoNombre`, el
+ * `file.name` original) y no fijo ("plantilla") a propósito: el backend
+ * infiere el `Content-Type` de cada archivo por la extensión del nombre, no
+ * por el `Content-Type` que mande el multipart — confirmado en producción,
+ * un nombre sin extensión se sirvió después como `application/octet-
+ * stream` y el navegador lo descargaba en vez de mostrarlo, sin importar
+ * qué binario fuera.
+ */
+async function subirArchivoAdaptacion(actividadId: number, adaptacion: Adaptacion): Promise<number> {
+  const blob = await fetch(adaptacion.versionModificadaRef).then((r) => r.blob())
+  const nombre = adaptacion.archivoNombre || "plantilla"
   const respuesta = await postMultipart<RowsEnvelope<{ fk_tarchivo: number }> | { fk_tarchivo: number }>(
     `/eval-col/planeador/actividades/${actividadId}/adaptaciones/archivo`,
     {},
-    { ARCHIVO: new File([blob], "plantilla", { type: blob.type }) },
+    { ARCHIVO: new File([blob], nombre, { type: blob.type }) },
   )
   return unwrapRow<{ fk_tarchivo: number }>(respuesta).fk_tarchivo
 }
@@ -89,7 +99,7 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
       if (!adaptacion.versionModificadaRef.startsWith("blob:")) {
         throw new Error("Elegí un archivo de plantilla para la adaptación marcada como \"Archivo\".")
       }
-      const fkTarchivo = await subirArchivoAdaptacion(actividadId, adaptacion.versionModificadaRef)
+      const fkTarchivo = await subirArchivoAdaptacion(actividadId, adaptacion)
       return { ...base, formatoAdaptacion, fkTarchivo }
     }),
   )
