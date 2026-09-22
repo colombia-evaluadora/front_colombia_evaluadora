@@ -102,6 +102,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         instrumento: "Rúbrica",
         grupo: "A",
         ponderacion: 25,
+        notaMaxima: null,
       },
       {
         id: 155,
@@ -111,6 +112,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         instrumento: "Lista de cotejo",
         grupo: "A",
         ponderacion: 25,
+        notaMaxima: null,
       },
     ],
   },
@@ -173,6 +175,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         instrumento: "Escala de valoración",
         grupo: "B",
         ponderacion: 0,
+        notaMaxima: null,
       },
       {
         id: 159,
@@ -182,6 +185,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         instrumento: "Rúbrica",
         grupo: "B",
         ponderacion: 0,
+        notaMaxima: null,
       },
     ],
   },
@@ -341,9 +345,28 @@ export function addActividadToUnidad(
     instrumento: origen.instrumento,
     grupo: origen.grupo,
     ponderacion,
+    notaMaxima: null,
   }
   unidad.actividades.push(created)
   return created
+}
+
+/**
+ * Edita el puntaje (`notaMaxima`) de una actividad ya vinculada — mock del
+ * `PUT /planeador/actividades/:id` con `{NOTA_MAXIMA}` que usa
+ * `useUpdatePuntajeActividadUnidad` (columna "Puntaje" en unidades "Suma de
+ * puntos"). Devuelve `null` si la actividad no está vinculada a ninguna
+ * unidad del seed.
+ */
+export function setPuntajeActividadUnidad(actividadId: number, puntaje: number): UnidadActividad | null {
+  for (const unidad of unidadesTematicasDb) {
+    const actividad = unidad.actividades.find((a) => a.actividadId === actividadId)
+    if (actividad) {
+      actividad.notaMaxima = puntaje
+      return actividad
+    }
+  }
+  return null
 }
 
 /**

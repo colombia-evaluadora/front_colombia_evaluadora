@@ -84,10 +84,18 @@ export interface UnidadActividad {
   tipo: string
   instrumento: string
   grupo: string
-  /** Peso dentro de la unidad, 0-100. Solo tiene sentido cuando
-   *  `metodoCalculo === "Ponderado"`; con "Promedio simple" o "Suma de
-   *  puntos" el vínculo no pide porcentaje y este campo queda en 0. */
+  /** Peso dentro de la unidad, 0-100. Con `metodoCalculo === "Ponderado"`
+   *  es lo que el docente edita a mano; con "Suma de puntos" es un
+   *  DERIVADO que calcula el backend a partir de `notaMaxima` (ver abajo);
+   *  con "Promedio simple" no se usa (columna oculta, ver
+   *  `createUnidadActividadesColumns`). */
   ponderacion: number
+  /** Puntaje de la actividad (`TACTIVIDAD.NOTA_MAXIMA`, V479) — lo que el
+   *  docente edita a mano cuando `metodoCalculo === "Suma de puntos"`; el
+   *  backend deriva `ponderacion` de este valor (reparto proporcional
+   *  sobre el total del grupo). `null` con cualquier otro método, o si
+   *  todavía no se capturó. */
+  notaMaxima: number | null
 }
 
 export interface UnidadTematica {
