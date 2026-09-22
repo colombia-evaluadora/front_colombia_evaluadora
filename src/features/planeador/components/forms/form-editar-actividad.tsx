@@ -3300,93 +3300,6 @@ function nivelesCualitativosDesdeUnidad(
   })
 }
 
-/**
- * "Criterios generales" de la escala: un input POR criterio, con
- * agregar/quitar — no un solo cajón de texto libre. El campo real del
- * backend (`TACTIVIDAD_ESCALA.CRITERIOS_GENERALES VARCHAR(4000)`, "Criterios
- * generales de la escala, separados por coma") sigue siendo un único string
- * — no hace falta una migración ni cambiar el tipo `EscalaValoracion` en
- * ningún otro archivo (precarga, guardado, mock): esta lista es solo la
- * PRESENTACIÓN, se arma partiendo el string por coma y se reserializa
- * juntando con coma en cada cambio.
- */
-function CriteriosGeneralesField({
-  escalaId,
-  value,
-  onChange,
-  disabled,
-}: {
-  escalaId: string
-  value: string
-  onChange: (next: string) => void
-  disabled: boolean
-}) {
-  // Sin criterios todavía: arranca con un input vacío para completar, no con
-  // una lista vacía + un paso extra para agregar el primero.
-  const criterios = value.length > 0 ? value.split(",") : [""]
-
-  function actualizar(index: number, nuevoValor: string) {
-    const next = criterios.slice()
-    next[index] = nuevoValor
-    onChange(next.join(","))
-  }
-
-  function agregar() {
-    onChange([...criterios, ""].join(","))
-  }
-
-  function quitar(index: number) {
-    const next = criterios.slice()
-    next.splice(index, 1)
-    onChange(next.join(","))
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {criterios.map((criterio, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <Field variant="outlined" className="flex-1">
-            <FieldLabel htmlFor={`${escalaId}-criterio-${index}`}>Criterio {index + 1}</FieldLabel>
-            <Input
-              id={`${escalaId}-criterio-${index}`}
-              placeholder={`Criterio ${index + 1}`}
-              maxLength={50}
-              value={criterio}
-              onChange={(e) => actualizar(index, e.target.value)}
-              disabled={disabled}
-            />
-          </Field>
-          {criterios.length > 1 && (
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              type="button"
-              aria-label={`Quitar criterio ${index + 1}`}
-              disabled={disabled}
-              onClick={() => quitar(index)}
-            >
-              <TrashIcon />
-            </Button>
-          )}
-        </div>
-      ))}
-      <Button
-        variant="outline"
-        color="neutral"
-        size="sm"
-        type="button"
-        disabled={disabled}
-        onClick={agregar}
-        className="self-start"
-      >
-        <PlusIcon data-icon="inline-start" />
-        Agregar criterio
-      </Button>
-    </div>
-  )
-}
-
 function EscalaValoracionSection({
   form,
   unidades,
@@ -3458,12 +3371,19 @@ function EscalaValoracionSection({
                   <div>
                     <h4 className="mb-3 text-sm font-semibold">Criterios generales</h4>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <CriteriosGeneralesField
-                        escalaId={String(escala.id)}
-                        value={escala.criteriosGenerales}
-                        onChange={(next) => updateEscala({ criteriosGenerales: next })}
-                        disabled={disabled}
-                      />
+                      <Field variant="outlined">
+                        <FieldLabel htmlFor={`${escala.id}-criterios-generales`}>
+                          Criterios generales (separados por coma)
+                        </FieldLabel>
+                        <Input
+                          id={`${escala.id}-criterios-generales`}
+                          placeholder="Criterio A, Criterio B"
+                          maxLength={50}
+                          value={escala.criteriosGenerales}
+                          onChange={(e) => updateEscala({ criteriosGenerales: e.target.value })}
+                          disabled={disabled}
+                        />
+                      </Field>
 
                       <Field variant="outlined">
                         <FieldLabel>Escala</FieldLabel>
