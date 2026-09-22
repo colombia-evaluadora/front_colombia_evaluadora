@@ -10,10 +10,9 @@ export const informesSearchSchema = z.object({
   sede: z.coerce.number().optional(),
   anio: z.coerce.number().optional(),
   jornada: z.coerce.number().optional(),
+  /** Incluye `PERIODO_FINAL_ID` cuando está marcado el checkbox "Final":
+   *  no es un período del calendario, pero se elige y viaja con los demás. */
   periodos: z.array(z.coerce.number()).optional(),
-  /** El checkbox "Final", que no es un período: pide la fila con la nota
-   *  del año. Va en la URL como los demás para que sobreviva al refresh. */
-  final: z.boolean().optional(),
   /** Las pestañas de grado/grupo abiertas, en orden. */
   grupos: z.array(z.coerce.number()).optional(),
   tab: z.coerce.number().optional(),

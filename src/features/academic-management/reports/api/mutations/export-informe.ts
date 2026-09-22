@@ -48,7 +48,8 @@ interface ExportTablaInput {
   periodos?: number[]
   /** El mismo texto del buscador de la tabla: lo que se ve es lo que baja. */
   search?: string
-  incluirFinal?: boolean
+  /** El resumen con nombres para el membrete; sin esto se imprimen los ids. */
+  filtersLabel?: string
 }
 
 function exportTabla(input: ExportTablaInput): Promise<ExportResult> {
@@ -58,8 +59,8 @@ function exportTabla(input: ExportTablaInput): Promise<ExportResult> {
       FK_TGRUPO: input.grupoId,
       PERIODOS: input.periodos?.length ? input.periodos : null,
       SEARCH: input.search?.trim() || null,
-      INCLUIR_FINAL: input.incluirFinal ?? false,
     },
+    filtersLabel: input.filtersLabel,
   })
 }
 

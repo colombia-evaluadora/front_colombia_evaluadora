@@ -1,5 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
+import { PERIODO_FINAL_ID } from "@/features/academic-management/reports/api/types"
+
 import {
   ANIOS_INFORME,
   ASIGNATURAS_INFORME,
@@ -140,10 +142,11 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
     })
 }
 
-/** La fila "Final" de `INCLUIR_FINAL`: el promedio del AÑO, no de los
- *  períodos marcados, y un período sin nota guardada vale cero. Se calcula
- *  al vuelo igual que en el backend, y llega con `fk_tperiodo_evaluacion:
- *  -1` — un centinela, no un identificador. */
+/** La fila "Final", que se pide con PERIODO_FINAL_ID dentro del mismo
+ *  arreglo de períodos: el promedio del AÑO, no el de los marcados, y un
+ *  período sin nota guardada vale cero. Se calcula al vuelo igual que en el
+ *  backend, y llega con `fk_tperiodo_evaluacion: -1` — un centinela, no un
+ *  identificador. */
 function filasFinalDeGrupo(grupoId: number, search: string | null) {
   const grupo = grupoDe(grupoId)
   if (!grupo) return []
@@ -320,7 +323,6 @@ export const informesHandlers = [
       FK_TGRUPO: number
       PERIODOS: number[] | null
       SEARCH: string | null
-      INCLUIR_FINAL: boolean | null
     }
     const pedidos = body.PERIODOS?.length ? body.PERIODOS : [PERIODOS_INFORME[0].id]
     // Ordenados por período, no por el orden en que llegaron: `PERIODOS` viene
@@ -331,7 +333,11 @@ export const informesHandlers = [
     const rows = periodos.flatMap((periodoId) =>
       filasDeGrupoPeriodo(body.FK_TGRUPO, periodoId, body.SEARCH),
     )
-    if (body.INCLUIR_FINAL) rows.push(...filasFinalDeGrupo(body.FK_TGRUPO, body.SEARCH))
+    // El Final viaja como un id mas del arreglo: -1. Los periodos reales lo
+    // ignoran solos, porque no matchea ninguno.
+    if (pedidos.includes(PERIODO_FINAL_ID)) {
+      rows.push(...filasFinalDeGrupo(body.FK_TGRUPO, body.SEARCH))
+    }
     return HttpResponse.json({ rows })
   }),
 
