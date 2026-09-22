@@ -22,6 +22,7 @@ import {
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
@@ -76,6 +77,23 @@ export function buildCalificarCeldaInput(
     }
   }
   if (instrumento.instrumento === "ESCALA_VALORACION") {
+    // 2+ criterios generales (V472): un valor POR criterio, `criterioId` =
+    // posición (0-based) — mismo criterio que `instrumentoCompletitud` y
+    // `EscalaValoracionFields` para derivar cuántos criterios tiene la
+    // escala (partir `criteriosGenerales` por coma, sin filtrar vacíos).
+    const criterios = splitCriteriosGenerales(instrumento.definicion.criteriosGenerales)
+    if (criterios.length > 1) {
+      const esCualitativa = instrumento.definicion.niveles.length > 0
+      const cuerpo = value
+        .filter((n) => n.criterioId < criterios.length && (esCualitativa ? n.nivelId != null : n.valor != null))
+        .map((n) =>
+          esCualitativa
+            ? { criterioIndex: n.criterioId, pkNivel: n.nivelId! }
+            : { criterioIndex: n.criterioId, valorNumerico: n.valor! },
+        )
+      if (cuerpo.length === 0) return null
+      return { pkTactividadEstudiante, fecha, tipo: "ESCALA_CRITERIOS", criterios: cuerpo }
+    }
     if (instrumento.definicion.niveles.length > 0) {
       const nivelId = value[0]?.nivelId
       if (nivelId == null) return null
