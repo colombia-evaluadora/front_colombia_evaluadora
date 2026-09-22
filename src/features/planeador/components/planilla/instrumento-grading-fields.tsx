@@ -47,6 +47,63 @@ function notaDe(value: NotaCriterio[], criterioId: number): NotaCriterio | undef
 }
 
 /**
+ * Los "criterios generales" de una escala son texto plano separado por
+ * coma (`TACTIVIDAD_ESCALA.CRITERIOS_GENERALES`, sin PK propio — pedido
+ * explícito, no se promovió a una tabla). El backend (V472,
+ * `fn_actividad_nota_calificar_escala_criterios`) deriva "cuántos criterios
+ * tiene la escala" partiendo ese MISMO string, sin filtrar vacíos — acá se
+ * hace exactamente igual para que la cuenta de los dos lados coincida
+ * siempre (un string con comas dobles/consecutivas cuenta los huecos como
+ * criterios "sin nombre", no los descarta).
+ */
+export function splitCriteriosGenerales(criteriosGenerales: string | null | undefined): string[] {
+  return criteriosGenerales ? criteriosGenerales.split(",") : []
+}
+
+/**
+ * "Otro (personalizado)" con método de valoración configurado (V240/V241)
+ * se califica EXACTAMENTE igual que su instrumento equivalente directo — el
+ * backend (`fn_actividad_nota_calificar`) resuelve el método y despacha al
+ * MISMO `fn_actividad_nota_calificar_rubrica/_cotejo/_escala`, con el MISMO
+ * payload. Confirmado real contra producción: `GET .../instrumento` de un
+ * "Otro" con método "Escala de valoración" trae
+ * `definicion.metodoValoracionValor` + `definicion.definicion` con la MISMA
+ * forma que traería la escala si fuera el instrumento directo.
+ *
+ * Esta función unifica los dos caminos (directo vs. "Otro" con método) en
+ * un solo tipo, para que el resto del archivo (y `buildCalificarCeldaInput`/
+ * `buildBulkInputs`) no tengan que repetir el `if (instrumento === "OTRO")`
+ * en cada rama. Antes de esto, "Otro" SIEMPRE caía al campo numérico plano
+ * sin importar el método configurado — perdiendo la rúbrica/lista de
+ * cotejo/escala real definida debajo (reportado en vivo).
+ */
+export type InstrumentoEfectivo =
+  | { tipo: "RUBRICA"; definicion: InstrumentoCriterio[] }
+  | { tipo: "LISTA_COTEJO"; definicion: InstrumentoCotejoItem[] }
+  | { tipo: "ESCALA_VALORACION"; definicion: InstrumentoEscala }
+  /** "Otro" sin método configurado (texto libre real): sigue siendo un
+   *  porcentaje manual, no hay estructura que mostrar. */
+  | { tipo: "VALOR_NUMERICO" }
+  | { tipo: null }
+
+export function resolverInstrumentoEfectivo(
+  instrumento: InstrumentoActividad | undefined,
+): InstrumentoEfectivo {
+  if (!instrumento || !instrumento.instrumento) return { tipo: null }
+  if (instrumento.instrumento === "OTRO") {
+    const d = instrumento.definicion
+    if (d.metodoValoracionValor === "RUBRICA") return { tipo: "RUBRICA", definicion: d.definicion }
+    if (d.metodoValoracionValor === "LISTA_COTEJO") return { tipo: "LISTA_COTEJO", definicion: d.definicion }
+    if (d.metodoValoracionValor === "ESCALA_VALORACION") return { tipo: "ESCALA_VALORACION", definicion: d.definicion }
+    return { tipo: "VALOR_NUMERICO" }
+  }
+  if (instrumento.instrumento === "RUBRICA") return { tipo: "RUBRICA", definicion: instrumento.definicion }
+  if (instrumento.instrumento === "LISTA_COTEJO") return { tipo: "LISTA_COTEJO", definicion: instrumento.definicion }
+  if (instrumento.instrumento === "ESCALA_VALORACION") return { tipo: "ESCALA_VALORACION", definicion: instrumento.definicion }
+  return { tipo: null }
+}
+
+/**
  * ¿Ya se puede guardar `value` contra el backend real? Rúbrica exige cubrir
  * TODOS los criterios activos en un solo request (400 si falta alguno) —
  * el resto de instrumentos solo necesita al menos una nota cargada. Se usa
@@ -61,8 +118,9 @@ export function instrumentoCompletitud(
   if (!instrumento || !instrumento.instrumento) {
     return { completo: false, mensaje: "Esta actividad todavía no tiene instrumento definido." }
   }
-  if (instrumento.instrumento === "RUBRICA") {
-    const total = instrumento.definicion.length
+  const efectivo = resolverInstrumentoEfectivo(instrumento)
+  if (efectivo.tipo === "RUBRICA") {
+    const total = efectivo.definicion.length
     // Solo cuenta contra criterios que SIGUEN activos en la rúbrica de
     // ahora — `value` puede traer una nota precargada (`toNotas`) de un
     // criterio que ya se borró/desactivó después de que el estudiante fue
@@ -71,7 +129,7 @@ export function instrumentoCompletitud(
     // rechazando el guardado con "La rúbrica tiene N criterio(s) activo(s)
     // pero se calificaron M" en cuanto el docente elegía el único criterio
     // vigente.
-    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
+    const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     const cubiertos = value.filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId)).length
     if (total === 0) return { completo: false, mensaje: "La rúbrica no tiene criterios activos." }
     if (cubiertos < total) {
@@ -81,6 +139,25 @@ export function instrumentoCompletitud(
       }
     }
     return { completo: true }
+  }
+  if (efectivo.tipo === "ESCALA_VALORACION") {
+    // Con 2+ criterios generales, la escala pasa a calificarse por
+    // criterio (V472) y exige cubrir el set completo — mismo criterio que
+    // Rúbrica arriba, la cuenta la deriva el backend de CRITERIOS_
+    // GENERALES, así que acá se replica exacto (ver `splitCriteriosGenerales`).
+    const criterios = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
+    if (criterios.length > 1) {
+      const cubiertos = value.filter(
+        (n) => n.criterioId < criterios.length && (n.nivelId != null || n.valor != null),
+      ).length
+      if (cubiertos < criterios.length) {
+        return {
+          completo: false,
+          mensaje: `Faltan ${criterios.length - cubiertos} de ${criterios.length} criterio(s) por calificar.`,
+        }
+      }
+      return { completo: true }
+    }
   }
   return { completo: value.length > 0 }
 }
@@ -118,16 +195,21 @@ export function InstrumentoGradingFields({
     )
   }
 
-  if (instrumento.instrumento === "RUBRICA") {
-    return <RubricaFields criterios={instrumento.definicion} value={value} onChange={onChange} />
+  // "Otro (personalizado)" con método configurado se resuelve al MISMO
+  // campo que su instrumento equivalente directo (ver el comentario de
+  // `resolverInstrumentoEfectivo`) — antes caía siempre a `ValorNumericoField`.
+  const efectivo = resolverInstrumentoEfectivo(instrumento)
+
+  if (efectivo.tipo === "RUBRICA") {
+    return <RubricaFields criterios={efectivo.definicion} value={value} onChange={onChange} />
   }
 
-  if (instrumento.instrumento === "LISTA_COTEJO") {
-    return <ListaCotejoFields items={instrumento.definicion} value={value} onChange={onChange} />
+  if (efectivo.tipo === "LISTA_COTEJO") {
+    return <ListaCotejoFields items={efectivo.definicion} value={value} onChange={onChange} />
   }
 
-  if (instrumento.instrumento === "ESCALA_VALORACION") {
-    return <EscalaValoracionFields escala={instrumento.definicion} value={value} onChange={onChange} />
+  if (efectivo.tipo === "ESCALA_VALORACION") {
+    return <EscalaValoracionFields escala={efectivo.definicion} value={value} onChange={onChange} />
   }
 
   return <ValorNumericoField value={value} onChange={onChange} />
@@ -173,10 +255,34 @@ function EscalaValoracionFields({
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
+  // 2+ criterios generales: la escala se califica por criterio (V472), un
+  // campo por cada uno — mismo `criterioId` = posición (0-based) que espera
+  // `buildCalificarCeldaInput` para armar `{criterios:[{criterioIndex,...}]}`.
+  // Con 0-1 criterio sigue el camino de siempre: un solo valor para toda
+  // la escala (`criterioId` fijo en 0).
+  const criterios = splitCriteriosGenerales(escala.criteriosGenerales)
+
   // Sin niveles cualitativos: es una escala numérica — el backend la exige
   // calificar celda a celda con `valorNumerico`, no con `calificar-bulk`
   // (ver el 400 documentado: "use PUT .../calificar con valorNumerico").
   if (escala.niveles.length === 0) {
+    if (criterios.length > 1) {
+      return (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {criterios.map((criterio, index) => (
+            <ValorNumericoField
+              key={index}
+              value={value}
+              onChange={onChange}
+              criterioId={index}
+              label={`Criterio ${index + 1}${criterio.trim() ? `: ${criterio.trim()}` : ""}`}
+              min={escala.valorMin ?? undefined}
+              max={escala.valorMax ?? undefined}
+            />
+          ))}
+        </div>
+      )
+    }
     return (
       <ValorNumericoField
         value={value}
@@ -184,6 +290,22 @@ function EscalaValoracionFields({
         min={escala.valorMin ?? undefined}
         max={escala.valorMax ?? undefined}
       />
+    )
+  }
+
+  if (criterios.length > 1) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {criterios.map((criterio, index) => (
+          <NivelSelectField
+            key={index}
+            label={`Criterio ${index + 1}${criterio.trim() ? `: ${criterio.trim()}` : ""}`}
+            niveles={escala.niveles}
+            nivelIdActual={notaDe(value, index)?.nivelId}
+            onSelect={(nivel) => onChange(setNota(value, index, nivel.ponderacion, nivel.pk))}
+          />
+        ))}
+      </div>
     )
   }
   return (
@@ -217,17 +339,26 @@ function ValorNumericoField({
   onChange,
   min = 0,
   max = 100,
+  criterioId = 0,
+  label,
 }: {
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
   min?: number
   max?: number
+  /** `criterioId` que se lee/escribe — 0 fijo para el caso de siempre (un
+   *  solo valor para toda la escala); el índice del criterio (0-based)
+   *  cuando la escala tiene 2+ criterios generales (V472). */
+  criterioId?: number
+  /** Label completo — reemplaza el `Nota (min-max)` de siempre cuando hay
+   *  varios criterios, cada uno con el suyo. */
+  label?: string
 }) {
   const id = useId()
-  const actual = notaDe(value, 0)?.valor
+  const actual = notaDe(value, criterioId)?.valor
   return (
     <Field variant="outlined">
-      <FieldLabel htmlFor={id}>{`Nota (${min}-${max})`}</FieldLabel>
+      <FieldLabel htmlFor={id}>{label ?? `Nota (${min}-${max})`}</FieldLabel>
       <Input
         id={id}
         type="number"
@@ -238,10 +369,10 @@ function ValorNumericoField({
         onChange={(e) => {
           const raw = Number(e.target.value)
           if (e.target.value === "" || Number.isNaN(raw)) {
-            onChange(quitarNota(value, 0))
+            onChange(quitarNota(value, criterioId))
             return
           }
-          onChange(setNota(value, 0, Math.min(max, Math.max(min, raw))))
+          onChange(setNota(value, criterioId, Math.min(max, Math.max(min, raw))))
         }}
       />
     </Field>

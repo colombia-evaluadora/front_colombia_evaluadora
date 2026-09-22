@@ -28,6 +28,14 @@ export type CalificarCeldaInput = {
   | { tipo: "LISTA_COTEJO"; itemsMarcados: number[] }
   | { tipo: "ESCALA_CUALITATIVA"; pkNivel: number }
   | { tipo: "VALOR_NUMERICO"; valorNumerico: number }
+  | {
+      tipo: "ESCALA_CRITERIOS"
+      criterios: ({ criterioIndex: number } & ({ pkNivel: number } | { valorNumerico: number }))[]
+    }
+  /** "Otro" SIN método de valoración configurado — texto libre real,
+   *  `fn_actividad_nota_calificar_otro` espera `{porcentaje}`, una clave
+   *  DISTINTA de `valorNumerico` (esa es de la escala numérica). */
+  | { tipo: "OTRO_PORCENTAJE"; porcentaje: number }
 )
 
 function buildCalificacion(input: CalificarCeldaInput): unknown {
@@ -45,6 +53,15 @@ function buildCalificacion(input: CalificarCeldaInput): unknown {
       return { pkNivel: input.pkNivel }
     case "VALOR_NUMERICO":
       return { valorNumerico: input.valorNumerico }
+    // Un valor POR criterio general de la escala (V472,
+    // fn_actividad_nota_calificar_escala_criterios) -- la fachada del
+    // backend (fn_actividad_nota_calificar) despacha acá SOLO si el body
+    // trae la clave "criterios"; sin ella sigue el camino de siempre
+    // (ESCALA_CUALITATIVA/VALOR_NUMERICO arriba).
+    case "ESCALA_CRITERIOS":
+      return { criterios: input.criterios }
+    case "OTRO_PORCENTAJE":
+      return { porcentaje: input.porcentaje }
   }
 }
 

@@ -54,43 +54,63 @@ interface DetalleEscalaEntry {
 
 /**
  * Confirmado real contra producción (`GET /planeador/actividades/
- * estudiantes/:id/nota`) para RUBRICA, LISTA_COTEJO y ESCALA_VALORACION/OTRO
- * numérica — antes solo se confiaba en RUBRICA (el único que cubría el
- * ejemplo de la colección Postman) y el resto se dejaba sin notas previas:
- * el popover de una celda ya calificada con lista de cotejo, escala o
- * "Otro" se veía vacío (checkboxes destildados, campo sin valor) aunque el
- * badge de la grilla mostrara la nota correcta — esa nota SÍ vive en
- * `celda.calificacion`, que la grilla lee aparte y ya funcionaba bien.
+ * estudiantes/:id/nota`) para RUBRICA, LISTA_COTEJO y ESCALA_VALORACION —
+ * antes solo se confiaba en RUBRICA (el único que cubría el ejemplo de la
+ * colección Postman) y el resto se dejaba sin notas previas: el popover de
+ * una celda ya calificada se veía vacío (checkboxes destildados, campo sin
+ * valor) aunque el badge de la grilla mostrara la nota correcta — esa nota
+ * SÍ vive en `celda.calificacion`, que la grilla lee aparte y ya funcionaba
+ * bien.
+ *
+ * Se detecta la FORMA de `detalle`, no el `instrumento` de la fila — "Otro
+ * (personalizado)" con método configurado (V240/V241) devuelve el MISMO
+ * `detalle` que su instrumento equivalente directo (confirmado real:
+ * `fn_actividad_nota_obtener` reusa el mismo armado JSONB para OTRO+método),
+ * así que basta con reconocer la forma para cubrir los dos casos con el
+ * mismo código, sin que este archivo necesite saber qué método tiene
+ * configurado la actividad.
  */
-function toNotas(instrumento: InstrumentoTipo | null, detalle: unknown): NotaCriterio[] {
-  if (instrumento === "RUBRICA" && Array.isArray(detalle)) {
-    return (detalle as DetalleRubricaEntry[]).map((d) => ({
-      criterioId: d.pkCriterio,
-      nivelId: d.pkNivel,
-      valor: d.ponderacion,
-    }))
+function toNotas(detalle: unknown): NotaCriterio[] {
+  if (Array.isArray(detalle) && detalle.length > 0) {
+    const primero = detalle[0] as Record<string, unknown>
+    if ("pkCriterio" in primero) {
+      return (detalle as DetalleRubricaEntry[]).map((d) => ({
+        criterioId: d.pkCriterio,
+        nivelId: d.pkNivel,
+        valor: d.ponderacion,
+      }))
+    }
+    if ("pkItem" in primero) {
+      // `ListaCotejoFields` lee "tildado" por PRESENCIA en `notas`
+      // (`notaDe(value, item.pk) !== undefined`), no por un booleano adentro
+      // — los ítems con `cumplido: "N"` quedan afuera, no con `valor: 0`.
+      return (detalle as DetalleCotejoEntry[])
+        .filter((d) => d.cumplido === "S")
+        .map((d) => ({ criterioId: d.pkItem, valor: 100 }))
+    }
+    if ("criterioIndex" in primero) {
+      // 2+ criterios generales de la escala (V472): un array, uno por
+      // `criterioIndex`.
+      return (detalle as (DetalleEscalaEntry & { criterioIndex: number })[]).map((d) =>
+        d.pkNivel != null
+          ? { criterioId: d.criterioIndex, nivelId: d.pkNivel, valor: d.ponderacion ?? undefined }
+          : { criterioId: d.criterioIndex, valor: d.valor ?? undefined },
+      )
+    }
   }
-  if (instrumento === "LISTA_COTEJO" && Array.isArray(detalle)) {
-    // `ListaCotejoFields` lee "tildado" por PRESENCIA en `notas`
-    // (`notaDe(value, item.pk) !== undefined`), no por un booleano adentro
-    // — los ítems con `cumplido: "N"` quedan afuera, no con `valor: 0`.
-    return (detalle as DetalleCotejoEntry[])
-      .filter((d) => d.cumplido === "S")
-      .map((d) => ({ criterioId: d.pkItem, valor: 100 }))
-  }
-  if ((instrumento === "ESCALA_VALORACION" || instrumento === "OTRO") && detalle && typeof detalle === "object") {
+  if (detalle && typeof detalle === "object" && !Array.isArray(detalle)) {
     const d = detalle as DetalleEscalaEntry
-    // Variante CUALITATIVA de la escala: shape inferido por simetría con la
-    // NUMERICA (mismo objeto, acá `pkNivel` en vez de `valor`) — todavía sin
-    // un ejemplo real en producción (no hay ninguna escala cualitativa
-    // calificada en la base al momento de este fix). Degrada a notas
-    // vacías si en la práctica no calza, mismo comportamiento que antes.
+    // Variante CUALITATIVA de la escala (0-1 criterio): shape inferido por
+    // simetría con la NUMERICA (mismo objeto, acá `pkNivel` en vez de
+    // `valor`) — todavía sin un ejemplo real en producción. Degrada a
+    // notas vacías si en la práctica no calza, mismo comportamiento que
+    // antes.
     if (d.pkNivel != null) {
       return [{ criterioId: 0, nivelId: d.pkNivel, valor: d.ponderacion ?? undefined }]
     }
-    // NUMERICA / OTRO (siempre numérico, ver `buildCalificarCeldaInput`):
-    // `valor` es el valorNumerico crudo tal como lo exige `PUT .../calificar`
-    // (la escala 1-5, no un porcentaje ya calculado — el backend rescala).
+    // NUMERICA (0-1 criterio): `valor` es el valorNumerico crudo tal como
+    // lo exige `PUT .../calificar` (la escala 1-5, no un porcentaje ya
+    // calculado — el backend rescala).
     if (d.valor != null) {
       return [{ criterioId: 0, valor: d.valor }]
     }
@@ -104,7 +124,7 @@ function toNotaEstudiante(row: NotaEstudianteRow | undefined): NotaEstudiante {
     calificacion: row?.calificacion ?? null,
     calificable: row?.calificable === "S",
     observacion: row?.observacion ?? null,
-    notas: toNotas(row?.instrumento ?? null, row?.detalle),
+    notas: toNotas(row?.detalle),
     evidencias: row?.evidencias ?? [],
   }
 }
