@@ -122,3 +122,28 @@ describe("resolveRecursoPreview — repositorios", () => {
     expect(resuelto?.value).not.toContain("dl=0")
   })
 })
+
+/**
+ * La URL firmada de un archivo ya guardado (`GET /files/view/:id?token=…`,
+ * `ArchivoGuardadoPreview`) es un id, no un nombre de archivo: su path no
+ * trae extensión. Mismo caso que un `blob:`, resuelto igual — si `fuente`
+ * trae el nombre real, esa extensión es la que manda.
+ */
+describe("resolveRecursoPreview — archivo guardado (URL firmada sin extensión)", () => {
+  const URL_FIRMADA = "https://api.ejemplo.com/files/view/324?token=abc.def"
+
+  it("usa la extensión de `fuente` cuando la URL no trae ninguna", () => {
+    expect(resolveRecursoPreview(URL_FIRMADA, "JORGE_SANCHEZ.pdf")).toEqual({
+      kind: "documento",
+      value: URL_FIRMADA,
+      fileType: ".pdf",
+    })
+  })
+
+  it("sigue sin reconocer nada si tampoco `fuente` trae extensión", () => {
+    expect(resolveRecursoPreview(URL_FIRMADA, "JORGE_SANCHEZ")).toEqual({
+      kind: "web",
+      value: URL_FIRMADA,
+    })
+  })
+})
