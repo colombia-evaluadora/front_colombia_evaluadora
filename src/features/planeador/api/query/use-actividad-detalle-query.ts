@@ -385,18 +385,35 @@ function adaptacionFromRaw(
       : typeof aplicaRaw === "string"
         ? aplicaRaw
         : ""
+  // Confirmado real (GET /planeador/actividades/14, producción):
+  // `{usaVersionModificada:"S", formatoAdaptacion:52013,
+  // formatoAdaptacionNombre:"Archivo", fkTarchivo:328, url:null}`. El
+  // nombre (no el id) es lo que se puede emparejar sin un catálogo aparte
+  // — mismo criterio que `tipo`/`aplicaA` de acá arriba cuando no hay
+  // catálogo a mano, y el mismo agujero que ya se tapó para escala/otro:
+  // antes esto se dejaba fijo en "no" porque no había un ejemplo real con
+  // datos, y una adaptación con archivo se veía "sin versión modificada"
+  // apenas se reabría la actividad.
+  const usaVersionModificadaRaw = item.usaVersionModificada ?? item.usa_version_modificada
+  const formatoNombreRaw = item.formatoAdaptacionNombre ?? item.formato_adaptacion_nombre
+  const urlRaw = item.url ?? item.URL
+  const fkTarchivoRaw = item.fkTarchivo ?? item.fk_tarchivo
+  const formatoLower = typeof formatoNombreRaw === "string" ? formatoNombreRaw.trim().toLowerCase() : ""
+  const versionModificada: Adaptacion["versionModificada"] =
+    usaVersionModificadaRaw !== "S"
+      ? "no"
+      : formatoLower === "archivo" || formatoLower === "enlace" || formatoLower === "biblioteca"
+        ? formatoLower
+        : "no"
+  const versionModificadaRef = versionModificada === "enlace" && typeof urlRaw === "string" ? urlRaw : ""
   return {
     tipo,
     descripcion: typeof descripcionRaw === "string" ? descripcionRaw : "",
-    // `usaVersionModificadaRaw === "S"` solo dice que SÍ hay una versión
-    // modificada, no cuál de las tres variantes ("archivo"/"enlace"/
-    // "biblioteca") — mostrar cualquiera de ellas fijo sería afirmar un
-    // dato que no se tiene, así que se deja en "no" (sin el campo auxiliar)
-    // en vez de arriesgar el tipo equivocado.
-    versionModificada: "no",
-    versionModificadaRef: "",
+    versionModificada,
+    versionModificadaRef,
     aplicaA,
     estudiantesIds: [],
+    ...(typeof fkTarchivoRaw === "number" ? { archivoId: fkTarchivoRaw } : {}),
   }
 }
 

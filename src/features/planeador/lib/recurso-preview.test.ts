@@ -124,26 +124,29 @@ describe("resolveRecursoPreview — repositorios", () => {
 })
 
 /**
- * La URL firmada de un archivo ya guardado (`GET /files/view/:id?token=…`,
- * `ArchivoGuardadoPreview`) es un id, no un nombre de archivo: su path no
- * trae extensión. Mismo caso que un `blob:`, resuelto igual — si `fuente`
- * trae el nombre real, esa extensión es la que manda.
+ * La URL de un archivo ya guardado (`fetchArchivoViewUrl`,
+ * `ArchivoGuardadoPreview`) es "absoluta desde la raíz" (sin esquema/host,
+ * pensada para un `<img src>` directo) y su path es un id, no un nombre de
+ * archivo: no trae extensión. Dos bugs reales, uno tapando al otro:
+ * - `new URL` sin base rechaza una URL relativa por completo.
+ * - Aunque parseara, el path (`/api/files/view/324`) no trae extensión —
+ *   hay que sacarla de `fuente`, igual que con un `blob:`.
  */
-describe("resolveRecursoPreview — archivo guardado (URL firmada sin extensión)", () => {
-  const URL_FIRMADA = "https://api.ejemplo.com/files/view/324?token=abc.def"
+describe("resolveRecursoPreview — archivo guardado (URL relativa sin extensión)", () => {
+  const URL_ARCHIVO = "/api/files/view/324?token=abc.def"
 
-  it("usa la extensión de `fuente` cuando la URL no trae ninguna", () => {
-    expect(resolveRecursoPreview(URL_FIRMADA, "JORGE_SANCHEZ.pdf")).toEqual({
+  it("resuelve una URL relativa (sin tirar) y usa la extensión de `fuente`", () => {
+    expect(resolveRecursoPreview(URL_ARCHIVO, "JORGE_SANCHEZ.pdf")).toEqual({
       kind: "documento",
-      value: URL_FIRMADA,
+      value: expect.stringContaining("/api/files/view/324?token=abc.def"),
       fileType: ".pdf",
     })
   })
 
   it("sigue sin reconocer nada si tampoco `fuente` trae extensión", () => {
-    expect(resolveRecursoPreview(URL_FIRMADA, "JORGE_SANCHEZ")).toEqual({
+    expect(resolveRecursoPreview(URL_ARCHIVO, "JORGE_SANCHEZ")).toEqual({
       kind: "web",
-      value: URL_FIRMADA,
+      value: URL_ARCHIVO,
     })
   })
 })
