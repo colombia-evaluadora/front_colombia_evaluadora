@@ -4473,6 +4473,7 @@ function AdaptacionItem({
               // Al cambiar de modo se limpia el auxiliar para no arrastrar
               // una URL de un archivo anterior o viceversa.
               versionModificadaRef: "",
+              archivoNombre: undefined,
             })
           }
           disabled={disabled}
@@ -4515,6 +4516,7 @@ function AdaptacionItem({
                 onChange({
                   ...adaptacion,
                   versionModificadaRef: file ? URL.createObjectURL(file) : "",
+                  archivoNombre: file?.name,
                 })
               }}
               className="pl-9"

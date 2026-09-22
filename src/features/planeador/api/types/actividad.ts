@@ -203,6 +203,18 @@ export interface Adaptacion {
    * el siguiente guardado si el usuario no vuelve a elegirlo.
    */
   archivoId?: number
+  /**
+   * Nombre original del archivo recién elegido en el formulario (con
+   * extensión) — `versionModificadaRef` es un `blob:` URL y no lo trae.
+   *
+   * Sin esto, la subida (`subirArchivoAdaptacion`) no tenía de dónde sacar
+   * un nombre y mandaba uno fijo sin extensión ("plantilla"): el backend
+   * infiere el `Content-Type` real del archivo por la extensión del
+   * nombre, así que cualquier plantilla terminaba sirviéndose como
+   * `application/octet-stream` — el navegador la descargaba en vez de
+   * mostrarla, sin importar qué binario fuera.
+   */
+  archivoNombre?: string
 }
 
 export interface Actividad {
