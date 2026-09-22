@@ -50,19 +50,29 @@ export function buildCalificarCeldaInput(
   fecha: string,
 ): CalificarCeldaInput | null {
   if (instrumento.instrumento === "RUBRICA") {
+    // Solo criterios que SIGUEN activos: `value` puede traer una nota
+    // precargada (`toNotas`) de un criterio ya borrado/desactivado después
+    // de que el estudiante fue calificado la primera vez. Mandarla junto
+    // con la elegida ahora hace que el backend rechace el guardado con
+    // "La rúbrica tiene N criterio(s) activo(s) pero se calificaron M" —
+    // mismo filtro que `instrumentoCompletitud`.
+    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
     const niveles = value
-      .filter((n) => n.nivelId != null)
+      .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
       .map((n) => ({ pkCriterio: n.criterioId, pkNivel: n.nivelId! }))
     if (niveles.length === 0) return null
     return { pkTactividadEstudiante, fecha, tipo: "RUBRICA", niveles }
   }
   if (instrumento.instrumento === "LISTA_COTEJO") {
-    if (value.length === 0) return null
+    // Mismo criterio que RUBRICA: solo ítems que siguen en la lista actual.
+    const itemsActivos = new Set(instrumento.definicion.map((i) => i.pk))
+    const marcados = value.filter((n) => itemsActivos.has(n.criterioId))
+    if (marcados.length === 0) return null
     return {
       pkTactividadEstudiante,
       fecha,
       tipo: "LISTA_COTEJO",
-      items: value.map((n) => ({ pkItem: n.criterioId, cumplido: true })),
+      items: marcados.map((n) => ({ pkItem: n.criterioId, cumplido: true })),
     }
   }
   if (instrumento.instrumento === "ESCALA_VALORACION") {

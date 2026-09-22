@@ -63,7 +63,16 @@ export function instrumentoCompletitud(
   }
   if (instrumento.instrumento === "RUBRICA") {
     const total = instrumento.definicion.length
-    const cubiertos = value.filter((n) => n.nivelId != null).length
+    // Solo cuenta contra criterios que SIGUEN activos en la rúbrica de
+    // ahora — `value` puede traer una nota precargada (`toNotas`) de un
+    // criterio que ya se borró/desactivó después de que el estudiante fue
+    // calificado la primera vez. Sin este filtro, esa nota vieja se sumaba
+    // a la elegida ahora y "completaba" de más: el backend terminaba
+    // rechazando el guardado con "La rúbrica tiene N criterio(s) activo(s)
+    // pero se calificaron M" en cuanto el docente elegía el único criterio
+    // vigente.
+    const criteriosActivos = new Set(instrumento.definicion.map((c) => c.pk))
+    const cubiertos = value.filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId)).length
     if (total === 0) return { completo: false, mensaje: "La rúbrica no tiene criterios activos." }
     if (cubiertos < total) {
       return {
