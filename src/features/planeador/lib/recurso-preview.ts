@@ -219,7 +219,12 @@ export function resolveRecursoPreview(
   const esDropbox = host === "dropbox.com" || host.endsWith(".dropbox.com")
   const effectiveUrl = esDropbox ? normalizeDropboxUrl(url) : url
 
-  const ext = getExtension(effectiveUrl.pathname)
+  // La URL firmada de un archivo ya guardado (`GET /files/view/:id?token=…`,
+  // ver `ArchivoGuardadoPreview`) no trae el nombre original en el path —es
+  // un id, no un filename— así que ahí no hay extensión que sacar de acá.
+  // Mismo caso que un `blob:`: si `fuente` trae el nombre real, se usa esa
+  // extensión en vez de rendirse.
+  const ext = getExtension(effectiveUrl.pathname) || getExtension(fuente ?? "")
 
   // El repositorio se consulta ANTES de caer a `web`, pero DESPUÉS de mirar
   // la extensión: si la URL ya dice que es un `.pdf`, nuestro propio visor es
