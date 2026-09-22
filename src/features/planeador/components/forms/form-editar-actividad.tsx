@@ -68,6 +68,7 @@ import {
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
 import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
@@ -4332,6 +4333,34 @@ function toTitleCase(value: string): string {
 }
 
 /**
+ * Enlace para abrir en pestaña nueva la plantilla YA subida de una
+ * adaptación (`adaptacion.archivoId`). No usa `RecursoPreview` —esa vista
+ * necesita el nombre del archivo para adivinar el tipo (imagen, PDF…) y acá
+ * no hay de dónde sacarlo: a diferencia de los materiales de apoyo
+ * (`fetchMaterialArchivos`, V427), no existe un endpoint que devuelva el
+ * nombre de los archivos de adaptaciones. Abrir la URL firmada tal cual —el
+ * mismo `AbrirAparte` de `recurso-preview.tsx`— alcanza: el navegador
+ * decide cómo mostrarla por el `Content-Type` real que manda el servidor,
+ * sin que el front tenga que adivinar nada.
+ */
+function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
+  const { data: url, isPending } = useArchivoViewUrl(archivoId)
+  if (isPending || !url) return null
+  return (
+    <Button
+      variant="ghost"
+      color="neutral"
+      size="sm"
+      type="button"
+      render={<a href={url} target="_blank" rel="noopener noreferrer" />}
+    >
+      <EyeIcon data-icon="inline-start" />
+      Ver plantilla cargada
+    </Button>
+  )
+}
+
+/**
  * Bloque de una adaptación curricular. Mismo patrón que `CriterioItem`:
  * título con índice y tachito, luego los cuatro campos del mockup.
  *
@@ -4492,6 +4521,14 @@ function AdaptacionItem({
               disabled={disabled}
             />
           </div>
+          {adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef && (
+            <>
+              <FieldDescription>
+                Ya hay una plantilla cargada. Elegí un archivo solo si querés reemplazarla.
+              </FieldDescription>
+              <VerPlantillaAdaptacion archivoId={adaptacion.archivoId} />
+            </>
+          )}
         </Field>
       )}
 
