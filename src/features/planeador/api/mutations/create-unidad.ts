@@ -6,6 +6,7 @@ import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
+import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
@@ -55,6 +56,12 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadRespon
     FK_TLV_CALCULO_DEFINITIVA: calculoDefinitivaId,
     OBJETIVOS: data.objetivos,
     CONTENIDOS: data.contenidos,
+  }
+  // Instrumento de evaluación de la unidad (sso V488) — opcional, a
+  // diferencia del método de cálculo: el docente puede dejarlo sin fijar.
+  if (data.instrumento) {
+    const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
+    if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
   if (data.enunciadosDba.length > 0) {
     body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
