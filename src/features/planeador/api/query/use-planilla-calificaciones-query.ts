@@ -24,6 +24,7 @@ interface PlanillaCeldaRow {
   recuperacion: number | null
   definitiva: number | null
   nota: number | null
+  notaHomologada: number | null
   calificable: "S" | "N" | null
   observacion: string | null
   /** Opcionales acá (aunque `PlanillaCelda` los deje obligatorios): toleran
@@ -47,6 +48,7 @@ interface PlanillaFilaRow {
   pk_testudiante: number
   nombre_estudiante: string
   definitiva_proyectada: number | null
+  definitiva_proyectada_homologada: number | null
   definitiva_registrada: number | null
   tendencia: number | null
   celdas: PlanillaCeldaRow[]
@@ -78,6 +80,7 @@ function toFila(row: PlanillaFilaRow): PlanillaFila {
     pkTestudiante: row.pk_testudiante,
     nombreEstudiante: row.nombre_estudiante,
     definitivaProyectada: row.definitiva_proyectada,
+    definitivaProyectadaHomologada: row.definitiva_proyectada_homologada,
     definitivaRegistrada: row.definitiva_registrada,
     tendencia: row.tendencia,
     celdas: row.celdas.map(toCelda),
