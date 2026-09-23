@@ -24,6 +24,9 @@ interface UnidadActividadRow {
   instrumento_evaluacion: string | null
   grupo: string | null
   ponderacion: number | null
+  /** V479 — puntaje (`TACTIVIDAD.NOTA_MAXIMA`) que el docente edita a mano
+   *  en unidades "Suma de puntos"; de acá el backend deriva `ponderacion`. */
+  nota_maxima: number | null
 }
 
 function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
@@ -40,6 +43,7 @@ function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
     instrumento: row.instrumento_evaluacion ?? "",
     grupo: row.grupo ?? "",
     ponderacion: row.ponderacion ?? 0,
+    notaMaxima: row.nota_maxima,
   }
 }
 

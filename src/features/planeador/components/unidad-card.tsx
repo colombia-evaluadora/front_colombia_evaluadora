@@ -28,8 +28,8 @@ interface UnidadCardProps {
 /**
  * Card del listado de unidades temáticas. Espejo de `ActividadCard` —misma
  * barra de status, mismo círculo de trazo, mismos estados de hover y
- * selección— pero con el contenido propio de la unidad: área, cantidad de
- * actividades y el rango de fechas.
+ * selección— pero con el contenido propio de la unidad: asignatura, cantidad
+ * de actividades y el rango de fechas.
  *
  * Se mantiene como componente aparte y no como una `ActividadCard` con props
  * opcionales: los dos modelos no comparten campos más allá del status, y
@@ -91,7 +91,7 @@ export function UnidadCard({
       </div>
 
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {unidad.area}
+        {unidad.asignatura}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {unidad.totalActividades ?? unidad.actividades.length} Actividades

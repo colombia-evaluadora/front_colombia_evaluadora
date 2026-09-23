@@ -13,6 +13,7 @@ import {
   ClipboardTextIcon,
   FolderOpenIcon,
   GraduationCapIcon,
+  InfoIcon,
   PencilIcon,
   PlusIcon,
   WarningIcon,
@@ -391,7 +392,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     [actividadesVinculadas],
   )
   const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado", totalPonderacion),
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion),
     [unidad.id, unidad.metodoCalculo, totalPonderacion],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
@@ -417,6 +418,19 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         description="Las actividades vinculadas y su peso dentro de la unidad."
         action={<DialogAgregarActividad unidad={unidad} />}
       />
+      {/* "Promedio simple" no lleva peso por actividad (ni %, ni puntaje) —
+          sin la columna, la tabla podía leerse como si algo faltara por
+          cargar; el banner aclara que es el método el que lo decide. Mismo
+          criterio en el popover "Vincular actividad" (`DialogAgregarActividad`). */}
+      {unidad.metodoCalculo === "Promedio simple" && (
+        <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
+          <InfoIcon className="size-5 shrink-0" />
+          <p>
+            Esta unidad temática promedia sus actividades: todas cuentan por igual, no hay un peso
+            ni un puntaje que asignar.
+          </p>
+        </div>
+      )}
       <DataTable
         table={table}
         isPending={isPending}

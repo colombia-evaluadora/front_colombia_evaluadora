@@ -27,7 +27,7 @@ import type {
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { agruparPorBloquesContinuos, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { agruparPorBloquesContinuos, compararPorHora, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
 /** Espera esto sin más marcas antes de guardar solo — evita una petición por
@@ -63,16 +63,6 @@ interface SesionTab {
 /** Nombre a mostrar en pestaña/encabezado: la actividad si es formativa, la asignatura si no. */
 function nombreSesion(sesion: Pick<SesionTab, "esFormativa" | "actividad" | "asignatura">): string {
   return sesion.esFormativa ? (sesion.actividad ?? "Actividad") : sesion.asignatura
-}
-
-/** Por hora de inicio (ISO, ordena bien como string) — la agenda del docente
- *  es cronológica, no alfabética por nombre de asignatura. Sin hora (toma
- *  suelta o sesión formativa sin horario real) va al final. */
-function compararPorHora(a: Pick<SesionTab, "horaInicio">, b: Pick<SesionTab, "horaInicio">): number {
-  if (a.horaInicio == null && b.horaInicio == null) return 0
-  if (a.horaInicio == null) return 1
-  if (b.horaInicio == null) return -1
-  return a.horaInicio.localeCompare(b.horaInicio)
 }
 
 function formatFechaLarga(fecha: string): string {

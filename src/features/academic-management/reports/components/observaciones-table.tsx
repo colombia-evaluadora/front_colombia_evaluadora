@@ -9,12 +9,11 @@ import type { FilaInforme } from "@/features/academic-management/reports/api/typ
 import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
 
-/** Alto de cada sub-fila (una por período). Lo comparten la columna "Pe" y la
- *  de observación para que queden alineadas. */
 const SUBFILA_CLASS = "flex h-12 items-center"
 
 interface ObservacionesTableProps {
   estudiantes: EstudianteFilas[]
+  columnaLabel: string
   seleccionados: Set<number>
   onToggleEstudiante: (matriculaId: number) => void
   onToggleTodos: () => void
@@ -23,6 +22,7 @@ interface ObservacionesTableProps {
 
 export function ObservacionesTable({
   estudiantes,
+  columnaLabel,
   seleccionados,
   onToggleEstudiante,
   onToggleTodos,
@@ -58,7 +58,7 @@ export function ObservacionesTable({
               Pe
             </th>
             <th className="border-l border-border px-3 py-3 text-left font-semibold uppercase">
-              Observación
+              {columnaLabel}
             </th>
           </tr>
         </thead>
