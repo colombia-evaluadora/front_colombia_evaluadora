@@ -438,6 +438,13 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
+  // Mismo criterio que la pestaña "Rúbricas" (`resolverInstrumentoUnico`):
+  // `undefined` en Formativa (no hay instrumento) o con instrumentos
+  // mixtos/sin actividades vinculadas todavía.
+  const instrumentoLabel = React.useMemo(
+    () => resolverInstrumentoUnico(actividadesVinculadas),
+    [actividadesVinculadas],
+  )
   const columns = React.useMemo(
     () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
     [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
@@ -458,23 +465,32 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     columnVisibilityStorageKey: "unidad-detalle-panel-actividades-column-visibility",
   })
 
-  // Pedido explícito: la descripción decía siempre "su peso dentro de la
-  // unidad" — no aplica a Formativa (no hay peso ni calificación) ni a
-  // "Suma de puntos" (es puntaje, no peso) ni a "Promedio simple" (no hay
-  // nada que repartir). Mismo criterio que la columna de peso/el banner de
-  // abajo: `esFormativa` manda antes que `metodoCalculo`.
-  const descripcionActividades = esFormativa
-    ? "Las actividades vinculadas a la unidad."
-    : unidad.metodoCalculo === "Ponderado"
-      ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
-      : unidad.metodoCalculo === "Suma de puntos"
-        ? "Las actividades vinculadas y su puntaje dentro de la unidad."
-        : "Las actividades vinculadas a la unidad — todas cuentan por igual."
+  // Pedido explícito: título y descripción decían siempre "Actividades de
+  // la unidad"/"su peso dentro de la unidad" sin importar nada — mismo
+  // criterio que ya usa "Rúbricas" (`getVisibleTabs`/`resolverInstrumentoUnico`):
+  // con un único instrumento entre las actividades vinculadas, "Actividades
+  // en {instrumento}" / "Actividades vinculadas en {instrumento}." — más
+  // preciso que el peso/método de cálculo, que es un dato aparte (una misma
+  // unidad Rúbrica puede ser Ponderada o Promediada). Sin instrumento único
+  // (Formativa —nunca lo tiene—, sin actividades vinculadas todavía, o con
+  // varias que usan instrumentos distintos) se cae al genérico de siempre,
+  // con el método de cálculo como pista (`esFormativa` manda antes que
+  // `metodoCalculo`, igual que la columna de peso/el banner de abajo).
+  const tituloActividades = instrumentoLabel ? `Actividades en ${instrumentoLabel}` : "Actividades de la unidad"
+  const descripcionActividades = instrumentoLabel
+    ? `Actividades vinculadas en ${instrumentoLabel}.`
+    : esFormativa
+      ? "Las actividades vinculadas a la unidad."
+      : unidad.metodoCalculo === "Ponderado"
+        ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
+        : unidad.metodoCalculo === "Suma de puntos"
+          ? "Las actividades vinculadas y su puntaje dentro de la unidad."
+          : "Las actividades vinculadas a la unidad — todas cuentan por igual."
 
   return (
     <div>
       <TabHeader
-        title="Actividades de la unidad"
+        title={tituloActividades}
         description={descripcionActividades}
         action={<DialogAgregarActividad unidad={unidad} />}
       />
