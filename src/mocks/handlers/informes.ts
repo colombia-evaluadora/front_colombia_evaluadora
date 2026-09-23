@@ -13,8 +13,12 @@ import {
   consolidar,
   deleteObservacion,
   estaConsolidado,
+  getEstadoObservacion,
+  getEstadoObservacionAnio,
   getObservacion,
   getObservacionAnio,
+  setEstadoObservacion,
+  setEstadoObservacionAnio,
   setObservacionAnio,
   deleteObservacionAnio,
   historialInforme,
@@ -133,7 +137,9 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
         reprobadas: detalle.filter((d) => d.aprobada === false).length,
         asignaturas: detalle,
         observacion: grupo.cualitativo ? getObservacion(estudiante.matriculaId, periodoId) : null,
-        observacion_estado: grupo.cualitativo && getObservacion(estudiante.matriculaId, periodoId) ? "APROBADA" : null,
+        observacion_estado: grupo.cualitativo
+          ? getEstadoObservacion(estudiante.matriculaId, periodoId)
+          : null,
         observacion_desactualizada: false,
         tiene_cambios_propuestos: detalle.some((d) => d.estado === "cambio_propuesto"),
         // Solo preescolar adjunta imágenes a las observaciones.
@@ -209,7 +215,7 @@ function filasFinalDeGrupo(grupoId: number, search: string | null) {
         // Lo GUARDADO, no el borrador: el concatenado es lo que devuelve
         // generar, y la fila arranca vacía hasta que alguien lo acepte.
         observacion: getObservacionAnio(estudiante.matriculaId),
-        observacion_estado: getObservacionAnio(estudiante.matriculaId) ? "APROBADA" : null,
+        observacion_estado: getEstadoObservacionAnio(estudiante.matriculaId),
         observacion_desactualizada: false,
         tiene_cambios_propuestos: false,
         evidencias: grupo.cualitativo ? EVIDENCIAS_MOCK.length : 0,
@@ -348,8 +354,14 @@ export const informesHandlers = [
       FK_TMATRICULA: number
       FK_TPERIODO_EVALUACION: number
       OBSERVACION: string
+      OBSERVACION_IA?: string
     }
     setObservacion(body.FK_TMATRICULA, body.FK_TPERIODO_EVALUACION, body.OBSERVACION)
+    setEstadoObservacion(
+      body.FK_TMATRICULA,
+      body.FK_TPERIODO_EVALUACION,
+      body.OBSERVACION_IA === body.OBSERVACION ? "APROBADA" : "MODIFICADA",
+    )
     return HttpResponse.json({ rows: [{ status: "OK" }] })
   }),
 
@@ -626,26 +638,18 @@ export const informesHandlers = [
     return HttpResponse.json({ rows })
   }),
 
-  /** `POST /informes/observacion/final`. GENERA el borrador del año y no
-   *  escribe nada; lo que devuelve se reenvía tal cual al guardar. */
-  http.post(URL("observacion/final"), async ({ request }) => {
-    await delay(120)
-    const body = (await request.json()) as { FK_TMATRICULA: number }
-    const borrador = observacionFinalDe(body.FK_TMATRICULA)
-    return HttpResponse.json({
-      rows: [
-        {
-          observacion_ia: borrador,
-          periodos_origen: borrador ? borrador.split(":").length - 1 : 0,
-        },
-      ],
-    })
-  }),
-
   http.post(URL("observacion/final/guardar"), async ({ request }) => {
     await delay(150)
-    const body = (await request.json()) as { FK_TMATRICULA: number; OBSERVACION: string }
+    const body = (await request.json()) as {
+      FK_TMATRICULA: number
+      OBSERVACION: string
+      OBSERVACION_IA?: string
+    }
     setObservacionAnio(body.FK_TMATRICULA, body.OBSERVACION)
+    setEstadoObservacionAnio(
+      body.FK_TMATRICULA,
+      body.OBSERVACION_IA === body.OBSERVACION ? "APROBADA" : "MODIFICADA",
+    )
     return HttpResponse.json({ rows: [{ pk_testudiante_anio_observacion: body.FK_TMATRICULA }] })
   }),
 
@@ -654,5 +658,70 @@ export const informesHandlers = [
     const body = (await request.json()) as { FK_TMATRICULA: number }
     deleteObservacionAnio(body.FK_TMATRICULA)
     return HttpResponse.json({ rows: [{ pk_testudiante_anio_observacion: body.FK_TMATRICULA }] })
+  }),
+
+  // --- ai-control-service: resúmenes de observaciones con IA --------------
+  // A diferencia de `/eval-col/informes/*`, este microservicio no envuelve
+  // la respuesta en `{rows: [...]}` y el generar YA guarda: nace `APROBADA`
+  // y responde 409 si lo que hay guardado es `MODIFICADA` y no llega
+  // `SOBRESCRIBIR`. La demo no modela las observaciones por actividad del
+  // docente (fuentes), así que el "resumen" es el texto ya sembrado —lo
+  // mismo que hacía el borrador antes de tener IA real.
+  http.post("/api/ai/observaciones/periodo", async ({ request }) => {
+    await delay(400)
+    const body = (await request.json()) as {
+      FK_TMATRICULA: number
+      FK_TPERIODO_EVALUACION: number
+      SOBRESCRIBIR?: boolean
+    }
+    const estadoActual = getEstadoObservacion(body.FK_TMATRICULA, body.FK_TPERIODO_EVALUACION)
+    if (estadoActual === "MODIFICADA" && !body.SOBRESCRIBIR) {
+      return HttpResponse.json(
+        { message: "La observación fue modificada por el docente." },
+        { status: 409 },
+      )
+    }
+    const observacion = getObservacion(body.FK_TMATRICULA, body.FK_TPERIODO_EVALUACION) ?? ""
+    if (observacion) {
+      setObservacion(body.FK_TMATRICULA, body.FK_TPERIODO_EVALUACION, observacion)
+      setEstadoObservacion(body.FK_TMATRICULA, body.FK_TPERIODO_EVALUACION, "APROBADA")
+    }
+    return HttpResponse.json({
+      observacion,
+      origen: observacion ? 3 : 0,
+      estado: "APROBADA",
+      modelo: "mock-minimax-m3",
+      tokensEntrada: 420,
+      tokensSalida: 180,
+      duracionMs: 900,
+      desdeCache: false,
+    })
+  }),
+
+  http.post("/api/ai/observaciones/anio", async ({ request }) => {
+    await delay(400)
+    const body = (await request.json()) as { FK_TMATRICULA: number; SOBRESCRIBIR?: boolean }
+    const estadoActual = getEstadoObservacionAnio(body.FK_TMATRICULA)
+    if (estadoActual === "MODIFICADA" && !body.SOBRESCRIBIR) {
+      return HttpResponse.json(
+        { message: "La observación fue modificada por el docente." },
+        { status: 409 },
+      )
+    }
+    const observacion = observacionFinalDe(body.FK_TMATRICULA) ?? ""
+    if (observacion) {
+      setObservacionAnio(body.FK_TMATRICULA, observacion)
+      setEstadoObservacionAnio(body.FK_TMATRICULA, "APROBADA")
+    }
+    return HttpResponse.json({
+      observacion,
+      origen: observacion ? observacion.split(":").length - 1 : 0,
+      estado: "APROBADA",
+      modelo: "mock-minimax-m3",
+      tokensEntrada: 600,
+      tokensSalida: 260,
+      duracionMs: 1100,
+      desdeCache: false,
+    })
   }),
 ]
