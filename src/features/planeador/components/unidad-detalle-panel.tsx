@@ -371,7 +371,8 @@ export function Rubricas({
    *  a pedir las actividades vinculadas acá adentro. `undefined` cuando no
    *  hay un único instrumento que mostrar (sin actividades vinculadas, o con
    *  varias que usan instrumentos distintos) — ahí el título se queda en el
-   *  genérico "Criterios de la unidad". Opcional: `planeador-editar-unidad-
+   *  genérico "Criterios" (sin "de la unidad", mismo motivo que
+   *  "Actividades"/"Objetivos"). Opcional: `planeador-editar-unidad-
    *  page.tsx` reusa este componente ANTES de que la unidad tenga
    *  actividades vinculadas (alta), donde no aplica. */
   instrumentoLabel?: string
@@ -417,7 +418,7 @@ export function Rubricas({
   return (
     <div>
       <TabHeader
-        title={instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Criterios de la unidad"}
+        title={instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Criterios"}
         actionLabel="Agregar criterio"
         onAction={() => setDialogOpen(true)}
       />
@@ -455,12 +456,16 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
-  // Mismo criterio que la pestaña "Rúbricas" (`resolverInstrumentoUnico`):
-  // `undefined` en Formativa (no hay instrumento) o con instrumentos
-  // mixtos/sin actividades vinculadas todavía.
+  // El instrumento FIJADO en la unidad (`unidad.instrumento`, sso V488)
+  // manda — es un dato explícito del docente, no una inferencia. Solo si la
+  // unidad no lo fijó (todas las anteriores a V488, o el docente lo dejó sin
+  // elegir) se cae al viejo criterio de `resolverInstrumentoUnico`: único
+  // instrumento entre las actividades YA vinculadas (`undefined` en
+  // Formativa, sin vinculadas todavía, o con varias distintas). Mismo
+  // criterio en la pestaña "Rúbricas" (`UnidadTabs`, más abajo).
   const instrumentoLabel = React.useMemo(
-    () => resolverInstrumentoUnico(actividadesVinculadas),
-    [actividadesVinculadas],
+    () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
+    [unidad.instrumento, actividadesVinculadas],
   )
   const columns = React.useMemo(
     () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
@@ -493,16 +498,15 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // varias que usan instrumentos distintos) se cae al genérico de siempre,
   // con el método de cálculo como pista (`esFormativa` manda antes que
   // `metodoCalculo`, igual que la columna de peso/el banner de abajo).
-  const tituloActividades = instrumentoLabel ? `Actividades en ${instrumentoLabel}` : "Actividades de la unidad"
+  // Pedido explícito: sin instrumento único, generico simple ("Actividades"/
+  // "Las actividades vinculadas.") — nada de "de la unidad"/"a la unidad"
+  // (mismo motivo que "Objetivos", ver `Columna` más abajo) ni de variar
+  // por método de cálculo, que termina siendo ruido cuando ni siquiera hay
+  // un instrumento que mostrar.
+  const tituloActividades = instrumentoLabel ? `Actividades en ${instrumentoLabel}` : "Actividades"
   const descripcionActividades = instrumentoLabel
     ? `Actividades vinculadas en ${instrumentoLabel}.`
-    : esFormativa
-      ? "Las actividades vinculadas a la unidad."
-      : unidad.metodoCalculo === "Ponderado"
-        ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
-        : unidad.metodoCalculo === "Suma de puntos"
-          ? "Las actividades vinculadas y su puntaje dentro de la unidad."
-          : "Las actividades vinculadas a la unidad — todas cuentan por igual."
+    : "Las actividades vinculadas."
 
   return (
     <div>
@@ -570,12 +574,13 @@ function UnidadTabs({
 }) {
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativo = unidadReferente?.esFormativo ?? false
-  // Instrumento real de las actividades ya vinculadas — ver
-  // `resolverInstrumentoUnico` y el comentario de `getVisibleTabs`.
+  // `unidad.instrumento` (fijado por el docente, sso V488) manda; solo si no
+  // lo fijó se cae al instrumento único entre las actividades ya vinculadas
+  // — ver `resolverInstrumentoUnico` y el comentario de `getVisibleTabs`.
   const { data: actividadesVinculadas = [] } = useUnidadActividadesQuery(unidad.id)
   const instrumentoLabel = React.useMemo(
-    () => resolverInstrumentoUnico(actividadesVinculadas),
-    [actividadesVinculadas],
+    () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
+    [unidad.instrumento, actividadesVinculadas],
   )
   const visibleTabs = React.useMemo(
     () => getVisibleTabs(esFormativo, instrumentoLabel),
