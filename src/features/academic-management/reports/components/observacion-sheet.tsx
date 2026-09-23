@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { BrainIcon, CheckIcon, InfoIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 
 import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
@@ -94,7 +96,7 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
     <Sheet open={fila != null} onOpenChange={onOpenChange}>
       <SheetContent className="gap-0 p-0">
         <SheetHeader className="pb-4">
-          <SheetTitle className="sr-only">{etiqueta} individual</SheetTitle>
+          <SheetTitle>{etiqueta} individual</SheetTitle>
           {fila && (
             <>
               <div className="flex items-center gap-3">
@@ -114,25 +116,52 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-8">
+          <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
+            {borrador
+              ? "Borrador generado; editalo si hace falta, que se guarda como modificado."
+              : esFinal
+                ? "El borrador del año se arma con las observaciones ya consolidadas de cada período. Guardar con el texto vacío lo elimina."
+                : "Guardar con el texto vacío elimina la observación de este período."}
+          </div>
+
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="observacion-individual" className="text-xs font-semibold uppercase">
-              {etiqueta}
-            </label>
-            <Textarea
-              id="observacion-individual"
-              value={texto}
-              maxLength={MAX_CARACTERES}
-              onChange={(e) => setTexto(e.target.value)}
-              placeholder={
-                esFinal
-                  ? "Genera el comentario del año y revísalo antes de guardarlo…"
-                  : "Escribe la observación de este estudiante para este período…"
-              }
-              className={cn(TEXTAREA_OUTLINED, "min-h-40 resize-y")}
-            />
-            <span className="self-end text-xs text-muted-foreground">
-              {texto.length}/{MAX_CARACTERES}
-            </span>
+            <div className="flex justify-end">
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    disabled={!texto}
+                    aria-label="Borrar toda la observación"
+                    onClick={() => setTexto("")}
+                  >
+                    <BrushIcon className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Borrar toda la observación</TooltipContent>
+              </Tooltip>
+            </div>
+            <Field variant="outlined">
+              <FieldLabel htmlFor="observacion-individual">{etiqueta}</FieldLabel>
+              <Textarea
+                id="observacion-individual"
+                value={texto}
+                maxLength={MAX_CARACTERES}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder={
+                  esFinal
+                    ? "Genera el comentario del año y revísalo antes de guardarlo…"
+                    : "Escribe la observación de este estudiante para este período…"
+                }
+                className={cn(TEXTAREA_OUTLINED, "min-h-40 resize-y")}
+              />
+              <span className="self-end text-xs text-muted-foreground">
+                {texto.length}/{MAX_CARACTERES}
+              </span>
+            </Field>
           </div>
 
           {(fila?.evidencias ?? 0) > 0 && (
@@ -166,15 +195,6 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
               )}
             </div>
           )}
-
-          <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-            <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
-            {borrador
-              ? "Borrador generado; editalo si hace falta, que se guarda como modificado."
-              : esFinal
-                ? "El borrador del año se arma con las observaciones ya consolidadas de cada período. Guardar con el texto vacío lo elimina."
-                : "Guardar con el texto vacío elimina la observación de este período."}
-          </div>
         </div>
 
         <SheetFooter className="flex-row justify-end gap-2">
@@ -194,7 +214,11 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
             disabled={guardando || generar.isPending}
             onClick={() => fila && onGuardar(fila, texto, borrador)}
           >
-            <CheckIcon data-icon="inline-start" />
+            {guardando ? (
+              <SpinnerIcon className="animate-spin" data-icon="inline-start" />
+            ) : (
+              <CheckIcon data-icon="inline-start" />
+            )}
             Guardar
           </Button>
         </SheetFooter>

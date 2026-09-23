@@ -93,19 +93,20 @@ export function CeldaObservacionTrigger({
   return (
     <>
       <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="icon-xs"
-              disabled={fecha === null}
-              aria-label={etiqueta}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <Icono className="size-3.5" />
+        {/* El trigger va en un `span`, no en el propio Button: un
+            <button disabled> nativo no dispara los eventos de hover que
+            necesita el Tooltip para abrirse. */}
+        <TooltipTrigger render={<span className="inline-flex" />}>
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-xs"
+            disabled={fecha === null}
+            aria-label={etiqueta}
+            onClick={() => setAbierto(true)}
+          >
+            <Icono className="size-3.5" />
+          </Button>
         </TooltipTrigger>
         <TooltipContent>
           {fecha === null

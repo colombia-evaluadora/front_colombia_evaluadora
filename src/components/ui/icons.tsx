@@ -24,6 +24,7 @@ import {
   MdBlock,
   MdBolt,
   MdBarChart,
+  MdBrush,
   MdBubbleChart,
   MdCalendarMonth,
   MdCalendarToday,
@@ -160,6 +161,7 @@ export const BellIcon = makeIcon(MdOutlineNotifications)
 export const BookIcon = makeIcon(MdMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
 export const BrainIcon = makeIcon(MdPsychology)
+export const BrushIcon = makeIcon(MdBrush)
 export const BuildingsIcon = makeIcon(MdApartment)
 export const CalendarBlankIcon = makeIcon(MdCalendarToday)
 export const CalendarDotsIcon = makeIcon(MdEvent)
