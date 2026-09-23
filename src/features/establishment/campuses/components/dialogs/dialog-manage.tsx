@@ -10,16 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
 import { CampusDetailsForm } from "@/features/establishment/campuses/components/forms/form-campus-details"
 import { useCreate } from "@/features/establishment/campuses/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/campuses/api/mutations/use-update"
 import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-campus"
-import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useZonasSedeQuery } from "@/features/establishment/campuses/api/query/use-zonas-sede"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
-import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -145,13 +143,12 @@ export function ManageCampusDialog({
   // De dónde sale el EE: en alta, del selector que se acaba de elegir; en
   // edición, del de la sede cargada (es inmutable, no se edita). Mientras
   // no haya ninguno —alta sin EE elegido todavía, o el detalle aún
-  // cargando— el catálogo llega sin filtrar, exactamente como antes.
+  // cargando— salen Urbana y Rural, que son las dos que una sede puede
+  // tener; "Urbana y Rural" no se ofrece nunca, porque es del EE.
   const zonesEstablishmentId = isEditMode
     ? (campusQuery.data?.status === "ok" ? (campusQuery.data.campus.establishmentId ?? null) : null)
     : formValues.establishmentId
-  const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES, {
-    establishmentId: zonesEstablishmentId,
-  })
+  const { data: zones = [] } = useZonasSedeQuery(zonesEstablishmentId)
 
   // El formulario se resetea al abrir (alta) o cuando llega la sede a editar.
   useEffect(() => {
