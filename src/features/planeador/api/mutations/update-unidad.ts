@@ -8,7 +8,6 @@ import {
   unidadesQueryKey,
 } from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
-import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 /** Todo menos `criterios`/`actividades`: esas listas se editan aparte, desde
@@ -47,12 +46,11 @@ async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<Upda
   }
   if (data.gradoId != null) body.FK_TGRADO = data.gradoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
-  // Instrumento de evaluación de la unidad (sso V488) — PATCH parcial, NULL
-  // no toca: solo se manda si el docente eligió algo en el form.
-  if (data.instrumento) {
-    const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
-    if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
-  }
+  // NO se manda `FK_TLV_INSTRUMENTO_EVALUACION`: desde el backend real (sso
+  // V488) esa columna de `TUNIDAD` ya no existe — el instrumento de la
+  // unidad se deriva de sus actividades vinculadas (solo lectura, ver
+  // `UnidadDetallePanel`). `PUT /planeador/unidades/:id` descarta ese campo
+  // en silencio si se lo manda; se dejó de intentar por completo.
   return api.put(`/eval-col/planeador/unidades/${unidadId}`, body)
 }
 
