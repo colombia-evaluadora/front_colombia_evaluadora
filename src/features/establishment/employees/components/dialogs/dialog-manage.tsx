@@ -846,7 +846,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
           setPhotoRemoved(false)
           notify(SUCCESS_MESSAGES.employee.created)
         } catch (error) {
-          notify(error instanceof Error ? error.message : "No fue posible registrar el funcionario.", {
+          // getErrorMessage y no error.message: un AxiosError ES un Error, y su
+          // .message es el generico de axios ("Request failed with status code
+          // 400"). El texto que explica el problema -- el correo mal formado, por
+          // ejemplo -- viene en response.data.message, que es lo que este lee.
+          notify(getErrorMessage(error) || "No fue posible registrar el funcionario.", {
             variant: "error",
           })
         }
@@ -1068,7 +1072,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       setPermissionsDialogOpen(false)
       notify("Permisos actualizados.")
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No fue posible actualizar los permisos.", {
+      notify(getErrorMessage(error) || "No fue posible actualizar los permisos.", {
         variant: "error",
       })
     } finally {
