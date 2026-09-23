@@ -29,6 +29,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { useUser } from "@/lib/auth"
 import { gestionAcademicaInformesRoute } from "@/router"
 
 import { useGuardarInformeMutation } from "@/features/academic-management/reports/api/mutations/use-guardar-informe"
@@ -71,6 +72,13 @@ import {
   type DestinoPlanilla,
 } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
+
+/**
+ * Los roles que solo alcanzan los grupos que la persona dirige: el espejo de
+ * fn_rol_alcance_sede en el backend (V443). El token trae los claims con la
+ * forma CEVAL- seguido del CODIGO del rol.
+ */
+const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 
 const PANEL_CLASS =
   "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
@@ -262,6 +270,7 @@ function GrupoTabContent({
 
 function ReportsPageContent() {
   const { notify } = useNotify()
+  const usuario = useUser()
   const navigate = gestionAcademicaInformesRoute.useNavigate()
   const search = gestionAcademicaInformesRoute.useSearch()
 
@@ -325,6 +334,15 @@ function ReportsPageContent() {
     },
     [setSearch, filtros, activeTab],
   )
+
+  // El backend recorta los informes a los grupos que la persona dirige cuando
+  // ninguno de sus roles alcanza la sede entera (V443). Acá se repite la
+  // lectura SOLO para elegir el texto del estado vacío: si esta lista se
+  // desactualiza, lo peor que pasa es que se muestre el mensaje genérico,
+  // nunca que alguien vea algo que no debe.
+  const roles = usuario.data?.roles ?? []
+  const soloSusGrupos =
+    roles.length > 0 && roles.every((rol) => ROLES_SOLO_SUS_GRUPOS.includes(rol))
 
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
   const [busqueda, setBusqueda] = React.useState("")
@@ -612,7 +630,9 @@ function ReportsPageContent() {
         )}
         {cascadaCompleta && !gruposQuery.isPending && grupos.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No hay grados ni grupos para la sede, el año y la jornada seleccionados.
+            {soloSusGrupos
+              ? "No diriges ningún grupo en esta sede, año y jornada."
+              : "No hay grados ni grupos para la sede, el año y la jornada seleccionados."}
           </p>
         )}
 
