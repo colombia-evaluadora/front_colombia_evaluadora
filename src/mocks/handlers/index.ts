@@ -16,7 +16,6 @@ import { promotionCriteriaHandlers } from "@/mocks/handlers/academic-period/prom
 import { evaluationCriteriaHandlers } from "@/mocks/handlers/academic-period/evaluation-criteria"
 import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-areas"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
-import { funcionariosHandlers } from "@/mocks/handlers/academic-period/funcionarios"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
 import { curriculumNodesHandlers } from "@/mocks/handlers/academic-period/curriculum-nodes"
 import { especialidadesHandlers } from "@/mocks/handlers/academic-period/especialidades"
@@ -60,7 +59,6 @@ export const handlers = [
   ...evaluationCriteriaHandlers,
   ...generalAreasHandlers,
   ...academicAssignmentsHandlers,
-  ...funcionariosHandlers,
   ...horarioHandlers,
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,

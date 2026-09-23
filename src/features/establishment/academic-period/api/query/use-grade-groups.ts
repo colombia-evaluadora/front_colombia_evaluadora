@@ -38,7 +38,8 @@ function toGradeGroup(row: GradeGroupRow): GradeGroup {
     codigo: row.codigo,
     jornada: row.jornada,
     jornadaName: row.jornada_name,
-    director: row.director_name ?? "",
+    directorId: row.director_id,
+    directorName: row.director_name ?? undefined,
     metodologia: row.metodologia ?? undefined,
     metodologiaName: row.metodologia_name ?? undefined,
     cupo: row.cupo,
@@ -67,8 +68,8 @@ async function fetchGradeGroups(
   if (params.filters.jornada) {
     rows = rows.filter((row) => row.jornada === params.filters.jornada)
   }
-  if (params.filters.director) {
-    rows = rows.filter((row) => row.director === params.filters.director)
+  if (params.filters.directorName) {
+    rows = rows.filter((row) => row.directorName === params.filters.directorName)
   }
   const totalCount = raw.rows?.[0]?.total_count ?? 0
   const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
