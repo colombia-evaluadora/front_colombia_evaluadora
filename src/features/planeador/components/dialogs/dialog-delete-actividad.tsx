@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
@@ -59,8 +60,13 @@ export function DialogDeleteActividad({
         setOpen(false)
         onDeleted?.()
       },
-      onError: () => {
-        notify("No se pudo eliminar la actividad.", { variant: "error" })
+      // El mensaje real del backend, no uno genérico: `fn_actividad_eliminar`
+      // (V482) rechaza el borrado con el motivo puntual cuando la actividad
+      // ya tiene notas, observaciones, capturas de instrumento, asistencia o
+      // recuperaciones asociadas — sin ese texto el docente no sabe por qué
+      // no puede borrarla.
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
