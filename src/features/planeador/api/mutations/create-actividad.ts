@@ -5,7 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { actividadesQueryKey } from "@/features/planeador/api/query/use-actividades-query"
+import { invalidarListadosActividades } from "@/features/planeador/api/query/invalidar-listados-actividades"
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
@@ -181,9 +181,10 @@ export function useCreateActividad({ mutationConfig }: UseCreateActividadOptions
   return useMutation({
     mutationFn: createActividad,
     onSuccess: (...args) => {
-      // Invalida el listado para que la nueva actividad aparezca al volver
-      // al Planeador (mismo criterio que `useCreateReservation`).
-      queryClient.invalidateQueries({ queryKey: actividadesQueryKey() })
+      // Refresca rail, calendario y cards de resumen para que la nueva
+      // actividad aparezca al volver al Planeador — no solo el listado
+      // legado (ver el comentario del helper).
+      invalidarListadosActividades(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,
