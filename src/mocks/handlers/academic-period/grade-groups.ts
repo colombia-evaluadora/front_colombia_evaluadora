@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
 import { GROUPS } from "@/mocks/db/reservations"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
+import { funcionariosDb } from "@/mocks/db/academic-period/funcionarios"
 
 import type { GradeGroupRecord } from "@/features/establishment/academic-period/api/types/grade-group"
 
@@ -34,7 +35,7 @@ function generateFallbackGroups(gradeId: number): GradeGroupRecord[] {
       codigo,
       jornada: jornada.name,
       jornadaName: jornada.name,
-      director: "",
+      directorId: null,
       metodologia: undefined,
       metodologiaName: undefined,
       cupo: 30,
@@ -52,13 +53,14 @@ interface GradeGroupWriteBody {
 }
 
 function toRawRow(row: GradeGroupRecord, totalCount?: number) {
+  const director = funcionariosDb.find((f) => f.id === row.directorId)
   return {
     id: row.id,
     codigo: row.codigo,
     jornada: row.jornada,
     jornada_name: row.jornadaName ?? row.jornada,
-    director_id: null,
-    director_name: row.director || null,
+    director_id: row.directorId,
+    director_name: director?.nombre ?? null,
     metodologia: row.metodologia ?? null,
     metodologia_name: row.metodologiaName ?? row.metodologia ?? null,
     cupo: row.cupo ?? 0,
@@ -108,7 +110,7 @@ export const gradeGroupsHandlers = [
       id,
       codigo: body.NOMBRE,
       jornada: "",
-      director: "",
+      directorId: body.FK_FUNCIONARIO ?? null,
       metodologia: body.FK_MODELO_PEDAGOGICO != null ? String(body.FK_MODELO_PEDAGOGICO) : undefined,
       cupo: body.CAPACIDAD,
       gradeId: body.FK_GRADO ?? gradeId,
@@ -130,6 +132,7 @@ export const gradeGroupsHandlers = [
     gradeGroupsDb[index] = {
       ...gradeGroupsDb[index],
       codigo: body.NOMBRE,
+      directorId: body.FK_FUNCIONARIO ?? gradeGroupsDb[index].directorId,
       metodologia: body.FK_MODELO_PEDAGOGICO != null ? String(body.FK_MODELO_PEDAGOGICO) : undefined,
       cupo: body.CAPACIDAD,
     }

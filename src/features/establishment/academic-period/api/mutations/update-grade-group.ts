@@ -7,28 +7,22 @@ import type {
   UpdateGradeGroupRequest,
 } from "@/features/establishment/academic-period/api/types/grade-group"
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
-import { resolveDirectorId } from "@/features/establishment/academic-period/api/mutations/resolve-director-id"
 
 interface UpdateGradeGroupInput {
   id: number
-  sedeId?: string
   values: UpdateGradeGroupRequest
 }
 
 async function updateGradeGroup({
   id,
-  sedeId,
   values,
 }: UpdateGradeGroupInput): Promise<MutationResult> {
-  const [fkModeloPedagogico, fkFuncionario] = await Promise.all([
-    resolveMetodologiaId(values.metodologia),
-    resolveDirectorId(sedeId, values.director),
-  ])
+  const fkModeloPedagogico = await resolveMetodologiaId(values.metodologia)
   return api.put<MutationResult>(`/eval-col/grupos/${id}`, {
     NOMBRE: values.codigo,
     FK_MODELO_PEDAGOGICO: fkModeloPedagogico,
     CAPACIDAD: values.cupo,
-    FK_FUNCIONARIO: fkFuncionario,
+    FK_FUNCIONARIO: values.directorId,
   })
 }
 
