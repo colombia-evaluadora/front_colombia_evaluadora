@@ -118,16 +118,26 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
 
   return (
     <div className="border-input overflow-auto rounded-md border">
-      <table className="w-full text-sm">
+      {/* `table-fixed`: sin esto el `w-40`/`truncate` de las columnas de
+          actividad no hacen nada — en `auto` (el default) la columna crece
+          al contenido más ancho (ej. una observación larga), ignorando el
+          ancho declarado. */}
+      <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           {grupos ? (
             <>
               <tr>
-                <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+                <th
+                  rowSpan={2}
+                  className="w-48 px-4 py-3 text-left align-bottom font-semibold uppercase"
+                >
                   Nombres
                 </th>
                 {mostrarDefinitiva && (
-                  <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+                  <th
+                    rowSpan={2}
+                    className="w-28 px-4 py-3 text-left align-bottom font-semibold uppercase"
+                  >
                     Definit. Proy.
                   </th>
                 )}
@@ -159,9 +169,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
             </>
           ) : (
             <tr>
-              <th className="px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+              <th className="w-48 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
               {mostrarDefinitiva && (
-                <th className="px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
+                <th className="w-28 px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
               )}
               {columnas.map((columna) => (
                 <ColumnaHeader
@@ -179,7 +189,10 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
 
             return (
               <tr key={fila.pkTestudiante}>
-                <td className="px-4 py-3 align-middle font-medium whitespace-nowrap">
+                <td
+                  className="truncate px-4 py-3 align-middle font-medium"
+                  title={fila.nombreEstudiante}
+                >
                   {fila.nombreEstudiante}
                 </td>
                 {mostrarDefinitiva && (
