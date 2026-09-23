@@ -301,16 +301,34 @@ export function EditarActividadForm({
   // navegar a "Ver recurso" — la edición sí puede usar su id real, estable
   // entre navegaciones (`key={actividadParaForm.id}` en la página).
   const draftKey: ActividadFormDraftKey = esNueva ? "nueva" : actividad.id
-  // Lazy initializer: corre una sola vez al montar, así que si venimos de
-  // "Ver recurso" (`consumeActividadFormDraft` ya borró el borrador para
-  // que no se reuse) el form arranca con lo que el docente ya había
-  // tipeado en vez de `actividad` a secas.
-  const [actividadInicial] = useState(() => consumeActividadFormDraft(draftKey) ?? actividad)
+  // Lazy initializer: corre una sola vez al montar. `defaultValues` SIEMPRE
+  // es la actividad original del servidor (nunca el borrador): es la base
+  // contra la que `isDefaultValue`/`isDirty` compara más abajo. Si acá
+  // metiéramos el borrador como default (como antes), al volver de "Ver
+  // recurso" el form se remonta, el borrador se restaura como si fuera el
+  // valor "de fábrica" y el form vuelve a verse limpio (`isDirty = false`)
+  // aunque el docente siga con cambios reales sin guardar — el aviso y el
+  // "Guardar" del `<TableScreenFooter>` desaparecían justo ahí.
+  const [actividadOriginal] = useState(() => actividad)
+  // El borrador (si venimos de "Ver recurso"; `consumeActividadFormDraft`
+  // ya lo borró para que no se reuse) se aplica aparte, como VALORES
+  // actuales del form, sin tocar los defaults de arriba.
+  const [draftInicial] = useState(() => consumeActividadFormDraft(draftKey))
 
   const form = useForm({
-    defaultValues: actividadInicial,
+    defaultValues: actividadOriginal,
     onSubmit: ({ value }) => onSubmit?.(value),
   })
+
+  // `keepDefaultValues: true` es la clave: pisa los valores actuales con el
+  // borrador pero deja `actividadOriginal` como default, así `isDirty` sigue
+  // comparando contra la actividad real del servidor.
+  useEffect(() => {
+    if (draftInicial) {
+      form.reset(draftInicial, { keepDefaultValues: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // `isDefaultValue` es lo que usa el form académico para detectar cambios:
   // es `false` apenas el usuario toca cualquier campo. Se re-emite hacia

@@ -232,20 +232,23 @@ function PlaneadorPageContent() {
 
   // Map day-of-month → actividades, para las filas de la grilla. El
   // endpoint devuelve por SOLAPAMIENTO (una actividad que sigue abierta
-  // aparece también en el mes donde arrancó), y ancla `fecha` al inicio (o
-  // a `fecha_desde` si el inicio cae afuera). Eso hacía que la MISMA
-  // actividad se plotara en dos meses distintos —una vez por su inicio,
-  // otra por el "sigue abierta" del mes siguiente— y se contara doble al
-  // mirar los dos meses. Acá se ancla SOLO por `fechaCierre` (cuándo
-  // vence) y se descarta lo que no cierre dentro del mes visible, así cada
-  // actividad aparece en un único mes: el de su cierre.
+  // aparece también en el mes donde arrancó) — por eso NO se planta cada
+  // actividad una sola vez con la `fecha` que resuelve el backend (inicio, o
+  // `fecha_desde` si el inicio cae afuera): visto mes por mes, esa ancla
+  // hacía que la MISMA actividad se plotara en DOS MESES distintos —una vez
+  // por su inicio, otra por el "sigue abierta" del mes siguiente— y se
+  // contara doble al mirar los dos meses.
+  //
+  // Acá cada actividad se planta en HASTA DOS celdas — su inicio y su cierre
+  // (pedido explícito: antes solo se veía la fecha de cierre) — pero cada
+  // una se valida CONTRA EL MES VISIBLE por separado, así que no reintroduce
+  // el bug de arriba: una actividad que arrancó el mes pasado y cierra este
+  // mes solo aparece bajo su día de cierre (su inicio no cae en este mes);
+  // una que arranca y cierra en el mismo mes aparece en las dos celdas de
+  // ESTE mes, nunca en otro.
   const events = React.useMemo(() => {
     const map = new Map<number, DayEvent[]>()
-    for (const a of calendarioActividades) {
-      if (a.fechaCierre < mesDesde || a.fechaCierre > mesHasta) continue
-      const anchor = parseLocalDate(a.fechaCierre)
-      if (!anchor) continue
-      const day = anchor.getDate()
+    function plantar(day: number, a: (typeof calendarioActividades)[number]) {
       const list = map.get(day) ?? []
       // `gradoGrupo` es el "601" del prototipo (grado+grupo, ya resuelto por
       // el backend) — antes se mostraba el `pk_tactividad` acá por error
@@ -258,6 +261,22 @@ function PlaneadorPageContent() {
         status: a.status,
       })
       map.set(day, list)
+    }
+    for (const a of calendarioActividades) {
+      if (a.fechaInicio >= mesDesde && a.fechaInicio <= mesHasta) {
+        const inicio = parseLocalDate(a.fechaInicio)
+        if (inicio) plantar(inicio.getDate(), a)
+      }
+      // Actividad de un solo día (inicio === cierre): no se duplica en la
+      // misma celda.
+      if (
+        a.fechaCierre !== a.fechaInicio &&
+        a.fechaCierre >= mesDesde &&
+        a.fechaCierre <= mesHasta
+      ) {
+        const cierre = parseLocalDate(a.fechaCierre)
+        if (cierre) plantar(cierre.getDate(), a)
+      }
     }
     return map
   }, [calendarioActividades, mesDesde, mesHasta])
