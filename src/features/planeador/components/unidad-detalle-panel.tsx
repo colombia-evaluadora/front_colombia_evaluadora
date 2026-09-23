@@ -26,8 +26,8 @@ import { paths } from "@/config/paths"
 import { cn } from "@/lib/utils"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
-import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -35,7 +35,7 @@ import { createUnidadCriteriosColumns } from "@/features/planeador/components/ta
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
-import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type { UnidadActividad, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
 
@@ -61,16 +61,36 @@ interface PanelTabDef {
 
 // Mismos íconos que `UnidadFormTabs` (alta/edición de unidad) para que las
 // pestañas se vean iguales en las dos pantallas.
-function getVisibleTabs(esFormativo: boolean): PanelTabDef[] {
+//
+// `instrumentoLabel` (pedido explícito): la pestaña decía siempre "Rúbricas"
+// aunque las actividades vinculadas calificaran con Lista de cotejo o Escala
+// de valoración — pasa a "Criterios en {instrumento}" cuando TODAS las
+// actividades vinculadas comparten el mismo `instrumento_evaluacion` (ver
+// `resolverInstrumentoUnico`); con ninguna vinculada, o con varias que usan
+// instrumentos distintos, no hay un único rótulo que mostrar y se cae al
+// genérico "Rúbricas" de siempre.
+function getVisibleTabs(esFormativo: boolean, instrumentoLabel: string | undefined): PanelTabDef[] {
   const tabs: PanelTabDef[] = [
     { value: "general", label: "Información general", Icon: ClipboardTextIcon },
-    { value: "rubricas", label: "Rúbricas", Icon: FolderOpenIcon },
+    {
+      value: "rubricas",
+      label: instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Rúbricas",
+      Icon: FolderOpenIcon,
+    },
     { value: "actividades", label: "Actividades", Icon: ClipboardCheckIcon },
   ]
   if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
   }
   return tabs
+}
+
+/** Único `instrumento_evaluacion` real entre las actividades ya vinculadas a
+ *  la unidad, o `undefined` si no hay ninguna vinculada (todavía) o si hay
+ *  más de uno distinto (ahí no hay un solo instrumento que titular). */
+function resolverInstrumentoUnico(actividades: UnidadActividad[]): string | undefined {
+  const distintos = new Set(actividades.map((a) => a.instrumento).filter(Boolean))
+  return distintos.size === 1 ? [...distintos][0] : undefined
 }
 
 /**
@@ -231,12 +251,16 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // `unidad.enfoquePedagogico` SIEMPRE llega "Evaluativo" desde este listado
   // (el backend real no guarda un enfoque propio por unidad, ver el
   // comentario de `toUnidadTematica` en `use-unidades-query.ts`) — hay que
-  // derivarlo en vivo del referente curricular de GRADO + ASIGNATURA, mismo
-  // criterio que ya usa `useEnfoquePedagogicoDerivado` en
-  // `UnidadInfoGeneralFields` (edición) y el mismo `useReferenteCurricularQuery`
-  // que ya pide esta pantalla más abajo para los enunciados/evidencias.
-  const { data: referente } = useReferenteCurricularQuery(unidad.gradoId, unidad.asignaturaId)
-  const esFormativa = referente?.esFormativo ?? false
+  // derivarlo en vivo. `useUnidadReferenteQuery` (por `unidad.id`, la unidad
+  // YA existe acá), no `useReferenteCurricularQuery(unidad.gradoId,
+  // unidad.asignaturaId)`: esos ids casi nunca vienen del backend real (ver
+  // el comentario de `UnidadTematica.gradoId`), así que esa query quedaba
+  // deshabilitada para la mayoría de las unidades reales y `esFormativa`
+  // caía siempre al default `false` (mismo bug ya corregido en
+  // `Actividades`/`DialogAgregarActividad`/`UnidadTabs`, acá en un cuarto
+  // lugar).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
 
   return (
     <div className="flex flex-col gap-6">
@@ -320,7 +344,21 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
  * unidad (`planeador-editar-unidad-page.tsx`) reusan esta misma pestaña
  * tal cual, para no mantener dos editores de criterios distintos.
  */
-export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
+export function Rubricas({
+  unidad,
+  instrumentoLabel,
+}: {
+  unidad: UnidadTematica
+  /** Ver `resolverInstrumentoUnico`/`getVisibleTabs`: mismo rótulo que ya
+   *  resuelve la pestaña, pasado por el caller (`UnidadTabs`) para no volver
+   *  a pedir las actividades vinculadas acá adentro. `undefined` cuando no
+   *  hay un único instrumento que mostrar (sin actividades vinculadas, o con
+   *  varias que usan instrumentos distintos) — ahí el título se queda en el
+   *  genérico "Criterios de la unidad". Opcional: `planeador-editar-unidad-
+   *  page.tsx` reusa este componente ANTES de que la unidad tenga
+   *  actividades vinculadas (alta), donde no aplica. */
+  instrumentoLabel?: string
+}) {
   // Nombres (y cantidad) reales de los niveles de desempeño de la unidad —
   // MISMA query que `DialogAgregarCriterio` (`GET /planeador/unidades/:id/
   // valoraciones`, confirmado real), para que la tabla y el modal de alta
@@ -362,7 +400,7 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
   return (
     <div>
       <TabHeader
-        title="Criterios de la unidad"
+        title={instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Criterios de la unidad"}
         actionLabel="Agregar criterio"
         onAction={() => setDialogOpen(true)}
       />
@@ -391,9 +429,18 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
     [actividadesVinculadas],
   )
+  // `unidad.enfoquePedagogico` NO sirve acá: el backend real no guarda un
+  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
+  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
+  // "(%)" visible en unidades Formativas de verdad (reportado en vivo,
+  // "Exploramos y contamos nuestras experiencias", Preescolar). El
+  // referente REAL de esta unidad ya guardada sale de
+  // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
   const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion),
-    [unidad.id, unidad.metodoCalculo, totalPonderacion],
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
+    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
@@ -411,18 +458,35 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     columnVisibilityStorageKey: "unidad-detalle-panel-actividades-column-visibility",
   })
 
+  // Pedido explícito: la descripción decía siempre "su peso dentro de la
+  // unidad" — no aplica a Formativa (no hay peso ni calificación) ni a
+  // "Suma de puntos" (es puntaje, no peso) ni a "Promedio simple" (no hay
+  // nada que repartir). Mismo criterio que la columna de peso/el banner de
+  // abajo: `esFormativa` manda antes que `metodoCalculo`.
+  const descripcionActividades = esFormativa
+    ? "Las actividades vinculadas a la unidad."
+    : unidad.metodoCalculo === "Ponderado"
+      ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
+      : unidad.metodoCalculo === "Suma de puntos"
+        ? "Las actividades vinculadas y su puntaje dentro de la unidad."
+        : "Las actividades vinculadas a la unidad — todas cuentan por igual."
+
   return (
     <div>
       <TabHeader
         title="Actividades de la unidad"
-        description="Las actividades vinculadas y su peso dentro de la unidad."
+        description={descripcionActividades}
         action={<DialogAgregarActividad unidad={unidad} />}
       />
-      {/* "Promedio simple" no lleva peso por actividad (ni %, ni puntaje) —
-          sin la columna, la tabla podía leerse como si algo faltara por
-          cargar; el banner aclara que es el método el que lo decide. Mismo
-          criterio en el popover "Vincular actividad" (`DialogAgregarActividad`). */}
-      {unidad.metodoCalculo === "Promedio simple" && (
+      {/* Formativa: SIN banner — no hay nada de calificación que aclarar (la
+          unidad se observa, no se califica; "Promedio simple" abajo es un
+          aviso sobre cálculo de nota, y acá ese cálculo directamente no
+          aplica). "Promedio simple" no lleva peso por actividad (ni %, ni
+          puntaje) — sin la columna, la tabla podía leerse como si algo
+          faltara por cargar; el banner aclara que es el método el que lo
+          decide. Mismo criterio en el popover "Vincular actividad"
+          (`DialogAgregarActividad`). */}
+      {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
         <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
           <InfoIcon className="size-5 shrink-0" />
           <p>
@@ -450,12 +514,17 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
  * sin esto, `Tabs` quedaría con un `value` que no matchea ningún
  * `TabsTrigger` visible y no se vería ningún contenido.
  *
- * El enfoque (¿es Formativo?) se deriva en vivo por Grado+Asignatura
- * (`useReferenteCurricularQuery`, mismo hook que ya usa el form de
- * edición) en vez de leer `unidad.enfoquePedagogico` — ese campo viene
- * hardcodeado en `"Evaluativo"` para toda unidad real, así que sin esto la
- * pestaña "Rúbricas" se veía siempre acá, aunque el form de edición ya la
- * ocultara bien para la misma unidad.
+ * El enfoque (¿es Formativo?) sale de `useUnidadReferenteQuery` (por
+ * `unidad.id`, la unidad YA existe acá) en vez de `useReferenteCurricularQuery
+ * (unidad.gradoId, unidad.asignaturaId)`: esos ids casi nunca vienen del
+ * backend real (solo cuando el docente los ELIGIÓ en el form de edición, ver
+ * el comentario de `UnidadTematica.gradoId`), así que esa query quedaba
+ * deshabilitada para la mayoría de las unidades reales y `esFormativo` caía
+ * siempre al default `false` — la pestaña "Rúbricas" se mostraba igual en
+ * unidades Formativas de verdad (mismo bug que ya se corrigió en
+ * `Actividades`/`DialogAgregarActividad`, acá en un tercer lugar).
+ * Tampoco leer `unidad.enfoquePedagogico`: viene hardcodeado en
+ * `"Evaluativo"` para toda unidad real (el backend no lo guarda por unidad).
  */
 function UnidadTabs({
   unidad,
@@ -466,9 +535,19 @@ function UnidadTabs({
   tab: PanelTab
   onTabChange: (tab: PanelTab) => void
 }) {
-  const { data: referente } = useReferenteCurricularQuery(unidad.gradoId, unidad.asignaturaId)
-  const esFormativo = referente?.esFormativo ?? false
-  const visibleTabs = React.useMemo(() => getVisibleTabs(esFormativo), [esFormativo])
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativo = unidadReferente?.esFormativo ?? false
+  // Instrumento real de las actividades ya vinculadas — ver
+  // `resolverInstrumentoUnico` y el comentario de `getVisibleTabs`.
+  const { data: actividadesVinculadas = [] } = useUnidadActividadesQuery(unidad.id)
+  const instrumentoLabel = React.useMemo(
+    () => resolverInstrumentoUnico(actividadesVinculadas),
+    [actividadesVinculadas],
+  )
+  const visibleTabs = React.useMemo(
+    () => getVisibleTabs(esFormativo, instrumentoLabel),
+    [esFormativo, instrumentoLabel],
+  )
 
   React.useEffect(() => {
     if (!visibleTabs.some((t) => t.value === tab)) {
@@ -494,7 +573,7 @@ function UnidadTabs({
       </TabsContent>
       {!esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
-          <Rubricas unidad={unidad} />
+          <Rubricas unidad={unidad} instrumentoLabel={instrumentoLabel} />
         </TabsContent>
       )}
       <TabsContent value="actividades" className={PANEL}>

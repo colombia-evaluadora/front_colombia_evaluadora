@@ -158,20 +158,35 @@ export function UnidadInfoGeneralFields({
   onChange: (patch: Partial<UnidadDraft>) => void
   tab?: UnidadTab
 }) {
-  const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId, draft.asignaturaId)
+  // Con `tab` (alta desde "Agregar {instrumento}") el enfoque NO puede
+  // depender de que el docente elija un grado puntual: TODOS los grados de
+  // esa pestaña comparten el MISMO referente (`tab.referenteId`, ver el
+  // comentario de `UnidadTab`), así que "Proyecto pedagógico de ciclo"
+  // (Preescolar, Formativo) mostraba igual "Forma en que se van a calcular
+  // las actividades" — una sección que ni aplica a Formativo, ver el
+  // guard `enfoqueDerivado !== "Formativo"` más abajo — hasta que se
+  // elegía un grado y recién ahí `useReferenteCurricularQuery` resolvía
+  // `esFormativo`. Se usa CUALQUIERA de `tab.grados` como base de la
+  // consulta mientras no haya uno elegido — mismo criterio que ya aplica
+  // `subjectLabel` un poco más abajo.
+  const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId ?? tab?.grados[0]?.id, draft.asignaturaId)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
     }
   }, [draft.enfoquePedagogico, enfoqueDerivado, onChange])
 
+  // Mismo criterio que `enfoqueDerivado`/`subjectLabel`: con `tab`, el
+  // rótulo de nivel 1 ("Derechos Básicos de Aprendizaje" vs "Propósitos"…)
+  // y los enunciados disponibles no pueden esperar a que se elija un grado
+  // puntual — cualquiera de `tab.grados` ya resuelve el mismo referente.
   const {
     enunciados: enunciadosDisponibles,
     nombre: referenteNombre,
     descripcion: referenteDescripcion,
     nivel1Etiqueta,
     isPending: isPendingEnunciados,
-  } = useEnunciadosDbaQuery(draft.gradoId, draft.asignaturaId)
+  } = useEnunciadosDbaQuery(draft.gradoId ?? tab?.grados[0]?.id, draft.asignaturaId)
 
   // Grado/Asignatura salen de `GET /planeador/docentes/grado-asignatura`
   // (mismo endpoint real que ya usa el filtro de la Planilla): son los
@@ -211,10 +226,16 @@ export function UnidadInfoGeneralFields({
   }, [tab, docenteGradoAsignatura, draft.gradoId])
 
   // Mismo rótulo dinámico que ya usa Plan de Estudio ("Dimensión", "Área", …
-  // según lo que el referente curricular del grado tenga personalizado) —
-  // `isPreescolar` fijo en `false` porque acá no hay ese dato a mano; solo
-  // afecta el DEFECTO cuando el referente no personalizó nada.
-  const subjectLabel = useStudyPlanSubjectLabel(draft.gradoId, false)
+  // según lo que el referente curricular del grado tenga personalizado).
+  // Con `tab` (alta desde "Agregar {instrumento}") TODOS los grados de la
+  // pestaña comparten el MISMO referente (`tab.referenteId`, ver el
+  // comentario de `UnidadTab`) — así que no hace falta esperar a que el
+  // docente elija un grado puntual para resolverlo: alcanza con CUALQUIERA
+  // de `tab.grados` como base de la consulta. Antes se pedía siempre por
+  // `draft.gradoId` (sin elegir, `undefined`) y el campo se quedaba en el
+  // rótulo genérico ("Asignatura") hasta que se elegía un grado, aunque la
+  // pestaña ya dejara clarísimo qué referente aplicaba.
+  const subjectLabel = useStudyPlanSubjectLabel(draft.gradoId ?? tab?.grados[0]?.id, false)
 
   // Grado + Asignatura son el punto de partida de la unidad: el resto de
   // los campos (nombre, descripción, objetivos, contenidos, DBA, método de

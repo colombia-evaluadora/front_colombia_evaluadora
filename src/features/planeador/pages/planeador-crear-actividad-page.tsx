@@ -291,15 +291,24 @@ function CrearActividadForm({
   const [actividad] = useState(() => {
     let base = crearActividadVacia()
     if (unidadPreseleccionada) {
-      // Solo `grado`/`asignatura` (los NOMBRES) y la unidad misma — los ids
-      // (`gradoId`/`asignaturaId`/`grupoId`) los resuelve el propio form
-      // cruzando estos nombres contra el catálogo del docente (mismo
-      // mecanismo que ya usa para una actividad real sin `fk_tgrado`, ver
-      // el efecto de `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
+      // `grado`/`asignatura` (los NOMBRES) y la unidad misma siempre viajan.
+      // `gradoId`/`asignaturaId` viajan TAMBIÉN de una cuando la unidad ya
+      // los trae (`UnidadTematica.gradoId`/`.asignaturaId`, no siempre
+      // presentes — ver su comentario) — así el form no depende del cruce
+      // por NOMBRE contra el catálogo del docente (`AsignaturaGradoSection`)
+      // para saber a qué grado/asignatura pertenece: sin esto, "¿es
+      // formativa?"/instrumento/niveles quedaban esperando ese cruce
+      // asíncrono aunque la unidad ya lo determinara sin ambigüedad, y si el
+      // nombre no calzaba exacto contra el catálogo (mayúsculas, espacios)
+      // el cruce nunca resolvía. Si la unidad no trae los ids, se sigue
+      // cayendo al cruce por nombre (sin cambios ahí, solo más robusto, ver
+      // su comentario en `AsignaturaGradoSection`).
       base = {
         ...base,
         grado: unidadPreseleccionada.grado,
         asignatura: unidadPreseleccionada.asignatura,
+        gradoId: unidadPreseleccionada.gradoId,
+        asignaturaId: unidadPreseleccionada.asignaturaId,
         unidad: { id: unidadPreseleccionada.id, nombre: unidadPreseleccionada.nombre },
       }
     }

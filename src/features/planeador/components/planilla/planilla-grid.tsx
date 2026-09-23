@@ -236,16 +236,6 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                     return (
                       <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
                         <div className="flex items-center gap-1.5">
-                          {celda?.observacion?.trim() ? (
-                            <span
-                              className="line-clamp-2 min-w-0 flex-1 text-xs"
-                              title={celda.observacion}
-                            >
-                              {celda.observacion}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">Observar</span>
-                          )}
                           {celda && (
                             <CeldaObservacionTrigger
                               pkTactividadEstudiante={celda.pkTactividadEstudiante}
@@ -256,6 +246,13 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                               evidenciasActuales={celda.evidencias}
                               actividadSinComenzar={columna.fechaInicio > todayDateOnly()}
                             />
+                          )}
+                          {celda?.observacion?.trim() ? (
+                            <span className="min-w-0 flex-1 truncate text-xs" title={celda.observacion}>
+                              {celda.observacion}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Observar</span>
                           )}
                         </div>
                       </td>

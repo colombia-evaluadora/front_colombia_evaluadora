@@ -490,6 +490,7 @@ export function AcademicPeriodForm({
                   name={field.name}
                   type="number"
                   min={1}
+                  max={20}
                   step={1}
                   placeholder="Agregar"
                   value={field.state.value ?? ""}
@@ -500,11 +501,12 @@ export function AcademicPeriodForm({
                       e.preventDefault()
                     }
                   }}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    if (e.target.value.length > 2) return
                     field.handleChange(
                       Number.isNaN(e.target.valueAsNumber) ? null : e.target.valueAsNumber,
                     )
-                  }
+                  }}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>

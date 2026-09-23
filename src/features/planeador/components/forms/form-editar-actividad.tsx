@@ -398,6 +398,17 @@ export function EditarActividadForm({
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
+  // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
+  // `DialogAgregarActividad`, `unidadId` de la URL en
+  // `planeador-crear-actividad-page.tsx`): esa unidad determina Grado,
+  // Asignatura y ella misma sin ambigüedad — no hace falta que Grado/
+  // Asignatura/Unidad queden como selects a elegir de nuevo. Se detecta por
+  // la unidad YA presente en `actividadOriginal` (capturada al montar, no
+  // cambia aunque el docente la borre después) para no afectar el alta
+  // genérica ("Nueva actividad" del listado, sin unidad de entrada) ni la
+  // edición de una actividad existente (ahí SÍ tiene sentido poder mover
+  // grado/asignatura/unidad).
+  const unidadBloqueada = esNueva && actividadOriginal.unidad.id !== 0
   // A diferencia de `bloqueadoPorRecuperacion` (que exige `destino =
   // ACTIVIDAD` + origen elegido, porque ahí es cuando hay un valor real que
   // heredar), esto es la regla de negocio simple de la guía: "una actividad
@@ -443,12 +454,16 @@ export function EditarActividadForm({
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Identificación de la actividad</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <AsignaturaGradoSection form={form} bloqueadoPorRecuperacion={bloqueadoPorRecuperacion} />
+          <AsignaturaGradoSection
+            form={form}
+            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
+            unidadBloqueada={unidadBloqueada}
+          />
           <UnidadAsociadaSection
             form={form}
             unidades={unidades}
             onCrearUnidad={crearUnidad}
-            disabled={disabled || bloqueadoPorRecuperacion}
+            disabled={disabled || bloqueadoPorRecuperacion || unidadBloqueada}
           />
           <IdentificacionSection
             form={form}
@@ -1430,12 +1445,27 @@ function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string
 function AsignaturaGradoSection({
   form,
   bloqueadoPorRecuperacion,
+  unidadBloqueada = false,
 }: {
   form: FormActividad
   /** Ver `useRecuperacionBloqueaCampos` — Grado/Grupo, Asignatura y
    *  Estudiantes quedan bloqueados (ya los llenó `useRecuperacionAutoFill`
    *  con los de la actividad original) mientras esto sea `true`. */
   bloqueadoPorRecuperacion: boolean
+  /** `true` en el alta de una actividad DESDE una Unidad ya elegida
+   *  ("Agregar actividad" dentro de una Unidad temática — ver
+   *  `planeador-crear-actividad-page.tsx`): esa unidad YA determina grado y
+   *  asignatura sin ambigüedad, así que no tiene sentido dejarlos como
+   *  selects editables esperando que el docente los vuelva a elegir. Con
+   *  esto en `true`, "Grado / Grupo" y "Asignatura / materia" quedan
+   *  DESHABILITADOS del todo (ya vienen resueltos) — pedido explícito: antes
+   *  "Grado / Grupo" solo filtraba sus opciones al grado ya conocido pero
+   *  seguía viéndose editable (flecha, clickeable), lo que confundía sobre
+   *  si en verdad estaba fijo. El grupo elegido es el PRIMERO del grado
+   *  (ver el cruce por nombre más abajo); si el docente dicta más de un
+   *  grupo en ese grado y necesita otro, tiene que editarlo desde la
+   *  actividad ya creada. */
+  unidadBloqueada?: boolean
 }) {
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
@@ -1522,8 +1552,35 @@ function AsignaturaGradoSection({
   // contra `docentes/grado-asignatura`: mismo catálogo del propio docente,
   // pero una asignatura suele repetirse en más grados que un grupo puntual,
   // así que tiene más chance de matchear.
+  // Comparación tolerante (trim + sin distinguir mayúsculas): el nombre que
+  // guarda la unidad y el que trae `docentes/grado-asignatura` deberían ser
+  // el mismo texto, pero un espacio de más o una mayúscula distinta bastaba
+  // para que el cruce por nombre de abajo nunca encontrara par — dejando
+  // `gradoId` sin resolver "a veces" (reportado en vivo) aunque la unidad sí
+  // supiera a qué grado/asignatura pertenecía.
+  function mismoNombre(a: string, b: string): boolean {
+    return a.trim().toLowerCase() === b.trim().toLowerCase()
+  }
+
   useEffect(() => {
-    if (gradoId != null) return
+    // `gradoId` ya resuelto (seedeado directo desde `UnidadTematica.gradoId`
+    // cuando la unidad lo trae, ver `planeador-crear-actividad-page.tsx`, o
+    // ya elegido por el docente) — solo falta completar `grupoId` si sigue
+    // vacío: se toma el PRIMER grupo de ese grado del catálogo del docente,
+    // mismo criterio que el cruce por nombre de más abajo. Antes esta rama
+    // ni se evaluaba cuando `gradoId` venía resuelto de entrada, así que una
+    // unidad con `gradoId` real dejaba "Grado / Grupo" sin grupo para
+    // siempre.
+    if (gradoId != null) {
+      if (grupoId == null) {
+        const combo = docenteGrupos.find((g) => g.gradoId === gradoId)
+        if (combo) {
+          form.setFieldValue("grupoId", combo.grupoId)
+          form.setFieldValue("grupo", grupoLabel(combo))
+        }
+      }
+      return
+    }
     if (grupoId != null) {
       const combo = docenteGrupos.find((g) => g.grupoId === grupoId)
       if (combo) {
@@ -1541,10 +1598,10 @@ function AsignaturaGradoSection({
       }
     }
     // Alta de actividad DESDE una Unidad (`CrearActividadForm` en
-    // `planeador-crear-actividad-page.tsx`, `unidadId` de la URL): ahí solo
-    // hay `grado`/`asignatura` (los NOMBRES) precargados, sin ningún id —
-    // `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del backend
-    // real (ver su comentario en `unidad-tematica.ts`). Se cruzan los DOS
+    // `planeador-crear-actividad-page.tsx`, `unidadId` de la URL) cuando la
+    // unidad NO trae `gradoId`/`asignaturaId` reales (no siempre los trae,
+    // ver el comentario de `UnidadTematica.gradoId`) — ahí solo hay
+    // `grado`/`asignatura` (los NOMBRES) precargados. Se cruzan los DOS
     // nombres juntos contra `docentes/grado-asignatura` (un solo match,
     // a diferencia de los cruces de arriba que solo tienen UN dato) y,
     // encontrado el par, se elige de una el PRIMER grupo de ese grado
@@ -1554,7 +1611,7 @@ function AsignaturaGradoSection({
     // toca (ya viene elegida) porque esa sí depende solo de grado/asignatura.
     if (grado && asignatura) {
       const par = docenteGradoAsignatura.find(
-        (p) => p.gradoNombre === grado && p.asignaturaNombre === asignatura,
+        (p) => mismoNombre(p.gradoNombre, grado) && mismoNombre(p.asignaturaNombre, asignatura),
       )
       if (par) {
         form.setFieldValue("gradoId", par.gradoId)
@@ -1573,9 +1630,11 @@ function AsignaturaGradoSection({
 
   // Ver el comentario de `filtrarSoloEvaluativas` más arriba: sin filtro
   // (el caso normal) estas dos son las mismas listas de siempre.
-  const gruposVisibles = filtrarSoloEvaluativas
-    ? docenteGrupos.filter((g) => gradosEvaluativosIds.has(g.gradoId))
-    : docenteGrupos
+  // `unidadBloqueada` acota además a los grupos DEL GRADO que ya trajo la
+  // unidad — así el docente elige grupo, no grado, desde este mismo select.
+  const gruposVisibles = (
+    filtrarSoloEvaluativas ? docenteGrupos.filter((g) => gradosEvaluativosIds.has(g.gradoId)) : docenteGrupos
+  ).filter((g) => !unidadBloqueada || gradoId == null || g.gradoId === gradoId)
   const asignaturasVisibles = filtrarSoloEvaluativas
     ? asignaturas.filter((a) => paresEvaluativos.has(a.gradoId * 1_000_000 + a.asignaturaId))
     : asignaturas
@@ -1629,7 +1688,7 @@ function AsignaturaGradoSection({
               form.setFieldValue("matriculasIds", [])
               form.setFieldValue("asignarTodoElGrupo", true)
             }}
-            disabled={bloqueadoPorRecuperacion}
+            disabled={bloqueadoPorRecuperacion || unidadBloqueada}
           >
             <SelectTrigger id="grado-grupo">
               <SelectValue placeholder="Seleccione">
@@ -1691,7 +1750,7 @@ function AsignaturaGradoSection({
                   form.setFieldValue("matriculasIds", [])
                   form.setFieldValue("asignarTodoElGrupo", true)
                 }}
-                disabled={!hasGradoGrupo || bloqueadoPorRecuperacion}
+                disabled={!hasGradoGrupo || bloqueadoPorRecuperacion || unidadBloqueada}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue
@@ -2861,6 +2920,18 @@ function EvaluacionSection({
       ? instrumentos.filter((instrumento) => instrumentosPermitidosLabels.includes(instrumento))
       : instrumentos
 
+  // Con referente FORMATIVO la tarjeta entera no tiene nada que mostrar: el
+  // `useEffect` de arriba ya fuerza `esEvaluativa: false` (la actividad
+  // nunca es sumativa), instrumento/definición/ponderación ya se ocultaban
+  // más abajo, y "Adaptaciones"/"Seguimiento" (mismo `esFormativa`, ver
+  // `EditarActividadForm`) también desaparecen enteras. Antes solo se
+  // ocultaba el instrumento en adelante y quedaba un "¿Es evaluación
+  // sumativa?" bloqueado en "No" sin nada más en la tarjeta — un campo sin
+  // decisión real que tomar. El `return null` va DESPUÉS de los hooks de
+  // arriba (`useEffect`, `useInstrumentoEvaluacionCatalogQuery`) para no
+  // romper las reglas de hooks.
+  if (esFormativa) return null
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Evaluación</h3>
@@ -2872,7 +2943,7 @@ function EvaluacionSection({
               <Select
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={esFormativa || esRecuperacion || disabled}
+                disabled={esRecuperacion || disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>

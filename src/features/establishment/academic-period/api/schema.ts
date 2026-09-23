@@ -21,6 +21,7 @@ export const academicPeriodFormSchema = z
       .number()
       .int()
       .positive("El número de bloques es obligatorio")
+      .max(20, "El número de bloques no puede superar 20")
       .nullable()
       .refine((v): v is number => v !== null, {
         message: "El número de bloques es obligatorio",
@@ -161,7 +162,7 @@ export const gradeGroupFormSchema = z.object({
     .string()
     .min(1, "El grupo es obligatorio")
     .max(2, "El nombre del grupo no puede superar los 2 caracteres"),
-  director: z.string(),
+  directorId: z.number().nullable(),
   metodologia: z.string(),
   cupo: z
     .number()
