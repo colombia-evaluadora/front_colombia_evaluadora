@@ -95,7 +95,11 @@ export function UnidadFicha({
           )}
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold">Objetivos de la unidad</p>
+          {/* Sin "de la unidad" — mismo motivo que `Columna` en
+              `unidad-detalle-panel.tsx`: el rótulo real del instrumento
+              (Unidad temática / Proyecto pedagógico) no concuerda en género
+              con "de la". */}
+          <p className="mb-2 text-sm font-semibold">Objetivos</p>
           <BulletList items={objetivos} />
         </div>
         <div>
