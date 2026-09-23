@@ -53,7 +53,7 @@ import type {
   MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 import {
-  REQUIRED_MATRICULA_FIELD_LABELS,
+  getMatriculaFieldErrorMessage,
   resolveMatriculaMunicipioDepartments,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
@@ -243,12 +243,12 @@ function MatriculaEditPageContent() {
       dismiss()
       return
     }
-    const label = REQUIRED_MATRICULA_FIELD_LABELS[missingFields[0]] ?? missingFields[0]
-    notify(`Falta el campo obligatorio: ${label}.`, {
+    if (!values) return
+    notify(getMatriculaFieldErrorMessage(missingFields[0], values), {
       variant: "error",
       autoCloseMs: 0,
     })
-  }, [missingFields, notify, dismiss])
+  }, [missingFields, values, notify, dismiss])
   async function performSave(onSaved?: () => void) {
     if (!values || !data?.details) return
 

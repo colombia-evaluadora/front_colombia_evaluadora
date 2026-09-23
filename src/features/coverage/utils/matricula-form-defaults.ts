@@ -210,6 +210,7 @@ export interface MatriculaAccountsFound {
  * de soporte (esos se gestionan aparte, desde el botón "Archivos").
  */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const DOCUMENT_REGEX = /^\d{3,10}$/
 
 export function validateMatricula(
   values: CreateMatriculaInput,
@@ -229,7 +230,9 @@ export function validateMatricula(
   if (!values.academic.grade) missing.push("matricula-grade")
   if (!values.academic.group) missing.push("matricula-group")
   if (!values.student.documentType) missing.push("student-document-type")
-  if (!values.student.documentNumber.trim()) missing.push("student-document-number")
+  const studentDocument = values.student.documentNumber.trim()
+  if (!studentDocument) missing.push("student-document-number")
+  else if (!DOCUMENT_REGEX.test(studentDocument)) missing.push("student-document-number")
   if (!values.student.firstName.trim()) missing.push("student-first-name")
   if (!values.student.lastName.trim()) missing.push("student-last-name")
   if (!values.student.birthDate) missing.push("student-birth-date")
@@ -261,5 +264,43 @@ export function validateMatricula(
   } else if (guardianEmail && !EMAIL_REGEX.test(guardianEmail)) {
     missing.push("guardian-contact-email")
   }
+
+  // El documento del acudiente ya se valida "requerido" arriba (via
+  // `OPTIONAL_MATRICULA_FIELD_GETTERS`), pero el formato (3-10 dígitos)
+  // aplica siempre que haya un valor, sea o no obligatorio.
+  const guardianDocument = values.guardian.documentNumber.trim()
+  if (guardianDocument && !DOCUMENT_REGEX.test(guardianDocument)) {
+    missing.push("guardian-document-number")
+  }
   return missing
+}
+
+// Ids de campo de correo que `validateMatricula` marca como "invalid" tanto
+// si están vacíos (obligatorio) como si tienen un valor con formato inválido
+// — el id no distingue el motivo, así que el mensaje se decide acá viendo el
+// valor actual.
+const EMAIL_FIELD_IDS = new Set(["student-contact-email", "guardian-contact-email"])
+const DOCUMENT_FIELD_IDS = new Set(["student-document-number", "guardian-document-number"])
+
+export function getMatriculaFieldErrorMessage(id: string, values: CreateMatriculaInput): string {
+  const label = REQUIRED_MATRICULA_FIELD_LABELS[id] ?? id
+  if (EMAIL_FIELD_IDS.has(id)) {
+    const email =
+      id === "student-contact-email"
+        ? values.studentContact.email.trim()
+        : values.guardianContact.email.trim()
+    if (email && !EMAIL_REGEX.test(email)) {
+      return `Formato de correo electrónico inválido: ${label}.`
+    }
+  }
+  if (DOCUMENT_FIELD_IDS.has(id)) {
+    const document =
+      id === "student-document-number"
+        ? values.student.documentNumber.trim()
+        : values.guardian.documentNumber.trim()
+    if (document && !DOCUMENT_REGEX.test(document)) {
+      return `El documento debe tener entre 3 y 10 dígitos: ${label}.`
+    }
+  }
+  return `Falta el campo obligatorio: ${label}.`
 }
