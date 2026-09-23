@@ -293,6 +293,13 @@ function BotonDesvincular({
  *   - "Promedio simple": sin columna de peso — cada actividad pesa lo
  *     mismo, no hay nada que editar (el caller muestra un banner explicando
  *     esto arriba de la tabla, ver `UnidadDetallePanel`).
+ * `esFormativa` (`unidad.enfoquePedagogico === "Formativo"`) manda ANTES que
+ * `metodoCalculo`: una unidad Formativa no calibra nota en absoluto —sus
+ * actividades se OBSERVAN, no se califican— así que ninguna columna de peso
+ * aplica sin importar qué método de cálculo tenga guardado (ese campo es un
+ * remanente sin uso real en Formativo). Reportado en vivo: una unidad
+ * formativa (actividades "Participación en clase"/"Tarea", sin instrumento)
+ * seguía mostrando "(%)" en 0 para todas, como si calificara.
  * `totalPonderacion` es la suma de `ponderacion` de TODAS las actividades ya
  * vinculadas (la pasa el caller, que ya tiene la lista completa) — de ahí
  * sale el tope real de cada fila en modo Ponderado (`100 - totalPonderacion
@@ -304,9 +311,11 @@ export function createUnidadActividadesColumns(
   unidadId: number,
   metodoCalculo: MetodoCalculo,
   totalPonderacion: number,
+  esFormativa: boolean,
 ): ColumnDef<UnidadActividad>[] {
-  const columnaPeso: ColumnDef<UnidadActividad>[] =
-    metodoCalculo === "Ponderado"
+  const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
+    ? []
+    : metodoCalculo === "Ponderado"
       ? [
           {
             id: "ponderacion",
