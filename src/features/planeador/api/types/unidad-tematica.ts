@@ -125,6 +125,17 @@ export interface UnidadTematica {
    *  parcial, así que el grado/asignatura ya guardados no se tocan. */
   gradoId?: number
   asignaturaId?: number
+  /** Instrumento de evaluación FIJADO en la unidad (sso V488,
+   *  `TUNIDAD.FK_TLV_INSTRUMENTO_EVALUACION`) — mismo catálogo
+   *  `INSTRUMENTO_EVALUACION` que ya usa `Actividad.instrumento`, pero es un
+   *  dato de la UNIDAD, no de cada actividad: el rótulo del panel
+   *  ("Actividades en {instrumento}") ya no depende de que las actividades
+   *  vinculadas tengan su propio instrumento configurado (el caso más común
+   *  — recién vinculadas — nunca lo tiene). `undefined`/`""` en unidades que
+   *  no lo fijaron (todas las anteriores a V488, sin backfill). No
+   *  condiciona el instrumento de sus actividades. */
+  instrumento?: string
+  instrumentoId?: number
   /** Conteo real (`total_actividades` del listado) — la card del rail lo
    *  usa en vez de `actividades.length`, que contra el backend real queda
    *  siempre vacío (esa lista vive en `GET /unidades/:id/actividades`,

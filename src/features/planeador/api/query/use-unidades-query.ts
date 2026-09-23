@@ -36,6 +36,11 @@ interface UnidadRealRow {
   fk_tgrado?: number
   descripcion?: string
   calculo_definitiva?: string
+  /** sso V488 — instrumento de evaluación FIJADO en la unidad (catálogo
+   *  `INSTRUMENTO_EVALUACION`, mismo que usa cada actividad). `undefined`/
+   *  `null` en unidades que no lo fijaron (todas las anteriores a V488). */
+  fk_tlv_instrumento_evaluacion?: number | null
+  instrumento_evaluacion?: string | null
   objetivos?: { pk: number; orden: number; descripcion: string }[]
   contenidos?: { pk: number; orden: number; descripcion: string }[]
   active?: boolean
@@ -111,6 +116,8 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     actividades: [],
     totalActividades: row.total_actividades,
     referenteVigente: row.referente_vigente,
+    instrumento: row.instrumento_evaluacion ?? undefined,
+    instrumentoId: row.fk_tlv_instrumento_evaluacion ?? undefined,
   }
 }
 

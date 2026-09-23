@@ -28,6 +28,7 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -98,6 +99,8 @@ export function draftFromUnidad(unidad: UnidadTematica): UnidadDraft {
     asignatura: unidad.asignatura,
     gradoId: unidad.gradoId,
     asignaturaId: unidad.asignaturaId,
+    instrumento: unidad.instrumento,
+    instrumentoId: unidad.instrumentoId,
     enunciadosDba: unidad.enunciadosDba,
   }
 }
@@ -243,6 +246,10 @@ export function UnidadInfoGeneralFields({
   // asignatura pertenece — mismo criterio que `EditarActividadForm` en
   // `form-editar-actividad.tsx`.
   const hasGradoAsignatura = draft.gradoId != null && draft.asignaturaId != null
+
+  // Catálogo global (mismo que ya usa el instrumento de cada actividad) —
+  // ver el `<Select>` de "Instrumento de evaluación" más abajo.
+  const { data: instrumentosDisponibles } = useInstrumentoEvaluacionCatalogQuery()
   const disabled = !hasGradoAsignatura
 
   return (
@@ -487,6 +494,41 @@ export function UnidadInfoGeneralFields({
             </div>
           )}
         </FieldSet>
+      )}
+
+      {/* Instrumento de evaluación de la UNIDAD (sso V488) — mismo gate que
+          "Forma en que se van a calcular": una unidad Formativa no califica,
+          así que tampoco tiene instrumento. Opcional (a diferencia del
+          método de cálculo): el docente puede dejarlo sin fijar. Solo el
+          rótulo del panel ("Actividades en {instrumento}") — no condiciona
+          el instrumento de las actividades que se vinculen. */}
+      {enfoqueDerivado !== "Formativo" && (
+        <Field variant="outlined">
+          <FieldLabel htmlFor="instrumento-unidad">Instrumento de evaluación</FieldLabel>
+          <FieldDescription>
+            Opcional — rotula la pestaña de esta unidad ("Actividades en…"). No exige que las
+            actividades vinculadas usen el mismo instrumento.
+          </FieldDescription>
+          <Select
+            value={draft.instrumento || "__none__"}
+            onValueChange={(v) => v && onChange({ instrumento: v === "__none__" ? undefined : v })}
+            disabled={disabled}
+          >
+            <SelectTrigger id="instrumento-unidad">
+              <SelectValue placeholder="Seleccione">
+                {(value) => (value === "__none__" ? "Sin fijar" : value)}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Sin fijar</SelectItem>
+              {(instrumentosDisponibles ?? []).map((nombre) => (
+                <SelectItem key={nombre} value={nombre}>
+                  {nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       )}
     </div>
   )
