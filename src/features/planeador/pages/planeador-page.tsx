@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -285,6 +285,13 @@ function PlaneadorPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle>Planeador</TableScreenTitle>
+        {/* Sin esto el `NoticeProvider` de arriba nunca pintaba nada: `notify()`
+            solo actualiza su estado, hace falta un `NoticeOutlet` montado en
+            algún lado para mostrarlo — mismo lugar que usan crear/editar
+            actividad/unidad. Sin él, eliminar una actividad (o calificarla/
+            observarla desde el panel de detalle, que cuelga del mismo
+            provider) no mostraba ningún aviso, ni de éxito ni de error. */}
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
         <PlaneadorTabs />
 
         <TableScreenToolbar>
