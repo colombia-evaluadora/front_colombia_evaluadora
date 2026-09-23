@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useResolvedSubjectLabelQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-resolution"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -261,6 +262,16 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // lugar).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
+  // El form de edición (`UnidadInfoGeneralFields`) ya resuelve este rótulo
+  // dinámico ("Dimensión" en Preescolar, "Asignatura" en el resto, o lo que
+  // el referente haya personalizado) — este panel de SOLO LECTURA lo tenía
+  // hardcodeado en "Asignatura" siempre. Se resuelve por `unidadReferente.id`
+  // (ya disponible acá, sin pedir grado/asignatura de nuevo) y, si el
+  // referente no personalizó nada, cae a "Dimensión"/"Asignatura" según
+  // `esFormativa` — en este dominio, Formativo es sinónimo de Preescolar
+  // (ver el comentario de `fn_actividad_es_formativa`).
+  const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
+  const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
 
   return (
     <div className="flex flex-col gap-6">
@@ -285,7 +296,13 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         <Columna title="Descripción" className="md:pr-6">
           <p className="text-muted-foreground text-sm">{unidad.descripcion}</p>
         </Columna>
-        <Columna title="Objetivos de la unidad" className="md:px-6">
+        {/* Sin "de la unidad": el rótulo del instrumento real (Unidad
+            temática / Proyecto pedagógico) exigiría concordar el artículo
+            con él ("de la unidad" vs "del proyecto"), mismo problema de
+            género que ya se evitó en `CrearUnidadPopover` quitando el
+            artículo del todo — acá directo se saca el sufijo, igual que ya
+            está "Contenidos" al lado. */}
+        <Columna title="Objetivos" className="md:px-6">
           <BulletList items={unidad.objetivos} />
         </Columna>
         <Columna title="Contenidos" className="md:pl-6">
@@ -322,7 +339,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
           )}
         >
           <ResumenItem Icon={GraduationCapIcon} label="Grado:" value={unidad.grado} />
-          <ResumenItem Icon={BookIcon} label="Asignatura:" value={unidad.asignatura} />
+          <ResumenItem Icon={BookIcon} label={`${subjectLabel}:`} value={unidad.asignatura} />
           <ResumenItem
             Icon={CalendarBlankIcon}
             label="Inicio:"
