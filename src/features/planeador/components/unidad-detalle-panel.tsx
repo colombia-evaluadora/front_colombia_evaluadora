@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useResolvedSubjectLabelQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-resolution"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -261,6 +262,16 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // lugar).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
+  // El form de edición (`UnidadInfoGeneralFields`) ya resuelve este rótulo
+  // dinámico ("Dimensión" en Preescolar, "Asignatura" en el resto, o lo que
+  // el referente haya personalizado) — este panel de SOLO LECTURA lo tenía
+  // hardcodeado en "Asignatura" siempre. Se resuelve por `unidadReferente.id`
+  // (ya disponible acá, sin pedir grado/asignatura de nuevo) y, si el
+  // referente no personalizó nada, cae a "Dimensión"/"Asignatura" según
+  // `esFormativa` — en este dominio, Formativo es sinónimo de Preescolar
+  // (ver el comentario de `fn_actividad_es_formativa`).
+  const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
+  const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
 
   return (
     <div className="flex flex-col gap-6">
@@ -285,7 +296,13 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         <Columna title="Descripción" className="md:pr-6">
           <p className="text-muted-foreground text-sm">{unidad.descripcion}</p>
         </Columna>
-        <Columna title="Objetivos de la unidad" className="md:px-6">
+        {/* Sin "de la unidad": el rótulo del instrumento real (Unidad
+            temática / Proyecto pedagógico) exigiría concordar el artículo
+            con él ("de la unidad" vs "del proyecto"), mismo problema de
+            género que ya se evitó en `CrearUnidadPopover` quitando el
+            artículo del todo — acá directo se saca el sufijo, igual que ya
+            está "Contenidos" al lado. */}
+        <Columna title="Objetivos" className="md:px-6">
           <BulletList items={unidad.objetivos} />
         </Columna>
         <Columna title="Contenidos" className="md:pl-6">
@@ -322,7 +339,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
           )}
         >
           <ResumenItem Icon={GraduationCapIcon} label="Grado:" value={unidad.grado} />
-          <ResumenItem Icon={BookIcon} label="Asignatura:" value={unidad.asignatura} />
+          <ResumenItem Icon={BookIcon} label={`${subjectLabel}:`} value={unidad.asignatura} />
           <ResumenItem
             Icon={CalendarBlankIcon}
             label="Inicio:"
@@ -438,6 +455,13 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
+  // Mismo criterio que la pestaña "Rúbricas" (`resolverInstrumentoUnico`):
+  // `undefined` en Formativa (no hay instrumento) o con instrumentos
+  // mixtos/sin actividades vinculadas todavía.
+  const instrumentoLabel = React.useMemo(
+    () => resolverInstrumentoUnico(actividadesVinculadas),
+    [actividadesVinculadas],
+  )
   const columns = React.useMemo(
     () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
     [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
@@ -458,23 +482,32 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     columnVisibilityStorageKey: "unidad-detalle-panel-actividades-column-visibility",
   })
 
-  // Pedido explícito: la descripción decía siempre "su peso dentro de la
-  // unidad" — no aplica a Formativa (no hay peso ni calificación) ni a
-  // "Suma de puntos" (es puntaje, no peso) ni a "Promedio simple" (no hay
-  // nada que repartir). Mismo criterio que la columna de peso/el banner de
-  // abajo: `esFormativa` manda antes que `metodoCalculo`.
-  const descripcionActividades = esFormativa
-    ? "Las actividades vinculadas a la unidad."
-    : unidad.metodoCalculo === "Ponderado"
-      ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
-      : unidad.metodoCalculo === "Suma de puntos"
-        ? "Las actividades vinculadas y su puntaje dentro de la unidad."
-        : "Las actividades vinculadas a la unidad — todas cuentan por igual."
+  // Pedido explícito: título y descripción decían siempre "Actividades de
+  // la unidad"/"su peso dentro de la unidad" sin importar nada — mismo
+  // criterio que ya usa "Rúbricas" (`getVisibleTabs`/`resolverInstrumentoUnico`):
+  // con un único instrumento entre las actividades vinculadas, "Actividades
+  // en {instrumento}" / "Actividades vinculadas en {instrumento}." — más
+  // preciso que el peso/método de cálculo, que es un dato aparte (una misma
+  // unidad Rúbrica puede ser Ponderada o Promediada). Sin instrumento único
+  // (Formativa —nunca lo tiene—, sin actividades vinculadas todavía, o con
+  // varias que usan instrumentos distintos) se cae al genérico de siempre,
+  // con el método de cálculo como pista (`esFormativa` manda antes que
+  // `metodoCalculo`, igual que la columna de peso/el banner de abajo).
+  const tituloActividades = instrumentoLabel ? `Actividades en ${instrumentoLabel}` : "Actividades de la unidad"
+  const descripcionActividades = instrumentoLabel
+    ? `Actividades vinculadas en ${instrumentoLabel}.`
+    : esFormativa
+      ? "Las actividades vinculadas a la unidad."
+      : unidad.metodoCalculo === "Ponderado"
+        ? "Las actividades vinculadas y su peso (%) dentro de la unidad."
+        : unidad.metodoCalculo === "Suma de puntos"
+          ? "Las actividades vinculadas y su puntaje dentro de la unidad."
+          : "Las actividades vinculadas a la unidad — todas cuentan por igual."
 
   return (
     <div>
       <TabHeader
-        title="Actividades de la unidad"
+        title={tituloActividades}
         description={descripcionActividades}
         action={<DialogAgregarActividad unidad={unidad} />}
       />
