@@ -268,6 +268,14 @@ export function isNotFoundError(error: unknown): boolean {
   return Axios.isAxiosError(error) && error.response?.status === 404
 }
 
+// Un 409 significa "esto ya no está en el estado que asumiste" — p.ej.
+// `ai-control-service` lo devuelve cuando el docente modificó a mano un
+// texto que se intenta regenerar sin `SOBRESCRIBIR`. La pantalla lo traduce
+// a una confirmación en vez de al toast de error genérico.
+export function isConflictError(error: unknown): boolean {
+  return Axios.isAxiosError(error) && error.response?.status === 409
+}
+
 // Mismo mensaje que ya muestra el toast global del interceptor (arriba),
 // pero para diálogos que quieren mostrarlo en su propio banner en vez de (o
 // además de) el toast — p.ej. para que no quede detrás del overlay del
