@@ -541,9 +541,7 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
         numeric
-        // Ningún documento colombiano (CC, TI, CE, NIT de persona) supera
-        // los 15 dígitos — 150 dejaba pasar cualquier longitud.
-        maxLength={15}
+        maxLength={10}
         disabled={identityDisabled}
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
@@ -1283,7 +1281,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-document-number")}
           value={value.documentNumber}
           numeric
-          maxLength={15}
+          maxLength={10}
           disabled={identityDisabled}
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />

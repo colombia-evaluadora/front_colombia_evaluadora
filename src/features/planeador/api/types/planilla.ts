@@ -56,6 +56,11 @@ export interface PlanillaCelda {
   recuperacion: number | null
   definitiva: number | null
   nota: number | null
+  /** Nota ya convertida a la escala real de calificación del período (la
+   *  que se muestra en el boletín) — a diferencia de `calificacion`, que es
+   *  el resultado crudo del instrumento (0-100). Es lo que debe pintar la
+   *  celda, nunca `calificacion` sin convertir. */
+  notaHomologada: number | null
   calificable: "S" | "N" | null
   observacion: string | null
   /** `esFormativa`/`es_formativa` — si la unidad de esta actividad es
@@ -80,6 +85,9 @@ export interface PlanillaFila {
   pkTestudiante: number
   nombreEstudiante: string
   definitivaProyectada: number | null
+  /** `definitivaProyectada` ya convertida a la escala real del período — lo
+   *  que debe pintar la fila, igual que `PlanillaCelda.notaHomologada`. */
+  definitivaProyectadaHomologada: number | null
   definitivaRegistrada: number | null
   tendencia: number | null
   celdas: PlanillaCelda[]

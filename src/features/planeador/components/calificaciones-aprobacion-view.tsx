@@ -22,8 +22,8 @@ import {
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  instrumentoSinBulk,
   resolverInstrumentoEfectivo,
-  splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
@@ -114,14 +114,9 @@ export function CalificacionesAprobacionView({
   // aviso, confirmado en vivo con una escala de 2 criterios.
   // Por tipo EFECTIVO (resuelve "Otro" con método al instrumento
   // equivalente) — un "Otro" que delega en RUBRICA/LISTA_COTEJO sí tiene
-  // bulk; solo VALOR_NUMERICO (escala numérica u "Otro" sin método) y la
-  // escala con 2+ criterios (V472, sin bulk propio todavía) quedan afuera.
+  // bulk; ver `instrumentoSinBulk` para qué queda afuera.
   const efectivoBulk = resolverInstrumentoEfectivo(instrumento)
-  const escalaSinBulk =
-    efectivoBulk.tipo === "VALOR_NUMERICO" ||
-    (efectivoBulk.tipo === "ESCALA_VALORACION" &&
-      (efectivoBulk.definicion.niveles.length === 0 ||
-        splitCriteriosGenerales(efectivoBulk.definicion.criteriosGenerales).length > 1))
+  const escalaSinBulk = instrumentoSinBulk(efectivoBulk)
 
   /** Mismo bulk que `CalificarActividadBulk`: un `PUT .../calificar-bulk/<tipo>`
    *  por cada criterio/ítem/nivel llenado, aplicado a los estudiantes tildados. */

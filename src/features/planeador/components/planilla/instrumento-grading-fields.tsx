@@ -42,7 +42,7 @@ function quitarNota(value: NotaCriterio[], criterioId: number): NotaCriterio[] {
   return value.filter((n) => n.criterioId !== criterioId)
 }
 
-function notaDe(value: NotaCriterio[], criterioId: number): NotaCriterio | undefined {
+export function notaDe(value: NotaCriterio[], criterioId: number): NotaCriterio | undefined {
   return value.find((n) => n.criterioId === criterioId)
 }
 
@@ -85,6 +85,15 @@ export type InstrumentoEfectivo =
    *  porcentaje manual, no hay estructura que mostrar. */
   | { tipo: "VALOR_NUMERICO" }
   | { tipo: null }
+
+/** Bulk soportado por el backend real: RUBRICA/LISTA_COTEJO siempre;
+ *  ESCALA_VALORACION siempre (`calificar-bulk/escala` acepta `PK_NIVEL`/
+ *  `VALOR_NUMERICO` con 0-1 criterio, o `CRITERIOS` — un valor por criterio,
+ *  igual para todos los estudiantes — con 2+, desde V484). Solo
+ *  VALOR_NUMERICO ("Otro" sin método) se queda sin endpoint de bulk. */
+export function instrumentoSinBulk(efectivo: InstrumentoEfectivo): boolean {
+  return efectivo.tipo === "VALOR_NUMERICO"
+}
 
 export function resolverInstrumentoEfectivo(
   instrumento: InstrumentoActividad | undefined,
@@ -262,9 +271,9 @@ function EscalaValoracionFields({
   // la escala (`criterioId` fijo en 0).
   const criterios = splitCriteriosGenerales(escala.criteriosGenerales)
 
-  // Sin niveles cualitativos: es una escala numérica — el backend la exige
-  // calificar celda a celda con `valorNumerico`, no con `calificar-bulk`
-  // (ver el 400 documentado: "use PUT .../calificar con valorNumerico").
+  // Sin niveles cualitativos: es una escala numérica — el mismo campo sirve
+  // para calificar celda a celda o en bulk (`calificar-bulk/escala` acepta
+  // VALOR_NUMERICO, ver `buildBulkInputs`).
   if (escala.niveles.length === 0) {
     if (criterios.length > 1) {
       return (

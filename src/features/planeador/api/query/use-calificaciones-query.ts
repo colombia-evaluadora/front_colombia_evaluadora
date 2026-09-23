@@ -53,6 +53,7 @@ interface CalificacionRow {
   asistencia_observacion: string | null
   fk_soporte_archivo: number | null
   calificacion: number | null
+  nota_homologada: number | null
   calificable: "S" | "N"
   nota_observacion: string | null
 }
@@ -86,6 +87,7 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     // directo en vez de recalcularlo de `notas` (ver el campo de abajo).
     notas: [],
     calificacion: row.calificacion,
+    notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
   }

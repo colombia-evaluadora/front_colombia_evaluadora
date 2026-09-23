@@ -266,8 +266,10 @@ function CalificacionRow({
                 {estudiante.observacion}
               </span>
             ) : (
-              <span className="text-muted-foreground">Observar</span>
+              <span className="text-muted-foreground">Agregar observación</span>
             )
+          ) : estudiante.notaHomologada != null ? (
+            <span className="font-semibold">{estudiante.notaHomologada.toFixed(2)}</span>
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
           ) : (
