@@ -21,6 +21,7 @@ export const academicPeriodFormSchema = z
       .number()
       .int()
       .positive("El número de bloques es obligatorio")
+      .max(20, "El número de bloques no puede superar 20")
       .nullable()
       .refine((v): v is number => v !== null, {
         message: "El número de bloques es obligatorio",

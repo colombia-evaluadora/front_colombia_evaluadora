@@ -26,6 +26,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import { fetchAsistenciaBloquesProgramados } from "@/features/academic-management/asistencia/api/query/use-asistencia-bloques-programados-query"
 import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
@@ -70,32 +71,46 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 
   /** Toma la asistencia de UN estudiante directo desde el Marcar del
    *  Planeador -- mismo endpoint que usa el módulo de Asistencia
-   *  (`POST /asistencias/registrar`), sin bloque de horario (actividad
-   *  evaluativa) o por la actividad misma (formativa, igual que el gate que
-   *  ya usa observar). */
-  function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
+   *  (`POST /asistencias/registrar`), por ASIGNATURA (formativa incluida:
+   *  desde V436 preescolar también registra por asignatura+bloque, no por
+   *  ACTIVIDAD -- esa vía quedó inalcanzable y sus filas no las reconoce el
+   *  módulo de Asistencia), contra TODOS los bloques reales de THORARIO ese
+   *  día (V481). */
+  async function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
     if (actividadSinComenzar) return
     if (!actividad.grupoId) {
       notify("Falta el grupo de la actividad para registrar asistencia.", { variant: "error" })
       return
     }
-    registrarAsistencia.mutate(
-      {
+    if (!actividad.asignaturaId) {
+      notify("Falta la asignatura de la actividad para registrar asistencia.", { variant: "error" })
+      return
+    }
+    try {
+      const bloques = await fetchAsistenciaBloquesProgramados({
         GRUPO: actividad.grupoId,
+        ASIGNATURA: actividad.asignaturaId,
         FECHA: actividad.fechaInicio,
-        REGISTROS: [{ fkMatricula: matriculaId, tipoAsistencia: tipo }],
-        ...(formativa
-          ? { ACTIVIDAD: actividad.id }
-          : { ASIGNATURA: actividad.asignaturaId, BLOQUE: null }),
-      },
-      {
-        onSuccess: () => {
-          notify("Asistencia registrada.")
-          queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
-        },
-        onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-      },
-    )
+      })
+      // Sin clase programada ese día (horario no cargado todavía): se
+      // registra suelta, sin bloque, en vez de no registrar nada.
+      const bloquesARegistrar = bloques.length > 0 ? bloques : [null]
+      await Promise.all(
+        bloquesARegistrar.map((bloque) =>
+          registrarAsistencia.mutateAsync({
+            GRUPO: actividad.grupoId!,
+            FECHA: actividad.fechaInicio,
+            REGISTROS: [{ fkMatricula: matriculaId, tipoAsistencia: tipo }],
+            ASIGNATURA: actividad.asignaturaId!,
+            BLOQUE: bloque,
+          }),
+        ),
+      )
+      notify("Asistencia registrada.")
+      queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    }
   }
 
   if (isPending) {
@@ -140,7 +155,6 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
             <th className="px-4 py-3 text-left font-semibold uppercase">
               {formativa ? "Observación" : "Nota"}
             </th>
-            <th className="w-12 px-2 py-3" aria-label="Acciones" />
           </tr>
         </thead>
         <tbody className="divide-border divide-y">
@@ -222,44 +236,44 @@ function CalificacionRow({
         </div>
       </td>
       <td className="px-4 py-3 align-middle">
-        {formativa ? (
-          estudiante.observacion?.trim() ? (
-            <span className="line-clamp-2 text-xs" title={estudiante.observacion}>
-              {estudiante.observacion}
-            </span>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {formativa ? (
+            <CeldaObservacionTrigger
+              pkTactividadEstudiante={estudiante.id}
+              contexto={actividad.nombre}
+              fecha={estudiante.fechaAsistencia ?? null}
+              estudianteNombre={nombreCompleto}
+              observacionActual={estudiante.observacion ?? null}
+              evidenciasActuales={[]}
+              actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
+              onGuardado={onGuardado}
+            />
           ) : (
-            <span className="text-muted-foreground">Observar</span>
-          )
-        ) : porcentaje !== null ? (
-          <span className="font-semibold">{porcentaje}%</span>
-        ) : (
-          <span className="text-muted-foreground">Agregar</span>
-        )}
-      </td>
-      <td className="px-2 py-3 align-middle">
-        {formativa ? (
-          <CeldaObservacionTrigger
-            pkTactividadEstudiante={estudiante.id}
-            contexto={actividad.nombre}
-            fecha={estudiante.fechaAsistencia ?? null}
-            estudianteNombre={nombreCompleto}
-            observacionActual={estudiante.observacion ?? null}
-            evidenciasActuales={[]}
-            actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
-            onGuardado={onGuardado}
-          />
-        ) : (
-          <DialogCalificarActividad
-            actividadId={actividad.id}
-            actividadNombre={actividad.nombre}
-            asignatura={actividad.asignatura}
-            gradoId={actividad.gradoId}
-            pkTactividadEstudiante={estudiante.id}
-            estudianteNombre={nombreCompleto}
-            fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
-            onGuardado={onGuardado}
-          />
-        )}
+            <DialogCalificarActividad
+              actividadId={actividad.id}
+              actividadNombre={actividad.nombre}
+              asignatura={actividad.asignatura}
+              gradoId={actividad.gradoId}
+              pkTactividadEstudiante={estudiante.id}
+              estudianteNombre={nombreCompleto}
+              fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
+              onGuardado={onGuardado}
+            />
+          )}
+          {formativa ? (
+            estudiante.observacion?.trim() ? (
+              <span className="min-w-0 flex-1 truncate text-xs" title={estudiante.observacion}>
+                {estudiante.observacion}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Observar</span>
+            )
+          ) : porcentaje !== null ? (
+            <span className="font-semibold">{porcentaje}%</span>
+          ) : (
+            <span className="text-muted-foreground">Agregar</span>
+          )}
+        </div>
       </td>
     </tr>
   )
@@ -328,7 +342,10 @@ function AsistenciaSelect({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {ASISTENCIA_OPTIONS.filter((opt) => opt.value !== "sin-registrar").map((opt) => (
+          {/* De momento solo Asistió/No asistió: aplicar "Llegó tarde" a
+              TODOS los bloques del día no tiene el mismo sentido que a un
+              único bloque -- queda pendiente. */}
+          {ASISTENCIA_OPTIONS.filter((opt) => opt.value === "asistio" || opt.value === "no-asistio").map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               <span className="flex items-center gap-2">
                 <opt.Icon className={cn("size-4", opt.iconClass)} />
