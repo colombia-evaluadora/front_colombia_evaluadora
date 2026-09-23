@@ -293,13 +293,15 @@ function BotonDesvincular({
  *   - "Promedio simple": sin columna de peso — cada actividad pesa lo
  *     mismo, no hay nada que editar (el caller muestra un banner explicando
  *     esto arriba de la tabla, ver `UnidadDetallePanel`).
- * `esFormativa` (`unidad.enfoquePedagogico === "Formativo"`) manda ANTES que
- * `metodoCalculo`: una unidad Formativa no calibra nota en absoluto —sus
- * actividades se OBSERVAN, no se califican— así que ninguna columna de peso
- * aplica sin importar qué método de cálculo tenga guardado (ese campo es un
- * remanente sin uso real en Formativo). Reportado en vivo: una unidad
- * formativa (actividades "Participación en clase"/"Tarea", sin instrumento)
- * seguía mostrando "(%)" en 0 para todas, como si calificara.
+ * `esFormativa` manda ANTES que `metodoCalculo`: una unidad Formativa no
+ * calibra nota en absoluto —sus actividades se OBSERVAN, no se califican—
+ * así que ninguna columna de peso aplica sin importar qué método de cálculo
+ * tenga guardado (ese campo es un remanente sin uso real en Formativo).
+ * Reportado en vivo: una unidad formativa (actividades "Participación en
+ * clase"/"Tarea", sin instrumento) seguía mostrando "(%)" en 0 para todas,
+ * como si calificara. Por el mismo motivo —Formativa no tiene instrumento de
+ * evaluación— la columna "Instrumento" tampoco se muestra: quedaba siempre
+ * vacía.
  * `totalPonderacion` es la suma de `ponderacion` de TODAS las actividades ya
  * vinculadas (la pasa el caller, que ya tiene la lista completa) — de ahí
  * sale el tope real de cada fila en modo Ponderado (`100 - totalPonderacion
@@ -358,13 +360,20 @@ export function createUnidadActividadesColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
       cell: ({ row }) => <span>{row.original.tipo}</span>,
     },
-    {
-      id: "instrumento",
-      accessorKey: "instrumento",
-      meta: { label: "Instrumento" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Instrumento" />,
-      cell: ({ row }) => <span>{row.original.instrumento}</span>,
-    },
+    // Formativa: no hay instrumento de evaluación en absoluto (se observa,
+    // no se califica) — la columna quedaba siempre vacía. Mismo criterio
+    // que `columnaPeso` (`esFormativa` manda antes que cualquier otra cosa).
+    ...(esFormativa
+      ? []
+      : [
+          {
+            id: "instrumento",
+            accessorKey: "instrumento",
+            meta: { label: "Instrumento" },
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Instrumento" />,
+            cell: ({ row }) => <span>{row.original.instrumento}</span>,
+          } satisfies ColumnDef<UnidadActividad>,
+        ]),
     {
       id: "grupo",
       accessorKey: "grupo",

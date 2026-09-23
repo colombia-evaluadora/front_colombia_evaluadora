@@ -242,12 +242,33 @@ export function setObservacion(matriculaId: number, periodoId: number, texto: st
 
 export function deleteObservacion(matriculaId: number, periodoId: number): void {
   observaciones.delete(observacionKey(matriculaId, periodoId))
+  estadosObservacion.delete(observacionKey(matriculaId, periodoId))
+}
+
+/** `APROBADA` = tal como salió de la IA, `MODIFICADA` = el docente la editó
+ *  a mano. Lo que decide si `/ai/observaciones/periodo` puede pisarla sin
+ *  `SOBRESCRIBIR`. */
+export type EstadoObservacion = "APROBADA" | "MODIFICADA"
+
+const estadosObservacion = new Map<string, EstadoObservacion>()
+
+export function getEstadoObservacion(matriculaId: number, periodoId: number): EstadoObservacion | null {
+  return estadosObservacion.get(observacionKey(matriculaId, periodoId)) ?? null
+}
+
+export function setEstadoObservacion(
+  matriculaId: number,
+  periodoId: number,
+  estado: EstadoObservacion,
+): void {
+  estadosObservacion.set(observacionKey(matriculaId, periodoId), estado)
 }
 
 /** El comentario del AÑO — la fila Final. Va en su propio mapa, igual que en
  *  el backend va en su propia tabla: la llave es solo la matrícula, sin
  *  período, porque la matrícula ya determina el año. */
 const observacionesAnio = new Map<number, string>()
+const estadosObservacionAnio = new Map<number, EstadoObservacion>()
 
 export function getObservacionAnio(matriculaId: number): string | null {
   return observacionesAnio.get(matriculaId) ?? null
@@ -259,6 +280,15 @@ export function setObservacionAnio(matriculaId: number, texto: string): void {
 
 export function deleteObservacionAnio(matriculaId: number): void {
   observacionesAnio.delete(matriculaId)
+  estadosObservacionAnio.delete(matriculaId)
+}
+
+export function getEstadoObservacionAnio(matriculaId: number): EstadoObservacion | null {
+  return estadosObservacionAnio.get(matriculaId) ?? null
+}
+
+export function setEstadoObservacionAnio(matriculaId: number, estado: EstadoObservacion): void {
+  estadosObservacionAnio.set(matriculaId, estado)
 }
 
 /** Informes ya consolidados: `<grupo>-<periodo>`. Lo que NO está acá se
