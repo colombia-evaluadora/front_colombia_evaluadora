@@ -3,7 +3,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   CaretDownIcon,
   CaretUpIcon,
-  ChatCircleTextIcon,
   ClipboardCheckIcon,
   ProhibitIcon,
 } from "@/components/ui/icons"
@@ -129,7 +128,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
               <tr>
                 <th
                   rowSpan={2}
-                  className="w-48 px-4 py-3 text-left align-bottom font-semibold uppercase"
+                  className="w-80 px-4 py-3 text-left align-bottom font-semibold uppercase"
                 >
                   Nombres
                 </th>
@@ -169,7 +168,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
             </>
           ) : (
             <tr>
-              <th className="w-48 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+              <th className="w-80 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
               {mostrarDefinitiva && (
                 <th className="w-28 px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
               )}
@@ -348,9 +347,7 @@ function ColumnaHeader({
   onAbrirBulk: (columna: PlanillaColumna) => void
 }) {
   const formativa = esFormativa(columna)
-  const accion = formativa
-    ? `Observar "${columna.titulo}" en bloque`
-    : `Calificar "${columna.titulo}" en bloque`
+  const accion = `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
@@ -358,27 +355,29 @@ function ColumnaHeader({
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
         <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                color="neutral"
-                size="icon-xs"
-                className="shrink-0"
-                onClick={() => onAbrirBulk(columna)}
-                aria-label={accion}
-              />
-            }
-          >
-            {formativa ? (
-              <ChatCircleTextIcon className="size-4" />
-            ) : (
+        {/* Formativa: sin botón de bloque — la observación es siempre
+            individual, desde "Marcar" (fn_actividad_observar_grupal pisa
+            la observación de TODOS los estudiantes sin poder respetar la
+            que ya haya cargada a mano, así que no se ofrece como acción). */}
+        {!formativa && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  className="shrink-0"
+                  onClick={() => onAbrirBulk(columna)}
+                  aria-label={accion}
+                />
+              }
+            >
               <ClipboardCheckIcon className="size-4" />
-            )}
-          </TooltipTrigger>
-          <TooltipContent>{accion}</TooltipContent>
-        </Tooltip>
+            </TooltipTrigger>
+            <TooltipContent>{accion}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </th>
   )
