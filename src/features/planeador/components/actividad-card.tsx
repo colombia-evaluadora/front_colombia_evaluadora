@@ -113,8 +113,17 @@ export function ActividadCard({
   //
   // "Aprobar" (bulk) no aplica en preescolar: ahí no hay reporte masivo,
   // "Marcar" ya cubre observación + asistencia de a un estudiante por vez.
+  // Tampoco aplica a una actividad que no es evaluativa (`esEvaluativa ===
+  // false`, "N" en el backend): sin nota que calificar no hay nada que
+  // aprobar en bloque, aunque la unidad en sí sea Evaluativo. Antes esto
+  // dependía SOLO de `esActividadFormativa` (`es_formativa`), que el listado
+  // real todavía no devuelve (reportado en vivo: el botón seguía
+  // apareciendo para actividades con `es_evaluativa: "N"`) — `esEvaluativa`
+  // sí viene siempre en esta fila, así que sirve de gate inmediato mientras
+  // el backend no complete `es_formativa` ahí, y además es la condición más
+  // precisa: "Aprobar" nunca tiene sentido sin nota, sea o no formativa.
   const acciones: Accion[] = ACCIONES_BASE.filter(
-    (accion) => accion.label !== "Aprobar" || !esActividadFormativa(actividad),
+    (accion) => accion.label !== "Aprobar" || (actividad.esEvaluativa && !esActividadFormativa(actividad)),
   ).map((accion) => {
     if (accion.label === "Editar" && onEdit) return { ...accion, onClick: onEdit }
     if (accion.label === "Marcar" && onShowGrades) return { ...accion, onClick: onShowGrades }
