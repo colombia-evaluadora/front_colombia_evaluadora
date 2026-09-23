@@ -16,18 +16,28 @@ import { CalificacionesAprobacionView } from "@/features/planeador/components/ca
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
+import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 const ACCIONES = [
-  { label: "Editar", Icon: PencilIcon },
-  { label: "Marcar", Icon: CheckIcon },
-  { label: "Aprobar", Icon: ClipboardCheckIcon },
+  { id: "marcar", label: "Marcar", Icon: CheckIcon },
+  { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" NO va acá: el export por actividad ya vive en la card
   // (botón conectado a `useExportarActividadesJson`, el mismo endpoint
   // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
   // del panel dejaba dos disparadores de exportación en la misma
   // pantalla, y el del panel no tenía handler.
-  { label: "Eliminar", Icon: TrashIcon },
+  { id: "eliminar", label: "Eliminar", Icon: TrashIcon },
 ] as const
+
+// El label mostrado (tooltip + aria-label) de "Marcar" es "Calificar", salvo
+// en una actividad formativa donde no hay nota que calificar y pasa a
+// "Observar". "Aprobar" nunca convive con formativa (se filtra más abajo),
+// así que queda fijo en "Calificar múltiple".
+function labelFor(id: string, label: string, actividad: Actividad | undefined): string {
+  if (id === "marcar") return actividad && esActividadFormativa(actividad) ? "Observar" : "Calificar"
+  if (id === "aprobar") return "Calificar múltiple"
+  return label
+}
 
 interface ActividadDetallePanelProps {
   actividadId: number
@@ -151,20 +161,20 @@ export function ActividadDetallePanel({
           </Tooltip>
           {ACCIONES.filter(
             (a) =>
-              a.label !== "Editar" &&
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
               // observación + asistencia de a un estudiante por vez.
-              (a.label !== "Aprobar" || !actividad || !esActividadFormativa(actividad)),
-          ).map(({ label, Icon }) => {
+              a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad),
+          ).map(({ id, label, Icon }) => {
             const handler =
-              label === "Marcar"
+              id === "marcar"
                 ? onShowGrades
-                : label === "Aprobar"
+                : id === "aprobar"
                   ? onShowApproval
                   : undefined
-            const labelConNombre = actividad ? `${label} ${actividad.nombre}` : label
+            const displayLabel = labelFor(id, label, actividad)
+            const labelConNombre = actividad ? `${displayLabel} ${actividad.nombre}` : displayLabel
             return (
-              <Tooltip key={label}>
+              <Tooltip key={id}>
                 <TooltipTrigger
                   render={
                     <Button
