@@ -304,3 +304,11 @@ export function getMatriculaFieldErrorMessage(id: string, values: CreateMatricul
   }
   return `Falta el campo obligatorio: ${label}.`
 }
+
+function tieneMotivoEspecifico(id: string, values: CreateMatriculaInput): boolean {
+  return !getMatriculaFieldErrorMessage(id, values).startsWith("Falta el campo obligatorio")
+}
+
+export function pickMatriculaErrorField(missing: string[], values: CreateMatriculaInput): string {
+  return missing.find((id) => tieneMotivoEspecifico(id, values)) ?? missing[0]!
+}
