@@ -23,6 +23,7 @@ import {
 import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -77,8 +78,21 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   const linkActividad = useLinkActividadUnidad()
   const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
 
-  const esPonderado = unidad.metodoCalculo === "Ponderado"
-  const esSumatoria = unidad.metodoCalculo === "Suma de puntos"
+  // Formativa: no hay calificación en absoluto —las actividades se
+  // observan, no se califican— así que ningún peso/puntaje aplica sin
+  // importar qué `metodoCalculo` tenga guardado la unidad (campo sin uso
+  // real en Formativo). Reportado en vivo: una unidad formativa seguía
+  // pidiendo "(%)" al vincular, como si calificara.
+  //
+  // `unidad.enfoquePedagogico` NO sirve: el backend real no guarda un
+  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
+  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
+  // el "(%)" visible en unidades Formativas de verdad. El referente REAL
+  // sale de `useUnidadReferenteQuery` (por `unidad.id`).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
+  const esPonderado = !esFormativa && unidad.metodoCalculo === "Ponderado"
+  const esSumatoria = !esFormativa && unidad.metodoCalculo === "Suma de puntos"
   const pideValor = esPonderado || esSumatoria
 
   function handleOpenChange(next: boolean) {
@@ -363,8 +377,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 `UnidadDetallePanel`): con "Promedio simple" no hay nada que
                 repartir, así que acá también hace falta aclararlo — sin
                 columna de peso, el popover podía leerse como que algo
-                faltaba por cargar. */}
-            {unidad.metodoCalculo === "Promedio simple" && (
+                faltaba por cargar. Formativa: SIN banner — nada de
+                calificación que aclarar acá tampoco. */}
+            {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>

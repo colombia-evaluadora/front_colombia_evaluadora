@@ -8,19 +8,15 @@ import {
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
-import { resolveDirectorId } from "@/features/establishment/academic-period/api/mutations/resolve-director-id"
 
 async function createGradeGroup(input: CreateGradeGroupRequest): Promise<{ id: number }> {
-  const [fkModeloPedagogico, fkFuncionario] = await Promise.all([
-    resolveMetodologiaId(input.metodologia),
-    resolveDirectorId(input.sedeId, input.director),
-  ])
+  const fkModeloPedagogico = await resolveMetodologiaId(input.metodologia)
   const raw = await api.post<WriteResultResponse>(`/eval-col/grados/${input.gradeId}/grupos`, {
     FK_GRADO: input.gradeId,
     NOMBRE: input.codigo,
     FK_MODELO_PEDAGOGICO: fkModeloPedagogico,
     CAPACIDAD: input.cupo,
-    FK_FUNCIONARIO: fkFuncionario,
+    FK_FUNCIONARIO: input.directorId,
   })
   return { id: extractWriteResultId(raw) }
 }

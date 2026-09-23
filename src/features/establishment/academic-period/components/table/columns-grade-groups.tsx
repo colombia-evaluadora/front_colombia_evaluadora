@@ -60,11 +60,11 @@ export function createGradeGroupColumns({
     },
     {
       id: "director",
-      accessorKey: "director",
+      accessorKey: "directorName",
       meta: { label: "Director de grupo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Director de grupo" />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.director || "—"}</span>
+        <span className="text-muted-foreground">{row.original.directorName || "—"}</span>
       ),
     },
     {

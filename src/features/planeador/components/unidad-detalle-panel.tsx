@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -391,9 +392,18 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
     [actividadesVinculadas],
   )
+  // `unidad.enfoquePedagogico` NO sirve acá: el backend real no guarda un
+  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
+  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
+  // "(%)" visible en unidades Formativas de verdad (reportado en vivo,
+  // "Exploramos y contamos nuestras experiencias", Preescolar). El
+  // referente REAL de esta unidad ya guardada sale de
+  // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
   const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion),
-    [unidad.id, unidad.metodoCalculo, totalPonderacion],
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
+    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
@@ -418,11 +428,15 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         description="Las actividades vinculadas y su peso dentro de la unidad."
         action={<DialogAgregarActividad unidad={unidad} />}
       />
-      {/* "Promedio simple" no lleva peso por actividad (ni %, ni puntaje) —
-          sin la columna, la tabla podía leerse como si algo faltara por
-          cargar; el banner aclara que es el método el que lo decide. Mismo
-          criterio en el popover "Vincular actividad" (`DialogAgregarActividad`). */}
-      {unidad.metodoCalculo === "Promedio simple" && (
+      {/* Formativa: SIN banner — no hay nada de calificación que aclarar (la
+          unidad se observa, no se califica; "Promedio simple" abajo es un
+          aviso sobre cálculo de nota, y acá ese cálculo directamente no
+          aplica). "Promedio simple" no lleva peso por actividad (ni %, ni
+          puntaje) — sin la columna, la tabla podía leerse como si algo
+          faltara por cargar; el banner aclara que es el método el que lo
+          decide. Mismo criterio en el popover "Vincular actividad"
+          (`DialogAgregarActividad`). */}
+      {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
         <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
           <InfoIcon className="size-5 shrink-0" />
           <p>

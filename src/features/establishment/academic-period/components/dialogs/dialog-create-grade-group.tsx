@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
@@ -47,7 +47,7 @@ import {
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",
-  director: "",
+  directorId: null,
   metodologia: "",
   cupo: 0,
 }
@@ -95,15 +95,12 @@ export function CreateGradeGroupDialog({
     pageIndex: 0,
     pageSize: 200,
   })
-  const teacherNames = useMemo(
-    () => (assignmentTeachers?.rows ?? []).map((t) => t.name),
-    [assignmentTeachers],
-  )
+  const teachers = assignmentTeachers?.rows ?? []
 
   const defaultValues: GradeGroupFormValues = gradeGroup
     ? {
         codigo: gradeGroup.codigo,
-        director: gradeGroup.director,
+        directorId: gradeGroup.directorId,
         metodologia: gradeGroup.metodologia ?? "",
         cupo: gradeGroup.cupo ?? 0,
       }
@@ -146,13 +143,9 @@ export function CreateGradeGroupDialog({
     onSubmit: ({ value }) => {
       const values = { ...gradeGroupFormSchema.parse(value), jornada: jornadaName }
       if (isEditing) {
-        updateGradeGroup.mutate({
-          id: gradeGroup.id,
-          sedeId: academicPeriod?.sedeId,
-          values,
-        })
+        updateGradeGroup.mutate({ id: gradeGroup.id, values })
       } else {
-        createGradeGroup.mutate({ ...values, gradeId, sedeId: academicPeriod?.sedeId })
+        createGradeGroup.mutate({ ...values, gradeId })
       }
     },
   })
@@ -260,22 +253,24 @@ export function CreateGradeGroupDialog({
             />
           </Field>
 
-          <form.Field name="director">
+          <form.Field name="directorId">
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
                 <ComboboxField
                   value={field.state.value}
-                  onValueChange={(value) => value && field.handleChange(value as string)}
+                  onValueChange={(value) => field.handleChange((value ?? null) as number | null)}
                 >
                   <ComboboxFieldTrigger id={field.name}>
-                    <ComboboxFieldValue placeholder="Seleccionar" />
+                    <ComboboxFieldValue>
+                      {(value) => teachers.find((t) => t.id === value)?.name ?? "Seleccionar"}
+                    </ComboboxFieldValue>
                   </ComboboxFieldTrigger>
                   <ComboboxFieldContent>
                     <ComboboxGroup>
-                      {teacherNames.map((name) => (
-                        <ComboboxFieldItem key={name} value={name}>
-                          {name}
+                      {teachers.map((teacher) => (
+                        <ComboboxFieldItem key={teacher.id} value={teacher.id}>
+                          {teacher.name}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxGroup>
