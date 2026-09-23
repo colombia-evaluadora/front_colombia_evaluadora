@@ -219,7 +219,13 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[28%]">Actividad</TableHead>
                   <TableHead className="w-[13%]">Tipo</TableHead>
-                  <TableHead className="w-[18%]">Instrumento</TableHead>
+                  {/* Formativa: no hay instrumento de evaluación en absoluto
+                      (se observa, no se califica) — mismo criterio que ya
+                      aplica `createUnidadActividadesColumns` en la tabla de
+                      "Actividades" del panel (`columns-unidad-actividades.tsx`),
+                      donde esta columna también se oculta. Acá quedaba
+                      siempre vacía en una unidad formativa. */}
+                  {!esFormativa && <TableHead className="w-[18%]">Instrumento</TableHead>}
                   <TableHead className="w-[11%]">Grupo</TableHead>
                   {pideValor && (
                     <>
@@ -240,7 +246,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 {disponibles.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={pideValor ? 6 : 4}
+                      colSpan={(esFormativa ? 3 : 4) + (pideValor ? 2 : 0)}
                       className="h-20 text-center text-muted-foreground"
                     >
                       {search
@@ -263,7 +269,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                           </span>
                         </TableCell>
                         <TableCell className="whitespace-normal">{actividad.tipo}</TableCell>
-                        <TableCell className="whitespace-normal">{actividad.instrumento}</TableCell>
+                        {!esFormativa && (
+                          <TableCell className="whitespace-normal">{actividad.instrumento}</TableCell>
+                        )}
                         <TableCell className="whitespace-normal">{actividad.grupo}</TableCell>
                         {pideValor && (
                           <>
