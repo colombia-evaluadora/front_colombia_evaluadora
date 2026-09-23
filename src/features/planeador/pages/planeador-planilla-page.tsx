@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -44,10 +45,7 @@ import {
   type AgrupacionPlanillaKey,
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
-import { ObservarActividadGrupal } from "@/features/planeador/components/planilla/observar-actividad-grupal"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
-import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
-import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
@@ -91,9 +89,15 @@ export function PlaneadorPlanillaPage() {
     ? { grupoId: filtro.grupoId, asignaturaId: filtro.asignaturaId, gradoId: filtro.gradoId }
     : null
 
-  const { data: todasLasColumnas = [] } = usePlanillaColumnasQuery(params)
-  const { data: calificacionesResult } = usePlanillaCalificacionesQuery(params)
+  const { data: todasLasColumnas = [], isPending: isPendingColumnas } = usePlanillaColumnasQuery(params)
+  const { data: calificacionesResult, isPending: isPendingCalificaciones } =
+    usePlanillaCalificacionesQuery(params)
   const filas = calificacionesResult?.rows ?? []
+  // Ambos endpoints pueden tardar (el de calificaciones resuelve notas de
+  // TODAS las actividades filtradas) -- sin esto, mientras cargan, `filas`
+  // vale [] igual que "sin estudiantes" y la grilla muestra por un momento
+  // el mensaje vacío en vez de un loading.
+  const cargandoPlanilla = filtro !== null && (isPendingColumnas || isPendingCalificaciones)
 
   const columnas = useMemo(() => {
     if (!filtro) return []
@@ -122,37 +126,6 @@ export function PlaneadorPlanillaPage() {
       })),
     [filas, columnaIds],
   )
-
-  // fn_actividad_observar_grupal (backend) no distingue: pisa la
-  // OBSERVACION de TODOS los estudiantes activos de la actividad, incluidos
-  // los que ya tienen una nota individual escrita a mano. Sin una separación
-  // real en el backend (pendiente), se avisa acá cuántos se van a perder si
-  // se guarda.
-  const estudiantesConObservacionPrevia = useMemo(() => {
-    if (!columnaEnBulk) return 0
-    let total = 0
-    for (const fila of filas) {
-      const celda = fila.celdas.find((c) => c.pkTactividad === columnaEnBulk.pkTactividad)
-      if (celda?.observacion?.trim()) total++
-    }
-    return total
-  }, [columnaEnBulk, filas])
-
-  // La observación grupal manda UNA sola fecha para todo el grupo, así que se
-  // propone la que más estudiantes comparten: el backend omite a quien no
-  // tenga asistencia válida ese día.
-  const fechaSugeridaBulk = useMemo(() => {
-    if (!columnaEnBulk) return ""
-    const conteo = new Map<string, number>()
-    for (const fila of filas) {
-      const fecha = fila.celdas.find(
-        (c) => c.pkTactividad === columnaEnBulk.pkTactividad,
-      )?.fechaAsistencia
-      if (fecha) conteo.set(fecha, (conteo.get(fecha) ?? 0) + 1)
-    }
-    const masComun = [...conteo.entries()].sort((a, b) => b[1] - a[1])[0]
-    return masComun?.[0] ?? columnaEnBulk.fechaInicio
-  }, [columnaEnBulk, filas])
 
   const estudiantesEnBulk = filas.map((fila) => ({
     id: fila.pkTestudiante,
@@ -256,7 +229,13 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && (
+          {filtro && !columnaEnBulk && cargandoPlanilla && (
+            <div className="text-muted-foreground flex items-center justify-center gap-2 py-24 text-sm">
+              <Spinner /> Cargando planilla…
+            </div>
+          )}
+
+          {filtro && !columnaEnBulk && !cargandoPlanilla && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
@@ -266,19 +245,7 @@ export function PlaneadorPlanillaPage() {
             />
           )}
 
-          {filtro && columnaEnBulk && esColumnaFormativa(columnaEnBulk) && (
-            <ObservarActividadGrupal
-              actividadId={columnaEnBulk.pkTactividad}
-              titulo={columnaEnBulk.titulo}
-              fechaSugerida={fechaSugeridaBulk}
-              actividadSinComenzar={columnaEnBulk.fechaInicio > todayDateOnly()}
-              totalEstudiantes={columnaEnBulk.estudiantesAsignados}
-              estudiantesConObservacionPrevia={estudiantesConObservacionPrevia}
-              onVolver={() => setColumnaEnBulk(null)}
-            />
-          )}
-
-          {filtro && columnaEnBulk && !esColumnaFormativa(columnaEnBulk) && (
+          {filtro && columnaEnBulk && (
             <CalificarActividadBulk
               actividadId={columnaEnBulk.pkTactividad}
               titulo={columnaEnBulk.titulo}

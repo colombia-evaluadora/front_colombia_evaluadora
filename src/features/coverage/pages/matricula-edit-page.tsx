@@ -54,6 +54,7 @@ import type {
 } from "@/features/coverage/api/types/matricula"
 import {
   getMatriculaFieldErrorMessage,
+  pickMatriculaErrorField,
   resolveMatriculaMunicipioDepartments,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
@@ -244,7 +245,7 @@ function MatriculaEditPageContent() {
       return
     }
     if (!values) return
-    notify(getMatriculaFieldErrorMessage(missingFields[0], values), {
+    notify(getMatriculaFieldErrorMessage(pickMatriculaErrorField(missingFields, values), values), {
       variant: "error",
       autoCloseMs: 0,
     })

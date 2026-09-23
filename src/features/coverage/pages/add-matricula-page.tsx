@@ -39,6 +39,7 @@ import {
   createEmptySupportFiles,
   createInitialMatriculaValues,
   getMatriculaFieldErrorMessage,
+  pickMatriculaErrorField,
   validateMatricula,
   type MatriculaAccountsFound,
 } from "@/features/coverage/utils/matricula-form-defaults"
@@ -307,7 +308,7 @@ function AddMatriculaPageContent() {
       dismiss()
       return
     }
-    notify(getMatriculaFieldErrorMessage(missingFields[0], values), {
+    notify(getMatriculaFieldErrorMessage(pickMatriculaErrorField(missingFields, values), values), {
       variant: "error",
       autoCloseMs: 0,
     })
