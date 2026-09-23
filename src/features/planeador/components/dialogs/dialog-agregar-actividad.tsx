@@ -77,8 +77,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   const linkActividad = useLinkActividadUnidad()
   const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
 
-  const esPonderado = unidad.metodoCalculo === "Ponderado"
-  const esSumatoria = unidad.metodoCalculo === "Suma de puntos"
+  // Formativa: no hay calificación en absoluto —las actividades se
+  // observan, no se califican— así que ningún peso/puntaje aplica sin
+  // importar qué `metodoCalculo` tenga guardado la unidad (campo sin uso
+  // real en Formativo). Reportado en vivo: una unidad formativa seguía
+  // pidiendo "(%)" al vincular, como si calificara.
+  const esFormativa = unidad.enfoquePedagogico === "Formativo"
+  const esPonderado = !esFormativa && unidad.metodoCalculo === "Ponderado"
+  const esSumatoria = !esFormativa && unidad.metodoCalculo === "Suma de puntos"
   const pideValor = esPonderado || esSumatoria
 
   function handleOpenChange(next: boolean) {
@@ -363,8 +369,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 `UnidadDetallePanel`): con "Promedio simple" no hay nada que
                 repartir, así que acá también hace falta aclararlo — sin
                 columna de peso, el popover podía leerse como que algo
-                faltaba por cargar. */}
-            {unidad.metodoCalculo === "Promedio simple" && (
+                faltaba por cargar. Formativa: SIN banner — nada de
+                calificación que aclarar acá tampoco. */}
+            {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>

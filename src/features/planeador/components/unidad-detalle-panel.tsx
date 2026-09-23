@@ -391,9 +391,10 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
     [actividadesVinculadas],
   )
+  const esFormativa = unidad.enfoquePedagogico === "Formativo"
   const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion),
-    [unidad.id, unidad.metodoCalculo, totalPonderacion],
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
+    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
@@ -418,11 +419,15 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         description="Las actividades vinculadas y su peso dentro de la unidad."
         action={<DialogAgregarActividad unidad={unidad} />}
       />
-      {/* "Promedio simple" no lleva peso por actividad (ni %, ni puntaje) —
-          sin la columna, la tabla podía leerse como si algo faltara por
-          cargar; el banner aclara que es el método el que lo decide. Mismo
-          criterio en el popover "Vincular actividad" (`DialogAgregarActividad`). */}
-      {unidad.metodoCalculo === "Promedio simple" && (
+      {/* Formativa: SIN banner — no hay nada de calificación que aclarar (la
+          unidad se observa, no se califica; "Promedio simple" abajo es un
+          aviso sobre cálculo de nota, y acá ese cálculo directamente no
+          aplica). "Promedio simple" no lleva peso por actividad (ni %, ni
+          puntaje) — sin la columna, la tabla podía leerse como si algo
+          faltara por cargar; el banner aclara que es el método el que lo
+          decide. Mismo criterio en el popover "Vincular actividad"
+          (`DialogAgregarActividad`). */}
+      {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
         <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
           <InfoIcon className="size-5 shrink-0" />
           <p>
