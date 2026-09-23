@@ -245,7 +245,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                               {celda.observacion}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">Observar</span>
+                            <span className="text-muted-foreground">Agregar observación</span>
                           )}
                         </div>
                       </td>

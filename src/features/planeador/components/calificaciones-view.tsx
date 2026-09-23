@@ -266,7 +266,7 @@ function CalificacionRow({
                 {estudiante.observacion}
               </span>
             ) : (
-              <span className="text-muted-foreground">Observar</span>
+              <span className="text-muted-foreground">Agregar observación</span>
             )
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
