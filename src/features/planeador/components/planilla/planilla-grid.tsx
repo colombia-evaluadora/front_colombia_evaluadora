@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
-import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
+import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
@@ -77,13 +77,6 @@ function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): stri
   if (!celda) return columna.fechaInicio
   if (celda.fechaAsistencia) return celda.fechaAsistencia
   return celda.tieneAsistencia ? columna.fechaInicio : null
-}
-
-/** El backend ya devuelve `calificacion`/`definitiva` calculados — acá solo
- *  se convierten a la escala 1.0-5.0 que usa el boletín colombiano (mismo
- *  criterio que antes, cuando el porcentaje se calculaba en el cliente). */
-function formatNota(porcentaje: number | null): number | null {
-  return porcentaje !== null ? notaEnEscalaCinco(porcentaje) : null
 }
 
 /**
@@ -182,7 +175,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
         </thead>
         <tbody className="divide-border divide-y">
           {filas.map((fila) => {
-            const definitiva = formatNota(fila.definitivaProyectada)
+            const definitiva = fila.definitivaProyectadaHomologada
 
             return (
               <tr key={fila.pkTestudiante}>
@@ -275,7 +268,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                     )
                   }
 
-                  const nota = celda ? formatNota(celda.calificacion) : null
+                  const nota = celda ? celda.notaHomologada : null
                   // Sin asistencia no se puede calificar (el gate del
                   // backend responde 400) — foto del momento de la lectura,
                   // se pinta gris igual que "No calificable" en vez de
