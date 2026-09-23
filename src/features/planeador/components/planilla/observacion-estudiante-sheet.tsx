@@ -17,7 +17,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckIcon, ImageIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { BrushIcon, CheckIcon, ImageIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -95,7 +95,9 @@ export function ObservacionEstudianteSheet({
   const [texto, setTexto] = useState("")
   const [evidenciaAmpliada, setEvidenciaAmpliada] = useState<CeldaEvidencia | null>(null)
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
   const inputArchivoRef = useRef<HTMLInputElement>(null)
+  const textoGuardadoRef = useRef("")
   const { notify } = useNotify()
 
   // OJO: la dependencia es el `id`, no el objeto `estudiante` completo. El
@@ -108,13 +110,24 @@ export function ObservacionEstudianteSheet({
   // servidor. Sincronizar solo al abrir (o al cambiar de estudiante) evita
   // perder texto a mitad de escritura.
   useEffect(() => {
-    if (estudiante) setTexto(estudiante.observacion ?? "")
+    if (estudiante) {
+      textoGuardadoRef.current = estudiante.observacion ?? ""
+      setTexto(textoGuardadoRef.current)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estudiante?.id])
 
   const sinAsistencia = estudiante?.fecha == null
-  const puedeGuardar = Boolean(texto.trim()) && !sinAsistencia && !guardando
+  const puedeGuardar = (Boolean(texto.trim()) || evidencias.length > 0) && !sinAsistencia && !guardando
   const limiteEvidenciasAlcanzado = evidencias.length >= OBSERVACION_EVIDENCIAS_MAX
+
+  function handleOpenChange(open: boolean) {
+    if (!open && texto !== textoGuardadoRef.current) {
+      setConfirmarSalida(true)
+      return
+    }
+    onOpenChange(open)
+  }
 
   function handleSeleccionArchivo(archivo: File | undefined) {
     if (!archivo) return
@@ -126,10 +139,10 @@ export function ObservacionEstudianteSheet({
   }
 
   return (
-    <Sheet open={estudiante != null} onOpenChange={onOpenChange}>
+    <Sheet open={estudiante != null} onOpenChange={handleOpenChange}>
       <SheetContent className="gap-0 p-0">
         <SheetHeader className="pb-4">
-          <SheetTitle className="sr-only">Observación del estudiante</SheetTitle>
+          <SheetTitle>Observación individual</SheetTitle>
           {estudiante && (
             <>
               <div className="flex items-center gap-3">
@@ -149,20 +162,49 @@ export function ObservacionEstudianteSheet({
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-8">
-          <Field variant="outlined">
-            <FieldLabel htmlFor="observacion-estudiante">Observación</FieldLabel>
-            <Textarea
-              id="observacion-estudiante"
-              value={texto}
-              maxLength={MAX_CARACTERES}
-              onChange={(e) => setTexto(e.target.value)}
-              placeholder="Escribe la observación de este estudiante para esta actividad…"
-              className={cn("min-h-40 resize-y", TEXTAREA_OUTLINED)}
-            />
-            <span className="self-end text-xs text-muted-foreground">
-              {texto.length}/{MAX_CARACTERES}
-            </span>
-          </Field>
+          <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
+            {sinAsistencia
+              ? actividadSinComenzar
+                ? "Esta actividad todavía no comienza: se podrá observar a este estudiante cuando empiece."
+                : "Este estudiante no tiene asistencia registrada en la ventana de la actividad. Regístrala desde Asistencia para poder observarlo."
+              : "La observacion que se añada se utilizara para construir el informe del periodo en el estudiante."}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-end">
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    disabled={!texto}
+                    aria-label="Borrar toda la observación"
+                    onClick={() => setTexto("")}
+                  >
+                    <BrushIcon className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Borrar toda la observación</TooltipContent>
+              </Tooltip>
+            </div>
+            <Field variant="outlined">
+              <FieldLabel htmlFor="observacion-estudiante">Observación</FieldLabel>
+              <Textarea
+                id="observacion-estudiante"
+                value={texto}
+                maxLength={MAX_CARACTERES}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Escribe la observación de este estudiante para esta actividad…"
+                className={cn("min-h-40 resize-y", TEXTAREA_OUTLINED)}
+              />
+              <span className="self-end text-xs text-muted-foreground">
+                {texto.length}/{MAX_CARACTERES}
+              </span>
+            </Field>
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <p className="text-xs font-semibold uppercase">Evidencias</p>
@@ -248,15 +290,6 @@ export function ObservacionEstudianteSheet({
               />
             </div>
           </div>
-
-          <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-            <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
-            {sinAsistencia
-              ? actividadSinComenzar
-                ? "Esta actividad todavía no comienza: se podrá observar a este estudiante cuando empiece."
-                : "Este estudiante no tiene asistencia registrada en la ventana de la actividad. Regístrala desde Asistencia para poder observarlo."
-              : "La observacion que se añada se utilizara para construir el informe del periodo en el estudiante."}
-          </div>
         </div>
 
         <SheetFooter className="flex-row justify-end gap-2">
@@ -264,7 +297,11 @@ export function ObservacionEstudianteSheet({
             type="button"
             color="primary"
             disabled={!puedeGuardar}
-            onClick={() => estudiante && onGuardar(estudiante, texto)}
+            onClick={() => {
+              if (!estudiante) return
+              textoGuardadoRef.current = texto
+              onGuardar(estudiante, texto)
+            }}
           >
             {guardando ? (
               <SpinnerIcon className="animate-spin" data-icon="inline-start" />
@@ -315,6 +352,31 @@ export function ObservacionEstudianteSheet({
             </AlertDialogAction>
             <AlertDialogCancel variant="fill" color="neutral">
               Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmarSalida} onOpenChange={(open) => !open && setConfirmarSalida(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Salir sin guardar los cambios?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La observación que escribiste todavía no se ha guardado. Si sales ahora, se pierde.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              color="destructive"
+              onClick={() => {
+                setConfirmarSalida(false)
+                onOpenChange(false)
+              }}
+            >
+              Salir sin guardar
+            </AlertDialogAction>
+            <AlertDialogCancel variant="fill" color="neutral">
+              Seguir editando
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
