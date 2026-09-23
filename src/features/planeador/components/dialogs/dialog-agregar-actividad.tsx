@@ -23,6 +23,7 @@ import {
 import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -82,7 +83,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   // importar qué `metodoCalculo` tenga guardado la unidad (campo sin uso
   // real en Formativo). Reportado en vivo: una unidad formativa seguía
   // pidiendo "(%)" al vincular, como si calificara.
-  const esFormativa = unidad.enfoquePedagogico === "Formativo"
+  //
+  // `unidad.enfoquePedagogico` NO sirve: el backend real no guarda un
+  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
+  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
+  // el "(%)" visible en unidades Formativas de verdad. El referente REAL
+  // sale de `useUnidadReferenteQuery` (por `unidad.id`).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
   const esPonderado = !esFormativa && unidad.metodoCalculo === "Ponderado"
   const esSumatoria = !esFormativa && unidad.metodoCalculo === "Suma de puntos"
   const pideValor = esPonderado || esSumatoria
