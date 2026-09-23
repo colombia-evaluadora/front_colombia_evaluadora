@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
-import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
+import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
@@ -79,13 +79,6 @@ function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): stri
   return celda.tieneAsistencia ? columna.fechaInicio : null
 }
 
-/** El backend ya devuelve `calificacion`/`definitiva` calculados — acá solo
- *  se convierten a la escala 1.0-5.0 que usa el boletín colombiano (mismo
- *  criterio que antes, cuando el porcentaje se calculaba en el cliente). */
-function formatNota(porcentaje: number | null): number | null {
-  return porcentaje !== null ? notaEnEscalaCinco(porcentaje) : null
-}
-
 /**
  * Grilla de la Planilla: una fila por estudiante, una columna por actividad
  * (más "Definit. Proy." al frente), opcionalmente agrupadas por unidad
@@ -125,16 +118,26 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
 
   return (
     <div className="border-input overflow-auto rounded-md border">
-      <table className="w-full text-sm">
+      {/* `table-fixed`: sin esto el `w-40`/`truncate` de las columnas de
+          actividad no hacen nada — en `auto` (el default) la columna crece
+          al contenido más ancho (ej. una observación larga), ignorando el
+          ancho declarado. */}
+      <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           {grupos ? (
             <>
               <tr>
-                <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+                <th
+                  rowSpan={2}
+                  className="w-48 px-4 py-3 text-left align-bottom font-semibold uppercase"
+                >
                   Nombres
                 </th>
                 {mostrarDefinitiva && (
-                  <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+                  <th
+                    rowSpan={2}
+                    className="w-28 px-4 py-3 text-left align-bottom font-semibold uppercase"
+                  >
                     Definit. Proy.
                   </th>
                 )}
@@ -166,9 +169,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
             </>
           ) : (
             <tr>
-              <th className="px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+              <th className="w-48 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
               {mostrarDefinitiva && (
-                <th className="px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
+                <th className="w-28 px-4 py-3 text-left font-semibold uppercase">Definit. Proy.</th>
               )}
               {columnas.map((columna) => (
                 <ColumnaHeader
@@ -182,11 +185,14 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
         </thead>
         <tbody className="divide-border divide-y">
           {filas.map((fila) => {
-            const definitiva = formatNota(fila.definitivaProyectada)
+            const definitiva = fila.definitivaProyectadaHomologada
 
             return (
               <tr key={fila.pkTestudiante}>
-                <td className="px-4 py-3 align-middle font-medium whitespace-nowrap">
+                <td
+                  className="truncate px-4 py-3 align-middle font-medium"
+                  title={fila.nombreEstudiante}
+                >
                   {fila.nombreEstudiante}
                 </td>
                 {mostrarDefinitiva && (
@@ -252,7 +258,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                               {celda.observacion}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">Observar</span>
+                            <span className="text-muted-foreground">Agregar observación</span>
                           )}
                         </div>
                       </td>
@@ -275,7 +281,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                     )
                   }
 
-                  const nota = celda ? formatNota(celda.calificacion) : null
+                  const nota = celda ? celda.notaHomologada : null
                   // Sin asistencia no se puede calificar (el gate del
                   // backend responde 400) — foto del momento de la lectura,
                   // se pinta gris igual que "No calificable" en vez de

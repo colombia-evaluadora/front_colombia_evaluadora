@@ -87,8 +87,8 @@ export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMen
       {!resumen ? (
         <Skeleton className="h-16 w-full" />
       ) : (
-        <div className="flex items-end gap-3">
-          <div className="flex h-16 shrink-0 items-end gap-1.5">
+        <div className="flex items-stretch gap-3">
+          <div className="flex shrink-0 items-end gap-1.5">
             {DESGLOSE.map(({ key, color }) => (
               <div
                 key={key}

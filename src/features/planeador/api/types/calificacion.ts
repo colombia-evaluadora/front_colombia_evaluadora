@@ -59,6 +59,9 @@ export type CalificacionEstudiante = Estudiante & {
    *  por criterio, que el real no siempre trae acá). `undefined` en mock,
    *  donde sí alcanza con `notas` + `porcentajeFinal`. */
   calificacion?: number | null
+  /** `calificacion` ya convertida a la escala real del período — lo que debe
+   *  mostrarse en vez del porcentaje, igual que `PlanillaCelda.notaHomologada`. */
+  notaHomologada?: number | null
   /** Observación del docente (`nota_observacion`) — en una actividad de
    *  referente FORMATIVO reemplaza a la nota, que viene siempre `null`. */
   observacion?: string | null

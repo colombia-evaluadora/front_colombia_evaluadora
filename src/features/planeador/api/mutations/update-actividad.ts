@@ -4,8 +4,7 @@ import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { actividadesQueryKey } from "@/features/planeador/api/query/use-actividades-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { invalidarListadosActividades } from "@/features/planeador/api/query/invalidar-listados-actividades"
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
@@ -137,8 +136,9 @@ export function useUpdateActividad({ mutationConfig }: UseUpdateActividadOptions
   return useMutation({
     mutationFn: updateActividad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
-      queryClient.invalidateQueries({ queryKey: actividadesQueryKey() })
+      // Refresca el detalle Y el rail/calendario/stats — no solo el listado
+      // legado (ver el comentario del helper).
+      invalidarListadosActividades(queryClient, { detalleId: variables.actividadId })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import { planeadorDb, registrarArchivoMaterial } from "@/mocks/db/planeador"
 import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
+import { notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
 import {
   addEvidencia,
   asignaturaIdDe,
@@ -155,6 +156,7 @@ export const planeadorPlanillaHandlers = [
           recuperacion: null,
           definitiva: porcentaje,
           nota: porcentaje,
+          notaHomologada: porcentaje !== null ? notaEnEscalaCinco(porcentaje) : null,
           calificable: noAsistio ? "N" : "S",
           observacion:
             getObservacion(actividad.id, estudiante.id) ??
@@ -175,11 +177,14 @@ export const planeadorPlanillaHandlers = [
           [],
       }))
 
+      const definitivaProyectada = notaDefinitiva(entradasDefinitiva)
       return {
         pk_tmatricula: estudiante.id,
         pk_testudiante: estudiante.id,
         nombre_estudiante: `${estudiante.nombres} ${estudiante.apellidos}`,
-        definitiva_proyectada: notaDefinitiva(entradasDefinitiva),
+        definitiva_proyectada: definitivaProyectada,
+        definitiva_proyectada_homologada:
+          definitivaProyectada !== null ? notaEnEscalaCinco(definitivaProyectada) : null,
         definitiva_registrada: null,
         tendencia: null,
         celdas,

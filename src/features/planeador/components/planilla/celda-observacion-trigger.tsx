@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { ChatCircleDotsIcon, ChatCircleTextIcon } from "@/components/ui/icons"
+import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
 import { useObservarEstudianteMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
@@ -85,7 +85,7 @@ export function CeldaObservacionTrigger({
   })
 
   const tieneObservacion = Boolean(observacionActual?.trim())
-  const Icono = tieneObservacion ? ChatCircleTextIcon : ChatCircleDotsIcon
+  const Icono = tieneObservacion ? EyeIcon : PlusIcon
   const etiqueta = tieneObservacion
     ? `Editar la observación de ${estudianteNombre}`
     : `Observar a ${estudianteNombre}`
@@ -98,7 +98,7 @@ export function CeldaObservacionTrigger({
             necesita el Tooltip para abrirse. */}
         <TooltipTrigger render={<span className="inline-flex" />}>
           <Button
-            variant="ghost"
+            variant="outline"
             color="neutral"
             size="icon-xs"
             disabled={fecha === null}

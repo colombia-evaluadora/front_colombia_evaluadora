@@ -14,6 +14,8 @@ import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
+  instrumentoSinBulk,
+  notaDe,
   resolverInstrumentoEfectivo,
   splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
@@ -81,23 +83,41 @@ export function buildBulkInputs(
         cumplido: true,
       }))
   }
-  if (
-    efectivo.tipo === "ESCALA_VALORACION" &&
-    efectivo.definicion.niveles.length > 0 &&
-    // 2+ criterios generales (V472): el bulk (`calificar-bulk/escala`) solo
-    // sabe aplicar UN nivel a varios estudiantes, no un valor por criterio
-    // — mismo motivo que la escala NUMÉRICA de abajo, se califica celda a
-    // celda desde el popover (`escalaSinBulk` ya se lo avisa al docente).
-    splitCriteriosGenerales(efectivo.definicion.criteriosGenerales).length <= 1
-  ) {
-    const nivelId = value[0]?.nivelId
-    if (nivelId == null) return []
-    return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
+  if (efectivo.tipo === "ESCALA_VALORACION") {
+    const esNumerica = efectivo.definicion.niveles.length === 0
+    const criteriosGenerales = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
+
+    if (criteriosGenerales.length > 1) {
+      // 2+ criterios generales (V472): un valor por criterio, el mismo
+      // juego para todos los estudiantes en un solo request
+      // (`calificar-bulk/escala` con CRITERIOS, V484).
+      const criterios = criteriosGenerales
+        .map((_, index) => {
+          const n = notaDe(value, index)
+          if (esNumerica) {
+            return n?.valor != null ? { criterioIndex: index, valorNumerico: n.valor } : null
+          }
+          return n?.nivelId != null ? { criterioIndex: index, pkNivel: n.nivelId } : null
+        })
+        .filter((c): c is NonNullable<typeof c> => c != null)
+      if (criterios.length < criteriosGenerales.length) return []
+      return [{ ...base, tipo: "ESCALA_VALORACION" as const, criterios }]
+    }
+
+    if (!esNumerica) {
+      const nivelId = value[0]?.nivelId
+      if (nivelId == null) return []
+      return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
+    }
+    // Escala NUMÉRICA (sin niveles cualitativos): `calificar-bulk/escala`
+    // acepta VALOR_NUMERICO en vez de PK_NIVEL (fn_actividad_nota_calificar_
+    // escala_bulk, V227).
+    const valorNumerico = value[0]?.valor
+    if (valorNumerico == null) return []
+    return [{ ...base, tipo: "ESCALA_VALORACION" as const, valorNumerico }]
   }
-  // Escala NUMÉRICA / "Otro" sin método / escala con 2+ criterios: el
-  // backend real no admite bulk para estos (400 documentado, o
-  // directamente sin endpoint para "un valor por criterio") — se califica
-  // celda a celda desde el popover.
+  // "Otro" sin método: sin endpoint de bulk — se califica celda a celda
+  // desde el popover.
   return []
 }
 
@@ -146,14 +166,9 @@ export function CalificarActividadBulk({
   const completitud = instrumentoCompletitud(instrumento, nota)
   // Por tipo EFECTIVO (resuelve "Otro" con método al instrumento
   // equivalente) — un "Otro" que delega en RUBRICA/LISTA_COTEJO sí tiene
-  // bulk; solo VALOR_NUMERICO (escala numérica u "Otro" sin método) y la
-  // escala con 2+ criterios (V472, sin bulk propio todavía) quedan afuera.
+  // bulk; ver `instrumentoSinBulk` para qué queda afuera.
   const efectivoBulk = resolverInstrumentoEfectivo(instrumento)
-  const escalaSinBulk =
-    efectivoBulk.tipo === "VALOR_NUMERICO" ||
-    (efectivoBulk.tipo === "ESCALA_VALORACION" &&
-      (efectivoBulk.definicion.niveles.length === 0 ||
-        splitCriteriosGenerales(efectivoBulk.definicion.criteriosGenerales).length > 1))
+  const escalaSinBulk = instrumentoSinBulk(efectivoBulk)
 
   async function guardar() {
     if (!instrumento || seleccionados.size === 0) return

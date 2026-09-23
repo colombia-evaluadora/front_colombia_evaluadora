@@ -69,8 +69,8 @@ export function Pagination({
     // Orden: total de registros (izquierda) → selector de entradas (outline)
     // → controles de página (texto neutral, página activa en fill primario)
     // → columnas visibles.
-    <div className="flex flex-wrap items-center justify-center gap-3 px-2 py-4 sm:justify-between sm:gap-6">
-      <span className="order-last w-full text-center text-sm text-muted-foreground sm:order-first sm:w-auto sm:text-left">
+    <div className="relative flex flex-wrap items-center justify-center gap-3 px-2 py-4 sm:gap-6">
+      <span className="order-last w-full text-center text-sm text-muted-foreground sm:absolute sm:left-2 sm:order-none sm:w-auto sm:text-left">
         Mostrando {rangeStart}-{rangeEnd} de {totalCount} registros
       </span>
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
@@ -156,9 +156,9 @@ export function Pagination({
             Entradas
           </FieldLabel>
         </Field>
-      </div>
 
-      {viewOptions}
+        {viewOptions}
+      </div>
     </div>
   )
 }

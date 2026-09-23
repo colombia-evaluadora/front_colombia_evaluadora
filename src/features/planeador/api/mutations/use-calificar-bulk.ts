@@ -9,11 +9,12 @@ import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/q
  * `PUT /planeador/actividades/:id/calificar-bulk/<tipo>` (confirmado real,
  * ver colección Postman `planeador-planilla-flujo-completo`, pasos 4.2-4.4).
  *
- * A diferencia de calificar una celda (que exige TODOS los criterios de la
- * rúbrica en un solo request), el bulk aplica UN criterio+nivel (o UN ítem,
- * o UN nivel de escala) a varios estudiantes de una — "calificar en bloque"
- * dispara un request por cada criterio que el docente llenó en el form,
- * cada uno con la misma lista de estudiantes.
+ * Para Rúbrica/Lista de cotejo, el bulk aplica UN criterio+nivel (o UN ítem)
+ * a varios estudiantes por request — "calificar en bloque" dispara un
+ * request por cada criterio que el docente llenó en el form, cada uno con la
+ * misma lista de estudiantes. Escala de valoración con 2+ criterios generales
+ * es la excepción: un solo request con `criterios` (todos los valores juntos,
+ * V484), igual que exige calificar una celda.
  *
  * Los tres endpoints NO son intercambiables: cada uno exige que la actividad
  * de `actividadId` use justo ese instrumento (rúbrica/cotejo/escala) — se
@@ -29,6 +30,18 @@ export type CalificarBulkInput = {
   | { tipo: "RUBRICA"; pkCriterio: number; pkNivel: number }
   | { tipo: "LISTA_COTEJO"; pkItem: number; cumplido: boolean }
   | { tipo: "ESCALA_VALORACION"; pkNivel: number }
+  /** Escala NUMÉRICA (sin niveles cualitativos): `calificar-bulk/escala`
+   *  acepta VALOR_NUMERICO en vez de PK_NIVEL (V227). */
+  | { tipo: "ESCALA_VALORACION"; valorNumerico: number }
+  /** Escala con 2+ criterios generales (V472): desde V484 el bulk acepta
+   *  CRITERIOS — un valor por criterio, el mismo juego para todos los
+   *  estudiantes de `estudianteIds`. Exactamente uno de `pkNivel`/
+   *  `valorNumerico` por elemento, según si la escala es cualitativa o
+   *  numérica (uniforme para toda la escala, nunca mezclado). */
+  | {
+      tipo: "ESCALA_VALORACION"
+      criterios: { criterioIndex: number; pkNivel?: number; valorNumerico?: number }[]
+    }
 )
 
 const BULK_PATH: Record<CalificarBulkInput["tipo"], string> = {
@@ -44,6 +57,18 @@ function buildBulkBody(input: CalificarBulkInput): Record<string, unknown> {
   }
   if (input.tipo === "LISTA_COTEJO") {
     return { ...base, PK_ITEM: input.pkItem, CUMPLIDO: input.cumplido ? "S" : "N" }
+  }
+  if ("criterios" in input) {
+    return {
+      ...base,
+      CRITERIOS: input.criterios.map((c) => ({
+        criterioIndex: c.criterioIndex,
+        ...(c.pkNivel != null ? { pkNivel: c.pkNivel } : { valorNumerico: c.valorNumerico }),
+      })),
+    }
+  }
+  if ("valorNumerico" in input) {
+    return { ...base, VALOR_NUMERICO: input.valorNumerico }
   }
   return { ...base, PK_NIVEL: input.pkNivel }
 }

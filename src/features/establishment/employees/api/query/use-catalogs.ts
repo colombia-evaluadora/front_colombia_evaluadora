@@ -136,24 +136,7 @@ async function getMockCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
   return response.json()
 }
 
-/**
- * Filtros opcionales del catálogo. Hoy solo existe uno:
- *
- * `establishmentId` viaja como `?ESTABLECIMIENTO=<id>` y **solo tiene
- * efecto en la categoría `ZONA`** (V414 en el backend): deja en la lista
- * únicamente las zonas que una sede de ese establecimiento puede tener
- * —Urbana si el EE es Urbana, Rural si es Rural, las dos si es mixto— y
- * nunca "Urbana y Rural", que queda reservada al establecimiento.
- *
- * Es opcional a propósito: sin el parámetro, `GET /select/:CATEGORIA`
- * responde exactamente igual que antes, así que las demás pantallas que
- * usan este mismo hook no se enteran del cambio.
- */
-export interface CatalogParams {
-  establishmentId?: number | null
-}
-
-async function getRealCatalog<T>(catalog: CatalogSlug, params?: CatalogParams): Promise<T[]> {
+async function getRealCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
   const categoria = CATALOG_CATEGORIAS[catalog]
   if (!categoria) {
     throw new Error(
@@ -167,11 +150,7 @@ async function getRealCatalog<T>(catalog: CatalogSlug, params?: CatalogParams): 
     // agrega `Authorization: Bearer <token>` — sin él, el gateway real
     // rechaza la petición con 403 antes de llegar a la query. `fetch()`
     // directo nunca llevaba ese header.
-    // Query string solo cuando hay filtro: la URL sin parámetros es la
-    // misma de siempre y comparte caché de red con el resto de pantallas.
-    const search =
-      params?.establishmentId == null ? "" : `?ESTABLECIMIENTO=${encodeURIComponent(params.establishmentId)}`
-    const response = (await api.get(`/eval-col/select/${categoria}${search}`)) as unknown as
+    const response = (await api.get(`/eval-col/select/${categoria}`)) as unknown as
       | { rows: RealCatalogRow[] }
       | RealCatalogRow[]
     const rows = unwrapRows<RealCatalogRow>(response)
@@ -185,23 +164,23 @@ async function getRealCatalog<T>(catalog: CatalogSlug, params?: CatalogParams): 
   }
 }
 
-export function getCatalog<T>(catalog: CatalogSlug, params?: CatalogParams): Promise<T[]> {
-  // El mock no filtra: sirve el catálogo completo, igual que antes. El
-  // filtro por establecimiento vive en la query real (V414).
-  return env.ENABLE_API_MOCKING ? getMockCatalog<T>(catalog) : getRealCatalog<T>(catalog, params)
+export function getCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
+  return env.ENABLE_API_MOCKING ? getMockCatalog<T>(catalog) : getRealCatalog<T>(catalog)
 }
 
-export function useCatalogQuery<T>(catalog: CatalogSlug, params?: CatalogParams) {
-  // El establecimiento entra en la `queryKey` para que dos EE con reglas
-  // distintas no se pisen la caché entre sí —y para que cambiarlo en el
-  // formulario vuelva a pedir la lista—. Cuando no hay filtro la clave
-  // queda igual de estable (`null`), así que las ~15 pantallas que llaman
-  // al hook sin parámetros siguen compartiendo la misma entrada.
-  const establishmentId = params?.establishmentId ?? null
-
+/**
+ * Catálogo genérico: la categoría entra, sus filas salen. Nada más.
+ *
+ * Entre V414 y V478 aceptó además un `establishmentId` que viajaba como
+ * `?ESTABLECIMIENTO=` y solo tenía efecto en la categoría ZONA. Esa regla
+ * vive ahora en `useZonasSedeQuery` (`GET /establecimientos/sedes/zonas`):
+ * un catálogo que usan ~15 pantallas no debería conocer un caso particular
+ * de una de ellas.
+ */
+export function useCatalogQuery<T>(catalog: CatalogSlug) {
   return useQuery({
-    queryKey: ["catalogs", catalog, establishmentId],
-    queryFn: () => getCatalog<T>(catalog, { establishmentId }),
+    queryKey: ["catalogs", catalog],
+    queryFn: () => getCatalog<T>(catalog),
   })
 }
 
