@@ -162,7 +162,7 @@ export const gradeGroupFormSchema = z.object({
     .string()
     .min(1, "El grupo es obligatorio")
     .max(2, "El nombre del grupo no puede superar los 2 caracteres"),
-  director: z.string(),
+  directorId: z.number().nullable(),
   metodologia: z.string(),
   cupo: z
     .number()

@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -391,7 +392,15 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
     [actividadesVinculadas],
   )
-  const esFormativa = unidad.enfoquePedagogico === "Formativo"
+  // `unidad.enfoquePedagogico` NO sirve acá: el backend real no guarda un
+  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
+  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
+  // "(%)" visible en unidades Formativas de verdad (reportado en vivo,
+  // "Exploramos y contamos nuestras experiencias", Preescolar). El
+  // referente REAL de esta unidad ya guardada sale de
+  // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
+  const esFormativa = unidadReferente?.esFormativo ?? false
   const columns = React.useMemo(
     () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
     [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],

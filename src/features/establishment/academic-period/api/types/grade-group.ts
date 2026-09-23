@@ -6,7 +6,10 @@ export interface GradeGroup {
   // Nombre de la jornada resuelto por el backend (TLISTA_VALOR.NOMBRE);
   // adicional al valor `jornada`.
   jornadaName?: string
-  director: string
+  directorId: number | null
+  // Nombre del director resuelto por el backend (TUSUARIO), solo para
+  // mostrar — el id es la fuente de verdad para crear/editar.
+  directorName?: string
   metodologia?: string
   // Nombre de la metodología resuelto por el backend (TLISTA_VALOR.NOMBRE);
   // adicional al valor `metodologia`.
@@ -17,7 +20,7 @@ export interface GradeGroup {
 export interface GradeGroupsQueryFilters {
   codigo?: string
   jornada?: string
-  director?: string
+  directorName?: string
 }
 
 export interface GradeGroupsQueryRequest {
@@ -40,9 +43,6 @@ export interface GradeGroupRecord extends GradeGroup {
 
 export type CreateGradeGroupRequest = Omit<GradeGroup, "id"> & {
   gradeId?: number
-  // Necesario para resolver `director` (nombre) a `FK_TFUNCIONARIO` contra
-  // `GET /eval-col/sedes/:ID/funcionarios` — ver resolve-director-id.ts.
-  sedeId?: string
 }
 
 export type UpdateGradeGroupRequest = Omit<GradeGroup, "id">
