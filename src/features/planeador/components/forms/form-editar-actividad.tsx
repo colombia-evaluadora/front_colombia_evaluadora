@@ -1457,10 +1457,14 @@ function AsignaturaGradoSection({
    *  `planeador-crear-actividad-page.tsx`): esa unidad YA determina grado y
    *  asignatura sin ambigüedad, así que no tiene sentido dejarlos como
    *  selects editables esperando que el docente los vuelva a elegir. Con
-   *  esto en `true`, "Asignatura / materia" queda deshabilitada (ya viene
-   *  resuelta) y "Grado / Grupo" solo ofrece los grupos DE ESE grado — el
-   *  docente sigue pudiendo elegir el grupo (la unidad no lo fija), pero ya
-   *  no puede "escaparse" a otro grado desde acá. */
+   *  esto en `true`, "Grado / Grupo" y "Asignatura / materia" quedan
+   *  DESHABILITADOS del todo (ya vienen resueltos) — pedido explícito: antes
+   *  "Grado / Grupo" solo filtraba sus opciones al grado ya conocido pero
+   *  seguía viéndose editable (flecha, clickeable), lo que confundía sobre
+   *  si en verdad estaba fijo. El grupo elegido es el PRIMERO del grado
+   *  (ver el cruce por nombre más abajo); si el docente dicta más de un
+   *  grupo en ese grado y necesita otro, tiene que editarlo desde la
+   *  actividad ya creada. */
   unidadBloqueada?: boolean
 }) {
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
@@ -1684,7 +1688,7 @@ function AsignaturaGradoSection({
               form.setFieldValue("matriculasIds", [])
               form.setFieldValue("asignarTodoElGrupo", true)
             }}
-            disabled={bloqueadoPorRecuperacion}
+            disabled={bloqueadoPorRecuperacion || unidadBloqueada}
           >
             <SelectTrigger id="grado-grupo">
               <SelectValue placeholder="Seleccione">
