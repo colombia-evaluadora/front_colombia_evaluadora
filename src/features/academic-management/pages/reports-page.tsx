@@ -21,13 +21,8 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  CheckIcon,
-  // ClockCountdownIcon, -- solo el ícono del botón de Historial de cambios, comentado abajo.
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { CheckIcon, ClockCountdownIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { useUser } from "@/lib/auth"
 import { gestionAcademicaInformesRoute } from "@/router"
@@ -572,7 +567,6 @@ function ReportsPageContent() {
               listo={listoParaBoletin}
               esPreescolar={esCualitativoActivo}
             />
-            {/* Historial de cambios: no se va a mostrar de momento.
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -589,7 +583,6 @@ function ReportsPageContent() {
               </TooltipTrigger>
               <TooltipContent>Historial de cambios</TooltipContent>
             </Tooltip>
-            */}
             <DialogDescargarTabla
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
