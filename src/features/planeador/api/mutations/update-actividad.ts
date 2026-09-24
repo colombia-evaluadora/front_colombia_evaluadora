@@ -40,7 +40,9 @@ interface UpdateActividadInput {
  * "todo el grupo" después de haberla puntualizado).
  *
  * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
- * materiales, adaptaciones, evidencias ni criterios.
+ * materiales ni adaptaciones (rutas de reemplazo completo aparte, iguales
+ * que `FK_TMATRICULAS` arriba). SÍ manda `EVIDENCIAS`/`CRITERIOS` — ver más
+ * abajo.
  */
 async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -121,6 +123,20 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
         data.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : data.recuperacionTipoCalculo,
       valorPonderacion: data.recuperacionValorPonderacion,
     }
+  }
+  // `EVIDENCIAS`/`CRITERIOS`: reemplazo COMPLETO en el mismo PUT (contrato
+  // confirmado, igual que `ENUNCIADOS` en `update-unidad.ts`). Antes se
+  // mandaba solo lo NUEVO, una evidencia/criterio por request
+  // (`useAgregarEvidenciaActividad`/`useAgregarCriterioUnidadActividad`,
+  // ver `planeador-editar-actividad-page.tsx`) porque no había endpoint
+  // confirmado para desvincular uno ya marcado — el checklist del form los
+  // dejaba tildados y deshabilitados sin forma de destildarlos. Con
+  // reemplazo completo alcanza con mandar la lista final tal cual quedó en
+  // el form; solo tiene sentido si la actividad sigue vinculada a una
+  // unidad (mismo guard que `create-actividad.ts`).
+  if (data.unidad.id !== 0) {
+    body.EVIDENCIAS = data.evidenciasIds
+    body.CRITERIOS = data.criteriosUnidadIds
   }
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
