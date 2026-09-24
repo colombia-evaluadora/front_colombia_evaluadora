@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { CaretDownIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { TimePickerPanel } from "@/components/ui/time-picker"
+import { TimePickerPanel, type TimePickerPanelHandle } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
 
 export type Break = { startTime: string; endTime: string }
@@ -246,6 +246,8 @@ function BreakTimeTrigger({
   onOpenChange: (open: boolean) => void
   onListoClose?: () => void
 }) {
+  const panelRef = useRef<TimePickerPanelHandle>(null)
+
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) (document.activeElement as HTMLElement | null)?.blur?.()
     onOpenChange(nextOpen)
@@ -253,6 +255,7 @@ function BreakTimeTrigger({
 
   function handleListoClick() {
     ;(document.activeElement as HTMLElement | null)?.blur?.()
+    panelRef.current?.commit()
     if (onListoClose) onListoClose()
     else onOpenChange(false)
   }
@@ -273,7 +276,7 @@ function BreakTimeTrigger({
         {value ? formatTime12(value) : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto gap-0 p-0" align="start">
-        <TimePickerPanel value={value || undefined} onChange={onChange} />
+        <TimePickerPanel ref={panelRef} value={value || undefined} onChange={onChange} />
         <Separator />
         <Button
           type="button"

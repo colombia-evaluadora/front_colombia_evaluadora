@@ -393,10 +393,13 @@ export function AddEstablishmentPage() {
           pkFuncionarioRegistrado: registered.pkFuncionario,
         }
       } catch (error) {
-        notify(
-          error instanceof Error ? error.message : `No fue posible guardar el ${label}.`,
-          { variant: "error" },
-        )
+        // getErrorMessage y no error.message: un AxiosError ES un Error, y su
+        // .message es el genérico de axios ("Request failed with status code
+        // 400"). El texto que explica el problema viene en response.data.message,
+        // que es lo que este lee.
+        notify(getErrorMessage(error) || `No fue posible guardar el ${label}.`, {
+          variant: "error",
+        })
         throw new Error(`person_persist_failed:${label}`)
       }
     }
