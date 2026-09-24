@@ -24,6 +24,12 @@ import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/compo
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import {
+  useUnidadesTabsQuery,
+  instrumentoLabelFromReferente,
+} from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -94,6 +100,26 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   const esPonderado = !esFormativa && unidad.metodoCalculo === "Ponderado"
   const esSumatoria = !esFormativa && unidad.metodoCalculo === "Suma de puntos"
   const pideValor = esPonderado || esSumatoria
+
+  // Rótulo real del instrumento ("Unidad temática"/"Proyecto pedagógico"/…)
+  // — mismo criterio que `UnidadFichaYEvidencias`/`CrearUnidadPopover`
+  // (`form-editar-actividad.tsx`): nunca "unidad"/"unidad temática" fijo en
+  // el copy, varía por nivel educativo. Se resuelve por `referente.id`, no
+  // por grado a secas, para no discrepar del `nivel1Etiqueta`/
+  // `nivel2Etiqueta` de ESTE MISMO referente ya cargado arriba.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const instrumentoLabel = instrumentoLabelFromReferente(unidadReferente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const instrumentoLabelLower = instrumentoLabel.toLowerCase()
+  // "la unidad temática"/"el proyecto pedagógico" — mismo helper que ya
+  // resuelve el género de este rótulo en `mensajeUnidadGuardada`, en vez de
+  // reinventar la regla acá. `demostrativo`/`deInstrumento` son variantes
+  // del mismo artículo para las otras posiciones donde aparece en el copy
+  // de abajo ("Esta/Este …", "dentro de la/del …" — "de el" no contrae
+  // solo, hace falta la forma "del" a mano).
+  const articulo = articuloDefinido(instrumentoLabel)
+  const instrumentoConArticulo = `${articulo} ${instrumentoLabelLower}`
+  const demostrativo = articulo === "el" ? "Este" : "Esta"
+  const deInstrumento = articulo === "el" ? "del" : "de la"
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -199,7 +225,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
 
             <p className="text-sm">
               <span className="font-semibold">Actividades disponibles:</span> selecciona una
-              actividad creada previamente para vincularla a esta unidad.
+              actividad creada previamente para vincularla con {instrumentoConArticulo}.
             </p>
 
             {/* `table-fixed` + un ancho por columna: sin esto, "Instrumento"
@@ -366,8 +392,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  Esta unidad temática utiliza cálculo ponderado. Al vincular una actividad, debes
-                  asignar el porcentaje que tendrá dentro de la unidad.
+                  {demostrativo} {instrumentoLabelLower} utiliza cálculo ponderado. Al vincular una
+                  actividad, debes asignar el porcentaje que tendrá dentro {deInstrumento}{" "}
+                  {instrumentoLabelLower}.
                 </p>
               </div>
             )}
@@ -375,9 +402,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  Esta unidad temática suma los puntajes de sus actividades. Al vincular una
-                  actividad, asigná el puntaje que tendrá — el sistema calcula el porcentaje que le
-                  corresponde dentro de la unidad.
+                  {demostrativo} {instrumentoLabelLower} suma los puntajes de sus actividades. Al
+                  vincular una actividad, asigná el puntaje que tendrá — el sistema calcula el
+                  porcentaje que le corresponde dentro {deInstrumento} {instrumentoLabelLower}.
                 </p>
               </div>
             )}
@@ -391,8 +418,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  Esta unidad temática promedia sus actividades: todas cuentan por igual, no hay un
-                  peso ni un puntaje que asignar.
+                  {demostrativo} {instrumentoLabelLower} promedia sus actividades: todas cuentan
+                  por igual, no hay un peso ni un puntaje que asignar.
                 </p>
               </div>
             )}

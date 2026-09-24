@@ -21,13 +21,8 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  CheckIcon,
-  // ClockCountdownIcon, -- solo el ícono del botón de Historial de cambios, comentado abajo.
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { CheckIcon, ClockCountdownIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { useUser } from "@/lib/auth"
 import { gestionAcademicaInformesRoute } from "@/router"
@@ -79,6 +74,17 @@ import { PeriodoFilter } from "@/features/academic-management/reports/components
  * forma CEVAL- seguido del CODIGO del rol.
  */
 const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
+
+/**
+ * Cuántas pestañas de grupo se pueden tener abiertas a la vez.
+ *
+ * El tope NO es de backend: solo se carga el informe de la pestaña activa, y
+ * las alertas —que sí van con todos los grupos abiertos— resultaron planas al
+ * medirlas (1 grupo 177 ms, 5 grupos 126 ms). Lo que se satura es la barra de
+ * pestañas, que a partir de ocho deja de leerse en una pantalla de portátil.
+ * Si hace falta más, subir este número no tiene costo del otro lado.
+ */
+const MAX_GRUPOS_ABIERTOS = 8
 
 const PANEL_CLASS =
   "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
@@ -345,6 +351,7 @@ function ReportsPageContent() {
     roles.length > 0 && roles.every((rol) => ROLES_SOLO_SUS_GRUPOS.includes(rol))
 
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
+  const [agregarAbierto, setAgregarAbierto] = React.useState(false)
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
@@ -394,6 +401,7 @@ function ReportsPageContent() {
 
   const gruposAbiertos = grupos.filter((g) => gruposAbiertosIds.includes(g.grupoId))
   const gruposDisponibles = grupos.filter((g) => !gruposAbiertosIds.includes(g.grupoId))
+  const topeAlcanzado = gruposAbiertosIds.length >= MAX_GRUPOS_ABIERTOS
   const grupoActivoId = Number(activeTab)
   const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
   const observacionLabel = useStudyPlanSubjectLabel(gradoActivoId, esCualitativoActivo)
@@ -516,6 +524,7 @@ function ReportsPageContent() {
   }
 
   function handleAgregarGrupo(grupoId: number) {
+    if (gruposAbiertosIds.length >= MAX_GRUPOS_ABIERTOS) return
     setGruposAbiertos([...gruposAbiertosIds, grupoId], grupoId)
   }
 
@@ -572,7 +581,6 @@ function ReportsPageContent() {
               listo={listoParaBoletin}
               esPreescolar={esCualitativoActivo}
             />
-            {/* Historial de cambios: no se va a mostrar de momento.
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -589,7 +597,6 @@ function ReportsPageContent() {
               </TooltipTrigger>
               <TooltipContent>Historial de cambios</TooltipContent>
             </Tooltip>
-            */}
             <DialogDescargarTabla
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
               periodos={periodos}
@@ -665,7 +672,7 @@ function ReportsPageContent() {
                   )}
                 </TabsTrigger>
               ))}
-              <Popover>
+              <Popover open={agregarAbierto} onOpenChange={setAgregarAbierto}>
                 <PopoverTrigger
                   render={
                     <button
@@ -684,7 +691,12 @@ function ReportsPageContent() {
                   <PopoverHeader className="pr-6">
                     <PopoverTitle className="text-sm normal-case">Agregar grado/grupo</PopoverTitle>
                   </PopoverHeader>
-                  {gruposDisponibles.length === 0 ? (
+                  {topeAlcanzado ? (
+                    <PopoverDescription className="text-xs">
+                      Llegaste al máximo de {MAX_GRUPOS_ABIERTOS} pestañas. Cierra alguna para
+                      abrir otra.
+                    </PopoverDescription>
+                  ) : gruposDisponibles.length === 0 ? (
                     <PopoverDescription className="text-xs">
                       Ya agregaste todos los grados/grupos disponibles.
                     </PopoverDescription>

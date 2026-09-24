@@ -52,6 +52,7 @@ import {
   referenteCurricularQueryOptions,
 } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
+import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
@@ -1449,7 +1450,7 @@ function AsignaturaGradoSection({
    *  actividad ya creada. */
   unidadBloqueada?: boolean
 }) {
-  const { data: docenteGrupos = [] } = useDocenteGruposQuery()
+  const { data: docenteGrupos = [], isPending: isPendingDocenteGrupos } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
 
   // Con `destino = NOTA_FINAL` no hay actividad de origen de la que heredar
@@ -1507,6 +1508,22 @@ function AsignaturaGradoSection({
   const asignatura = useSelector(form.store, (state) => state.values.asignatura)
   const hasGradoGrupo = gradoId != null && grupoId != null
 
+  // `docentes/grupos` solo trae los grupos donde ESTE docente dicta algo —
+  // pero el listado de unidades del Planeador puede mostrar unidades de
+  // grados fuera de ese alcance (un coordinador, o una unidad de otro
+  // docente/área). Ahí `gradoId` sí llega bien desde la unidad (siempre
+  // presente, confirmado contra la API real) pero ningún combo de
+  // `docentes/grupos` matchea ese grado — "Grado / Grupo" se quedaba en
+  // "Seleccione" para siempre, bloqueado (`unidadBloqueada`), sin forma de
+  // corregirlo (reportado en vivo). Se espera a que `docentes/grupos`
+  // termine de cargar (`isPendingDocenteGrupos`) antes de decidir que "no
+  // hay match": si no, la ausencia transitoria durante la carga dispararía
+  // el fallback de más abajo por las dudas, incluso cuando el combo real
+  // SÍ iba a aparecer un instante después.
+  const necesitaFallbackGrupo =
+    gradoId != null && grupoId == null && !isPendingDocenteGrupos && !docenteGrupos.some((g) => g.gradoId === gradoId)
+  const { data: gradoGrupos = [] } = useGradoGruposQuery(necesitaFallbackGrupo ? gradoId : undefined)
+
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
@@ -1559,6 +1576,14 @@ function AsignaturaGradoSection({
         if (combo) {
           form.setFieldValue("grupoId", combo.grupoId)
           form.setFieldValue("grupo", grupoLabel(combo))
+        } else if (gradoGrupos.length > 0) {
+          // `docentes/grupos` no tiene nada para este grado — se toma el
+          // PRIMER grupo del catálogo del establecimiento (`useGradoGruposQuery`,
+          // ver su comentario), mismo criterio "primero disponible" que la
+          // rama de arriba.
+          const [fallback] = gradoGrupos
+          form.setFieldValue("grupoId", fallback.grupoId)
+          form.setFieldValue("grupo", fallback.grupoCodigo)
         }
       }
       return
@@ -1605,7 +1630,7 @@ function AsignaturaGradoSection({
         }
       }
     }
-  }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, docenteGradoAsignatura, form])
+  }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, gradoGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)

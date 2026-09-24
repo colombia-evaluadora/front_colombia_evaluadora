@@ -10,7 +10,11 @@ import { CalendarIcon, ClockIcon } from "@/components/ui/icons"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { TimePickerPanel, formatTimeLabel } from "@/components/ui/time-picker"
+import {
+  TimePickerPanel,
+  formatTimeLabel,
+  type TimePickerPanelHandle,
+} from "@/components/ui/time-picker"
 
 type PickerBaseProps = VariantProps<typeof inputVariants> & {
   /** Texto cuando no hay valor; ocupa el lugar del `placeholder` del input. */
@@ -116,6 +120,13 @@ function DatePicker(props: DatePickerProps) {
     setOpen(nextOpen)
   }
 
+  const timePanelRef = React.useRef<TimePickerPanelHandle>(null)
+
+  function handleListoClick() {
+    timePanelRef.current?.commit()
+    handleOpenChange(false)
+  }
+
   const resolvedVariant = useInputVariant(variant)
 
   // En `time` el valor es un string y no hay fecha; en el resto la hora se
@@ -190,14 +201,14 @@ function DatePicker(props: DatePickerProps) {
       <PopoverContent className="w-auto gap-0 border border-border p-0" align={align}>
         {mode === "time" ? (
           <>
-            <TimePickerPanel value={timeValue} onChange={handleChangeTime} />
+            <TimePickerPanel ref={timePanelRef} value={timeValue} onChange={handleChangeTime} />
             <Separator />
             <Button
               type="button"
               size="sm"
               variant="ghost"
               className="w-full rounded-none font-normal"
-              onClick={() => handleOpenChange(false)}
+              onClick={handleListoClick}
             >
               Listo
             </Button>

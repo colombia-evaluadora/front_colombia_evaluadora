@@ -240,9 +240,6 @@ function RolesMenusPageContent() {
               assignedIds={assignedIds}
               onAssign={handleAssign}
               onUnassign={handleUnassign}
-              // El orden del menú del rol ES el orden de su lista de menús, así
-              // que reordenar se guarda con la misma llamada que asignar.
-              onReorderAssigned={save}
               readOnlyIds={readOnlyIds}
               onToggleReadOnly={handleToggleReadOnly}
               disabled={updateRoleMenus.isPending}

@@ -369,7 +369,6 @@ export function AddEstablishmentPage() {
             },
             foto,
           )
-          notify(`${label} actualizado.`)
           return { person, pkFuncionarioRegistrado: null }
         }
 
@@ -387,16 +386,18 @@ export function AddEstablishmentPage() {
           )
         }
 
-        notify(`${label} guardado.`)
         return {
           person: persistedPerson,
           pkFuncionarioRegistrado: registered.pkFuncionario,
         }
       } catch (error) {
-        notify(
-          error instanceof Error ? error.message : `No fue posible guardar el ${label}.`,
-          { variant: "error" },
-        )
+        // getErrorMessage y no error.message: un AxiosError ES un Error, y su
+        // .message es el genérico de axios ("Request failed with status code
+        // 400"). El texto que explica el problema viene en response.data.message,
+        // que es lo que este lee.
+        notify(getErrorMessage(error) || `No fue posible guardar el ${label}.`, {
+          variant: "error",
+        })
         throw new Error(`person_persist_failed:${label}`)
       }
     }
@@ -408,7 +409,6 @@ export function AddEstablishmentPage() {
       throw new Error(`person_persist_failed:${label}`)
     }
 
-    notify(`${label} guardado.`)
     return { person: result.person, pkFuncionarioRegistrado: null }
   }
 
@@ -499,13 +499,15 @@ export function AddEstablishmentPage() {
       const results = await Promise.allSettled(
         pendientes.map((pk) => cancelarFuncionarioPendiente(pk)),
       )
-      const fallaronTodas = results.every((r) => r.status === "rejected")
-      notify(
-        fallaronTodas
-          ? "Además, no fue posible deshacer el registro de rector/secretaria — puede haber quedado un registro a medias, contacta soporte."
-          : "El registro de rector/secretaria de este intento se deshizo — puedes volver a intentarlo.",
-        { variant: "error" },
-      )
+      // Solo se avisa si el rollback FALLO. Cuando funciona no quedo nada
+      // registrado, asi que contarlo no le sirve a quien esta leyendo el
+      // error: le agrega un segundo mensaje sobre algo que ya no existe.
+      if (results.every((r) => r.status === "rejected")) {
+        notify(
+          "No fue posible deshacer el registro de rector/secretaria — puede haber quedado un registro a medias, contacta soporte.",
+          { variant: "error" },
+        )
+      }
     }
 
     if (isEditMode && establishmentId) {
