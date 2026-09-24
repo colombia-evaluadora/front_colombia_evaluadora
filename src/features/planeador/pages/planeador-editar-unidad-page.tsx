@@ -19,7 +19,6 @@ import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUpdateUnidad } from "@/features/planeador/api/mutations/update-unidad"
-import { useUnlinkEnunciadoUnidad } from "@/features/planeador/api/mutations/unlink-enunciado-unidad"
 import {
   UnidadInfoGeneralFields,
   draftFromUnidad,
@@ -93,9 +92,9 @@ function EditarUnidadPageContent({
   // `unidad.enunciadosDba` (del detalle) siempre llega vacío contra el
   // backend real (viven en un endpoint aparte — ver el comentario de
   // `UnidadTematica.enunciadosDba`); los que la unidad YA tiene relacionados
-  // salen de acá, con el `pkRelacion` que exige desvincular uno.
+  // salen de acá, para precargar el picker de "Derechos Básicos de
+  // Aprendizaje" con el borrador inicial.
   const { data: referente, isPending: referentePending } = useUnidadReferenteQuery(unidad?.id)
-  const unlinkEnunciado = useUnlinkEnunciadoUnidad()
 
   const updateMutation = useUpdateUnidad({
     mutationConfig: {
@@ -174,27 +173,12 @@ function EditarUnidadPageContent({
         {unidad && current && (
           <form
             id={FORM_ID}
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault()
-              // Enunciados que estaban relacionados y el docente sacó del
-              // picker: se desvinculan uno por uno (`PATCH .../unidades/
-              // enunciados/:pkRelacion`, confirmado real) — no hay endpoint
-              // confirmado para AGREGAR uno nuevo a una unidad ya creada
-              // (solo al crearla), así que un alta nueva en el picker no se
-              // manda todavía.
-              const idsActuales = new Set(current.enunciadosDba.map((e) => e.id))
-              const quitados = (referente?.enunciados ?? []).filter((e) => !idsActuales.has(e.id))
-              for (const enunciado of quitados) {
-                try {
-                  await unlinkEnunciado.mutateAsync({
-                    unidadId: unidad.id,
-                    pkRelacion: enunciado.pkRelacion,
-                  })
-                } catch (error) {
-                  notify(getErrorMessage(error), { variant: "error" })
-                  return
-                }
-              }
+              // `ENUNCIADOS` en el PUT (sso V492) reemplaza la lista
+              // completa en una sola llamada — agregados y quitados del
+              // picker de "Derechos Básicos de Aprendizaje" viajan juntos
+              // en `useUpdateUnidad`, no hace falta desvincular aparte.
               updateMutation.mutate({ unidadId: unidad.id, data: draftToPayload(current) })
             }}
           >
@@ -222,14 +206,14 @@ function EditarUnidadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!current?.nombre.trim() || updateMutation.isPending || unlinkEnunciado.isPending}
+              disabled={!current?.nombre.trim() || updateMutation.isPending}
             >
-              {updateMutation.isPending || unlinkEnunciado.isPending ? (
+              {updateMutation.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
                 <CheckIcon data-icon="inline-start" />
               )}
-              {updateMutation.isPending || unlinkEnunciado.isPending ? "Guardando..." : "Guardar"}
+              {updateMutation.isPending ? "Guardando..." : "Guardar"}
             </Button>
           </>
         ) : (
