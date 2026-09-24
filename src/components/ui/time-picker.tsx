@@ -12,6 +12,11 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 type Period = "AM" | "PM"
 type ClockMode = "hour" | "minute"
 
+export interface TimePickerPanelHandle {
+  /** Confirma la hora actualmente mostrada, aunque el usuario no haya tocado nada. */
+  commit: () => void
+}
+
 interface TimePickerPanelProps {
   value?: string
   onChange?: (value: string) => void
@@ -23,133 +28,146 @@ interface TimePickerPanelProps {
  * equivalente de `Calendar` para la hora: el panel suelto, sin trigger. Para
  * un campo de formulario con el aspecto de un input, usar `TimePicker`.
  */
-export function TimePickerPanel({ value, onChange, className }: TimePickerPanelProps) {
-  const [view, setView] = React.useState<"text" | "analog">("text")
-  const [hour, setHour] = React.useState(() => extractHour(value))
-  const [minute, setMinute] = React.useState(() => extractMinute(value))
-  const [period, setPeriod] = React.useState<Period>(() => derivePeriod(value))
+export const TimePickerPanel = React.forwardRef<TimePickerPanelHandle, TimePickerPanelProps>(
+  function TimePickerPanel({ value, onChange, className }, ref) {
+    const [view, setView] = React.useState<"text" | "analog">("text")
+    const [hour, setHour] = React.useState(() => extractHour(value))
+    const [minute, setMinute] = React.useState(() => extractMinute(value))
+    const [period, setPeriod] = React.useState<Period>(() => derivePeriod(value))
 
-  const [hourText, setHourText] = React.useState(() => pad(hour))
-  const [minuteText, setMinuteText] = React.useState(() => pad(minute))
+    const [hourText, setHourText] = React.useState(() => pad(hour))
+    const [minuteText, setMinuteText] = React.useState(() => pad(minute))
 
-  // Sin valor el panel igual muestra 12:00 AM, así que un blur a secas no se
-  // puede leer como una elección: si no, abrir el picker y hacer clic en
-  // cualquier otro lado ya dejaba la hora en 12:00am. Solo cuenta como
-  // intención haber escrito en el campo (o tocar el reloj / el AM-PM).
-  const hourEdited = React.useRef(false)
-  const minuteEdited = React.useRef(false)
+    // Sin valor el panel igual muestra 12:00 AM, así que un blur a secas no se
+    // puede leer como una elección: si no, abrir el picker y hacer clic en
+    // cualquier otro lado ya dejaba la hora en 12:00am. Solo cuenta como
+    // intención haber escrito en el campo (o tocar el reloj / el AM-PM).
+    const hourEdited = React.useRef(false)
+    const minuteEdited = React.useRef(false)
 
-  React.useEffect(() => {
-    const h = extractHour(value)
-    const m = extractMinute(value)
-    setHour(h)
-    setMinute(m)
-    setPeriod(derivePeriod(value))
-    setHourText(pad(h))
-    setMinuteText(pad(m))
-    hourEdited.current = false
-    minuteEdited.current = false
-  }, [value])
+    React.useEffect(() => {
+      const h = extractHour(value)
+      const m = extractMinute(value)
+      setHour(h)
+      setMinute(m)
+      setPeriod(derivePeriod(value))
+      setHourText(pad(h))
+      setMinuteText(pad(m))
+      hourEdited.current = false
+      minuteEdited.current = false
+    }, [value])
 
-  function commit(nextHour: number, nextMinute: number, nextPeriod: Period) {
-    setHour(nextHour)
-    setMinute(nextMinute)
-    setPeriod(nextPeriod)
-    setHourText(pad(nextHour))
-    setMinuteText(pad(nextMinute))
-    const h24 = to24h(nextHour, nextPeriod)
-    onChange?.(`${pad(h24)}:${pad(nextMinute)}`)
-  }
+    function commit(nextHour: number, nextMinute: number, nextPeriod: Period) {
+      setHour(nextHour)
+      setMinute(nextMinute)
+      setPeriod(nextPeriod)
+      setHourText(pad(nextHour))
+      setMinuteText(pad(nextMinute))
+      const h24 = to24h(nextHour, nextPeriod)
+      onChange?.(`${pad(h24)}:${pad(nextMinute)}`)
+    }
 
-  function commitHourText() {
-    if (!hourEdited.current) return
-    hourEdited.current = false
-    commit(clamp(parseIntOrZero(hourText), 1, 12), readMinuteText(), period)
-  }
+    function commitHourText() {
+      if (!hourEdited.current) return
+      hourEdited.current = false
+      commit(clamp(parseIntOrZero(hourText), 1, 12), readMinuteText(), period)
+    }
 
-  function commitMinuteText() {
-    if (!minuteEdited.current) return
-    minuteEdited.current = false
-    commit(readHourText(), clamp(parseIntOrZero(minuteText), 0, 59), period)
-  }
+    function commitMinuteText() {
+      if (!minuteEdited.current) return
+      minuteEdited.current = false
+      commit(readHourText(), clamp(parseIntOrZero(minuteText), 0, 59), period)
+    }
 
-  /**
-   * Cambiar AM/PM se toma con lo que hay escrito, no con lo último
-   * confirmado: al hacer clic en el toggle el input todavía no ha alcanzado a
-   * commitear su blur, y con el estado viejo se perdía la hora recién tecleada.
-   */
-  function commitPeriod(nextPeriod: Period) {
-    hourEdited.current = false
-    minuteEdited.current = false
-    commit(readHourText(), readMinuteText(), nextPeriod)
-  }
+    /**
+     * Cambiar AM/PM se toma con lo que hay escrito, no con lo último
+     * confirmado: al hacer clic en el toggle el input todavía no ha alcanzado a
+     * commitear su blur, y con el estado viejo se perdía la hora recién tecleada.
+     */
+    function commitPeriod(nextPeriod: Period) {
+      hourEdited.current = false
+      minuteEdited.current = false
+      commit(readHourText(), readMinuteText(), nextPeriod)
+    }
 
-  function readHourText() {
-    return clamp(parseIntOrZero(hourText), 1, 12)
-  }
+    function readHourText() {
+      return clamp(parseIntOrZero(hourText), 1, 12)
+    }
 
-  function readMinuteText() {
-    return clamp(parseIntOrZero(minuteText), 0, 59)
-  }
+    function readMinuteText() {
+      return clamp(parseIntOrZero(minuteText), 0, 59)
+    }
 
-  return (
-    <div data-slot="time-picker" className={cn("bg-background flex flex-col gap-4 p-3", className)}>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-          Ingresar hora
-        </span>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="fill"
-                size="icon-sm"
-                onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
-                aria-label={view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
-              />
-            }
-          >
-            <ClockIcon weight="bold" />
-          </TooltipTrigger>
-          <TooltipContent>
-            {view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
-          </TooltipContent>
-        </Tooltip>
+    // "Listo" debe confirmar la hora mostrada aunque el usuario no haya
+    // tocado nada (a diferencia de un blur, es una acción explícita).
+    React.useImperativeHandle(ref, () => ({
+      commit: () => commit(readHourText(), readMinuteText(), period),
+    }))
+
+    return (
+      <div
+        data-slot="time-picker"
+        className={cn("bg-background flex flex-col gap-4 p-3", className)}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            Ingresar hora
+          </span>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="fill"
+                  size="icon-sm"
+                  onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
+                  aria-label={
+                    view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"
+                  }
+                />
+              }
+            >
+              <ClockIcon weight="bold" />
+            </TooltipTrigger>
+            <TooltipContent>
+              {view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="flex justify-center">
+          {view === "text" ? (
+            <TextInputView
+              hourText={hourText}
+              minuteText={minuteText}
+              period={period}
+              onHourTextChange={(v) => {
+                hourEdited.current = true
+                setHourText(v)
+              }}
+              onMinuteTextChange={(v) => {
+                minuteEdited.current = true
+                setMinuteText(v)
+              }}
+              onHourCommit={commitHourText}
+              onMinuteCommit={commitMinuteText}
+              onPeriodChange={commitPeriod}
+            />
+          ) : (
+            <AnalogClockView
+              hour={hour}
+              minute={minute}
+              period={period}
+              onSelectHour={(h) => commit(h, minute, period)}
+              onSelectMinute={(m) => commit(hour, m, period)}
+              onPeriodChange={(p) => commit(hour, minute, p)}
+            />
+          )}
+        </div>
       </div>
-
-      <div className="flex justify-center">
-        {view === "text" ? (
-          <TextInputView
-            hourText={hourText}
-            minuteText={minuteText}
-            period={period}
-            onHourTextChange={(v) => {
-              hourEdited.current = true
-              setHourText(v)
-            }}
-            onMinuteTextChange={(v) => {
-              minuteEdited.current = true
-              setMinuteText(v)
-            }}
-            onHourCommit={commitHourText}
-            onMinuteCommit={commitMinuteText}
-            onPeriodChange={commitPeriod}
-          />
-        ) : (
-          <AnalogClockView
-            hour={hour}
-            minute={minute}
-            period={period}
-            onSelectHour={(h) => commit(h, minute, period)}
-            onSelectMinute={(m) => commit(hour, m, period)}
-            onPeriodChange={(p) => commit(hour, minute, p)}
-          />
-        )}
-      </div>
-    </div>
-  )
-}
+    )
+  },
+)
 
 function PeriodToggle({
   period,
