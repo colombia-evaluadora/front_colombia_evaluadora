@@ -3049,24 +3049,39 @@ function EvaluacionSection({
               if (ponderacionInfo.modo === "PUNTAJE") {
                 return (
                   <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                    <form.Field name="notaMaxima">
-                      {(notaMaximaField) => (
-                        <Field variant="outlined">
-                          <FieldLabel htmlFor={notaMaximaField.name}>
-                            Puntaje{ponderacionInfo.requerido ? " *" : ""}
-                          </FieldLabel>
-                          <Input
-                            id={notaMaximaField.name}
-                            type="number"
-                            min={0}
-                            value={notaMaximaField.state.value ?? ""}
-                            onChange={(e) =>
-                              notaMaximaField.handleChange(e.target.value === "" ? undefined : Number(e.target.value))
-                            }
-                            disabled={disabled}
-                          />
-                        </Field>
-                      )}
+                    <form.Field
+                      name="notaMaxima"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (value == null || Number.isNaN(value)) return undefined
+                          if (value <= 0) return { message: "El puntaje debe ser mayor a 0." }
+                          return undefined
+                        },
+                      }}
+                    >
+                      {(notaMaximaField) => {
+                        const isInvalid = notaMaximaField.state.meta.isTouched && !notaMaximaField.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={notaMaximaField.name}>
+                              Puntaje{ponderacionInfo.requerido ? " *" : ""}
+                            </FieldLabel>
+                            <Input
+                              id={notaMaximaField.name}
+                              type="number"
+                              min={0}
+                              value={notaMaximaField.state.value ?? ""}
+                              onChange={(e) => {
+                                const raw = e.target.value
+                                notaMaximaField.handleChange(raw === "" ? undefined : Number(raw))
+                              }}
+                              disabled={disabled}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && <FieldError errors={notaMaximaField.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
                     </form.Field>
                   </div>
                 )
@@ -3075,23 +3090,39 @@ function EvaluacionSection({
               // resuelto: cae al campo de siempre en vez de no mostrar nada.
               return (
                 <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                  <form.Field name="ponderacion">
-                    {(ponderacionField) => (
-                      <Field variant="outlined">
-                        <FieldLabel htmlFor={ponderacionField.name}>
-                          Ponderación (%){ponderacionInfo.requerido ? " *" : ""}
-                        </FieldLabel>
-                        <Input
-                          id={ponderacionField.name}
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={ponderacionField.state.value}
-                          onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
-                          disabled={disabled}
-                        />
-                      </Field>
-                    )}
+                  <form.Field
+                    name="ponderacion"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (Number.isNaN(value)) return undefined
+                        if (value < 0 || value > 100) {
+                          return { message: "La ponderación debe estar entre 0 y 100%." }
+                        }
+                        return undefined
+                      },
+                    }}
+                  >
+                    {(ponderacionField) => {
+                      const isInvalid = ponderacionField.state.meta.isTouched && !ponderacionField.state.meta.isValid
+                      return (
+                        <Field variant="outlined" data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={ponderacionField.name}>
+                            Ponderación (%){ponderacionInfo.requerido ? " *" : ""}
+                          </FieldLabel>
+                          <Input
+                            id={ponderacionField.name}
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={ponderacionField.state.value}
+                            onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                            disabled={disabled}
+                            aria-invalid={isInvalid}
+                          />
+                          {isInvalid && <FieldError errors={ponderacionField.state.meta.errors} />}
+                        </Field>
+                      )
+                    }}
                   </form.Field>
                 </div>
               )
@@ -3918,10 +3949,19 @@ function InstrumentoPersonalizadoSection({
 }
 
 function RubricasSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Se llega a esta sección solo cuando el instrumento elegido exige una
+  // rúbrica (ver `InstrumentoEvaluacionSection`: cualquier valor que no sea
+  // "Lista de cotejo"/"Escala de valoración"/"Otro" cae acá), así que al
+  // menos un criterio siempre es obligatorio — antes se podía guardar la
+  // actividad con la rúbrica completamente vacía (reportado en vivo: "se
+  // creó una actividad con rúbrica y quedaron vacíos todos sus datos").
+  // Mismo patrón que `fechaInicio`/`fechaCierre` más arriba: el error solo
+  // se marca tras tocar el campo o tras un intento de guardar.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Definición de Rúbricas</h3>
+        <h3 className="text-base font-semibold">Definición de Rúbricas *</h3>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -3960,11 +4000,32 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
           "Puntaje" — un solo flag gobierna toda la rúbrica. */}
       <form.Subscribe selector={(state) => state.values.esEvaluativa}>
         {(esEvaluativa) => (
-          <form.Field name="rubrica">
+          <form.Field
+            name="rubrica"
+            validators={{
+              onChange: ({ value }) => {
+                const rubrica = value as { id: number; criterios: Criterio[] }
+                return rubrica.criterios.length === 0
+                  ? { message: "Agrega al menos un criterio de rúbrica." }
+                  : undefined
+              },
+            }}
+          >
             {(field) => {
               const rubrica = field.state.value as { id: number; criterios: Criterio[] }
+              const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
               if (rubrica.criterios.length === 0) {
-                return null
+                return (
+                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid}>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        Agrega al menos un criterio con el botón de arriba.
+                      </p>
+                    )}
+                  </div>
+                )
               }
               return (
                 <ul className="flex flex-col gap-6">
@@ -4124,9 +4185,14 @@ function CriterioItem({
                 value={criterio.excelentePonderacion ?? ""}
                 onChange={(e) => {
                   const raw = e.target.value
+                  if (raw === "") {
+                    onChange({ ...criterio, excelentePonderacion: undefined })
+                    return
+                  }
+                  const num = Number(raw)
                   onChange({
                     ...criterio,
-                    excelentePonderacion: raw === "" ? undefined : Number(raw),
+                    excelentePonderacion: Number.isNaN(num) ? undefined : Math.min(100, Math.max(0, num)),
                   })
                 }}
                 disabled={disabled}
@@ -4216,12 +4282,19 @@ function CriterioItem({
                   onChange={(e) => {
                     const raw = e.target.value
                     const next = criterio.niveles.slice()
-                    next[nIndex] = {
-                      ...nivel,
-                      // string vacío → `undefined` para mantener el campo
-                      // opcional sin valores "fantasma" (0 cuando el
-                      // usuario apenas está editando).
-                      ponderacion: raw === "" ? undefined : Number(raw),
+                    // string vacío → `undefined` para mantener el campo
+                    // opcional sin valores "fantasma" (0 cuando el
+                    // usuario apenas está editando). Clamp real (no solo
+                    // el `min`/`max` decorativo del `<input>`), mismo
+                    // criterio que `dialog-agregar-actividad.tsx`.
+                    if (raw === "") {
+                      next[nIndex] = { ...nivel, ponderacion: undefined }
+                    } else {
+                      const num = Number(raw)
+                      next[nIndex] = {
+                        ...nivel,
+                        ponderacion: Number.isNaN(num) ? undefined : Math.min(100, Math.max(0, num)),
+                      }
                     }
                     onChange({ ...criterio, niveles: next })
                   }}
@@ -4318,7 +4391,10 @@ function CriterioItem({
           min={0}
           max={100}
           value={criterio.ponderacion}
-          onChange={(e) => onChange({ ...criterio, ponderacion: Number(e.target.value) })}
+          onChange={(e) => {
+            const num = Number(e.target.value)
+            onChange({ ...criterio, ponderacion: Number.isNaN(num) ? 0 : Math.min(100, Math.max(0, num)) })
+          }}
           disabled={disabled}
         />
       </Field>
