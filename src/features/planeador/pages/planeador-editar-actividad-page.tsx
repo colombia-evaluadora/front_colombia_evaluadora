@@ -22,7 +22,6 @@ import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-qu
 import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
-import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
 import { useSetEstudiantesActividad } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
 import {
@@ -30,7 +29,6 @@ import {
   useUpdateInstrumentoActividad,
 } from "@/features/planeador/api/mutations/update-instrumento-actividad"
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
-import { useAgregarCriterioUnidadActividad } from "@/features/planeador/api/mutations/agregar-criterio-unidad-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -167,11 +165,6 @@ function EditarActividadPageContent({
   // ya tenía una.
   const linkActividad = useLinkActividadUnidad()
   const unlinkActividad = useUnlinkActividadUnidad({ unidadId: actividad?.unidad.id ?? 0 })
-  // Solo AGREGA evidencias nuevas (ver el comentario de `Actividad.
-  // evidenciasIds`): no hay endpoint confirmado para desvincular una ya
-  // relacionada, así que el checklist del form las deja tildadas y
-  // deshabilitadas — nunca aparecen en el diff de `handleSubmit`.
-  const agregarEvidencia = useAgregarEvidenciaActividad()
   // Reemplazo completo (`PUT .../materiales`) — se llama solo cuando la
   // lista de recursos cambió (ver `handleSubmit`), no en cada guardado.
   const updateMateriales = useUpdateMaterialesActividad({
@@ -204,9 +197,6 @@ function EditarActividadPageContent({
   // `use-actividad-detalle-query.ts`), mismo criterio de "solo si cambió"
   // que `updateMateriales`/`updateAdaptaciones` más abajo.
   const setEstudiantes = useSetEstudiantesActividad()
-  // Solo AGREGA criterios nuevos — mismo criterio que `agregarEvidencia`
-  // (ver el comentario de `Actividad.criteriosUnidadIds`).
-  const agregarCriterio = useAgregarCriterioUnidadActividad()
   const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
 
   async function handleSubmit(values: Actividad) {
@@ -271,16 +261,10 @@ function EditarActividadPageContent({
     // algo que guardar terminó bien; el primer error frena el resto y se
     // avisa con la pantalla todavía montada.
     try {
+      // `EVIDENCIAS`/`CRITERIOS` viajan DENTRO de este mismo PUT como
+      // reemplazo completo (ver `update-actividad.ts`) — ya no hace falta
+      // un request aparte por cada evidencia/criterio nuevo.
       await updateMutation.mutateAsync({ actividadId: actividad.id, data: values })
-
-      // Evidencias marcadas en este submit que todavía no estaban
-      // relacionadas — cada una es su propio `POST`, no hay bulk confirmado.
-      const evidenciasNuevas = values.evidenciasIds.filter(
-        (id) => !actividad.evidenciasIds.includes(id),
-      )
-      for (const evidenciaId of evidenciasNuevas) {
-        await agregarEvidencia.mutateAsync({ actividadId: actividad.id, evidenciaId })
-      }
 
       // `PUT .../materiales` reemplaza TODA la lista — solo se llama si de
       // verdad cambió, para no pegarle al backend en cada guardado cuando el
@@ -297,15 +281,6 @@ function EditarActividadPageContent({
       // "solo si cambió" que `updateMateriales`.
       if (JSON.stringify(values.adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
         await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones: values.adaptaciones })
-      }
-
-      // Criterios de la unidad marcados en este submit que todavía no estaban
-      // relacionados — mismo criterio que las evidencias nuevas de arriba.
-      const criteriosNuevos = values.criteriosUnidadIds.filter(
-        (id) => !actividad.criteriosUnidadIds.includes(id),
-      )
-      for (const criterioUnidadId of criteriosNuevos) {
-        await agregarCriterio.mutateAsync({ actividadId: actividad.id, criterioUnidadId })
       }
 
       // "Estudiantes": solo si de verdad cambió (ver el comentario de

@@ -122,10 +122,14 @@ interface EnunciadosEvidenciasChecklistProps {
   /** Ids de evidencias tildadas para esta actividad. */
   seleccionadas: number[]
   onToggle: (evidenciaId: number) => void
-  /** Evidencias ya relacionadas ANTES de este render (al editar una
-   *  actividad existente): quedan tildadas pero no se pueden destildar —
-   *  no hay endpoint confirmado para desvincular una evidencia ya marcada,
-   *  solo para agregar (`POST /actividades/:id/evidencias`). */
+  /** Evidencias que quedan tildadas y sin poder destildar. Lo usa SOLO el
+   *  panel de detalle de solo lectura (`DetailSections`), donde tocar el
+   *  checkbox guarda al instante con `POST /actividades/:id/evidencias` —
+   *  ese endpoint únicamente agrega, no hay forma de desvincular desde ahí
+   *  todavía. El form de crear/editar actividad (`form-editar-actividad.tsx`)
+   *  NO pasa esta prop: ahí la selección completa viaja recién al enviar el
+   *  form, con `PUT /actividades/:id` (reemplazo completo, ver
+   *  `update-actividad.ts`), así que tildar y destildar funciona igual. */
   disabledIds?: number[]
   /** Id de la evidencia que se está guardando ahora mismo (panel de
    *  detalle, guardado inmediato) — le muestra un spinner en vez del
@@ -226,11 +230,13 @@ interface CriteriosUnidadChecklistProps {
   /** Ids de criterios de la unidad tildados para esta actividad. */
   seleccionados: number[]
   onToggle: (criterioId: number) => void
-  /** Igual que `disabledIds` en `EnunciadosEvidenciasChecklist`: no hay
-   *  endpoint confirmado para desvincular un criterio ya relacionado
-   *  (`PATCH /actividades/criterios/:id` pide el pk de la RELACIÓN, que acá
-   *  no se conoce), así que un criterio ya marcado queda tildado sin poder
-   *  destildarse. */
+  /** Igual que `disabledIds` en `EnunciadosEvidenciasChecklist`: lo usa
+   *  SOLO el panel de detalle de solo lectura (guardado inmediato,
+   *  `POST /actividades/:id/criterios`) — no hay forma de desvincular un
+   *  criterio ya relacionado desde ahí (`PATCH /actividades/criterios/:id`
+   *  pide el pk de la RELACIÓN, que ese panel no conoce). El form de crear/
+   *  editar actividad no pasa esta prop: guarda la selección completa al
+   *  enviar el form (`PUT /actividades/:id`, reemplazo completo). */
   disabledIds?: number[]
   className?: string
 }
