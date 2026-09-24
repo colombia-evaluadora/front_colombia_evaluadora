@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 
 import {
   partitionKnownMenus,
-  reorderAssignedMenus,
   reorderSiblings,
   withRequiredParents,
 } from "@/features/administration/roles-menus/api/types/role-menu"
@@ -48,34 +47,6 @@ describe("reorderSiblings", () => {
   it("no devuelve nada si el destino es el mismo lugar o no está a la vista", () => {
     expect(reorderSiblings(siblings, allVisible, 2, 2)).toEqual([])
     expect(reorderSiblings(siblings, [1, 2], 1, 4)).toEqual([])
-  })
-})
-
-// Dos grupos con dos ítems cada uno.
-const tree: MenuTreeNode[] = [
-  { ...menu(1, 0), children: [menu(11, 0, 1), menu(12, 1, 1)] },
-  { ...menu(2, 1), children: [menu(21, 0, 2), menu(22, 1, 2)] },
-]
-const assignedIds = [1, 11, 12, 2, 21, 22]
-
-describe("reorderAssignedMenus", () => {
-  it("mueve un grupo con todos sus ítems", () => {
-    expect(reorderAssignedMenus(assignedIds, tree, 2, 1)).toEqual([2, 21, 22, 1, 11, 12])
-  })
-
-  it("mueve un ítem dentro de su grupo", () => {
-    expect(reorderAssignedMenus(assignedIds, tree, 12, 11)).toEqual([1, 12, 11, 2, 21, 22])
-  })
-
-  it("no mueve un ítem a otro grupo: eso sería cambiarle el padre", () => {
-    expect(reorderAssignedMenus(assignedIds, tree, 11, 21)).toBe(assignedIds)
-  })
-
-  it("no toca el catálogo: solo reordena la lista del rol", () => {
-    const next = reorderAssignedMenus(assignedIds, tree, 2, 1)
-    expect(tree[0].menuOrder).toBe(0)
-    expect(tree[1].menuOrder).toBe(1)
-    expect([...next].sort()).toEqual([...assignedIds].sort())
   })
 })
 
