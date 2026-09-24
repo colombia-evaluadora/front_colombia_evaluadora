@@ -20,10 +20,12 @@ import { api } from "@/lib/api-client"
  *
  * Además de "¿es formativa?" (`enfoque_valor`), se mapean los enunciados
  * (nivel 1) que la unidad YA relacionó, con el `pk` de la RELACIÓN
- * (`pkTunidadEnunciado`, distinto del `pk` del enunciado): es lo que pide
- * `PATCH /planeador/unidades/enunciados/:pkTunidadEnunciado` para
- * desvincular uno cuando el docente lo saca del picker de "Derechos
- * Básicos de Aprendizaje" al editar la unidad (`unlink-enunciado-unidad.ts`).
+ * (`pkTunidadEnunciado`, distinto del `pk` del enunciado) — es el `id` que
+ * `useUpdateUnidad` necesita para armar el borrador inicial del picker de
+ * "Derechos Básicos de Aprendizaje" al editar la unidad
+ * (`planeador-editar-unidad-page.tsx`); el `PUT .../unidades/:id` (sso
+ * V492, `ENUNCIADOS`) reemplaza la lista completa en una sola llamada, ya
+ * no hace falta desvincular uno por uno.
  *
  * El árbol de EVIDENCIAS (nivel 2) para marcar en la actividad, y los
  * rótulos `nivel_1_etiqueta`/`nivel_2_etiqueta` ("Propósito"/"Imprescindible"

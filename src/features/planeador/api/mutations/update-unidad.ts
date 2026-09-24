@@ -51,6 +51,18 @@ async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<Upda
   // unidad se deriva de sus actividades vinculadas (solo lectura, ver
   // `UnidadDetallePanel`). `PUT /planeador/unidades/:id` descarta ese campo
   // en silencio si se lo manda; se dejó de intentar por completo.
+  //
+  // `ENUNCIADOS` (sso V492): reemplazo COMPLETO de los enunciados
+  // relacionados a la unidad — se desactivan los que no vienen en el array
+  // y se relacionan/reactivan los que sí, en una sola llamada. Antes de
+  // V492 el PUT no aceptaba esta lista y editar una unidad ya creada solo
+  // podía SACAR enunciados (uno por uno, `PATCH .../unidades/enunciados/
+  // :pkRelacion`) — agregar uno nuevo desde el picker de "Derechos Básicos
+  // de Aprendizaje" al editar se perdía en silencio (ver
+  // `planeador-editar-unidad-page.tsx`). `data.enunciadosDba` siempre es un
+  // array (nunca `undefined`, ver `UNIDAD_DRAFT_VACIO`), así que se manda
+  // tal cual: un array vacío es una desvinculación total válida.
+  body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
   return api.put(`/eval-col/planeador/unidades/${unidadId}`, body)
 }
 
