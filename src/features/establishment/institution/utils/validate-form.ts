@@ -1,6 +1,12 @@
 import { z } from "zod"
 
 import { passwordRules } from "@/features/auth/api/schema"
+import {
+  CORREO,
+  MENSAJES,
+  TELEFONO,
+  validarFormatoPersona,
+} from "@/features/establishment/shared/person-field-rules"
 import { optionalImageFile } from "@/lib/image-file"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Person } from "@/features/establishment/employees/api/types/person"
@@ -92,15 +98,12 @@ const establishmentSchema = z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
   }),
   contact: z.object({
-    email: optionalPattern(
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      "Ingresa un correo electrónico válido."
-    ),
+    email: optionalPattern(CORREO, MENSAJES.correo),
     website: optionalCheck(
       (value) => z.string().url().safeParse(value).success,
       "Ingresa una página web válida (ej. https://ejemplo.com)."
     ),
-    phone: optionalPattern(/^\d{1,10}$/, "El teléfono no debe superar los 10 dígitos."),
+    phone: optionalPattern(TELEFONO, MENSAJES.telefono),
   }),
 })
 
@@ -141,9 +144,6 @@ const PERSON_LABELS: Record<string, string> = {
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
-
-/** Edad mínima exigida a rector/secretaria (mayoría de edad en Colombia). */
-const MINIMUM_PERSON_AGE_YEARS = 18
 
 function isBlank(value: string | null | undefined): boolean {
   return value == null || value.trim() === ""
@@ -221,30 +221,12 @@ function makePersonSchema(required: boolean) {
       require("firstName", p.firstName, "Ingresa el primer nombre.")
       require("lastName", p.lastName, "Ingresa el primer apellido.")
 
-      if (!isBlank(p.birthDate)) {
-        const birthDate = new Date(p.birthDate as string)
-        const cutoff = new Date()
-        cutoff.setFullYear(cutoff.getFullYear() - MINIMUM_PERSON_AGE_YEARS)
-
-        if (Number.isNaN(birthDate.getTime()) || birthDate > cutoff) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["birthDate"],
-            message: "La persona debe ser mayor de edad.",
-          })
-        }
-      }
-
-      // Formato, no obligatoriedad: eso ya lo cubre `require("email", ...)`
-      // más abajo (solo para persona nueva). Acá se valida cualquier correo
-      // no vacío, exista o no la cuenta, nueva o ya cargada.
-      if (!isBlank(p.email) && !z.string().email().safeParse(p.email).success) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["email"],
-          message: "Ingresa un correo electrónico válido.",
-        })
-      }
+      // Formato de cada campo, no obligatoriedad: eso lo cubren los
+      // `require` de arriba y abajo. Son las mismas reglas que funcionarios
+      // —misma clase de persona, mismo backend— y por eso viven en un módulo
+      // compartido: cuando cada pantalla tenía su copia, esta validaba el
+      // correo y aquella no.
+      validarFormatoPersona(p, ctx)
 
       /**
        * Persona SIN `id` todavía (nunca tuvo rector/secretaria enlazado, o
