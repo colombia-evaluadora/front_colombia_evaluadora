@@ -142,10 +142,10 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 
   return (
     <div className="border-input overflow-hidden rounded-md border">
-      <table className="w-full text-sm">
+      <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+            <th className="w-80 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
             <th className="w-72 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
@@ -212,7 +212,9 @@ function CalificacionRow({
 
   return (
     <tr className="transition-colors">
-      <td className="px-4 py-3 align-middle font-medium">{nombreCompleto}</td>
+      <td className="truncate px-4 py-3 align-middle font-medium" title={nombreCompleto}>
+        {nombreCompleto}
+      </td>
       <td className="w-72 max-w-72 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <AsistenciaSelect
@@ -262,12 +264,17 @@ function CalificacionRow({
           )}
           {formativa ? (
             estudiante.observacion?.trim() ? (
-              <span className="min-w-0 flex-1 truncate text-xs" title={estudiante.observacion}>
+              <span
+                className="min-w-0 max-w-[77ch] flex-1 truncate text-xs"
+                title={estudiante.observacion}
+              >
                 {estudiante.observacion}
               </span>
             ) : (
-              <span className="text-muted-foreground">Observar</span>
+              <span className="text-muted-foreground">Agregar observación</span>
             )
+          ) : estudiante.notaHomologada != null ? (
+            <span className="font-semibold">{estudiante.notaHomologada.toFixed(2)}</span>
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
           ) : (
@@ -279,27 +286,12 @@ function CalificacionRow({
   )
 }
 
-/** `EstadoAsistencia` seleccionable → `TipoAsistencia` real que exige
- *  `POST /asistencias/registrar`. "sin-registrar" no tiene equivalente: es
- *  la ausencia de fila, no un estado que se pueda mandar. */
 const ESTADO_A_TIPO: Partial<Record<EstadoAsistencia, TipoAsistencia>> = {
   asistio: 1,
   "llego-tarde": 5,
   "no-asistio": 2,
 }
 
-/**
- * Select de asistencia envuelto en un `Field` outlined con label flotante.
- * El label "Asistencia" se monta sobre el borde superior y queda anclado
- * aunque el select cambie de valor, igual que en el resto de los campos
- * outlined-floating del design system.
- *
- * Editable desde acá: toma la asistencia de este estudiante con el mismo
- * endpoint que usa el módulo de Asistencia, para no obligar al docente a
- * saltar de pantalla solo para poder calificar/observar. `onChange`
- * ausente (mock, o sin `matriculaId`) cae al viejo comportamiento
- * read-only.
- */
 function AsistenciaSelect({
   estado,
   onChange,
@@ -362,8 +354,6 @@ function AsistenciaSelect({
 
   return (
     <Tooltip>
-      {/* El trigger va en un `span`, no en el propio Select: un control
-          disabled no dispara los eventos de hover que necesita el Tooltip. */}
       <TooltipTrigger render={<span className="inline-flex min-w-36" />}>{campo}</TooltipTrigger>
       <TooltipContent>Esta actividad todavía no comienza: no se puede tomar asistencia.</TooltipContent>
     </Tooltip>
@@ -389,8 +379,6 @@ const ASISTENCIA_OPTIONS = [
     Icon: WarningCircleIcon,
     iconClass: "text-red",
   },
-  // Caso real confirmado: sin registro de asistencia ese día todavía (se
-  // toma en otro módulo) — no es "no asistió", es "todavía no se sabe".
   {
     value: "sin-registrar",
     label: "Sin registrar",
@@ -399,11 +387,6 @@ const ASISTENCIA_OPTIONS = [
   },
 ] as const
 
-/**
- * Campo de justificación + badge de adjuntos. Aparece solo cuando el
- * estado de asistencia es "llego-tarde" o "no-asistio" — en "asistió" no
- * hay nada que justificar.
- */
 function JustificacionField({
   value,
   adjuntos,

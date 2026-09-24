@@ -36,9 +36,10 @@ import {
 } from "@/features/coverage/components/forms/form-create-matricula"
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
 import {
-  REQUIRED_MATRICULA_FIELD_LABELS,
   createEmptySupportFiles,
   createInitialMatriculaValues,
+  getMatriculaFieldErrorMessage,
+  pickMatriculaErrorField,
   validateMatricula,
   type MatriculaAccountsFound,
 } from "@/features/coverage/utils/matricula-form-defaults"
@@ -307,12 +308,11 @@ function AddMatriculaPageContent() {
       dismiss()
       return
     }
-    const label = REQUIRED_MATRICULA_FIELD_LABELS[missingFields[0]] ?? missingFields[0]
-    notify(`Falta el campo obligatorio: ${label}.`, {
+    notify(getMatriculaFieldErrorMessage(pickMatriculaErrorField(missingFields, values), values), {
       variant: "error",
       autoCloseMs: 0,
     })
-  }, [missingFields, notify, dismiss])
+  }, [missingFields, values, notify, dismiss])
 
   function resetForm() {
     const blank = createInitialMatriculaValues()

@@ -56,6 +56,11 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadRespon
     OBJETIVOS: data.objetivos,
     CONTENIDOS: data.contenidos,
   }
+  // NO se manda `FK_TLV_INSTRUMENTO_EVALUACION`: desde el backend real (sso
+  // V488) esa columna de `TUNIDAD` ya no existe — el instrumento de la
+  // unidad se deriva de sus actividades vinculadas (solo lectura, ver
+  // `UnidadDetallePanel`). `POST /planeador/unidades` descarta ese campo en
+  // silencio si se lo manda; se dejó de intentar por completo.
   if (data.enunciadosDba.length > 0) {
     body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
   }

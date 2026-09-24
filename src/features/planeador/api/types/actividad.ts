@@ -235,22 +235,24 @@ export interface Actividad {
    * sentido con `unidad.id !== 0`: una actividad huérfana no tiene de
    * dónde sacarlas. Se mandan en `POST /planeador/actividades` como
    * `EVIDENCIAS: [ids]` (colección Postman
-   * `planeador-flujo-unidad-actividad`, paso 7); agregar una nueva a una
-   * actividad ya creada usa `POST .../actividades/:id/evidencias` en vez
-   * del PUT general (ver `agregar-evidencia-actividad.ts`).
+   * `planeador-flujo-unidad-actividad`, paso 7) y en `PUT .../actividades/:id`
+   * como reemplazo completo (`update-actividad.ts`, sso V492) — el checklist
+   * del form permite tildar y destildar tanto al crear como al editar.
+   * `POST .../actividades/:id/evidencias` (`agregar-evidencia-actividad.ts`)
+   * sigue existiendo aparte, para el guardado inmediato del panel de
+   * detalle de solo lectura (`DetailSections`), que ahí solo puede agregar.
    */
   evidenciasIds: number[]
   /**
    * Ids de criterios de la RÚBRICA DE LA UNIDAD (`UnidadTematica.criterios`,
    * `TCRITERIO_UNIDAD` — no la rúbrica propia de la actividad, `rubrica`)
    * marcados para relacionar con esta actividad — solo tiene sentido con
-   * `unidad.id !== 0`. A diferencia de `evidenciasIds`, NO viaja en
-   * `POST /planeador/actividades` (no confirmado en ese body): siempre es
-   * `POST .../actividades/:id/criterios` aparte, con la actividad ya creada
-   * (ver `agregar-criterio-unidad-actividad.ts`). Igual que `evidenciasIds`,
-   * se precarga con lo ya relacionado (`fn_actividad_buscar_por_pk`, columna
-   * `criterios`, ver `use-actividad-detalle-query.ts`) al reabrir el detalle
-   * real — el checklist del form solo puede AGREGAR, no quitar por acá.
+   * `unidad.id !== 0`. Igual que `evidenciasIds`: viaja como reemplazo
+   * completo en `PUT .../actividades/:id` (`update-actividad.ts`), y el
+   * checklist del form permite tildar y destildar tanto al crear como al
+   * editar. `POST .../actividades/:id/criterios`
+   * (`agregar-criterio-unidad-actividad.ts`) sigue existiendo aparte, para
+   * el guardado inmediato del panel de detalle de solo lectura.
    */
   criteriosUnidadIds: number[]
   asignatura: string

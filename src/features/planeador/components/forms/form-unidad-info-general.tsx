@@ -98,6 +98,11 @@ export function draftFromUnidad(unidad: UnidadTematica): UnidadDraft {
     asignatura: unidad.asignatura,
     gradoId: unidad.gradoId,
     asignaturaId: unidad.asignaturaId,
+    // `instrumento`/`instrumentoId` de `UnidadTematica` NO se copian acá:
+    // desde el backend real (sso V488) son un valor DERIVADO de las
+    // actividades ya vinculadas a la unidad (solo lectura, ver
+    // `UnidadDetallePanel`), no algo que este form edite. `POST`/`PUT
+    // /planeador/unidades` ya ni siquiera aceptan ese campo.
     enunciadosDba: unidad.enunciadosDba,
   }
 }
@@ -243,6 +248,7 @@ export function UnidadInfoGeneralFields({
   // asignatura pertenece — mismo criterio que `EditarActividadForm` en
   // `form-editar-actividad.tsx`.
   const hasGradoAsignatura = draft.gradoId != null && draft.asignaturaId != null
+
   const disabled = !hasGradoAsignatura
 
   return (

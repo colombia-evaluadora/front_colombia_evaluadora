@@ -20,13 +20,32 @@ import { downloadJson } from "@/features/planeador/lib/download-json"
 
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 
+type AccionId = "editar" | "marcar" | "aprobar"
+
 interface Accion {
+  id: AccionId
   label: string
   Icon: React.ComponentType<{ className?: string }>
   /** Si está definido, este botón tiene handler propio y no se renderiza
    * `disabled`. Sirve para distinguir visualmente las acciones vivas de
    * las que siguen siendo read-only visual. */
   onClick?: () => void
+}
+
+// El label mostrado (tooltip + aria-label) no es fijo por acción: "Marcar"
+// dice "Calificar" en general, pero "Observar" cuando la actividad es
+// formativa (ahí no hay nota que calificar, solo observación). "Aprobar"
+// nunca convive con formativa (se filtra más abajo), así que su label queda
+// fijo en "Calificar múltiple".
+function labelFor(id: AccionId, actividad: Actividad): string {
+  switch (id) {
+    case "editar":
+      return "Editar"
+    case "marcar":
+      return esActividadFormativa(actividad) ? "Observar" : "Calificar"
+    case "aprobar":
+      return "Calificar múltiple"
+  }
 }
 
 interface ActividadCardProps {
@@ -49,10 +68,10 @@ interface ActividadCardProps {
   onDeleted?: () => void
 }
 
-const ACCIONES_BASE: readonly Omit<Accion, "onClick">[] = [
-  { label: "Editar", Icon: PencilIcon },
-  { label: "Marcar", Icon: CheckIcon },
-  { label: "Aprobar", Icon: ClipboardCheckIcon },
+const ACCIONES_BASE: readonly Omit<Accion, "label" | "onClick">[] = [
+  { id: "editar", Icon: PencilIcon },
+  { id: "marcar", Icon: CheckIcon },
+  { id: "aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" y "Eliminar" NO van acá: sus diálogos traen su propio
   // trigger, así que montarlos también en este loop duplicaría el botón.
 ] as const
@@ -113,13 +132,23 @@ export function ActividadCard({
   //
   // "Aprobar" (bulk) no aplica en preescolar: ahí no hay reporte masivo,
   // "Marcar" ya cubre observación + asistencia de a un estudiante por vez.
+  // Tampoco aplica a una actividad que no es evaluativa (`esEvaluativa ===
+  // false`, "N" en el backend): sin nota que calificar no hay nada que
+  // aprobar en bloque, aunque la unidad en sí sea Evaluativo. Antes esto
+  // dependía SOLO de `esActividadFormativa` (`es_formativa`), que el listado
+  // real todavía no devuelve (reportado en vivo: el botón seguía
+  // apareciendo para actividades con `es_evaluativa: "N"`) — `esEvaluativa`
+  // sí viene siempre en esta fila, así que sirve de gate inmediato mientras
+  // el backend no complete `es_formativa` ahí, y además es la condición más
+  // precisa: "Aprobar" nunca tiene sentido sin nota, sea o no formativa.
   const acciones: Accion[] = ACCIONES_BASE.filter(
-    (accion) => accion.label !== "Aprobar" || !esActividadFormativa(actividad),
+    (accion) => accion.id !== "aprobar" || (actividad.esEvaluativa && !esActividadFormativa(actividad)),
   ).map((accion) => {
-    if (accion.label === "Editar" && onEdit) return { ...accion, onClick: onEdit }
-    if (accion.label === "Marcar" && onShowGrades) return { ...accion, onClick: onShowGrades }
-    if (accion.label === "Aprobar" && onShowApproval) return { ...accion, onClick: onShowApproval }
-    return accion
+    const label = labelFor(accion.id, actividad)
+    if (accion.id === "editar" && onEdit) return { ...accion, label, onClick: onEdit }
+    if (accion.id === "marcar" && onShowGrades) return { ...accion, label, onClick: onShowGrades }
+    if (accion.id === "aprobar" && onShowApproval) return { ...accion, label, onClick: onShowApproval }
+    return { ...accion, label }
   })
 
   // Sin estudiantes asignados el porcentaje no significa nada: se omite en
@@ -205,14 +234,15 @@ export function ActividadCard({
           "group-focus-within/actividad:pointer-events-auto group-focus-within/actividad:opacity-100",
         )}
       >
-        {acciones.map(({ label, Icon, onClick }) => {
-          // `label` sola ("Editar"/"Marcar"/"Aprobar") no distingue de cuál
-          // actividad es el botón cuando hay varias cards a la vista (mismo
-          // texto en las dos) — se le suma el nombre, mismo criterio que ya
-          // usan "Exportar"/"Eliminar" acá abajo.
+        {acciones.map(({ id, label, Icon, onClick }) => {
+          // `label` sola ("Editar"/"Calificar"/"Observar"/"Calificar
+          // múltiple") no distingue de cuál actividad es el botón cuando hay
+          // varias cards a la vista (mismo texto en las dos) — se le suma el
+          // nombre, mismo criterio que ya usan "Exportar"/"Eliminar" acá
+          // abajo.
           const labelConNombre = `${label} ${actividad.nombre}`
           return (
-            <Tooltip key={label}>
+            <Tooltip key={id}>
               <TooltipTrigger
                 render={
                   <Button

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
@@ -7,22 +8,24 @@ import { informeGrupoQueryKeyPrefix } from "@/features/academic-management/repor
 
 export interface ObservacionGenerada {
   texto: string
-  /** Cuántas observaciones del docente resumió. Se reenvía al guardar: el
-   *  backend lo compara contra cuántas hay hoy para marcar
-   *  `observacion_desactualizada`. */
+  /** Cuántas observaciones (o períodos, en la fila Final) resumió. Se
+   *  reenvía al guardar: el backend lo compara contra cuántas hay hoy para
+   *  marcar `observacion_desactualizada`. */
   observacionesOrigen: number
+  /** El resumen no cambió desde la última vez que se generó: `ai-control-
+   *  service` devolvió el mismo texto guardado sin volver a llamar al modelo. */
+  desdeCache: boolean
 }
 
-interface GenerarRow {
-  observacion_ia: string | null
-  observaciones_origen: number | null
-}
-
-/** El del año cuenta PERÍODOS consolidados, no observaciones por actividad:
- *  lo que deja viejo a ese texto es que se cierre un período nuevo. */
-interface GenerarFinalRow {
-  observacion_ia: string | null
-  periodos_origen: number | null
+interface GenerarIaResponse {
+  observacion: string
+  origen: number
+  estado: string
+  modelo: string
+  tokensEntrada: number
+  tokensSalida: number
+  duracionMs: number
+  desdeCache: boolean
 }
 
 export interface GenerarObservacionInput {
@@ -31,29 +34,28 @@ export interface GenerarObservacionInput {
    *  endpoint porque encadena los resúmenes de período YA consolidados y no
    *  las observaciones por actividad. */
   periodoId: number | null
+  /** Confirma reemplazar un texto que el docente ya modificó a mano. Sin
+   *  esto, un texto `MODIFICADA` responde 409 en vez de pisarse. */
+  sobrescribir?: boolean
 }
 
-/** `POST /informes/observacion/generar`. No escribe nada, así que se puede
- *  llamar las veces que haga falta. La IA está simulada del lado del backend
- *  —concatena las observaciones por actividad— pero el contrato ya es el
- *  definitivo: cuando llegue el modelo, acá no cambia nada. */
+/** `POST /ai/observaciones/periodo` y `POST /ai/observaciones/anio`, de
+ *  `ai-control-service`. Redacta el resumen con el modelo de lenguaje y lo
+ *  GUARDA de una vez —nace `APROBADA`—, así que a diferencia del viejo
+ *  `/informes/observacion/generar` esto ya no es de solo lectura: llamarlo
+ *  sobre un texto que el docente modificó responde 409 salvo que se mande
+ *  `sobrescribir`. */
 async function generarObservacion(input: GenerarObservacionInput): Promise<ObservacionGenerada> {
-  if (input.periodoId === null) {
-    const rows = await evalCol.postRows<GenerarFinalRow>("/informes/observacion/final", {
-      FK_TMATRICULA: input.matriculaId,
-    })
-    return {
-      texto: rows[0]?.observacion_ia ?? "",
-      observacionesOrigen: rows[0]?.periodos_origen ?? 0,
-    }
-  }
-  const rows = await evalCol.postRows<GenerarRow>("/informes/observacion/generar", {
+  const url = input.periodoId === null ? "/ai/observaciones/anio" : "/ai/observaciones/periodo"
+  const data = await api.post<GenerarIaResponse>(url, {
     FK_TMATRICULA: input.matriculaId,
-    FK_TPERIODO_EVALUACION: input.periodoId,
+    ...(input.periodoId !== null && { FK_TPERIODO_EVALUACION: input.periodoId }),
+    ...(input.sobrescribir && { SOBRESCRIBIR: true }),
   })
   return {
-    texto: rows[0]?.observacion_ia ?? "",
-    observacionesOrigen: rows[0]?.observaciones_origen ?? 0,
+    texto: data.observacion,
+    observacionesOrigen: data.origen,
+    desdeCache: data.desdeCache,
   }
 }
 
@@ -119,7 +121,20 @@ async function eliminarObservacion(input: EliminarObservacionInput): Promise<voi
 export function useGenerarObservacionMutation({
   mutationConfig,
 }: { mutationConfig?: MutationConfig<typeof generarObservacion> } = {}) {
-  return useMutation({ mutationFn: generarObservacion, ...mutationConfig })
+  const queryClient = useQueryClient()
+  const { onSuccess, ...restConfig } = mutationConfig ?? {}
+
+  return useMutation({
+    mutationFn: generarObservacion,
+    // A diferencia del viejo `/informes/observacion/generar`, este endpoint
+    // ya guarda: sin invalidar, la tabla de atrás sigue mostrando el estado
+    // previo hasta el próximo refetch.
+    onSuccess: (result, variables, ...rest) => {
+      queryClient.invalidateQueries({ queryKey: informeGrupoQueryKeyPrefix() })
+      onSuccess?.(result, variables, ...rest)
+    },
+    ...restConfig,
+  })
 }
 
 export function useGuardarObservacionMutation({

@@ -1,8 +1,18 @@
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
+import { getErrorMessage, isConflictError } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -45,6 +55,10 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
   // Mismo patrón que `ObservacionEstudianteSheet` en Planeador: clic en la
   // miniatura abre la misma imagen más grande en un diálogo aparte.
   const [evidenciaAmpliada, setEvidenciaAmpliada] = React.useState<EvidenciaInforme | null>(null)
+  // Se pide cuando `handleGenerar` choca con un texto que el docente ya
+  // modificó a mano (409): confirmar acá es lo que arma el reintento con
+  // `sobrescribir: true`.
+  const [confirmarSobrescribir, setConfirmarSobrescribir] = React.useState(false)
   const generar = useGenerarObservacionMutation()
 
   // La fila Final tiene el mismo ciclo que un período —generar, revisar,
@@ -68,12 +82,13 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
     setEvidenciaAmpliada(null)
   }, [fila])
 
-  async function handleGenerar() {
+  async function handleGenerar(sobrescribir = false) {
     if (!fila) return
     try {
       const generada = await generar.mutateAsync({
         matriculaId: fila.matriculaId,
         periodoId: periodoIdOnull,
+        sobrescribir,
       })
       if (generada.texto.trim() === "") {
         notify(
@@ -87,8 +102,17 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
       setTexto(generada.texto)
       setBorrador({ texto: generada.texto, observacionesOrigen: generada.observacionesOrigen })
     } catch (error) {
+      if (isConflictError(error)) {
+        setConfirmarSobrescribir(true)
+        return
+      }
       notify(getErrorMessage(error), { variant: "error" })
     }
+  }
+
+  function handleConfirmarSobrescribir() {
+    setConfirmarSobrescribir(false)
+    void handleGenerar(true)
   }
 
   return (
@@ -203,7 +227,7 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
             variant="outline"
             color="neutral"
             disabled={guardando || generar.isPending}
-            onClick={handleGenerar}
+            onClick={() => handleGenerar()}
           >
             <BrainIcon data-icon="inline-start" />
             {generar.isPending ? "Generando…" : borrador ? "Regenerar" : "Generar con IA"}
@@ -242,6 +266,24 @@ export function ObservacionSheet({ fila, etiqueta, guardando, onOpenChange, onGu
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmarSobrescribir} onOpenChange={setConfirmarSobrescribir}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Sobrescribir la observación del docente?</AlertDialogTitle>
+          <AlertDialogDescription>
+            El texto guardado fue modificado a mano después de la última generación. Volver a
+            generar con IA reemplaza lo que el docente escribió.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={handleConfirmarSobrescribir}>Sobrescribir</AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral">
+            Cancelar
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }

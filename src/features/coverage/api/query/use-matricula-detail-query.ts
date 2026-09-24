@@ -115,7 +115,7 @@ interface RawMatriculaDetail {
   matricula: RawMatriculaCore
   acudientes: RawMatriculaAcudiente[]
   estudiante: RawMatriculaEstudiante
-  socioeconomico: RawMatriculaSocioeconomico
+  socioeconomico: RawMatriculaSocioeconomico | null
   archivos: RawMatriculaArchivo[]
 }
 
@@ -137,9 +137,10 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
     matricula: m,
     acudientes,
     estudiante: est,
-    socioeconomico: socio,
+    socioeconomico: rawSocio,
     archivos,
   } = unwrapRow(raw).matricula
+  const socio = rawSocio ?? ({} as RawMatriculaSocioeconomico)
 
   // `fk_tgrado` es el PK real (fn_grados_query), no el "valor" (-2..100) que
   // usa el resto del módulo como value del select -- hay que resolverlo

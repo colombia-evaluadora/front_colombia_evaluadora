@@ -18,12 +18,13 @@ interface AgregarCriterioInput {
  * `FK_TUNIDAD` y que el criterio pertenezca a la rúbrica de esa misma
  * unidad.
  *
- * Existe también `PATCH /planeador/actividades/criterios/:id` (4.10) para
- * desvincular, pero pide el PK de la RELACIÓN (`PK_TACTIVIDAD_CRITERIO_
- * UNIDAD`), no el del criterio — igual que con evidencias
- * (`agregar-evidencia-actividad.ts`), no hay forma confirmada de saber qué
- * relaciones ya existían al abrir el detalle real, así que el checklist del
- * form solo AGREGA, nunca quita.
+ * Único uso restante: el ALTA de una actividad
+ * (`planeador-crear-actividad-page.tsx`), que llama esto una vez por cada
+ * criterio marcado, DESPUÉS de crear la actividad (recién ahí existe
+ * `actividadId`). Al EDITAR ya no hace falta: `values.criteriosUnidadIds`
+ * viaja completo en el mismo `PUT /actividades/:id` como reemplazo total
+ * (`update-actividad.ts`, sso V492), así que tildar y destildar funciona
+ * igual que al crear.
  */
 function agregarCriterioUnidadActividad({
   actividadId,

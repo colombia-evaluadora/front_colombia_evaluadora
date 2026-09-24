@@ -122,9 +122,10 @@ function PlaneadorCrearActividadPageContent() {
       },
     },
   })
-  // Cada criterio de la unidad marcado es su propio `POST` — no hay bulk
-  // confirmado (mismo criterio que `agregarEvidencia` en la página de
-  // edición).
+  // Cada criterio de la unidad marcado es su propio `POST`, DESPUÉS de
+  // crear la actividad (recién ahí existe `actividadId`) — a diferencia de
+  // `EVIDENCIAS`, que sí viaja directo en el body de `POST /actividades`
+  // (ver `create-actividad.ts`).
   const agregarCriterio = useAgregarCriterioUnidadActividad({
     mutationConfig: {
       onError: (error) =>
