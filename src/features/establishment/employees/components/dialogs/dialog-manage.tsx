@@ -80,6 +80,7 @@ import type {
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
 import { passwordRules } from "@/features/auth/api/schema"
+import { validarFormatoPersona } from "@/features/establishment/shared/person-field-rules"
 import {
   createAdditionalInfoFromEmployee,
   EmployeeAdditionalInfoForm,
@@ -308,15 +309,13 @@ const employeePersonSchema = z
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
-    if (!isBlankValue(person.birthDate)) {
-      const birthDate = new Date(person.birthDate as string)
-      const cutoff = new Date()
-      cutoff.setFullYear(cutoff.getFullYear() - 18)
-
-      if (Number.isNaN(birthDate.getTime()) || birthDate > cutoff) {
-        ctx.addIssue({ code: "custom", path: ["birthDate"], message: "La persona debe ser mayor de edad." })
-      }
-    }
+    // Formato de cada campo — nombres sin caracteres especiales, documento
+    // de 3 a 10 dígitos, teléfono de hasta 10, correo válido y mayoría de
+    // edad. Vive en un módulo compartido con rector/secretaria: las dos
+    // pantallas dan de alta a la misma clase de persona, y cuando cada una
+    // tenía su copia se desincronizaron (institución verificaba el correo y
+    // esta no, así que el mismo dato pasaba acá y lo rechazaba el backend).
+    validarFormatoPersona(person, ctx)
 
     // Persona SIN `id` todavía: va a `POST /register/cval/funcionario`, que
     // exige `@NotBlank` en email/password (mismo criterio que rector/

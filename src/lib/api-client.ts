@@ -186,6 +186,29 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   u_tlista_valor_1: "Ya existe un registro con ese valor.",
 }
 
+/**
+ * Fugas de la capa de validación de Java.
+ *
+ * Cuando un campo no pasa una anotación del backend (@Email, @Size, ...)
+ * la excepción llega redactada para un log, no para una pantalla:
+ *   "Bean validation error: Validation failed for argument [0] ... with 1
+ *   error(s): [Field error in object 'personaDTO' on field 'email'; codes
+ *   [...]; default message [debe ser una dirección de correo válida]]"
+ *
+ * Adentro suele venir una frase utilizable —la de `default message [...]`,
+ * que es el mensaje de la anotación—, así que se rescata esa y se descarta
+ * el envoltorio. Si no la hay, al menos se cambia el volcado por una frase
+ * que diga qué hacer.
+ *
+ * Esto es una red, no la solución: que el usuario llegue a ver un error de
+ * bean validation significa que el formulario dejó pasar algo que el
+ * backend rechaza, y eso se corrige validando el campo en pantalla (ver
+ * `establishment/shared/person-field-rules.ts`). La red existe porque las
+ * dos listas de reglas nunca van a coincidir del todo.
+ */
+const JAVA_VALIDATION =
+  /bean validation|validation failed for argument|constraintviolation|(?:javax|jakarta)[.]validation|org[.]springframework/i
+
 export function cleanErrorMessage(message: string): string {
   const constraint = message.match(/unique constraint "([^"]+)"/i)?.[1]
   if (constraint) {
@@ -193,6 +216,17 @@ export function cleanErrorMessage(message: string): string {
       CONSTRAINT_MESSAGES[constraint.toLowerCase()] ??
       "Ya existe un registro con esos datos: hay un campo que no puede repetirse."
     )
+  }
+
+  if (JAVA_VALIDATION.test(message)) {
+    // El último `default message [...]`: cuando la excepción anida varios
+    // errores, el más interno es el de la anotación que realmente falló.
+    const anotaciones = [...message.matchAll(/default message \[([^\]]+)\]/gi)]
+    const frase = anotaciones.at(-1)?.[1]?.trim()
+
+    return frase && frase.length > 3
+      ? frase.charAt(0).toUpperCase() + frase.slice(1)
+      : "Hay un campo con un formato no válido. Revisa los datos del formulario."
   }
 
   const firstLine = message.split(/\r?\n/)[0]?.trim() ?? message
@@ -245,8 +279,7 @@ api.interceptors.response.use(
     const isProbe = PROBE_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
 
     if (!isProbe && !suppressGlobalErrorToast) {
-      const message = error.response?.data?.message || error.message
-      toast.error(cleanErrorMessage(message))
+      toast.error(getErrorMessage(error))
     }
 
     if (isExpiredSession) {
@@ -272,12 +305,95 @@ export function isNotFoundError(error: unknown): boolean {
 // pero para diálogos que quieren mostrarlo en su propio banner en vez de (o
 // además de) el toast — p.ej. para que no quede detrás del overlay del
 // modal. Reusa `cleanErrorMessage` para recortar el ruido de Postgres.
+/**
+ * De dónde sale la frase, en orden.
+ *
+ * El backend no tiene UNA forma de reportar errores: las funciones
+ * PL/pgSQL llegan como `message`, `ProblemDetail` de Spring usa `detail`,
+ * auth-center usa `error_description` en los de OAuth y la validación de
+ * campos manda una lista en `errors`. Leer solo `message` —como se hacía—
+ * dejaba a todos los demás mostrando el texto de Axios.
+ *
+ * `error` NO entra en la lista a propósito: en el cuerpo por defecto de
+ * Spring ese campo es la frase del status ("Bad Request"), que no dice
+ * nada, y en los de OAuth es un código ("invalid_token").
+ */
+function mensajeDelCuerpo(data: unknown): string {
+  // Un cuerpo de texto suele ser el error tal cual, pero también puede ser
+  // la página HTML de un gateway: eso no se le muestra a nadie.
+  if (typeof data === "string") {
+    const texto = data.trim()
+    return texto.startsWith("<") || texto.length > 300 ? "" : texto
+  }
+  if (data == null || typeof data !== "object") return ""
+
+  const cuerpo = data as Record<string, unknown>
+
+  for (const clave of ["message", "detail", "error_description"]) {
+    const valor = cuerpo[clave]
+    if (typeof valor === "string" && valor.trim() !== "") return valor.trim()
+  }
+
+  if (Array.isArray(cuerpo.errors)) {
+    const frases = cuerpo.errors
+      .map((item) => {
+        if (typeof item === "string") return item
+        if (item == null || typeof item !== "object") return null
+        const campo = item as Record<string, unknown>
+        const frase = campo.defaultMessage ?? campo.message
+        return typeof frase === "string" ? frase : null
+      })
+      .filter((frase): frase is string => frase != null && frase.trim() !== "")
+
+    if (frases.length > 0) return frases.join(" ")
+  }
+
+  return ""
+}
+
+/**
+ * Lo que dice Axios cuando el backend no dijo nada útil. Son mensajes de
+ * librería, no de producto: "Request failed with status code 400" fue
+ * literalmente lo que vieron los usuarios al fallar el registro de un
+ * funcionario por la contraseña.
+ */
+const AXIOS_GENERICO = /^(request failed with status code \d+|network error|timeout of \d+ *ms exceeded|canceled)$/i
+
+/**
+ * El último recurso: cuando no hay frase del backend, al menos que el
+ * status diga algo. Sigue siendo genérico —el mensaje bueno es el que
+ * manda el backend—, pero es legible.
+ */
+const POR_STATUS: Record<number, string> = {
+  400: "El servidor rechazó los datos enviados. Revisa los campos del formulario.",
+  401: "Tu sesión no es válida. Vuelve a iniciar sesión.",
+  403: "No tienes permisos para realizar esta acción.",
+  404: "No se encontró el recurso solicitado.",
+  409: "Ya existe un registro con esos datos.",
+  413: "El archivo es demasiado grande.",
+  500: "El servidor tuvo un problema procesando la solicitud. Intenta de nuevo.",
+  502: "El servidor no está respondiendo. Intenta de nuevo en un momento.",
+  503: "El servidor no está respondiendo. Intenta de nuevo en un momento.",
+  504: "El servidor tardó demasiado en responder. Intenta de nuevo.",
+}
+
+function sinFraseDelBackend(message: string, status?: number): string {
+  if (!AXIOS_GENERICO.test(message.trim())) return cleanErrorMessage(message)
+
+  return (
+    (status != null ? POR_STATUS[status] : undefined) ??
+    "No fue posible completar la operación. Intenta de nuevo."
+  )
+}
+
 export function getErrorMessage(error: unknown): string {
   if (Axios.isAxiosError(error)) {
-    const message = error.response?.data?.message || error.message
-    return cleanErrorMessage(message)
+    const delCuerpo = mensajeDelCuerpo(error.response?.data)
+    if (delCuerpo !== "") return cleanErrorMessage(delCuerpo)
+
+    return sinFraseDelBackend(error.message, error.response?.status)
   }
-  if (error instanceof Error) return cleanErrorMessage(error.message)
+  if (error instanceof Error) return sinFraseDelBackend(error.message)
   return "No fue posible completar la operación."
 }
 
