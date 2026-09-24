@@ -472,12 +472,7 @@ export function EditarActividadForm({
           />
         </div>
       </Card>
-      <UnidadSection
-        form={form}
-        unidades={unidades}
-        evidenciasOriginales={esNueva ? [] : actividad.evidenciasIds}
-        criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
-      />
+      <UnidadSection form={form} unidades={unidades} />
       <MaterialesSection form={form} disabled={disabled} />
       <RecursosSection
         form={form}
@@ -1280,23 +1275,18 @@ function UnidadAsociadaSection({
  * `contenidos` pueden faltar ahí aunque la unidad sí los tenga, y solo el
  * detalle por `:id` los trae de forma confiable.
  *
- * La selección de evidencias viaja en el propio form (`values.evidenciasIds`)
- * y se guarda junto con el resto al submit, igual que cualquier otro campo.
- * Al EDITAR una actividad ya creada, `evidenciasOriginales` marca cuáles ya
- * estaban relacionadas: esas quedan tildadas pero no se pueden destildar (no
- * hay endpoint confirmado para desvincular una evidencia, solo para agregar
- * una nueva — ver el comentario de `Actividad.evidenciasIds`).
+ * La selección de evidencias y de criterios de la unidad viaja en el propio
+ * form (`values.evidenciasIds`/`values.criteriosUnidadIds`) y se guarda
+ * junto con el resto al submit, como cualquier otro campo — al editar,
+ * `PUT /actividades/:id` reemplaza la lista completa (`update-actividad.ts`),
+ * así que tildar o destildar acá funciona igual creando que editando.
  */
 function UnidadSection({
   form,
   unidades,
-  evidenciasOriginales,
-  criteriosUnidadOriginales,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
-  evidenciasOriginales: number[]
-  criteriosUnidadOriginales: number[]
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
@@ -1320,7 +1310,6 @@ function UnidadSection({
                           : [...actual, evidenciaId],
                       )
                     }}
-                    disabledIds={evidenciasOriginales}
                     criteriosSeleccionados={criteriosField.state.value}
                     onToggleCriterio={(criterioId) => {
                       const actual = criteriosField.state.value
@@ -1330,7 +1319,6 @@ function UnidadSection({
                           : [...actual, criterioId],
                       )
                     }}
-                    criteriosDisabledIds={criteriosUnidadOriginales}
                   />
                 )}
               </form.Field>
@@ -1351,19 +1339,15 @@ function UnidadFichaYEvidencias({
   nombreFallback,
   seleccionadas,
   onToggle,
-  disabledIds,
   criteriosSeleccionados,
   onToggleCriterio,
-  criteriosDisabledIds,
 }: {
   unidadId: number
   nombreFallback: string
   seleccionadas: number[]
   onToggle: (evidenciaId: number) => void
-  disabledIds: number[]
   criteriosSeleccionados: number[]
   onToggleCriterio: (criterioId: number) => void
-  criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
   // `unidad.criterios` queda siempre vacío contra el backend real —viven en
@@ -1404,7 +1388,6 @@ function UnidadFichaYEvidencias({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
-          disabledIds={disabledIds}
         />
       )}
       {criterios.length > 0 && (
@@ -1412,7 +1395,6 @@ function UnidadFichaYEvidencias({
           criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
-          disabledIds={criteriosDisabledIds}
         />
       )}
     </div>
