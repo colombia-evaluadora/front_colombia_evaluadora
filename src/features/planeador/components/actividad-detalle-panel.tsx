@@ -1,11 +1,5 @@
 import { Button } from "@/components/ui/button"
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  ClipboardCheckIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@/components/ui/icons"
+import { ArrowLeftIcon, CheckIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
@@ -15,6 +9,7 @@ import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-act
 import { CalificacionesAprobacionView } from "@/features/planeador/components/calificaciones-aprobacion-view"
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
+import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -26,7 +21,12 @@ const ACCIONES = [
   // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
   // del panel dejaba dos disparadores de exportación en la misma
   // pantalla, y el del panel no tenía handler.
-  { id: "eliminar", label: "Eliminar", Icon: TrashIcon },
+  //
+  // "Eliminar" NO va acá tampoco (desde ahora): `DialogDeleteActividad` es
+  // un `AlertDialog` con su propio trigger — igual que en `ActividadCard`,
+  // montarlo también en este loop genérico (que solo sabe de un `onClick`
+  // suelto) hubiera duplicado el botón. Antes vivía acá con `handler`
+  // siempre `undefined`, así que quedaba deshabilitado para siempre.
 ] as const
 
 // El label mostrado (tooltip + aria-label) de "Marcar" es "Calificar", salvo
@@ -74,10 +74,10 @@ interface ActividadDetallePanelProps {
  * - `mode="approval"` (clipboard-check "Aprobar" de la card): la
  *   aprobación bulk por estudiante con instrumento / Diseño / Modalidad.
  *
- * Las cinco acciones del header siguen el mismo patrón que la card: las
- * tres vivas son Editar (link al form), Marcar (cambia el modo del
- * panel) y Aprobar (idem). Eliminar sigue deshabilitado; el export por
- * actividad vive solo en la card.
+ * Las acciones del header siguen el mismo patrón que la card: Editar
+ * (link al form), Marcar (cambia el modo del panel), Aprobar (idem) y
+ * Eliminar (`DialogDeleteActividad`, cierra el panel al terminar OK). El
+ * export por actividad vive solo en la card.
  */
 export function ActividadDetallePanel({
   actividadId,
@@ -136,13 +136,12 @@ export function ActividadDetallePanel({
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          {/* Editar navega a la ruta de edición propia; Marcar cambia el panel
-              a la vista de calificaciones; las demás siguen deshabilitadas
-              (sin endpoints en esta iteración). El nombre de la actividad se
-              suma al label ("Editar {nombre}") — mismo criterio que
-              `ActividadCard`: "Editar" a secas no distingue nada cuando el
-              panel puede reabrirse con cualquier actividad. Mientras carga
-              (`actividad` todavía `undefined`) cae al label a secas. */}
+          {/* Editar navega a la ruta de edición propia. El nombre de la
+              actividad se suma al label ("Editar {nombre}") — mismo
+              criterio que `ActividadCard`: "Editar" a secas no distingue
+              nada cuando el panel puede reabrirse con cualquier actividad.
+              Mientras carga (`actividad` todavía `undefined`) cae al label
+              a secas. */}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -193,6 +192,17 @@ export function ActividadDetallePanel({
               </Tooltip>
             )
           })}
+          {/* Eliminar: el `AlertDialog` del delete vive adentro de
+              `DialogDeleteActividad` — mismo criterio que `ActividadCard`.
+              Solo se monta con la actividad ya cargada (necesita el
+              `nombre` para el texto de confirmación); mientras carga no
+              hay nada que borrar todavía. Al terminar OK, `onClose` cierra
+              el panel y el Planeador vuelve a mostrar el calendario —
+              mismo criterio que usa `planeador-page.tsx` cuando se borra
+              desde la card. */}
+          {actividad && (
+            <DialogDeleteActividad actividad={actividad} onDeleted={onClose} />
+          )}
         </div>
       </div>
 
