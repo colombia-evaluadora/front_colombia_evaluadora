@@ -209,8 +209,8 @@ export interface MatriculaAccountsFound {
  * `files` es opcional porque en edición no se vuelven a pedir los documentos
  * de soporte (esos se gestionan aparte, desde el botón "Archivos").
  */
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const DOCUMENT_REGEX = /^\d{3,10}$/
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const DOCUMENT_REGEX = /^\d{3,10}$/
 
 export function validateMatricula(
   values: CreateMatriculaInput,

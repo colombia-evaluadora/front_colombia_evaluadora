@@ -2,15 +2,11 @@ import type { BadgeProps } from "@/features/coverage/api/ui-mappings"
 import type { EnrollmentStatus } from "@/features/coverage/api/types/enrollment"
 
 export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
-  recibida: "Recibida",
-  en_revision: "En revisión",
-  aceptada: "Aceptada",
-  rechazada: "Rechazada",
+  sin_asignar_cupo: "Sin asignar cupos",
+  cupo_asignado: "Cupo asignado",
 }
 
 export const ENROLLMENT_STATUS_BADGE: Record<EnrollmentStatus, BadgeProps> = {
-  recibida: { variant: "soft", color: "info" },
-  en_revision: { variant: "soft", color: "warning" },
-  aceptada: { variant: "soft", color: "success" },
-  rechazada: { variant: "soft", color: "destructive" },
+  sin_asignar_cupo: { variant: "soft", color: "warning" },
+  cupo_asignado: { variant: "soft", color: "success" },
 }

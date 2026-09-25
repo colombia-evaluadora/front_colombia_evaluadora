@@ -7,25 +7,26 @@ import {
 
 import {
   EDUCATION_LEVELS,
+  ENROLLMENT_STATUSES,
   RESERVATION_GROUP_BY,
-  RESERVATION_STATUSES,
   SHIFTS,
-  type ReservationFiltersFormInput,
+  type EnrollmentFiltersFormInput,
 } from "@/features/coverage/api/schema"
 import {
   EDUCATION_LEVEL_LABELS,
   RESERVATION_GROUP_BY_LABELS,
-  RESERVATION_STATUS_LABELS,
   SHIFT_LABELS,
   formatGrade,
 } from "@/features/coverage/api/ui-mappings"
+import { ENROLLMENT_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-enrollments"
 
 /**
  * Sintaxis del buscador de inscripciones: misma forma que el de reservas,
  * porque comparten campos. La diferencia es semántica: aquí "estado" hace
- * referencia al estado de la inscripción, no de la reserva.
+ * referencia al estado del estudiante en la inscripción (sin asignar cupo /
+ * cupo asignado), no al de una reserva.
  */
-export const enrollmentsSyntax: QuerySyntax<ReservationFiltersFormInput> = {
+export const enrollmentsSyntax: QuerySyntax<EnrollmentFiltersFormInput> = {
   empty: {
     firstName: "",
     lastName: "",
@@ -65,9 +66,9 @@ export const enrollmentsSyntax: QuerySyntax<ReservationFiltersFormInput> = {
     optionsTerm(
       "estado",
       "statuses",
-      RESERVATION_STATUSES.map((status) => ({
+      ENROLLMENT_STATUSES.map((status) => ({
         value: status,
-        label: RESERVATION_STATUS_LABELS[status],
+        label: ENROLLMENT_STATUS_LABELS[status],
       })),
     ),
     textTerm("desde", "reservedFrom"),

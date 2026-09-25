@@ -4,8 +4,8 @@ import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
-import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "@/features/coverage/api/schema"
-import { FilterReservationsForm } from "@/features/coverage/components/forms/form-filter-reservations"
+import type { EnrollmentFiltersFormInput, EnrollmentFiltersFormValues } from "@/features/coverage/api/schema"
+import { FilterEnrollmentsForm } from "@/features/coverage/components/forms/form-filter-enrollments"
 import { enrollmentsSyntax } from "@/features/coverage/components/search/query-syntax-enrollments"
 
 const FILTER_ENROLLMENTS_FORM_ID = "filter-enrollments-form"
@@ -14,8 +14,8 @@ const SEARCH_INPUT_ID = "enrollments-search"
 
 interface SearchEnrollmentsProps {
   activeFilterCount: number
-  filters: ReservationFiltersFormInput
-  applyFilters: (values: ReservationFiltersFormValues) => void
+  filters: EnrollmentFiltersFormInput
+  applyFilters: (values: EnrollmentFiltersFormValues) => void
   clearAllFilters: () => void
 }
 
@@ -37,7 +37,7 @@ export function SearchEnrollments({
 
   const advancedFilterCount = activeFilterCount - (filters.documentNumber ? 1 : 0)
 
-  function handleApplyAdvanced(values: ReservationFiltersFormValues) {
+  function handleApplyAdvanced(values: EnrollmentFiltersFormValues) {
     applyFilters({ ...values, documentNumber: freeText })
     setOpen(false)
   }
@@ -63,7 +63,7 @@ export function SearchEnrollments({
         onOpenChange={setOpen}
         formId={FILTER_ENROLLMENTS_FORM_ID}
       >
-        <FilterReservationsForm
+        <FilterEnrollmentsForm
           id={FILTER_ENROLLMENTS_FORM_ID}
           defaultValues={filters}
           onSubmit={handleApplyAdvanced}

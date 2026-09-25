@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/combobox"
 import { DatePicker } from "@/components/date-picker"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Stepper } from "@/components/ui/stepper"
 import {
@@ -52,6 +52,8 @@ import {
   RELATIONSHIP_OPTIONS,
   RESIDENCE_OPTIONS,
 } from "@/features/coverage/api/ui-mappings"
+import { DOCUMENT_REGEX, EMAIL_REGEX } from "@/features/coverage/utils/matricula-form-defaults"
+import { MOCK_CAMPUS_OPTIONS } from "@/features/coverage/utils/campus-options"
 
 const STEP_LABELS = ["Datos del estudiante", "Datos del acudiente", "Establecimiento", "Confirmación"]
 
@@ -117,55 +119,45 @@ const EMPTY_GUARDIAN: GuardianFormData = {
   address: "",
 }
 
-interface CampusOption {
-  id: string
-  name: string
-  address: string
-  shift: string
-  gender: string
+// Mismas reglas que la validación de matrícula (`validateMatricula`): formato
+// de documento (3-10 dígitos), formato de correo y fecha de nacimiento no
+// futura, además de los campos obligatorios de cada paso.
+function studentStepErrors(student: StudentFormData): Partial<Record<keyof StudentFormData, string>> {
+  const errors: Partial<Record<keyof StudentFormData, string>> = {}
+  if (!student.documentType) errors.documentType = "Requerido."
+  const documentNumber = student.documentNumber.trim()
+  if (!documentNumber) errors.documentNumber = "Requerido."
+  else if (!DOCUMENT_REGEX.test(documentNumber)) {
+    errors.documentNumber = "El documento debe tener entre 3 y 10 dígitos."
+  }
+  if (!student.firstName.trim()) errors.firstName = "Requerido."
+  if (!student.lastName.trim()) errors.lastName = "Requerido."
+  if (!student.birthDate) errors.birthDate = "Requerido."
+  else if (student.birthDate > new Date().toISOString().slice(0, 10)) {
+    errors.birthDate = "La fecha no puede ser futura."
+  }
+  if (!student.gender) errors.gender = "Requerido."
+  if (!student.targetGrade) errors.targetGrade = "Requerido."
+  const email = student.email.trim()
+  if (email && !EMAIL_REGEX.test(email)) errors.email = "Formato de correo electrónico inválido."
+  return errors
 }
 
-// El catálogo real de sedes (`use-reservation-catalogs-query`) solo trae el
-// nombre — todavía no hay endpoint que devuelva dirección/jornada/género por
-// sede, así que se mockea acá, igual que otros catálogos pendientes del
-// módulo (ver `MOCK_ORIGIN_PERIODS` en `add-matricula-page.tsx`).
-const MOCK_CAMPUS_OPTIONS: CampusOption[] = [
-  {
-    id: "sede-1",
-    name: "Aspaen Gimnasio Cartagena",
-    address: "Carrera 91 # 40 190 - Getsemaní",
-    shift: "Mañana",
-    gender: "Masculino",
-  },
-  {
-    id: "sede-2",
-    name: "Colegio Británico de Cartagena",
-    address: "Carrera 21 # 56 190 - La Matuna",
-    shift: "Tarde",
-    gender: "Femenino",
-  },
-  {
-    id: "sede-3",
-    name: "Gimnasio Altair",
-    address: "Carrera 68 # 56 60 - El Laguito",
-    shift: "Mañana",
-    gender: "Mixto",
-  },
-  {
-    id: "sede-4",
-    name: "Colegio Jorge Washington",
-    address: "Carrera 51 # 56 190 - Bocagrande",
-    shift: "Jornada continua",
-    gender: "Mixto",
-  },
-  {
-    id: "sede-5",
-    name: "Colegio Washington",
-    address: "Carrera 71 # 98 50 - Manga",
-    shift: "Jornada continua",
-    gender: "Mixto",
-  },
-]
+function guardianStepErrors(guardian: GuardianFormData): Partial<Record<keyof GuardianFormData, string>> {
+  const errors: Partial<Record<keyof GuardianFormData, string>> = {}
+  if (!guardian.documentType) errors.documentType = "Requerido."
+  const documentNumber = guardian.documentNumber.trim()
+  if (!documentNumber) errors.documentNumber = "Requerido."
+  else if (!DOCUMENT_REGEX.test(documentNumber)) {
+    errors.documentNumber = "El documento debe tener entre 3 y 10 dígitos."
+  }
+  if (!guardian.firstName.trim()) errors.firstName = "Requerido."
+  if (!guardian.lastName.trim()) errors.lastName = "Requerido."
+  if (!guardian.relationship) errors.relationship = "Requerido."
+  const email = guardian.email.trim()
+  if (email && !EMAIL_REGEX.test(email)) errors.email = "Formato de correo electrónico inválido."
+  return errors
+}
 
 function gradeToLevel(grade: number): string {
   if (Number.isNaN(grade)) return "—"
@@ -181,20 +173,28 @@ function TextField({
   onChange,
   type = "text",
   required = false,
+  error,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   type?: "text" | "date" | "email" | "tel"
   required?: boolean
+  error?: string
 }) {
   return (
-    <Field variant="outlined">
+    <Field variant="outlined" data-invalid={error ? "true" : undefined}>
       <FieldLabel>
         {label}
         {required ? "*" : ""}
       </FieldLabel>
-      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      <Input
+        type={type}
+        value={value}
+        aria-invalid={Boolean(error)}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {error ? <FieldError errors={[{ message: error }]} /> : null}
     </Field>
   )
 }
@@ -205,22 +205,24 @@ function SelectField({
   onChange,
   options,
   required = false,
+  error,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   options: string[]
   required?: boolean
+  error?: string
 }) {
   const items = Object.fromEntries(options.map((option) => [option, option]))
   return (
-    <Field variant="outlined">
+    <Field variant="outlined" data-invalid={error ? "true" : undefined}>
       <FieldLabel>
         {label}
         {required ? "*" : ""}
       </FieldLabel>
       <ComboboxField value={value} onValueChange={(next) => next && onChange(next)} items={items}>
-        <ComboboxFieldTrigger className="w-full">
+        <ComboboxFieldTrigger className="w-full" aria-invalid={Boolean(error)}>
           <ComboboxFieldValue placeholder="Seleccionar" />
         </ComboboxFieldTrigger>
         <ComboboxFieldContent>
@@ -231,6 +233,7 @@ function SelectField({
           ))}
         </ComboboxFieldContent>
       </ComboboxField>
+      {error ? <FieldError errors={[{ message: error }]} /> : null}
     </Field>
   )
 }
@@ -262,6 +265,12 @@ export function AddEnrollmentDialog() {
   const [guardian, setGuardian] = useState<GuardianFormData>(EMPTY_GUARDIAN)
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null)
   const [campusSort, setCampusSort] = useState<TableSort<"name" | "shift" | "gender">>(null)
+  // Los errores se calculan siempre, pero solo se muestran después del primer
+  // intento de "Continuar" del paso -- igual que `hasSubmitted` en el alta de
+  // matrícula, para no pintar el formulario en rojo antes de que el usuario
+  // empiece a completarlo.
+  const [attemptedStudentStep, setAttemptedStudentStep] = useState(false)
+  const [attemptedGuardianStep, setAttemptedGuardianStep] = useState(false)
 
   const selectedCampus = MOCK_CAMPUS_OPTIONS.find((campus) => campus.id === selectedCampusId) ?? null
   const sortedCampusOptions = sortBySortKey(MOCK_CAMPUS_OPTIONS, campusSort)
@@ -280,18 +289,30 @@ export function AddEnrollmentDialog() {
     setStudent(EMPTY_STUDENT)
     setGuardian(EMPTY_GUARDIAN)
     setSelectedCampusId(null)
+    setAttemptedStudentStep(false)
+    setAttemptedGuardianStep(false)
   }
 
-  const canContinueStudent = Boolean(
-    student.documentType &&
-      student.documentNumber &&
-      student.firstName &&
-      student.lastName &&
-      student.targetGrade,
-  )
-  const canContinueGuardian = Boolean(
-    guardian.documentType && guardian.documentNumber && guardian.firstName && guardian.lastName,
-  )
+  const studentErrors = studentStepErrors(student)
+  const guardianErrors = guardianStepErrors(guardian)
+  const canContinueStudent = Object.keys(studentErrors).length === 0
+  const canContinueGuardian = Object.keys(guardianErrors).length === 0
+
+  function handleContinueStudent() {
+    if (!canContinueStudent) {
+      setAttemptedStudentStep(true)
+      return
+    }
+    setStep(1)
+  }
+
+  function handleContinueGuardian() {
+    if (!canContinueGuardian) {
+      setAttemptedGuardianStep(true)
+      return
+    }
+    setStep(2)
+  }
 
   return (
     <Dialog
@@ -353,18 +374,21 @@ export function AddEnrollmentDialog() {
               onChange={(value) => patchStudent({ documentType: value })}
               options={DOCUMENT_TYPE_OPTIONS}
               required
+              error={attemptedStudentStep ? studentErrors.documentType : undefined}
             />
             <TextField
               label="Número de documento"
               value={student.documentNumber}
               onChange={(value) => patchStudent({ documentNumber: value })}
               required
+              error={attemptedStudentStep ? studentErrors.documentNumber : undefined}
             />
             <TextField
               label="Primer nombre"
               value={student.firstName}
               onChange={(value) => patchStudent({ firstName: value })}
               required
+              error={attemptedStudentStep ? studentErrors.firstName : undefined}
             />
             <TextField
               label="Segundo nombre"
@@ -376,32 +400,43 @@ export function AddEnrollmentDialog() {
               value={student.lastName}
               onChange={(value) => patchStudent({ lastName: value })}
               required
+              error={attemptedStudentStep ? studentErrors.lastName : undefined}
             />
             <TextField
               label="Segundo apellido"
               value={student.secondLastName}
               onChange={(value) => patchStudent({ secondLastName: value })}
             />
-            <Field variant="outlined">
-              <FieldLabel>Fecha de nacimiento</FieldLabel>
+            <Field
+              variant="outlined"
+              data-invalid={attemptedStudentStep && studentErrors.birthDate ? "true" : undefined}
+            >
+              <FieldLabel>Fecha de nacimiento*</FieldLabel>
               <DatePicker
                 mode="date"
                 maxDate={new Date()}
+                aria-invalid={Boolean(attemptedStudentStep && studentErrors.birthDate)}
                 value={parseDateValue(student.birthDate)}
                 onChange={(date) => patchStudent({ birthDate: formatDateValue(date) ?? "" })}
               />
+              {attemptedStudentStep && studentErrors.birthDate ? (
+                <FieldError errors={[{ message: studentErrors.birthDate }]} />
+              ) : null}
             </Field>
             <SelectField
               label="Género"
               value={student.gender}
               onChange={(value) => patchStudent({ gender: value })}
               options={GENDER_OPTIONS}
+              required
+              error={attemptedStudentStep ? studentErrors.gender : undefined}
             />
             <TextField
               label="Correo electrónico"
               type="email"
               value={student.email}
               onChange={(value) => patchStudent({ email: value })}
+              error={attemptedStudentStep ? studentErrors.email : undefined}
             />
             <TextField
               label="Teléfono"
@@ -426,6 +461,7 @@ export function AddEnrollmentDialog() {
               onChange={(value) => patchStudent({ targetGrade: value })}
               options={GRADE_OPTIONS.map((grade) => String(grade))}
               required
+              error={attemptedStudentStep ? studentErrors.targetGrade : undefined}
             />
           </div>
         ) : null}
@@ -438,18 +474,21 @@ export function AddEnrollmentDialog() {
               onChange={(value) => patchGuardian({ documentType: value })}
               options={DOCUMENT_TYPE_OPTIONS}
               required
+              error={attemptedGuardianStep ? guardianErrors.documentType : undefined}
             />
             <TextField
               label="Número de documento"
               value={guardian.documentNumber}
               onChange={(value) => patchGuardian({ documentNumber: value })}
               required
+              error={attemptedGuardianStep ? guardianErrors.documentNumber : undefined}
             />
             <TextField
               label="Primer nombre"
               value={guardian.firstName}
               onChange={(value) => patchGuardian({ firstName: value })}
               required
+              error={attemptedGuardianStep ? guardianErrors.firstName : undefined}
             />
             <TextField
               label="Segundo nombre"
@@ -461,6 +500,7 @@ export function AddEnrollmentDialog() {
               value={guardian.lastName}
               onChange={(value) => patchGuardian({ lastName: value })}
               required
+              error={attemptedGuardianStep ? guardianErrors.lastName : undefined}
             />
             <TextField
               label="Segundo apellido"
@@ -478,12 +518,15 @@ export function AddEnrollmentDialog() {
               value={guardian.relationship}
               onChange={(value) => patchGuardian({ relationship: value })}
               options={RELATIONSHIP_OPTIONS}
+              required
+              error={attemptedGuardianStep ? guardianErrors.relationship : undefined}
             />
             <TextField
               label="Correo electrónico"
               type="email"
               value={guardian.email}
               onChange={(value) => patchGuardian({ email: value })}
+              error={attemptedGuardianStep ? guardianErrors.email : undefined}
             />
             <TextField
               label="Teléfono"
@@ -606,12 +649,10 @@ export function AddEnrollmentDialog() {
         <div className="flex shrink-0 justify-end gap-2 px-6 pb-6">
           {step === 0 ? (
             <>
-              {canContinueStudent ? (
-                <Button type="button" color="primary" size="sm" onClick={() => setStep(1)}>
-                  Continuar
-                  <ArrowRightIcon data-icon="inline-end" />
-                </Button>
-              ) : null}
+              <Button type="button" color="primary" size="sm" onClick={handleContinueStudent}>
+                Continuar
+                <ArrowRightIcon data-icon="inline-end" />
+              </Button>
               <Button
                 type="button"
                 variant="fill"
@@ -630,12 +671,10 @@ export function AddEnrollmentDialog() {
                 <ArrowLeftIcon data-icon="inline-start" />
                 Datos del estudiante
               </Button>
-              {canContinueGuardian ? (
-                <Button type="button" color="primary" size="sm" onClick={() => setStep(2)}>
-                  Continuar
-                  <ArrowRightIcon data-icon="inline-end" />
-                </Button>
-              ) : null}
+              <Button type="button" color="primary" size="sm" onClick={handleContinueGuardian}>
+                Continuar
+                <ArrowRightIcon data-icon="inline-end" />
+              </Button>
               <Button
                 type="button"
                 variant="fill"
