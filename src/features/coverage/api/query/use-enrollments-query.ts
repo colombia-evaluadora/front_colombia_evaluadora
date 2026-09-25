@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type {
+  EnrollmentsQueryFilters,
   EnrollmentsQueryRequest,
   EnrollmentsQueryResponse,
 } from "@/features/coverage/api/types/enrollment"
-import type { ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 interface UseEnrollmentsQueryParams {
-  filters: ReservationsQueryFilters
+  filters: EnrollmentsQueryFilters
   sorting: EnrollmentsQueryRequest["sorting"]
   pageIndex: number
   pageSize: number

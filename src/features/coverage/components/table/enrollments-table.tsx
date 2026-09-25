@@ -1,5 +1,6 @@
 "use no memo"
 
+import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -20,8 +21,9 @@ import { useEnrollmentFilters } from "@/features/coverage/hooks/use-enrollment-f
 import { columnsEnrollments } from "@/features/coverage/components/table/columns-enrollments"
 import { SearchEnrollments } from "@/features/coverage/components/search/search-enrollments"
 import { AddEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-add-enrollment"
+import { ConfirmAsignarCupoEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-confirm-asignar-cupo-enrollment"
 import { Button } from "@/components/ui/button"
-import { FileDownloadOutlinedIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, UserGroupAddIcon } from "@/components/ui/icons"
 
 interface EnrollmentsTableProps {
   title: ReactNode
@@ -30,6 +32,7 @@ interface EnrollmentsTableProps {
 }
 
 export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTableProps) {
+  const [openAsignarCupo, setOpenAsignarCupo] = useState(false)
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEnrollmentFilters()
@@ -40,7 +43,7 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
     pageSize,
   })
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns: columnsEnrollments,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -53,6 +56,17 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
     setSorting,
     columnVisibilityStorageKey: "enrollments-table-column-visibility",
   })
+
+  /**
+   * "Asignar cupo" reemplaza a "Agregar inscripción" cuando toda la selección
+   * son estudiantes sin cupo asignado -- no tiene sentido ofrecer la acción si
+   * hay alguno ya matriculado.
+   */
+  const canAsignarCupo = useMemo(() => {
+    if (!hasSelection || !data?.rows.length) return false
+    const selected = data.rows.filter((row) => selectedIds.includes(row.id))
+    return selected.length > 0 && selected.every((row) => row.status === "sin_asignar_cupo")
+  }, [hasSelection, data?.rows, selectedIds])
 
   return (
     <TableScreen>
@@ -70,7 +84,25 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
           />
 
           <TableScreenActions>
-            <AddEnrollmentDialog />
+            {canAsignarCupo ? (
+              <>
+                <Button size="sm" color="primary" onClick={() => setOpenAsignarCupo(true)}>
+                  <UserGroupAddIcon data-icon="inline-start" />
+                  Asignar cupo
+                </Button>
+                <ConfirmAsignarCupoEnrollmentDialog
+                  open={openAsignarCupo}
+                  onOpenChange={setOpenAsignarCupo}
+                  onConfirm={() => {
+                    // TODO: llamar mutación con selectedIds
+                    console.log("Asignar cupo", { selectedIds })
+                    resetSelection()
+                  }}
+                />
+              </>
+            ) : (
+              <AddEnrollmentDialog />
+            )}
             <Button
               size="icon-sm"
               variant="outline"
