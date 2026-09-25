@@ -3,22 +3,23 @@ import { http, HttpResponse, delay } from "msw"
 import { enrollmentsDb } from "@/mocks/db/enrollments"
 import type {
   Enrollment,
+  EnrollmentsQueryFilters,
   EnrollmentsQueryRequest,
   EnrollmentsQueryResponse,
 } from "@/features/coverage/api/types/enrollment"
-import type { ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 function matches(value: string, needle: string): boolean {
   return value.toLowerCase().includes(needle.toLowerCase())
 }
 
-function applyFilters(rows: Enrollment[], filters: ReservationsQueryFilters): Enrollment[] {
+function applyFilters(rows: Enrollment[], filters: EnrollmentsQueryFilters): Enrollment[] {
   return rows.filter((row) => {
     if (filters.firstName && !matches(row.firstName, filters.firstName)) return false
     if (filters.lastName && !matches(row.lastName, filters.lastName)) return false
     if (filters.documentNumber && !row.documentNumber.includes(filters.documentNumber)) return false
     if (filters.campus && !matches(row.campus, filters.campus)) return false
     if (filters.grade != null && row.grade !== filters.grade) return false
+    if (filters.statuses?.length && !filters.statuses.includes(row.status)) return false
     return true
   })
 }
@@ -60,5 +61,39 @@ export const enrollmentsHandlers = [
       pageCount,
       totalCount,
     })
+  }),
+
+  http.put("/api/coverage/enrollments/:id", async ({ request, params }) => {
+    await delay(300)
+    const { id } = params as { id: string }
+    const index = enrollmentsDb.findIndex((row) => row.id === id)
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Registro no encontrado." },
+        { status: 404 },
+      )
+    }
+
+    const changes = (await request.json()) as Partial<Enrollment>
+    enrollmentsDb[index] = { ...enrollmentsDb[index], ...changes }
+
+    return HttpResponse.json({ status: "ok", message: "Registro actualizado correctamente." })
+  }),
+
+  http.delete("/api/coverage/enrollments/:id", async ({ params }) => {
+    await delay(300)
+    const { id } = params as { id: string }
+    const index = enrollmentsDb.findIndex((row) => row.id === id)
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Registro no encontrado." },
+        { status: 404 },
+      )
+    }
+
+    enrollmentsDb.splice(index, 1)
+    return HttpResponse.json({ status: "ok", message: "Registro eliminado correctamente." })
   }),
 ]

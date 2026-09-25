@@ -11,6 +11,8 @@ export const SHIFTS = ["MANANA", "TARDE", "UNICA", "COMPLETA", "NOCTURNA"] as co
 
 export const RESERVATION_STATUSES = ["confirmada", "pendiente", "vencida"] as const
 
+export const ENROLLMENT_STATUSES = ["sin_asignar_cupo", "cupo_asignado"] as const
+
 export const RESERVATION_GROUP_BY = [
   "institution",
   "campus",
@@ -23,7 +25,7 @@ export const RESERVATION_GROUP_BY = [
 // Filtros del sheet. Todo string/array para que el form y la URL serialicen
 // igual (mismo criterio que `auditFiltersFormSchema`); `grade` y `groupBy`
 // se convierten a su tipo real recién en `useReservationFilters`.
-export const reservationFiltersFormSchema = z.object({
+const baseFiltersFormShape = {
   firstName: z.string(),
   lastName: z.string(),
   documentNumber: z.string(),
@@ -33,28 +35,32 @@ export const reservationFiltersFormSchema = z.object({
   group: z.string(),
   shifts: z.array(z.enum(SHIFTS)),
   levels: z.array(z.enum(EDUCATION_LEVELS)),
-  statuses: z.array(z.enum(RESERVATION_STATUSES)),
   // yyyy-MM-dd o yyyy-MM-dd'T'HH:mm — lo que emita el DatePicker.
   reservedFrom: z.string(),
   reservedTo: z.string(),
   groupBy: z.string(),
-})
-  /*
-   * Los filtros no tienen campos obligatorios —filtrar por nada es válido—, así
-   * que lo único que se valida es la coherencia del rango. La comparación es de
-   * strings porque los dos formatos que emite el DatePicker (`yyyy-MM-dd` y
-   * `yyyy-MM-dd'T'HH:mm`) son ISO, y ahí el orden lexicográfico coincide con el
-   * cronológico. El issue se ancla en "hasta", que es el campo a mover.
-   */
-  .superRefine((value, ctx) => {
-    if (value.reservedFrom && value.reservedTo && value.reservedTo < value.reservedFrom) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["reservedTo"],
-        message: "La fecha final no puede ser anterior a la inicial.",
-      })
-    }
-  })
+}
+
+/*
+ * Los filtros no tienen campos obligatorios —filtrar por nada es válido—, así
+ * que lo único que se valida es la coherencia del rango. La comparación es de
+ * strings porque los dos formatos que emite el DatePicker (`yyyy-MM-dd` y
+ * `yyyy-MM-dd'T'HH:mm`) son ISO, y ahí el orden lexicográfico coincide con el
+ * cronológico. El issue se ancla en "hasta", que es el campo a mover.
+ */
+function validateDateRange(value: { reservedFrom: string; reservedTo: string }, ctx: z.RefinementCtx) {
+  if (value.reservedFrom && value.reservedTo && value.reservedTo < value.reservedFrom) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["reservedTo"],
+      message: "La fecha final no puede ser anterior a la inicial.",
+    })
+  }
+}
+
+export const reservationFiltersFormSchema = z
+  .object({ ...baseFiltersFormShape, statuses: z.array(z.enum(RESERVATION_STATUSES)) })
+  .superRefine(validateDateRange)
 export type ReservationFiltersFormInput = z.input<typeof reservationFiltersFormSchema>
 export type ReservationFiltersFormValues = z.infer<typeof reservationFiltersFormSchema>
 
@@ -83,9 +89,19 @@ export type ReservationsSearch = z.infer<typeof reservationsSearchSchema>
 export const preMatriculaSearchSchema = reservationsSearchSchema
 export type PreMatriculaSearch = ReservationsSearch
 
-// Inscripciones: mismos filtros que reservaciones.
-export const enrollmentsSearchSchema = reservationsSearchSchema
-export type EnrollmentsSearch = ReservationsSearch
+// Inscripciones: misma forma que reservaciones, pero con su propio catálogo
+// de estados -- el "estado" de una inscripción es el del estudiante (sin
+// asignar cupo / cupo asignado), no el de una reserva.
+export const enrollmentFiltersFormSchema = z
+  .object({ ...baseFiltersFormShape, statuses: z.array(z.enum(ENROLLMENT_STATUSES)) })
+  .superRefine(validateDateRange)
+export type EnrollmentFiltersFormInput = z.input<typeof enrollmentFiltersFormSchema>
+export type EnrollmentFiltersFormValues = z.infer<typeof enrollmentFiltersFormSchema>
+
+export const enrollmentsSearchSchema = reservationsSearchSchema.extend({
+  statuses: z.array(z.enum(ENROLLMENT_STATUSES)).optional().catch(undefined),
+})
+export type EnrollmentsSearch = z.infer<typeof enrollmentsSearchSchema>
 
 // Alta de reserva ("Realizar reserva"). Acá sí validamos de verdad: el
 // formulario lo usa como `onSubmit` validator de TanStack Form.
