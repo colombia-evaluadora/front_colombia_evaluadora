@@ -396,7 +396,7 @@ export const informesHandlers = [
     registrarHistorial({
       grupoId: body.FK_TGRUPO,
       asignaturaId: null,
-      origen: "informe",
+      origen: "INFORME",
       periodoId: body.FK_TPERIODO_EVALUACION,
       usuario: "USUARIO DE PRUEBA",
       fecha: new Date().toISOString().slice(0, 10),
@@ -410,14 +410,19 @@ export const informesHandlers = [
       const promedio = notas.length
         ? Math.round((notas.reduce((acc, n) => acc + n, 0) / notas.length) * 10) / 10
         : null
+      // Las columnas de fn_informe_periodo_guardar: contadores por
+      // estudiante, NO un `resultado`. Ese campo es de la planilla, que
+      // consolida una sola asignatura; este mock lo devolvia igual y por eso
+      // el conteo de la pantalla se veia bien en local y daba cero contra el
+      // backend real.
       return {
         fk_tmatricula: e.matriculaId,
         estudiante: e.nombre,
-        resultado: yaEstaba ? "actualizada" : "guardada",
-        anterior: null,
-        nota_anterior: null,
+        guardadas: yaEstaba ? 0 : asignaturas.length,
+        actualizadas: yaEstaba ? asignaturas.length : 0,
+        sin_proyeccion: 0,
+        sin_cambio: 0,
         promedio,
-        promedio_periodo: promedio,
         aprobadas: notas.filter((n) => n >= 3).length,
         reprobadas: notas.filter((n) => n < 3).length,
       }
@@ -489,7 +494,7 @@ export const informesHandlers = [
     registrarHistorial({
       grupoId: body.FK_TGRUPO,
       asignaturaId: body.FK_TASIGNATURA,
-      origen: "planilla",
+      origen: "PLANILLA",
       periodoId: body.FK_TPERIODO_EVALUACION,
       usuario: "USUARIO DE PRUEBA",
       fecha: new Date().toISOString().slice(0, 10),
@@ -543,11 +548,12 @@ export const informesHandlers = [
           estudiantes: h.estudiantes,
           detalle: estudiantesDe(h.grupoId)
             .slice(0, h.estudiantes)
-            .map((e) => ({
-              fk_tmatricula: e.matriculaId,
+            .map((e, i) => ({
+              matricula: e.matriculaId,
               estudiante: e.nombre,
-              guardadas: 1,
-              actualizadas: 0,
+              documento: e.documento ?? null,
+              promedio: 70 + i,
+              asignaturas: 1 + (i % 3),
             })),
         }
       })

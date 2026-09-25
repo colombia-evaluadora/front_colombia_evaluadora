@@ -7,11 +7,18 @@ import type {
   HistorialDetalle,
 } from "@/features/academic-management/reports/api/types"
 
+/**
+ * Las claves las arma `fn_informe_historial_listar` con JSONB_BUILD_OBJECT,
+ * y NO son las mismas que devuelve el guardado (`fk_tmatricula`,
+ * `guardadas`, `actualizadas`). Leer aquellas acá hacía que todo el detalle
+ * mostrara cero: las propiedades no existían y caían en el `?? 0`.
+ */
 interface HistorialDetalleRow {
-  fk_tmatricula: number
-  estudiante: string
-  guardadas: number | null
-  actualizadas: number | null
+  matricula: number
+  estudiante: string | null
+  documento: string | null
+  promedio: number | null
+  asignaturas: number | null
 }
 
 interface HistorialRow {
@@ -34,10 +41,11 @@ interface HistorialRow {
 
 function toDetalle(row: HistorialDetalleRow): HistorialDetalle {
   return {
-    matriculaId: row.fk_tmatricula,
-    estudiante: row.estudiante,
-    guardadas: row.guardadas ?? 0,
-    actualizadas: row.actualizadas ?? 0,
+    matriculaId: row.matricula,
+    estudiante: row.estudiante ?? "",
+    documento: row.documento,
+    asignaturas: row.asignaturas ?? 0,
+    promedio: row.promedio,
   }
 }
 

@@ -316,9 +316,9 @@ export interface HistorialSeed {
 }
 
 export const historialInforme: HistorialSeed[] = [
-  { id: 1, grupoId: 501, asignaturaId: null, origen: "informe", periodoId: 201, usuario: "MARTA LUCÍA OSPINA", fecha: "2026-04-14", momento: "2026-04-14T15:20:00", estudiantes: 6 },
-  { id: 2, grupoId: 502, asignaturaId: null, origen: "informe", periodoId: 201, usuario: "JORGE ELIÉCER RAMOS", fecha: "2026-04-15", momento: "2026-04-15T09:05:00", estudiantes: 6 },
-  { id: 3, grupoId: 502, asignaturaId: 4401, origen: "planilla", periodoId: 202, usuario: "JORGE ELIÉCER RAMOS", fecha: "2026-06-22", momento: "2026-06-22T11:42:00", estudiantes: 6 },
+  { id: 1, grupoId: 501, asignaturaId: null, origen: "INFORME", periodoId: 201, usuario: "MARTA LUCÍA OSPINA", fecha: "2026-04-14", momento: "2026-04-14T15:20:00", estudiantes: 6 },
+  { id: 2, grupoId: 502, asignaturaId: null, origen: "INFORME", periodoId: 201, usuario: "JORGE ELIÉCER RAMOS", fecha: "2026-04-15", momento: "2026-04-15T09:05:00", estudiantes: 6 },
+  { id: 3, grupoId: 502, asignaturaId: 4401, origen: "PLANILLA", periodoId: 202, usuario: "JORGE ELIÉCER RAMOS", fecha: "2026-06-22", momento: "2026-06-22T11:42:00", estudiantes: 6 },
 ]
 
 export function registrarHistorial(entrada: Omit<HistorialSeed, "id">): void {

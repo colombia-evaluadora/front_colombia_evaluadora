@@ -471,14 +471,28 @@ function ReportsPageContent() {
         ),
       )
       const filas = detalles.flat()
-      const consolidados = filas.filter(
-        (d) => d.resultado === "guardada" || d.resultado === "actualizada",
-      ).length
-      const sinProyeccion = filas.filter((d) => d.resultado === "sin_proyeccion").length
+      // Un estudiante cuenta como consolidado si se le escribió al menos una
+      // asignatura. Es la misma regla con la que el backend decide registrar
+      // el historial (`IF v_g + v_a > 0` en fn_informe_periodo_guardar), así
+      // que el aviso y el historial no pueden contradecirse.
+      const escribio = (d: (typeof filas)[number]) => d.guardadas + d.actualizadas > 0
+      // Por matrícula y no por fila: con varios períodos marcados hay una fila
+      // por (estudiante, período), y el mensaje habla de estudiantes.
+      const consolidados = new Set(filas.filter(escribio).map((d) => d.matriculaId)).size
+      const sinProyeccion = new Set(
+        filas.filter((d) => !escribio(d) && d.sinProyeccion > 0).map((d) => d.matriculaId),
+      ).size
       if (consolidados === 0 && sinProyeccion > 0) {
         notify("No hay actividades calificadas para consolidar en lo seleccionado.", {
           variant: "error",
         })
+        return
+      }
+      // Nada escrito y nada sin proyección: las notas ya estaban consolidadas
+      // con el mismo valor. El guardado es idempotente, así que esto NO es un
+      // error — pero decir «se consolidaron 0 estudiantes» suena a que falló.
+      if (consolidados === 0) {
+        notify("Lo seleccionado ya estaba consolidado: no hubo cambios.")
         return
       }
       notify(

@@ -11,6 +11,7 @@ import {
 } from "@/features/coverage/api/ui-mappings-enrollments"
 import type { Enrollment } from "@/features/coverage/api/types/enrollment"
 import { DetailEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-detail-enrollment"
+import { DeleteEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-delete-enrollment"
 
 export const columnsEnrollments: ColumnDef<Enrollment>[] = [
   {
@@ -96,10 +97,12 @@ export const columnsEnrollments: ColumnDef<Enrollment>[] = [
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
         <DetailEnrollmentDialog enrollment={row.original} />
+        <DetailEnrollmentDialog enrollment={row.original} variant="pencil" />
+        <DeleteEnrollmentDialog enrollment={row.original} />
       </div>
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 64,
+    size: 112,
   },
 ]

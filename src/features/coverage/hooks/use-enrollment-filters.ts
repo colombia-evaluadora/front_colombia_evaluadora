@@ -3,13 +3,14 @@ import { useCallback, useMemo } from "react"
 import { coberturaInscritosRoute } from "@/router"
 
 import { RESERVATION_GROUP_BY } from "@/features/coverage/api/schema"
-import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "@/features/coverage/api/schema"
-import type { ReservationGroupBy, ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
+import type { EnrollmentFiltersFormInput, EnrollmentFiltersFormValues } from "@/features/coverage/api/schema"
+import type { EnrollmentsQueryFilters } from "@/features/coverage/api/types/enrollment"
+import type { ReservationGroupBy } from "@/features/coverage/api/types/reservation"
 
 export interface EnrollmentFilters {
-  filters: ReservationFiltersFormInput
-  queryFilters: ReservationsQueryFilters
-  applyFilters: (values: ReservationFiltersFormValues) => void
+  filters: EnrollmentFiltersFormInput
+  queryFilters: EnrollmentsQueryFilters
+  applyFilters: (values: EnrollmentFiltersFormValues) => void
   clearAllFilters: () => void
   activeFilterCount: number
 }
@@ -25,7 +26,7 @@ export function useEnrollmentFilters(): EnrollmentFilters {
   const navigate = coberturaInscritosRoute.useNavigate()
 
   const applyFilters = useCallback(
-    (values: ReservationFiltersFormValues) => {
+    (values: EnrollmentFiltersFormValues) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -73,7 +74,7 @@ export function useEnrollmentFilters(): EnrollmentFilters {
     })
   }, [navigate])
 
-  const queryFilters: ReservationsQueryFilters = useMemo(
+  const queryFilters: EnrollmentsQueryFilters = useMemo(
     () => ({
       firstName: search.firstName,
       lastName: search.lastName,

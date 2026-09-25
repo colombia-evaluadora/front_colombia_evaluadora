@@ -194,8 +194,17 @@ export interface CambioPendiente {
 export interface HistorialDetalle {
   matriculaId: number
   estudiante: string
-  guardadas: number
-  actualizadas: number
+  documento: string | null
+  /** Asignaturas que ese guardado escribió para el estudiante. Es la suma
+   *  de guardadas + actualizadas: el historial NO conserva el desglose, lo
+   *  suma al registrar (`v_g + v_a` en fn_informe_periodo_guardar). El
+   *  desglose solo existe en la respuesta del guardado, en el momento. */
+  asignaturas: number
+  /** Promedio tal como quedó ese día, en porcentaje 0-100 y copiado, no
+   *  recalculado. No se pinta: sin el criterio de evaluación del período no
+   *  se puede homologar al formato del colegio, y mostrar 77,7 al lado de
+   *  notas en 3,3 es justo lo que corrigió la V474. */
+  promedio: number | null
 }
 
 export interface HistorialCambio {
@@ -251,6 +260,29 @@ export interface FilaPlanilla {
 }
 
 export type ResultadoGuardado = "guardada" | "actualizada" | "sin_cambio" | "sin_proyeccion"
+
+/**
+ * Lo que devuelve consolidar el INFORME (`fn_informe_periodo_guardar`), una
+ * fila por estudiante. No tiene `resultado`: ese estado de una sola nota es
+ * de la planilla, que consolida UNA asignatura. Acá se consolidan todas las
+ * del estudiante a la vez, así que el backend devuelve cuántas cayeron en
+ * cada caso.
+ */
+export interface ConsolidacionEstudiante {
+  matriculaId: number
+  estudiante: string
+  /** Asignaturas que no tenían nota consolidada y ahora sí. */
+  guardadas: number
+  /** Asignaturas cuya nota consolidada cambió. */
+  actualizadas: number
+  /** Asignaturas sin nota proyectada: no hay nada que consolidar todavía. */
+  sinProyeccion: number
+  /** Asignaturas que ya estaban consolidadas con el mismo valor. */
+  sinCambio: number
+  promedio: number | null
+  aprobadas: number | null
+  reprobadas: number | null
+}
 
 export interface DetalleGuardado {
   matriculaId: number
