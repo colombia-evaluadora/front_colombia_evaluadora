@@ -419,7 +419,6 @@ export function TabStatements({ reference }: TabStatementsProps) {
         onOpenChange={(open) => setStatementDialog((prev) => ({ ...prev, open }))}
         curricularReferenceId={reference.id}
         areaId={areaId}
-        areas={reference.areas}
         statement={statementDialog.statement}
         levelLabel={level1Label}
         onCreated={setSelectedStatementId}

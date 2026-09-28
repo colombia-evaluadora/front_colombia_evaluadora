@@ -37,6 +37,9 @@ interface CeldaNotaPopoverProps {
    *  manda, y casi nunca coincide con el día en que arrancó la actividad. */
   fecha: string
   estudianteNombre: string
+  /** Se dispara justo al guardar, antes de que la Planilla termine de
+   *  refrescar — permite mostrar un loading en la celda mientras tanto. */
+  onGuardado?: () => void
 }
 
 /** Arma el body de `calificar` según el instrumento REAL de la actividad —
@@ -139,6 +142,7 @@ export function CeldaNotaPopover({
   pkTactividadEstudiante,
   fecha,
   estudianteNombre,
+  onGuardado,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -156,6 +160,7 @@ export function CeldaNotaPopover({
       onSuccess: () => {
         notify("Nota guardada.")
         setOpen(false)
+        onGuardado?.()
       },
       onError: (error) => {
         notify(getErrorMessage(error), { variant: "error" })

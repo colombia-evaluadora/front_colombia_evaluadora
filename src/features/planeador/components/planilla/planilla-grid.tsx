@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react"
+import { useIsFetching } from "@tanstack/react-query"
+
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CaretDownIcon,
@@ -15,6 +19,7 @@ import { CeldaObservacionTrigger } from "@/features/planeador/components/planill
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
@@ -25,6 +30,8 @@ interface PlanillaGridProps {
   verPor: "actividad" | "unidad"
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
+  /** Abre el registro narrativo (Observación/Momento/Evidencia) de una actividad formativa. */
+  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
   /** Grado del filtro aplicado — solo para el rótulo dinámico del mensaje
    *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
    *  lo personalizó). */
@@ -58,21 +65,21 @@ function agruparPorUnidad(columnas: PlanillaColumna[]): GrupoUnidad[] {
   return grupos
 }
 
-function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
+export function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
   return fila.celdas.find((c) => c.pkTactividad === columna.pkTactividad)
 }
 
 /** Lo decide el backend (`fn_actividad_es_formativa`): la actividad cuelga
  *  de una unidad con referente NO evaluativo. No se deduce del instrumento —
  *  una actividad evaluativa sin instrumento definido también lo trae nulo. */
-function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
+export function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
   return esColumnaFormativa(columna) || celda?.esFormativa === true
 }
 
 /** `BODY.FECHA` de calificar/observar: el día con asistencia válida de ESE
  *  estudiante, no la fecha de inicio de la actividad — ver
  *  `PlanillaCelda.fechaAsistencia`. */
-function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): string | null {
+export function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): string | null {
   if (!celda) return columna.fechaInicio
   if (celda.fechaAsistencia) return celda.fechaAsistencia
   return celda.tieneAsistencia ? columna.fechaInicio : null
@@ -90,8 +97,25 @@ function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): stri
  * calificación puntual (`CeldaNotaPopover`), que guarda directo contra el
  * backend.
  */
-export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: PlanillaGridProps) {
+export function PlanillaGrid({
+  columnas,
+  verPor,
+  filas,
+  onAbrirBulk,
+  onAbrirRegistroNarrativo,
+  gradoId,
+}: PlanillaGridProps) {
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+
+  // Celdas recién guardadas cuya nota todavía no refleja el cambio: la
+  // mutación resuelve antes de que termine el refetch de la Planilla, así
+  // que sin esto la nota vieja se ve un instante después de "Guardar".
+  const [refrescando, setRefrescando] = useState<Set<string>>(new Set())
+  const fetchingPlanilla = useIsFetching({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+
+  useEffect(() => {
+    if (fetchingPlanilla === 0 && refrescando.size > 0) setRefrescando(new Set())
+  }, [fetchingPlanilla, refrescando.size])
 
   if (columnas.length === 0) {
     return (
@@ -161,6 +185,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                       key={columna.pkTactividad}
                       columna={columna}
                       onAbrirBulk={onAbrirBulk}
+                      onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                     />
                   )),
                 )}
@@ -177,6 +202,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   key={columna.pkTactividad}
                   columna={columna}
                   onAbrirBulk={onAbrirBulk}
+                  onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                 />
               ))}
             </tr>
@@ -299,10 +325,14 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                       </td>
                     )
                   }
+                  const claveCelda = `${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
+                  const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
                       <div className="flex items-center gap-1.5">
-                        {nota !== null ? (
+                        {actualizandoNota ? (
+                          <Spinner className="size-4" />
+                        ) : nota !== null ? (
                           <span
                             className={cn(
                               "font-medium",
@@ -320,6 +350,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
                             fecha={fechaParaGuardar(columna, celda) ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
+                            onGuardado={() =>
+                              setRefrescando((prev) => new Set(prev).add(claveCelda))
+                            }
                           />
                         )}
                       </div>
@@ -342,12 +375,16 @@ const ANCHO_COLUMNA_ACTIVIDAD = "w-40"
 function ColumnaHeader({
   columna,
   onAbrirBulk,
+  onAbrirRegistroNarrativo,
 }: {
   columna: PlanillaColumna
   onAbrirBulk: (columna: PlanillaColumna) => void
+  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
 }) {
   const formativa = esFormativa(columna)
-  const accion = `Calificar "${columna.titulo}" en bloque`
+  const accion = formativa
+    ? `Registro narrativo de "${columna.titulo}"`
+    : `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
@@ -355,29 +392,23 @@ function ColumnaHeader({
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
         <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
-        {/* Formativa: sin botón de bloque — la observación es siempre
-            individual, desde "Marcar" (fn_actividad_observar_grupal pisa
-            la observación de TODOS los estudiantes sin poder respetar la
-            que ya haya cargada a mano, así que no se ofrece como acción). */}
-        {!formativa && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-xs"
-                  className="shrink-0"
-                  onClick={() => onAbrirBulk(columna)}
-                  aria-label={accion}
-                />
-              }
-            >
-              <ClipboardCheckIcon className="size-4" />
-            </TooltipTrigger>
-            <TooltipContent>{accion}</TooltipContent>
-          </Tooltip>
-        )}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-xs"
+                className="shrink-0"
+                onClick={() => (formativa ? onAbrirRegistroNarrativo(columna) : onAbrirBulk(columna))}
+                aria-label={accion}
+              />
+            }
+          >
+            <ClipboardCheckIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>{accion}</TooltipContent>
+        </Tooltip>
       </div>
     </th>
   )

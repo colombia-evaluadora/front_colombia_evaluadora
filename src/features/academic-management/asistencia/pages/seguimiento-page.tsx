@@ -17,13 +17,13 @@ import { paths } from "@/config/paths"
 import { asistenciaSeguimientoRoute } from "@/router"
 import { useAsistenciaSeguimientoQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-seguimiento-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import {
   TIPOS_JUSTIFICADOS,
   useTipoAsistenciaCatalogQuery,
 } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { SeguimientoSummaryCards } from "@/features/academic-management/asistencia/components/seguimiento-summary-cards"
-import { columnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
+import { buildColumnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
 import { SearchSeguimiento } from "@/features/academic-management/asistencia/components/search/search-seguimiento"
 import { ExportSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-export-seguimiento"
 import {
@@ -75,13 +75,14 @@ function SeguimientoTable({ sede }: { sede: number }) {
 
 
   const hoy = React.useMemo(() => new Date(), [])
-  const esDocente = useEsDocente()
+  const { isDocente, esDocentePuro } = useAsistenciaAccess()
   const { data: sesionesDelMes } = useAsistenciaCalendarioQuery({
     SEDE: sede,
     ANIO: hoy.getFullYear(),
     MES: hoy.getMonth() + 1,
-    MIAS: esDocente,
+    MIAS: esDocentePuro,
   })
+  const columnsSeguimiento = React.useMemo(() => buildColumnsSeguimiento(isDocente), [isDocente])
   const {
     grupos: grupoCatalog,
     asignaturas: asignaturaCatalog,
