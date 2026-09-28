@@ -1,16 +1,48 @@
 import { useAuth } from "@/features/auth/hooks/use-auth"
 
-/** Claim de rol del token: `'CEVAL-' || TROL.CODIGO` (ver `lib/auth-mapper`). */
 const DOCENTE_ROLE = "CEVAL-DOCENTE"
+const DIRECTOR_GRUPO_ROLE = "CEVAL-DIRECTOR_GRUPO"
+const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
+const JEFE_AREA_ROLE = "CEVAL-JEFE_AREA"
 
-/**
- * Gobierna las dos mitades de la misma decisión: la vista restringida del
- * calendario (sin drill-down de rector) y el `MIAS` que manda el backend a
- * `fn_asistencia_calendario` / `fn_asistencia_resumen_horas`. Sin `MIAS` el
- * alcance que queda es el del rol —para un docente, toda su sede— y la
- * pantalla muestra clases de grupos que no dicta.
- */
 export function useEsDocente(): boolean {
   const { user } = useAuth()
   return user?.roles.includes(DOCENTE_ROLE) ?? false
+}
+
+export function useEsDirectorGrupo(): boolean {
+  const { user } = useAuth()
+  return user?.roles.includes(DIRECTOR_GRUPO_ROLE) ?? false
+}
+
+export function useEsCoordinador(): boolean {
+  const { user } = useAuth()
+  return user?.roles.includes(COORDINADOR_ROLE) ?? false
+}
+
+export interface AsistenciaAccess {
+  isDocente: boolean
+  isDirectorGrupo: boolean
+  isCoordinador: boolean
+  esDocentePuro: boolean
+  puedeRegistrar: boolean
+}
+
+/** Regla 74: resuelve de una vez el alcance de lectura/escritura de asistencia para el usuario actual, incluyendo el caso de doble rol (docente + director de grupo). */
+export function useAsistenciaAccess(): AsistenciaAccess {
+  const { user } = useAuth()
+  const roles = user?.roles ?? []
+  const isDocente = roles.includes(DOCENTE_ROLE)
+  const isDirectorGrupo = roles.includes(DIRECTOR_GRUPO_ROLE)
+  const isCoordinador = roles.includes(COORDINADOR_ROLE)
+  const isJefeArea = roles.includes(JEFE_AREA_ROLE)
+  const esDocentePuro = isDocente && !isDirectorGrupo && !isCoordinador && !isJefeArea
+
+  return {
+    isDocente,
+    isDirectorGrupo,
+    isCoordinador,
+    esDocentePuro,
+    puedeRegistrar: isDocente,
+  }
 }

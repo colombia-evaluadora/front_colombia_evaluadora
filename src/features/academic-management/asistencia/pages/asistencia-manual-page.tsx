@@ -17,7 +17,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
@@ -514,13 +514,20 @@ export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
   const [anio, mes] = fecha.split("-").map(Number)
 
-  const esDocente = useEsDocente()
-  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery({
-    SEDE: sede,
-    ANIO: anio,
-    MES: mes,
-    MIAS: esDocente,
-  })
+  const { isDocente } = useAsistenciaAccess()
+  // Esta pantalla es SOLO de escritura: a diferencia del calendario/Seguimiento
+  // (de solo lectura para Director de Grupo/Coordinador), aquí SIEMPRE se
+  // filtra a lo que el usuario dicta, aunque además sea director de grupo —
+  // su alcance amplio de lectura no le da permiso de escritura ajena (Regla 74).
+  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery(
+    {
+      SEDE: sede,
+      ANIO: anio,
+      MES: mes,
+      MIAS: true,
+    },
+    isDocente,
+  )
 
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
     const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)
@@ -580,21 +587,27 @@ export function AsistenciaManualPage() {
           <h2 className="text-base font-semibold">Asistencia manual</h2>
         </div>
 
-        {isPending && <Skeleton className="h-64 w-full" />}
+        {!isDocente && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Solo un docente puede registrar o editar asistencia. Tu rol tiene acceso de solo consulta.
+          </p>
+        )}
 
-        {esFechaFutura(fecha) && (
+        {isDocente && isPending && <Skeleton className="h-64 w-full" />}
+
+        {isDocente && esFechaFutura(fecha) && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Todavía no se puede tomar asistencia: {formatFechaLarga(fecha)} es una fecha futura.
           </p>
         )}
 
-        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
+        {isDocente && !isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No hay sesiones programadas para este día.
           </p>
         )}
 
-        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
+        {isDocente && !isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
           <Tabs value={currentTab} onValueChange={setActiveTab}>
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (

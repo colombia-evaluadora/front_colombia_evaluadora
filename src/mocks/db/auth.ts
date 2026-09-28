@@ -47,6 +47,24 @@ export const authUsers: (User & {
     roles: ["USER", "CEVAL-DOCENTE"],
     document: "1011223344",
   },
+  {
+    id: "5",
+    email: "director-docente@example.com",
+    password: "password",
+    name: "Director Docente Demo",
+    role: "USER",
+    roles: ["USER", "CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"],
+    document: "1022334455",
+  },
+  {
+    id: "6",
+    email: "director-puro@example.com",
+    password: "password",
+    name: "Director Puro Demo",
+    role: "USER",
+    roles: ["USER", "CEVAL-DIRECTOR_GRUPO"],
+    document: "1033445566",
+  },
 ]
 
 /** El usuario con el que se ingresa es el correo. */
