@@ -143,22 +143,28 @@ function buildAsistencia(index: number): Asistencia {
   const estado = ESTADOS[index % ESTADOS.length]
   const base: Asistencia = {
     estado,
+    justificada: false,
     adjuntos: 0,
   }
 
   if (estado === "llego-tarde") {
+    const adjuntos = index % 4 === 0 ? 1 : 0
     return {
       ...base,
       justificacion: JUSTIFICACIONES_LLEGADA_TARDE[index % JUSTIFICACIONES_LLEGADA_TARDE.length],
-      adjuntos: index % 4 === 0 ? 1 : 0,
+      // Regla 73: "justificada" solo la da el soporte cargado en Asistencia.
+      justificada: adjuntos > 0,
+      adjuntos,
     }
   }
 
   if (estado === "no-asistio") {
+    const adjuntos = index % 3 === 0 ? 1 : 0
     return {
       ...base,
       justificacion: JUSTIFICACIONES_NO_ASISTIO[index % JUSTIFICACIONES_NO_ASISTIO.length],
-      adjuntos: index % 3 === 0 ? 1 : 0,
+      justificada: adjuntos > 0,
+      adjuntos,
     }
   }
 
