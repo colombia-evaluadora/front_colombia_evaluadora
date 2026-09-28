@@ -37,6 +37,25 @@ const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
 
+const JUSTIFICADO_DE: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
+  2: 3,
+  5: 6,
+}
+
+function tipoConSoporte(tipo: TipoAsistencia, hayArchivo: boolean): TipoAsistencia {
+  if (!hayArchivo) return tipo
+  return JUSTIFICADO_DE[tipo] ?? tipo
+}
+
+const BASE_DE_JUSTIFICADO: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
+  3: 2,
+  6: 5,
+}
+
+function tipoBase(tipo: TipoAsistencia): TipoAsistencia {
+  return BASE_DE_JUSTIFICADO[tipo] ?? tipo
+}
+
 
 const PANEL_CLASS =
   "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
@@ -118,7 +137,7 @@ function registrosPorBloque(
             : undefined
         porBloque.get(bloque)!.push({
           fkMatricula,
-          tipoAsistencia: tipoBloque,
+          tipoAsistencia: tipoConSoporte(tipoBloque, archivo !== undefined),
           ...(archivo !== undefined && { fkArchivo: archivo }),
         })
       }
@@ -136,7 +155,7 @@ function registrosPorBloque(
         : undefined
       porBloque.get(bloque)!.push({
         fkMatricula,
-        tipoAsistencia: tipo,
+        tipoAsistencia: tipoConSoporte(tipo, archivo !== undefined),
         ...(archivo !== undefined && { fkArchivo: archivo }),
       })
     }
@@ -154,7 +173,7 @@ function registroAutoritativo(
   for (const bloque of bloques) {
     const row = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)
     if (!row || row.tipo_asistencia_valor == null) continue
-    if (row.tipo_asistencia_valor === LLEGO_TARDE) return { bloque, row }
+    if (tipoBase(row.tipo_asistencia_valor) === LLEGO_TARDE) return { bloque, row }
     candidato ??= { bloque, row }
   }
   return candidato
@@ -221,10 +240,11 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     const inicialBloqueTarde: Record<number, number> = {}
     for (const [fkMatricula, { bloque, row }] of autoritativos) {
       if (row.tipo_asistencia_valor == null) continue
-      inicialSeleccion[fkMatricula] = row.tipo_asistencia_valor
+      const base = tipoBase(row.tipo_asistencia_valor)
+      inicialSeleccion[fkMatricula] = base
       // Sin bloque real no hay "en cuál bloque llegó" que preseleccionar
       // (sesión suelta o de un solo bloque -- el selector ni se muestra).
-      if (row.tipo_asistencia_valor === LLEGO_TARDE && bloque !== null) {
+      if (base === LLEGO_TARDE && bloque !== null) {
         inicialBloqueTarde[fkMatricula] = bloque
       }
     }
