@@ -399,7 +399,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => {
                             isUserEditingDocument.current = true
-                            emitChange({ identification: toDigitsOnly(event.target.value, 11) })
+                            emitChange({ identification: toDigitsOnly(event.target.value, 10) })
                         }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
@@ -583,16 +583,22 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         type="tel"
-                        // TUSUARIO.TELEFONO / RegisterUsuarioRequest.telefono
-                        // son VARCHAR(30)/@Size(max=30) — sin restringir a
-                        // solo dígitos (a diferencia de NIT/DANE), un
-                        // teléfono legítimamente puede traer "+", espacios o
-                        // una extensión.
-                        maxLength={30}
+                        // La columna aguanta VARCHAR(30), pero solo se opera
+                        // en Colombia y un teléfono de acá —fijo o celular—
+                        // no pasa de 10 dígitos. Mismo trato que el teléfono
+                        // de contacto del establecimiento, que ya recortaba
+                        // acá: la regla compartida los valida con el mismo
+                        // patrón y no tiene sentido dejar escribir algo que
+                        // el submit va a rechazar.
+                        inputMode="numeric"
+                        maxLength={10}
                         value={person.phone}
                         aria-invalid={isInvalid(`${fieldPrefix}.phone`)}
-                        onChange={(event) => emitChange({ phone: event.target.value })}
+                        onChange={(event) =>
+                            emitChange({ phone: toDigitsOnly(event.target.value, 10) })
+                        }
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.phone`)}</FieldError>
                 </Field>
             </div>
         </div>
