@@ -45,6 +45,7 @@ import {
   type AgrupacionPlanillaKey,
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import { ObservarActividadCards } from "@/features/planeador/components/planilla/observar-actividad-cards"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
@@ -78,6 +79,7 @@ export function PlaneadorPlanillaPage() {
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
   const [columnaEnBulk, setColumnaEnBulk] = useState<PlanillaColumna | null>(null)
+  const [columnaEnObservacion, setColumnaEnObservacion] = useState<PlanillaColumna | null>(null)
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
@@ -229,18 +231,19 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && cargandoPlanilla && (
+          {filtro && !columnaEnBulk && !columnaEnObservacion && cargandoPlanilla && (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-24 text-sm">
               <Spinner /> Cargando planilla…
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !cargandoPlanilla && (
+          {filtro && !columnaEnBulk && !columnaEnObservacion && !cargandoPlanilla && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
+              onAbrirRegistroNarrativo={setColumnaEnObservacion}
               gradoId={filtro.gradoId}
             />
           )}
@@ -252,6 +255,14 @@ export function PlaneadorPlanillaPage() {
               fecha={columnaEnBulk.fechaInicio}
               estudiantes={estudiantesEnBulk}
               onVolver={() => setColumnaEnBulk(null)}
+            />
+          )}
+
+          {filtro && columnaEnObservacion && (
+            <ObservarActividadCards
+              columna={columnaEnObservacion}
+              filas={filasFiltradas}
+              onVolver={() => setColumnaEnObservacion(null)}
             />
           )}
         </TableScreenBody>

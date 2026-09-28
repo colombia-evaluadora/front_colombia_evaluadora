@@ -47,7 +47,6 @@ const CALIFICAR_CELDA_URL = "/api/eval-col/planeador/actividades/estudiantes/:id
 const CALIFICAR_BULK_URL = "/api/eval-col/planeador/actividades/:id/calificar-bulk/:tipo"
 const NOTA_ESTUDIANTE_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/nota"
 const OBSERVAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/observar"
-const OBSERVAR_GRUPAL_URL = "/api/eval-col/planeador/actividades/:id/observar-grupal"
 // Va por /files/**, igual que el paso 1 de materiales de apoyo: es file-service
 // quien intercepta el multipart antes de que llegue al query-service.
 const SOPORTE_AGREGAR_URL = "*/api/files/eval-col/planeador/actividades/estudiantes/:id/soportes"
@@ -433,25 +432,5 @@ export const planeadorPlanillaHandlers = [
     }
     setObservacion(actividadId, estudianteId, body.OBSERVACION)
     return HttpResponse.json({ rows: [{ status: "OK" }] })
-  }),
-
-  // Observación grupal: se aplica a todo el roster y OMITE (no falla) a quien
-  // no tenga asistencia válida — devuelve cuántos quedaron observados.
-  http.post(OBSERVAR_GRUPAL_URL, async ({ params, request }) => {
-    await delay(250)
-    const actividadId = Number(params.id)
-    const actividad = planeadorDb.find((a) => a.id === actividadId)
-    if (!actividad) {
-      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
-    }
-    const body = (await request.json()) as { OBSERVACION: string; FECHA: string }
-    const observados = getCalificacionesByActividad(actividadId, planeadorDb).filter(
-      (estudiante) => {
-        if (estudiante.asistencia.estado === "no-asistio") return false
-        setObservacion(actividadId, estudiante.id, body.OBSERVACION)
-        return true
-      },
-    ).length
-    return HttpResponse.json({ rows: [{ estudiantes_observados: observados }] })
   }),
 ]

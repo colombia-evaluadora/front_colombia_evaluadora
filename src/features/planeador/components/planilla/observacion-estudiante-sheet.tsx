@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -37,48 +38,26 @@ function iniciales(nombreCompleto: string): string {
 }
 
 export interface EstudianteObservable {
-  /** `PK_TACTIVIDAD_ESTUDIANTE` — el id que pide `PUT .../observar`. */
   id: number
   nombreCompleto: string
   observacion: string | null
-  /** `yyyy-MM-dd` con asistencia válida; `null` si no hay ninguna y el
-   *  backend va a rechazar la observación. */
   fecha: string | null
 }
 
 interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
-  /** Subtítulo del encabezado: la actividad sobre la que se observa. */
   contexto: string
-  /** Imágenes ya adjuntas (`TACTIVIDAD_SOPORTE`, V461). */
   evidencias?: CeldaEvidencia[]
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   onGuardar: (estudiante: EstudianteObservable, texto: string) => void
-  /** `undefined` = deshabilita el botón "Agregar" (el caller no lo soporta). */
   onAgregarEvidencia?: (archivo: File) => void
   agregandoEvidencia?: boolean
   onQuitarEvidencia?: (evidencia: CeldaEvidencia) => void
-  /** `pk` de la evidencia que se está quitando en este momento — para
-   *  deshabilitar solo ESA miniatura, no todas. */
   quitandoEvidenciaPk?: number | null
-  /** `true` si `estudiante.fecha` es `null` porque la actividad todavía no
-   *  empieza (su ventana arranca a futuro) — matiza el aviso de "sin
-   *  asistencia", que si no suena a que algo falta por registrar cuando en
-   *  realidad todavía no hay clase. */
   actividadSinComenzar?: boolean
 }
 
-/**
- * Observación de UN estudiante en un panel lateral — mismo patrón que la
- * observación cualitativa de Informes (`ObservacionSheet`), que es de donde
- * viene la forma: avatar con iniciales, textarea grande con contador y un
- * solo botón Guardar.
- *
- * Dos diferencias con el de Informes, por el endpoint que hay detrás:
- * guardar vacío NO borra (`observar` no tiene borrado confirmado), y sin
- * fecha con asistencia válida no se puede guardar (gate del backend).
- */
 export function ObservacionEstudianteSheet({
   estudiante,
   contexto,
@@ -93,6 +72,8 @@ export function ObservacionEstudianteSheet({
   actividadSinComenzar,
 }: ObservacionEstudianteSheetProps) {
   const [texto, setTexto] = useState("")
+  // "Momento": sin endpoint todavía, queda como borrador local sin persistir.
+  const [momento, setMomento] = useState("")
   const [evidenciaAmpliada, setEvidenciaAmpliada] = useState<CeldaEvidencia | null>(null)
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
@@ -100,19 +81,11 @@ export function ObservacionEstudianteSheet({
   const textoGuardadoRef = useRef("")
   const { notify } = useNotify()
 
-  // OJO: la dependencia es el `id`, no el objeto `estudiante` completo. El
-  // caller (`CeldaObservacionTrigger`) arma ese objeto de nuevo en cada
-  // render mientras el panel está abierto (p. ej. cuando `notaActual`
-  // refresca en segundo plano — cualquier guardado en OTRA celda invalida
-  // el mismo prefijo de query). Con `[estudiante]` como dependencia, cada
-  // una de esas referencias nuevas disparaba el efecto y pisaba lo que el
-  // docente estaba escribiendo, todavía sin guardar, con el valor viejo del
-  // servidor. Sincronizar solo al abrir (o al cambiar de estudiante) evita
-  // perder texto a mitad de escritura.
   useEffect(() => {
     if (estudiante) {
       textoGuardadoRef.current = estudiante.observacion ?? ""
       setTexto(textoGuardadoRef.current)
+      setMomento("")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estudiante?.id])
@@ -122,7 +95,7 @@ export function ObservacionEstudianteSheet({
   const limiteEvidenciasAlcanzado = evidencias.length >= OBSERVACION_EVIDENCIAS_MAX
 
   function handleOpenChange(open: boolean) {
-    if (!open && texto !== textoGuardadoRef.current) {
+    if (!open && (texto !== textoGuardadoRef.current || momento !== "")) {
       setConfirmarSalida(true)
       return
     }
@@ -203,6 +176,20 @@ export function ObservacionEstudianteSheet({
               <span className="self-end text-xs text-muted-foreground">
                 {texto.length}/{MAX_CARACTERES}
               </span>
+            </Field>
+
+            <Field variant="outlined" className="mt-4">
+              <FieldLabel htmlFor="momento-estudiante">
+                Momento{" "}
+                <span className="text-muted-foreground font-normal">(borrador — aún no se guarda)</span>
+              </FieldLabel>
+              <Input
+                id="momento-estudiante"
+                value={momento}
+                maxLength={100}
+                onChange={(e) => setMomento(e.target.value)}
+                placeholder="Ej. Inicio, Desarrollo, Cierre…"
+              />
             </Field>
           </div>
 

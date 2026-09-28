@@ -216,9 +216,8 @@ export function mergeOverride(
 
 /**
  * Observaciones en memoria — el equivalente formativo de `overrides`, para
- * que `PUT .../observar` y `POST .../observar-grupal` tengan un efecto real
- * que la grilla refleje después. Una sola observación viva por
- * estudiante-actividad, igual que el real: la individual pisa a la grupal.
+ * que `PUT .../observar` tenga un efecto real que la grilla refleje después.
+ * Una sola observación viva por estudiante-actividad, igual que el real.
  */
 const observaciones = new Map<string, string>()
 
