@@ -194,6 +194,21 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       enableHiding: false,
     },
     {
+      accessorKey: "gradosVinculados",
+      id: "gradosVinculados",
+      meta: { label: "Grados vinculados" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grados vinculados" />,
+      cell: ({ row }) => (
+        <WrappedTextCell
+          text={
+            row.original.gradosVinculados.length > 0
+              ? row.original.gradosVinculados.map((grado) => toSentenceCase(grado.name)).join(", ")
+              : "Todos"
+          }
+        />
+      ),
+    },
+    {
       accessorKey: "active",
       id: "active",
       meta: { label: "Estado" },

@@ -41,10 +41,12 @@ export const curricularReferencesDb: CurricularReference[] = [
     ],
     instrument: "Unidad temática",
     instrumentDescription: "Planes de área, rúbricas e informes de logro.",
+    executionLabel: "Actividad",
     regulation: "Decreto 1290 de 2009.",
     active: true,
     createdYear: 2023,
     deactivatedYear: null,
+    gradosVinculados: [],
   },
   {
     id: 2,
@@ -59,10 +61,12 @@ export const curricularReferencesDb: CurricularReference[] = [
     areas: [],
     instrument: "Unidad temática",
     instrumentDescription: "Planes de área, rúbricas e informes de logro.",
+    executionLabel: "Actividad",
     regulation: "Decreto 1290 de 2009.",
     active: false,
     createdYear: 2021,
     deactivatedYear: 2022,
+    gradosVinculados: [],
   },
   {
     id: 3,
@@ -77,10 +81,12 @@ export const curricularReferencesDb: CurricularReference[] = [
     areas: [],
     instrument: "Proyecto pedagógico",
     instrumentDescription: "Relatos pedagógicos, observaciones, registros de desarrollo.",
+    executionLabel: "Actividad",
     regulation: "Decreto 1421 de 2017.",
     active: true,
     createdYear: 2023,
     deactivatedYear: null,
+    gradosVinculados: [],
   },
 ]
 
@@ -120,10 +126,12 @@ curricularReferencesDb.push(
       areas: [],
       instrument: "Unidad temática",
       instrumentDescription: "",
+      executionLabel: "Actividad",
       regulation: "Decreto 1290 de 2009.",
       active,
       createdYear: 2020 + (index % 5),
       deactivatedYear: active ? null : 2023,
+      gradosVinculados: [],
     } satisfies CurricularReference
   }),
 )

@@ -205,6 +205,8 @@ export const curricularReferencesHandlers = [
       // `curricularReferenceStatusPeriod`).
       createdYear: new Date().getFullYear(),
       deactivatedYear: null,
+      // Un referente recién creado todavía no tiene componentes de Nivel 1.
+      gradosVinculados: [],
     }
     const saved = upsertCurricularReference(reference)
 
@@ -251,6 +253,8 @@ export const curricularReferencesHandlers = [
       id,
       createdYear: existing.createdYear,
       deactivatedYear,
+      // No editable desde el Formulario de Configuración: se conserva.
+      gradosVinculados: existing.gradosVinculados,
     })
 
     return HttpResponse.json({
