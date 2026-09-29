@@ -215,13 +215,13 @@ export function PlanillaGrid({
             return (
               <tr key={fila.pkTestudiante}>
                 <td
-                  className="truncate px-4 py-3 align-middle font-medium"
+                  className="truncate px-4 py-1.5 align-middle font-medium"
                   title={fila.nombreEstudiante}
                 >
                   {fila.nombreEstudiante}
                 </td>
                 {mostrarDefinitiva && (
-                  <td className="px-4 py-3 align-middle">
+                  <td className="px-4 py-1.5 align-middle">
                     {definitiva !== null && (
                       <span
                         className={cn(
@@ -237,17 +237,9 @@ export function PlanillaGrid({
                 )}
                 {columnas.map((columna) => {
                   const celda = celdaDe(fila, columna)
-
-                  // Va ANTES que cualquier otro estado: un estudiante sin
-                  // asignar a la actividad también llega con
-                  // `tieneAsistencia: false` (el backend ni siquiera resuelve
-                  // la fecha para él), así que sin este chequeo caía en la
-                  // rama de "sin asistencia" — un mensaje que no explica el
-                  // motivo real y sugiere que alcanza con registrar la
-                  // asistencia para poder calificarlo.
                   if (celda?.estado === "NO_ASIGNADA") {
                     return (
-                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-1.5 align-middle">
                         <span
                           className="text-muted-foreground"
                           title="Este estudiante no está asignado a esta actividad."
@@ -257,15 +249,9 @@ export function PlanillaGrid({
                       </td>
                     )
                   }
-
-                  // El caso formativo va ANTES que `NO_CALIFICABLE`: una
-                  // actividad sin nota llega siempre con ese estado y
-                  // `calificable: "N"` —es su normalidad, no un bloqueo—, así
-                  // que tratarlo como tal tapaba la observación con el ícono
-                  // rojo y dejaba el popover inalcanzable.
                   if (esFormativa(columna, celda)) {
                     return (
-                      <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
                         <div className="flex items-center gap-1.5">
                           {celda && (
                             <CeldaObservacionTrigger
@@ -294,7 +280,7 @@ export function PlanillaGrid({
                   // habitual es que falte la asistencia de ese día).
                   if (celda?.estado === "NO_CALIFICABLE") {
                     return (
-                      <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
                         <span
                           className="text-red inline-flex items-center"
                           aria-label="No calificable"
@@ -307,14 +293,10 @@ export function PlanillaGrid({
                   }
 
                   const nota = celda ? celda.notaHomologada : null
-                  // Sin asistencia no se puede calificar (el gate del
-                  // backend responde 400) — foto del momento de la lectura,
-                  // se pinta gris igual que "No calificable" en vez de
-                  // ofrecer un lápiz que va a fallar al guardar.
                   const sinAsistencia = celda != null && !celda.tieneAsistencia
                   if (sinAsistencia) {
                     return (
-                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-1.5 align-middle">
                         <span
                           className="text-muted-foreground inline-flex items-center"
                           aria-label="Sin asistencia registrada"
@@ -328,8 +310,13 @@ export function PlanillaGrid({
                   const claveCelda = `${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
                   const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   return (
-                    <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
-                      <div className="flex items-center gap-1.5">
+                    <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
+                      <div
+                        className={cn(
+                          "flex items-center gap-1.5",
+                          nota === null && !actualizandoNota && "justify-center",
+                        )}
+                      >
                         {actualizandoNota ? (
                           <Spinner className="size-4" />
                         ) : nota !== null ? (
@@ -341,15 +328,14 @@ export function PlanillaGrid({
                           >
                             {nota.toFixed(2)}
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground">Agregar</span>
-                        )}
+                        ) : null}
                         {celda && (
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
                             fecha={fechaParaGuardar(columna, celda) ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
+                            sinNota={nota === null}
                             onGuardado={() =>
                               setRefrescando((prev) => new Set(prev).add(claveCelda))
                             }

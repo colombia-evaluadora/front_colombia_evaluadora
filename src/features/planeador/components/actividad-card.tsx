@@ -1,9 +1,9 @@
+import { IoMdCheckboxOutline } from "react-icons/io"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
 import {
-  CheckIcon,
   ClipboardCheckIcon,
   FileDownloadOutlinedIcon,
   PencilIcon,
@@ -70,7 +70,7 @@ interface ActividadCardProps {
 
 const ACCIONES_BASE: readonly Omit<Accion, "label" | "onClick">[] = [
   { id: "editar", Icon: PencilIcon },
-  { id: "marcar", Icon: CheckIcon },
+  { id: "marcar", Icon: IoMdCheckboxOutline },
   { id: "aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" y "Eliminar" NO van acá: sus diálogos traen su propio
   // trigger, así que montarlos también en este loop duplicaría el botón.

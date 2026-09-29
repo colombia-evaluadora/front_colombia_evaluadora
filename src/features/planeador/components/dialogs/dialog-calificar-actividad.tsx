@@ -13,7 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { IoMdCheckboxOutline } from "react-icons/io"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -39,6 +40,8 @@ interface DialogCalificarActividadProps {
   gradoId?: number
   pkTactividadEstudiante: number
   estudianteNombre: string
+  /** Sin nota cargada: el botón va relleno en primary. */
+  sinNota?: boolean
   /** `yyyy-MM-dd` — fecha de la actividad, la que exige el backend al
    *  calificar (mismo criterio que `PlanillaColumna.fechaInicio`). */
   fecha: string
@@ -69,6 +72,7 @@ export function DialogCalificarActividad({
   gradoId,
   pkTactividadEstudiante,
   estudianteNombre,
+  sinNota = false,
   fecha,
   onGuardado,
 }: DialogCalificarActividadProps) {
@@ -115,16 +119,16 @@ export function DialogCalificarActividad({
             <DialogTrigger
               render={
                 <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-xs"
+                  variant={open || sinNota ? "fill" : "outline"}
+                  color="primary"
+                  size="icon-sm"
                   aria-label={`Calificar a ${estudianteNombre}`}
                 />
               }
             />
           }
         >
-          <PencilIcon className="size-3.5" />
+          <IoMdCheckboxOutline className="size-5" />
         </TooltipTrigger>
         <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
       </Tooltip>
