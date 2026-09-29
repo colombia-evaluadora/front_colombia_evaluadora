@@ -38,8 +38,6 @@ interface CeldaNotaPopoverProps {
    *  manda, y casi nunca coincide con el día en que arrancó la actividad. */
   fecha: string
   estudianteNombre: string
-  /** Sin nota cargada: el botón va relleno en primary. */
-  sinNota?: boolean
   /** Se dispara justo al guardar, antes de que la Planilla termine de
    *  refrescar — permite mostrar un loading en la celda mientras tanto. */
   onGuardado?: () => void
@@ -145,7 +143,6 @@ export function CeldaNotaPopover({
   pkTactividadEstudiante,
   fecha,
   estudianteNombre,
-  sinNota = false,
   onGuardado,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
@@ -189,16 +186,16 @@ export function CeldaNotaPopover({
             <PopoverTrigger
               render={
                 <Button
-                  variant={open || sinNota ? "fill" : "outline"}
-                  color="primary"
-                  size="icon-sm"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
                   aria-label={`Calificar a ${estudianteNombre}`}
                 />
               }
             />
           }
         >
-          <IoMdCheckboxOutline className="size-5" />
+          <IoMdCheckboxOutline className="size-4" />
         </TooltipTrigger>
         <TooltipContent>Calificar a {estudianteNombre}</TooltipContent>
       </Tooltip>
