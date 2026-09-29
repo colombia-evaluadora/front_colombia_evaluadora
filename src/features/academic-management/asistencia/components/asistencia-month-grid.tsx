@@ -199,7 +199,7 @@ export function AsistenciaMonthGrid({
 
                   if (restrictedView) {
                     return (
-                      <AsistenciaDayCellRectorPopover items={items}>{cellBody}</AsistenciaDayCellRectorPopover>
+                      <AsistenciaDayCellRectorPopover items={items} seguimientoSede={manualSede}>{cellBody}</AsistenciaDayCellRectorPopover>
                     )
                   }
 
