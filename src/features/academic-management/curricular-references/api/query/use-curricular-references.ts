@@ -40,6 +40,8 @@ interface CurricularReferenceRow {
   estado: "A" | "I"
   anio_vigencia_desde: number
   anio_vigencia_hasta: number | null
+  modificado_por: string | null
+  modificado_en: string | null
   active: boolean
   total_count: number
 }
@@ -82,6 +84,8 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
       code: grado.codigo,
       name: grado.nombre,
     })),
+    lastModifiedBy: row.modificado_por,
+    lastModifiedAt: row.modificado_en,
   }
 }
 

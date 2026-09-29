@@ -25,6 +25,7 @@ import { Pagination } from "@/components/pagination"
 
 import { toSentenceCase } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { useCurricularStatementsQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-statements"
+import { useCurricularReferenceGradesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-grades"
 import { useCurricularEvidencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-evidences"
 import { ManageStatementDialog } from "@/features/academic-management/curricular-references/components/statements/dialog-manage-statement"
 import { DeleteStatementDialog } from "@/features/academic-management/curricular-references/components/statements/dialog-delete-statement"
@@ -59,9 +60,22 @@ export function TabStatements({ reference }: TabStatementsProps) {
   const [evidencePageIndex, setEvidencePageIndex] = useState(0)
   const [evidencePageSize, setEvidencePageSize] = useState(10)
 
+  // Grado (Regla 12): solo se muestra si el referente ofrece grados.
+  const { data: grades = [], isPending: isGradesPending } = useCurricularReferenceGradesQuery(reference.id)
+  const hasGrades = grades.length > 0
+  const [gradeId, setGradeId] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    setGradeId((prev) => (prev !== undefined && grades.some((grade) => grade.id === prev) ? prev : grades[0]?.id))
+  }, [grades])
+
+  // `undefined` = aún sin grado elegido (o cargando): no consulta.
+  const statementsGradeId = isGradesPending ? undefined : hasGrades ? gradeId : null
+
   const { data: statements = [], isPending: isStatementsPending } = useCurricularStatementsQuery(
     reference.id,
     areaId,
+    statementsGradeId,
   )
 
   const filteredStatements = statements.filter(
@@ -74,7 +88,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
     if (filteredStatements.some((statement) => statement.id === selectedStatementId)) return
     setSelectedStatementId(filteredStatements[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statements, areaId, onlyUnassigned])
+  }, [statements, areaId, onlyUnassigned, statementsGradeId])
 
   const { data: evidences = [], isPending: isEvidencesPending } = useCurricularEvidencesQuery(
     selectedStatementId,
@@ -85,6 +99,12 @@ export function TabStatements({ reference }: TabStatementsProps) {
     [UNASSIGNED_AREA]: "Sin asignar",
     ...Object.fromEntries(reference.areas.map((area) => [area.id, toSentenceCase(area.name)])),
   }
+  const gradeLabels = Object.fromEntries(grades.map((grade) => [grade.id, toSentenceCase(grade.name)]))
+
+  // El nuevo Nivel 1 toma Grado y Área de los filtros: ambos deben tener valor real.
+  const hasAreaForCreate = hasReferenceAreas ? areaId != null && !onlyUnassigned : true
+  const hasGradeForCreate = !isGradesPending && (!hasGrades || gradeId !== undefined)
+  const canAddStatement = hasAreaForCreate && hasGradeForCreate
   const filteredEvidences = evidences.filter((evidence) =>
     evidence.text.toLowerCase().includes(evidenceSearch.trim().toLowerCase()),
   )
@@ -103,6 +123,29 @@ export function TabStatements({ reference }: TabStatementsProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {(hasGrades || hasReferenceAreas) && (
+      <div className={cn("grid grid-cols-1 gap-4", hasGrades && hasReferenceAreas && "md:grid-cols-2")}>
+      {hasGrades && (
+        <Field orientation="vertical" variant="outlined" className="w-full">
+          <FieldLabel htmlFor="statement-grade">Grado</FieldLabel>
+          <ComboboxField
+            items={gradeLabels}
+            value={gradeId ?? null}
+            onValueChange={(value) => setGradeId(value == null ? undefined : (value as number))}
+          >
+            <ComboboxFieldTrigger id="statement-grade" size="sm" className="h-12 w-full [&_svg]:size-5">
+              <ComboboxFieldValue placeholder="Seleccionar" />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              {grades.map((grade) => (
+                <ComboboxFieldItem key={grade.id} value={grade.id}>
+                  {toSentenceCase(grade.name)}
+                </ComboboxFieldItem>
+              ))}
+            </ComboboxFieldContent>
+          </ComboboxField>
+        </Field>
+      )}
       {hasReferenceAreas && (
         <Field orientation="vertical" variant="outlined" className="w-full">
           <FieldLabel htmlFor="statement-area">Áreas o dimensiones</FieldLabel>
@@ -137,6 +180,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
             </ComboboxFieldContent>
           </ComboboxField>
         </Field>
+      )}
+      </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[20rem_1fr]">
@@ -173,7 +218,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
             color="primary"
             size="sm"
             className="min-w-0 shrink"
-            disabled={areaId === undefined}
+            disabled={!canAddStatement}
+            title={canAddStatement ? undefined : "Selecciona grado y área para agregar"}
             onClick={() => setStatementDialog({ open: true, statement: null })}
           >
             <ControlPointIcon data-icon="inline-start" className="size-5 shrink-0" />
@@ -191,7 +237,11 @@ export function TabStatements({ reference }: TabStatementsProps) {
             </>
           ) : filteredStatements.length === 0 ? (
             <p className="text-muted-foreground rounded-lg border p-4 text-center text-sm break-words">
-              {areaId === undefined ? "Selecciona un área." : `Sin ${level1Label.toLowerCase()}s.`}
+              {hasGrades && gradeId === undefined
+                ? "Selecciona un grado."
+                : areaId === undefined
+                  ? "Selecciona un área."
+                  : `Sin ${level1Label.toLowerCase()}s.`}
             </p>
           ) : (
             filteredStatements.map((statement) => {
@@ -342,7 +392,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
           <TableBody>
             {selectedStatementId == null ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground break-words">
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground break-words">
                   Selecciona un {level1Label.toLowerCase()} para ver sus {level2Label.toLowerCase()}s.
                 </TableCell>
               </TableRow>
@@ -419,6 +469,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
         onOpenChange={(open) => setStatementDialog((prev) => ({ ...prev, open }))}
         curricularReferenceId={reference.id}
         areaId={areaId}
+        gradeId={hasGrades ? gradeId : null}
         statement={statementDialog.statement}
         levelLabel={level1Label}
         onCreated={setSelectedStatementId}

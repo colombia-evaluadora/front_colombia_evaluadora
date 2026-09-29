@@ -22,6 +22,15 @@ import {
   useCurricularReferenceAreasQuery,
   type CurricularReferenceArea,
 } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-areas"
+import { fetchCurricularReferenceImpact } from "@/features/academic-management/curricular-references/api/query/fetch-impact"
+import {
+  buildHighImpactAlerts,
+  getChangedHighImpactFields,
+  revertHighImpactFields,
+  type HighImpactAlert,
+  type HighImpactField,
+} from "@/features/academic-management/curricular-references/api/high-impact-alerts"
+import { HighImpactDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-high-impact"
 import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -68,8 +77,8 @@ const curricularReferenceSchema = z.object({
     .trim()
     .min(1, "Ingresa la descripción o finalidad.")
     .max(400, "Máximo 400 caracteres."),
-  level1: z.string().trim().min(1, "Ingresa el nivel 1.").max(50, "Máximo 50 caracteres."),
-  level2: z.string().trim().min(1, "Ingresa el nivel 2.").max(50, "Máximo 50 caracteres."),
+  level1: z.string().trim().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
+  level2: z.string().trim().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
     .object({ id: z.number().nullish() })
     .nullish()
@@ -78,7 +87,7 @@ const curricularReferenceSchema = z.object({
     .object({ id: z.number().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
-  instrument: z.string().trim().min(1, "Ingresa el instrumento.").max(50, "Máximo 50 caracteres."),
+  instrument: z.string().trim().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
   executionLabel: z.string().trim().max(50, "Máximo 50 caracteres."),
   regulation: z.string().trim().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
 }).superRefine((values, ctx) => {
@@ -127,6 +136,12 @@ export function ManageCurricularReferenceDialog({
   const noticeIdRef = useRef(0)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
+  // Modal de alto impacto (Reglas 4, 13, 14, 15).
+  const [impactAlerts, setImpactAlerts] = useState<HighImpactAlert[]>([])
+  const [impactFields, setImpactFields] = useState<HighImpactField[]>([])
+  const [isCheckingImpact, setIsCheckingImpact] = useState(false)
+  const isSubDialogOpen = confirmDiscardOpen || impactAlerts.length > 0
+
   function notifyInDialog(message: string, variant: NoticeVariant = "error") {
     noticeIdRef.current += 1
     setNotice({ id: noticeIdRef.current, message, variant })
@@ -142,6 +157,8 @@ export function ManageCurricularReferenceDialog({
       populatedRef.current = false
       setNotice(null)
       setConfirmDiscardOpen(false)
+      setImpactAlerts([])
+      setImpactFields([])
       return
     }
     if (populatedRef.current) return
@@ -180,27 +197,47 @@ export function ManageCurricularReferenceDialog({
     initialValuesRef.current = { ...initialValuesRef.current, subjectLabel }
   }, [open, isEditMode, subjectLabelOptions, formValues.subjectLabel])
 
-  const createMutation = useCreate({
-    mutationConfig: {
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error) || "No fue posible guardar el referente curricular.")
-      },
-    },
-  })
-
-  const updateMutation = useUpdate({
-    mutationConfig: {
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error) || "No fue posible actualizar el referente curricular.")
-      },
-    },
-  })
+  // Los errores se manejan en `save` (ahí se detecta el de la Regla 7).
+  const createMutation = useCreate()
+  const updateMutation = useUpdate()
 
   function handleFormChange(next: CurricularReferenceDraft) {
     setFormValues(next)
     if (Object.keys(fieldErrors).length > 0) {
       setFieldErrors(validateCurricularReference(next))
     }
+  }
+
+  async function save(values: CurricularReferenceDraft) {
+    try {
+      const result =
+        isEditMode && curricularReference
+          ? await updateMutation.mutateAsync({
+              id: curricularReference.id,
+              values,
+              previousActive: curricularReference.active,
+            })
+          : await createMutation.mutateAsync(values)
+
+      if (result.status === "error") {
+        setImpactAlerts([])
+        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+        return
+      }
+    } catch (error) {
+      // Se cierra el modal de impacto para que se vea el error del backend.
+      setImpactAlerts([])
+      notifyInDialog(getErrorMessage(error) || "No fue posible guardar el referente curricular.")
+      return
+    }
+
+    setImpactAlerts([])
+    notify(
+      isEditMode
+        ? "El referente curricular se actualizó correctamente."
+        : "El referente curricular se creó correctamente.",
+    )
+    onOpenChange(false)
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -214,33 +251,38 @@ export function ManageCurricularReferenceDialog({
       return
     }
 
+    // Alto impacto: solo si el referente ya tiene unidades o actividades.
     if (isEditMode && curricularReference) {
-      const result = await updateMutation.mutateAsync({
-        id: curricularReference.id,
-        values: formValues,
-        previousActive: curricularReference.active,
-      })
-      if (result.status === "error") {
-        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-        return
+      const fields = getChangedHighImpactFields(initialValuesRef.current, formValues)
+      if (fields.length > 0) {
+        setIsCheckingImpact(true)
+        try {
+          const impact = await fetchCurricularReferenceImpact(curricularReference.id)
+          if (impact.units + impact.activities > 0) {
+            setImpactFields(fields)
+            setImpactAlerts(buildHighImpactAlerts(fields, formValues, impact))
+            return
+          }
+        } catch (error) {
+          notifyInDialog(getErrorMessage(error))
+          return
+        } finally {
+          setIsCheckingImpact(false)
+        }
       }
-
-      notify("El referente curricular se actualizó correctamente.")
-      onOpenChange(false)
-      return
     }
 
-    const result = await createMutation.mutateAsync(formValues)
-    if (result.status === "error") {
-      notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-      return
-    }
-
-    notify("El referente curricular se creó correctamente.")
-    onOpenChange(false)
+    await save(formValues)
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending
+  function cancelHighImpact() {
+    // Cancelar revierte los campos y no guarda nada.
+    setFormValues((prev) => revertHighImpactFields(prev, initialValuesRef.current, impactFields))
+    setImpactAlerts([])
+    setImpactFields([])
+  }
+
+  const isPending = createMutation.isPending || updateMutation.isPending || isCheckingImpact
   const isLoadingDetail = isEditMode && (isDetailPending || isAreasPending)
 
   const isDirty = JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
@@ -266,7 +308,7 @@ export function ManageCurricularReferenceDialog({
       <DialogContent
         className="flex w-[min(95vw,48rem)] max-w-none sm:max-w-192 max-h-[85vh] flex-col overflow-hidden p-0"
         showCloseButton={false}
-        inert={confirmDiscardOpen}
+        inert={isSubDialogOpen}
       >
         <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{isEditMode ? "Editar referente curricular" : "Agregar referente curricular"}</DialogTitle>
@@ -275,16 +317,17 @@ export function ManageCurricularReferenceDialog({
               ? "Actualiza la información de este referente curricular."
               : "Completa la información para crear un nuevo referente curricular."}
           </DialogDescription>
-        </DialogHeader>
-
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
+          {/* Fijo con el título: no se pierde al hacer scroll en el formulario. */}
           <NoticeBanner
             notice={notice}
             onClose={() => setNotice(null)}
             variant={notice?.variant}
             autoCloseMs={notice?.variant === "error" ? undefined : 4000}
-            className="mb-2"
+            className="mt-2"
           />
+        </DialogHeader>
+
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
 
           {isLoadingDetail ? (
             <Skeleton className="h-64 w-full" />
@@ -329,6 +372,14 @@ export function ManageCurricularReferenceDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <HighImpactDialog
+        open={impactAlerts.length > 0}
+        alerts={impactAlerts}
+        isPending={isPending}
+        onConfirm={() => save(formValues)}
+        onCancel={cancelHighImpact}
+      />
 
       <ConfirmDiscardDialog
         open={confirmDiscardOpen}

@@ -39,19 +39,35 @@ function enunciadoUrl(id: number) {
   return apiPath(`/academic-management/curricular-statements/${id}`, `/referentes-curriculares/enunciados/${id}`)
 }
 
+// Grados y "Grados vinculados" dependen de los enunciados de nivel 1.
+function invalidateStatementDerived(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
+  queryClient.invalidateQueries({ queryKey: ["curricular-reference-grades"] })
+  queryClient.invalidateQueries({ queryKey: ["curricular-reference"] })
+  queryClient.invalidateQueries({ queryKey: ["curricular-references"] })
+}
+
 async function createStatement(input: {
   curricularReferenceId: number
   areaId: number | null
+  /** Grado del filtro; queda fijo desde la creación (Regla 11). */
+  gradeId: number | null
   text: string
   active: boolean
 }): Promise<StatementResult> {
   const url = statementsUrl(input.curricularReferenceId)
   if (env.ENABLE_API_MOCKING) {
-    return api.post<StatementResult>(url, { areaId: input.areaId, text: input.text, active: input.active })
+    return api.post<StatementResult>(url, {
+      areaId: input.areaId,
+      gradeId: input.gradeId,
+      text: input.text,
+      active: input.active,
+    })
   }
   const raw = await api.post<CreateStatementResponse>(url, {
     TEXTO: input.text,
     AREA_ID: input.areaId,
+    ...(input.gradeId != null ? { GRADO_ID: input.gradeId } : {}),
     ESTADO: input.active ? "A" : "I",
   })
   return {
@@ -69,7 +85,7 @@ export function useCreateStatement(options: { mutationConfig?: MutationConfig<ty
     mutationFn: createStatement,
     ...options.mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
+      invalidateStatementDerived(queryClient)
       options.mutationConfig?.onSuccess?.(...args)
     },
   })
@@ -118,7 +134,7 @@ export function useDeleteStatement(options: { mutationConfig?: MutationConfig<ty
     mutationFn: deleteStatement,
     ...options.mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
+      invalidateStatementDerived(queryClient)
       queryClient.invalidateQueries({ queryKey: ["curricular-evidences"] })
       options.mutationConfig?.onSuccess?.(...args)
     },
