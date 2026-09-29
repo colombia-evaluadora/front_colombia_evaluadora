@@ -42,21 +42,6 @@ interface CalificacionesViewProps {
   actividad: Actividad
 }
 
-/**
- * Calificaciones de una actividad: tabla con un renglón por estudiante del
- * grupo, asistencia a la fecha de la actividad y nota final. Reemplaza a
- * `DetailSections` en el panel de detalle del Planeador — el viejo
- * read-only se queda en el código por si se quiere volver a mostrar, pero
- * el punto de entrada del panel apunta ahora a esta vista.
- *
- * El "Agregar" en la columna NOTA es solo el placeholder del campo: cuando
- * todavía no se cargó ninguna nota, no hay porcentaje que mostrar. Se
- * prefiere `estudiante.calificacion` (el agregado que ya trae el backend
- * real) sobre recalcularlo con `porcentajeFinal()` a partir de `notas` —
- * esta última sigue siendo el fallback del mock, que no manda ese campo.
- * El lápiz de "Calificar" abre `DialogCalificarActividad`, que sí pega
- * contra el backend real e invalida este listado al guardar.
- */
 export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
     useCalificacionesQuery(actividad.id, actividad.fechaInicio)
@@ -64,22 +49,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { notify } = useNotify()
   const formativa = esActividadFormativa(actividad)
   const registrarAsistencia = useAsistenciaRegistrarMutation()
-  // Sin la ventana empezada no puede existir una clase que asistir todavía
-  // -- el backend la rechaza igual (fn_asistencia_registrar_bulk, V464),
-  // pero se corta acá para no dejar clickear el Select y recién ahí fallar.
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
 
-  /** Toma la asistencia de UN estudiante directo desde el Marcar del
-   *  Planeador -- mismo endpoint que usa el módulo de Asistencia
-   *  (`POST /asistencias/registrar`), por ASIGNATURA (formativa incluida:
-   *  desde V436 preescolar también registra por asignatura+bloque, no por
-   *  ACTIVIDAD -- esa vía quedó inalcanzable y sus filas no las reconoce el
-   *  módulo de Asistencia), contra TODOS los bloques reales de THORARIO ese
-   *  día (V481). */
-  // Regla 73: la Excusa se adjunta en el módulo de Asistencia, no acá -- este
-  // Select solo cubre Asistió/No asistió (sin justificar). Justificar una
-  // inasistencia ya registrada se hace en Asistencia manual/calendario;
-  // Planeador solo REFLEJA ese resultado (ver `ExcusaField`, de solo lectura).
   async function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
     if (actividadSinComenzar) return
     if (!actividad.grupoId) {
@@ -149,15 +120,20 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
       <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           <tr>
-            <th className="w-80 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+            <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
             <th className="w-72 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
                 Fecha: {formatDate(actividad.fechaInicio)}
               </span>
             </th>
-            <th className="px-4 py-3 text-left font-semibold uppercase">
-              {formativa ? "Observación" : "Nota"}
+            <th
+              className={cn(
+                "px-4 py-3 font-semibold uppercase",
+                formativa ? "text-left" : "text-center",
+              )}
+            >
+              {formativa ? "Observación" : "Valoración"}
             </th>
           </tr>
         </thead>
@@ -209,6 +185,7 @@ function CalificacionRow({
 }: CalificacionRowProps) {
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
+  const sinNota = estudiante.notaHomologada == null && porcentaje === null
   const mostrarJustificacion =
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
@@ -216,10 +193,10 @@ function CalificacionRow({
 
   return (
     <tr className="transition-colors">
-      <td className="truncate px-4 py-3 align-middle font-medium" title={nombreCompleto}>
+      <td className="truncate px-4 py-1.5 align-middle font-medium" title={nombreCompleto}>
         {nombreCompleto}
       </td>
-      <td className="w-72 max-w-72 px-4 py-3">
+      <td className="w-72 max-w-72 px-4 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <AsistenciaSelect
             estado={estudiante.asistencia.estado}
@@ -247,8 +224,13 @@ function CalificacionRow({
           )}
         </div>
       </td>
-      <td className="px-4 py-3 align-middle">
-        <div className="flex min-w-0 items-center gap-1.5">
+      <td className="px-4 py-1.5 align-middle">
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-1.5",
+            !formativa && "justify-center",
+          )}
+        >
           {formativa ? (
             <CeldaObservacionTrigger
               pkTactividadEstudiante={estudiante.id}
@@ -260,18 +242,7 @@ function CalificacionRow({
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
             />
-          ) : (
-            <DialogCalificarActividad
-              actividadId={actividad.id}
-              actividadNombre={actividad.nombre}
-              asignatura={actividad.asignatura}
-              gradoId={actividad.gradoId}
-              pkTactividadEstudiante={estudiante.id}
-              estudianteNombre={nombreCompleto}
-              fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
-              onGuardado={onGuardado}
-            />
-          )}
+          ) : null}
           {formativa ? (
             estudiante.observacion?.trim() ? (
               <span
@@ -287,8 +258,19 @@ function CalificacionRow({
             <span className="font-semibold">{estudiante.notaHomologada.toFixed(2)}</span>
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
-          ) : (
-            <span className="text-muted-foreground">Agregar</span>
+          ) : null}
+          {!formativa && (
+            <DialogCalificarActividad
+              actividadId={actividad.id}
+              actividadNombre={actividad.nombre}
+              asignatura={actividad.asignatura}
+              gradoId={actividad.gradoId}
+              pkTactividadEstudiante={estudiante.id}
+              estudianteNombre={nombreCompleto}
+              sinNota={sinNota}
+              fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
+              onGuardado={onGuardado}
+            />
           )}
         </div>
       </td>
@@ -428,13 +410,6 @@ function VerExcusaButton({ fkSoporteArchivo }: { fkSoporteArchivo: number }) {
   )
 }
 
-/**
- * Excusa de una inasistencia/tardanza (Regla 73): SOLO LECTURA. La Excusa se
- * adjunta en el módulo de Asistencia (manual/calendario) -- Planeador
- * únicamente refleja ese soporte ya cargado; no ofrece adjuntar, cambiar ni
- * quitar desde acá, para no duplicar el punto de captura que exige el
- * requerimiento.
- */
 function ExcusaField({
   adjuntos,
   fkSoporteArchivo,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type RefObject } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -7,7 +7,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { ArrowLeftIcon, MagnifyingGlassIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use-calificar-bulk"
@@ -36,6 +36,15 @@ interface CalificarActividadBulkProps {
   fecha: string
   estudiantes: FilaEstudiante[]
   onVolver: () => void
+  /** Estado del botón "Guardar" del header de la página (null = oculto). */
+  onEstadoGuardar: (estado: EstadoGuardar | null) => void
+  /** La página llama a esta ref al pulsar "Guardar". */
+  guardarRef: RefObject<(() => void) | null>
+}
+
+export interface EstadoGuardar {
+  disabled: boolean
+  guardando: boolean
 }
 
 /** El bulk real acepta UN criterio/ítem/nivel por request — si el docente
@@ -136,6 +145,8 @@ export function CalificarActividadBulk({
   fecha,
   estudiantes,
   onVolver,
+  onEstadoGuardar,
+  guardarRef,
 }: CalificarActividadBulkProps) {
   const [nota, setNota] = useState<NotaCriterio[]>([])
   const [seleccionados, setSeleccionados] = useState<Set<number>>(
@@ -143,6 +154,7 @@ export function CalificarActividadBulk({
   )
   const [filtro, setFiltro] = useState("")
   const [guardando, setGuardando] = useState(false)
+  const [dirty, setDirty] = useState(false)
   const { notify } = useNotify()
 
   const { data: instrumento } = useInstrumentoActividadQuery(actividadId)
@@ -155,10 +167,27 @@ export function CalificarActividadBulk({
   }, [estudiantes, filtro])
 
   function toggle(id: number) {
+    setDirty(true)
     setSeleccionados((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      return next
+    })
+  }
+
+  // Tildados entre los filtrados (para el checkbox de la cabecera).
+  const filtradosTildados = filtrados.filter((e) => seleccionados.has(e.id)).length
+  const todosTildados = filtrados.length > 0 && filtradosTildados === filtrados.length
+
+  function toggleTodos() {
+    setDirty(true)
+    setSeleccionados((prev) => {
+      const next = new Set(prev)
+      for (const e of filtrados) {
+        if (todosTildados) next.delete(e.id)
+        else next.add(e.id)
+      }
       return next
     })
   }
@@ -185,6 +214,15 @@ export function CalificarActividadBulk({
       setGuardando(false)
     }
   }
+
+  const deshabilitado = seleccionados.size === 0 || !completitud.completo || escalaSinBulk
+
+  // Informa a la página si mostrar "Guardar" (solo con cambios).
+  guardarRef.current = guardar
+  useEffect(() => {
+    onEstadoGuardar(dirty ? { disabled: deshabilitado, guardando } : null)
+  }, [dirty, deshabilitado, guardando, onEstadoGuardar])
+  useEffect(() => () => onEstadoGuardar(null), [onEstadoGuardar])
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 rounded-md border bg-card p-3">
@@ -213,7 +251,14 @@ export function CalificarActividadBulk({
         </div>
       </div>
 
-      <InstrumentoGradingFields actividadId={actividadId} value={nota} onChange={setNota} />
+      <InstrumentoGradingFields
+        actividadId={actividadId}
+        value={nota}
+        onChange={(next) => {
+          setDirty(true)
+          setNota(next)
+        }}
+      />
 
       {escalaSinBulk && (
         <p className="text-muted-foreground text-xs">
@@ -236,6 +281,15 @@ export function CalificarActividadBulk({
       </Field>
 
       <ul className="border-input flex-1 overflow-y-auto rounded-md border">
+        <li className="bg-card sticky top-0 flex items-center gap-3 border-b px-4 py-3">
+          <Checkbox
+            checked={todosTildados}
+            indeterminate={filtradosTildados > 0 && !todosTildados}
+            onCheckedChange={toggleTodos}
+            aria-label="Seleccionar todos los estudiantes"
+          />
+          <span className="text-sm font-semibold">Apellidos y nombres</span>
+        </li>
         {filtrados.map((estudiante) => {
           const checked = seleccionados.has(estudiante.id)
           return (
@@ -255,24 +309,6 @@ export function CalificarActividadBulk({
           )
         })}
       </ul>
-
-      <div className="flex items-center justify-between rounded-md border bg-card px-4 py-3">
-        <p className="text-muted-foreground text-sm">
-          {completitud.mensaje ?? "Se aplicará a los estudiantes tildados."}
-        </p>
-        <Button
-          variant="fill"
-          color="primary"
-          size="sm"
-          disabled={
-            seleccionados.size === 0 || !completitud.completo || guardando || escalaSinBulk
-          }
-          onClick={guardar}
-        >
-          {guardando && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
-          Guardar
-        </Button>
-      </div>
     </div>
   )
 }
