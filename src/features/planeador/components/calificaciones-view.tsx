@@ -51,6 +51,17 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const registrarAsistencia = useAsistenciaRegistrarMutation()
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
 
+  /** Toma la asistencia de UN estudiante directo desde el Marcar del
+   *  Planeador -- mismo endpoint que usa el módulo de Asistencia
+   *  (`POST /asistencias/registrar`), por ASIGNATURA (formativa incluida:
+   *  desde V436 preescolar también registra por asignatura+bloque, no por
+   *  ACTIVIDAD -- esa vía quedó inalcanzable y sus filas no las reconoce el
+   *  módulo de Asistencia), contra TODOS los bloques reales de THORARIO ese
+   *  día (V481). */
+  // Regla 73: la Excusa se adjunta en el módulo de Asistencia, no acá -- este
+  // Select solo cubre Asistió/No asistió (sin justificar). Justificar una
+  // inasistencia ya registrada se hace en Asistencia manual/calendario;
+  // Planeador solo REFLEJA ese resultado (ver `ExcusaField`, de solo lectura).
   async function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
     if (actividadSinComenzar) return
     if (!actividad.grupoId) {
@@ -410,6 +421,13 @@ function VerExcusaButton({ fkSoporteArchivo }: { fkSoporteArchivo: number }) {
   )
 }
 
+/**
+ * Excusa de una inasistencia/tardanza (Regla 73): SOLO LECTURA. La Excusa se
+ * adjunta en el módulo de Asistencia (manual/calendario) -- Planeador
+ * únicamente refleja ese soporte ya cargado; no ofrece adjuntar, cambiar ni
+ * quitar desde acá, para no duplicar el punto de captura que exige el
+ * requerimiento.
+ */
 function ExcusaField({
   adjuntos,
   fkSoporteArchivo,

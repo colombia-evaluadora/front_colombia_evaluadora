@@ -292,6 +292,14 @@ export function PlaneadorPlanillaPage() {
               onVolver={() => setColumnaEnObservacion(null)}
             />
           )}
+
+          {filtro && columnaEnObservacion && (
+            <ObservarActividadCards
+              columna={columnaEnObservacion}
+              filas={filasFiltradas}
+              onVolver={() => setColumnaEnObservacion(null)}
+            />
+          )}
         </TableScreenBody>
       </TableScreen>
     </NoticeProvider>
