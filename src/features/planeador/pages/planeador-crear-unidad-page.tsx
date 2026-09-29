@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,10 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
@@ -54,6 +56,16 @@ function PlaneadorCrearUnidadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
+
+  // Mismo guard de permiso que `planeador-crear-actividad-page.tsx`: sin
+  // "crear" en Planeador, redirige al listado apenas se sabe que no hay
+  // permiso.
+  const { puedeCrear, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  useEffect(() => {
+    if (!isLoadingPermiso && !puedeCrear) {
+      navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })
+    }
+  }, [isLoadingPermiso, puedeCrear, navigate])
 
   // `?instrumento=` llega cuando se entra desde el botón "Agregar
   // {instrumento}" de una pestaña (`planeador-unidades-page.tsx`) — permite
@@ -129,24 +141,30 @@ function PlaneadorCrearUnidadPageContent() {
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        <form
-          id={FORM_ID}
-          onSubmit={(e) => {
-            e.preventDefault()
-            createMutation.mutate(draftToPayload(draft))
-          }}
-        >
-          <UnidadFormTabs
-            esFormativo={draft.enfoquePedagogico === "Formativo"}
-            infoGeneralContent={
-              <UnidadInfoGeneralFields
-                draft={draft}
-                onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
-                tab={tabDesdeAgregar}
-              />
-            }
-          />
-        </form>
+        {isLoadingPermiso || !puedeCrear ? (
+          <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
+            <Spinner /> Cargando…
+          </div>
+        ) : (
+          <form
+            id={FORM_ID}
+            onSubmit={(e) => {
+              e.preventDefault()
+              createMutation.mutate(draftToPayload(draft))
+            }}
+          >
+            <UnidadFormTabs
+              esFormativo={draft.enfoquePedagogico === "Formativo"}
+              infoGeneralContent={
+                <UnidadInfoGeneralFields
+                  draft={draft}
+                  onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
+                  tab={tabDesdeAgregar}
+                />
+              }
+            />
+          </form>
+        )}
       </TableScreenBody>
 
       <TableScreenFooter>

@@ -25,6 +25,7 @@ import { UnidadDetallePanel } from "@/features/planeador/components/unidad-detal
 import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-filters"
 
 import { planeadorUnidadesRoute } from "@/router"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /**
  * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
@@ -35,6 +36,7 @@ import { planeadorUnidadesRoute } from "@/router"
 export function PlaneadorUnidadesPage() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
+  const { puedeCrear } = useMenuPermission("PLANEADOR")
 
   const buscar = search.buscar ?? ""
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useUnidadesFilters()
@@ -117,23 +119,25 @@ export function PlaneadorUnidadesPage() {
               {/* El rótulo sale del referente curricular (400 caracteres
                 posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
                 recorte, uno largo estiraba la barra entera fuera de pantalla. */}
-              <Button
-                color="primary"
-                size="sm"
-                variant="fill"
-                className="min-w-0 max-w-[18rem] shrink"
-                aria-label={`Agregar ${tabLabel}`}
-                title={`Agregar ${tabLabel}`}
-                render={
-                  <Link
-                    to={paths.app.planeadorUnidadCrear.getHref()}
-                    search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
-                  />
-                }
-              >
-                <PlusCircleIcon data-icon="inline-start" />
-                <span className="truncate">Agregar {tabLabel}</span>
-              </Button>
+              {puedeCrear && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  variant="fill"
+                  className="min-w-0 max-w-[18rem] shrink"
+                  aria-label={`Agregar ${tabLabel}`}
+                  title={`Agregar ${tabLabel}`}
+                  render={
+                    <Link
+                      to={paths.app.planeadorUnidadCrear.getHref()}
+                      search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
+                    />
+                  }
+                >
+                  <PlusCircleIcon data-icon="inline-start" />
+                  <span className="truncate">Agregar {tabLabel}</span>
+                </Button>
+              )}
               <Tooltip>
                 <TooltipTrigger
                   render={
