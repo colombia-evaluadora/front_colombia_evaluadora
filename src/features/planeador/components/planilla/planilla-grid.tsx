@@ -311,12 +311,7 @@ export function PlanillaGrid({
                   const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
-                      <div
-                        className={cn(
-                          "flex items-center gap-1.5",
-                          nota === null && !actualizandoNota && "justify-center",
-                        )}
-                      >
+                      <div className="flex items-center gap-1.5">
                         {actualizandoNota ? (
                           <Spinner className="size-4" />
                         ) : nota !== null ? (
@@ -328,14 +323,15 @@ export function PlanillaGrid({
                           >
                             {nota.toFixed(2)}
                           </span>
-                        ) : null}
+                        ) : (
+                          <span className="text-muted-foreground">Agregar</span>
+                        )}
                         {celda && (
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
                             fecha={fechaParaGuardar(columna, celda) ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
-                            sinNota={nota === null}
                             onGuardado={() =>
                               setRefrescando((prev) => new Set(prev).add(claveCelda))
                             }
