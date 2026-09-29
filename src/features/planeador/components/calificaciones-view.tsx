@@ -1,7 +1,18 @@
-import { useId } from "react"
+import { useId, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   Select,
@@ -14,11 +25,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckCircleIcon,
+  CheckIcon,
   ClockIcon,
   EyeIcon,
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   WarningCircleIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
@@ -29,6 +42,7 @@ import { fetchAsistenciaBloquesProgramados } from "@/features/academic-managemen
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
+import { useMarcarNoPresento } from "@/features/planeador/api/mutations/use-marcar-no-presento"
 import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
@@ -201,6 +215,11 @@ function CalificacionRow({
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
   const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`.trim()
+  // Regla 62: "No presentó" reemplaza a la nota / observación (excluyentes).
+  const noPresento = estudiante.noPresento === true
+  const asistio =
+    estudiante.asistencia.estado === "asistio" || estudiante.asistencia.estado === "llego-tarde"
+  const tieneResultado = formativa ? Boolean(estudiante.observacion?.trim()) : !sinNota
 
   return (
     <tr className="transition-colors">
@@ -242,7 +261,9 @@ function CalificacionRow({
             !formativa && "justify-center",
           )}
         >
-          {formativa ? (
+          {noPresento ? (
+            <span className="font-semibold text-muted-foreground">No presentó</span>
+          ) : formativa ? (
             <CeldaObservacionTrigger
               pkTactividadEstudiante={estudiante.id}
               contexto={actividad.nombre}
@@ -254,7 +275,7 @@ function CalificacionRow({
               onGuardado={onGuardado}
             />
           ) : null}
-          {formativa ? (
+          {noPresento ? null : formativa ? (
             estudiante.observacion?.trim() ? (
               <span
                 className="min-w-0 max-w-[77ch] flex-1 truncate text-xs"
@@ -270,7 +291,7 @@ function CalificacionRow({
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
           ) : null}
-          {!formativa && (
+          {!formativa && !noPresento && (
             <DialogCalificarActividad
               actividadId={actividad.id}
               actividadNombre={actividad.nombre}
@@ -283,9 +304,116 @@ function CalificacionRow({
               onGuardado={onGuardado}
             />
           )}
+          <NoPresentoCheckbox
+            actividadId={actividad.id}
+            pkTactividadEstudiante={estudiante.id}
+            fecha={estudiante.fechaAsistencia ?? null}
+            checked={noPresento}
+            tieneResultado={tieneResultado}
+            // Solo si asistió (o llegó tarde) y la actividad ya empezó.
+            disabled={!asistio || actividadSinComenzar}
+          />
         </div>
       </td>
     </tr>
+  )
+}
+
+/** Regla 62: el estudiante asistió pero no presentó evidencia. */
+function NoPresentoCheckbox({
+  actividadId,
+  pkTactividadEstudiante,
+  fecha,
+  checked,
+  tieneResultado,
+  disabled,
+}: {
+  actividadId: number
+  pkTactividadEstudiante: number
+  fecha: string | null
+  checked: boolean
+  tieneResultado: boolean
+  disabled: boolean
+}) {
+  const id = useId()
+  const { notify } = useNotify()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const mutation = useMarcarNoPresento({
+    mutationConfig: {
+      onSuccess: (_, input) =>
+        notify(input.noPresento ? "Marcado como No presentó." : "Queda pendiente de calificar."),
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+
+  function guardar(noPresento: boolean) {
+    if (!fecha) {
+      notify("El estudiante todavía no tiene asistencia válida para esta actividad.", { variant: "error" })
+      return
+    }
+    mutation.mutate({ actividadId, pkTactividadEstudiante, noPresento, fecha })
+  }
+
+  const motivo = disabled ? "Solo aplica si el estudiante asistió a la actividad." : undefined
+
+  return (
+    <>
+      <label
+        htmlFor={id}
+        title={motivo}
+        className={cn(
+          "ml-auto flex shrink-0 items-center gap-1.5 text-xs",
+          disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
+        )}
+      >
+        {mutation.isPending ? (
+          <SpinnerIcon className="size-4 animate-spin" />
+        ) : (
+          <Checkbox
+            id={id}
+            checked={checked}
+            disabled={disabled}
+            onCheckedChange={(next) => {
+              // Marcarlo borra la nota: se confirma solo si ya había una.
+              if (next && tieneResultado) {
+                setConfirmOpen(true)
+                return
+              }
+              guardar(next === true)
+            }}
+          />
+        )}
+        No presentó
+      </label>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como No presentó</AlertDialogTitle>
+            <AlertDialogDescription>
+              El estudiante ya tiene una valoración en esta actividad. Al marcarlo como No presentó se
+              eliminará esa valoración.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              color="destructive"
+              onClick={() => {
+                setConfirmOpen(false)
+                guardar(true)
+              }}
+            >
+              <CheckIcon data-icon="inline-start" />
+              Sí, marcar
+            </AlertDialogAction>
+            <AlertDialogCancel variant="fill" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 

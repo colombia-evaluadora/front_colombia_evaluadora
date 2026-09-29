@@ -78,6 +78,9 @@ export type CalificacionEstudiante = Estudiante & {
    *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en
    *  mock. */
   fechaAsistencia?: string | null
+  /** Regla 62: asistió pero no presentó evidencia. Excluyente con la nota.
+   *  `no_presento` del GET — contrato propuesto, aún no existe en el backend. */
+  noPresento?: boolean
 }
 
 /** Un criterio de rúbrica, ítem de lista de cotejo, o el único "ítem
