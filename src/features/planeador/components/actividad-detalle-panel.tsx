@@ -1,5 +1,6 @@
+import { IoMdCheckboxOutline } from "react-icons/io"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, CheckIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
@@ -14,19 +15,8 @@ import { esActividadFormativa } from "@/features/planeador/lib/actividad-formati
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 const ACCIONES = [
-  { id: "marcar", label: "Marcar", Icon: CheckIcon },
+  { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
   { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
-  // "Descargar" NO va acá: el export por actividad ya vive en la card
-  // (botón conectado a `useExportarActividadesJson`, el mismo endpoint
-  // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
-  // del panel dejaba dos disparadores de exportación en la misma
-  // pantalla, y el del panel no tenía handler.
-  //
-  // "Eliminar" NO va acá tampoco (desde ahora): `DialogDeleteActividad` es
-  // un `AlertDialog` con su propio trigger — igual que en `ActividadCard`,
-  // montarlo también en este loop genérico (que solo sabe de un `onClick`
-  // suelto) hubiera duplicado el botón. Antes vivía acá con `handler`
-  // siempre `undefined`, así que quedaba deshabilitado para siempre.
 ] as const
 
 // El label mostrado (tooltip + aria-label) de "Marcar" es "Calificar", salvo
@@ -96,16 +86,8 @@ export function ActividadDetallePanel({
     // (mobile, sin el `md:flex` del padre) `flex-1` no hace nada, así que
     // no hace falta condicionarlo a `md:`.
     <div className="flex min-h-0 flex-1 flex-col rounded-md border bg-card">
-      {/* `bg-muted/10`: el mismo fondo que `TableScreenTitle` le da al
-          encabezado de la pantalla, para que el header del panel se lea como
-          parte del mismo sistema. */}
       <div className="bg-muted/10 flex items-center justify-between gap-2 border-b p-3">
         <div className="flex min-w-0 items-center gap-2">
-          {/* `icon-sm` es el tamaño de los botones de acción de las filas de
-              tabla: el icono ES el control, no acompaña a un texto. El
-              `size-6` explícito pisa el `size-5` del preset —la base lo
-              permite con `:not([class*='size-'])`— para que la flecha no
-              quede chica al lado del título en negrita. */}
           <Tooltip>
             <TooltipTrigger
               render={

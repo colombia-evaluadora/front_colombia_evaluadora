@@ -52,19 +52,24 @@ function createInitialValues(): CurricularReferenceDraft {
     areas: [],
     instrument: "",
     instrumentDescription: "",
+    executionLabel: "",
     regulation: "",
     active: false,
   }
 }
 
 const curricularReferenceSchema = z.object({
-  name: z.string().trim().min(1, "Ingresa el nombre del referente."),
+  name: z.string().trim().min(1, "Ingresa el nombre del referente.").max(150, "Máximo 150 caracteres."),
   educationLevels: z
     .array(z.object({ id: z.number() }))
     .min(1, "Selecciona al menos un nivel educativo."),
-  description: z.string().trim().min(1, "Ingresa la descripción o finalidad."),
-  level1: z.string().trim().min(1, "Ingresa el nivel 1."),
-  level2: z.string().trim().min(1, "Ingresa el nivel 2."),
+  description: z
+    .string()
+    .trim()
+    .min(1, "Ingresa la descripción o finalidad.")
+    .max(400, "Máximo 400 caracteres."),
+  level1: z.string().trim().min(1, "Ingresa el nivel 1.").max(50, "Máximo 50 caracteres."),
+  level2: z.string().trim().min(1, "Ingresa el nivel 2.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
     .object({ id: z.number().nullish() })
     .nullish()
@@ -73,8 +78,19 @@ const curricularReferenceSchema = z.object({
     .object({ id: z.number().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
-  instrument: z.string().trim().min(1, "Ingresa el instrumento."),
-  regulation: z.string().trim().min(1, "Ingresa la normatividad."),
+  instrument: z.string().trim().min(1, "Ingresa el instrumento.").max(50, "Máximo 50 caracteres."),
+  executionLabel: z.string().trim().max(50, "Máximo 50 caracteres."),
+  regulation: z.string().trim().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
+}).superRefine((values, ctx) => {
+  const isFormativo = values.pedagogicalApproach?.id === 122
+  const isCuantitativa = values.evaluationType?.id === 112
+  if (isFormativo && isCuantitativa) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["evaluationType"],
+      message: "Los referentes de enfoque formativo requieren evaluación cualitativa.",
+    })
+  }
 })
 
 function validateCurricularReference(values: CurricularReferenceDraft): Record<string, string> {

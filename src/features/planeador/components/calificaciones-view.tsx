@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -16,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   CheckCircleIcon,
   ClockIcon,
-  PaperclipIcon,
+  EyeIcon,
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   WarningCircleIcon,
@@ -27,6 +26,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { fetchAsistenciaBloquesProgramados } from "@/features/academic-management/asistencia/api/query/use-asistencia-bloques-programados-query"
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
@@ -42,21 +42,6 @@ interface CalificacionesViewProps {
   actividad: Actividad
 }
 
-/**
- * Calificaciones de una actividad: tabla con un renglón por estudiante del
- * grupo, asistencia a la fecha de la actividad y nota final. Reemplaza a
- * `DetailSections` en el panel de detalle del Planeador — el viejo
- * read-only se queda en el código por si se quiere volver a mostrar, pero
- * el punto de entrada del panel apunta ahora a esta vista.
- *
- * El "Agregar" en la columna NOTA es solo el placeholder del campo: cuando
- * todavía no se cargó ninguna nota, no hay porcentaje que mostrar. Se
- * prefiere `estudiante.calificacion` (el agregado que ya trae el backend
- * real) sobre recalcularlo con `porcentajeFinal()` a partir de `notas` —
- * esta última sigue siendo el fallback del mock, que no manda ese campo.
- * El lápiz de "Calificar" abre `DialogCalificarActividad`, que sí pega
- * contra el backend real e invalida este listado al guardar.
- */
 export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
     useCalificacionesQuery(actividad.id, actividad.fechaInicio)
@@ -64,9 +49,6 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { notify } = useNotify()
   const formativa = esActividadFormativa(actividad)
   const registrarAsistencia = useAsistenciaRegistrarMutation()
-  // Sin la ventana empezada no puede existir una clase que asistir todavía
-  // -- el backend la rechaza igual (fn_asistencia_registrar_bulk, V464),
-  // pero se corta acá para no dejar clickear el Select y recién ahí fallar.
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
 
   /** Toma la asistencia de UN estudiante directo desde el Marcar del
@@ -76,6 +58,10 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
    *  ACTIVIDAD -- esa vía quedó inalcanzable y sus filas no las reconoce el
    *  módulo de Asistencia), contra TODOS los bloques reales de THORARIO ese
    *  día (V481). */
+  // Regla 73: la Excusa se adjunta en el módulo de Asistencia, no acá -- este
+  // Select solo cubre Asistió/No asistió (sin justificar). Justificar una
+  // inasistencia ya registrada se hace en Asistencia manual/calendario;
+  // Planeador solo REFLEJA ese resultado (ver `ExcusaField`, de solo lectura).
   async function guardarAsistencia(matriculaId: number, tipo: TipoAsistencia) {
     if (actividadSinComenzar) return
     if (!actividad.grupoId) {
@@ -145,15 +131,20 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
       <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           <tr>
-            <th className="w-80 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+            <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
             <th className="w-72 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
                 Fecha: {formatDate(actividad.fechaInicio)}
               </span>
             </th>
-            <th className="px-4 py-3 text-left font-semibold uppercase">
-              {formativa ? "Observación" : "Nota"}
+            <th
+              className={cn(
+                "px-4 py-3 font-semibold uppercase",
+                formativa ? "text-left" : "text-center",
+              )}
+            >
+              {formativa ? "Observación" : "Valoración"}
             </th>
           </tr>
         </thead>
@@ -205,6 +196,7 @@ function CalificacionRow({
 }: CalificacionRowProps) {
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
+  const sinNota = estudiante.notaHomologada == null && porcentaje === null
   const mostrarJustificacion =
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
@@ -212,13 +204,19 @@ function CalificacionRow({
 
   return (
     <tr className="transition-colors">
-      <td className="truncate px-4 py-3 align-middle font-medium" title={nombreCompleto}>
+      <td className="truncate px-4 py-1.5 align-middle font-medium" title={nombreCompleto}>
         {nombreCompleto}
       </td>
-      <td className="w-72 max-w-72 px-4 py-3">
+      <td className="w-72 max-w-72 px-4 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <AsistenciaSelect
             estado={estudiante.asistencia.estado}
+            // Regla 73: el Resultado solo se pre-llena Justificada/No
+            // justificada para "No Asistió" -- "Llegó Tarde" nunca cambia el
+            // Resultado aunque tenga Excusa, así que no se etiqueta.
+            justificada={
+              estudiante.asistencia.estado === "no-asistio" ? estudiante.asistencia.justificada : undefined
+            }
             guardando={
               estudiante.matriculaId != null && guardandoAsistenciaMatriculaId === estudiante.matriculaId
             }
@@ -230,15 +228,20 @@ function CalificacionRow({
             }
           />
           {mostrarJustificacion && (
-            <JustificacionField
-              value={estudiante.asistencia.justificacion ?? ""}
+            <ExcusaField
               adjuntos={estudiante.asistencia.adjuntos}
+              fkSoporteArchivo={estudiante.asistencia.fkSoporteArchivo}
             />
           )}
         </div>
       </td>
-      <td className="px-4 py-3 align-middle">
-        <div className="flex min-w-0 items-center gap-1.5">
+      <td className="px-4 py-1.5 align-middle">
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-1.5",
+            !formativa && "justify-center",
+          )}
+        >
           {formativa ? (
             <CeldaObservacionTrigger
               pkTactividadEstudiante={estudiante.id}
@@ -250,18 +253,7 @@ function CalificacionRow({
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
             />
-          ) : (
-            <DialogCalificarActividad
-              actividadId={actividad.id}
-              actividadNombre={actividad.nombre}
-              asignatura={actividad.asignatura}
-              gradoId={actividad.gradoId}
-              pkTactividadEstudiante={estudiante.id}
-              estudianteNombre={nombreCompleto}
-              fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
-              onGuardado={onGuardado}
-            />
-          )}
+          ) : null}
           {formativa ? (
             estudiante.observacion?.trim() ? (
               <span
@@ -277,8 +269,19 @@ function CalificacionRow({
             <span className="font-semibold">{estudiante.notaHomologada.toFixed(2)}</span>
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
-          ) : (
-            <span className="text-muted-foreground">Agregar</span>
+          ) : null}
+          {!formativa && (
+            <DialogCalificarActividad
+              actividadId={actividad.id}
+              actividadNombre={actividad.nombre}
+              asignatura={actividad.asignatura}
+              gradoId={actividad.gradoId}
+              pkTactividadEstudiante={estudiante.id}
+              estudianteNombre={nombreCompleto}
+              sinNota={sinNota}
+              fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
+              onGuardado={onGuardado}
+            />
           )}
         </div>
       </td>
@@ -294,18 +297,22 @@ const ESTADO_A_TIPO: Partial<Record<EstadoAsistencia, TipoAsistencia>> = {
 
 function AsistenciaSelect({
   estado,
+  justificada,
   onChange,
   guardando,
   actividadSinComenzar,
 }: {
   estado: EstadoAsistencia
+  /** Regla 73: solo aplica para "no-asistio" -- viene de la excusa cargada
+   *  en Asistencia, acá solo se muestra. */
+  justificada?: boolean
   onChange?: (tipo: TipoAsistencia) => void
   guardando?: boolean
   actividadSinComenzar?: boolean
 }) {
   const id = useId()
   const campo = (
-    <Field variant="outlined" className="min-w-36">
+    <Field variant="outlined" className="min-w-0 flex-1">
       <FieldLabel htmlFor={id}>Asistencia</FieldLabel>
       <Select
         value={estado}
@@ -315,19 +322,23 @@ function AsistenciaSelect({
         }}
         disabled={!onChange || guardando}
       >
-        <SelectTrigger id={id}>
+        <SelectTrigger id={id} className="min-w-0">
           <SelectValue>
             {(value) => {
               const opt = ASISTENCIA_OPTIONS.find((o) => o.value === value)
               if (!opt) return null
+              const label =
+                estado === "no-asistio" && justificada != null
+                  ? `${opt.label} — ${justificada ? "Justificada" : "No justificada"}`
+                  : opt.label
               return (
-                <span className="flex items-center gap-2">
+                <span className="flex min-w-0 items-center gap-2" title={label}>
                   {guardando ? (
-                    <SpinnerIcon className="size-4 animate-spin" />
+                    <SpinnerIcon className="size-4 shrink-0 animate-spin" />
                   ) : (
-                    <opt.Icon className={cn("size-4", opt.iconClass)} />
+                    <opt.Icon className={cn("size-4 shrink-0", opt.iconClass)} />
                   )}
-                  {opt.label}
+                  <span className="truncate">{label}</span>
                 </span>
               )
             }}
@@ -387,29 +398,47 @@ const ASISTENCIA_OPTIONS = [
   },
 ] as const
 
-function JustificacionField({
-  value,
-  adjuntos,
-}: {
-  value: string
-  adjuntos: number
-}) {
+/**
+ * Excusa de una inasistencia/tardanza (Regla 74, sección Asistencia): al
+ * adjuntar el soporte, `onAdjuntar` reenvía el mismo tipo de asistencia pero
+ * en su variante "justificada" (Regla 73 -- 2→3, 5→6), para que el Resultado
+ * se pre-llene como Justificada en vez de No justificada.
+ */
+function VerExcusaButton({ fkSoporteArchivo }: { fkSoporteArchivo: number }) {
+  const { data: url, isPending } = useArchivoViewUrl(fkSoporteArchivo)
+
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <Input
-        value={value}
-        readOnly
-        className="min-w-0 flex-1"
-        aria-label="Justificación"
-      />
-      {adjuntos > 0 && (
-        <span className="relative inline-flex shrink-0" aria-label={`${adjuntos} adjunto`}>
-          <PaperclipIcon className="size-4 text-muted-foreground" />
-          <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] font-semibold leading-none">
-            {adjuntos}
-          </span>
-        </span>
-      )}
+    <button
+      type="button"
+      aria-label="Ver excusa"
+      title="Ver excusa"
+      disabled={!url || isPending}
+      className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+      onClick={() => url && window.open(url, "_blank", "noopener,noreferrer")}
+    >
+      <EyeIcon className="size-3.5 shrink-0" />
+    </button>
+  )
+}
+
+/**
+ * Excusa de una inasistencia/tardanza (Regla 73): SOLO LECTURA. La Excusa se
+ * adjunta en el módulo de Asistencia (manual/calendario) -- Planeador
+ * únicamente refleja ese soporte ya cargado; no ofrece adjuntar, cambiar ni
+ * quitar desde acá, para no duplicar el punto de captura que exige el
+ * requerimiento.
+ */
+function ExcusaField({
+  adjuntos,
+  fkSoporteArchivo,
+}: {
+  adjuntos: number
+  fkSoporteArchivo?: number | null
+}) {
+  if (adjuntos <= 0 || fkSoporteArchivo == null) return null
+  return (
+    <div className="flex shrink-0 items-center">
+      <VerExcusaButton fkSoporteArchivo={fkSoporteArchivo} />
     </div>
   )
 }

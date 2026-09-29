@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
-import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
@@ -43,7 +43,7 @@ export function AsistenciaPage() {
 
 function AsistenciaPageContent() {
   const { notify } = useNotify()
-  const isDocente = useEsDocente()
+  const { isDocente, esDocentePuro } = useAsistenciaAccess()
   const { data: sedes } = useSedesOpcionesQuery()
   const navigate = useNavigate()
   const search = asistenciaRoute.useSearch()
@@ -71,14 +71,38 @@ function AsistenciaPageContent() {
   const mes = selectedDay.getMonth() + 1
 
   const { data: sesiones } = useAsistenciaCalendarioQuery(
-    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes, MIAS: isDocente },
+    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes, MIAS: esDocentePuro },
     sedeId !== null,
   )
   const { data: resumen } = useAsistenciaResumenHorasQuery(
-    { SEDE: sedeId ?? 0, FECHA: toIsoDate(selectedDay), MIAS: isDocente },
+    { SEDE: sedeId ?? 0, FECHA: toIsoDate(selectedDay), MIAS: esDocentePuro },
     sedeId !== null,
   )
 
+  // Regla 74: un docente que ADEMÁS es director de grupo ve (por `sesiones`,
+  // MIAS=false) todas las asignaturas de su grupo, pero solo puede MARCAR las
+  // que dicta -- por eso hace falta saber, aparte, cuáles son esas ("mías",
+  // MIAS=true) para no ofrecer la acción de escritura sobre lo ajeno.
+  const necesitaPropias = isDocente && !esDocentePuro
+  const { data: misSesiones } = useAsistenciaCalendarioQuery(
+    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes, MIAS: true },
+    sedeId !== null && necesitaPropias,
+  )
+  const clavesPropias = React.useMemo(() => {
+    if (!necesitaPropias) return null
+    const set = new Set<string>()
+    for (const s of misSesiones ?? []) {
+      set.add(s.es_formativa ? `${s.fk_grupo}-act-${s.fk_tactividad}` : `${s.fk_grupo}-asig-${s.fk_asignatura}`)
+    }
+    return set
+  }, [necesitaPropias, misSesiones])
+
+  function puedeEditarSesion(s: { fkGrupo: number; fkAsignatura: number; fkActividad: number | null; esFormativa: boolean }): boolean {
+    if (!isDocente) return false
+    if (esDocentePuro) return true
+    const clave = s.esFormativa ? `${s.fkGrupo}-act-${s.fkActividad}` : `${s.fkGrupo}-asig-${s.fkAsignatura}`
+    return clavesPropias?.has(clave) ?? false
+  }
 
   const events = React.useMemo(() => {
     const map = new Map<number, AsistenciaDayEntry[]>()
@@ -119,17 +143,20 @@ function AsistenciaPageContent() {
             esFormativa: b.esFormativa,
             fkActividad: b.fkActividad,
             actividad: b.actividad,
+            puedeEditar: puedeEditarSesion(b),
           })),
       )
     }
     return map
-  }, [sesiones])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesiones, isDocente, esDocentePuro, clavesPropias])
 
   const registrar = useAsistenciaRegistrarMutation()
   const [markingEntryId, setMarkingEntryId] = React.useState<string | null>(null)
   const [markedEntryIds, setMarkedEntryIds] = React.useState<Set<string>>(new Set())
 
   async function handleMarkAllPresent(entry: AsistenciaDayEntry) {
+    if (!entry.puedeEditar) return
     setMarkingEntryId(entry.id)
     try {
       // Una clase de varios bloques continuos es UNA sola sesión en la

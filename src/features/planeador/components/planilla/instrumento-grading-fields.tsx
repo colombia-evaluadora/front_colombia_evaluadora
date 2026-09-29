@@ -1,6 +1,16 @@
 import { useId } from "react"
 
-import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { CaretDownIcon, XIcon } from "@/components/ui/icons"
+import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -112,14 +122,7 @@ export function resolverInstrumentoEfectivo(
   return { tipo: null }
 }
 
-/**
- * ¿Ya se puede guardar `value` contra el backend real? Rúbrica exige cubrir
- * TODOS los criterios activos en un solo request (400 si falta alguno) —
- * el resto de instrumentos solo necesita al menos una nota cargada. Se usa
- * tanto para deshabilitar el botón "Guardar" como para armar el payload de
- * la mutación (`CeldaNotaPopover`/`CalificarActividadBulk`) sin repetir la
- * misma cuenta.
- */
+
 export function instrumentoCompletitud(
   instrumento: InstrumentoActividad | undefined,
   value: NotaCriterio[],
@@ -130,14 +133,6 @@ export function instrumentoCompletitud(
   const efectivo = resolverInstrumentoEfectivo(instrumento)
   if (efectivo.tipo === "RUBRICA") {
     const total = efectivo.definicion.length
-    // Solo cuenta contra criterios que SIGUEN activos en la rúbrica de
-    // ahora — `value` puede traer una nota precargada (`toNotas`) de un
-    // criterio que ya se borró/desactivó después de que el estudiante fue
-    // calificado la primera vez. Sin este filtro, esa nota vieja se sumaba
-    // a la elegida ahora y "completaba" de más: el backend terminaba
-    // rechazando el guardado con "La rúbrica tiene N criterio(s) activo(s)
-    // pero se calificaron M" en cuanto el docente elegía el único criterio
-    // vigente.
     const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     const cubiertos = value.filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId)).length
     if (total === 0) return { completo: false, mensaje: "La rúbrica no tiene criterios activos." }
@@ -150,10 +145,6 @@ export function instrumentoCompletitud(
     return { completo: true }
   }
   if (efectivo.tipo === "ESCALA_VALORACION") {
-    // Con 2+ criterios generales, la escala pasa a calificarse por
-    // criterio (V472) y exige cubrir el set completo — mismo criterio que
-    // Rúbrica arriba, la cuenta la deriva el backend de CRITERIOS_
-    // GENERALES, así que acá se replica exacto (ver `splitCriteriosGenerales`).
     const criterios = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
     if (criterios.length > 1) {
       const cubiertos = value.filter(
@@ -171,16 +162,6 @@ export function instrumentoCompletitud(
   return { completo: value.length > 0 }
 }
 
-/**
- * El formulario "volátil" de calificación: qué campos mostrar depende del
- * instrumento REAL de la actividad (`GET .../actividades/:id/instrumento`),
- * no de la rúbrica/lista de cotejo/escala de la Unidad temática — son dos
- * jerarquías independientes en el backend real, y esta es la única que
- * consume calificar. Se usa tal cual tanto en el popover por celda
- * (`CeldaNotaPopover`) como en la pantalla de calificación en bulk
- * (`CalificarActividadBulk`) — el `value`/`onChange` son lo único que
- * cambia entre los dos contextos.
- */
 export function InstrumentoGradingFields({
   actividadId,
   value,
@@ -214,7 +195,7 @@ export function InstrumentoGradingFields({
   }
 
   if (efectivo.tipo === "LISTA_COTEJO") {
-    return <ListaCotejoFields items={efectivo.definicion} value={value} onChange={onChange} />
+    return <ListaCotejoSelect items={efectivo.definicion} value={value} onChange={onChange} />
   }
 
   if (efectivo.tipo === "ESCALA_VALORACION") {
@@ -264,16 +245,7 @@ function EscalaValoracionFields({
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
-  // 2+ criterios generales: la escala se califica por criterio (V472), un
-  // campo por cada uno — mismo `criterioId` = posición (0-based) que espera
-  // `buildCalificarCeldaInput` para armar `{criterios:[{criterioIndex,...}]}`.
-  // Con 0-1 criterio sigue el camino de siempre: un solo valor para toda
-  // la escala (`criterioId` fijo en 0).
   const criterios = splitCriteriosGenerales(escala.criteriosGenerales)
-
-  // Sin niveles cualitativos: es una escala numérica — el mismo campo sirve
-  // para calificar celda a celda o en bulk (`calificar-bulk/escala` acepta
-  // VALOR_NUMERICO, ver `buildBulkInputs`).
   if (escala.niveles.length === 0) {
     if (criterios.length > 1) {
       return (
@@ -327,22 +299,6 @@ function EscalaValoracionFields({
   )
 }
 
-/**
- * Único campo numérico — cubre la escala NUMÉRICA (rango real
- * `valorMin`-`valorMax` de la escala, confirmado real en
- * `GET .../instrumento`: `definicion.valorMin`/`valorMax`) y el instrumento
- * "OTRO" (shape no confirmado contra el backend real todavía, sin rango
- * propio que mostrar — cae al 0-100 de siempre, mismo criterio conservador
- * que `use-nota-estudiante-query.ts`).
- *
- * El backend califica con el valor CRUDO (`valorNumerico`, la escala
- * 1-5/3-15/etc., NO un porcentaje ya calculado — % = valor / valorMax * 100,
- * ver V469) — antes el campo decía "Nota (0-100)" y no validaba contra el
- * rango real de la escala, así que un docente podía cargar un valor fuera
- * de rango sin aviso hasta que el backend lo rechazara (o, peor, uno DENTRO
- * de 0-100 pero fuera del rango real de la escala, que el backend sí acepta
- * sin quejarse aunque no tenga sentido para esa escala puntual).
- */
 function ValorNumericoField({
   value,
   onChange,
@@ -355,12 +311,7 @@ function ValorNumericoField({
   onChange: (next: NotaCriterio[]) => void
   min?: number
   max?: number
-  /** `criterioId` que se lee/escribe — 0 fijo para el caso de siempre (un
-   *  solo valor para toda la escala); el índice del criterio (0-based)
-   *  cuando la escala tiene 2+ criterios generales (V472). */
   criterioId?: number
-  /** Label completo — reemplaza el `Nota (min-max)` de siempre cuando hay
-   *  varios criterios, cada uno con el suyo. */
   label?: string
 }) {
   const id = useId()
@@ -388,7 +339,9 @@ function ValorNumericoField({
   )
 }
 
-function ListaCotejoFields({
+/** Lista de cotejo (ítem tildado = nota 100) como select múltiple con chips
+ *  y "Seleccionar todos". */
+function ListaCotejoSelect({
   items,
   value,
   onChange,
@@ -397,6 +350,7 @@ function ListaCotejoFields({
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
+  const id = useId()
   if (items.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -404,32 +358,82 @@ function ListaCotejoFields({
       </p>
     )
   }
+  const nombre = (item: InstrumentoCotejoItem) => item.descripcion || `Ítem ${item.pk}`
+  const isChecked = (pk: number) => notaDe(value, pk) !== undefined
+  const seleccionados = items.filter((i) => isChecked(i.pk))
+  const todos = seleccionados.length === items.length
+  const toggle = (pk: number) =>
+    onChange(isChecked(pk) ? quitarNota(value, pk) : setNota(value, pk, 100))
+
   return (
-    <ul className="border-input divide-border max-h-64 divide-y overflow-y-auto rounded-md border">
-      {items.map((item) => {
-        const checked = notaDe(value, item.pk) !== undefined
-        return (
-          <li key={item.pk} className="flex items-center gap-3 px-4 py-2.5">
-            <Checkbox
-              checked={checked}
-              onCheckedChange={() =>
-                onChange(checked ? quitarNota(value, item.pk) : setNota(value, item.pk, 100))
-              }
-              aria-label={item.descripcion || `Ítem ${item.pk}`}
+    <Field variant="outlined">
+      <FieldLabel htmlFor={id}>Ítems</FieldLabel>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button
+              id={id}
+              type="button"
+              className={cn(
+                inputVariants({ variant: "outlined" }),
+                inputTriggerVariants({ variant: "outlined" }),
+                "flex h-auto min-h-11 items-center justify-between gap-2 py-2 text-left",
+              )}
             />
-            <span className="text-sm">{item.descripcion || `Ítem ${item.pk}`}</span>
-          </li>
-        )
-      })}
-    </ul>
+          }
+        >
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+            {seleccionados.length === 0 ? (
+              <span className="text-muted-foreground">Seleccionar</span>
+            ) : (
+              seleccionados.map((item) => (
+                <Badge key={item.pk} variant="soft" color="muted" className="text-xs normal-case">
+                  <span>{nombre(item)}</span>
+                  <span
+                    role="button"
+                    tabIndex={-1}
+                    aria-label={`Quitar ${nombre(item)}`}
+                    data-icon="inline-end"
+                    className="text-muted-foreground hover:text-foreground cursor-pointer"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggle(item.pk)
+                    }}
+                  >
+                    <XIcon className="size-3" />
+                  </span>
+                </Badge>
+              ))
+            )}
+          </div>
+          <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-72 min-w-64 overflow-y-auto">
+          <DropdownMenuCheckboxItem
+            checked={todos}
+            onCheckedChange={() =>
+              onChange(todos ? [] : items.map((i) => ({ criterioId: i.pk, valor: 100 })))
+            }
+          >
+            {todos ? "Deseleccionar todos" : "Seleccionar todos"}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          {items.map((item) => (
+            <DropdownMenuCheckboxItem
+              key={item.pk}
+              checked={isChecked(item.pk)}
+              onCheckedChange={() => toggle(item.pk)}
+            >
+              {nombre(item)}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Field>
   )
 }
 
-/**
- * `<Select>` de un nivel elegible (nivel de rúbrica o de escala
- * cualitativa), mostrando su etiqueta pero guardando el `pk` real que exige
- * el backend al calificar.
- */
 function NivelSelectField({
   label,
   niveles,

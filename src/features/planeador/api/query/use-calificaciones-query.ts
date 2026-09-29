@@ -77,8 +77,13 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     apellidos: "",
     asistencia: {
       estado: toEstadoAsistencia(row.tipo_asistencia),
+      // Regla 73: el catálogo TIPO_ASISTENCIA distingue "No Asistió" (2) de
+      // "No Asistió Justificada" (3) -- y lo mismo para "Llegó Tarde"
+      // (5/6) -- por NOMBRE, no por un campo aparte.
+      justificada: (row.tipo_asistencia ?? "").toLowerCase().includes("justific"),
       justificacion: row.asistencia_observacion ?? undefined,
       adjuntos: row.fk_soporte_archivo != null ? 1 : 0,
+      fkSoporteArchivo: row.fk_soporte_archivo,
     },
     // El detalle de notas por criterio vive aparte (`GET .../estudiantes/:ID/nota`,
     // 7.7) — acá solo llega el porcentaje ya resuelto (`calificacion`), no

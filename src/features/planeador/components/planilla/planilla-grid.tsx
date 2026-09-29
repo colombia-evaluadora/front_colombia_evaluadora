@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react"
+import { useIsFetching } from "@tanstack/react-query"
+
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CaretDownIcon,
@@ -15,6 +19,7 @@ import { CeldaObservacionTrigger } from "@/features/planeador/components/planill
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
@@ -25,6 +30,8 @@ interface PlanillaGridProps {
   verPor: "actividad" | "unidad"
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
+  /** Abre el registro narrativo (Observación/Momento/Evidencia) de una actividad formativa. */
+  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
   /** Grado del filtro aplicado — solo para el rótulo dinámico del mensaje
    *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
    *  lo personalizó). */
@@ -58,21 +65,21 @@ function agruparPorUnidad(columnas: PlanillaColumna[]): GrupoUnidad[] {
   return grupos
 }
 
-function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
+export function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
   return fila.celdas.find((c) => c.pkTactividad === columna.pkTactividad)
 }
 
 /** Lo decide el backend (`fn_actividad_es_formativa`): la actividad cuelga
  *  de una unidad con referente NO evaluativo. No se deduce del instrumento —
  *  una actividad evaluativa sin instrumento definido también lo trae nulo. */
-function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
+export function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
   return esColumnaFormativa(columna) || celda?.esFormativa === true
 }
 
 /** `BODY.FECHA` de calificar/observar: el día con asistencia válida de ESE
  *  estudiante, no la fecha de inicio de la actividad — ver
  *  `PlanillaCelda.fechaAsistencia`. */
-function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): string | null {
+export function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): string | null {
   if (!celda) return columna.fechaInicio
   if (celda.fechaAsistencia) return celda.fechaAsistencia
   return celda.tieneAsistencia ? columna.fechaInicio : null
@@ -90,8 +97,25 @@ function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): stri
  * calificación puntual (`CeldaNotaPopover`), que guarda directo contra el
  * backend.
  */
-export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: PlanillaGridProps) {
+export function PlanillaGrid({
+  columnas,
+  verPor,
+  filas,
+  onAbrirBulk,
+  onAbrirRegistroNarrativo,
+  gradoId,
+}: PlanillaGridProps) {
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+
+  // Celdas recién guardadas cuya nota todavía no refleja el cambio: la
+  // mutación resuelve antes de que termine el refetch de la Planilla, así
+  // que sin esto la nota vieja se ve un instante después de "Guardar".
+  const [refrescando, setRefrescando] = useState<Set<string>>(new Set())
+  const fetchingPlanilla = useIsFetching({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+
+  useEffect(() => {
+    if (fetchingPlanilla === 0 && refrescando.size > 0) setRefrescando(new Set())
+  }, [fetchingPlanilla, refrescando.size])
 
   if (columnas.length === 0) {
     return (
@@ -161,6 +185,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                       key={columna.pkTactividad}
                       columna={columna}
                       onAbrirBulk={onAbrirBulk}
+                      onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                     />
                   )),
                 )}
@@ -177,6 +202,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   key={columna.pkTactividad}
                   columna={columna}
                   onAbrirBulk={onAbrirBulk}
+                  onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                 />
               ))}
             </tr>
@@ -189,13 +215,13 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
             return (
               <tr key={fila.pkTestudiante}>
                 <td
-                  className="truncate px-4 py-3 align-middle font-medium"
+                  className="truncate px-4 py-1.5 align-middle font-medium"
                   title={fila.nombreEstudiante}
                 >
                   {fila.nombreEstudiante}
                 </td>
                 {mostrarDefinitiva && (
-                  <td className="px-4 py-3 align-middle">
+                  <td className="px-4 py-1.5 align-middle">
                     {definitiva !== null && (
                       <span
                         className={cn(
@@ -211,17 +237,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                 )}
                 {columnas.map((columna) => {
                   const celda = celdaDe(fila, columna)
-
-                  // Va ANTES que cualquier otro estado: un estudiante sin
-                  // asignar a la actividad también llega con
-                  // `tieneAsistencia: false` (el backend ni siquiera resuelve
-                  // la fecha para él), así que sin este chequeo caía en la
-                  // rama de "sin asistencia" — un mensaje que no explica el
-                  // motivo real y sugiere que alcanza con registrar la
-                  // asistencia para poder calificarlo.
                   if (celda?.estado === "NO_ASIGNADA") {
                     return (
-                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-1.5 align-middle">
                         <span
                           className="text-muted-foreground"
                           title="Este estudiante no está asignado a esta actividad."
@@ -231,15 +249,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                       </td>
                     )
                   }
-
-                  // El caso formativo va ANTES que `NO_CALIFICABLE`: una
-                  // actividad sin nota llega siempre con ese estado y
-                  // `calificable: "N"` —es su normalidad, no un bloqueo—, así
-                  // que tratarlo como tal tapaba la observación con el ícono
-                  // rojo y dejaba el popover inalcanzable.
                   if (esFormativa(columna, celda)) {
                     return (
-                      <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
                         <div className="flex items-center gap-1.5">
                           {celda && (
                             <CeldaObservacionTrigger
@@ -268,7 +280,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   // habitual es que falte la asistencia de ese día).
                   if (celda?.estado === "NO_CALIFICABLE") {
                     return (
-                      <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
                         <span
                           className="text-red inline-flex items-center"
                           aria-label="No calificable"
@@ -281,14 +293,10 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   }
 
                   const nota = celda ? celda.notaHomologada : null
-                  // Sin asistencia no se puede calificar (el gate del
-                  // backend responde 400) — foto del momento de la lectura,
-                  // se pinta gris igual que "No calificable" en vez de
-                  // ofrecer un lápiz que va a fallar al guardar.
                   const sinAsistencia = celda != null && !celda.tieneAsistencia
                   if (sinAsistencia) {
                     return (
-                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-1.5 align-middle">
                         <span
                           className="text-muted-foreground inline-flex items-center"
                           aria-label="Sin asistencia registrada"
@@ -299,10 +307,19 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                       </td>
                     )
                   }
+                  const claveCelda = `${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
+                  const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   return (
-                    <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
-                      <div className="flex items-center gap-1.5">
-                        {nota !== null ? (
+                    <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
+                      <div
+                        className={cn(
+                          "flex items-center gap-1.5",
+                          nota === null && !actualizandoNota && "justify-center",
+                        )}
+                      >
+                        {actualizandoNota ? (
+                          <Spinner className="size-4" />
+                        ) : nota !== null ? (
                           <span
                             className={cn(
                               "font-medium",
@@ -311,15 +328,17 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                           >
                             {nota.toFixed(2)}
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground">Agregar</span>
-                        )}
+                        ) : null}
                         {celda && (
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
                             fecha={fechaParaGuardar(columna, celda) ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
+                            sinNota={nota === null}
+                            onGuardado={() =>
+                              setRefrescando((prev) => new Set(prev).add(claveCelda))
+                            }
                           />
                         )}
                       </div>
@@ -342,12 +361,16 @@ const ANCHO_COLUMNA_ACTIVIDAD = "w-40"
 function ColumnaHeader({
   columna,
   onAbrirBulk,
+  onAbrirRegistroNarrativo,
 }: {
   columna: PlanillaColumna
   onAbrirBulk: (columna: PlanillaColumna) => void
+  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
 }) {
   const formativa = esFormativa(columna)
-  const accion = `Calificar "${columna.titulo}" en bloque`
+  const accion = formativa
+    ? `Registro narrativo de "${columna.titulo}"`
+    : `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
@@ -355,29 +378,23 @@ function ColumnaHeader({
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
         <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
-        {/* Formativa: sin botón de bloque — la observación es siempre
-            individual, desde "Marcar" (fn_actividad_observar_grupal pisa
-            la observación de TODOS los estudiantes sin poder respetar la
-            que ya haya cargada a mano, así que no se ofrece como acción). */}
-        {!formativa && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-xs"
-                  className="shrink-0"
-                  onClick={() => onAbrirBulk(columna)}
-                  aria-label={accion}
-                />
-              }
-            >
-              <ClipboardCheckIcon className="size-4" />
-            </TooltipTrigger>
-            <TooltipContent>{accion}</TooltipContent>
-          </Tooltip>
-        )}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-xs"
+                className="shrink-0"
+                onClick={() => (formativa ? onAbrirRegistroNarrativo(columna) : onAbrirBulk(columna))}
+                aria-label={accion}
+              />
+            }
+          >
+            <ClipboardCheckIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>{accion}</TooltipContent>
+        </Tooltip>
       </div>
     </th>
   )
