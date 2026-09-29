@@ -12,6 +12,7 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface UnidadCardProps {
   unidad: UnidadTematica
@@ -45,6 +46,7 @@ export function UnidadCard({
 }: UnidadCardProps) {
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   return (
     <article
@@ -114,24 +116,26 @@ export function UnidadCard({
           "group-focus-within/unidad:pointer-events-auto group-focus-within/unidad:opacity-100",
         )}
       >
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                disabled={!onEdit}
-                onClick={onEdit}
-                aria-label={`Editar ${unidad.nombre}`}
-                className="size-6"
-              />
-            }
-          >
-            <PencilIcon />
-          </TooltipTrigger>
-          <TooltipContent>{`Editar ${unidad.nombre}`}</TooltipContent>
-        </Tooltip>
+        {puedeEditar && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled={!onEdit}
+                  onClick={onEdit}
+                  aria-label={`Editar ${unidad.nombre}`}
+                  className="size-6"
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Editar ${unidad.nombre}`}</TooltipContent>
+          </Tooltip>
+        )}
         <DialogDeleteUnidad
           unidad={unidad}
           onDeleted={onDeleted}

@@ -37,6 +37,7 @@ import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/d
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import type { UnidadActividad, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
 
@@ -156,6 +157,7 @@ function TabHeader({
   actionLabel,
   onAction,
   action,
+  hideAction = false,
 }: {
   title: string
   description?: string
@@ -169,6 +171,10 @@ function TabHeader({
    *  de un `onClick` simple: ahí el trigger y el contenido viven juntos, no
    *  se puede armar con `actionLabel`/`onAction`. */
   action?: React.ReactNode
+  /** Modo solo lectura: oculta el botón por completo (a diferencia de
+   *  `!onAction`, que lo deja visible mas deshabilitado — acá no hay
+   *  permiso, no un flujo pendiente). */
+  hideAction?: boolean
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -178,19 +184,20 @@ function TabHeader({
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      {action ?? (
-        <Button
-          color="primary"
-          variant="fill"
-          size="sm"
-          disabled={!onAction}
-          onClick={onAction}
-          className="shrink-0"
-        >
-          <PlusIcon data-icon="inline-start" />
-          {actionLabel}
-        </Button>
-      )}
+      {!hideAction &&
+        (action ?? (
+          <Button
+            color="primary"
+            variant="fill"
+            size="sm"
+            disabled={!onAction}
+            onClick={onAction}
+            className="shrink-0"
+          >
+            <PlusIcon data-icon="inline-start" />
+            {actionLabel}
+          </Button>
+        ))}
     </div>
   )
 }
@@ -398,6 +405,7 @@ export function Rubricas({
   const { data: criterios = [], isPending, isError, refetch } = useUnidadCriteriosQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
+  const { puedeCrear } = useMenuPermission("PLANEADOR")
 
   // Sin `Pagination`: los criterios vienen enteros en una sola llamada y son
   // pocos, así que entran todos en una sola página.
@@ -421,6 +429,7 @@ export function Rubricas({
         title={instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Criterios"}
         actionLabel="Agregar criterio"
         onAction={() => setDialogOpen(true)}
+        hideAction={!puedeCrear}
       />
       <DataTable
         table={table}
@@ -429,7 +438,9 @@ export function Rubricas({
         onRetry={refetch}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
-      <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
+      {puedeCrear && (
+        <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
+      )}
     </div>
   )
 }
@@ -456,6 +467,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
+  const { puedeEditar, puedeEliminar } = useMenuPermission("PLANEADOR")
   // El instrumento FIJADO en la unidad (`unidad.instrumento`, sso V488)
   // manda — es un dato explícito del docente, no una inferencia. Solo si la
   // unidad no lo fijó (todas las anteriores a V488, o el docente lo dejó sin
@@ -468,8 +480,16 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     [unidad.instrumento, actividadesVinculadas],
   )
   const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa),
-    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa],
+    () =>
+      createUnidadActividadesColumns(
+        unidad.id,
+        unidad.metodoCalculo,
+        totalPonderacion,
+        esFormativa,
+        puedeEditar,
+        puedeEliminar,
+      ),
+    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa, puedeEditar, puedeEliminar],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
@@ -632,6 +652,7 @@ function UnidadTabs({
 export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelProps) {
   const { data: unidad, isPending, isError, refetch } = useUnidadDetalleQuery(Number(unidadId))
   const [tab, setTab] = React.useState<PanelTab>("general")
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col rounded-md border bg-card">
@@ -643,22 +664,24 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Página aparte, no modal — mismo criterio que "Editar" de
                 Actividad (`planeador-editar-actividad-page.tsx`). */}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    color="neutral"
-                    size="icon-sm"
-                    aria-label="Editar"
-                    render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
-                  />
-                }
-              >
-                <PencilIcon />
-              </TooltipTrigger>
-              <TooltipContent>Editar</TooltipContent>
-            </Tooltip>
+            {puedeEditar && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      color="neutral"
+                      size="icon-sm"
+                      aria-label="Editar"
+                      render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
+                    />
+                  }
+                >
+                  <PencilIcon />
+                </TooltipTrigger>
+                <TooltipContent>Editar</TooltipContent>
+              </Tooltip>
+            )}
             <DialogDeleteUnidad unidad={unidad} onDeleted={onDeleted} />
           </div>
         )}

@@ -33,6 +33,7 @@ import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-la
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DialogAgregarActividadProps {
   unidad: UnidadTematica
@@ -71,6 +72,7 @@ interface DialogAgregarActividadProps {
  * actividad), no hace falta pedirlo aparte (1.5).
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
+  const { puedeCrear } = useMenuPermission("PLANEADOR")
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   // Borrador de peso por actividad — vive acá, no en el form de la fila:
@@ -155,6 +157,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
       },
     )
   }
+
+  if (!puedeCrear) return null
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>

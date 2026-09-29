@@ -29,6 +29,7 @@ import {
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoCriterio } from "@/features/planeador/api/types/planilla"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DialogCalificarActividadProps {
   actividadId: number
@@ -80,6 +81,7 @@ export function DialogCalificarActividad({
   const [draft, setDraft] = useState<NotaCriterio[]>([])
   const { notify } = useNotify()
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   const { data: instrumento, isPending: isPendingInstrumento } =
     useInstrumentoActividadQuery(actividadId)
@@ -110,6 +112,8 @@ export function DialogCalificarActividad({
     if (!input) return
     calificar.mutate(input)
   }
+
+  if (!puedeEditar) return null
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

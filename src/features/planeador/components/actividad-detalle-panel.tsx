@@ -13,6 +13,7 @@ import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -77,6 +78,7 @@ export function ActividadDetallePanel({
   onShowApproval,
 }: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -124,22 +126,24 @@ export function ActividadDetallePanel({
               nada cuando el panel puede reabrirse con cualquier actividad.
               Mientras carga (`actividad` todavía `undefined`) cae al label
               a secas. */}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
-                  aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
-                />
-              }
-            >
-              <PencilIcon />
-            </TooltipTrigger>
-            <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
-          </Tooltip>
+          {puedeEditar && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
+                    aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
+            </Tooltip>
+          )}
           {ACCIONES.filter(
             (a) =>
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
