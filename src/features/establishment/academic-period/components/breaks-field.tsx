@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator"
 import { TimePickerPanel, type TimePickerPanelHandle } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
+import { addOneMinute, timeToMinutes } from "@/features/establishment/academic-period/api/schema"
 
 export type Break = { startTime: string; endTime: string }
 
@@ -32,6 +33,29 @@ function getSortedBreakIndices(breaks: Break[]): number[] {
   return breaks
     .map((_, index) => index)
     .sort((a, b) => breaks[a].startTime.localeCompare(breaks[b].startTime))
+}
+
+/** Motivo por el que el descanso no se puede agregar (null = válido). */
+function getBreakError(
+  brk: { startTime: string; endTime: string },
+  existing: Break[],
+  minTime?: string,
+  maxTime?: string,
+): string | null {
+  if (!brk.startTime || !brk.endTime) return null
+  const start = timeToMinutes(brk.startTime)
+  const end = timeToMinutes(brk.endTime)
+  if (start >= end) return "La hora inicial debe ser anterior a la final."
+  if (minTime && start < timeToMinutes(minTime)) {
+    return `El descanso no puede empezar antes de ${formatTime12(minTime)}.`
+  }
+  if (maxTime && end > timeToMinutes(maxTime)) {
+    return `El descanso no puede terminar después de ${formatTime12(maxTime)}.`
+  }
+  const overlaps = existing.some(
+    (b) => start < timeToMinutes(b.endTime) && end > timeToMinutes(b.startTime),
+  )
+  return overlaps ? "El descanso se cruza con otro ya agregado." : null
 }
 
 const MAX_VISIBLE_CHIPS = 3
@@ -81,10 +105,15 @@ export function BreaksField({
   value,
   onAdd,
   onRemove,
+  minTime,
+  maxTime,
 }: {
   value: Break[]
   onAdd: (brk: Break) => void
   onRemove: (index: number) => void
+  /** Límites de la jornada: los descansos deben quedar dentro. */
+  minTime?: string
+  maxTime?: string
 }) {
   const resolvedVariant = useInputVariant()
   const [open, setOpen] = useState(false)
@@ -92,7 +121,12 @@ export function BreaksField({
   const [draftEnd, setDraftEnd] = useState("")
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen && draftStart && draftEnd && draftStart < draftEnd) {
+    if (
+      !nextOpen &&
+      draftStart &&
+      draftEnd &&
+      !getBreakError({ startTime: draftStart, endTime: draftEnd }, value, minTime, maxTime)
+    ) {
       onAdd({ startTime: draftStart, endTime: draftEnd })
       setDraftStart("")
       setDraftEnd("")
@@ -135,6 +169,9 @@ export function BreaksField({
             onStartTimeChange={setDraftStart}
             onEndTimeChange={setDraftEnd}
             onAdd={onAdd}
+            existing={value}
+            minTime={minTime}
+            maxTime={maxTime}
           />
 
           {value.length > 0 && (
@@ -174,28 +211,41 @@ function BreakEditor({
   onStartTimeChange,
   onEndTimeChange,
   onAdd,
+  existing,
+  minTime,
+  maxTime,
 }: {
   startTime: string
   endTime: string
   onStartTimeChange: (value: string) => void
   onEndTimeChange: (value: string) => void
   onAdd: (brk: Break) => void
+  existing: Break[]
+  minTime?: string
+  maxTime?: string
 }) {
+  const error = getBreakError({ startTime, endTime }, existing, minTime, maxTime)
   const [startOpen, setStartOpen] = useState(false)
   const [endOpen, setEndOpen] = useState(false)
 
   function commitAndReset() {
+    if (error) return
     onAdd({ startTime, endTime })
     onStartTimeChange("")
     onEndTimeChange("")
   }
 
   return (
+    <div className="flex w-full flex-col gap-1">
     <div className="flex w-full items-center gap-2">
       <div className="border-input flex flex-1 items-center gap-3 rounded-lg border px-3 py-2.5">
         <BreakTimeTrigger
           value={startTime}
-          onChange={onStartTimeChange}
+          onChange={(value) => {
+            onStartTimeChange(value)
+            // Sin hora final (o inicio >= final) la final se ajusta a +1 minuto.
+            if (!endTime || value >= endTime) onEndTimeChange(addOneMinute(value) ?? "")
+          }}
           placeholder="Hora inicio"
           open={startOpen}
           onOpenChange={(nextOpen) => {
@@ -211,7 +261,7 @@ function BreakEditor({
           open={endOpen}
           onOpenChange={(nextOpen) => {
             setEndOpen(nextOpen)
-            if (!nextOpen && startTime && endTime && startTime < endTime) commitAndReset()
+            if (!nextOpen && startTime && endTime) commitAndReset()
           }}
           onListoClose={() => setEndOpen(false)}
         />
@@ -222,11 +272,17 @@ function BreakEditor({
         size="icon"
         className="size-10 shrink-0 rounded-lg"
         aria-label="Agregar descanso"
-        disabled={!startTime || !endTime}
+        disabled={!startTime || !endTime || !!error}
         onClick={commitAndReset}
       >
         <PlusIcon weight="bold" />
       </Button>
+    </div>
+    {error && (
+      <p role="alert" className="text-red text-xs">
+        {error}
+      </p>
+    )}
     </div>
   )
 }
