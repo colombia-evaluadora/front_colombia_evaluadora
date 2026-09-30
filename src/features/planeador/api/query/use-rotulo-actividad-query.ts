@@ -69,7 +69,7 @@ export function rotuloEnMinuscula(rotulo: string): string {
 
 export function useRotuloActividadQuery(
   gradoId: number | undefined,
-  asignaturaId: number | undefined,
+  asignaturaId?: number,
   anio?: number,
 ) {
   return useQuery({

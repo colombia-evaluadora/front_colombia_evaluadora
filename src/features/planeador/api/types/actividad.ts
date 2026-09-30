@@ -269,15 +269,25 @@ export interface Actividad {
    * `undefined` en el mock y en filas reales de antes de este cambio.
    */
   gradoGrupo?: string
-  /** `PK_TASIGNATURA`/`PK_TGRADO`/`PK_TGRUPO` reales — solo se conocen
-   *  cuando el docente ELIGE en los `<Select>` de "Grado / Grupo" y
-   *  "Asignatura" (`useDocenteGruposQuery`/`useDocenteGradoAsignaturaQuery`,
-   *  ver `AsignaturaGradoSection`). Igual que en `UnidadTematica`, si
-   *  quedan `undefined` al editar, `update-actividad.ts` no manda
-   *  `FK_TGRUPO`/`FK_TASIGNATURA` — el PUT real es parcial. */
+  /** `PK_TASIGNATURA`/`PK_TGRADO`/`PK_TGRUPO` reales. El detalle real
+   *  (`fn_actividad_buscar_por_pk`, sso V452) ya los manda
+   *  (`fk_tasignatura`/`fk_tgrado`/`fk_tgrupo`) — quedan `undefined` solo
+   *  contra el mock viejo, contra el resumen de "mis actividades"
+   *  (`fn_actividad_listar_docente` no expone `fk_tgrupo`/`fk_tasignatura`
+   *  al resumen, ver `toActividadResumen`) o cuando el docente ELIGE en los
+   *  `<Select>` de "Grado / Grupo" y "Asignatura" de una actividad nueva
+   *  (`useDocenteGruposQuery`/`useDocenteGradoAsignaturaQuery`, ver
+   *  `AsignaturaGradoSection`). Si quedan `undefined` al editar,
+   *  `update-actividad.ts` no manda `FK_TGRUPO`/`FK_TASIGNATURA` — el PUT
+   *  real es parcial. */
   asignaturaId?: number
   gradoId?: number
   grupoId?: number
+  /** Cómo se llama "la actividad" para su grado/asignatura ("Actividad"/
+   *  "Experiencia"/"Proyecto"…, Regla 13, sso V481/V452/V511) — nunca
+   *  hardcodear el literal "Actividad" en pantallas que ya tienen la
+   *  actividad cargada. `undefined` solo contra el mock viejo. */
+  rotuloEjecucion?: string
   /**
    * `PK_TMATRICULA` (no `Estudiante.id`/`PK_TESTUDIANTE`) de los
    * estudiantes elegidos a mano en "Estudiantes" — mutuamente excluyente
