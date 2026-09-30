@@ -65,24 +65,23 @@ export function CeldaObservacionTrigger({
         setAbierto(false)
         onGuardado?.()
       },
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
+      // El error se muestra dentro del sheet (`errorGuardar`): un aviso de
+      // pantalla quedaría detrás de su overlay.
     },
   })
 
+  // Los errores de evidencias se muestran dentro de la sección Evidencias.
   const agregarEvidencia = useAgregarObservacionSoporteMutation({
     mutationConfig: {
       onSuccess: () => onGuardado?.(),
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
   const quitarEvidencia = useQuitarObservacionSoporteMutation({
     mutationConfig: {
       onSuccess: () => onGuardado?.(),
-      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
+  const evidenciaError = agregarEvidencia.error ?? quitarEvidencia.error
 
   const tieneObservacion = Boolean(observacionActual?.trim())
   const Icono = tieneObservacion ? EyeIcon : PlusIcon
@@ -132,8 +131,14 @@ export function CeldaObservacionTrigger({
         evidencias={notaActual?.evidencias.length ? notaActual.evidencias : evidenciasActuales}
         actividadSinComenzar={actividadSinComenzar}
         guardando={observar.isPending}
+        errorGuardar={observar.error ? getErrorMessage(observar.error) : null}
         onOpenChange={(open) => {
-          if (!open) setAbierto(false)
+          if (!open) {
+            setAbierto(false)
+            observar.reset()
+            agregarEvidencia.reset()
+            quitarEvidencia.reset()
+          }
         }}
         onGuardar={(estudiante, texto) => {
           if (!fecha) return
@@ -144,6 +149,7 @@ export function CeldaObservacionTrigger({
           agregarEvidencia.mutate({ pkTactividadEstudiante, archivo, fecha })
         }}
         agregandoEvidencia={agregarEvidencia.isPending}
+        errorEvidencia={evidenciaError ? getErrorMessage(evidenciaError) : null}
         onQuitarEvidencia={(evidencia) => {
           if (!fecha) return
           quitarEvidencia.mutate({ pkTactividadSoporte: evidencia.pk, pkTactividadEstudiante, fecha })

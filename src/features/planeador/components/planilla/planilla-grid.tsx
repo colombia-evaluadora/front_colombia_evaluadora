@@ -31,7 +31,6 @@ interface PlanillaGridProps {
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
   /** Abre el registro narrativo (Observación/Momento/Evidencia) de una actividad formativa. */
-  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
   /** Grado del filtro aplicado — solo para el rótulo dinámico del mensaje
    *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
    *  lo personalizó). */
@@ -102,7 +101,6 @@ export function PlanillaGrid({
   verPor,
   filas,
   onAbrirBulk,
-  onAbrirRegistroNarrativo,
   gradoId,
 }: PlanillaGridProps) {
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
@@ -185,7 +183,6 @@ export function PlanillaGrid({
                       key={columna.pkTactividad}
                       columna={columna}
                       onAbrirBulk={onAbrirBulk}
-                      onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                     />
                   )),
                 )}
@@ -202,7 +199,6 @@ export function PlanillaGrid({
                   key={columna.pkTactividad}
                   columna={columna}
                   onAbrirBulk={onAbrirBulk}
-                  onAbrirRegistroNarrativo={onAbrirRegistroNarrativo}
                 />
               ))}
             </tr>
@@ -357,16 +353,13 @@ const ANCHO_COLUMNA_ACTIVIDAD = "w-40"
 function ColumnaHeader({
   columna,
   onAbrirBulk,
-  onAbrirRegistroNarrativo,
 }: {
   columna: PlanillaColumna
   onAbrirBulk: (columna: PlanillaColumna) => void
-  onAbrirRegistroNarrativo: (columna: PlanillaColumna) => void
 }) {
+  // Formativa: sin acción en bloque (la observación es individual).
   const formativa = esFormativa(columna)
-  const accion = formativa
-    ? `Registro narrativo de "${columna.titulo}"`
-    : `Calificar "${columna.titulo}" en bloque`
+  const accion = `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
@@ -374,23 +367,25 @@ function ColumnaHeader({
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
         <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                color="neutral"
-                size="icon-xs"
-                className="shrink-0"
-                onClick={() => (formativa ? onAbrirRegistroNarrativo(columna) : onAbrirBulk(columna))}
-                aria-label={accion}
-              />
-            }
-          >
-            <ClipboardCheckIcon className="size-4" />
-          </TooltipTrigger>
-          <TooltipContent>{accion}</TooltipContent>
-        </Tooltip>
+        {!formativa && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  className="shrink-0"
+                  onClick={() => onAbrirBulk(columna)}
+                  aria-label={accion}
+                />
+              }
+            >
+              <ClipboardCheckIcon className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>{accion}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </th>
   )

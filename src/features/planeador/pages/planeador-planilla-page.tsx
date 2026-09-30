@@ -49,7 +49,6 @@ import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
-import { ObservarActividadCards } from "@/features/planeador/components/planilla/observar-actividad-cards"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
@@ -86,7 +85,6 @@ export function PlaneadorPlanillaPage() {
   // Estado del "Guardar" que reporta la vista de calificar masivo (null = sin cambios).
   const [estadoGuardarBulk, setEstadoGuardarBulk] = useState<EstadoGuardar | null>(null)
   const guardarBulkRef = useRef<(() => void) | null>(null)
-  const [columnaEnObservacion, setColumnaEnObservacion] = useState<PlanillaColumna | null>(null)
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
@@ -256,19 +254,18 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !columnaEnObservacion && cargandoPlanilla && (
+          {filtro && !columnaEnBulk && cargandoPlanilla && (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-24 text-sm">
               <Spinner /> Cargando planilla…
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !columnaEnObservacion && !cargandoPlanilla && (
+          {filtro && !columnaEnBulk && !cargandoPlanilla && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
-              onAbrirRegistroNarrativo={setColumnaEnObservacion}
               gradoId={filtro.gradoId}
             />
           )}
@@ -282,22 +279,6 @@ export function PlaneadorPlanillaPage() {
               onVolver={() => setColumnaEnBulk(null)}
               onEstadoGuardar={setEstadoGuardarBulk}
               guardarRef={guardarBulkRef}
-            />
-          )}
-
-          {filtro && columnaEnObservacion && (
-            <ObservarActividadCards
-              columna={columnaEnObservacion}
-              filas={filasFiltradas}
-              onVolver={() => setColumnaEnObservacion(null)}
-            />
-          )}
-
-          {filtro && columnaEnObservacion && (
-            <ObservarActividadCards
-              columna={columnaEnObservacion}
-              filas={filasFiltradas}
-              onVolver={() => setColumnaEnObservacion(null)}
             />
           )}
         </TableScreenBody>

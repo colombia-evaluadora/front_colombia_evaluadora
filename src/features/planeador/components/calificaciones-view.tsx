@@ -52,6 +52,10 @@ import { DialogCalificarActividad } from "@/features/planeador/components/dialog
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 
+// Regla 62 "No presentó": oculto hasta que el backend tenga el endpoint
+// (PUT .../estudiantes/:id/no-presento). Poner en `true` para habilitarlo.
+const NO_PRESENTO_HABILITADO = false
+
 interface CalificacionesViewProps {
   actividad: Actividad
 }
@@ -64,6 +68,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const formativa = esActividadFormativa(actividad)
   const registrarAsistencia = useAsistenciaRegistrarMutation()
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
+  const [guardandoMatriculaId, setGuardandoMatriculaId] = useState<number | null>(null)
 
   /** Toma la asistencia de UN estudiante directo desde el Marcar del
    *  Planeador -- mismo endpoint que usa el módulo de Asistencia
@@ -86,6 +91,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
       notify("Falta la asignatura de la actividad para registrar asistencia.", { variant: "error" })
       return
     }
+    // Cubre todo el flujo (bloques + registro + recarga), no solo el POST.
+    setGuardandoMatriculaId(matriculaId)
     try {
       const bloques = await fetchAsistenciaBloquesProgramados({
         GRUPO: actividad.grupoId,
@@ -106,10 +113,13 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
           }),
         ),
       )
+      // Se espera la recarga para que el select ya muestre el valor nuevo.
+      await queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
       notify("Asistencia registrada.")
-      queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setGuardandoMatriculaId(null)
     }
   }
 
@@ -146,7 +156,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
         <thead className="bg-muted/10 border-b">
           <tr>
             <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-            <th className="w-72 px-4 py-3 text-left">
+            <th className="w-96 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
                 Fecha: {formatDate(actividad.fechaInicio)}
@@ -173,11 +183,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
                 queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
               }
               onGuardarAsistencia={guardarAsistencia}
-              guardandoAsistenciaMatriculaId={
-                registrarAsistencia.isPending
-                  ? (registrarAsistencia.variables?.REGISTROS?.[0]?.fkMatricula ?? null)
-                  : null
-              }
+              guardandoAsistenciaMatriculaId={guardandoMatriculaId}
               actividadSinComenzar={actividadSinComenzar}
             />
           ))}
@@ -217,8 +223,10 @@ function CalificacionRow({
   const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`.trim()
   // Regla 62: "No presentó" reemplaza a la nota / observación (excluyentes).
   const noPresento = estudiante.noPresento === true
-  const asistio =
-    estudiante.asistencia.estado === "asistio" || estudiante.asistencia.estado === "llego-tarde"
+  // No aparece si no asistió sin justificación.
+  const mostrarNoPresento = !(
+    estudiante.asistencia.estado === "no-asistio" && !estudiante.asistencia.justificada
+  )
   const tieneResultado = formativa ? Boolean(estudiante.observacion?.trim()) : !sinNota
 
   return (
@@ -226,7 +234,7 @@ function CalificacionRow({
       <td className="truncate px-4 py-1.5 align-middle font-medium" title={nombreCompleto}>
         {nombreCompleto}
       </td>
-      <td className="w-72 max-w-72 px-4 py-1.5">
+      <td className="w-96 max-w-96 px-4 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <AsistenciaSelect
             estado={estudiante.asistencia.estado}
@@ -250,6 +258,17 @@ function CalificacionRow({
             <ExcusaField
               adjuntos={estudiante.asistencia.adjuntos}
               fkSoporteArchivo={estudiante.asistencia.fkSoporteArchivo}
+            />
+          )}
+          {NO_PRESENTO_HABILITADO && mostrarNoPresento && (
+            <NoPresentoCheckbox
+              actividadId={actividad.id}
+              pkTactividadEstudiante={estudiante.id}
+              fecha={estudiante.fechaAsistencia ?? null}
+              checked={noPresento}
+              tieneResultado={tieneResultado}
+              // Sin asistencia registrada todavía, o actividad sin comenzar.
+              disabled={estudiante.asistencia.estado === "sin-registrar" || actividadSinComenzar}
             />
           )}
         </div>
@@ -304,15 +323,6 @@ function CalificacionRow({
               onGuardado={onGuardado}
             />
           )}
-          <NoPresentoCheckbox
-            actividadId={actividad.id}
-            pkTactividadEstudiante={estudiante.id}
-            fecha={estudiante.fechaAsistencia ?? null}
-            checked={noPresento}
-            tieneResultado={tieneResultado}
-            // Solo si asistió (o llegó tarde) y la actividad ya empezó.
-            disabled={!asistio || actividadSinComenzar}
-          />
         </div>
       </td>
     </tr>
@@ -354,7 +364,7 @@ function NoPresentoCheckbox({
     mutation.mutate({ actividadId, pkTactividadEstudiante, noPresento, fecha })
   }
 
-  const motivo = disabled ? "Solo aplica si el estudiante asistió a la actividad." : undefined
+  const motivo = disabled ? "Disponible cuando la asistencia esté registrada." : undefined
 
   return (
     <>
@@ -362,7 +372,7 @@ function NoPresentoCheckbox({
         htmlFor={id}
         title={motivo}
         className={cn(
-          "ml-auto flex shrink-0 items-center gap-1.5 text-xs",
+          "flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs",
           disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
         )}
       >
@@ -462,11 +472,13 @@ function AsistenciaSelect({
               return (
                 <span className="flex min-w-0 items-center gap-2" title={label}>
                   {guardando ? (
-                    <SpinnerIcon className="size-4 shrink-0 animate-spin" />
+                    <SpinnerIcon className="size-4 shrink-0 animate-spin text-primary" />
                   ) : (
                     <opt.Icon className={cn("size-4 shrink-0", opt.iconClass)} />
                   )}
-                  <span className="truncate">{label}</span>
+                  <span className={cn("truncate", guardando && "text-muted-foreground")}>
+                    {guardando ? "Guardando…" : label}
+                  </span>
                 </span>
               )
             }}
