@@ -93,6 +93,8 @@ interface ActividadDetalleRow {
   requiere_validacion_coordinador: "S" | "N"
   observaciones_docente: string | null
   estado: string
+  /** sso V452/V511 — Regla 13, ver `Actividad.rotuloEjecucion`. */
+  rotulo_ejecucion?: string
   estudiantes_asignados: number
   estudiantes_evaluados: number
   materiales: unknown[]
@@ -448,6 +450,7 @@ function toActividadDetalle(
     gradoId: row.fk_tgrado ?? undefined,
     grupo: row.grupo ?? "",
     gradoGrupo: row.grado_grupo ?? undefined,
+    rotuloEjecucion: row.rotulo_ejecucion,
     fechaInicio: toDateOnly(row.fecha_inicio),
     fechaCierre: toDateOnly(row.fecha_cierre),
     status: estadoDerivadoToStatus(row.estado),

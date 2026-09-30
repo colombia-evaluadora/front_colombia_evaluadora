@@ -19,6 +19,10 @@ import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import {
   EnunciadosEvidenciasChecklist,
@@ -120,13 +124,15 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const unidadLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
   const subjectLabel = useStudyPlanSubjectLabel(actividad.gradoId, false)
+  // Rótulo real (Regla 13, sso V452/V511) — nunca "actividad" fijo.
+  const rotuloLabelLower = rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
   return (
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
-      <Section title="Identificación de la actividad">
+      <Section title={`Identificación de la ${rotuloLabelLower}`}>
         <DefinitionGrid cols={3}>
-          <Definition term="Nombre de la actividad">{actividad.nombre}</Definition>
-          <Definition term="Tipo de actividad">{actividad.tipo}</Definition>
+          <Definition term={`Nombre de la ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
+          <Definition term={`Tipo de ${rotuloLabelLower}`}>{actividad.tipo}</Definition>
           <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
         </DefinitionGrid>
 
@@ -265,7 +271,9 @@ function EvaluacionDetalle({ actividad }: { actividad: Actividad }) {
   return (
     <Section title="Evaluación">
       <DefinitionGrid cols={2}>
-        <Definition term="¿Es actividad evaluativa?">
+        <Definition
+          term={`¿Es ${rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)} evaluativa?`}
+        >
           {actividad.esEvaluativa ? "Sí" : "No"}
         </Definition>
         <Definition term="Instrumento de evaluación">

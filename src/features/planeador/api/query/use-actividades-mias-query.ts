@@ -49,6 +49,8 @@ interface ActividadMiaRow {
   instrumento_evaluacion: string | null
   ponderacion: number | null
   es_evaluativa: "S" | "N"
+  /** sso V481/V511 — Regla 13, ver `Actividad.rotuloEjecucion`. */
+  rotulo_ejecucion?: string
   /** Nuevo en el listado (antes había que abrir el detalle para saberlo) —
    *  opcional para tolerar una respuesta vieja sin la columna. */
   es_recuperacion?: "S" | "N"
@@ -100,6 +102,8 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     grado: row.grado ?? "",
     grupo: row.grupo ?? "",
     gradoGrupo: row.grado_grupo ?? undefined,
+    gradoId: row.fk_tgrado ?? undefined,
+    rotuloEjecucion: row.rotulo_ejecucion,
     fechaInicio: toDateOnly(row.fecha_inicio),
     fechaCierre: toDateOnly(row.fecha_cierre),
     status: estadoDerivadoToStatus(row.estado),

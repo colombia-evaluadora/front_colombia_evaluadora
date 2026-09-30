@@ -30,6 +30,10 @@ import {
 } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -123,6 +127,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   const demostrativo = articulo === "el" ? "Este" : "Esta"
   const deInstrumento = articulo === "el" ? "del" : "de la"
 
+  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
+  // V488/V511) — nunca el literal fijo. Mismo helper de género que ya usa
+  // el instrumento (`articuloDefinido`): el indefinido es su misma
+  // terminación ("el" → "un", "la" → "una").
+  const rotuloLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
+  const rotuloLabelLower = rotuloEnMinuscula(rotuloLabel)
+  const rotuloIndefinido = articuloDefinido(rotuloLabel) === "el" ? "un" : "una"
+
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
@@ -196,7 +208,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                   <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="buscar-actividad"
-                    placeholder="Buscar actividad..."
+                    placeholder={`Buscar ${rotuloLabelLower}...`}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9"
@@ -223,13 +235,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                 }
               >
                 <PlusCircleIcon data-icon="inline-start" />
-                Agregar actividad
+                Agregar {rotuloLabelLower}
               </Button>
             </div>
 
             <p className="text-sm">
-              <span className="font-semibold">Actividades disponibles:</span> selecciona una
-              actividad creada previamente para vincularla con {instrumentoConArticulo}.
+              <span className="font-semibold">{rotuloLabel}s disponibles:</span> selecciona{" "}
+              {rotuloIndefinido} {rotuloLabelLower} creada previamente para vincularla con{" "}
+              {instrumentoConArticulo}.
             </p>
 
             {/* `table-fixed` + un ancho por columna: sin esto, "Instrumento"
@@ -247,7 +260,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[28%]">Actividad</TableHead>
+                  <TableHead className="w-[28%]">{rotuloLabel}</TableHead>
                   <TableHead className="w-[13%]">Tipo</TableHead>
                   {/* Formativa: no hay instrumento de evaluación en absoluto
                       (se observa, no se califica) — mismo criterio que ya
@@ -280,8 +293,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                       className="h-20 text-center text-muted-foreground"
                     >
                       {search
-                        ? "Sin actividades que coincidan con la búsqueda."
-                        : "No hay actividades disponibles para vincular."}
+                        ? `Sin ${rotuloLabelLower}s que coincidan con la búsqueda.`
+                        : `No hay ${rotuloLabelLower}s disponibles para vincular.`}
                     </TableCell>
                   </TableRow>
                 ) : (
