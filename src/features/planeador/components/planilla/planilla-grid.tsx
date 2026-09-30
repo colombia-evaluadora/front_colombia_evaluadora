@@ -366,7 +366,15 @@ function ColumnaHeader({
         {/* `line-clamp-2` en vez de `truncate` (una sola línea): el título
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
-        <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
+        {/* Tooltip con el nombre completo: el título se recorta a 2 líneas. */}
+        <Tooltip>
+          <TooltipTrigger
+            render={<span className="line-clamp-2 min-w-0 flex-1 cursor-default normal-case" />}
+          >
+            {columna.titulo}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs normal-case">{columna.titulo}</TooltipContent>
+        </Tooltip>
         {!formativa && (
           <Tooltip>
             <TooltipTrigger
