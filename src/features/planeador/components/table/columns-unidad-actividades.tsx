@@ -316,6 +316,9 @@ export function createUnidadActividadesColumns(
   esFormativa: boolean,
   puedeEditar: boolean,
   puedeEliminar: boolean,
+  /** Rótulo real de la unidad para "Actividad" (Regla 13) — nunca el
+   *  literal fijo. */
+  rotuloActividadLabel: string = "Actividad",
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
     ? []
@@ -351,8 +354,8 @@ export function createUnidadActividadesColumns(
     {
       id: "nombre",
       accessorKey: "nombre",
-      meta: { label: "Actividad" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Actividad" />,
+      meta: { label: rotuloActividadLabel },
+      header: ({ column }) => <DataTableColumnHeader column={column} title={rotuloActividadLabel} />,
       cell: ({ row }) => <span className="font-semibold">{row.original.nombre}</span>,
     },
     {

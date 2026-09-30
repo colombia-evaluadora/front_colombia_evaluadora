@@ -80,7 +80,9 @@ export function UnidadFormTabs({
         <TabsTrigger value="actividades" disabled={!puedeEditarListas}>
           <span className="inline-flex items-center gap-1.5">
             <ClipboardCheckIcon data-icon="inline-start" />
-            Actividades
+            {/* Rótulo real (Regla 13) — sin unidad todavía (alta) cae al
+                genérico, igual que `puedeEditarListas`. */}
+            {unidad?.rotuloEjecucion ?? "Actividad"}s
           </span>
         </TabsTrigger>
       </TabsList>

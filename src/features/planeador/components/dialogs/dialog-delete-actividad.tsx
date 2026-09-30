@@ -20,9 +20,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useDeleteActividad } from "@/features/planeador/api/mutations/delete-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogDeleteActividadProps {
-  actividad: Pick<Actividad, "id" | "nombre">
+  actividad: Pick<Actividad, "id" | "nombre" | "rotuloEjecucion">
   /** Además del toast, la página puede querer reaccionar (limpiar la URL,
    * cerrar el panel, etc.) cuando el delete termina OK. */
   onDeleted?: () => void
@@ -49,6 +53,8 @@ export function DialogDeleteActividad({
 }) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+  // Rótulo real (Regla 13) — nunca "actividad" fijo.
+  const rotuloLabelLower = rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
 
   const deleteMutation = useDeleteActividad({
     mutationConfig: {
@@ -100,9 +106,10 @@ export function DialogDeleteActividad({
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar actividad</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar {rotuloLabelLower}</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente la actividad &ldquo;{actividad.nombre}&rdquo;. Esta acción
+            Se eliminará permanentemente la {rotuloLabelLower} &ldquo;{actividad.nombre}&rdquo;.
+            Esta acción
             no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>

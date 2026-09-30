@@ -51,6 +51,11 @@ import {
   useReferenteCurricularQuery,
   referenteCurricularQueryOptions,
 } from "@/features/planeador/api/query/use-referente-curricular-query"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+  useRotuloActividadQuery,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
@@ -426,6 +431,16 @@ export function EditarActividadForm({
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   useRecuperacionAutoFill(form)
 
+  // Cómo se llama "la actividad" en ESTE grado ("Actividad"/"Experiencia"/
+  // "Proyecto"…, `docs/rotulo-actividad.md`) — deshabilitada (cae al
+  // fallback genérico) hasta que Grado esté elegido, igual que el resto de
+  // lo que depende de él (`disabled` arriba). Nunca hardcodear "actividad"
+  // en los textos de este form.
+  const gradoIdActual = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaIdActual = useSelector(form.store, (state) => state.values.asignaturaId)
+  const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdActual, asignaturaIdActual)
+  const rotulo = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+
   return (
     <form
       id={formId}
@@ -473,7 +488,7 @@ export function EditarActividadForm({
         </div>
       </Card>
       <Card className="gap-4 p-4">
-        <h3 className="text-base font-semibold">Identificación de la actividad</h3>
+        <h3 className="text-base font-semibold">Identificación de la {rotuloEnMinuscula(rotulo)}</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <IdentificacionSection
             form={form}

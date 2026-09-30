@@ -41,6 +41,8 @@ interface UnidadRealRow {
    *  `null` en unidades que no lo fijaron (todas las anteriores a V488). */
   fk_tlv_instrumento_evaluacion?: number | null
   instrumento_evaluacion?: string | null
+  /** sso V488/V511 — Regla 13, ver `UnidadTematica.rotuloEjecucion`. */
+  rotulo_ejecucion?: string
   objetivos?: { pk: number; orden: number; descripcion: string }[]
   contenidos?: { pk: number; orden: number; descripcion: string }[]
   active?: boolean
@@ -118,6 +120,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     referenteVigente: row.referente_vigente,
     instrumento: row.instrumento_evaluacion ?? undefined,
     instrumentoId: row.fk_tlv_instrumento_evaluacion ?? undefined,
+    rotuloEjecucion: row.rotulo_ejecucion,
   }
 }
 
