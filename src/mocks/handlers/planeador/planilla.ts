@@ -8,6 +8,7 @@ import {
   asignaturaIdDe,
   calificacionANotas,
   decodePkTactividadEstudiante,
+  esEvidenciaFavorita,
   esFormativaMock,
   getEvidencias,
   getObservacion,
@@ -15,6 +16,7 @@ import {
   gradoIdDe,
   grupoIdDe,
   instrumentoActividadDe,
+  marcarEvidenciaFavorita,
   mergeOverride,
   pkTactividadEstudianteDe,
   ponderacionItemCotejo,
@@ -51,6 +53,8 @@ const OBSERVAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/observ
 // quien intercepta el multipart antes de que llegue al query-service.
 const SOPORTE_AGREGAR_URL = "*/api/files/eval-col/planeador/actividades/estudiantes/:id/soportes"
 const SOPORTE_QUITAR_URL = "/api/eval-col/planeador/actividades/estudiantes/soportes/:id"
+const SOPORTES_LISTAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/soportes"
+const SOPORTE_FAVORITO_URL = "/api/eval-col/planeador/actividades/estudiantes/soportes/:id/favorito"
 
 /** Actividades del (grado, grupo, asignatura) pedidos — mismos ids
  *  hasheados que ya devuelve `/planeador/docentes/grupos` y
@@ -399,6 +403,35 @@ export const planeadorPlanillaHandlers = [
     await delay(150)
     const pk = Number(params.id)
     if (!removeEvidencia(pk)) {
+      return HttpResponse.json(
+        { error: "No se encontro el soporte de observacion solicitado (o ya fue retirado)" },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ rows: [{ pk_tactividad_soporte: pk }] })
+  }),
+
+  // Listar las evidencias de UNA observación, con `es_favorito`.
+  http.get(SOPORTES_LISTAR_URL, async ({ params }) => {
+    await delay(120)
+    const { actividadId, estudianteId } = decodePkTactividadEstudiante(Number(params.id))
+    return HttpResponse.json({
+      rows: getEvidencias(actividadId, estudianteId).map((e) => ({
+        pk_tactividad_soporte: e.pk,
+        fk_tarchivo: e.fkTarchivo,
+        nombre: e.nombre,
+        fecha: e.fecha,
+        es_favorito: esEvidenciaFavorita(actividadId, estudianteId, e.pk),
+      })),
+    })
+  }),
+
+  // Marcar/desmarcar la favorita (a lo sumo una por observación).
+  http.put(SOPORTE_FAVORITO_URL, async ({ params, request }) => {
+    await delay(120)
+    const pk = Number(params.id)
+    const body = (await request.json().catch(() => ({}))) as { ES_FAVORITO?: boolean }
+    if (!marcarEvidenciaFavorita(pk, body.ES_FAVORITO ?? true)) {
       return HttpResponse.json(
         { error: "No se encontro el soporte de observacion solicitado (o ya fue retirado)" },
         { status: 404 },

@@ -7,6 +7,7 @@ import type { MutationConfig } from "@/lib/react-query"
 
 import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
 import { notaEstudianteQueryKey } from "@/features/planeador/api/query/use-nota-estudiante-query"
+import { soportesEstudianteQueryKey } from "@/features/planeador/api/query/use-soportes-estudiante-query"
 
 /**
  * Adjuntar/quitar UNA evidencia de la observación de un estudiante
@@ -58,6 +59,9 @@ export function useAgregarObservacionSoporteMutation({
       queryClient.invalidateQueries({
         queryKey: notaEstudianteQueryKey(variables.pkTactividadEstudiante),
       })
+      queryClient.invalidateQueries({
+        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
+      })
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,
@@ -96,6 +100,47 @@ export function useQuitarObservacionSoporteMutation({
       queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
       queryClient.invalidateQueries({
         queryKey: notaEstudianteQueryKey(variables.pkTactividadEstudiante),
+      })
+      queryClient.invalidateQueries({
+        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
+      })
+      onSuccess?.(result, variables, ...rest)
+    },
+    ...restConfig,
+  })
+}
+
+export interface MarcarFavoritoSoporteInput {
+  pkTactividadSoporte: number
+  /** Para invalidar los soportes de ESE estudiante. */
+  pkTactividadEstudiante: number
+  /** `true` marca esta y desmarca la anterior; `false` la desmarca. */
+  esFavorito: boolean
+}
+
+/** No exige asistencia: solo cambia cuál evidencia se destaca. */
+function marcarFavoritoSoporte(input: MarcarFavoritoSoporteInput): Promise<SoporteRow> {
+  return evalCol.putRow<SoporteRow>(
+    `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}/favorito`,
+    { ES_FAVORITO: input.esFavorito },
+  )
+}
+
+interface UseMarcarFavoritoSoporteOptions {
+  mutationConfig?: MutationConfig<typeof marcarFavoritoSoporte>
+}
+
+export function useMarcarFavoritoSoporteMutation({
+  mutationConfig,
+}: UseMarcarFavoritoSoporteOptions = {}) {
+  const queryClient = useQueryClient()
+  const { onSuccess, ...restConfig } = mutationConfig ?? {}
+
+  return useMutation({
+    mutationFn: marcarFavoritoSoporte,
+    onSuccess: (result, variables, ...rest) => {
+      queryClient.invalidateQueries({
+        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
       })
       onSuccess?.(result, variables, ...rest)
     },

@@ -269,12 +269,36 @@ export function removeEvidencia(pkSoporte: number): boolean {
   for (const [llave, lista] of evidenciasPorEstudiante) {
     const encontrada = lista.some((e) => e.pk === pkSoporte)
     if (encontrada) {
+      // Si era la favorita, la observación queda sin favorita.
+      if (favoritaPorEstudiante.get(llave) === pkSoporte) favoritaPorEstudiante.delete(llave)
       evidenciasPorEstudiante.set(
         llave,
         lista.filter((e) => e.pk !== pkSoporte),
       )
       return true
     }
+  }
+  return false
+}
+
+/** Evidencia favorita por estudiante × actividad: a lo sumo una. */
+const favoritaPorEstudiante = new Map<string, number>()
+
+export function esEvidenciaFavorita(
+  actividadId: number,
+  estudianteId: number,
+  pkSoporte: number,
+): boolean {
+  return favoritaPorEstudiante.get(key(actividadId, estudianteId)) === pkSoporte
+}
+
+/** `false` si el soporte no existe (404 del real). Marcar desmarca la anterior. */
+export function marcarEvidenciaFavorita(pkSoporte: number, esFavorito: boolean): boolean {
+  for (const [llave, lista] of evidenciasPorEstudiante) {
+    if (!lista.some((e) => e.pk === pkSoporte)) continue
+    if (esFavorito) favoritaPorEstudiante.set(llave, pkSoporte)
+    else if (favoritaPorEstudiante.get(llave) === pkSoporte) favoritaPorEstudiante.delete(llave)
+    return true
   }
   return false
 }
