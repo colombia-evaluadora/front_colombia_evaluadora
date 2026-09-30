@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { z } from "zod"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -136,6 +137,7 @@ function PlanSelect({
       },
     },
   })
+  const planError = createPlan.error ? getErrorMessage(createPlan.error) : null
 
   return (
     <Select value={value} onValueChange={(next) => next && onChange(String(next))}>
@@ -183,6 +185,11 @@ function PlanSelect({
             <ControlPointIcon />
           </Button>
         </div>
+        {planError && (
+          <p role="alert" className="text-destructive px-2 pb-2 text-xs">
+            {planError}
+          </p>
+        )}
       </SelectContent>
     </Select>
   )
@@ -255,10 +262,19 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
         : [],
     )
     setFieldErrors({})
+    setSaveError(null)
   }, [open, menu])
 
+  const [saveError, setSaveError] = useState<string | null>(null)
   const saveMenu = useSaveMenu()
-  const deleteMenu = useDeleteMenu()
+  const deleteMenu = useDeleteMenu({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") setSaveError(result.message)
+      },
+      onError: (error) => setSaveError(getErrorMessage(error)),
+    },
+  })
 
   /** Los submenús que la carpeta ya tenía al abrir el diálogo. */
   const existingChildren = menu != null && "children" in menu ? menu.children : []
@@ -331,6 +347,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     }
 
     setFieldErrors({})
+    setSaveError(null)
 
     try {
       if (isEditing) {
@@ -390,8 +407,9 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
       }
       onOpenChange(false)
       notify(isEditing ? "El menú se actualizó correctamente." : "El menú se creó correctamente.")
-    } catch {
-      // El interceptor de `api` ya muestra el error del backend.
+    } catch (error) {
+      // El NoticeProvider apaga el toast global: el error va al banner del diálogo.
+      setSaveError(getErrorMessage(error))
     }
   }
 
@@ -413,6 +431,11 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
       >
         <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{isEditing ? "Editar menú" : "Agregar menú"}</DialogTitle>
+          {saveError && (
+            <p role="alert" className="text-destructive text-sm">
+              {saveError}
+            </p>
+          )}
         </DialogHeader>
 
         {/* Único bloque con scroll: header y footer quedan fijos afuera, con
