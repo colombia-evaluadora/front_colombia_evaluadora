@@ -43,6 +43,7 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
@@ -173,6 +174,12 @@ function PlaneadorPageContent() {
   const diaAnterior = miasResult?.diaAnterior ?? null
   const diaSiguiente = miasResult?.diaSiguiente ?? null
 
+  // Rótulo real (Regla 13) solo si TODAS las filas filtradas lo comparten —
+  // este listado puede cruzar varios grados a la vez, mismo criterio que
+  // `DialogExportActividades`.
+  const rotulosUnicos = new Set(filtered.map((a) => a.rotuloEjecucion).filter(Boolean))
+  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
+
   // Mismos criterios que ya filtran `/actividades/mias` arriba, en la forma
   // que espera el reporte real `planeador-actividades` (ver
   // `export-actividades.ts`) — así el PDF/Excel exportado coincide con lo
@@ -296,6 +303,7 @@ function PlaneadorPageContent() {
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
             instrumentoOptions={instrumentoOptions}
+            rotuloLabel={rotuloLabel}
           />
 
           {/* Las acciones de la pantalla van junto al buscador, no en el
