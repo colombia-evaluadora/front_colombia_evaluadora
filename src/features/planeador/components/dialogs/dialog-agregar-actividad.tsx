@@ -178,7 +178,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
         render={<Button color="primary" variant="fill" size="sm" className="shrink-0" />}
       >
         <PlusIcon data-icon="inline-start" />
-        Vincular actividad
+        Vincular {rotuloLabelLower}
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -189,7 +189,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
         className="flex max-h-[70vh] w-[min(46rem,90vw)] flex-col overflow-hidden"
       >
         <PopoverHeader className="shrink-0">
-          <PopoverTitle>Vincular actividad</PopoverTitle>
+          <PopoverTitle>Vincular {rotuloLabelLower}</PopoverTitle>
         </PopoverHeader>
 
         {/* Único bloque con scroll: título queda fijo afuera — así una
@@ -203,7 +203,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
           <div className="flex flex-col gap-4">
             <div className="flex items-end justify-between gap-4">
               <Field variant="outlined" className="min-w-0 flex-1">
-                <FieldLabel htmlFor="buscar-actividad">Buscar por actividad</FieldLabel>
+                <FieldLabel htmlFor="buscar-actividad">Buscar por {rotuloLabelLower}</FieldLabel>
                 <div className="relative">
                   <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
