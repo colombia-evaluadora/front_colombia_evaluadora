@@ -409,9 +409,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  {demostrativo} {instrumentoLabelLower} utiliza cálculo ponderado. Al vincular una
-                  actividad, debes asignar el porcentaje que tendrá dentro {deInstrumento}{" "}
-                  {instrumentoLabelLower}.
+                  {demostrativo} {instrumentoLabelLower} utiliza cálculo ponderado. Al vincular{" "}
+                  {rotuloIndefinido} {rotuloLabelLower}, debes asignar el porcentaje que tendrá
+                  dentro {deInstrumento} {instrumentoLabelLower}.
                 </p>
               </div>
             )}
@@ -419,9 +419,10 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  {demostrativo} {instrumentoLabelLower} suma los puntajes de sus actividades. Al
-                  vincular una actividad, asigná el puntaje que tendrá — el sistema calcula el
-                  porcentaje que le corresponde dentro {deInstrumento} {instrumentoLabelLower}.
+                  {demostrativo} {instrumentoLabelLower} suma los puntajes de sus {rotuloLabelLower}s.
+                  Al vincular {rotuloIndefinido} {rotuloLabelLower}, asigná el puntaje que tendrá —
+                  el sistema calcula el porcentaje que le corresponde dentro {deInstrumento}{" "}
+                  {instrumentoLabelLower}.
                 </p>
               </div>
             )}
@@ -435,8 +436,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  {demostrativo} {instrumentoLabelLower} promedia sus actividades: todas cuentan
-                  por igual, no hay un peso ni un puntaje que asignar.
+                  {demostrativo} {instrumentoLabelLower} promedia sus {rotuloLabelLower}s: todas
+                  cuentan por igual, no hay un peso ni un puntaje que asignar.
                 </p>
               </div>
             )}

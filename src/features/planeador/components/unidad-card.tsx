@@ -96,7 +96,8 @@ export function UnidadCard({
         {unidad.asignatura}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {unidad.totalActividades ?? unidad.actividades.length} Actividades
+        {/* Rótulo real (Regla 13) — nunca "Actividades" fijo. */}
+        {unidad.totalActividades ?? unidad.actividades.length} {unidad.rotuloEjecucion ?? "Actividad"}s
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {formatDate(unidad.fechaInicio)} - {formatDate(unidad.fechaFin)}
