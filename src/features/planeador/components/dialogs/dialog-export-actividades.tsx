@@ -26,6 +26,10 @@ import {
   type PlaneadorActividadesReportFilters,
 } from "@/features/planeador/api/mutations/export-actividades"
 import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogExportActividadesProps {
   /** Filas ya filtradas en el cliente (lo que se está viendo en el rail) — solo para el conteo del texto. */
@@ -47,6 +51,15 @@ interface DialogExportActividadesProps {
 export function DialogExportActividades({ rows, filters }: DialogExportActividadesProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+
+  // Rótulo real (Regla 13) solo si TODAS las filas filtradas comparten el
+  // mismo — el filtro puede cruzar varios grados a la vez, y ahí no hay un
+  // rótulo único que mostrar (mismo criterio que `resolverInstrumentoUnico`
+  // en `unidad-detalle-panel.tsx`). Con una sola fila (exportar desde la
+  // card de una actividad puntual) siempre resuelve a la suya.
+  const rotulosUnicos = new Set(rows.map((r) => r.rotuloEjecucion).filter(Boolean))
+  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
+  const rotuloLower = rotuloEnMinuscula(rotuloLabel)
 
   const exportAll = useExportActividades({
     mutationConfig: {
@@ -78,7 +91,7 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
                   variant="outline"
                   color="muted"
                   size="icon-sm"
-                  aria-label="Exportar actividades filtradas"
+                  aria-label={`Exportar ${rotuloLower}s filtradas`}
                 />
               }
             />
@@ -89,14 +102,14 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
               a que se reconozca como "exportar" sin necesidad de label. */}
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>Exportar actividades filtradas</TooltipContent>
+        <TooltipContent>Exportar {rotuloLower}s filtradas</TooltipContent>
       </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar las {rows.length} actividad(es) que coinciden con los
-            filtros activos.
+            Elige un formato para exportar las {rows.length} {rotuloLower}(es) que coinciden con
+            los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
