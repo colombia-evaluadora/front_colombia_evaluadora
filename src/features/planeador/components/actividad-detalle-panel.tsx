@@ -12,19 +12,16 @@ import { CalificacionesView } from "@/features/planeador/components/calificacion
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
-import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
   { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
 ] as const
 
-// El label mostrado (tooltip + aria-label) de "Marcar" es "Calificar", salvo
-// en una actividad formativa donde no hay nota que calificar y pasa a
-// "Observar". "Aprobar" nunca convive con formativa (se filtra más abajo),
+// "Marcar" se muestra como "Registrar resultados". "Aprobar" nunca convive con formativa (se filtra más abajo),
 // así que queda fijo en "Calificar múltiple".
-function labelFor(id: string, label: string, actividad: Actividad | undefined): string {
-  if (id === "marcar") return actividad && esActividadFormativa(actividad) ? "Observar" : "Calificar"
+function labelFor(id: string, label: string): string {
+  if (id === "marcar") return "Registrar resultados"
   if (id === "aprobar") return "Calificar múltiple"
   return label
 }
@@ -152,7 +149,7 @@ export function ActividadDetallePanel({
                 : id === "aprobar"
                   ? onShowApproval
                   : undefined
-            const displayLabel = labelFor(id, label, actividad)
+            const displayLabel = labelFor(id, label)
             const labelConNombre = actividad ? `${displayLabel} ${actividad.nombre}` : displayLabel
             return (
               <Tooltip key={id}>

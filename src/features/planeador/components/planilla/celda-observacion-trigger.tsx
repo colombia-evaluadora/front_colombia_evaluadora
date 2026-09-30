@@ -40,7 +40,7 @@ interface CeldaObservacionTriggerProps {
 /**
  * Abre la observación de UNA celda (estudiante × actividad formativa) en el
  * mismo panel lateral que usa la vista de aprobación, en vez de un popover
- * anclado a la celda: el texto llega a 500 caracteres y en el popover se leía
+ * anclado a la celda: el texto llega a 1000 caracteres y en el popover se leía
  * en una ventanita de dos líneas.
  */
 export function CeldaObservacionTrigger({

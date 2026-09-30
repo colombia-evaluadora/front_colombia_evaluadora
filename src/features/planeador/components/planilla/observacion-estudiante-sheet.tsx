@@ -14,7 +14,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -28,6 +34,7 @@ import {
   WarningCircleIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { MdContentCopy, MdContentPaste } from "react-icons/md"
 import { cn } from "@/lib/utils"
 
 import { ArchivoImage } from "@/features/files/components/archivo-image"
@@ -44,6 +51,8 @@ import {
   validarEvidencia,
 } from "@/features/planeador/lib/observacion"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
+
+const MOMENTOS_REGISTRO = ["Inicio", "Proceso", "Cierre"] as const
 
 /** Evidencia que no es imagen (PDF, DOC…): tarjeta con ícono que la abre en otra pestaña. */
 function EvidenciaDocumento({ evidencia }: { evidencia: CeldaEvidencia }) {
@@ -114,6 +123,29 @@ export function ObservacionEstudianteSheet({
   const [texto, setTexto] = useState("")
   // "Momento": sin endpoint todavía, queda como borrador local sin persistir.
   const [momento, setMomento] = useState("")
+  const [copiado, setCopiado] = useState(false)
+  const [errorPortapapeles, setErrorPortapapeles] = useState<string | null>(null)
+
+  async function copiarObservacion() {
+    try {
+      setErrorPortapapeles(null)
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 1500)
+    } catch {
+      setErrorPortapapeles("No se pudo copiar la observación.")
+    }
+  }
+
+  async function pegarObservacion() {
+    try {
+      setErrorPortapapeles(null)
+      const pegado = await navigator.clipboard.readText()
+      if (pegado) setTexto(pegado.slice(0, MAX_CARACTERES))
+    } catch {
+      setErrorPortapapeles("No se pudo pegar: el navegador no permitió leer el portapapeles. Usa Ctrl+V.")
+    }
+  }
   const [evidenciaAmpliada, setEvidenciaAmpliada] = useState<CeldaEvidencia | null>(null)
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
@@ -188,7 +220,39 @@ export function ObservacionEstudianteSheet({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-1">
+              {/* Copiar/pegar para repetir la observación en otro estudiante. */}
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    disabled={!texto}
+                    aria-label="Copiar observación"
+                    onClick={copiarObservacion}
+                  >
+                    {copiado ? <CheckIcon className="size-4" /> : <MdContentCopy className="size-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{copiado ? "Copiada" : "Copiar observación"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    aria-label="Pegar observación"
+                    onClick={pegarObservacion}
+                  >
+                    <MdContentPaste className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Pegar observación</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger render={<span className="inline-flex" />}>
                   <Button
@@ -219,20 +283,29 @@ export function ObservacionEstudianteSheet({
               <span className="self-end text-xs text-muted-foreground">
                 {texto.length}/{MAX_CARACTERES}
               </span>
+              {errorPortapapeles && (
+                <p role="alert" className="text-destructive text-xs">
+                  {errorPortapapeles}
+                </p>
+              )}
             </Field>
 
             <Field variant="outlined" className="mt-4">
               <FieldLabel htmlFor="momento-estudiante">
-                Momento{" "}
-                <span className="text-muted-foreground font-normal">(borrador — aún no se guarda)</span>
+                Momento del registro{" "}
               </FieldLabel>
-              <Input
-                id="momento-estudiante"
-                value={momento}
-                maxLength={100}
-                onChange={(e) => setMomento(e.target.value)}
-                placeholder="Ej. Inicio, Desarrollo, Cierre…"
-              />
+              <Select value={momento} onValueChange={(v) => setMomento(v ? String(v) : "")}>
+                <SelectTrigger id="momento-estudiante">
+                  <SelectValue>{(v) => (v ? String(v) : "Seleccione")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {MOMENTOS_REGISTRO.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 

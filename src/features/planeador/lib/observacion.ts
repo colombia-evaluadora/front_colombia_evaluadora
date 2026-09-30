@@ -1,7 +1,7 @@
 /** Largo máximo de una observación de estudiante. Aplica a las superficies
  *  que la escriben (panel lateral, registro narrativo en bloque) para que el
  *  tope no dependa de por dónde se entre. */
-export const OBSERVACION_MAX_CARACTERES = 500
+export const OBSERVACION_MAX_CARACTERES = 1000
 
 /** Máximo de evidencias adjuntas por observación — el backend no impone un
  *  límite (`TACTIVIDAD_SOPORTE` es una relación libre), así que lo pone el
