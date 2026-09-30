@@ -19,6 +19,7 @@ import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import {
   EnunciadosEvidenciasChecklist,
   UnidadFicha,
@@ -468,6 +469,7 @@ function UnidadFichaYEvidenciasDetalle({
 }) {
   const navigate = useNavigate()
   const { notify } = useNotify()
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
   const { data: unidad } = useUnidadDetalleQuery(actividad.unidad.id)
   // Mismo criterio que `UnidadFichaYEvidencias` en `form-editar-actividad.tsx`:
   // el árbol de enunciados (ya acotado a los que la UNIDAD relacionó) +
@@ -519,8 +521,10 @@ function UnidadFichaYEvidenciasDetalle({
         descripcion={unidad?.descripcion ?? ""}
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
-        onEditar={() =>
-          navigate({ to: paths.app.planeadorUnidadEditar.getHref(String(actividad.unidad.id)) })
+        onEditar={
+          puedeEditar
+            ? () => navigate({ to: paths.app.planeadorUnidadEditar.getHref(String(actividad.unidad.id)) })
+            : undefined
         }
       />
       {referente && referente.enunciados.length > 0 && (

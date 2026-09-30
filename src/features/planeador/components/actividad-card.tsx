@@ -19,6 +19,7 @@ import { useExportarActividadesJson } from "@/features/planeador/api/mutations/e
 import { downloadJson } from "@/features/planeador/lib/download-json"
 
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 type AccionId = "editar" | "marcar" | "aprobar"
 
@@ -33,16 +34,15 @@ interface Accion {
 }
 
 // El label mostrado (tooltip + aria-label) no es fijo por acción: "Marcar"
-// dice "Calificar" en general, pero "Observar" cuando la actividad es
-// formativa (ahí no hay nota que calificar, solo observación). "Aprobar"
+// dice "Registrar resultados" (también en formativa, donde se observa). "Aprobar"
 // nunca convive con formativa (se filtra más abajo), así que su label queda
 // fijo en "Calificar múltiple".
-function labelFor(id: AccionId, actividad: Actividad): string {
+function labelFor(id: AccionId): string {
   switch (id) {
     case "editar":
       return "Editar"
     case "marcar":
-      return esActividadFormativa(actividad) ? "Observar" : "Calificar"
+      return "Registrar resultados"
     case "aprobar":
       return "Calificar múltiple"
   }
@@ -114,6 +114,7 @@ export function ActividadCard({
   const StatusIcon = statusIconFor(actividad.status)
   const accent = statusAccentFor(actividad.status)
   const { notify } = useNotify()
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
@@ -143,13 +144,15 @@ export function ActividadCard({
   // precisa: "Aprobar" nunca tiene sentido sin nota, sea o no formativa.
   const acciones: Accion[] = ACCIONES_BASE.filter(
     (accion) => accion.id !== "aprobar" || (actividad.esEvaluativa && !esActividadFormativa(actividad)),
-  ).map((accion) => {
-    const label = labelFor(accion.id, actividad)
-    if (accion.id === "editar" && onEdit) return { ...accion, label, onClick: onEdit }
-    if (accion.id === "marcar" && onShowGrades) return { ...accion, label, onClick: onShowGrades }
-    if (accion.id === "aprobar" && onShowApproval) return { ...accion, label, onClick: onShowApproval }
-    return { ...accion, label }
-  })
+  )
+    .filter((accion) => accion.id !== "editar" || puedeEditar)
+    .map((accion) => {
+      const label = labelFor(accion.id)
+      if (accion.id === "editar" && onEdit) return { ...accion, label, onClick: onEdit }
+      if (accion.id === "marcar" && onShowGrades) return { ...accion, label, onClick: onShowGrades }
+      if (accion.id === "aprobar" && onShowApproval) return { ...accion, label, onClick: onShowApproval }
+      return { ...accion, label }
+    })
 
   // Sin estudiantes asignados el porcentaje no significa nada: se omite en
   // vez de mostrar un 0% que se leería como "nadie evaluado".

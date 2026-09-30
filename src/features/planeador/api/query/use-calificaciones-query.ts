@@ -56,6 +56,8 @@ interface CalificacionRow {
   nota_homologada: number | null
   calificable: "S" | "N"
   nota_observacion: string | null
+  /** Regla 62 — contrato propuesto; `undefined` mientras el backend no lo envíe. */
+  no_presento?: boolean | null
 }
 
 function toEstadoAsistencia(tipoAsistencia: string | null): EstadoAsistencia {
@@ -95,6 +97,7 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
+    noPresento: row.no_presento === true,
   }
 }
 

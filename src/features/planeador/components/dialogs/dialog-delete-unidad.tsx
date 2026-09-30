@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DialogDeleteUnidadProps {
   unidad: Pick<UnidadTematica, "id" | "nombre">
@@ -56,6 +57,9 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
       },
     },
   })
+
+  const { puedeEliminar } = useMenuPermission("PLANEADOR")
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

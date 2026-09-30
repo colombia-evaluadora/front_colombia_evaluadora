@@ -48,6 +48,7 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import {
   formatDate,
   parseLocalDate,
@@ -76,6 +77,7 @@ function PlaneadorPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
+  const { puedeCrear } = useMenuPermission("PLANEADOR")
 
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`.
@@ -306,17 +308,19 @@ function PlaneadorPageContent() {
               entre hijos. */}
           <TableScreenActions>
             <div className="flex gap-0">
-              <Button
-                color="primary"
-                size="sm"
-                variant="fill"
-                aria-label="Nueva actividad"
-                className="rounded-r-none border-r-0"
-                render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
-              >
-                <PlusCircleIcon data-icon="inline-start" />
-                Nueva actividad
-              </Button>
+              {puedeCrear && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  variant="fill"
+                  aria-label="Nueva actividad"
+                  className="rounded-r-none border-r-0"
+                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
+                >
+                  <PlusCircleIcon data-icon="inline-start" />
+                  Nueva actividad
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -325,7 +329,7 @@ function PlaneadorPageContent() {
                       size="sm"
                       variant="fill"
                       aria-label="Más opciones"
-                      className="rounded-l-none"
+                      className={puedeCrear ? "rounded-l-none" : undefined}
                     />
                   }
                 >
@@ -346,9 +350,11 @@ function PlaneadorPageContent() {
                   >
                     Exportar todo
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setImportarOpen(true)}>
-                    Importar
-                  </DropdownMenuItem>
+                  {puedeCrear && (
+                    <DropdownMenuItem onClick={() => setImportarOpen(true)}>
+                      Importar
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

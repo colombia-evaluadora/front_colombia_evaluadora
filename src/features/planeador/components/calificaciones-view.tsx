@@ -1,7 +1,18 @@
-import { useId } from "react"
+import { useId, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   Select,
@@ -14,11 +25,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckCircleIcon,
+  CheckIcon,
   ClockIcon,
   EyeIcon,
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   WarningCircleIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
@@ -29,6 +42,7 @@ import { fetchAsistenciaBloquesProgramados } from "@/features/academic-managemen
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
+import { useMarcarNoPresento } from "@/features/planeador/api/mutations/use-marcar-no-presento"
 import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
@@ -37,6 +51,10 @@ import { formatDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
+
+// Regla 62 "No presentó": oculto hasta que el backend tenga el endpoint
+// (PUT .../estudiantes/:id/no-presento). Poner en `true` para habilitarlo.
+const NO_PRESENTO_HABILITADO = false
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -50,6 +68,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const formativa = esActividadFormativa(actividad)
   const registrarAsistencia = useAsistenciaRegistrarMutation()
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
+  const [guardandoMatriculaId, setGuardandoMatriculaId] = useState<number | null>(null)
 
   /** Toma la asistencia de UN estudiante directo desde el Marcar del
    *  Planeador -- mismo endpoint que usa el módulo de Asistencia
@@ -72,6 +91,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
       notify("Falta la asignatura de la actividad para registrar asistencia.", { variant: "error" })
       return
     }
+    // Cubre todo el flujo (bloques + registro + recarga), no solo el POST.
+    setGuardandoMatriculaId(matriculaId)
     try {
       const bloques = await fetchAsistenciaBloquesProgramados({
         GRUPO: actividad.grupoId,
@@ -92,10 +113,13 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
           }),
         ),
       )
+      // Se espera la recarga para que el select ya muestre el valor nuevo.
+      await queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
       notify("Asistencia registrada.")
-      queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setGuardandoMatriculaId(null)
     }
   }
 
@@ -132,7 +156,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
         <thead className="bg-muted/10 border-b">
           <tr>
             <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-            <th className="w-72 px-4 py-3 text-left">
+            <th className="w-96 px-4 py-3 text-left">
               <span className="block font-semibold uppercase">Asistencia</span>
               <span className="text-muted-foreground text-xs font-normal">
                 Fecha: {formatDate(actividad.fechaInicio)}
@@ -159,11 +183,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
                 queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
               }
               onGuardarAsistencia={guardarAsistencia}
-              guardandoAsistenciaMatriculaId={
-                registrarAsistencia.isPending
-                  ? (registrarAsistencia.variables?.REGISTROS?.[0]?.fkMatricula ?? null)
-                  : null
-              }
+              guardandoAsistenciaMatriculaId={guardandoMatriculaId}
               actividadSinComenzar={actividadSinComenzar}
             />
           ))}
@@ -201,13 +221,20 @@ function CalificacionRow({
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
   const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`.trim()
+  // Regla 62: "No presentó" reemplaza a la nota / observación (excluyentes).
+  const noPresento = estudiante.noPresento === true
+  // No aparece si no asistió sin justificación.
+  const mostrarNoPresento = !(
+    estudiante.asistencia.estado === "no-asistio" && !estudiante.asistencia.justificada
+  )
+  const tieneResultado = formativa ? Boolean(estudiante.observacion?.trim()) : !sinNota
 
   return (
     <tr className="transition-colors">
       <td className="truncate px-4 py-1.5 align-middle font-medium" title={nombreCompleto}>
         {nombreCompleto}
       </td>
-      <td className="w-72 max-w-72 px-4 py-1.5">
+      <td className="w-96 max-w-96 px-4 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <AsistenciaSelect
             estado={estudiante.asistencia.estado}
@@ -233,6 +260,17 @@ function CalificacionRow({
               fkSoporteArchivo={estudiante.asistencia.fkSoporteArchivo}
             />
           )}
+          {NO_PRESENTO_HABILITADO && mostrarNoPresento && (
+            <NoPresentoCheckbox
+              actividadId={actividad.id}
+              pkTactividadEstudiante={estudiante.id}
+              fecha={estudiante.fechaAsistencia ?? null}
+              checked={noPresento}
+              tieneResultado={tieneResultado}
+              // Sin asistencia registrada todavía, o actividad sin comenzar.
+              disabled={estudiante.asistencia.estado === "sin-registrar" || actividadSinComenzar}
+            />
+          )}
         </div>
       </td>
       <td className="px-4 py-1.5 align-middle">
@@ -242,7 +280,9 @@ function CalificacionRow({
             !formativa && "justify-center",
           )}
         >
-          {formativa ? (
+          {noPresento ? (
+            <span className="font-semibold text-muted-foreground">No presentó</span>
+          ) : formativa ? (
             <CeldaObservacionTrigger
               pkTactividadEstudiante={estudiante.id}
               contexto={actividad.nombre}
@@ -254,7 +294,7 @@ function CalificacionRow({
               onGuardado={onGuardado}
             />
           ) : null}
-          {formativa ? (
+          {noPresento ? null : formativa ? (
             estudiante.observacion?.trim() ? (
               <span
                 className="min-w-0 max-w-[77ch] flex-1 truncate text-xs"
@@ -270,7 +310,7 @@ function CalificacionRow({
           ) : porcentaje !== null ? (
             <span className="font-semibold">{porcentaje}%</span>
           ) : null}
-          {!formativa && (
+          {!formativa && !noPresento && (
             <DialogCalificarActividad
               actividadId={actividad.id}
               actividadNombre={actividad.nombre}
@@ -286,6 +326,104 @@ function CalificacionRow({
         </div>
       </td>
     </tr>
+  )
+}
+
+/** Regla 62: el estudiante asistió pero no presentó evidencia. */
+function NoPresentoCheckbox({
+  actividadId,
+  pkTactividadEstudiante,
+  fecha,
+  checked,
+  tieneResultado,
+  disabled,
+}: {
+  actividadId: number
+  pkTactividadEstudiante: number
+  fecha: string | null
+  checked: boolean
+  tieneResultado: boolean
+  disabled: boolean
+}) {
+  const id = useId()
+  const { notify } = useNotify()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const mutation = useMarcarNoPresento({
+    mutationConfig: {
+      onSuccess: (_, input) =>
+        notify(input.noPresento ? "Marcado como No presentó." : "Queda pendiente de calificar."),
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+
+  function guardar(noPresento: boolean) {
+    if (!fecha) {
+      notify("El estudiante todavía no tiene asistencia válida para esta actividad.", { variant: "error" })
+      return
+    }
+    mutation.mutate({ actividadId, pkTactividadEstudiante, noPresento, fecha })
+  }
+
+  const motivo = disabled ? "Disponible cuando la asistencia esté registrada." : undefined
+
+  return (
+    <>
+      <label
+        htmlFor={id}
+        title={motivo}
+        className={cn(
+          "flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs",
+          disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
+        )}
+      >
+        {mutation.isPending ? (
+          <SpinnerIcon className="size-4 animate-spin" />
+        ) : (
+          <Checkbox
+            id={id}
+            checked={checked}
+            disabled={disabled}
+            onCheckedChange={(next) => {
+              // Marcarlo borra la nota: se confirma solo si ya había una.
+              if (next && tieneResultado) {
+                setConfirmOpen(true)
+                return
+              }
+              guardar(next === true)
+            }}
+          />
+        )}
+        No presentó
+      </label>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como No presentó</AlertDialogTitle>
+            <AlertDialogDescription>
+              El estudiante ya tiene una valoración en esta actividad. Al marcarlo como No presentó se
+              eliminará esa valoración.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              color="destructive"
+              onClick={() => {
+                setConfirmOpen(false)
+                guardar(true)
+              }}
+            >
+              <CheckIcon data-icon="inline-start" />
+              Sí, marcar
+            </AlertDialogAction>
+            <AlertDialogCancel variant="fill" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -334,11 +472,13 @@ function AsistenciaSelect({
               return (
                 <span className="flex min-w-0 items-center gap-2" title={label}>
                   {guardando ? (
-                    <SpinnerIcon className="size-4 shrink-0 animate-spin" />
+                    <SpinnerIcon className="size-4 shrink-0 animate-spin text-primary" />
                   ) : (
                     <opt.Icon className={cn("size-4 shrink-0", opt.iconClass)} />
                   )}
-                  <span className="truncate">{label}</span>
+                  <span className={cn("truncate", guardando && "text-muted-foreground")}>
+                    {guardando ? "Guardando…" : label}
+                  </span>
                 </span>
               )
             }}

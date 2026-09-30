@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { addDays } from "date-fns"
 import { useForm, useSelector } from "@tanstack/react-form"
 
@@ -33,6 +33,7 @@ import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-p
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
   academicPeriodFormSchema,
+  addOneMinute,
   timeToMinutes,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
@@ -98,6 +99,9 @@ export function AcademicPeriodForm({
       onSubmit(academicPeriodFormSchema.parse(value))
     },
   })
+
+  // Aviso cuando se rechaza una hora de jornada inválida (inicio >= final).
+  const [horaError, setHoraError] = useState<string | null>(null)
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
@@ -433,6 +437,16 @@ export function AcademicPeriodForm({
                         id={field.name}
                         value={field.state.value}
                         onChange={(value) => {
+                          // Sin hora final (o inicio >= final) la final se ajusta a +1 minuto.
+                          if (!scheduleEndTime || value >= scheduleEndTime) {
+                            const nextEnd = addOneMinute(value)
+                            if (!nextEnd) {
+                              setHoraError("La hora de inicio debe ser anterior a las 11:59 pm.")
+                              return
+                            }
+                            form.setFieldValue("scheduleEndTime", nextEnd)
+                          }
+                          setHoraError(null)
                           field.handleChange(value)
                           field.handleBlur()
                         }}
@@ -461,18 +475,36 @@ export function AcademicPeriodForm({
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Hora final*</FieldLabel>
-                <DatePicker
-                  mode="time"
-                  id={field.name}
-                  value={field.state.value}
-                  onChange={(value) => {
-                    field.handleChange(value)
-                    field.handleBlur()
-                  }}
-                  placeholder="Agregar"
-                  aria-invalid={isInvalid}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                <form.Subscribe selector={(state) => state.values.scheduleStartTime}>
+                  {(scheduleStartTime) => (
+                    <>
+                      <DatePicker
+                        mode="time"
+                        id={field.name}
+                        value={field.state.value}
+                        onChange={(value) => {
+                          // No se acepta una hora final igual o anterior al inicio.
+                          if (scheduleStartTime && value <= scheduleStartTime) {
+                            setHoraError("La hora final debe ser posterior a la hora de inicio.")
+                            return
+                          }
+                          setHoraError(null)
+                          field.handleChange(value)
+                          field.handleBlur()
+                        }}
+                        placeholder="Agregar"
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : horaError ? (
+                        <p role="alert" className="text-red text-xs">
+                          {horaError}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </form.Subscribe>
               </Field>
             )
           }}
@@ -537,6 +569,8 @@ export function AcademicPeriodForm({
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel>Cantidad y horarios de descanso</FieldLabel>
                     <BreaksField
+                      minTime={scheduleStartTime || undefined}
+                      maxTime={scheduleEndTime || undefined}
                       value={field.state.value}
                       onAdd={(brk) => field.pushValue(brk)}
                       onRemove={(index) => field.removeValue(index)}

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import { EditarActividadForm } from "@/features/planeador/components/forms/form-
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "crear-actividad-form"
 
@@ -52,6 +53,20 @@ function PlaneadorCrearActividadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [isDirty, setIsDirty] = useState(false)
+
+  // Sin permiso de "crear" en Planeador, esta pantalla no debería ni poder
+  // verse: se redirige de una al listado apenas se sabe que no hay permiso
+  // (mientras `isLoadingPermiso` es `true` no se puede afirmar nada todavía,
+  // ver `useMenuPermission`). Es la primera pantalla del feature con un
+  // guard de PERMISO a nivel de página (el router solo gatea por sesión,
+  // ver CLAUDE.md) — los puntos de entrada (botones "Nueva actividad") ya
+  // estaban ocultos, esto cubre a quien llega por URL directa.
+  const { puedeCrear, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  useEffect(() => {
+    if (!isLoadingPermiso && !puedeCrear) {
+      navigate({ to: paths.app.planeadorActividades.getHref(), replace: true })
+    }
+  }, [isLoadingPermiso, puedeCrear, navigate])
 
   // `unidadId` llega cuando se abre esta pantalla desde "Agregar actividad"
   // dentro de una Unidad temática (`DialogAgregarActividad`); `fechaInicio`/
@@ -207,7 +222,7 @@ function PlaneadorCrearActividadPageContent() {
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        {esperandoPreseleccion ? (
+        {esperandoPreseleccion || isLoadingPermiso || !puedeCrear ? (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando…
           </div>

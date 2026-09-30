@@ -49,9 +49,9 @@ import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
-import { ObservarActividadCards } from "@/features/planeador/components/planilla/observar-actividad-cards"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
  *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
@@ -79,6 +79,7 @@ type VerPorOption = AgrupacionPlanillaKey
  * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
+  const { puedeCrear, puedeEditar } = useMenuPermission("PLANEADOR")
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
@@ -86,7 +87,6 @@ export function PlaneadorPlanillaPage() {
   // Estado del "Guardar" que reporta la vista de calificar masivo (null = sin cambios).
   const [estadoGuardarBulk, setEstadoGuardarBulk] = useState<EstadoGuardar | null>(null)
   const guardarBulkRef = useRef<(() => void) | null>(null)
-  const [columnaEnObservacion, setColumnaEnObservacion] = useState<PlanillaColumna | null>(null)
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
@@ -149,6 +149,7 @@ export function PlaneadorPlanillaPage() {
           <TableScreenTitle
             action={
               columnaEnBulk ? (
+                puedeEditar &&
                 estadoGuardarBulk && (
                   <Button
                     color="primary"
@@ -165,18 +166,20 @@ export function PlaneadorPlanillaPage() {
                 )
               ) : (
               <div className="flex gap-0">
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  aria-label="Nueva actividad"
-                  nativeButton={false}
-                  className="rounded-r-none border-r-0"
-                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
-                >
-                  <PlusCircleIcon data-icon="inline-start" />
-                  Nueva actividad
-                </Button>
+                {puedeCrear && (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    aria-label="Nueva actividad"
+                    nativeButton={false}
+                    className="rounded-r-none border-r-0"
+                    render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
+                  >
+                    <PlusCircleIcon data-icon="inline-start" />
+                    Nueva actividad
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -185,7 +188,7 @@ export function PlaneadorPlanillaPage() {
                         size="sm"
                         variant="fill"
                         aria-label="Más opciones"
-                        className="rounded-l-none"
+                        className={puedeCrear ? "rounded-l-none" : undefined}
                       />
                     }
                   >
@@ -256,19 +259,18 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !columnaEnObservacion && cargandoPlanilla && (
+          {filtro && !columnaEnBulk && cargandoPlanilla && (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-24 text-sm">
               <Spinner /> Cargando planilla…
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !columnaEnObservacion && !cargandoPlanilla && (
+          {filtro && !columnaEnBulk && !cargandoPlanilla && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
-              onAbrirRegistroNarrativo={setColumnaEnObservacion}
               gradoId={filtro.gradoId}
             />
           )}
@@ -282,22 +284,6 @@ export function PlaneadorPlanillaPage() {
               onVolver={() => setColumnaEnBulk(null)}
               onEstadoGuardar={setEstadoGuardarBulk}
               guardarRef={guardarBulkRef}
-            />
-          )}
-
-          {filtro && columnaEnObservacion && (
-            <ObservarActividadCards
-              columna={columnaEnObservacion}
-              filas={filasFiltradas}
-              onVolver={() => setColumnaEnObservacion(null)}
-            />
-          )}
-
-          {filtro && columnaEnObservacion && (
-            <ObservarActividadCards
-              columna={columnaEnObservacion}
-              filas={filasFiltradas}
-              onVolver={() => setColumnaEnObservacion(null)}
             />
           )}
         </TableScreenBody>

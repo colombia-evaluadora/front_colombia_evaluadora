@@ -73,6 +73,11 @@ interface DataTableProps {
    */
   isRowActive?: (row: Row<any>) => boolean
   /**
+   * Filas atenuadas (p. ej. registros inactivos). Solo baja la opacidad del
+   * contenido: el overlay de acciones sigue opaco.
+   */
+  isRowMuted?: (row: Row<any>) => boolean
+  /**
    * Fila fija al pie del cuerpo (alta en línea). Recibe las piezas de la
    * grilla porque tiene que replicar la celda de respiro y la de acciones.
    */
@@ -103,6 +108,7 @@ export function DataTable({
   errorMessage = "Ocurrió un error al cargar los datos.",
   renderSubRow,
   isRowActive,
+  isRowMuted,
   footerRow,
   cellClassName,
   growColumnId,
@@ -265,6 +271,7 @@ export function DataTable({
           ) : table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => {
               const active = isRowActive?.(row) ?? false
+              const muted = isRowMuted?.(row) ?? false
               const subRow = renderSubRow?.(row)
               return (
                 <Fragment key={row.id}>
@@ -282,7 +289,7 @@ export function DataTable({
                             )}
                             style={growCellStyle(cell.column.id)}
                           >
-                            <div className={cn(isActions && overlayClass(active))}>
+                            <div className={cn(isActions ? overlayClass(active) : muted && "opacity-50")}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </div>
                           </TableCell>
