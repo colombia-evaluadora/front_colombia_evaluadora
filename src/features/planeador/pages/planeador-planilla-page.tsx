@@ -46,6 +46,11 @@ import {
   type AgrupacionPlanillaKey,
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+  useRotuloActividadQuery,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
@@ -89,7 +94,14 @@ export function PlaneadorPlanillaPage() {
   const guardarBulkRef = useRef<(() => void) | null>(null)
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
-  const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
+  // El catálogo `AGRUPACION_PLANILLA` etiqueta la opción como "Actividades" a
+  // secas, pero acá SÍ se conoce el grado (una vez elegido el filtro), así
+  // que se pisa con el rótulo real de ESE grado — nunca "Actividad" fijo.
+  const { data: rotuloActividad } = useRotuloActividadQuery(filtro?.gradoId, filtro?.asignaturaId)
+  const rotulo = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+  const opcionesVerPor = (verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK).map((option) =>
+    option.key === "actividad" ? { ...option, label: rotulo } : option,
+  )
 
   // Recién con Grado, Grupo Y Asignatura elegidos hay contra qué pedir
   // columnas/calificaciones reales — antes de eso no tiene sentido pegarle
@@ -171,13 +183,13 @@ export function PlaneadorPlanillaPage() {
                     color="primary"
                     size="sm"
                     variant="fill"
-                    aria-label="Nueva actividad"
+                    aria-label={`Nueva ${rotuloEnMinuscula(rotulo)}`}
                     nativeButton={false}
                     className="rounded-r-none border-r-0"
                     render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
                   >
                     <PlusCircleIcon data-icon="inline-start" />
-                    Nueva actividad
+                    Nueva {rotuloEnMinuscula(rotulo)}
                   </Button>
                 )}
                 <DropdownMenu>
@@ -216,7 +228,7 @@ export function PlaneadorPlanillaPage() {
                 <Select value={verPor} onValueChange={(v) => v && setVerPor(v as VerPorOption)}>
                   <SelectTrigger>
                     <SelectValue>
-                      {(v) => opcionesVerPor.find((o) => o.key === v)?.label ?? "Actividad"}
+                      {(v) => opcionesVerPor.find((o) => o.key === v)?.label ?? rotulo}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -235,7 +247,7 @@ export function PlaneadorPlanillaPage() {
                   <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="buscar-planilla"
-                    placeholder={verPor === "unidad" ? "Buscar unidad" : "Buscar actividad"}
+                    placeholder={verPor === "unidad" ? "Buscar unidad" : `Buscar ${rotuloEnMinuscula(rotulo)}`}
                     value={buscar}
                     onChange={(e) => setBuscar(e.target.value)}
                     className="pl-9"

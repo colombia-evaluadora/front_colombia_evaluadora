@@ -116,15 +116,21 @@ export interface UnidadTematica {
   metodoCalculo: MetodoCalculo
   grado: string
   asignatura: string
-  /** `PK_TGRADO`/`PK_TASIGNATURA` reales — solo se conocen cuando el
-   *  docente ELIGE grado/asignatura en el form (vía
-   *  `useDocenteGradoAsignaturaQuery`, no hay forma de resolverlos de
-   *  vuelta desde el nombre plano que devuelve el listado/detalle real).
-   *  Si quedan `undefined` al editar, `update-unidad.ts` no manda
-   *  `FK_TGRADO`/`FK_TASIGNATURA` — el backend real trata el PUT como
-   *  parcial, así que el grado/asignatura ya guardados no se tocan. */
+  /** `PK_TGRADO`/`PK_TASIGNATURA` reales. El listado/detalle real (sso
+   *  V488) ya los manda (`fk_tgrado`/`fk_tasignatura`, ver `toUnidadTematica`
+   *  en `use-unidades-query.ts`) — quedan `undefined` solo contra el mock
+   *  viejo o una unidad creada en esta misma sesión de form antes de
+   *  guardar (`useDocenteGradoAsignaturaQuery`). Si quedan `undefined` al
+   *  editar, `update-unidad.ts` no manda `FK_TGRADO`/`FK_TASIGNATURA` — el
+   *  backend real trata el PUT como parcial, así que el grado/asignatura ya
+   *  guardados no se tocan. */
   gradoId?: number
   asignaturaId?: number
+  /** Cómo se llama "la actividad" para el grado/asignatura de esta unidad
+   *  ("Actividad"/"Experiencia"/"Proyecto"…, Regla 13, sso V488/V511) —
+   *  nunca hardcodear el literal "Actividad" en pantallas que ya tienen la
+   *  unidad cargada. `undefined` solo contra el mock viejo. */
+  rotuloEjecucion?: string
   /** Instrumento de evaluación FIJADO en la unidad (sso V488,
    *  `TUNIDAD.FK_TLV_INSTRUMENTO_EVALUACION`) — mismo catálogo
    *  `INSTRUMENTO_EVALUACION` que ya usa `Actividad.instrumento`, pero es un

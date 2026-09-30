@@ -30,6 +30,10 @@ import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoCriterio } from "@/features/planeador/api/types/planilla"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  useRotuloActividadQuery,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogCalificarActividadProps {
   actividadId: number
@@ -82,6 +86,9 @@ export function DialogCalificarActividad({
   const { notify } = useNotify()
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
   const { puedeEditar } = useMenuPermission("PLANEADOR")
+  // Rótulo real (Regla 13, sso V511) — nunca "Actividad" fijo.
+  const { data: rotuloActividad } = useRotuloActividadQuery(gradoId)
+  const rotuloLabel = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
 
   const { data: instrumento, isPending: isPendingInstrumento } =
     useInstrumentoActividadQuery(actividadId)
@@ -138,7 +145,7 @@ export function DialogCalificarActividad({
       </Tooltip>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Calificar actividad</DialogTitle>
+          <DialogTitle>Calificar {rotuloLabel.toLowerCase()}</DialogTitle>
           <p className="text-muted-foreground text-sm">
             Instrumento: {instrumento?.instrumentoNombre ?? "…"}
           </p>
@@ -150,7 +157,7 @@ export function DialogCalificarActividad({
             <p className="truncate font-semibold">{estudianteNombre}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Actividad</p>
+            <p className="text-muted-foreground text-xs font-semibold uppercase">{rotuloLabel}</p>
             <p className="truncate font-semibold">{actividadNombre}</p>
           </div>
           <div className="min-w-0">
