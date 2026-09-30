@@ -28,6 +28,10 @@ interface SearchPlaneadorProps {
   // la pestaña "Unidad temática" comparte este buscador pero no tiene
   // instrumento que filtrar.
   instrumentoOptions?: string[]
+  /** Rótulo real (Regla 13) para la opción "Actividad" de "Ver por" — el
+   *  caller ya resuelve si todas las filas filtradas comparten uno, o cae
+   *  al genérico "Actividad". */
+  rotuloLabel: string
 }
 
 /**
@@ -43,8 +47,17 @@ export function SearchPlaneador({
   applyFilters,
   clearAllFilters,
   instrumentoOptions = [],
+  rotuloLabel,
 }: SearchPlaneadorProps) {
   const [open, setOpen] = useState(false)
+
+  // Mismo VIEW_OPTIONS pero con la opción "actividad" pisada por el rótulo
+  // real (Regla 13) — nunca "Actividad" fijo en el token `ver:(...)` de la
+  // sintaxis ni en el popover de filtros.
+  const viewOptions = useMemo(
+    () => VIEW_OPTIONS.map((o) => (o.value === "actividad" ? { ...o, label: rotuloLabel } : o)),
+    [rotuloLabel],
+  )
 
   // Ver `@/components/search/query-syntax`: el texto sin clave va a `buscar`
   // y cada filtro avanzado tiene la suya.
@@ -59,10 +72,10 @@ export function SearchPlaneador({
           "filtro",
           instrumentoOptions.map((nombre) => ({ value: nombre, label: nombre })),
         ),
-        optionTerm("ver", "vista", [...VIEW_OPTIONS]),
+        optionTerm("ver", "vista", viewOptions),
       ],
     }),
-    [instrumentoOptions],
+    [instrumentoOptions, viewOptions],
   )
 
   const { search, setSearch, freeText } = useQuerySearch({
@@ -108,6 +121,7 @@ export function SearchPlaneador({
           defaultValues={filters}
           onSubmit={handleApplyAdvanced}
           instrumentoOptions={instrumentoOptions}
+          rotuloLabel={rotuloLabel}
         />
       </SearchQueryBar>
     </div>
