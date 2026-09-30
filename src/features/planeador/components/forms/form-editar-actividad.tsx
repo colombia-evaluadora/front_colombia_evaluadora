@@ -540,11 +540,15 @@ function camposObligatoriosFaltantes(
     esFormativa,
   }: { camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]; esFormativa: boolean },
 ): string[] {
+  // Función plana (sin hooks): usa el rótulo que ya trae `values` de la
+  // actividad original, no el live de `useRotuloActividadQuery` que sí
+  // leen los `<FieldLabel>` — mismo criterio, nunca "actividad" fija.
+  const rotuloLower = rotuloEnMinuscula(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
   const faltantes: string[] = []
   if (values.grupoId == null) faltantes.push("Grado / Grupo")
   if (values.asignaturaId == null) faltantes.push("Asignatura")
-  if (!values.nombre?.trim()) faltantes.push("Nombre de la actividad")
-  if (!values.tipo) faltantes.push("Tipo de actividad")
+  if (!values.nombre?.trim()) faltantes.push(`Nombre de la ${rotuloLower}`)
+  if (!values.tipo) faltantes.push(`Tipo de ${rotuloLower}`)
   if (!values.fechaInicio) faltantes.push("Fecha inicio")
   if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")
   if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
@@ -1047,13 +1051,19 @@ function IdentificacionSection({
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
   const nombreInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.nombre?.trim()))
   const tipoInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.tipo))
+  // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
+  // `EditarActividadForm`.
+  const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
+  const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdSel, asignaturaIdSel)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
 
   return (
     <>
         <form.Field name="nombre">
           {(field) => (
             <Field variant="outlined" data-invalid={nombreInvalido}>
-              <FieldLabel htmlFor={field.name}>Nombre de la actividad *</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Nombre de la {rotuloLower} *</FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
@@ -1073,7 +1083,7 @@ function IdentificacionSection({
         <form.Field name="tipo">
           {(field) => (
             <Field variant="outlined" data-invalid={tipoInvalido}>
-              <FieldLabel htmlFor={field.name}>Tipo de actividad *</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Tipo de {rotuloLower} *</FieldLabel>
               <Select
                 // `__none__` es el sentinel de "sin elegir" — mismo criterio
                 // que el resto de los `<Select>` del form (Asignatura,
@@ -1587,6 +1597,10 @@ function AsignaturaGradoSection({
 
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
+  // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
+  // `EditarActividadForm`.
+  const { data: rotuloActividad } = useRotuloActividadQuery(gradoId, asignaturaId)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
@@ -1868,7 +1882,7 @@ function AsignaturaGradoSection({
         <form.Field name="matriculasIds">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estudiantes de la actividad</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower}</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
                 estudiantes={matriculas}
