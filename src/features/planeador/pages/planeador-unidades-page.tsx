@@ -23,6 +23,7 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
 import { UnidadDetallePanel } from "@/features/planeador/components/unidad-detalle-panel"
 import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-filters"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 import { planeadorUnidadesRoute } from "@/router"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -84,6 +85,11 @@ export function PlaneadorUnidadesPage() {
     )
   }, [unidades, buscar, tabActiva])
 
+  // Rótulo real (Regla 13) solo si TODAS las unidades filtradas lo
+  // comparten — mismo criterio que `planeador-page.tsx`.
+  const rotulosUnicos = new Set(filtered.map((u) => u.rotuloEjecucion).filter(Boolean))
+  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
+
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna
   // derecha nunca quede vacía.
@@ -111,6 +117,7 @@ export function PlaneadorUnidadesPage() {
               filters={filters}
               applyFilters={applyFilters}
               clearAllFilters={clearAllFilters}
+              rotuloLabel={rotuloLabel}
             />
             {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
               con su "…" van pegados como un control partido y el exportar va
