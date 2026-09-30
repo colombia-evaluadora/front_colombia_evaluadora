@@ -38,7 +38,7 @@ interface EstudiantesMultiSelectProps {
  * que abre un menú de checkboxes), pero sin la medición de overflow por
  * chips — un grupo puede tener 60+ estudiantes, y listarlos todos como
  * badges saturaría el trigger. En su lugar el trigger muestra un resumen
- * ("N estudiantes" / "Ningún estudiante" / "Todo el grupo").
+ * ("N estudiantes" / "Ningún estudiante" / "Todos los estudiantes del grupo").
  *
  * El checkbox "maestro" ("Seleccionar todos"/"Deseleccionar todos") es un
  * toggle real de dos extremos (todos ↔ ninguno), como el de cualquier
@@ -94,7 +94,7 @@ export function EstudiantesMultiSelect({
     : estudiantes.length === 0
       ? placeholder
       : allSelected
-        ? "Todo el grupo"
+        ? "Todos los estudiantes del grupo"
         : value.length === 0
           ? "Ningún estudiante"
           : `${value.length} estudiante${value.length === 1 ? "" : "s"}`

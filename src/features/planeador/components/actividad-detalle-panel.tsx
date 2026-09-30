@@ -1,5 +1,6 @@
+import { IoMdCheckboxOutline } from "react-icons/io"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, CheckIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
@@ -11,30 +12,17 @@ import { CalificacionesView } from "@/features/planeador/components/calificacion
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
-import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ACCIONES = [
-  { id: "marcar", label: "Marcar", Icon: CheckIcon },
+  { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
   { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
-  // "Descargar" NO va acá: el export por actividad ya vive en la card
-  // (botón conectado a `useExportarActividadesJson`, el mismo endpoint
-  // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
-  // del panel dejaba dos disparadores de exportación en la misma
-  // pantalla, y el del panel no tenía handler.
-  //
-  // "Eliminar" NO va acá tampoco (desde ahora): `DialogDeleteActividad` es
-  // un `AlertDialog` con su propio trigger — igual que en `ActividadCard`,
-  // montarlo también en este loop genérico (que solo sabe de un `onClick`
-  // suelto) hubiera duplicado el botón. Antes vivía acá con `handler`
-  // siempre `undefined`, así que quedaba deshabilitado para siempre.
 ] as const
 
-// El label mostrado (tooltip + aria-label) de "Marcar" es "Calificar", salvo
-// en una actividad formativa donde no hay nota que calificar y pasa a
-// "Observar". "Aprobar" nunca convive con formativa (se filtra más abajo),
+// "Marcar" se muestra como "Registrar resultados". "Aprobar" nunca convive con formativa (se filtra más abajo),
 // así que queda fijo en "Calificar múltiple".
-function labelFor(id: string, label: string, actividad: Actividad | undefined): string {
-  if (id === "marcar") return actividad && esActividadFormativa(actividad) ? "Observar" : "Calificar"
+function labelFor(id: string, label: string): string {
+  if (id === "marcar") return "Registrar resultados"
   if (id === "aprobar") return "Calificar múltiple"
   return label
 }
@@ -87,6 +75,7 @@ export function ActividadDetallePanel({
   onShowApproval,
 }: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -96,16 +85,8 @@ export function ActividadDetallePanel({
     // (mobile, sin el `md:flex` del padre) `flex-1` no hace nada, así que
     // no hace falta condicionarlo a `md:`.
     <div className="flex min-h-0 flex-1 flex-col rounded-md border bg-card">
-      {/* `bg-muted/10`: el mismo fondo que `TableScreenTitle` le da al
-          encabezado de la pantalla, para que el header del panel se lea como
-          parte del mismo sistema. */}
       <div className="bg-muted/10 flex items-center justify-between gap-2 border-b p-3">
         <div className="flex min-w-0 items-center gap-2">
-          {/* `icon-sm` es el tamaño de los botones de acción de las filas de
-              tabla: el icono ES el control, no acompaña a un texto. El
-              `size-6` explícito pisa el `size-5` del preset —la base lo
-              permite con `:not([class*='size-'])`— para que la flecha no
-              quede chica al lado del título en negrita. */}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -142,22 +123,24 @@ export function ActividadDetallePanel({
               nada cuando el panel puede reabrirse con cualquier actividad.
               Mientras carga (`actividad` todavía `undefined`) cae al label
               a secas. */}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
-                  aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
-                />
-              }
-            >
-              <PencilIcon />
-            </TooltipTrigger>
-            <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
-          </Tooltip>
+          {puedeEditar && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
+                    aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
+            </Tooltip>
+          )}
           {ACCIONES.filter(
             (a) =>
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
@@ -170,7 +153,7 @@ export function ActividadDetallePanel({
                 : id === "aprobar"
                   ? onShowApproval
                   : undefined
-            const displayLabel = labelFor(id, label, actividad)
+            const displayLabel = labelFor(id, label)
             const labelConNombre = actividad ? `${displayLabel} ${actividad.nombre}` : displayLabel
             return (
               <Tooltip key={id}>

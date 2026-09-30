@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, esFechaFutura, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
-import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { AsistenciaDayCellRectorPopover, AsistenciaGrupoDrillDown } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
   id: string
@@ -32,6 +32,8 @@ export interface AsistenciaDayEntry {
   esFormativa: boolean
   fkActividad: number | null
   actividad: string | null
+  /** Regla 74: Director de Grupo/Coordinador ven esta sesión pero no pueden marcarla -- solo el docente asignado a ella. */
+  puedeEditar: boolean
 }
 
 /** Nombre a mostrar: la actividad si la sesión es formativa, la asignatura si no. */
@@ -197,7 +199,7 @@ export function AsistenciaMonthGrid({
 
                   if (restrictedView) {
                     return (
-                      <AsistenciaDayCellRectorPopover items={items}>{cellBody}</AsistenciaDayCellRectorPopover>
+                      <AsistenciaDayCellRectorPopover items={items} seguimientoSede={manualSede}>{cellBody}</AsistenciaDayCellRectorPopover>
                     )
                   }
 
@@ -242,6 +244,59 @@ function gradosDelDia(
     .sort((a, b) => a.grado.localeCompare(b.grado) || a.jornada.localeCompare(b.jornada))
 }
 
+interface ItemAsistenciaDiaProps {
+  item: AsistenciaDayEntry
+  onMarkAllPresent: (entry: AsistenciaDayEntry) => void
+  markingEntryId: string | null
+  marcado: boolean
+}
+
+function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: ItemAsistenciaDiaProps) {
+  const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
+  const puedeMarcar = item.puedeEditar && !esFechaFutura(item.fecha)
+
+  return (
+    <li className="flex flex-col gap-1">
+      <span className="text-xs font-semibold text-muted-foreground">
+        {item.grado}{item.grupo} ({item.jornada})
+      </span>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+        <span className="text-sm font-medium">{nombreSesion(item)}</span>
+        {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
+      </div>
+      {puedeMarcar ? (
+        <button
+          type="button"
+          disabled={markingEntryId !== null}
+          onClick={() => onMarkAllPresent(item)}
+          className={cn(
+            "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",
+            marcado ? "text-green" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {markingEntryId === item.id ? (
+            <SpinnerIcon className="size-3.5 animate-spin" />
+          ) : marcado ? (
+            <CheckCircleFillIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <span className="size-3.5 shrink-0 rounded-full border border-border" aria-hidden="true" />
+          )}
+          Marcar todo como Asistió
+        </button>
+      ) : (
+        // No dicta esta asignatura (o la fecha ya no admite marcar): solo consulta.
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          {(() => {
+            const EstadoIcon = ESTADO_SESION_ICON[item.estado]
+            return <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
+          })()}
+          {ESTADO_SESION_LABELS[item.estado].title}
+        </span>
+      )}
+    </li>
+  )
+}
+
 function formatFechaLarga(fecha: string): string {
   const [anio, mes, dia] = fecha.split("-").map(Number)
   return new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", {
@@ -271,6 +326,11 @@ function DayCellPopover({
   const [open, setOpen] = React.useState(false)
   const fecha = items[0]?.fecha
   const futura = Boolean(fecha) && esFechaFutura(fecha)
+  const misClases = items.filter((item) => item.puedeEditar)
+  const clasesDelGrupo = items.filter((item) => !item.puedeEditar)
+  // Solo separa en dos grupos cuando de verdad hay una mezcla (docente que
+  // ADEMÁS es director de grupo); un docente puro sigue viendo la lista plana.
+  const hayMezcla = misClases.length > 0 && clasesDelGrupo.length > 0
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -297,41 +357,32 @@ function DayCellPopover({
             Todavía no se puede tomar asistencia: es una fecha futura.
           </p>
         ) : (
-          <>
-            <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {items.map((item) => {
-                const marcado = item.estado === "REGISTRADA" || markedEntryIds.has(item.id)
-                const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
-                return (
-                  <li key={item.id} className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {item.grado}{item.grupo} ({item.jornada})
-                    </span>
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                      <span className="text-sm font-medium">{nombreSesion(item)}</span>
-                      {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={markingEntryId !== null}
-                      onClick={() => onMarkAllPresent(item)}
-                      className={cn(
-                        "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",
-                        marcado ? "text-green" : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {markingEntryId === item.id ? (
-                        <SpinnerIcon className="size-3.5 animate-spin" />
-                      ) : marcado ? (
-                        <CheckCircleFillIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                      ) : (
-                        <span className="size-3.5 shrink-0 rounded-full border border-border" aria-hidden="true" />
-                      )}
-                      Marcar todo como Asistió
-                    </button>
-                  </li>
-                )
-              })}
+          <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {hayMezcla && (
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  Clases del grupo (Director)
+                </span>
+                {/* Clases ajenas (solo lectura): cada materia lleva a Seguimiento filtrado. */}
+                <AsistenciaGrupoDrillDown items={clasesDelGrupo} omitirGrados seguimientoSede={manualSede} />
+              </div>
+            )}
+
+            {hayMezcla && (
+              <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                Mis clases
+              </span>
+            )}
+            <ul className="flex flex-col gap-3">
+              {(hayMezcla ? misClases : items).map((item) => (
+                <ItemAsistenciaDia
+                  key={item.id}
+                  item={item}
+                  onMarkAllPresent={onMarkAllPresent}
+                  markingEntryId={markingEntryId}
+                  marcado={item.estado === "REGISTRADA" || markedEntryIds.has(item.id)}
+                />
+              ))}
             </ul>
 
             <Button
@@ -350,7 +401,7 @@ function DayCellPopover({
               <ClipboardTextIcon className="size-4" />
               Asistencia manual
             </Button>
-          </>
+          </div>
         )}
       </PopoverContent>
     </Popover>

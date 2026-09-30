@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useDeleteMenu } from "@/features/administration/roles-menus/api/mutations/delete-menu"
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
@@ -31,12 +32,17 @@ export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteM
   const deleteMenu = useDeleteMenu({
     mutationConfig: {
       onSuccess: (result) => {
+        // Se cierra antes de avisar: el aviso de página queda detrás del overlay.
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
-        setOpen(false)
         notify("El menú se eliminó correctamente.")
+      },
+      onError: (error) => {
+        setOpen(false)
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -52,8 +58,7 @@ export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteM
             {childrenCount > 0 && ` y los ${childrenCount} menús que cuelgan de él`} para todos los
             roles. Esta acción no se puede deshacer.
           </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
+        </AlertDialogHeader>        <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMenu.isPending}

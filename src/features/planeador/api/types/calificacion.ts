@@ -26,11 +26,19 @@ export type Estudiante = {
 
 export type Asistencia = {
   estado: EstadoAsistencia
+  /** Regla 73: `estado` "no-asistio"/"llego-tarde" con Excusa adjuntada en
+   *  el módulo de Asistencia queda registrado con el TIPO_ASISTENCIA
+   *  "justificada" del catálogo (3/6) -- esto refleja ESE dato, no lo decide
+   *  el Planeador. */
+  justificada: boolean
   /** Texto libre cuando el estado es "llego-tarde" o "no-asistio". */
   justificacion?: string
   /** Adjuntos que justifican la inasistencia/llegada tarde (badge con el
    * conteo en la UI). */
   adjuntos: number
+  /** `FK_SOPORTE_ARCHIVO` del registro -- para poder ver el adjunto ya
+   *  cargado (`useArchivoViewUrl`). `null`/`undefined` si no hay soporte. */
+  fkSoporteArchivo?: number | null
 }
 
 /** Nota del estudiante en un criterio específico. */
@@ -70,6 +78,9 @@ export type CalificacionEstudiante = Estudiante & {
    *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en
    *  mock. */
   fechaAsistencia?: string | null
+  /** Regla 62: asistió pero no presentó evidencia. Excluyente con la nota.
+   *  `no_presento` del GET — contrato propuesto, aún no existe en el backend. */
+  noPresento?: boolean
 }
 
 /** Un criterio de rúbrica, ítem de lista de cotejo, o el único "ítem

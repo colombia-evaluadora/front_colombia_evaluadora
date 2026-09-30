@@ -8,6 +8,7 @@ import {
   asignaturaIdDe,
   calificacionANotas,
   decodePkTactividadEstudiante,
+  esEvidenciaFavorita,
   esFormativaMock,
   getEvidencias,
   getObservacion,
@@ -15,6 +16,7 @@ import {
   gradoIdDe,
   grupoIdDe,
   instrumentoActividadDe,
+  marcarEvidenciaFavorita,
   mergeOverride,
   pkTactividadEstudianteDe,
   ponderacionItemCotejo,
@@ -47,11 +49,12 @@ const CALIFICAR_CELDA_URL = "/api/eval-col/planeador/actividades/estudiantes/:id
 const CALIFICAR_BULK_URL = "/api/eval-col/planeador/actividades/:id/calificar-bulk/:tipo"
 const NOTA_ESTUDIANTE_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/nota"
 const OBSERVAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/observar"
-const OBSERVAR_GRUPAL_URL = "/api/eval-col/planeador/actividades/:id/observar-grupal"
 // Va por /files/**, igual que el paso 1 de materiales de apoyo: es file-service
 // quien intercepta el multipart antes de que llegue al query-service.
 const SOPORTE_AGREGAR_URL = "*/api/files/eval-col/planeador/actividades/estudiantes/:id/soportes"
 const SOPORTE_QUITAR_URL = "/api/eval-col/planeador/actividades/estudiantes/soportes/:id"
+const SOPORTES_LISTAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/soportes"
+const SOPORTE_FAVORITO_URL = "/api/eval-col/planeador/actividades/estudiantes/soportes/:id/favorito"
 
 /** Actividades del (grado, grupo, asignatura) pedidos — mismos ids
  *  hasheados que ya devuelve `/planeador/docentes/grupos` y
@@ -408,6 +411,35 @@ export const planeadorPlanillaHandlers = [
     return HttpResponse.json({ rows: [{ pk_tactividad_soporte: pk }] })
   }),
 
+  // Listar las evidencias de UNA observación, con `es_favorito`.
+  http.get(SOPORTES_LISTAR_URL, async ({ params }) => {
+    await delay(120)
+    const { actividadId, estudianteId } = decodePkTactividadEstudiante(Number(params.id))
+    return HttpResponse.json({
+      rows: getEvidencias(actividadId, estudianteId).map((e) => ({
+        pk_tactividad_soporte: e.pk,
+        fk_tarchivo: e.fkTarchivo,
+        nombre: e.nombre,
+        fecha: e.fecha,
+        es_favorito: esEvidenciaFavorita(actividadId, estudianteId, e.pk),
+      })),
+    })
+  }),
+
+  // Marcar/desmarcar la favorita (a lo sumo una por observación).
+  http.put(SOPORTE_FAVORITO_URL, async ({ params, request }) => {
+    await delay(120)
+    const pk = Number(params.id)
+    const body = (await request.json().catch(() => ({}))) as { ES_FAVORITO?: boolean }
+    if (!marcarEvidenciaFavorita(pk, body.ES_FAVORITO ?? true)) {
+      return HttpResponse.json(
+        { error: "No se encontro el soporte de observacion solicitado (o ya fue retirado)" },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ rows: [{ pk_tactividad_soporte: pk }] })
+  }),
+
   // Observar a UN estudiante (actividad formativa): mismo gate de asistencia
   // que calificar, y la observación pisa a la que hubiera (grupal incluida).
   http.put(OBSERVAR_URL, async ({ params, request }) => {
@@ -433,25 +465,5 @@ export const planeadorPlanillaHandlers = [
     }
     setObservacion(actividadId, estudianteId, body.OBSERVACION)
     return HttpResponse.json({ rows: [{ status: "OK" }] })
-  }),
-
-  // Observación grupal: se aplica a todo el roster y OMITE (no falla) a quien
-  // no tenga asistencia válida — devuelve cuántos quedaron observados.
-  http.post(OBSERVAR_GRUPAL_URL, async ({ params, request }) => {
-    await delay(250)
-    const actividadId = Number(params.id)
-    const actividad = planeadorDb.find((a) => a.id === actividadId)
-    if (!actividad) {
-      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
-    }
-    const body = (await request.json()) as { OBSERVACION: string; FECHA: string }
-    const observados = getCalificacionesByActividad(actividadId, planeadorDb).filter(
-      (estudiante) => {
-        if (estudiante.asistencia.estado === "no-asistio") return false
-        setObservacion(actividadId, estudiante.id, body.OBSERVACION)
-        return true
-      },
-    ).length
-    return HttpResponse.json({ rows: [{ estudiantes_observados: observados }] })
   }),
 ]

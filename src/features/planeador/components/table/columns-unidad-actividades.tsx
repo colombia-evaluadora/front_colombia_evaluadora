@@ -314,6 +314,8 @@ export function createUnidadActividadesColumns(
   metodoCalculo: MetodoCalculo,
   totalPonderacion: number,
   esFormativa: boolean,
+  puedeEditar: boolean,
+  puedeEliminar: boolean,
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
     ? []
@@ -418,28 +420,30 @@ export function createUnidadActividadesColumns(
             </TooltipTrigger>
             <TooltipContent>Ver {row.original.nombre}</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Editar ${row.original.nombre}`}
-                  render={
-                    <Link
-                      to={paths.app.planeadorActividadEditar.getHref(
-                        String(row.original.actividadId),
-                      )}
-                    />
-                  }
-                />
-              }
-            >
-              <PencilIcon />
-            </TooltipTrigger>
-            <TooltipContent>Editar {row.original.nombre}</TooltipContent>
-          </Tooltip>
+          {puedeEditar && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Editar ${row.original.nombre}`}
+                    render={
+                      <Link
+                        to={paths.app.planeadorActividadEditar.getHref(
+                          String(row.original.actividadId),
+                        )}
+                      />
+                    }
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>Editar {row.original.nombre}</TooltipContent>
+            </Tooltip>
+          )}
           {/* Chulito: abre el panel del listado principal directo en modo
               "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
               header de `ActividadDetallePanel`. */}
@@ -464,7 +468,7 @@ export function createUnidadActividadesColumns(
             </TooltipTrigger>
             <TooltipContent>Calificar {row.original.nombre}</TooltipContent>
           </Tooltip>
-          <BotonDesvincular actividad={row.original} unidadId={unidadId} />
+          {puedeEliminar && <BotonDesvincular actividad={row.original} unidadId={unidadId} />}
         </div>
       ),
       enableSorting: false,

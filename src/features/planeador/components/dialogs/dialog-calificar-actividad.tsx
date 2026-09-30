@@ -13,7 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { IoMdCheckboxOutline } from "react-icons/io"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -28,6 +29,7 @@ import {
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoCriterio } from "@/features/planeador/api/types/planilla"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DialogCalificarActividadProps {
   actividadId: number
@@ -39,6 +41,8 @@ interface DialogCalificarActividadProps {
   gradoId?: number
   pkTactividadEstudiante: number
   estudianteNombre: string
+  /** Sin nota cargada: el botón va relleno en primary. */
+  sinNota?: boolean
   /** `yyyy-MM-dd` — fecha de la actividad, la que exige el backend al
    *  calificar (mismo criterio que `PlanillaColumna.fechaInicio`). */
   fecha: string
@@ -69,6 +73,7 @@ export function DialogCalificarActividad({
   gradoId,
   pkTactividadEstudiante,
   estudianteNombre,
+  sinNota = false,
   fecha,
   onGuardado,
 }: DialogCalificarActividadProps) {
@@ -76,6 +81,7 @@ export function DialogCalificarActividad({
   const [draft, setDraft] = useState<NotaCriterio[]>([])
   const { notify } = useNotify()
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   const { data: instrumento, isPending: isPendingInstrumento } =
     useInstrumentoActividadQuery(actividadId)
@@ -107,6 +113,8 @@ export function DialogCalificarActividad({
     calificar.mutate(input)
   }
 
+  if (!puedeEditar) return null
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -115,16 +123,16 @@ export function DialogCalificarActividad({
             <DialogTrigger
               render={
                 <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-xs"
+                  variant={open || sinNota ? "fill" : "outline"}
+                  color="primary"
+                  size="icon-sm"
                   aria-label={`Calificar a ${estudianteNombre}`}
                 />
               }
             />
           }
         >
-          <PencilIcon className="size-3.5" />
+          <IoMdCheckboxOutline className="size-5" />
         </TooltipTrigger>
         <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
       </Tooltip>

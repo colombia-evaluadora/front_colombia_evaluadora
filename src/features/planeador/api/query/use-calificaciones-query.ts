@@ -56,6 +56,8 @@ interface CalificacionRow {
   nota_homologada: number | null
   calificable: "S" | "N"
   nota_observacion: string | null
+  /** Regla 62 — contrato propuesto; `undefined` mientras el backend no lo envíe. */
+  no_presento?: boolean | null
 }
 
 function toEstadoAsistencia(tipoAsistencia: string | null): EstadoAsistencia {
@@ -77,8 +79,13 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     apellidos: "",
     asistencia: {
       estado: toEstadoAsistencia(row.tipo_asistencia),
+      // Regla 73: el catálogo TIPO_ASISTENCIA distingue "No Asistió" (2) de
+      // "No Asistió Justificada" (3) -- y lo mismo para "Llegó Tarde"
+      // (5/6) -- por NOMBRE, no por un campo aparte.
+      justificada: (row.tipo_asistencia ?? "").toLowerCase().includes("justific"),
       justificacion: row.asistencia_observacion ?? undefined,
       adjuntos: row.fk_soporte_archivo != null ? 1 : 0,
+      fkSoporteArchivo: row.fk_soporte_archivo,
     },
     // El detalle de notas por criterio vive aparte (`GET .../estudiantes/:ID/nota`,
     // 7.7) — acá solo llega el porcentaje ya resuelto (`calificacion`), no
@@ -90,6 +97,7 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
+    noPresento: row.no_presento === true,
   }
 }
 

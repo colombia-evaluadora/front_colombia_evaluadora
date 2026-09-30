@@ -15,9 +15,11 @@ import {
   curricularReferenceStatusBadge,
   curricularReferenceStatusLabel,
   curricularReferenceStatusPeriod,
+  formatLastModifiedDate,
   toSentenceCase,
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { DeleteCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-delete"
+import { ToggleStatusButton } from "@/features/academic-management/curricular-references/components/table/toggle-status-button"
 
 interface CurricularReferenceColumnsOptions {
   onEdit: (curricularReference: CurricularReference) => void
@@ -75,6 +77,7 @@ function ActionsCell({
         </TooltipTrigger>
         <TooltipContent>{`Editar ${label}`}</TooltipContent>
       </Tooltip>
+      <ToggleStatusButton curricularReference={curricularReference} />
       <DeleteCurricularReferenceDialog curricularReference={curricularReference} />
     </div>
   )
@@ -134,6 +137,20 @@ function StatusCell({ reference }: { reference: CurricularReference }) {
   )
 }
 
+function LastModifiedCell({ reference }: { reference: CurricularReference }) {
+  const date = formatLastModifiedDate(reference.lastModifiedAt)
+  if (!date && !reference.lastModifiedBy) return <span className="text-sm">—</span>
+
+  return (
+    <div className="flex flex-col items-start">
+      {date ? <span className="text-sm">{date}</span> : null}
+      {reference.lastModifiedBy ? (
+        <WrappedTextCell text={reference.lastModifiedBy} />
+      ) : null}
+    </div>
+  )
+}
+
 export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): ColumnDef<CurricularReference>[] {
   return [
     {
@@ -156,20 +173,18 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
           text={row.original.educationLevels.map((level) => toSentenceCase(level.name)).join(", ") || "—"}
         />
       ),
-      enableHiding: false,
     },
     {
       accessorKey: "instrument",
       id: "instrument",
-      meta: { label: "Instrumento" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Instrumento" />,
+      meta: { label: "Rótulo de secuencia de actividades" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Rótulo de secuencia de actividades" />,
       cell: ({ row }) => (
         <TitleWithDescriptionCell
           title={row.original.instrument}
           description={row.original.instrumentDescription}
         />
       ),
-      enableHiding: false,
     },
     {
       accessorKey: "pedagogicalApproach",
@@ -181,7 +196,6 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
           text={row.original.pedagogicalApproach ? toSentenceCase(row.original.pedagogicalApproach.name) : "—"}
         />
       ),
-      enableHiding: false,
     },
     {
       accessorKey: "evaluationType",
@@ -191,7 +205,21 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       cell: ({ row }) => (
         <WrappedTextCell text={row.original.evaluationType ? toSentenceCase(row.original.evaluationType.name) : "—"} />
       ),
-      enableHiding: false,
+    },
+    {
+      accessorKey: "gradosVinculados",
+      id: "gradosVinculados",
+      meta: { label: "Grados vinculados" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grados vinculados" />,
+      cell: ({ row }) => (
+        <WrappedTextCell
+          text={
+            row.original.gradosVinculados.length > 0
+              ? row.original.gradosVinculados.map((grado) => toSentenceCase(grado.name)).join(", ")
+              : "Todos"
+          }
+        />
+      ),
     },
     {
       accessorKey: "active",
@@ -199,7 +227,15 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       meta: { label: "Estado" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => <StatusCell reference={row.original} />,
-      enableHiding: false,
+    },
+    {
+      accessorKey: "lastModifiedAt",
+      id: "lastModifiedAt",
+      meta: { label: "Última modificación" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Última modificación" />,
+      cell: ({ row }) => <LastModifiedCell reference={row.original} />,
+      // El listado del backend no ordena por esta columna.
+      enableSorting: false,
     },
     {
       id: "actions",
@@ -207,7 +243,8 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       cell: ({ row }) => <ActionsCell curricularReference={row.original} onEdit={onEdit} />,
       enableSorting: false,
       enableHiding: false,
-      size: 96,
+      // Cuatro botones: ver, editar, activar/inactivar y eliminar.
+      size: 156,
     },
   ]
 }

@@ -19,10 +19,12 @@ import { SubjectLabelSelect } from "@/features/academic-management/curricular-re
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-// `Textarea` no trae la variante `outlined` sola (a diferencia de `Input`):
-// `TEXTAREA_OUTLINED` la iguala a mano, acá sumada al ajuste de tamaño fijo
-// que necesitan estos textareas largos.
 const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full break-all")
+
+// Regla 2: id del enfoque pedagógico "Formativo" en el catálogo (ver catalogs.ts).
+const FORMATIVO_APPROACH_ID = 122
+// Regla 2: id del tipo de evaluación "Cualitativa" en el catálogo (ver catalogs.ts).
+const CUALITATIVA_EVALUATION_ID = 111
 
 interface CurricularReferenceDetailsFormProps {
   value: CurricularReferenceDraft
@@ -49,6 +51,8 @@ export function CurricularReferenceDetailsForm({
   const { data: generalAreas = [] } = useGeneralAreasQuery()
   const areaById = new Map(generalAreas.map((area) => [area.id, area]))
 
+  const isFormativo = value.pedagogicalApproach?.id === FORMATIVO_APPROACH_ID
+
   return (
     <div className="flex flex-col gap-4 [&_::placeholder]:opacity-60">
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
@@ -68,6 +72,7 @@ export function CurricularReferenceDetailsForm({
             onChange={(event) => onChange({ ...value, name: event.target.value })}
             placeholder="Ej. DBA - Primaria"
           />
+          <CharacterCounter value={value.name} max={150} />
           <FieldError>{errors["name"]}</FieldError>
         </Field>
 
@@ -129,6 +134,12 @@ export function CurricularReferenceDetailsForm({
             value={value.pedagogicalApproach?.id ?? null}
             onValueChange={(selectedValue) => {
               const option = pedagogicalApproaches.find((item) => item.id === selectedValue)
+              if (option?.id === FORMATIVO_APPROACH_ID) {
+                // Regla 2: al pasar a Formativo, el tipo de evaluación se fija en Cualitativa y se bloquea.
+                const cualitativa = evaluationTypes.find((item) => item.id === CUALITATIVA_EVALUATION_ID)
+                onChange({ ...value, pedagogicalApproach: option, evaluationType: cualitativa ?? value.evaluationType })
+                return
+              }
               onChange({ ...value, pedagogicalApproach: option ?? null })
             }}
           >
@@ -160,6 +171,7 @@ export function CurricularReferenceDetailsForm({
           <ComboboxField
             items={evaluationTypeLabels}
             value={value.evaluationType?.id ?? null}
+            disabled={isFormativo}
             onValueChange={(selectedValue) => {
               const option = evaluationTypes.find((item) => item.id === selectedValue)
               onChange({ ...value, evaluationType: option ?? null })
@@ -168,6 +180,7 @@ export function CurricularReferenceDetailsForm({
             <ComboboxFieldTrigger
               id="curricular-reference-evaluation-type"
               size="sm"
+              disabled={isFormativo}
               aria-invalid={Boolean(errors["evaluationType"])}
             >
               <ComboboxFieldValue placeholder="Seleccione" />
@@ -195,11 +208,11 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level1"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level1">Nivel 1 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level1">Rótulo de Nivel 1 *</FieldLabel>
           <Input
             id="curricular-reference-level1"
             size="sm"
-            maxLength={60}
+            maxLength={50}
             value={value.level1}
             aria-invalid={Boolean(errors["level1"])}
             onChange={(event) => onChange({ ...value, level1: event.target.value })}
@@ -214,11 +227,11 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level2"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level2">Nivel 2 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level2">Rótulo de Nivel 2 *</FieldLabel>
           <Input
             id="curricular-reference-level2"
             size="sm"
-            maxLength={60}
+            maxLength={50}
             value={value.level2}
             aria-invalid={Boolean(errors["level2"])}
             onChange={(event) => onChange({ ...value, level2: event.target.value })}
@@ -252,7 +265,7 @@ export function CurricularReferenceDetailsForm({
         </Field>
 
         <Field orientation="vertical" variant="outlined" className="w-full">
-          <FieldLabel htmlFor="curricular-reference-subject-label">Personalizar</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-subject-label">Rótulo de Área</FieldLabel>
           <SubjectLabelSelect
             id="curricular-reference-subject-label"
             value={value.subjectLabel}
@@ -267,22 +280,41 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["instrument"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-instrument">Instrumento *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-instrument">Rótulo de Secuencia de Actividades *</FieldLabel>
           <Input
             id="curricular-reference-instrument"
             size="sm"
-            maxLength={400}
+            maxLength={50}
             value={value.instrument}
             aria-invalid={Boolean(errors["instrument"])}
             onChange={(event) => onChange({ ...value, instrument: event.target.value })}
-            placeholder="Ej. DBA - Primaria"
+            placeholder="Ej. Unidad temática"
           />
           <FieldError>{errors["instrument"]}</FieldError>
         </Field>
 
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full"
+          data-invalid={errors["executionLabel"] ? "true" : undefined}
+        >
+          <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de Ejecución</FieldLabel>
+          <Input
+            id="curricular-reference-execution-label"
+            size="sm"
+            maxLength={50}
+            value={value.executionLabel}
+            aria-invalid={Boolean(errors["executionLabel"])}
+            onChange={(event) => onChange({ ...value, executionLabel: event.target.value })}
+            placeholder="Ej. Actividad"
+          />
+          <FieldError>{errors["executionLabel"]}</FieldError>
+        </Field>
+
         <Field orientation="vertical" variant="outlined" className="w-full md:col-span-2">
           <FieldLabel htmlFor="curricular-reference-instrument-description">
-            Información adicional del instrumento
+            Información adicional de la Secuencia de Actividades
           </FieldLabel>
           <Textarea
             id="curricular-reference-instrument-description"
@@ -293,7 +325,7 @@ export function CurricularReferenceDetailsForm({
               const next = raw.trim() === "" ? "" : raw
               onChange({ ...value, instrumentDescription: next })
             }}
-            placeholder="Describe qué incluye este instrumento y cómo se utiliza..."
+            placeholder="Describe qué incluye la secuencia de actividades y cómo se utiliza..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
           <CharacterCounter value={value.instrumentDescription} max={400} />

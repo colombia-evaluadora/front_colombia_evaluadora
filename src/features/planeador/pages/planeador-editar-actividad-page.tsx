@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ import {
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "editar-actividad-form"
 
@@ -100,6 +101,17 @@ function EditarActividadPageContent({
 }) {
   const [isDirty, setIsDirty] = useState(false)
   const { notify } = useNotify()
+
+  // Sin permiso de "editar" en Planeador, esta pantalla no debería ni poder
+  // verse (mismo criterio que `PlaneadorCrearActividadPage`): redirige al
+  // listado apenas se sabe que no hay permiso.
+  const navigate = useNavigate()
+  const { puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  useEffect(() => {
+    if (!isLoadingPermiso && !puedeEditar) {
+      navigate({ to: paths.app.planeadorActividades.getHref(), replace: true })
+    }
+  }, [isLoadingPermiso, puedeEditar, navigate])
 
   // Para resolver si la unidad NUEVA (si el docente la cambió en el
   // select) calcula por "Ponderado" — ver el comentario de `handleSubmit`.
@@ -332,7 +344,7 @@ function EditarActividadPageContent({
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        {isPendingCompleto && (
+        {(isPendingCompleto || isLoadingPermiso || !puedeEditar) && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando actividad…
           </div>
@@ -344,7 +356,7 @@ function EditarActividadPageContent({
           </p>
         )}
 
-        {!isPendingCompleto && actividadParaForm && (
+        {!isPendingCompleto && puedeEditar && actividadParaForm && (
           <EditarActividadForm
             key={actividadParaForm.id}
             actividad={actividadParaForm}

@@ -14,31 +14,19 @@ import { Switch } from "@/components/ui/switch"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
-import {
-  ComboboxField,
-  ComboboxFieldContent,
-  ComboboxFieldItem,
-  ComboboxFieldTrigger,
-  ComboboxFieldValue,
-} from "@/components/ui/combobox"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
-import { toSentenceCase } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { useCreateStatement, useUpdateStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
-
-interface StatementArea {
-  id: number
-  name: string
-}
 
 interface ManageStatementDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   curricularReferenceId: number
   areaId: number | null | undefined
-  areas: StatementArea[]
+  /** Grado del filtro del Panel Izquierdo; se asigna solo al crear. */
+  gradeId: number | null | undefined
   statement?: CurricularStatement | null
   levelLabel: string
   /** Se dispara al crear uno nuevo, para seleccionarlo automáticamente en el
@@ -46,16 +34,12 @@ interface ManageStatementDialogProps {
   onCreated?: (id: number) => void
 }
 
-// Sentinel: los ids reales de área son PKs de BD (siempre > 0), así que 0
-// queda libre para representar "Sin asignar" (AREA_ID nulo) en el combobox.
-const UNASSIGNED_AREA = 0
-
 export function ManageStatementDialog({
   open,
   onOpenChange,
   curricularReferenceId,
   areaId,
-  areas,
+  gradeId,
   statement = null,
   levelLabel,
   onCreated,
@@ -65,14 +49,12 @@ export function ManageStatementDialog({
 
   const [text, setText] = useState("")
   const [active, setActive] = useState(true)
-  const [statementAreaId, setStatementAreaId] = useState<number | null>(null)
   const [error, setError] = useState("")
 
   useEffect(() => {
     if (!open) return
     setText(statement?.text ?? "")
     setActive(statement?.active ?? true)
-    setStatementAreaId(statement?.areaId ?? null)
     setError("")
   }, [open, statement])
 
@@ -101,9 +83,7 @@ export function ManageStatementDialog({
 
   const hasRequiredFields = text.trim().length > 0
   const hasChanges = isEditMode
-    ? text.trim() !== (statement?.text ?? "") ||
-      active !== (statement?.active ?? true) ||
-      statementAreaId !== (statement?.areaId ?? null)
+    ? text.trim() !== (statement?.text ?? "") || active !== (statement?.active ?? true)
     : true
   const canSave = hasRequiredFields && hasChanges
 
@@ -118,13 +98,13 @@ export function ManageStatementDialog({
     if (isEditMode && statement) {
       await updateMutation.mutateAsync({
         id: statement.id,
-        values: { text: text.trim(), active, areaId: statementAreaId },
+        values: { text: text.trim(), active },
       })
       return
     }
 
-    if (areaId === undefined) return
-    await createMutation.mutateAsync({ curricularReferenceId, areaId, text: text.trim(), active })
+    if (areaId === undefined || gradeId === undefined) return
+    await createMutation.mutateAsync({ curricularReferenceId, areaId, gradeId, text: text.trim(), active })
   }
 
   return (
@@ -151,43 +131,15 @@ export function ManageStatementDialog({
             <Textarea
               id="statement-text"
               value={text}
-              maxLength={400}
+              maxLength={500}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
               className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />
-            <CharacterCounter value={text} max={400} />
+            <CharacterCounter value={text} max={500} />
             <FieldError>{error}</FieldError>
           </Field>
-
-          {isEditMode && areas.length > 0 && (
-            <Field orientation="vertical" variant="outlined" className="mt-6">
-              <FieldLabel htmlFor="statement-area">Área o dimensión</FieldLabel>
-              <ComboboxField
-                items={{
-                  [UNASSIGNED_AREA]: "Sin asignar",
-                  ...Object.fromEntries(areas.map((area) => [area.id, toSentenceCase(area.name)])),
-                }}
-                value={statementAreaId ?? UNASSIGNED_AREA}
-                onValueChange={(value) =>
-                  setStatementAreaId(value == null || value === UNASSIGNED_AREA ? null : (value as number))
-                }
-              >
-                <ComboboxFieldTrigger id="statement-area" size="sm">
-                  <ComboboxFieldValue placeholder="Seleccionar" />
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  <ComboboxFieldItem value={UNASSIGNED_AREA}>Sin asignar</ComboboxFieldItem>
-                  {areas.map((area) => (
-                    <ComboboxFieldItem key={area.id} value={area.id}>
-                      {toSentenceCase(area.name)}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxFieldContent>
-              </ComboboxField>
-            </Field>
-          )}
 
           <Field orientation="vertical" variant="outlined" className="mt-6">
             <FieldLabel htmlFor="statement-status">Estado</FieldLabel>

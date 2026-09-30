@@ -137,8 +137,11 @@ const PERSON_LABELS: Record<string, string> = {
   documentType: "tipo de documento",
   identification: "número de documento",
   firstName: "primer nombre",
+  middleName: "segundo nombre",
   lastName: "primer apellido",
+  secondLastName: "segundo apellido",
   email: "correo electrónico",
+  phone: "teléfono",
   gender: "género",
   birthDate: "fecha de nacimiento",
   password: "contraseña",
@@ -370,6 +373,18 @@ export function validateEstablishmentForm(
       if (issue) {
         collect(`${fieldPrefix}.${field}`, issue.message, `${label}: ${fieldLabel}`)
       }
+    }
+
+    // Red de seguridad: recorrer PERSON_LABELS da el orden del formulario,
+    // pero DESCARTA en silencio cualquier campo que no esté en el mapa. Así
+    // estuvo el teléfono: la regla se evaluaba, el issue se creaba y nadie
+    // lo mostraba. Lo que no tenga etiqueta se muestra igual, al final.
+    for (const issue of result.error.issues) {
+      const field = issue.path.join(".")
+      if (field === "" || PERSON_LABELS[field] != null) {
+        continue
+      }
+      collect(`${fieldPrefix}.${field}`, issue.message, `${label}: ${field}`)
     }
 
     // "No coinciden" reemplaza al mensaje de campo vacío cuando ambos tienen

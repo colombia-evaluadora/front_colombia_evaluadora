@@ -18,7 +18,9 @@ function formatFecha(fecha: string): string {
   return `${dia}/${mes}/${anio}`
 }
 
-export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
+/** Regla 74: la columna de acciones (editar registro) solo se arma para quien puede escribir asistencia (docente) — Director de Grupo/Coordinador son de solo lectura. */
+export function buildColumnsSeguimiento(canEditar: boolean): ColumnDef<AsistenciaQueryRow>[] {
+  return [
   {
     id: "estudiante",
     accessorKey: "estudiante",
@@ -34,9 +36,6 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
     meta: { label: "Tipo de asistencia" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo de asistencia" />,
     cell: ({ row }) => {
-      // Mismo criterio que Asistencia manual (`columns-asistencia-manual`): el
-      // bloque solo se muestra al llegar tarde, y solo si la sesión tiene más
-      // de uno. En una inasistencia no agrega nada.
       const esTarde = row.original.tipo_asistencia_valor === 5 || row.original.tipo_asistencia_valor === 6
       const bloques =
         esTarde && (row.original.bloques?.length ?? 0) > 1
@@ -108,11 +107,16 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
       )
     },
   },
-  {
-    id: "actions",
-    enableSorting: false,
-    enableHiding: false,
-    header: () => null,
-    cell: ({ row }) => <EditarSeguimientoDialog row={row.original} />,
-  },
-]
+    ...(canEditar
+      ? [
+          {
+            id: "actions",
+            enableSorting: false,
+            enableHiding: false,
+            header: () => null,
+            cell: ({ row }) => <EditarSeguimientoDialog row={row.original} />,
+          } satisfies ColumnDef<AsistenciaQueryRow>,
+        ]
+      : []),
+  ]
+}

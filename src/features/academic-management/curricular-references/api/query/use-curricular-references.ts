@@ -32,12 +32,16 @@ interface CurricularReferenceRow {
   niveles: NivelRow[] | string | null
   instrumento: string
   instrumento_info_adicional: string | null
+  rotulo_ejecucion: string
+  grados_vinculados: NivelRow[] | string | null
   enfoque_pedagogico: string | null
   tipo_evaluacion: string | null
   nombre_asignatura: string | null
   estado: "A" | "I"
   anio_vigencia_desde: number
   anio_vigencia_hasta: number | null
+  modificado_por: string | null
+  modificado_en: string | null
   active: boolean
   total_count: number
 }
@@ -70,10 +74,18 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
     areas: [],
     instrument: row.instrumento,
     instrumentDescription: row.instrumento_info_adicional ?? "",
+    executionLabel: row.rotulo_ejecucion ?? "",
     regulation: "",
     active: row.estado === "A",
     createdYear: row.anio_vigencia_desde,
     deactivatedYear: row.anio_vigencia_hasta,
+    gradosVinculados: parseNiveles(row.grados_vinculados).map((grado) => ({
+      id: grado.id,
+      code: grado.codigo,
+      name: grado.nombre,
+    })),
+    lastModifiedBy: row.modificado_por,
+    lastModifiedAt: row.modificado_en,
   }
 }
 

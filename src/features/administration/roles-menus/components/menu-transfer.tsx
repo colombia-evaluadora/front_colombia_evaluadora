@@ -12,10 +12,12 @@ import {
   PencilIcon,
   TrashIcon,
 } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
 import { useReorderMenus } from "@/features/administration/roles-menus/api/mutations/reorder-menus"
@@ -333,7 +335,10 @@ export function MenuTransfer({
   const [dragged, setDragged] = useState<MenuNode | null>(null)
   const [dropTargetId, setDropTargetId] = useState<number | null>(null)
 
-  const reorderMenus = useReorderMenus()
+  const { notify } = useNotify()
+  const reorderMenus = useReorderMenus({
+    mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+  })
 
   const assigned = useMemo(() => new Set(assignedIds), [assignedIds])
 

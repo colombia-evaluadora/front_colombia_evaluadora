@@ -34,3 +34,11 @@ export function curricularReferenceStatusPeriod(reference: {
   }
   return { from: `${reference.createdYear}`, to: null }
 }
+
+/** Fecha corta es-CO de un timestamp del backend; "" si no hay o no parsea. */
+export function formatLastModifiedDate(value: string | null | undefined): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return date.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+}

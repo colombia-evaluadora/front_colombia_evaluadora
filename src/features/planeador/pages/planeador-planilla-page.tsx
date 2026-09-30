@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ import {
   InboxIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
+  SpinnerIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
@@ -44,9 +45,13 @@ import {
   useAgrupacionPlanillaOptionsQuery,
   type AgrupacionPlanillaKey,
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
-import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import {
+  CalificarActividadBulk,
+  type EstadoGuardar,
+} from "@/features/planeador/components/planilla/calificar-actividad-bulk"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
  *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
@@ -74,10 +79,14 @@ type VerPorOption = AgrupacionPlanillaKey
  * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
+  const { puedeCrear, puedeEditar } = useMenuPermission("PLANEADOR")
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
   const [columnaEnBulk, setColumnaEnBulk] = useState<PlanillaColumna | null>(null)
+  // Estado del "Guardar" que reporta la vista de calificar masivo (null = sin cambios).
+  const [estadoGuardarBulk, setEstadoGuardarBulk] = useState<EstadoGuardar | null>(null)
+  const guardarBulkRef = useRef<(() => void) | null>(null)
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
@@ -139,18 +148,38 @@ export function PlaneadorPlanillaPage() {
         <TableScreenHeader>
           <TableScreenTitle
             action={
+              columnaEnBulk ? (
+                puedeEditar &&
+                estadoGuardarBulk && (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    disabled={estadoGuardarBulk.disabled || estadoGuardarBulk.guardando}
+                    onClick={() => guardarBulkRef.current?.()}
+                  >
+                    {estadoGuardarBulk.guardando && (
+                      <SpinnerIcon className="animate-spin" data-icon="inline-start" />
+                    )}
+                    Guardar
+                  </Button>
+                )
+              ) : (
               <div className="flex gap-0">
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  aria-label="Nueva actividad"
-                  className="rounded-r-none border-r-0"
-                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
-                >
-                  <PlusCircleIcon data-icon="inline-start" />
-                  Nueva actividad
-                </Button>
+                {puedeCrear && (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    aria-label="Nueva actividad"
+                    nativeButton={false}
+                    className="rounded-r-none border-r-0"
+                    render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
+                  >
+                    <PlusCircleIcon data-icon="inline-start" />
+                    Nueva actividad
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -159,7 +188,7 @@ export function PlaneadorPlanillaPage() {
                         size="sm"
                         variant="fill"
                         aria-label="Más opciones"
-                        className="rounded-l-none"
+                        className={puedeCrear ? "rounded-l-none" : undefined}
                       />
                     }
                   >
@@ -174,6 +203,7 @@ export function PlaneadorPlanillaPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              )
             }
           >
             Planilla de calificación
@@ -252,6 +282,8 @@ export function PlaneadorPlanillaPage() {
               fecha={columnaEnBulk.fechaInicio}
               estudiantes={estudiantesEnBulk}
               onVolver={() => setColumnaEnBulk(null)}
+              onEstadoGuardar={setEstadoGuardarBulk}
+              guardarRef={guardarBulkRef}
             />
           )}
         </TableScreenBody>

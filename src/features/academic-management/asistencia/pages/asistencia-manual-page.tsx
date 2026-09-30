@@ -17,7 +17,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
@@ -36,6 +36,25 @@ const AUTOGUARDADO_DEBOUNCE_MS = 900
 const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
+
+const JUSTIFICADO_DE: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
+  2: 3,
+  5: 6,
+}
+
+function tipoConSoporte(tipo: TipoAsistencia, hayArchivo: boolean): TipoAsistencia {
+  if (!hayArchivo) return tipo
+  return JUSTIFICADO_DE[tipo] ?? tipo
+}
+
+const BASE_DE_JUSTIFICADO: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
+  3: 2,
+  6: 5,
+}
+
+function tipoBase(tipo: TipoAsistencia): TipoAsistencia {
+  return BASE_DE_JUSTIFICADO[tipo] ?? tipo
+}
 
 
 const PANEL_CLASS =
@@ -118,7 +137,7 @@ function registrosPorBloque(
             : undefined
         porBloque.get(bloque)!.push({
           fkMatricula,
-          tipoAsistencia: tipoBloque,
+          tipoAsistencia: tipoConSoporte(tipoBloque, archivo !== undefined),
           ...(archivo !== undefined && { fkArchivo: archivo }),
         })
       }
@@ -136,7 +155,7 @@ function registrosPorBloque(
         : undefined
       porBloque.get(bloque)!.push({
         fkMatricula,
-        tipoAsistencia: tipo,
+        tipoAsistencia: tipoConSoporte(tipo, archivo !== undefined),
         ...(archivo !== undefined && { fkArchivo: archivo }),
       })
     }
@@ -154,7 +173,7 @@ function registroAutoritativo(
   for (const bloque of bloques) {
     const row = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)
     if (!row || row.tipo_asistencia_valor == null) continue
-    if (row.tipo_asistencia_valor === LLEGO_TARDE) return { bloque, row }
+    if (tipoBase(row.tipo_asistencia_valor) === LLEGO_TARDE) return { bloque, row }
     candidato ??= { bloque, row }
   }
   return candidato
@@ -221,10 +240,11 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     const inicialBloqueTarde: Record<number, number> = {}
     for (const [fkMatricula, { bloque, row }] of autoritativos) {
       if (row.tipo_asistencia_valor == null) continue
-      inicialSeleccion[fkMatricula] = row.tipo_asistencia_valor
+      const base = tipoBase(row.tipo_asistencia_valor)
+      inicialSeleccion[fkMatricula] = base
       // Sin bloque real no hay "en cuál bloque llegó" que preseleccionar
       // (sesión suelta o de un solo bloque -- el selector ni se muestra).
-      if (row.tipo_asistencia_valor === LLEGO_TARDE && bloque !== null) {
+      if (base === LLEGO_TARDE && bloque !== null) {
         inicialBloqueTarde[fkMatricula] = bloque
       }
     }
@@ -514,13 +534,20 @@ export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
   const [anio, mes] = fecha.split("-").map(Number)
 
-  const esDocente = useEsDocente()
-  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery({
-    SEDE: sede,
-    ANIO: anio,
-    MES: mes,
-    MIAS: esDocente,
-  })
+  const { isDocente } = useAsistenciaAccess()
+  // Esta pantalla es SOLO de escritura: a diferencia del calendario/Seguimiento
+  // (de solo lectura para Director de Grupo/Coordinador), aquí SIEMPRE se
+  // filtra a lo que el usuario dicta, aunque además sea director de grupo —
+  // su alcance amplio de lectura no le da permiso de escritura ajena (Regla 74).
+  const { data: sesiones, isPending } = useAsistenciaCalendarioQuery(
+    {
+      SEDE: sede,
+      ANIO: anio,
+      MES: mes,
+      MIAS: true,
+    },
+    isDocente,
+  )
 
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
     const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)
@@ -580,21 +607,27 @@ export function AsistenciaManualPage() {
           <h2 className="text-base font-semibold">Asistencia manual</h2>
         </div>
 
-        {isPending && <Skeleton className="h-64 w-full" />}
+        {!isDocente && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Solo un docente puede registrar o editar asistencia. Tu rol tiene acceso de solo consulta.
+          </p>
+        )}
 
-        {esFechaFutura(fecha) && (
+        {isDocente && isPending && <Skeleton className="h-64 w-full" />}
+
+        {isDocente && esFechaFutura(fecha) && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Todavía no se puede tomar asistencia: {formatFechaLarga(fecha)} es una fecha futura.
           </p>
         )}
 
-        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
+        {isDocente && !isPending && !esFechaFutura(fecha) && sesionesDelDia.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No hay sesiones programadas para este día.
           </p>
         )}
 
-        {!isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
+        {isDocente && !isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
           <Tabs value={currentTab} onValueChange={setActiveTab}>
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (

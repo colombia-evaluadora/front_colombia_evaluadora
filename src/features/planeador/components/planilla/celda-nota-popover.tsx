@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { IoMdCheckboxOutline } from "react-icons/io"
 import {
   Popover,
   PopoverContent,
@@ -37,6 +38,9 @@ interface CeldaNotaPopoverProps {
    *  manda, y casi nunca coincide con el día en que arrancó la actividad. */
   fecha: string
   estudianteNombre: string
+  /** Se dispara justo al guardar, antes de que la Planilla termine de
+   *  refrescar — permite mostrar un loading en la celda mientras tanto. */
+  onGuardado?: () => void
 }
 
 /** Arma el body de `calificar` según el instrumento REAL de la actividad —
@@ -139,6 +143,7 @@ export function CeldaNotaPopover({
   pkTactividadEstudiante,
   fecha,
   estudianteNombre,
+  onGuardado,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -156,6 +161,7 @@ export function CeldaNotaPopover({
       onSuccess: () => {
         notify("Nota guardada.")
         setOpen(false)
+        onGuardado?.()
       },
       onError: (error) => {
         notify(getErrorMessage(error), { variant: "error" })
@@ -189,7 +195,7 @@ export function CeldaNotaPopover({
             />
           }
         >
-          <PencilIcon className="size-3.5" />
+          <IoMdCheckboxOutline className="size-4" />
         </TooltipTrigger>
         <TooltipContent>Calificar a {estudianteNombre}</TooltipContent>
       </Tooltip>

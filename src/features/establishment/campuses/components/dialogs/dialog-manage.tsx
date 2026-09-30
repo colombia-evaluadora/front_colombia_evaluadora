@@ -162,33 +162,40 @@ export function ManageCampusDialog({
 
     if (campusQuery.data?.status === "ok") {
       const campus = campusQuery.data.campus
-      // En real, `zone` llega solo con el id (la query no resuelve contra
-      // TLISTA_VALOR — ver use-campus.ts); se completa acá contra el
-      // catálogo ya cargado. El EE no viaja en `Campus` (es inmutable, no
-      // se pide en edición).
-      const zone = campus.zone
-        ? (zones.find((item) => item.id === campus.zone!.id) ?? campus.zone)
-        : null
-      setFormValues({ ...campus, zone, establishmentId: null })
+      // `zone` llega solo con el id (la query no resuelve contra
+      // TLISTA_VALOR — ver use-campus.ts). Se completa abajo, en el efecto
+      // de `zones`, para que ESTE no dependa del catálogo. El EE no viaja
+      // en `Campus` (es inmutable, no se pide en edición).
+      setFormValues({ ...campus, zone: campus.zone, establishmentId: null })
       setFieldErrors({})
     }
-  }, [campusQuery.data, isEditMode, open, zones])
+    // OJO con las dependencias: `zones` NO puede estar acá. El catálogo se
+    // vuelve a pedir cada vez que cambia el establecimiento elegido, así que
+    // al elegir uno en el alta este efecto volvía a correr y reseteaba el
+    // formulario entero — el select se veía vacío otra vez, como si no
+    // hubiera seleccionado nada, y se perdía lo ya escrito.
+  }, [campusQuery.data, isEditMode, open])
 
-  // Si la zona seleccionada dejó de estar en la lista, se limpia. Pasa en
-  // dos situaciones, y en las dos dejarla puesta mandaría al backend algo
-  // que va a rechazar:
-  //  - en alta, al cambiar de establecimiento después de haber elegido zona;
-  //  - en edición, con las sedes viejas que quedaron con una zona que la
-  //    regla nueva ya no permite (p. ej. "Urbana y Rural"). Esos datos no se
-  //    migraron a propósito: la validación es de escritura, así que la sede
-  //    sigue viva hasta que alguien la edite —y en ese momento tiene que
-  //    elegir una zona válida, que es justo lo que este limpiado fuerza.
+  // La zona, contra el catálogo ya cargado. Dos cosas, las dos acá porque
+  // este es el único efecto que puede depender de `zones` sin pisar lo que
+  // el usuario escribió (solo toca `zone`, nunca el resto del formulario):
+  //
+  //  - Si dejó de estar en la lista, se limpia. Pasa en alta al cambiar de
+  //    establecimiento después de haber elegido zona, y en edición con las
+  //    sedes viejas que quedaron con una zona que la regla nueva ya no
+  //    permite (p. ej. "Urbana y Rural"). Esos datos no se migraron a
+  //    propósito: la validación es de escritura, así que la sede sigue viva
+  //    hasta que alguien la edite —y ahí tiene que elegir una válida.
+  //  - Si sigue estando, se completa con el ítem del catálogo: el detalle
+  //    trae solo el id.
   useEffect(() => {
     if (zones.length === 0) return
 
     setFormValues((current) => {
-      if (!current.zone || zones.some((item) => item.id === current.zone!.id)) return current
-      return { ...current, zone: null }
+      if (!current.zone) return current
+      const enCatalogo = zones.find((item) => item.id === current.zone!.id)
+      if (!enCatalogo) return { ...current, zone: null }
+      return enCatalogo.name === current.zone.name ? current : { ...current, zone: enCatalogo }
     })
   }, [zones])
 
