@@ -33,6 +33,7 @@ import {
   nombreDeOpcion,
 } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SeguimientoFiltersValues, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type { AsistenciaSeguimientoSearch } from "@/features/academic-management/asistencia/api/schema"
 
 function SeguimientoSinSede() {
   return (
@@ -68,18 +69,36 @@ function SeguimientoSinFiltroMensaje() {
   )
 }
 
-function SeguimientoTable({ sede }: { sede: number }) {
+/** Filtros con los que arranca la pantalla (vacíos si no vienen en la URL). */
+function initialFilters(initial: AsistenciaSeguimientoSearch): SeguimientoFiltersValues {
+  return {
+    ...EMPTY_SEGUIMIENTO_FILTERS,
+    fechaDesde: initial.fecha ?? "",
+    fechaHasta: initial.fecha ?? "",
+    jornada: initial.jornada ?? "",
+    grado: initial.grado ?? "",
+    grupo: initial.grupo != null ? String(initial.grupo) : "",
+    asignatura: initial.asignatura != null ? String(initial.asignatura) : "",
+  }
+}
+
+function SeguimientoTable({ sede, initial }: { sede: number; initial: AsistenciaSeguimientoSearch }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const [search, setSearch] = React.useState("")
-  const [filters, setFilters] = React.useState<SeguimientoFiltersValues>(EMPTY_SEGUIMIENTO_FILTERS)
+  const [filters, setFilters] = React.useState<SeguimientoFiltersValues>(() => initialFilters(initial))
 
-
-  const hoy = React.useMemo(() => new Date(), [])
+  // Los combos salen de las sesiones del mes: el de la fecha recibida, o el actual.
+  const mesCatalogo = React.useMemo(() => {
+    const [anio, mes] = (initial.fecha ?? "").split("-").map(Number)
+    if (anio && mes) return { anio, mes }
+    const hoy = new Date()
+    return { anio: hoy.getFullYear(), mes: hoy.getMonth() + 1 }
+  }, [initial.fecha])
   const { isDocente, esDocentePuro } = useAsistenciaAccess()
   const { data: sesionesDelMes } = useAsistenciaCalendarioQuery({
     SEDE: sede,
-    ANIO: hoy.getFullYear(),
-    MES: hoy.getMonth() + 1,
+    ANIO: mesCatalogo.anio,
+    MES: mesCatalogo.mes,
     MIAS: esDocentePuro,
   })
   const columnsSeguimiento = React.useMemo(() => buildColumnsSeguimiento(isDocente), [isDocente])
@@ -233,7 +252,8 @@ function SeguimientoTable({ sede }: { sede: number }) {
 
 /** Pantalla "Seguimiento" — listado paginado de registros de asistencia individuales de UN día. */
 export function SeguimientoPage() {
-  const { sede } = asistenciaSeguimientoRoute.useSearch()
+  const routeSearch = asistenciaSeguimientoRoute.useSearch()
+  const { sede } = routeSearch
 
   return (
     <NoticeProvider>
@@ -268,7 +288,12 @@ export function SeguimientoPage() {
         <TableScreenBody>
           {sede ? (
             <TablePaginationProvider>
-              <SeguimientoTable sede={sede} />
+              {/* `key`: al llegar con otros filtros desde el calendario, se reinicia el estado. */}
+              <SeguimientoTable
+                key={`${sede}-${routeSearch.fecha}-${routeSearch.grupo}-${routeSearch.asignatura}`}
+                sede={sede}
+                initial={routeSearch}
+              />
             </TablePaginationProvider>
           ) : (
             <SeguimientoSinSede />

@@ -14,23 +14,66 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BrushIcon, CheckIcon, ImageIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import {
+  BrushIcon,
+  CheckIcon,
+  FileTextIcon,
+  ImageIcon,
+  InfoIcon,
+  SpinnerIcon,
+  WarningCircleIcon,
+  XIcon,
+} from "@/components/ui/icons"
+import { MdContentCopy, MdContentPaste } from "react-icons/md"
 import { cn } from "@/lib/utils"
 
-import { useNotify } from "@/components/notice/notice-context"
-
 import { ArchivoImage } from "@/features/files/components/archivo-image"
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
+import { EvidenciaFavoritoButton } from "@/features/planeador/components/planilla/evidencia-favorito-button"
 import {
   OBSERVACION_EVIDENCIAS_MAX,
-  OBSERVACION_EVIDENCIA_MAX_BYTES,
+  OBSERVACION_EVIDENCIA_ACCEPT,
   OBSERVACION_EVIDENCIA_MAX_MB,
+  OBSERVACION_EVIDENCIA_TIPOS_LABEL,
   OBSERVACION_MAX_CARACTERES as MAX_CARACTERES,
+  esEvidenciaImagen,
+  extensionEvidencia,
+  validarEvidencia,
 } from "@/features/planeador/lib/observacion"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
+
+const MOMENTOS_REGISTRO = ["Inicio", "Proceso", "Cierre"] as const
+
+/** Evidencia que no es imagen (PDF, DOC…): tarjeta con ícono que la abre en otra pestaña. */
+function EvidenciaDocumento({ evidencia }: { evidencia: CeldaEvidencia }) {
+  const { data: url, isPending } = useArchivoViewUrl(evidencia.fkTarchivo)
+  const nombre = evidencia.nombre ?? "Documento"
+
+  return (
+    <button
+      type="button"
+      title={nombre}
+      aria-label={`Abrir ${nombre}`}
+      disabled={!url || isPending}
+      onClick={() => url && window.open(url, "_blank", "noopener,noreferrer")}
+      className="flex size-20 flex-col items-center justify-center gap-1 rounded-md border bg-muted/40 px-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-60"
+    >
+      <FileTextIcon className="size-6" />
+      <span className="font-semibold">{extensionEvidencia(evidencia.nombre)}</span>
+      <span className="w-full truncate text-[10px]">{nombre}</span>
+    </button>
+  )
+}
 
 function iniciales(nombreCompleto: string): string {
   const partes = nombreCompleto.trim().split(/\s+/)
@@ -55,6 +98,10 @@ interface ObservacionEstudianteSheetProps {
   agregandoEvidencia?: boolean
   onQuitarEvidencia?: (evidencia: CeldaEvidencia) => void
   quitandoEvidenciaPk?: number | null
+  /** Error del backend al agregar/quitar evidencia: se muestra en la sección. */
+  errorEvidencia?: string | null
+  /** Error del backend al guardar: dentro del sheet, no detrás de su overlay. */
+  errorGuardar?: string | null
   actividadSinComenzar?: boolean
 }
 
@@ -69,23 +116,49 @@ export function ObservacionEstudianteSheet({
   agregandoEvidencia,
   onQuitarEvidencia,
   quitandoEvidenciaPk,
+  errorEvidencia,
+  errorGuardar,
   actividadSinComenzar,
 }: ObservacionEstudianteSheetProps) {
   const [texto, setTexto] = useState("")
   // "Momento": sin endpoint todavía, queda como borrador local sin persistir.
   const [momento, setMomento] = useState("")
+  const [copiado, setCopiado] = useState(false)
+  const [errorPortapapeles, setErrorPortapapeles] = useState<string | null>(null)
+
+  async function copiarObservacion() {
+    try {
+      setErrorPortapapeles(null)
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 1500)
+    } catch {
+      setErrorPortapapeles("No se pudo copiar la observación.")
+    }
+  }
+
+  async function pegarObservacion() {
+    try {
+      setErrorPortapapeles(null)
+      const pegado = await navigator.clipboard.readText()
+      if (pegado) setTexto(pegado.slice(0, MAX_CARACTERES))
+    } catch {
+      setErrorPortapapeles("No se pudo pegar: el navegador no permitió leer el portapapeles. Usa Ctrl+V.")
+    }
+  }
   const [evidenciaAmpliada, setEvidenciaAmpliada] = useState<CeldaEvidencia | null>(null)
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
+  const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const inputArchivoRef = useRef<HTMLInputElement>(null)
   const textoGuardadoRef = useRef("")
-  const { notify } = useNotify()
 
   useEffect(() => {
     if (estudiante) {
       textoGuardadoRef.current = estudiante.observacion ?? ""
       setTexto(textoGuardadoRef.current)
       setMomento("")
+      setErrorLocal(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estudiante?.id])
@@ -104,12 +177,14 @@ export function ObservacionEstudianteSheet({
 
   function handleSeleccionArchivo(archivo: File | undefined) {
     if (!archivo) return
-    if (archivo.size > OBSERVACION_EVIDENCIA_MAX_BYTES) {
-      notify(`La imagen supera el máximo de ${OBSERVACION_EVIDENCIA_MAX_MB} MB.`, { variant: "error" })
-      return
-    }
+    // El error se muestra dentro de la sección Evidencias, no arriba.
+    const error = validarEvidencia(archivo, evidencias.length)
+    setErrorLocal(error)
+    if (error) return
     onAgregarEvidencia?.(archivo)
   }
+
+  const mensajeErrorEvidencia = errorLocal ?? errorEvidencia ?? null
 
   return (
     <Sheet open={estudiante != null} onOpenChange={handleOpenChange}>
@@ -145,7 +220,39 @@ export function ObservacionEstudianteSheet({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-1">
+              {/* Copiar/pegar para repetir la observación en otro estudiante. */}
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    disabled={!texto}
+                    aria-label="Copiar observación"
+                    onClick={copiarObservacion}
+                  >
+                    {copiado ? <CheckIcon className="size-4" /> : <MdContentCopy className="size-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{copiado ? "Copiada" : "Copiar observación"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="neutral"
+                    size="icon-xs"
+                    aria-label="Pegar observación"
+                    onClick={pegarObservacion}
+                  >
+                    <MdContentPaste className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Pegar observación</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger render={<span className="inline-flex" />}>
                   <Button
@@ -176,20 +283,29 @@ export function ObservacionEstudianteSheet({
               <span className="self-end text-xs text-muted-foreground">
                 {texto.length}/{MAX_CARACTERES}
               </span>
+              {errorPortapapeles && (
+                <p role="alert" className="text-destructive text-xs">
+                  {errorPortapapeles}
+                </p>
+              )}
             </Field>
 
             <Field variant="outlined" className="mt-4">
               <FieldLabel htmlFor="momento-estudiante">
-                Momento{" "}
-                <span className="text-muted-foreground font-normal">(borrador — aún no se guarda)</span>
+                Momento del registro{" "}
               </FieldLabel>
-              <Input
-                id="momento-estudiante"
-                value={momento}
-                maxLength={100}
-                onChange={(e) => setMomento(e.target.value)}
-                placeholder="Ej. Inicio, Desarrollo, Cierre…"
-              />
+              <Select value={momento} onValueChange={(v) => setMomento(v ? String(v) : "")}>
+                <SelectTrigger id="momento-estudiante">
+                  <SelectValue>{(v) => (v ? String(v) : "Seleccione")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {MOMENTOS_REGISTRO.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 
@@ -198,18 +314,28 @@ export function ObservacionEstudianteSheet({
             <div className="flex flex-wrap items-start gap-2">
               {evidencias.map((evidencia) => (
                 <div key={evidencia.pk} className="group relative">
-                  <button
-                    type="button"
-                    className="block cursor-zoom-in rounded-md"
-                    aria-label="Ver evidencia en grande"
-                    onClick={() => setEvidenciaAmpliada(evidencia)}
-                  >
-                    <ArchivoImage
-                      archivoId={evidencia.fkTarchivo}
-                      alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
-                      className="size-20"
+                  {esEvidenciaImagen(evidencia.nombre) ? (
+                    <button
+                      type="button"
+                      className="block cursor-zoom-in rounded-md"
+                      aria-label="Ver evidencia en grande"
+                      onClick={() => setEvidenciaAmpliada(evidencia)}
+                    >
+                      <ArchivoImage
+                        archivoId={evidencia.fkTarchivo}
+                        alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
+                        className="size-20"
+                      />
+                    </button>
+                  ) : (
+                    <EvidenciaDocumento evidencia={evidencia} />
+                  )}
+                  {estudiante && (
+                    <EvidenciaFavoritoButton
+                      pkTactividadEstudiante={estudiante.id}
+                      pkTactividadSoporte={evidencia.pk}
                     />
-                  </button>
+                  )}
                   {onQuitarEvidencia && (
                     <Button
                       type="button"
@@ -260,14 +386,14 @@ export function ObservacionEstudianteSheet({
                       ? "La actividad todavía no comienza: no se puede adjuntar evidencia todavía."
                       : "Sin asistencia registrada todavía no se puede adjuntar evidencia."
                     : limiteEvidenciasAlcanzado
-                      ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por observación.`
-                      : `Subir una foto (máx. ${OBSERVACION_EVIDENCIA_MAX_MB} MB) como evidencia de esta observación.`}
+                      ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
+                      : `Subir un archivo ${OBSERVACION_EVIDENCIA_TIPOS_LABEL} (máx. ${OBSERVACION_EVIDENCIA_MAX_MB} MB).`}
                 </TooltipContent>
               </Tooltip>
               <input
                 ref={inputArchivoRef}
                 type="file"
-                accept="image/*"
+                accept={OBSERVACION_EVIDENCIA_ACCEPT}
                 className="hidden"
                 onChange={(e) => {
                   const archivo = e.target.files?.[0]
@@ -276,10 +402,26 @@ export function ObservacionEstudianteSheet({
                 }}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              {OBSERVACION_EVIDENCIA_TIPOS_LABEL} · máx. {OBSERVACION_EVIDENCIA_MAX_MB} MB por archivo · hasta{" "}
+              {OBSERVACION_EVIDENCIAS_MAX} archivos
+            </p>
+            {mensajeErrorEvidencia && (
+              <p role="alert" className="flex items-start gap-1.5 text-xs text-red">
+                <WarningCircleIcon className="mt-0.5 size-3.5 shrink-0" />
+                {mensajeErrorEvidencia}
+              </p>
+            )}
           </div>
         </div>
 
-        <SheetFooter className="flex-row justify-end gap-2">
+        <SheetFooter className="flex-row flex-wrap items-center justify-end gap-2">
+          {errorGuardar && (
+            <p role="alert" className="mr-auto flex min-w-0 flex-1 items-start gap-1.5 text-xs text-red">
+              <WarningCircleIcon className="mt-0.5 size-3.5 shrink-0" />
+              {errorGuardar}
+            </p>
+          )}
           <Button
             type="button"
             color="primary"
@@ -323,7 +465,7 @@ export function ObservacionEstudianteSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar esta evidencia?</AlertDialogTitle>
             <AlertDialogDescription>
-              La imagen se quita de la observación de este estudiante. No se puede deshacer.
+              La evidencia se quita de la observación de este estudiante. No se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

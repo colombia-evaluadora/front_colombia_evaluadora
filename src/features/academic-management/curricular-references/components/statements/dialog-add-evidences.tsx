@@ -122,13 +122,13 @@ export function AddEvidencesDialog({
             <Textarea
               id="evidence-text"
               value={text}
-              maxLength={400}
+              maxLength={500}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe la ${levelLabel.toLowerCase()}...`}
               className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />
-            <CharacterCounter value={text} max={400} />
+            <CharacterCounter value={text} max={500} />
             <FieldError>{error}</FieldError>
           </Field>
 

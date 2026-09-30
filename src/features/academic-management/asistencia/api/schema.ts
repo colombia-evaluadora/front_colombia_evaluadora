@@ -12,7 +12,13 @@ export const asistenciaManualSearchSchema = z.object({
 export type AsistenciaManualSearch = z.infer<typeof asistenciaManualSearchSchema>
 
 
+// Filtros iniciales opcionales: llegan desde el calendario (vista no docente).
 export const asistenciaSeguimientoSearchSchema = z.object({
   sede: z.coerce.number().optional(),
+  fecha: z.string().optional().catch(undefined),
+  jornada: z.string().optional().catch(undefined),
+  grado: z.string().optional().catch(undefined),
+  grupo: z.coerce.number().optional().catch(undefined),
+  asignatura: z.coerce.number().optional().catch(undefined),
 })
 export type AsistenciaSeguimientoSearch = z.infer<typeof asistenciaSeguimientoSearchSchema>

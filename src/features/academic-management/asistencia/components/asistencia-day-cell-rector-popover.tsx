@@ -1,8 +1,10 @@
 import * as React from "react"
+import { Link } from "@tanstack/react-router"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ArrowLeftIcon, CaretRightIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { paths } from "@/config/paths"
 
 import { nombreSesion, type AsistenciaDayEntry } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
 import {
@@ -15,6 +17,8 @@ import {
 
 interface AsistenciaDayCellRectorPopoverProps {
   items: AsistenciaDayEntry[]
+  /** Vista no docente: cada materia lleva a Seguimiento con sus filtros. */
+  seguimientoSede?: number
   children: React.ReactNode
 }
 
@@ -34,9 +38,16 @@ interface AsistenciaGrupoDrillDownProps {
   open?: boolean
   /** Director de grupo: sus grupos ya son pocos, así que arranca directo en "grupos" (grado+grupo) sin el paso intermedio por grado. */
   omitirGrados?: boolean
+  /** Si viene, cada materia es un link a Seguimiento filtrado por ella. */
+  seguimientoSede?: number
 }
 
-export function AsistenciaGrupoDrillDown({ items, open = true, omitirGrados = false }: AsistenciaGrupoDrillDownProps) {
+export function AsistenciaGrupoDrillDown({
+  items,
+  open = true,
+  omitirGrados = false,
+  seguimientoSede,
+}: AsistenciaGrupoDrillDownProps) {
   const inicial: RectorView = omitirGrados ? { level: "grupos-todos" } : { level: "grados" }
   const [view, setView] = React.useState<RectorView>(inicial)
 
@@ -232,13 +243,40 @@ export function AsistenciaGrupoDrillDown({ items, open = true, omitirGrados = fa
           {asignaturas.map((item) => {
             const EstadoIcon = ESTADO_SESION_ICON[item.estado]
             const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
-            return (
-              <li key={item.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+            const contenido = (
+              <>
                 <span className="flex min-w-0 items-center gap-2">
                   <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
                   <span>{nombreSesion(item)}</span>
                 </span>
                 {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
+              </>
+            )
+            if (seguimientoSede == null) {
+              return (
+                <li key={item.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                  {contenido}
+                </li>
+              )
+            }
+            return (
+              <li key={item.id}>
+                <Link
+                  to={paths.app.asistenciaSeguimiento.getHref()}
+                  search={{
+                    sede: seguimientoSede,
+                    fecha: item.fecha,
+                    jornada: item.jornada,
+                    grado: item.grado,
+                    grupo: item.fkGrupo,
+                    // Formativa: fk_asignatura es la dueña de la actividad y no filtra sus registros.
+                    asignatura: item.esFormativa ? undefined : item.fkAsignatura,
+                  }}
+                  className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
+                >
+                  {contenido}
+                  <CaretRightIcon className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+                </Link>
               </li>
             )
           })}
@@ -248,7 +286,7 @@ export function AsistenciaGrupoDrillDown({ items, open = true, omitirGrados = fa
   )
 }
 
-export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDayCellRectorPopoverProps) {
+export function AsistenciaDayCellRectorPopover({ items, children, seguimientoSede }: AsistenciaDayCellRectorPopoverProps) {
   const [open, setOpen] = React.useState(false)
   const fecha = items[0]?.fecha
 
@@ -271,7 +309,7 @@ export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDa
             <XIcon className="size-4" />
           </button>
         </div>
-        <AsistenciaGrupoDrillDown items={items} open={open} />
+        <AsistenciaGrupoDrillDown items={items} open={open} seguimientoSede={seguimientoSede} />
       </PopoverContent>
     </Popover>
   )
