@@ -363,7 +363,8 @@ function DayCellPopover({
                 <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
                   Clases del grupo (Director)
                 </span>
-                <AsistenciaGrupoDrillDown items={clasesDelGrupo} omitirGrados />
+                {/* Clases ajenas (solo lectura): cada materia lleva a Seguimiento filtrado. */}
+                <AsistenciaGrupoDrillDown items={clasesDelGrupo} omitirGrados seguimientoSede={manualSede} />
               </div>
             )}
 
