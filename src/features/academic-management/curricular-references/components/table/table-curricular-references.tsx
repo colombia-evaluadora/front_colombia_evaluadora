@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -111,12 +111,15 @@ export function CurricularReferencesDataTable() {
           isPending={isPending}
           isError={isError}
           onRetry={refetch}
+          // Inactivo: visible y filtrable, pero atenuado (Regla 5).
+          isRowMuted={(row) => !(row.original as CurricularReference).active}
           emptyMessage="Sin resultados."
           errorMessage="Ocurrió un error al cargar los referentes curriculares."
         />
 
         {data && (
           <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
             pageIndex={pageIndex}
             pageCount={data.pageCount}
             canPrev={pageIndex > 0}

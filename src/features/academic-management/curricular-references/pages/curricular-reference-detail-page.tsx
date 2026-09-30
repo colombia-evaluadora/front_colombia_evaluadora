@@ -54,8 +54,8 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
       <p className="text-sm font-bold">Estructura del referente</p>
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
-        <InfoField label="Nivel 1">{reference.level1 ? toSentenceCase(reference.level1) : "—"}</InfoField>
-        <InfoField label="Nivel 2">{reference.level2 ? toSentenceCase(reference.level2) : "—"}</InfoField>
+        <InfoField label="Rótulo de Nivel 1">{reference.level1 ? toSentenceCase(reference.level1) : "—"}</InfoField>
+        <InfoField label="Rótulo de Nivel 2">{reference.level2 ? toSentenceCase(reference.level2) : "—"}</InfoField>
 
         <InfoField label="Enfoque pedagógico">
           {reference.pedagogicalApproach ? toSentenceCase(reference.pedagogicalApproach.name) : "—"}
@@ -82,9 +82,33 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
             </div>
           )}
         </InfoField>
-        <InfoField label="Instrumento">{reference.instrument || "—"}</InfoField>
+        <InfoField label="Rótulo de Área">
+          {reference.subjectLabel ? toSentenceCase(reference.subjectLabel.name) : "—"}
+        </InfoField>
+        <InfoField label="Rótulo de Secuencia de Actividades">{reference.instrument || "—"}</InfoField>
+        <InfoField label="Rótulo de Ejecución">{reference.executionLabel || "—"}</InfoField>
 
-        <InfoField label="Información adicional del instrumento">
+        {/* Solo lectura: agregado de los grados de los enunciados de Nivel 1. `[]` = Todos. */}
+        <InfoField label="Grados vinculados">
+          {reference.gradosVinculados.length === 0 ? (
+            "Todos"
+          ) : (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {reference.gradosVinculados.map((grado) => (
+                <Badge
+                  key={grado.id}
+                  variant="soft"
+                  color="muted"
+                  className="rounded-full px-2.5 py-0.5 text-xs normal-case tracking-normal"
+                >
+                  {toSentenceCase(grado.name)}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </InfoField>
+
+        <InfoField label="Información adicional de la Secuencia de Actividades">
           {reference.instrumentDescription || "—"}
         </InfoField>
         <InfoField label="Normatividad">

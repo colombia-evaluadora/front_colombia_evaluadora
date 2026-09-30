@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useCreateRole } from "@/features/administration/roles-menus/api/mutations/create-role"
 import { useUpdateRoleMenus } from "@/features/administration/roles-menus/api/mutations/update-role-menus"
@@ -78,6 +79,8 @@ function RolesMenusPageContent() {
         setSelectedRoleId(role.id)
         notify("El rol se creó correctamente.")
       },
+      // El NoticeProvider apaga el toast global: el error va al aviso de la página.
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
 
@@ -95,6 +98,7 @@ function RolesMenusPageContent() {
         }
         notify("Los menús del rol se actualizaron correctamente.")
       },
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
 

@@ -7,6 +7,13 @@ export function timeToMinutes(value: string): number {
   return (h || 0) * 60 + (m || 0)
 }
 
+/** "HH:mm" un minuto después de `value`; null si ya es el último minuto del día. */
+export function addOneMinute(value: string): string | null {
+  const total = timeToMinutes(value) + 1
+  if (total >= 24 * 60) return null
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`
+}
+
 export const academicPeriodFormSchema = z
   .object({
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),

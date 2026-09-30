@@ -22,11 +22,14 @@ export interface CurricularReference {
   /** Agregado de los Grados que cada componente de Nivel 1 declaró — de solo
    *  lectura, no se edita desde el Formulario de Configuración. `[]` = "Todos". */
   gradosVinculados: CatalogItem[]
+  /** Última modificación (solo en el listado). */
+  lastModifiedBy?: string | null
+  lastModifiedAt?: string | null
 }
 
 export type CurricularReferenceDraft = Omit<
   CurricularReference,
-  "id" | "createdYear" | "deactivatedYear" | "gradosVinculados"
+  "id" | "createdYear" | "deactivatedYear" | "gradosVinculados" | "lastModifiedBy" | "lastModifiedAt"
 >
 
 export interface CurricularReferencesQueryFilters {

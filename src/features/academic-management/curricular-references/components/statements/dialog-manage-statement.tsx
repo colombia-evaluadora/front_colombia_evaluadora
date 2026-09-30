@@ -25,6 +25,8 @@ interface ManageStatementDialogProps {
   onOpenChange: (open: boolean) => void
   curricularReferenceId: number
   areaId: number | null | undefined
+  /** Grado del filtro del Panel Izquierdo; se asigna solo al crear. */
+  gradeId: number | null | undefined
   statement?: CurricularStatement | null
   levelLabel: string
   /** Se dispara al crear uno nuevo, para seleccionarlo automáticamente en el
@@ -37,6 +39,7 @@ export function ManageStatementDialog({
   onOpenChange,
   curricularReferenceId,
   areaId,
+  gradeId,
   statement = null,
   levelLabel,
   onCreated,
@@ -100,8 +103,8 @@ export function ManageStatementDialog({
       return
     }
 
-    if (areaId === undefined) return
-    await createMutation.mutateAsync({ curricularReferenceId, areaId, text: text.trim(), active })
+    if (areaId === undefined || gradeId === undefined) return
+    await createMutation.mutateAsync({ curricularReferenceId, areaId, gradeId, text: text.trim(), active })
   }
 
   return (
@@ -128,13 +131,13 @@ export function ManageStatementDialog({
             <Textarea
               id="statement-text"
               value={text}
-              maxLength={400}
+              maxLength={500}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
               className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />
-            <CharacterCounter value={text} max={400} />
+            <CharacterCounter value={text} max={500} />
             <FieldError>{error}</FieldError>
           </Field>
 

@@ -208,7 +208,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level1"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level1">Nivel 1 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level1">Rótulo de Nivel 1 *</FieldLabel>
           <Input
             id="curricular-reference-level1"
             size="sm"
@@ -227,7 +227,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level2"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level2">Nivel 2 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level2">Rótulo de Nivel 2 *</FieldLabel>
           <Input
             id="curricular-reference-level2"
             size="sm"
@@ -325,7 +325,7 @@ export function CurricularReferenceDetailsForm({
               const next = raw.trim() === "" ? "" : raw
               onChange({ ...value, instrumentDescription: next })
             }}
-            placeholder="Describe qué incluye este instrumento y cómo se utiliza..."
+            placeholder="Describe qué incluye la secuencia de actividades y cómo se utiliza..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
           <CharacterCounter value={value.instrumentDescription} max={400} />
