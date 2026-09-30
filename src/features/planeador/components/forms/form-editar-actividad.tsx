@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
@@ -316,9 +316,13 @@ export function EditarActividadForm({
   // actuales del form, sin tocar los defaults de arriba.
   const [draftInicial] = useState(() => consumeActividadFormDraft(draftKey))
 
+  const { notify } = useNotify()
   const form = useForm({
     defaultValues: actividadOriginal,
-    onSubmit: ({ value }) => onSubmit?.(value),
+    onSubmit: ({ value }) => {
+      if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
+      return onSubmit?.(value)
+    },
   })
 
   // `keepDefaultValues: true` es la clave: pisa los valores actuales con el
@@ -386,6 +390,8 @@ export function EditarActividadForm({
     actividad.camposDisponibles,
     actividad.unidad.id,
   )
+  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa })
+  camposEfectivosRef.current = { camposEfectivos, esFormativa }
 
   // Grado + Asignatura son el punto de partida de toda la actividad: el
   // resto de los campos (nombre, tipo, unidad asociada, materiales,
@@ -426,6 +432,10 @@ export function EditarActividadForm({
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault()
+        const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
+        if (faltantes.length > 0) {
+          notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
+        }
         form.handleSubmit()
       }}
     >
@@ -443,29 +453,28 @@ export function EditarActividadForm({
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
-      {/* Identificación + Asignatura/Grado en UNA sola grilla —antes vivían
-          en dos `<Card>` separadas y se veían como dos cajas sueltas, aunque
-          las dos son "de dónde depende la actividad" (Grado/Asignatura,
-          Unidad, Nombre/Tipo, mismo grid). Cada sección sigue siendo su
-          propio componente (hooks/lógica separados), pero acá comparten un
-          solo `<Card>` y un solo `grid`. Orden: Grado/Asignatura primero (lo
-          primero que hay que elegir), después Unidad temática asociada
-          (depende de Grado/Asignatura), recién después Nombre/Tipo — el
-          resto del form. */}
+      {/* Bloque "Contexto Académico y Estudiantes": la unidad va entre el área y los estudiantes. */}
       <Card className="gap-4 p-4">
-        <h3 className="text-base font-semibold">Identificación de la actividad</h3>
-        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+        <h3 className="text-base font-semibold">Contexto Académico y Estudiantes</h3>
+        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <AsignaturaGradoSection
             form={form}
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
             unidadBloqueada={unidadBloqueada}
+            unidadSlot={
+              <UnidadAsociadaSection
+                form={form}
+                unidades={unidades}
+                onCrearUnidad={crearUnidad}
+                disabled={disabled || bloqueadoPorRecuperacion || unidadBloqueada}
+              />
+            }
           />
-          <UnidadAsociadaSection
-            form={form}
-            unidades={unidades}
-            onCrearUnidad={crearUnidad}
-            disabled={disabled || bloqueadoPorRecuperacion || unidadBloqueada}
-          />
+        </div>
+      </Card>
+      <Card className="gap-4 p-4">
+        <h3 className="text-base font-semibold">Identificación de la actividad</h3>
+        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <IdentificacionSection
             form={form}
             disabled={disabled}
@@ -507,6 +516,35 @@ export function EditarActividadForm({
     </form>
   )
 }
+
+/** Campos obligatorios vacíos, con el nombre que se ve en pantalla. */
+function camposObligatoriosFaltantes(
+  values: Actividad,
+  {
+    camposEfectivos,
+    esFormativa,
+  }: { camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]; esFormativa: boolean },
+): string[] {
+  const faltantes: string[] = []
+  if (values.grupoId == null) faltantes.push("Grado / Grupo")
+  if (values.asignaturaId == null) faltantes.push("Asignatura")
+  if (!values.nombre?.trim()) faltantes.push("Nombre de la actividad")
+  if (!values.tipo) faltantes.push("Tipo de actividad")
+  if (!values.fechaInicio) faltantes.push("Fecha inicio")
+  if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")
+  if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
+    faltantes.push("Instrumento de evaluación")
+  }
+  return faltantes
+}
+
+/** Error inline de "obligatorio" tras un intento de guardar. */
+function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  return submissionAttempts > 0 && vacio
+}
+
+const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
 
 /**
  * Grado + Asignatura elegidos (los DOS ids, no los nombres): el resto del
@@ -992,13 +1030,15 @@ function IdentificacionSection({
 }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
+  const nombreInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.nombre?.trim()))
+  const tipoInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.tipo))
 
   return (
     <>
         <form.Field name="nombre">
           {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Nombre de la actividad</FieldLabel>
+            <Field variant="outlined" data-invalid={nombreInvalido}>
+              <FieldLabel htmlFor={field.name}>Nombre de la actividad *</FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
@@ -1008,15 +1048,17 @@ function IdentificacionSection({
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 disabled={disabled || bloqueadoPorRecuperacion}
+                aria-invalid={nombreInvalido}
               />
+              {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
         </form.Field>
 
         <form.Field name="tipo">
           {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Tipo de actividad</FieldLabel>
+            <Field variant="outlined" data-invalid={tipoInvalido}>
+              <FieldLabel htmlFor={field.name}>Tipo de actividad *</FieldLabel>
               <Select
                 // `__none__` es el sentinel de "sin elegir" — mismo criterio
                 // que el resto de los `<Select>` del form (Asignatura,
@@ -1044,6 +1086,7 @@ function IdentificacionSection({
                   ))}
                 </SelectContent>
               </Select>
+              {tipoInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
         </form.Field>
@@ -1429,6 +1472,7 @@ function AsignaturaGradoSection({
   form,
   bloqueadoPorRecuperacion,
   unidadBloqueada = false,
+  unidadSlot,
 }: {
   form: FormActividad
   /** Ver `useRecuperacionBloqueaCampos` — Grado/Grupo, Asignatura y
@@ -1449,6 +1493,8 @@ function AsignaturaGradoSection({
    *  grupo en ese grado y necesita otro, tiene que editarlo desde la
    *  actividad ya creada. */
   unidadBloqueada?: boolean
+  /** Selector de unidad, entre el área y "Estudiantes". */
+  unidadSlot?: ReactNode
 }) {
   const { data: docenteGrupos = [], isPending: isPendingDocenteGrupos } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
@@ -1634,6 +1680,11 @@ function AsignaturaGradoSection({
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+  const grupoInvalido = useErrorObligatorio(form, useSelector(form.store, (state) => state.values.grupoId == null))
+  const asignaturaInvalida = useErrorObligatorio(
+    form,
+    useSelector(form.store, (state) => state.values.asignaturaId == null),
+  )
 
   // Ver el comentario de `filtrarSoloEvaluativas` más arriba: sin filtro
   // (el caso normal) estas dos son las mismas listas de siempre.
@@ -1652,8 +1703,8 @@ function AsignaturaGradoSection({
             `UnidadAsociadaSection`) dependen de él y están deshabilitados
             hasta elegirlo — mostrarlo después invertía la relación de
             dependencia y confundía sobre qué elegir primero. */}
-        <Field variant="outlined">
-          <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
+        <Field variant="outlined" data-invalid={grupoInvalido}>
+          <FieldLabel htmlFor="grado-grupo">Grado / Grupo *</FieldLabel>
           <Select
             // `__none__` es el sentinel de "sin elegir" — mismo criterio
             // que Asignatura arriba (y que "Unidad temática asociada"):
@@ -1716,12 +1767,13 @@ function AsignaturaGradoSection({
               ))}
             </SelectContent>
           </Select>
+          {grupoInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
 
         <form.Field name="asignaturaId">
           {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>{subjectLabel}</FieldLabel>
+            <Field variant="outlined" data-invalid={asignaturaInvalida}>
+              <FieldLabel htmlFor={field.name}>{subjectLabel} *</FieldLabel>
               <Select
                 // `__none__` es el sentinel de "sin elegir" — mismo criterio
                 // que Grado/Grupo arriba (y que "Unidad temática asociada").
@@ -1785,9 +1837,12 @@ function AsignaturaGradoSection({
                   ))}
                 </SelectContent>
               </Select>
+              {asignaturaInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
         </form.Field>
+
+        {unidadSlot}
 
         {/* "Estudiantes": deshabilitado hasta elegir Grado/Grupo Y
             Asignatura — mismo criterio de dependencia que Asignatura arriba
@@ -1798,7 +1853,7 @@ function AsignaturaGradoSection({
         <form.Field name="matriculasIds">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estudiantes</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Estudiantes de la actividad</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
                 estudiantes={matriculas}
@@ -2549,7 +2604,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
             const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Fecha inicio *</FieldLabel>
                 <DatePicker
                   mode="date"
                   id={field.name}
@@ -2581,7 +2636,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre*</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre *</FieldLabel>
                     <DatePicker
                       mode="date"
                       id={field.name}
@@ -3245,8 +3300,13 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
               if (listaCotejo.items.length === 0) {
                 return null
               }
+              const totalPosible = listaCotejo.items.reduce(
+                (acc, it) => acc + (Number.isFinite(it.ponderacion) ? (it.ponderacion as number) : 0),
+                0,
+              )
               return (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
                   {listaCotejo.items.map((item, index) => (
                     <ListaCotejoItemCard
                       key={item.id}
@@ -3268,7 +3328,16 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       }}
                     />
                   ))}
-                </div>
+                  </div>
+                  {esEvaluativa && (
+                    <div className="flex justify-end">
+                      <Field variant="outlined" className="w-44">
+                        <FieldLabel htmlFor="lista-cotejo-total-posible">Total posible</FieldLabel>
+                        <Input id="lista-cotejo-total-posible" type="number" value={totalPosible} readOnly disabled />
+                      </Field>
+                    </div>
+                  )}
+                </>
               )
             }}
           </form.Field>
@@ -3327,13 +3396,13 @@ function ListaCotejoItemCard({
       {/* Descripción + ponderación en la misma fila: `flex-1` en la
           descripción para que absorba el ancho sobrante, `w-36 shrink-0`
           en la ponderación —ancho subido de `w-24`: a 96px el label
-          "Puntaje" quedaba apretado contra el borde del campo—
+          "Puntaje del elemento" quedaba apretado contra el borde del campo—
           para que no se comprima con textos largos. Sin `esEvaluativa`
           el campo de ponderación no se monta —no queda un hueco vacío
           al lado del textarea. */}
       <div className="mt-3 flex items-start gap-3">
         <Field variant="outlined" className="min-w-0 flex-1">
-          <FieldLabel htmlFor={`${item.id}-descripcion`}>Descripción del ítem</FieldLabel>
+          <FieldLabel htmlFor={`${item.id}-descripcion`}>Descripción del elemento</FieldLabel>
           <Textarea
             id={`${item.id}-descripcion`}
             className={TEXTAREA_OUTLINED}
@@ -3346,8 +3415,8 @@ function ListaCotejoItemCard({
         </Field>
 
         {esEvaluativa && (
-          <Field variant="outlined" className="w-36 shrink-0">
-            <FieldLabel htmlFor={`${item.id}-ponderacion`}>Puntaje</FieldLabel>
+          <Field variant="outlined" className="w-44 shrink-0">
+            <FieldLabel htmlFor={`${item.id}-ponderacion`}>Puntaje del elemento</FieldLabel>
             <Input
               id={`${item.id}-ponderacion`}
               type="number"
