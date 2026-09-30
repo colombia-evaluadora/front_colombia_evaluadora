@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useDeleteActividad } from "@/features/planeador/api/mutations/delete-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DialogDeleteActividadProps {
   actividad: Pick<Actividad, "id" | "nombre">
@@ -70,6 +71,9 @@ export function DialogDeleteActividad({
       },
     },
   })
+
+  const { puedeEliminar } = useMenuPermission("PLANEADOR")
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

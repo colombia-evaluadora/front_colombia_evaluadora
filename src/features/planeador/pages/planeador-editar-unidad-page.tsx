@@ -30,6 +30,7 @@ import {
   mensajeUnidadGuardada,
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "editar-unidad-form"
 
@@ -88,6 +89,17 @@ function EditarUnidadPageContent({
   const [initialDraft, setInitialDraft] = useState<UnidadDraft | null>(null)
   const { notify } = useNotify()
   const instrumento = useUnidadInstrumentoLabel(unidad?.gradoId)
+
+  // Mismo guard de permiso que `planeador-editar-actividad-page.tsx`: sin
+  // "editar" en Planeador, redirige al listado apenas se sabe que no hay
+  // permiso.
+  const navigate = useNavigate()
+  const { puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  useEffect(() => {
+    if (!isLoadingPermiso && !puedeEditar) {
+      navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })
+    }
+  }, [isLoadingPermiso, puedeEditar, navigate])
 
   // `unidad.enunciadosDba` (del detalle) siempre llega vacío contra el
   // backend real (viven en un endpoint aparte — ver el comentario de
@@ -158,7 +170,7 @@ function EditarUnidadPageContent({
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        {(isPending || (!isError && unidad && !current)) && (
+        {(isPending || isLoadingPermiso || !puedeEditar || (!isError && unidad && !current)) && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando unidad…
           </div>
@@ -170,7 +182,7 @@ function EditarUnidadPageContent({
           </p>
         )}
 
-        {unidad && current && (
+        {puedeEditar && unidad && current && (
           <form
             id={FORM_ID}
             onSubmit={(e) => {

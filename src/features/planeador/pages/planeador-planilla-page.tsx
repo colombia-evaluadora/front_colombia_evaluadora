@@ -51,6 +51,7 @@ import {
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
  *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
@@ -78,6 +79,7 @@ type VerPorOption = AgrupacionPlanillaKey
  * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
+  const { puedeCrear, puedeEditar } = useMenuPermission("PLANEADOR")
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
@@ -147,6 +149,7 @@ export function PlaneadorPlanillaPage() {
           <TableScreenTitle
             action={
               columnaEnBulk ? (
+                puedeEditar &&
                 estadoGuardarBulk && (
                   <Button
                     color="primary"
@@ -163,18 +166,20 @@ export function PlaneadorPlanillaPage() {
                 )
               ) : (
               <div className="flex gap-0">
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  aria-label="Nueva actividad"
-                  nativeButton={false}
-                  className="rounded-r-none border-r-0"
-                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
-                >
-                  <PlusCircleIcon data-icon="inline-start" />
-                  Nueva actividad
-                </Button>
+                {puedeCrear && (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    aria-label="Nueva actividad"
+                    nativeButton={false}
+                    className="rounded-r-none border-r-0"
+                    render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
+                  >
+                    <PlusCircleIcon data-icon="inline-start" />
+                    Nueva actividad
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -183,7 +188,7 @@ export function PlaneadorPlanillaPage() {
                         size="sm"
                         variant="fill"
                         aria-label="Más opciones"
-                        className="rounded-l-none"
+                        className={puedeCrear ? "rounded-l-none" : undefined}
                       />
                     }
                   >

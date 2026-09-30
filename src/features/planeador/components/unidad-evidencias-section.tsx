@@ -187,7 +187,13 @@ export function EnunciadosEvidenciasChecklist({
     <div className={cn("flex flex-col gap-4", className)}>
       <h4 className="text-sm font-semibold">{titulo}</h4>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* `auto-fill` + `minmax(...,1fr)` en vez de un `grid-cols-N` fijo: con
+          un solo propósito, esa columna ocupaba 1/4 del ancho y el resto
+          quedaba vacío (ver captura del feedback). Así la columna estira
+          hasta llenar la fila cuando hay pocos, y el mínimo hace que las
+          demás bajen de línea en vez de angostarse sin límite cuando hay
+          muchos. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-4">
         {enunciados.map((enunciado) => (
           <div key={enunciado.id} className="flex flex-col gap-2">
             <p className="text-sm font-semibold">{enunciado.text}</p>
