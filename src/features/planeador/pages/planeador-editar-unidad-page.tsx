@@ -172,7 +172,7 @@ function EditarUnidadPageContent({
       <TableScreenBody className="rounded-b-none border-b-0">
         {(isPending || isLoadingPermiso || !puedeEditar || (!isError && unidad && !current)) && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-            <Spinner /> Cargando unidad…
+            <Spinner /> Cargando…
           </div>
         )}
 
