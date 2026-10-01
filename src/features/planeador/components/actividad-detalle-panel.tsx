@@ -194,7 +194,7 @@ export function ActividadDetallePanel({
       <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto p-3">
         {isPending && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-            <Spinner /> Cargando actividad…
+            <Spinner /> Cargando…
           </div>
         )}
 
