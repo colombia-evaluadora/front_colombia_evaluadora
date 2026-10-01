@@ -101,17 +101,23 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
           nombrePlantilla: adaptacion.nombrePlantilla,
         }
       }
-      // BIBLIOTECA: el archivo elegido ya existe (subido en otra
-      // actividad, `AdaptacionBibliotecaField`) — se manda directo, sin
-      // subir nada. Sin `nombrePlantilla`: esa plantilla ya tiene el suyo
-      // propio, fijado cuando se creó.
+      // BIBLIOTECA: el recurso elegido ya existe (registrado en otra
+      // actividad propia, `AdaptacionBibliotecaField`) — se manda directo,
+      // sin subir nada. Puede ser un archivo (fkTarchivo) o, si la
+      // plantilla de origen era de solo enlace, una URL
+      // (`versionModificadaRef`, reutilizado acá igual que en "enlace").
+      // Sin `nombrePlantilla`: esa plantilla ya tiene el suyo propio,
+      // fijado cuando se creó.
       if (adaptacion.versionModificada === "biblioteca") {
-        if (adaptacion.archivoId === undefined) {
-          throw new Error(
-            "Elegí una plantilla de la biblioteca institucional para la adaptación marcada como \"Biblioteca\".",
-          )
+        if (adaptacion.archivoId !== undefined) {
+          return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
         }
-        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
+        if (adaptacion.versionModificadaRef) {
+          return { ...base, formatoAdaptacion, url: adaptacion.versionModificadaRef }
+        }
+        throw new Error(
+          "Elegí una plantilla de la biblioteca institucional para la adaptación marcada como \"Biblioteca\".",
+        )
       }
       // "archivo" — hasta 3, el único caso que sube binarios. Uno YA
       // guardado se reenvía por su `fkTarchivo` sin volver a subirlo —

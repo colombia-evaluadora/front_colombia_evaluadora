@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query"
+
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
 
@@ -44,4 +46,15 @@ export async function fetchTipoAdaptacionOptions(): Promise<TipoAdaptacionOption
 export async function resolveTipoAdaptacionId(tipo: string): Promise<number | undefined> {
   const options = await fetchTipoAdaptacionOptions()
   return options.find((o) => o.tipo === tipo)?.id
+}
+
+/** Para `AdaptacionBibliotecaField`: filtrar por defecto la Biblioteca al
+ *  mismo Tipo de adaptación ya elegido (Regla 50) necesita el id sin
+ *  esperar a armar el body del PUT — catálogo, `staleTime: Infinity`. */
+export function useTipoAdaptacionCatalogQuery() {
+  return useQuery({
+    queryKey: ["planeador", "tipo-adaptacion-catalog"],
+    queryFn: fetchTipoAdaptacionOptions,
+    staleTime: Infinity,
+  })
 }
