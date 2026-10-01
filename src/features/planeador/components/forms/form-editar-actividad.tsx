@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
@@ -4005,7 +4006,12 @@ function InstrumentoPersonalizadoSection({
                   >
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
                       <SelectValue placeholder="Seleccione">
-                        {(v) => TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? (v as string) ?? "Seleccione"}
+                        {(v) =>
+                          // `??` no sirve acá: sin selección `v` llega como
+                          // `""` (falsy pero no nulo), así que el `??`
+                          // nunca cae a "Seleccione" y se veía en blanco.
+                          v ? (TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? (v as string)) : "Seleccione"
+                        }
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -4567,9 +4573,11 @@ function AdaptacionesSection({
               ...adaptaciones,
               {
                 tipo: "",
+                tipoOtro: "",
                 descripcion: "",
                 versionModificada: "no",
                 versionModificadaRef: "",
+                nombrePlantilla: "",
                 aplicaA: "",
                 estudiantesIds: [],
               },
@@ -4768,14 +4776,47 @@ function AdaptacionBibliotecaField({
   )
 }
 
+// Formatos definidos para la plantilla de una adaptación (pedido explícito,
+// distinto del `RECURSO_ARCHIVO_ACCEPT` de "Recursos" — ese acepta
+// imagen/audio/video/pdf a secas; acá son documentos de adaptación
+// curricular, no multimedia). A diferencia de "Recursos" (`accept` ahí es
+// guía, no validación — decide `file-service`), acá SÍ se valida en el
+// cliente: pedido explícito de QA.
+const ADAPTACION_ARCHIVO_ACCEPT = ".pdf,.doc,.docx,.jpg,.jpeg,.png"
+const ADAPTACION_ARCHIVO_MIME_ACCEPT = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+]
+const ADAPTACION_ARCHIVO_MAX_BYTES = 10 * 1024 * 1024
+
+/** `new URL` tira con cualquier string que no sea una URL absoluta — sin
+ *  protocolo (`http`/`https`) no sirve como enlace de plantilla. */
+function esUrlValida(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 /**
  * Bloque de una adaptación curricular. Mismo patrón que `CriterioItem`:
- * título con índice y tachito, luego los cuatro campos del mockup.
+ * título con índice y tachito, luego los campos del mockup.
  *
  * El campo `descripcion` lleva `maxLength={500}` para hacer cumplir el
- * tope del placeholder. Los selects usan `Field variant="outlined"` con
+ * tope del contador. Los selects usan `Field variant="outlined"` con
  * `FieldLabel` adentro —mismo patrón que el resto del form— y arrancan
  * con `Seleccione` como placeholder hasta que se elija un valor real.
+ *
+ * `tipoOtro`/`nombrePlantilla` ya viajan al backend (sso V532, ver
+ * `update-adaptaciones-actividad.ts`) pero no tenían campo acá — sin
+ * `form` disponible (este componente no lo recibe, solo `adaptacion`/
+ * `onChange`), la validación de "obligatorio" es local por `blur`, no por
+ * intento de guardar como el resto del form.
  */
 function AdaptacionItem({
   index,
@@ -4796,6 +4837,22 @@ function AdaptacionItem({
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
+  const [tocoTipoOtro, setTocoTipoOtro] = useState(false)
+  const [tocoNombrePlantilla, setTocoNombrePlantilla] = useState(false)
+  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
+  // `adaptacion`, así que no alcanza con derivarlo de ahí.
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
+  const [tocoEnlace, setTocoEnlace] = useState(false)
+
+  const tipoOtroInvalido = tocoTipoOtro && adaptacion.tipo === "Otro" && !adaptacion.tipoOtro.trim()
+  const nombrePlantillaInvalida =
+    tocoNombrePlantilla &&
+    (adaptacion.versionModificada === "archivo" || adaptacion.versionModificada === "enlace") &&
+    !adaptacion.nombrePlantilla.trim()
+  const enlaceInvalido =
+    tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
+    !esUrlValida(adaptacion.versionModificadaRef)
+
   return (
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -4823,9 +4880,12 @@ function AdaptacionItem({
       <Field variant="outlined" className="mt-3">
         <FieldLabel>¿Qué tipo de adaptación requiere esta actividad?</FieldLabel>
         <Select
-          value={adaptacion.tipo as never}
+          value={(adaptacion.tipo || "__none__") as never}
           onValueChange={(value) =>
-            onChange({ ...adaptacion, tipo: (value ?? "") as Adaptacion["tipo"] })
+            onChange({
+              ...adaptacion,
+              tipo: (!value || value === "__none__" ? "" : value) as Adaptacion["tipo"],
+            })
           }
           disabled={disabled}
         >
@@ -4857,10 +4917,27 @@ function AdaptacionItem({
         </Select>
       </Field>
 
+      {/* Solo "Otro" la exige (fn_actividad_validar_adaptaciones, V532) —
+          el resto del catálogo no tiene dónde usarla. */}
+      {adaptacion.tipo === "Otro" && (
+        <Field variant="outlined" className="mt-4" data-invalid={tipoOtroInvalido}>
+          <FieldLabel>Especifique el tipo de adaptación *</FieldLabel>
+          <Input
+            maxLength={100}
+            placeholder="Describa el tipo de adaptación…"
+            value={adaptacion.tipoOtro}
+            onChange={(e) => onChange({ ...adaptacion, tipoOtro: e.target.value })}
+            onBlur={() => setTocoTipoOtro(true)}
+            aria-invalid={tipoOtroInvalido}
+            disabled={disabled}
+          />
+          <CharacterCounter value={adaptacion.tipoOtro} max={100} />
+          {tipoOtroInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
+        </Field>
+      )}
+
       <Field variant="outlined" className="mt-4">
-        <FieldLabel>
-          Describa cómo se adapta la actividad para este caso (máx. 500 caracteres)
-        </FieldLabel>
+        <FieldLabel>Describa cómo se adapta la actividad para este caso</FieldLabel>
         <Textarea
           rows={3}
           maxLength={500}
@@ -4870,6 +4947,7 @@ function AdaptacionItem({
           className={TEXTAREA_OUTLINED}
           disabled={disabled}
         />
+        <CharacterCounter value={adaptacion.descripcion} max={500} />
       </Field>
 
       <Field variant="outlined" className="mt-4">
@@ -4911,57 +4989,116 @@ function AdaptacionItem({
           no muestra nada; los tres modos "Sí…" muestran cada uno su propio
           control (file picker, input URL o select de plantillas). */}
       {adaptacion.versionModificada === "archivo" && (
-        <Field variant="outlined" className="mt-4">
-          <FieldLabel>Archivo de plantilla</FieldLabel>
-          <div className="relative">
-            <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+        <>
+          <Field variant="outlined" className="mt-4" data-invalid={Boolean(errorArchivo)}>
+            <FieldLabel>Archivo de plantilla</FieldLabel>
+            <div className="relative">
+              <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input
+                type="file"
+                // `<input type="file">` no acepta `value` programático (el
+                // browser tira `InvalidStateError` con cualquier valor que no
+                // sea `""`) — el archivo se lee de `e.target.files`, no de un
+                // `value` controlado. Mismo criterio que el file picker de
+                // "Recursos" (`RecursosSection`, más arriba en este archivo).
+                // A diferencia de ese, acá SÍ se valida tipo/tamaño — ver
+                // `ADAPTACION_ARCHIVO_ACCEPT`.
+                accept={ADAPTACION_ARCHIVO_ACCEPT}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) {
+                    setErrorArchivo(null)
+                    return
+                  }
+                  if (!ADAPTACION_ARCHIVO_MIME_ACCEPT.includes(file.type)) {
+                    setErrorArchivo("Formato no permitido. Usá PDF, Word (.doc/.docx), JPG o PNG.")
+                    e.target.value = ""
+                    return
+                  }
+                  if (file.size > ADAPTACION_ARCHIVO_MAX_BYTES) {
+                    setErrorArchivo("El archivo supera el tamaño máximo permitido (10 MB).")
+                    e.target.value = ""
+                    return
+                  }
+                  setErrorArchivo(null)
+                  if (adaptacion.versionModificadaRef.startsWith("blob:")) {
+                    URL.revokeObjectURL(adaptacion.versionModificadaRef)
+                  }
+                  onChange({
+                    ...adaptacion,
+                    versionModificadaRef: URL.createObjectURL(file),
+                    archivoNombre: file.name,
+                  })
+                }}
+                className="pl-9"
+                disabled={disabled}
+              />
+            </div>
+            {errorArchivo && <FieldError errors={[{ message: errorArchivo }]} />}
+            {adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef && (
+              <>
+                <FieldDescription>
+                  Ya hay una plantilla cargada. Elegí un archivo solo si querés reemplazarla.
+                </FieldDescription>
+                <VerPlantillaAdaptacion archivoId={adaptacion.archivoId} />
+              </>
+            )}
+          </Field>
+          <Field variant="outlined" className="mt-4" data-invalid={nombrePlantillaInvalida}>
+            <FieldLabel>Nombre de plantilla *</FieldLabel>
             <Input
-              type="file"
-              // `<input type="file">` no acepta `value` programático (el
-              // browser tira `InvalidStateError` con cualquier valor que no
-              // sea `""`) — el archivo se lee de `e.target.files`, no de un
-              // `value` controlado. Mismo criterio que el file picker de
-              // "Recursos" (`RecursosSection`, más arriba en este archivo).
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (adaptacion.versionModificadaRef.startsWith("blob:")) {
-                  URL.revokeObjectURL(adaptacion.versionModificadaRef)
-                }
-                onChange({
-                  ...adaptacion,
-                  versionModificadaRef: file ? URL.createObjectURL(file) : "",
-                  archivoNombre: file?.name,
-                })
-              }}
-              className="pl-9"
+              maxLength={100}
+              placeholder="Nombre con el que se identifica la plantilla…"
+              value={adaptacion.nombrePlantilla}
+              onChange={(e) => onChange({ ...adaptacion, nombrePlantilla: e.target.value })}
+              onBlur={() => setTocoNombrePlantilla(true)}
+              aria-invalid={nombrePlantillaInvalida}
               disabled={disabled}
             />
-          </div>
-          {adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef && (
-            <>
-              <FieldDescription>
-                Ya hay una plantilla cargada. Elegí un archivo solo si querés reemplazarla.
-              </FieldDescription>
-              <VerPlantillaAdaptacion archivoId={adaptacion.archivoId} />
-            </>
-          )}
-        </Field>
+            <CharacterCounter value={adaptacion.nombrePlantilla} max={100} />
+            {nombrePlantillaInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+          </Field>
+        </>
       )}
 
       {adaptacion.versionModificada === "enlace" && (
-        <Field variant="outlined" className="mt-4">
-          <FieldLabel>Enlace de la plantilla</FieldLabel>
-          <Input
-            type="url"
-            placeholder="https://…"
-            maxLength={500}
-            value={adaptacion.versionModificadaRef}
-            onChange={(e) =>
-              onChange({ ...adaptacion, versionModificadaRef: e.target.value })
-            }
-            disabled={disabled}
-          />
-        </Field>
+        <>
+          <Field variant="outlined" className="mt-4" data-invalid={enlaceInvalido}>
+            <FieldLabel>Enlace de la plantilla</FieldLabel>
+            <Input
+              type="url"
+              placeholder="https://…"
+              maxLength={500}
+              value={adaptacion.versionModificadaRef}
+              onChange={(e) =>
+                onChange({ ...adaptacion, versionModificadaRef: e.target.value })
+              }
+              onBlur={() => setTocoEnlace(true)}
+              aria-invalid={enlaceInvalido}
+              disabled={disabled}
+            />
+            <CharacterCounter value={adaptacion.versionModificadaRef} max={500} />
+            {enlaceInvalido && (
+              <FieldError
+                errors={[{ message: "Ingresá una URL válida (debe empezar con http:// o https://)." }]}
+              />
+            )}
+          </Field>
+          <Field variant="outlined" className="mt-4" data-invalid={nombrePlantillaInvalida}>
+            <FieldLabel>Nombre de plantilla *</FieldLabel>
+            <Input
+              maxLength={100}
+              placeholder="Nombre con el que se identifica la plantilla…"
+              value={adaptacion.nombrePlantilla}
+              onChange={(e) => onChange({ ...adaptacion, nombrePlantilla: e.target.value })}
+              onBlur={() => setTocoNombrePlantilla(true)}
+              aria-invalid={nombrePlantillaInvalida}
+              disabled={disabled}
+            />
+            <CharacterCounter value={adaptacion.nombrePlantilla} max={100} />
+            {nombrePlantillaInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+          </Field>
+        </>
       )}
 
       {adaptacion.versionModificada === "biblioteca" && (
@@ -4980,9 +5117,9 @@ function AdaptacionItem({
       <Field variant="outlined" className="mt-4">
         <FieldLabel>¿A quién se aplica esta adaptación?</FieldLabel>
         <Select
-          value={adaptacion.aplicaA as never}
+          value={(adaptacion.aplicaA || "__none__") as never}
           onValueChange={(value) => {
-            const next = (value ?? "") as Adaptacion["aplicaA"]
+            const next = (!value || value === "__none__" ? "" : value) as Adaptacion["aplicaA"]
             onChange({
               ...adaptacion,
               aplicaA: next,

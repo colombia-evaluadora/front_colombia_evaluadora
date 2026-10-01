@@ -190,9 +190,24 @@ export interface Unidad {
  */
 export interface Adaptacion {
   tipo: string
+  /**
+   * Justificación libre, obligatoria cuando `tipo === "Otro"` (sso V532,
+   * `TACTIVIDAD_ADAPTACION.TIPO_OTRO`) — ningún otro valor del catálogo la
+   * usa.
+   */
+  tipoOtro: string
   descripcion: string
   versionModificada: "no" | "archivo" | "enlace" | "biblioteca" | ""
   versionModificadaRef: string
+  /**
+   * Rótulo que el docente le da a la plantilla (archivo o enlace) para
+   * reconocerla después en la Biblioteca institucional (sso V532,
+   * `TACTIVIDAD_ADAPTACION.NOMBRE_PLANTILLA`) — máx. 100 caracteres,
+   * obligatorio con `versionModificada` en `"archivo"`/`"enlace"`. No
+   * aplica a `"biblioteca"`: ahí se reusa el nombre que ya tiene la
+   * plantilla elegida.
+   */
+  nombrePlantilla: string
   aplicaA: string
   estudiantesIds: number[]
   /**

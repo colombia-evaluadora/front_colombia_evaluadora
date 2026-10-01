@@ -65,6 +65,10 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
       const usaVersionModificada = adaptacion.versionModificada && adaptacion.versionModificada !== "no" ? "S" : "N"
       const base = {
         tipoAdaptacion: await resolveTipoAdaptacionId(adaptacion.tipo),
+        // Solo "Otro" lo exige (fn_actividad_validar_adaptaciones, V532);
+        // el resto del catálogo no tiene dónde usarlo, así que se omite en
+        // vez de mandar un string vacío.
+        ...(adaptacion.tipo === "Otro" ? { tipoOtro: adaptacion.tipoOtro } : {}),
         descripcion: adaptacion.descripcion,
         usaVersionModificada,
         aplicaA: await resolveAplicaAId(adaptacion.aplicaA),
@@ -76,11 +80,17 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
 
       const formatoAdaptacion = await resolveFormatoAdaptacionId(adaptacion.versionModificada)
       if (adaptacion.versionModificada === "enlace") {
-        return { ...base, formatoAdaptacion, url: adaptacion.versionModificadaRef }
+        return {
+          ...base,
+          formatoAdaptacion,
+          url: adaptacion.versionModificadaRef,
+          nombrePlantilla: adaptacion.nombrePlantilla,
+        }
       }
       // BIBLIOTECA: el archivo elegido ya existe (subido en otra
       // actividad, `AdaptacionBibliotecaField`) — se manda directo, sin
-      // subir nada.
+      // subir nada. Sin `nombrePlantilla`: esa plantilla ya tiene el suyo
+      // propio, fijado cuando se creó.
       if (adaptacion.versionModificada === "biblioteca") {
         if (adaptacion.archivoId === undefined) {
           throw new Error(
@@ -96,7 +106,7 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
       // REEMPLAZO TOTAL, así que reabrir la actividad y guardar cualquier
       // otro campo (sin tocar la plantilla) se llevaba puesto el archivo.
       if (adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef.startsWith("blob:")) {
-        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
+        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId, nombrePlantilla: adaptacion.nombrePlantilla }
       }
       // Sin blob URL y sin id no hay nada que enlazar: el docente eligió
       // "Sí, adjuntar plantilla (archivo)" pero no llegó a elegir un archivo.
@@ -104,7 +114,7 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
         throw new Error("Elegí un archivo de plantilla para la adaptación marcada como \"Archivo\".")
       }
       const fkTarchivo = await subirArchivoAdaptacion(actividadId, adaptacion)
-      return { ...base, formatoAdaptacion, fkTarchivo }
+      return { ...base, formatoAdaptacion, fkTarchivo, nombrePlantilla: adaptacion.nombrePlantilla }
     }),
   )
   await api.put(`/eval-col/planeador/actividades/${actividadId}/adaptaciones`, {

@@ -365,6 +365,10 @@ function nombreConExtension(row: MaterialArchivoRow): string {
  * `update-adaptaciones-actividad.ts`) — quedan vacíos en vez de inventar en
  * cuál de los tres tipos ("archivo"/"enlace"/"biblioteca") cayó, que sería
  * peor que no mostrar nada.
+ *
+ * `tipoOtro`/`nombrePlantilla` (sso V532) sí tienen campo confirmado:
+ * `TACTIVIDAD_ADAPTACION.TIPO_OTRO`/`.NOMBRE_PLANTILLA`, expuestos tal cual
+ * en el JSONB de `fn_actividad_buscar_por_pk`.
  */
 function adaptacionFromRaw(
   raw: unknown,
@@ -408,11 +412,15 @@ function adaptacionFromRaw(
         ? formatoLower
         : "no"
   const versionModificadaRef = versionModificada === "enlace" && typeof urlRaw === "string" ? urlRaw : ""
+  const tipoOtroRaw = item.tipoOtro ?? item.tipo_otro
+  const nombrePlantillaRaw = item.nombrePlantilla ?? item.nombre_plantilla
   return {
     tipo,
+    tipoOtro: typeof tipoOtroRaw === "string" ? tipoOtroRaw : "",
     descripcion: typeof descripcionRaw === "string" ? descripcionRaw : "",
     versionModificada,
     versionModificadaRef,
+    nombrePlantilla: typeof nombrePlantillaRaw === "string" ? nombrePlantillaRaw : "",
     aplicaA,
     estudiantesIds: [],
     ...(typeof fkTarchivoRaw === "number" ? { archivoId: fkTarchivoRaw } : {}),
