@@ -96,7 +96,7 @@ export type CalificacionEstudiante = Estudiante & {
 /** Motivo por el que no se puede calificar ni observar, o `null` si se puede. */
 export function bloqueoCalificar(e: CalificacionEstudiante): string | null {
   if (e.estadoResultado === "NO_PRESENTO" || e.noPresento) {
-    return "Está marcado No presentó: quítelo para registrar el resultado."
+    return "El estudiante no presentó."
   }
   // Si el backend aún no manda el estado, la asistencia ausente basta.
   if (
