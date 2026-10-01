@@ -5,6 +5,7 @@ import type {
   Asistencia,
   CalificacionEstudiante,
   EstadoAsistencia,
+  EstadoResultado,
   Estudiante,
   NotaCriterio,
 } from "@/features/planeador/api/types/calificacion"
@@ -209,14 +210,48 @@ function buildCalificaciones(
 
   for (const actividad of actividades) {
     const estudiantes = buildEstudiantes(actividad.grado, actividad.grupo)
-    out[actividad.id] = estudiantes.map((estudiante, index) => ({
-      ...estudiante,
-      asistencia: buildAsistencia(index),
-      notas: actividad.esEvaluativa ? buildNotas(index, actividad.rubrica.criterios) : [],
-    }))
+    out[actividad.id] = estudiantes.map((estudiante, index) =>
+      conEstado({
+        ...estudiante,
+        asistencia: buildAsistencia(index),
+        notas: actividad.esEvaluativa ? buildNotas(index, actividad.rubrica.criterios) : [],
+      }),
+    )
   }
 
   return out
+}
+
+/** Estado del resultado como lo resuelve el backend (Regla 62/73). */
+function conEstado(c: CalificacionEstudiante): CalificacionEstudiante {
+  const conNota = c.notas.some((n) => typeof n.valor === "number")
+  const estadoResultado: EstadoResultado = conNota
+    ? "CALIFICADO"
+    : c.noPresento
+      ? "NO_PRESENTO"
+      : c.asistencia.estado === "no-asistio"
+        ? c.asistencia.justificada
+          ? "NO_ASISTIO_JUSTIFICADA"
+          : "NO_ASISTIO_NO_JUSTIFICADA"
+        : "PENDIENTE"
+  return { ...c, estadoResultado, asistenciaEditable: !conNota }
+}
+
+/** Mock: aplica un cambio a la fila de ese `PK_TACTIVIDAD_ESTUDIANTE`. Los ids
+ *  del mock se repiten entre actividades, así que alcanza a todas. */
+export function actualizarCalificacionEstudiante(
+  id: number,
+  cambio: (c: CalificacionEstudiante) => CalificacionEstudiante,
+): CalificacionEstudiante | undefined {
+  let ultimo: CalificacionEstudiante | undefined
+  for (const filas of Object.values(cache ?? {})) {
+    const i = filas.findIndex((c) => c.id === id)
+    if (i >= 0) {
+      filas[i] = conEstado(cambio(filas[i]))
+      ultimo = filas[i]
+    }
+  }
+  return ultimo
 }
 
 /**

@@ -53,6 +53,9 @@ interface DialogCalificarActividadProps {
   /** Se ejecuta cuando termina OK el guardado (invalidar el listado que
    *  muestra la nota agregada del estudiante). */
   onGuardado?: () => void
+  /** Motivo por el que no se puede calificar (sin asistencia, No asistido,
+   *  No presentó): deshabilita el botón y se muestra en el tooltip. */
+  bloqueo?: string | null
 }
 
 /**
@@ -80,6 +83,7 @@ export function DialogCalificarActividad({
   sinNota = false,
   fecha,
   onGuardado,
+  bloqueo,
 }: DialogCalificarActividadProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -121,6 +125,26 @@ export function DialogCalificarActividad({
   }
 
   if (!puedeEditar) return null
+
+  if (bloqueo) {
+    return (
+      <Tooltip>
+        {/* El span recibe el hover: un botón deshabilitado no lo dispara. */}
+        <TooltipTrigger render={<span className="inline-flex" />}>
+          <Button
+            variant="outline"
+            color="primary"
+            size="icon-sm"
+            disabled
+            aria-label={`Calificar a ${estudianteNombre}`}
+          >
+            <IoMdCheckboxOutline className="size-5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{bloqueo}</TooltipContent>
+      </Tooltip>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

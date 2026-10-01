@@ -38,16 +38,7 @@ const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
 
-const JUSTIFICADO_DE: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
-  2: 3,
-  5: 6,
-}
-
-function tipoConSoporte(tipo: TipoAsistencia, hayArchivo: boolean): TipoAsistencia {
-  if (!hayArchivo) return tipo
-  return JUSTIFICADO_DE[tipo] ?? tipo
-}
-
+// 3 y 6 solo vienen en filas históricas: la excusa es el archivo, no un tipo.
 const BASE_DE_JUSTIFICADO: Partial<Record<TipoAsistencia, TipoAsistencia>> = {
   3: 2,
   6: 5,
@@ -138,7 +129,7 @@ function registrosPorBloque(
             : undefined
         porBloque.get(bloque)!.push({
           fkMatricula,
-          tipoAsistencia: tipoConSoporte(tipoBloque, archivo !== undefined),
+          tipoAsistencia: tipoBloque,
           ...(archivo !== undefined && { fkArchivo: archivo }),
         })
       }
@@ -156,7 +147,7 @@ function registrosPorBloque(
         : undefined
       porBloque.get(bloque)!.push({
         fkMatricula,
-        tipoAsistencia: tipoConSoporte(tipo, archivo !== undefined),
+        tipoAsistencia: tipo,
         ...(archivo !== undefined && { fkArchivo: archivo }),
       })
     }

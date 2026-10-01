@@ -24,6 +24,7 @@ import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/u
 import type { UnidadTab } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
+  ContenidosCaja,
   ListaAgregableCaja,
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
@@ -410,13 +411,11 @@ export function UnidadInfoGeneralFields({
         disabled={disabled}
       />
 
-      <ListaAgregableCaja
-        title="Contenidos"
-        description="Agrega los componentes o temas que se abordarán."
-        columnLabel="Contenido (componente)"
+      <ContenidosCaja
+        title="Estructura de la Unidad/Proyecto"
+        description="Agrega las secciones (fases, recursos, metodología…) que la componen, con un título opcional para cada una."
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
-        placeholder="Escribe un nuevo componente"
         disabled={disabled}
       />
 

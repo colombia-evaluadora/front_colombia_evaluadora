@@ -9,6 +9,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ArrowLeftIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
 
+import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use-calificar-bulk"
 import {
@@ -19,11 +20,13 @@ import {
   resolverInstrumentoEfectivo,
   splitCriteriosGenerales,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
-import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
+import { bloqueoCalificar, type NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
 
 interface FilaEstudiante {
   id: number
+  /** `PK_TMATRICULA`: cruza con el listado de calificaciones de la actividad. */
+  matriculaId?: number
   nombres: string
   apellidos: string
 }
@@ -160,6 +163,22 @@ export function CalificarActividadBulk({
   const { data: instrumento } = useInstrumentoActividadQuery(actividadId)
   const bulkMutation = useCalificarBulkMutation()
 
+  // Sin asistencia, No asistido o No presentó no entran al lote: el backend
+  // rechazaría el lote completo.
+  const { data: calificaciones } = useCalificacionesQuery(actividadId)
+  const bloqueos = useMemo(() => {
+    const porMatricula = new Map<number, string>()
+    for (const c of calificaciones ?? []) {
+      const motivo = bloqueoCalificar(c)
+      if (motivo && c.matriculaId != null) porMatricula.set(c.matriculaId, motivo)
+    }
+    return porMatricula
+  }, [calificaciones])
+  const motivoBloqueo = (e: FilaEstudiante) =>
+    e.matriculaId != null ? bloqueos.get(e.matriculaId) : undefined
+  const bloqueados = new Set(estudiantes.filter((e) => motivoBloqueo(e)).map((e) => e.id))
+  const efectivos = [...seleccionados].filter((id) => !bloqueados.has(id))
+
   const filtrados = useMemo(() => {
     const term = filtro.trim().toLowerCase()
     if (!term) return estudiantes
@@ -167,6 +186,7 @@ export function CalificarActividadBulk({
   }, [estudiantes, filtro])
 
   function toggle(id: number) {
+    if (bloqueados.has(id)) return
     setDirty(true)
     setSeleccionados((prev) => {
       const next = new Set(prev)
@@ -176,15 +196,16 @@ export function CalificarActividadBulk({
     })
   }
 
-  // Tildados entre los filtrados (para el checkbox de la cabecera).
-  const filtradosTildados = filtrados.filter((e) => seleccionados.has(e.id)).length
-  const todosTildados = filtrados.length > 0 && filtradosTildados === filtrados.length
+  // Tildados entre los filtrados habilitados (para el checkbox de la cabecera).
+  const filtradosHabilitados = filtrados.filter((e) => !bloqueados.has(e.id))
+  const filtradosTildados = filtradosHabilitados.filter((e) => seleccionados.has(e.id)).length
+  const todosTildados = filtradosHabilitados.length > 0 && filtradosTildados === filtradosHabilitados.length
 
   function toggleTodos() {
     setDirty(true)
     setSeleccionados((prev) => {
       const next = new Set(prev)
-      for (const e of filtrados) {
+      for (const e of filtradosHabilitados) {
         if (todosTildados) next.delete(e.id)
         else next.add(e.id)
       }
@@ -200,8 +221,8 @@ export function CalificarActividadBulk({
   const escalaSinBulk = instrumentoSinBulk(efectivoBulk)
 
   async function guardar() {
-    if (!instrumento || seleccionados.size === 0) return
-    const inputs = buildBulkInputs(instrumento, nota, actividadId, [...seleccionados], fecha)
+    if (!instrumento || efectivos.length === 0) return
+    const inputs = buildBulkInputs(instrumento, nota, actividadId, efectivos, fecha)
     if (inputs.length === 0) return
     setGuardando(true)
     try {
@@ -215,7 +236,7 @@ export function CalificarActividadBulk({
     }
   }
 
-  const deshabilitado = seleccionados.size === 0 || !completitud.completo || escalaSinBulk
+  const deshabilitado = efectivos.length === 0 || !completitud.completo || escalaSinBulk
 
   // Informa a la página si mostrar "Guardar" (solo con cambios).
   guardarRef.current = guardar
@@ -291,20 +312,24 @@ export function CalificarActividadBulk({
           <span className="text-sm font-semibold">Apellidos y nombres</span>
         </li>
         {filtrados.map((estudiante) => {
-          const checked = seleccionados.has(estudiante.id)
+          const motivo = motivoBloqueo(estudiante)
+          const checked = !motivo && seleccionados.has(estudiante.id)
           return (
             <li
               key={estudiante.id}
+              title={motivo}
               className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
             >
               <Checkbox
                 checked={checked}
+                disabled={Boolean(motivo)}
                 onCheckedChange={() => toggle(estudiante.id)}
                 aria-label={`Aplicar a ${estudiante.nombres} ${estudiante.apellidos}`}
               />
-              <span className="font-medium uppercase">
+              <span className={motivo ? "font-medium uppercase text-muted-foreground" : "font-medium uppercase"}>
                 {estudiante.nombres} {estudiante.apellidos}
               </span>
+              {motivo && <span className="text-muted-foreground ml-auto text-xs">{motivo}</span>}
             </li>
           )
         })}
