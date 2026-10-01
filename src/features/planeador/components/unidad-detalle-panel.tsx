@@ -32,6 +32,7 @@ import { useResolvedSubjectLabelQuery } from "@/features/academic-management/cur
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
@@ -74,7 +75,7 @@ interface PanelTabDef {
 function getVisibleTabs(
   esFormativo: boolean,
   instrumentoLabel: string | undefined,
-  rotuloActividadesLabel: string,
+  rotuloActividadLabel: string,
 ): PanelTabDef[] {
   const tabs: PanelTabDef[] = [
     { value: "general", label: "Información general", Icon: ClipboardTextIcon },
@@ -83,7 +84,7 @@ function getVisibleTabs(
       label: instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Rúbricas",
       Icon: FolderOpenIcon,
     },
-    { value: "actividades", label: rotuloActividadesLabel, Icon: ClipboardCheckIcon },
+    { value: "actividades", label: rotuloActividadLabel, Icon: ClipboardCheckIcon },
   ]
   if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
@@ -283,8 +284,11 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // (ver el comentario de `fn_actividad_es_formativa`).
   const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
   const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
-  // Rótulo real (Regla 13) — nunca "actividades" fijo.
-  const rotuloActividadesLower = `${(unidad.rotuloEjecucion ?? "Actividad").toLowerCase()}s`
+  // Rótulo real (Regla 13) — nunca "actividad" fijo. Siempre en singular: el
+  // texto no es un dato controlado (puede traer cualquier palabra desde el
+  // referente curricular) y concatenar "s" a mano rompe con cualquiera que
+  // no termine en consonante simple (ver "Actividads").
+  const rotuloActividadLower = (unidad.rotuloEjecucion ?? "Actividad").toLowerCase()
 
   return (
     <div className="flex flex-col gap-6">
@@ -337,7 +341,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
-              Forma en que se van a calcular las {rotuloActividadesLower} dentro de la unidad
+              Forma en que se calcula cada {rotuloActividadLower} dentro de la unidad
             </h4>
             <p className="text-muted-foreground text-sm">
               Método Seleccionado:{" "}
@@ -538,15 +542,18 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // (mismo motivo que "Objetivos", ver `Columna` más abajo) ni de variar
   // por método de cálculo, que termina siendo ruido cuando ni siquiera hay
   // un instrumento que mostrar.
-  // Rótulo real de "las actividades" para el grado de esta unidad (Regla
-  // 13, sso V488/V511) — nunca el literal "Actividades" fijo.
-  const rotuloActividadesLabel = `${unidad.rotuloEjecucion ?? "Actividad"}s`
+  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
+  // V488/V511) — nunca el literal "Actividades" fijo, y siempre en
+  // singular: el texto no es un dato controlado (ver el comentario de
+  // `rotuloActividadLower` más arriba).
+  const rotuloActividadLabel = unidad.rotuloEjecucion ?? "Actividad"
+  const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
   const tituloActividades = instrumentoLabel
-    ? `${rotuloActividadesLabel} en ${instrumentoLabel}`
-    : rotuloActividadesLabel
+    ? `${rotuloActividadLabel} en ${instrumentoLabel}`
+    : rotuloActividadLabel
   const descripcionActividades = instrumentoLabel
-    ? `${rotuloActividadesLabel} vinculadas en ${instrumentoLabel}.`
-    : `Las ${rotuloActividadesLabel.toLowerCase()} vinculadas.`
+    ? `Vinculad${rotuloActividadGenero} en ${instrumentoLabel}.`
+    : `Vinculad${rotuloActividadGenero} a esta unidad.`
 
   return (
     <div>
@@ -577,7 +584,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage={`Esta unidad todavía no tiene ${rotuloActividadesLabel.toLowerCase()} vinculadas.`}
+        emptyMessage={`Esta unidad todavía no tiene ningun${rotuloActividadGenero === "o" ? "" : "a"} ${rotuloActividadLabel.toLowerCase()} vinculad${rotuloActividadGenero}.`}
       />
     </div>
   )
@@ -622,12 +629,13 @@ function UnidadTabs({
     () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
     [unidad.instrumento, actividadesVinculadas],
   )
-  // Rótulo real de "las actividades" para el grado de esta unidad (Regla
-  // 13, sso V488/V511) — nunca el literal "Actividades" fijo.
-  const rotuloActividadesLabel = `${unidad.rotuloEjecucion ?? "Actividad"}s`
+  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
+  // V488/V511) — nunca el literal "Actividades" fijo. Siempre en singular,
+  // mismo motivo que `rotuloActividadLower` más arriba.
+  const rotuloActividadLabel = unidad.rotuloEjecucion ?? "Actividad"
   const visibleTabs = React.useMemo(
-    () => getVisibleTabs(esFormativo, instrumentoLabel, rotuloActividadesLabel),
-    [esFormativo, instrumentoLabel, rotuloActividadesLabel],
+    () => getVisibleTabs(esFormativo, instrumentoLabel, rotuloActividadLabel),
+    [esFormativo, instrumentoLabel, rotuloActividadLabel],
   )
 
   React.useEffect(() => {
