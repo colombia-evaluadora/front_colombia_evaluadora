@@ -86,7 +86,11 @@ import {
   ComboboxGroup,
   ComboboxEmpty,
 } from "@/components/ui/combobox"
-import { useAdaptacionesReutilizablesQuery } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
+import {
+  useAdaptacionesReutilizablesQuery,
+  type AdaptacionReutilizable,
+} from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
+import { useTipoAdaptacionCatalogQuery } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
@@ -531,19 +535,17 @@ export function EditarActividadForm({
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />
-      {/* Adaptaciones y Seguimiento se desactivan junto con Evaluación
-          cuando el referente de la unidad es FORMATIVO — regla de negocio
-          confirmada: una unidad formativa no lleva instrumentos ni
-          ponderación, y tampoco adaptaciones/seguimiento (que existen para
-          hacerle ajustes a una evaluación sumativa). Mismo `esFormativa`
-          que ya usa `EvaluacionSection`, calculado una sola vez acá arriba
-          para no triplicar las queries de `campos_disponibles`. */}
-      {!esFormativa && (
-        <>
-          <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} actividadId={actividad.id} />
-          <SeguimientoSection form={form} disabled={disabled} />
-        </>
-      )}
+      {/* Adaptaciones (Bloque 6) es SIEMPRE visible, sin importar el Enfoque
+          (Regla 49): el Decreto 1421/PIAR exige documentar ajustes
+          razonables para estudiantes con discapacidad sin importar si la
+          actividad es evaluativa o formativa — ocultarlo en referentes
+          Formativos (los más comunes en Preescolar) dejaría sin
+          trazabilidad legal justo a la población que más lo necesita.
+          Seguimiento sigue atado a `esFormativa` como antes: existe para
+          hacerle ajustes a una evaluación sumativa, y su propio gate
+          interno (`hasAdaptaciones`) ya decide si se muestra. */}
+      <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} actividadId={actividad.id} />
+      {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
   )
 }
@@ -4714,11 +4716,16 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
 }
 
 /**
- * "Seleccionar desde biblioteca institucional" — combobox con lo que ya se
- * subió como plantilla de adaptación en OTRAS actividades (propias o de un
- * colega del mismo establecimiento), `fn_actividad_adaptaciones_
- * reutilizables_listar` (V471). Reemplaza el combo de dos opciones fijas
+ * "Seleccionar desde biblioteca institucional" — combobox con lo que el
+ * PROPIO docente ya registró como versión modificada en OTRAS actividades
+ * (Regla 50; ya no es la biblioteca de todo el establecimiento),
+ * `fn_actividad_adaptaciones_reutilizables_listar` (V471/V496.1-2),
+ * archivos Y enlaces. Reemplaza el combo de dos opciones fijas
  * ("Biblioteca - Plantilla A/B") que no tenía datos reales detrás.
+ *
+ * Filtrada por defecto al mismo Tipo de adaptación ya elegido en el campo 1
+ * (Regla 50) — sin eso, el docente vería mezcladas plantillas de tipos que
+ * no tienen nada que ver con la adaptación que está armando.
  *
  * Mismo backend/idea que la "Biblioteca de recursos" de materiales
  * (`DialogBibliotecaRecursos`), pero como COMBOBOX en vez de modal —así lo
@@ -4726,7 +4733,7 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
  * 100 resultados: el filtrado por texto lo hace el propio `ComboboxField`
  * del lado del cliente (mismo patrón que el resto de los combobox de la
  * app), así que no hace falta ida y vuelta al servidor por cada letra
- * tecleada. Una biblioteca institucional de plantillas no espera miles de
+ * tecleada. Una biblioteca personal de plantillas no espera miles de
  * archivos; si algún día lo necesita, ahí sí vale la pena paginar en
  * servidor como hace el modal de materiales.
  */
@@ -4744,45 +4751,55 @@ function AdaptacionBibliotecaField({
   disabled: boolean
 }) {
   const tieneAncla = actividadId > 0 || grupoId > 0
+  const { data: tipoAdaptacionOptions } = useTipoAdaptacionCatalogQuery()
+  const tipoAdaptacionId = tipoAdaptacionOptions?.find((o) => o.tipo === adaptacion.tipo)?.id
   const { data, isPending } = useAdaptacionesReutilizablesQuery(
-    { actividadId, grupoId, search: "", pagina: 1, size: 100 },
+    { actividadId, grupoId, tipoAdaptacionId, search: "", pagina: 1, size: 100 },
     tieneAncla,
   )
   const items = data?.items ?? []
-  const seleccionado = items.find((item) => item.archivoId === adaptacion.archivoId)
+  // Identifica la plantilla por la fila de ORIGEN (`pkTactividadAdaptacion`),
+  // no por `archivoId`: una plantilla de solo enlace no tiene archivo.
+  const seleccionado = items.find((item) =>
+    item.archivoId != null
+      ? item.archivoId === adaptacion.archivoId
+      : item.url != null && item.url === adaptacion.versionModificadaRef,
+  )
+  const etiqueta = (item: AdaptacionReutilizable) => item.nombrePlantilla || item.nombreArchivo || item.url || "—"
 
   function handleChange(value: string | null) {
-    const item = items.find((it) => String(it.archivoId) === value)
+    const item = items.find((it) => String(it.pkTactividadAdaptacion) === value)
     onChange({
       ...adaptacion,
       archivoId: item?.archivoId,
       archivoNombre: item?.nombreArchivo,
-      // Sin blob: el archivo ya está guardado del lado del servidor, igual
-      // que al reusar un material desde su biblioteca.
-      versionModificadaRef: "",
+      // Sin blob: el recurso ya está guardado del lado del servidor, igual
+      // que al reusar un material desde su biblioteca. Si la plantilla
+      // elegida es de solo enlace, acá es donde viaja la URL.
+      versionModificadaRef: item?.archivoId == null ? (item?.url ?? "") : "",
     })
   }
 
   return (
     <ComboboxField
       items={Object.fromEntries(
-        items.map((item) => [String(item.archivoId), `${item.nombreArchivo} — de: ${item.actividadOrigenTitulo}`]),
+        items.map((item) => [String(item.pkTactividadAdaptacion), `${etiqueta(item)} — de: ${item.actividadOrigenTitulo}`]),
       )}
-      value={adaptacion.archivoId != null ? String(adaptacion.archivoId) : null}
+      value={seleccionado ? String(seleccionado.pkTactividadAdaptacion) : null}
       onValueChange={handleChange}
       disabled={disabled || !tieneAncla}
     >
       <ComboboxFieldTrigger className="w-full">
         <ComboboxFieldValue placeholder={!tieneAncla ? "Elegí un grupo primero" : "Seleccione"}>
-          {() => (seleccionado ? seleccionado.nombreArchivo : "Seleccione")}
+          {() => (seleccionado ? etiqueta(seleccionado) : "Seleccione")}
         </ComboboxFieldValue>
       </ComboboxFieldTrigger>
       <ComboboxFieldContent>
         <ComboboxGroup>
           {items.map((item) => (
-            <ComboboxFieldItem key={item.archivoId} value={String(item.archivoId)}>
+            <ComboboxFieldItem key={item.pkTactividadAdaptacion} value={String(item.pkTactividadAdaptacion)}>
               <span className="flex flex-col">
-                <span>{item.nombreArchivo}</span>
+                <span>{etiqueta(item)}</span>
                 <span className="text-muted-foreground text-xs">de: {item.actividadOrigenTitulo}</span>
               </span>
             </ComboboxFieldItem>
