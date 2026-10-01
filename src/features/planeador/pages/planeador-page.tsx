@@ -135,11 +135,6 @@ function PlaneadorPageContent() {
     })
   }
 
-  // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
-  // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
-  // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
-  const { data: statsCounts } = useActividadesStatsQuery()
-
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) para el filtro
   // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
   const { data: instrumentoOptions = [] } = useInstrumentoEvaluacionCatalogQuery()
@@ -160,6 +155,13 @@ function PlaneadorPageContent() {
   // que saltear el filtro con una sola pestaña dejaba el alta sin acotar.
   const { data: actividadTabs = [] } = useActividadesTabsQuery()
   const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
+
+  // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
+  // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
+  // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
+  const { data: statsCounts } = useActividadesStatsQuery({
+    gradoAsignaturaPares: tabActiva?.pares,
+  })
 
   const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
     fechaDesde: mesDesde,

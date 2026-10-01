@@ -430,10 +430,30 @@ export const planeadorHandlers = [
   // Stats del docente (cards de resumen). Contadores sobre TODO
   // `planeadorDb`, no sobre lo que devuelva `/mias` filtrado — mismo
   // criterio que el real: el universo no cambia con el buscador de abajo.
-  http.get(ACTIVIDAD_STATS_URL, async () => {
+  // Sí respeta `?grado_asignatura_pares=` (pestaña de Rótulo de Ejecución
+  // activa, mismo criterio que `ACTIVIDAD_MIAS_URL`/`ACTIVIDAD_CALENDARIO_URL`).
+  http.get(ACTIVIDAD_STATS_URL, async ({ request }) => {
     await delay(150)
+    const url = new URL(request.url)
+    const paresParam = url.searchParams.get("grado_asignatura_pares")
+    const pares = paresParam
+      ? paresParam.split(",").map((par) => {
+          const [gradoStr, asignaturaStr] = par.split(":")
+          return { grado: Number(gradoStr), asignatura: asignaturaStr ? Number(asignaturaStr) : null }
+        })
+      : null
     const counts = { pending: 0, in_progress: 0, completed: 0, cancelled: 0 }
     for (const row of planeadorDb) {
+      if (
+        pares &&
+        !pares.some(
+          (p) =>
+            p.grado === gradoIdMock(row.grado) &&
+            (p.asignatura == null || p.asignatura === asignaturaIdMock(row.asignatura)),
+        )
+      ) {
+        continue
+      }
       if (row.status === "pending") counts.pending++
       else if (row.status === "in-progress") counts.in_progress++
       else if (row.status === "completed") counts.completed++
