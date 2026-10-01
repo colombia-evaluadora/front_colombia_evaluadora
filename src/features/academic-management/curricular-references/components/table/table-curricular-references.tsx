@@ -98,7 +98,7 @@ export function CurricularReferencesDataTable() {
               className="text-sm [&_svg:not([class*='size-'])]:size-4"
             >
               <ControlPointIcon data-icon="inline-start" />
-              Agregar referente
+              Nuevo referente
             </Button>
             <ExportCurricularReferencesDialog filters={queryFilters} />
           </TableScreenActions>

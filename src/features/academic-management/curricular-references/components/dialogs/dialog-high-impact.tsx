@@ -23,6 +23,7 @@ interface HighImpactDialogProps {
 }
 
 // Modal bloqueante: solo confirma con la casilla marcada.
+// Con alertas "block" no se puede confirmar: solo se cierra.
 export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, onCancel }: HighImpactDialogProps) {
   const [understood, setUnderstood] = useState(false)
 
@@ -30,7 +31,9 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
     if (open) setUnderstood(false)
   }, [open])
 
-  const title = alerts.length === 1 ? alerts[0].title : "Cambios de alto impacto"
+  const isBlocked = alerts.some((alert) => alert.kind === "block")
+  const title =
+    alerts.length === 1 ? alerts[0].title : isBlocked ? "No es posible aplicar el cambio" : "Cambios de alto impacto"
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && !isPending && onCancel()}>
@@ -47,32 +50,43 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox checked={understood} onCheckedChange={(checked) => setUnderstood(checked === true)} />
-          Entiendo el impacto de este cambio
-        </label>
+        {isBlocked ? null : (
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={understood} onCheckedChange={(checked) => setUnderstood(checked === true)} />
+            Entiendo el impacto de este cambio
+          </label>
+        )}
 
-        <AlertDialogFooter>
-          <Button
-            size="sm"
-            variant="fill"
-            color="primary"
-            disabled={!understood || isPending}
-            aria-busy={isPending}
-            onClick={onConfirm}
-          >
-            {isPending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
+        {isBlocked ? (
+          <AlertDialogFooter>
+            <Button size="sm" variant="fill" color="primary" onClick={onCancel}>
               <CheckIcon data-icon="inline-start" />
-            )}
-            Confirmar cambio
-          </Button>
-          <Button size="sm" variant="fill" color="neutral" disabled={isPending} onClick={onCancel}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </Button>
-        </AlertDialogFooter>
+              Entendido
+            </Button>
+          </AlertDialogFooter>
+        ) : (
+          <AlertDialogFooter>
+            <Button
+              size="sm"
+              variant="fill"
+              color="primary"
+              disabled={!understood || isPending}
+              aria-busy={isPending}
+              onClick={onConfirm}
+            >
+              {isPending ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              Confirmar cambio
+            </Button>
+            <Button size="sm" variant="fill" color="neutral" disabled={isPending} onClick={onCancel}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </Button>
+          </AlertDialogFooter>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   )
