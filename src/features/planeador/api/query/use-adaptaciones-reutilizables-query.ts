@@ -17,6 +17,10 @@ import { evalCol } from "@/lib/eval-col-client"
 export interface AdaptacionReutilizable {
   archivoId: number
   nombreArchivo: string
+  /** Rótulo que el docente le dio a la plantilla al guardarla (sso V532,
+   *  `NOMBRE_PLANTILLA`) — `undefined` en plantillas de antes de V532, que
+   *  no lo tienen; ahí se cae a `nombreArchivo`. */
+  nombrePlantilla?: string
   peso: number
   actividadOrigenId: number
   actividadOrigenTitulo: string
@@ -28,6 +32,7 @@ export interface AdaptacionReutilizable {
 interface AdaptacionReutilizableRow {
   fk_tarchivo: number
   nombre_archivo: string
+  nombre_plantilla: string | null
   peso: number | null
   pk_tactividad_origen: number
   titulo_actividad_origen: string
@@ -46,6 +51,7 @@ function toAdaptacion(row: AdaptacionReutilizableRow): AdaptacionReutilizable {
   return {
     archivoId: row.fk_tarchivo,
     nombreArchivo: row.nombre_archivo,
+    nombrePlantilla: row.nombre_plantilla ?? undefined,
     peso: row.peso ?? 0,
     actividadOrigenId: row.pk_tactividad_origen,
     actividadOrigenTitulo: row.titulo_actividad_origen,
