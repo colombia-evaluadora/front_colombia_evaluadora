@@ -26,11 +26,17 @@ import { fetchCurricularReferenceImpact } from "@/features/academic-management/c
 import {
   buildHighImpactAlerts,
   getChangedHighImpactFields,
+  getRemovedItems,
+  getVisibleAlerts,
   revertHighImpactFields,
   type HighImpactAlert,
-  type HighImpactField,
 } from "@/features/academic-management/curricular-references/api/high-impact-alerts"
 import { HighImpactDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-high-impact"
+import { LevelConflictDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-level-conflict"
+import {
+  toLevelConflict,
+  type LevelConflict,
+} from "@/features/academic-management/curricular-references/api/level-conflict"
 import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -61,7 +67,7 @@ function createInitialValues(): CurricularReferenceDraft {
     areas: [],
     instrument: "",
     instrumentDescription: "",
-    executionLabel: "",
+    executionLabel: "Actividad",
     regulation: "",
     active: false,
   }
@@ -88,7 +94,7 @@ const curricularReferenceSchema = z.object({
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
   instrument: z.string().trim().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
-  executionLabel: z.string().trim().max(50, "Máximo 50 caracteres."),
+  executionLabel: z.string().trim().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
   regulation: z.string().trim().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
 }).superRefine((values, ctx) => {
   const isFormativo = values.pedagogicalApproach?.id === 122
@@ -136,11 +142,11 @@ export function ManageCurricularReferenceDialog({
   const noticeIdRef = useRef(0)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
-  // Modal de alto impacto (Reglas 4, 13, 14, 15).
+  // Modal de alto impacto (Reglas 4, 5, 8, 9, 13, 14, 15).
   const [impactAlerts, setImpactAlerts] = useState<HighImpactAlert[]>([])
-  const [impactFields, setImpactFields] = useState<HighImpactField[]>([])
   const [isCheckingImpact, setIsCheckingImpact] = useState(false)
-  const isSubDialogOpen = confirmDiscardOpen || impactAlerts.length > 0
+  const [levelConflict, setLevelConflict] = useState<LevelConflict | null>(null)
+  const isSubDialogOpen = confirmDiscardOpen || impactAlerts.length > 0 || levelConflict != null
 
   function notifyInDialog(message: string, variant: NoticeVariant = "error") {
     noticeIdRef.current += 1
@@ -158,7 +164,7 @@ export function ManageCurricularReferenceDialog({
       setNotice(null)
       setConfirmDiscardOpen(false)
       setImpactAlerts([])
-      setImpactFields([])
+      setLevelConflict(null)
       return
     }
     if (populatedRef.current) return
@@ -208,6 +214,18 @@ export function ManageCurricularReferenceDialog({
     }
   }
 
+  // Regla 7 abre su modal; cualquier otro error va al banner.
+  async function handleSaveError(message: string, values: CurricularReferenceDraft) {
+    setImpactAlerts([])
+    const conflict = values.active ? await toLevelConflict(message) : null
+    if (conflict) {
+      setLevelConflict(conflict)
+      return
+    }
+    setLevelConflict(null)
+    notifyInDialog(message || "No fue posible guardar el referente curricular.")
+  }
+
   async function save(values: CurricularReferenceDraft) {
     try {
       const result =
@@ -220,18 +238,17 @@ export function ManageCurricularReferenceDialog({
           : await createMutation.mutateAsync(values)
 
       if (result.status === "error") {
-        setImpactAlerts([])
-        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+        await handleSaveError(result.message ?? "", values)
         return
       }
     } catch (error) {
       // Se cierra el modal de impacto para que se vea el error del backend.
-      setImpactAlerts([])
-      notifyInDialog(getErrorMessage(error) || "No fue posible guardar el referente curricular.")
+      await handleSaveError(getErrorMessage(error), values)
       return
     }
 
     setImpactAlerts([])
+    setLevelConflict(null)
     notify(
       isEditMode
         ? "El referente curricular se actualizó correctamente."
@@ -251,16 +268,20 @@ export function ManageCurricularReferenceDialog({
       return
     }
 
-    // Alto impacto: solo si el referente ya tiene unidades o actividades.
+    // Alto impacto: solo los campos con registros afectados abren modal.
     if (isEditMode && curricularReference) {
-      const fields = getChangedHighImpactFields(initialValuesRef.current, formValues)
+      const initial = initialValuesRef.current
+      const fields = getChangedHighImpactFields(initial, formValues)
       if (fields.length > 0) {
         setIsCheckingImpact(true)
         try {
-          const impact = await fetchCurricularReferenceImpact(curricularReference.id)
-          if (impact.units + impact.activities > 0) {
-            setImpactFields(fields)
-            setImpactAlerts(buildHighImpactAlerts(fields, formValues, impact))
+          const impact = await fetchCurricularReferenceImpact(curricularReference.id, {
+            removedLevelIds: getRemovedItems(initial.educationLevels, formValues.educationLevels).map((l) => l.id),
+            removedAreaIds: getRemovedItems(initial.areas, formValues.areas).map((a) => a.id),
+          })
+          const alerts = buildHighImpactAlerts(fields, initial, formValues, impact)
+          if (alerts.length > 0) {
+            setImpactAlerts(getVisibleAlerts(alerts))
             return
           }
         } catch (error) {
@@ -276,10 +297,10 @@ export function ManageCurricularReferenceDialog({
   }
 
   function cancelHighImpact() {
-    // Cancelar revierte los campos y no guarda nada.
-    setFormValues((prev) => revertHighImpactFields(prev, initialValuesRef.current, impactFields))
+    // Cancelar revierte los campos del modal y no guarda nada.
+    const fields = impactAlerts.map((alert) => alert.field)
+    setFormValues((prev) => revertHighImpactFields(prev, initialValuesRef.current, fields))
     setImpactAlerts([])
-    setImpactFields([])
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending || isCheckingImpact
@@ -379,6 +400,18 @@ export function ManageCurricularReferenceDialog({
         isPending={isPending}
         onConfirm={() => save(formValues)}
         onCancel={cancelHighImpact}
+      />
+
+      <LevelConflictDialog
+        conflict={levelConflict}
+        isPending={isPending}
+        onSaveInactive={() => {
+          const inactive = { ...formValues, active: false }
+          setFormValues(inactive)
+          save(inactive)
+        }}
+        onLeave={() => onOpenChange(false)}
+        onCancel={() => setLevelConflict(null)}
       />
 
       <ConfirmDiscardDialog

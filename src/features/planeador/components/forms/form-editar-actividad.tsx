@@ -56,6 +56,7 @@ import {
   rotuloEnMinuscula,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import type { ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
@@ -259,6 +260,15 @@ interface EditarActividadFormProps {
    * viene de `useActividadDetalleQuery`, con un id real.
    */
   esNueva?: boolean
+  /**
+   * Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
+   * (`?rotulo=`, `planeador-crear-actividad-page.tsx`) — acota las opciones
+   * de Grado/Asignatura de `AsignaturaGradoSection` a esa pestaña en vez de
+   * todo el catálogo del docente. `undefined` en edición (no hay restricción
+   * de catálogo al editar una actividad ya creada) y cuando el docente tiene
+   * un solo Rótulo de Ejecución (nada que acotar).
+   */
+  tab?: ActividadTab
 }
 
 /**
@@ -274,6 +284,7 @@ export function EditarActividadForm({
   formId,
   onSubmit,
   esNueva = false,
+  tab,
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
@@ -476,6 +487,7 @@ export function EditarActividadForm({
             form={form}
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
             unidadBloqueada={unidadBloqueada}
+            tab={tab}
             unidadSlot={
               <UnidadAsociadaSection
                 form={form}
@@ -1498,6 +1510,7 @@ function AsignaturaGradoSection({
   bloqueadoPorRecuperacion,
   unidadBloqueada = false,
   unidadSlot,
+  tab,
 }: {
   form: FormActividad
   /** Ver `useRecuperacionBloqueaCampos` — Grado/Grupo, Asignatura y
@@ -1520,6 +1533,16 @@ function AsignaturaGradoSection({
   unidadBloqueada?: boolean
   /** Selector de unidad, entre el área y "Estudiantes". */
   unidadSlot?: ReactNode
+  /** Pestaña de Rótulo de Ejecución activa (`?rotulo=`, ver
+   *  `EditarActividadFormProps.tab`) — acota "Grado / Grupo" y "Asignatura /
+   *  materia" a `tab.pares` en vez de todo el catálogo del docente.
+   *  Independiente de `unidadBloqueada`: si la actividad ya viene de una
+   *  Unidad elegida, `unidadBloqueada` sigue ganando (deshabilita los campos
+   *  por completo); `tab` solo tiene efecto visible cuando NO hay unidad
+   *  preseleccionada. El filtro es por PAR (grado, asignatura), no por grado
+   *  solo: un grado puede tener asignaturas repartidas en dos pestañas
+   *  distintas (ver `fn_planeador_actividad_tabs_listar`, sso V525). */
+  tab?: ActividadTab
 }) {
   const { data: docenteGrupos = [], isPending: isPendingDocenteGrupos } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
@@ -1715,16 +1738,29 @@ function AsignaturaGradoSection({
     useSelector(form.store, (state) => state.values.asignaturaId == null),
   )
 
+  // `tab.pares` es la fuente correcta para filtrar por asignatura: un grado
+  // puede tener asignaturas repartidas en dos pestañas distintas (ver el
+  // comentario de `tab` más arriba), así que no alcanza con mirar `gradoId`
+  // suelto para la asignatura.
+  const tienePar = (gradoId: number | undefined, asignaturaId: number | undefined) =>
+    !tab || tab.pares.some((p) => p.gradoId === gradoId && (p.asignaturaId == null || p.asignaturaId === asignaturaId))
+
   // Ver el comentario de `filtrarSoloEvaluativas` más arriba: sin filtro
   // (el caso normal) estas dos son las mismas listas de siempre.
   // `unidadBloqueada` acota además a los grupos DEL GRADO que ya trajo la
   // unidad — así el docente elige grupo, no grado, desde este mismo select.
+  // `tab` acota a la pestaña de Rótulo de Ejecución activa (ver su
+  // comentario) — compone con `unidadBloqueada` en vez de reemplazarlo.
   const gruposVisibles = (
     filtrarSoloEvaluativas ? docenteGrupos.filter((g) => gradosEvaluativosIds.has(g.gradoId)) : docenteGrupos
-  ).filter((g) => !unidadBloqueada || gradoId == null || g.gradoId === gradoId)
-  const asignaturasVisibles = filtrarSoloEvaluativas
-    ? asignaturas.filter((a) => paresEvaluativos.has(a.gradoId * 1_000_000 + a.asignaturaId))
-    : asignaturas
+  )
+    .filter((g) => !unidadBloqueada || gradoId == null || g.gradoId === gradoId)
+    .filter((g) => !tab || tab.gradoIds.includes(g.gradoId))
+  const asignaturasVisibles = (
+    filtrarSoloEvaluativas
+      ? asignaturas.filter((a) => paresEvaluativos.has(a.gradoId * 1_000_000 + a.asignaturaId))
+      : asignaturas
+  ).filter((a) => tienePar(a.gradoId, a.asignaturaId))
 
   return (
     <>

@@ -40,6 +40,12 @@ export const planeadorSearchSchema = z.object({
    *  (botón "Marcar") | approval (botón "Aprobar"). Va en la URL por el
    *  mismo motivo que `actividad` — enlazable y sobrevive al refresh. */
   modo: z.enum(["info", "grades", "approval"]).optional().catch(undefined),
+  /** Pestaña de "Actividades" activa cuando el docente tiene más de un
+   *  Rótulo de Ejecución (`GET /planeador/actividades/tabs` trae más de una
+   *  fila) — el `rotulo` (singular) de esa fila, usado para filtrar "Mis
+   *  actividades" a sus pares grado+asignatura. Ver `planeador-tabs.tsx`,
+   *  mismo criterio que `instrumento` en `planeadorUnidadesSearchSchema`. */
+  rotulo: z.string().optional().catch(undefined),
 })
 export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
 
@@ -91,6 +97,11 @@ export const planeadorActividadCrearSearchSchema = z.object({
   unidadId: z.string().optional().catch(undefined),
   fechaInicio: z.string().optional().catch(undefined),
   fechaCierre: z.string().optional().catch(undefined),
+  /** Llega desde "Agregar {rótulo plural}" de una pestaña de Actividades
+   *  (`planeador-tabs.tsx`, `GET /planeador/actividades/tabs`) — acota
+   *  Grado/Asignatura a esa pestaña desde el primer render, mismo criterio
+   *  que `instrumento` en `planeadorUnidadCrearSearchSchema`. */
+  rotulo: z.string().optional().catch(undefined),
 })
 export type PlaneadorActividadCrearSearch = z.infer<typeof planeadorActividadCrearSearchSchema>
 
