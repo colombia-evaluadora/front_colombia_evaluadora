@@ -24,12 +24,19 @@ export type Estudiante = {
   apellidos: string
 }
 
+/** Regla 62: estado del resultado, ya resuelto por el backend
+ *  (`estado_resultado`). No asistido sale de la asistencia, no se marca a mano. */
+export type EstadoResultado =
+  | "PENDIENTE"
+  | "CALIFICADO"
+  | "NO_PRESENTO"
+  | "NO_ASISTIO_JUSTIFICADA"
+  | "NO_ASISTIO_NO_JUSTIFICADA"
+
 export type Asistencia = {
   estado: EstadoAsistencia
-  /** Regla 73: `estado` "no-asistio"/"llego-tarde" con Excusa adjuntada en
-   *  el módulo de Asistencia queda registrado con el TIPO_ASISTENCIA
-   *  "justificada" del catálogo (3/6) -- esto refleja ESE dato, no lo decide
-   *  el Planeador. */
+  /** Regla 73: hay excusa (archivo de soporte) ese día, cargada en el
+   *  módulo de Asistencia. El Planeador solo la refleja. */
   justificada: boolean
   /** Texto libre cuando el estado es "llego-tarde" o "no-asistio". */
   justificacion?: string
@@ -78,9 +85,31 @@ export type CalificacionEstudiante = Estudiante & {
    *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en
    *  mock. */
   fechaAsistencia?: string | null
-  /** Regla 62: asistió pero no presentó evidencia. Excluyente con la nota.
-   *  `no_presento` del GET — contrato propuesto, aún no existe en el backend. */
+  /** Regla 62: asistió pero no presentó evidencia. Excluyente con la nota. */
   noPresento?: boolean
+  /** `estado_resultado` del GET. `undefined` en mock. */
+  estadoResultado?: EstadoResultado
+  /** `false` si ya hay nota u observación: la asistencia queda congelada. */
+  asistenciaEditable?: boolean
+}
+
+/** Motivo por el que no se puede calificar ni observar, o `null` si se puede. */
+export function bloqueoCalificar(e: CalificacionEstudiante): string | null {
+  if (e.estadoResultado === "NO_PRESENTO" || e.noPresento) {
+    return "Está marcado No presentó: quítelo para registrar el resultado."
+  }
+  // Si el backend aún no manda el estado, la asistencia ausente basta.
+  if (
+    e.estadoResultado?.startsWith("NO_ASISTIO") ||
+    (e.asistencia.estado === "no-asistio" && e.estadoResultado !== "CALIFICADO")
+  ) {
+    return "No asistió: cambie su asistencia para registrar el resultado."
+  }
+  // Un resultado ya registrado (congelado) se puede corregir.
+  if (e.asistencia.estado === "sin-registrar" && e.estadoResultado !== "CALIFICADO") {
+    return "Registre la asistencia antes de registrar el resultado."
+  }
+  return null
 }
 
 /** Un criterio de rúbrica, ítem de lista de cotejo, o el único "ítem
