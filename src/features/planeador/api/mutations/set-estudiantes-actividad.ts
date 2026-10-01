@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
 import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 
@@ -10,6 +11,37 @@ interface SetEstudiantesInput {
    *  (ver `create-actividad.ts`): matrículas puntuales, o todo el grupo. */
   matriculasIds: number[]
   asignarTodoElGrupo: boolean
+}
+
+/** Un estudiante que salió de la actividad y, de paso, de alguna adaptación
+ *  que lo tenía marcado (Regla 46) — el backend ya desactivó esa relación;
+ *  esto es solo el aviso. */
+export interface AfectadoAdaptacion {
+  pkTmatricula: number
+  estudiante: string
+  adaptaciones: { pkTactividadAdaptacion: number; tipoAdaptacion: string }[]
+}
+
+/** Un estudiante del grupo con discapacidad (PIAR) registrada que NO quedó
+ *  en la actividad — informativo, Regla 48 (Decreto 1421). No bloquea nada:
+ *  el docente decide si corresponde incluirlo. */
+export interface AvisoPiar {
+  pkTmatricula: number
+  fkTestudiante: number
+  estudiante: string
+  discapacidad: string
+}
+
+interface SetEstudiantesRow {
+  total_asignados: number
+  afectados_adaptacion: AfectadoAdaptacion[]
+  avisos_piar: AvisoPiar[]
+}
+
+export interface SetEstudiantesResult {
+  totalAsignados: number
+  afectadosAdaptacion: AfectadoAdaptacion[]
+  avisosPiar: AvisoPiar[]
 }
 
 /**
@@ -30,14 +62,23 @@ async function setEstudiantesActividad({
   actividadId,
   matriculasIds,
   asignarTodoElGrupo,
-}: SetEstudiantesInput): Promise<unknown> {
+}: SetEstudiantesInput): Promise<SetEstudiantesResult> {
   const body: Record<string, unknown> = {}
   if (asignarTodoElGrupo) {
     body.ASIGNAR_TODO_EL_GRUPO = true
   } else {
     body.FK_TMATRICULAS = matriculasIds
   }
-  return api.put(`/eval-col/planeador/actividades/${actividadId}/estudiantes`, body)
+  const respuesta = await api.put<RowsEnvelope<SetEstudiantesRow> | SetEstudiantesRow>(
+    `/eval-col/planeador/actividades/${actividadId}/estudiantes`,
+    body,
+  )
+  const row = unwrapRow<SetEstudiantesRow>(respuesta)
+  return {
+    totalAsignados: row.total_asignados,
+    afectadosAdaptacion: row.afectados_adaptacion ?? [],
+    avisosPiar: row.avisos_piar ?? [],
+  }
 }
 
 interface UseSetEstudiantesActividadOptions {
