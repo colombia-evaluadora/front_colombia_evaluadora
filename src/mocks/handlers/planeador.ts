@@ -452,8 +452,27 @@ export const planeadorHandlers = [
     const url = new URL(request.url)
     const fechaDesde = url.searchParams.get("fecha_desde") ?? ""
     const fechaHasta = url.searchParams.get("fecha_hasta") ?? ""
+    // `?grado_asignatura_pares=` — misma pestaña de Rótulo de Ejecución que
+    // ya filtra `ACTIVIDAD_MIAS_URL` más abajo: sin esto la grilla mensual
+    // mezclaba actividades de todos los rótulos del docente en el mismo mes.
+    const paresParam = url.searchParams.get("grado_asignatura_pares")
+    const pares = paresParam
+      ? paresParam.split(",").map((par) => {
+          const [gradoStr, asignaturaStr] = par.split(":")
+          return { grado: Number(gradoStr), asignatura: asignaturaStr ? Number(asignaturaStr) : null }
+        })
+      : null
     const rows = planeadorDb
       .filter((row) => row.fechaInicio <= fechaHasta && row.fechaCierre >= fechaDesde)
+      .filter(
+        (row) =>
+          !pares ||
+          pares.some(
+            (p) =>
+              p.grado === gradoIdMock(row.grado) &&
+              (p.asignatura == null || p.asignatura === asignaturaIdMock(row.asignatura)),
+          ),
+      )
       .map((row) => ({
         fecha: row.fechaInicio >= fechaDesde ? row.fechaInicio : fechaDesde,
         fecha_inicio: row.fechaInicio,

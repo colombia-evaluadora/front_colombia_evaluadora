@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
+import {
+  paresToQueryParam,
+  type ActividadTabPair,
+} from "@/features/planeador/api/query/use-actividades-tabs-query"
 
 /**
  * `GET /planeador/actividades/calendario` (V251, ver colección Postman
@@ -78,6 +82,10 @@ export interface UseActividadesCalendarioParams {
   asignatura?: number
   grupo?: number
   unidad?: number
+  /** Pestaña de Rótulo de Ejecución activa (ver `use-actividades-mias-query.ts`)
+   *  — sin esto la grilla mezclaba actividades de todos los rótulos del
+   *  docente en el mismo mes. */
+  gradoAsignaturaPares?: ActividadTabPair[]
 }
 
 async function fetchActividadesCalendario(
@@ -90,6 +98,9 @@ async function fetchActividadesCalendario(
   if (params.asignatura != null) query.set("asignatura", String(params.asignatura))
   if (params.grupo != null) query.set("grupo", String(params.grupo))
   if (params.unidad != null) query.set("unidad", String(params.unidad))
+  if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
+    query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
+  }
 
   const rows = await evalCol.getRows<ActividadCalendarioRow>(
     `/planeador/actividades/calendario?${query}`,
