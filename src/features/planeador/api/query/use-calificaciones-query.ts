@@ -3,7 +3,11 @@ import { queryOptions, useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 
-import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
+import type {
+  CalificacionEstudiante,
+  EstadoAsistencia,
+  EstadoResultado,
+} from "@/features/planeador/api/types/calificacion"
 
 function calificacionesUrl(id: number, fecha?: string): string {
   const base = `/planeador/actividades/${id}/calificaciones`
@@ -25,14 +29,9 @@ export const calificacionesQueryKey = (id: number, fecha?: string) =>
  * `CalificacionEstudiante`. `pk_tactividad_estudiante` es el id real que
  * exigen 7.1/7.7 (`PUT/GET .../estudiantes/:ID/...`), NO `pk_tmatricula`.
  *
- * `tipo_asistencia` viene `null` cuando todavía no hay registro de
- * asistencia ese día ("no es un error" — se toma en otro módulo). Los
- * valores que SÍ trae el catálogo cuando hay registro no están confirmados
- * contra una respuesta real todavía (esta captura solo mostró el caso
- * `null`) — mientras tanto se intenta reconocer "ausente"/"tarde" por
- * palabra clave y, si no calza con ninguna, se cae a "asistió" en vez de
- * inventar un mapeo que probablemente no calce (mismo criterio que
- * `valoracion_nombre` en su momento).
+ * La asistencia es la de la actividad (fecha fin si ya se tomó, si no el
+ * primer día; o la marcada en el Planeador). `tipo_asistencia_valor` viene
+ * `null` si el estudiante todavía no tiene asistencia.
  */
 interface CalificacionRow {
   pk_tactividad_estudiante: number
@@ -56,18 +55,28 @@ interface CalificacionRow {
   nota_homologada: number | null
   calificable: "S" | "N"
   nota_observacion: string | null
-  /** Regla 62 — contrato propuesto; `undefined` mientras el backend no lo envíe. */
-  no_presento?: boolean | null
+  /** `1` Asistió, `2` No asistió, `5` Llegó tarde (3/6 solo en históricos). */
+  tipo_asistencia_valor: string | null
+  /** Hay excusa (archivo) ese día. */
+  asistencia_justificada: boolean | null
+  /** `false` si ya hay nota u observación. */
+  asistencia_editable: boolean | null
+  estado_resultado: EstadoResultado | null
 }
 
-function toEstadoAsistencia(tipoAsistencia: string | null): EstadoAsistencia {
-  if (!tipoAsistencia) return "sin-registrar"
-  const lower = tipoAsistencia.toLowerCase()
-  if (lower.includes("ausen") || lower.includes("no_asis") || lower.includes("no asis")) {
-    return "no-asistio"
+function toEstadoAsistencia(valor: string | null): EstadoAsistencia {
+  switch (valor) {
+    case "1":
+      return "asistio"
+    case "2":
+    case "3":
+      return "no-asistio"
+    case "5":
+    case "6":
+      return "llego-tarde"
+    default:
+      return "sin-registrar"
   }
-  if (lower.includes("tard")) return "llego-tarde"
-  return "asistio"
 }
 
 function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante {
@@ -78,11 +87,8 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     // El real no separa nombres/apellidos — viene un solo `nombre_estudiante`.
     apellidos: "",
     asistencia: {
-      estado: toEstadoAsistencia(row.tipo_asistencia),
-      // Regla 73: el catálogo TIPO_ASISTENCIA distingue "No Asistió" (2) de
-      // "No Asistió Justificada" (3) -- y lo mismo para "Llegó Tarde"
-      // (5/6) -- por NOMBRE, no por un campo aparte.
-      justificada: (row.tipo_asistencia ?? "").toLowerCase().includes("justific"),
+      estado: toEstadoAsistencia(row.tipo_asistencia_valor),
+      justificada: row.asistencia_justificada === true,
       justificacion: row.asistencia_observacion ?? undefined,
       adjuntos: row.fk_soporte_archivo != null ? 1 : 0,
       fkSoporteArchivo: row.fk_soporte_archivo,
@@ -97,7 +103,9 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
-    noPresento: row.no_presento === true,
+    noPresento: row.estado_resultado === "NO_PRESENTO",
+    estadoResultado: row.estado_resultado ?? undefined,
+    asistenciaEditable: row.asistencia_editable !== false,
   }
 }
 

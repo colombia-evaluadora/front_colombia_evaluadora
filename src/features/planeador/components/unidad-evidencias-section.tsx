@@ -21,11 +21,31 @@ function BulletList({ items }: { items: string[] }) {
   )
 }
 
+/** Cada sección trae su Título (negrita) como encabezado, seguido de su
+ *  Descripción completa — sin título, se muestra solo la descripción (como
+ *  antes de que `titulo` existiera). Exportado: también la usa
+ *  `unidad-detalle-panel.tsx` (pestaña "Información general" de la unidad). */
+export function ContenidosList({ items }: { items: { titulo?: string; descripcion: string }[] }) {
+  if (items.length === 0) {
+    return <p className="text-muted-foreground text-sm">—</p>
+  }
+  return (
+    <ul className="space-y-2">
+      {items.map((item, index) => (
+        <li key={index} className="text-sm">
+          {item.titulo && <p className="font-semibold">{item.titulo}</p>}
+          <p className="text-muted-foreground whitespace-pre-line">{item.descripcion}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 interface UnidadFichaProps {
   nombre: string
   descripcion: string
   objetivos: string[]
-  contenidos: string[]
+  contenidos: { titulo?: string; descripcion: string }[]
   /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar,
    *  "Unidad temática" en el resto) — mismo dato que ya resuelve el resto
    *  del form/detalle (`resolveInstrumentoLabel`/`instrumentoLabelFromReferente`).
@@ -104,7 +124,7 @@ export function UnidadFicha({
         </div>
         <div>
           <p className="mb-2 text-sm font-semibold">Contenidos</p>
-          <BulletList items={contenidos} />
+          <ContenidosList items={contenidos} />
         </div>
       </div>
     </fieldset>

@@ -14,6 +14,27 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
  *  las pestañas Rúbricas/Actividades del panel. */
 export type UnidadInfoGeneral = Omit<UnidadTematica, "id" | "criterios" | "actividades">
 
+/**
+ * `CONTENIDOS`/`CONTENIDOS_TITULOS` (sso V492, §4) para el body de
+ * `POST`/`PUT /planeador/unidades`. El backend real
+ * (`fn_unidad_validar_contenidos_titulos`) es TODO O NADA para los
+ * títulos: si `CONTENIDOS_TITULOS` viaja, tiene que traer un título NO
+ * VACÍO por cada contenido, en la misma posición — mezclar secciones con y
+ * sin título en el mismo guardado tira 22023. Por eso acá solo se manda
+ * cuando TODAS las secciones ya tienen uno; mientras falte alguno, se omite
+ * por completo (la Descripción, que es el dato principal, se guarda
+ * siempre) — compartido por `create-unidad.ts`/`update-unidad.ts` para no
+ * duplicar esta regla en los dos lugares.
+ */
+export function contenidosABody(
+  contenidos: UnidadInfoGeneral["contenidos"],
+): { CONTENIDOS: string[]; CONTENIDOS_TITULOS?: string[] } {
+  const descripciones = contenidos.map((c) => c.descripcion)
+  const titulos = contenidos.map((c) => c.titulo?.trim() ?? "")
+  const todosConTitulo = contenidos.length > 0 && titulos.every((t) => t !== "")
+  return todosConTitulo ? { CONTENIDOS: descripciones, CONTENIDOS_TITULOS: titulos } : { CONTENIDOS: descripciones }
+}
+
 interface UpdateUnidadInput {
   unidadId: number
   data: UnidadInfoGeneral
@@ -41,7 +62,7 @@ async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<Upda
     NOMBRE: data.nombre,
     DESCRIPCION: data.descripcion,
     OBJETIVOS: data.objetivos,
-    CONTENIDOS: data.contenidos,
+    ...contenidosABody(data.contenidos),
     FK_TLV_CALCULO_DEFINITIVA: await resolveCalculoDefinitivaId(data.metodoCalculo),
   }
   if (data.gradoId != null) body.FK_TGRADO = data.gradoId
