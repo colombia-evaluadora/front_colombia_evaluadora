@@ -91,7 +91,7 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
                   variant="outline"
                   color="muted"
                   size="icon-sm"
-                  aria-label={`Exportar ${rotuloLower}s filtradas`}
+                  aria-label={`Exportar filtro de ${rotuloLower}`}
                 />
               }
             />
@@ -102,14 +102,14 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
               a que se reconozca como "exportar" sin necesidad de label. */}
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>Exportar {rotuloLower}s filtradas</TooltipContent>
+        <TooltipContent>Exportar filtro de {rotuloLower}</TooltipContent>
       </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar las {rows.length} {rotuloLower}(es) que coinciden con
-            los filtros activos.
+            Elige un formato para exportar los {rows.length} registros de {rotuloLower} que
+            coinciden con los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

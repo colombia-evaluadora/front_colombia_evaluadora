@@ -96,8 +96,11 @@ export function UnidadCard({
         {unidad.asignatura}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {/* Rótulo real (Regla 13) — nunca "Actividades" fijo. */}
-        {unidad.totalActividades ?? unidad.actividades.length} {unidad.rotuloEjecucion ?? "Actividad"}s
+        {/* Rótulo real (Regla 13) — nunca "Actividades" fijo. "Rótulo: N" en
+            vez de "N rótulos" porque el rótulo no es un dato controlado y no
+            se puede pluralizar de forma confiable (ver el bug de
+            "Actividad2s"); como categoría + cuenta, no hace falta. */}
+        {unidad.rotuloEjecucion ?? "Actividad"}: {unidad.totalActividades ?? unidad.actividades.length}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {formatDate(unidad.fechaInicio)} - {formatDate(unidad.fechaFin)}

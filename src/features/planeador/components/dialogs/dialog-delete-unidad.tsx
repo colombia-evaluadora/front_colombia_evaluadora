@@ -19,9 +19,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import {
+  articuloDefinido,
+  useUnidadInstrumentoLabel,
+} from "@/features/planeador/lib/unidad-instrumento-label"
+import { rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogDeleteUnidadProps {
-  unidad: Pick<UnidadTematica, "id" | "nombre">
+  unidad: Pick<UnidadTematica, "id" | "nombre" | "gradoId">
   /** Además del toast, el panel reacciona (reselecciona otra unidad en el
    *  rail) cuando el delete termina OK — la unidad abierta ya no existe. */
   onDeleted?: () => void
@@ -41,6 +46,15 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
+  // Rótulo real de la pestaña de ESTA unidad ("Unidad temática"/"Proyecto
+  // pedagógico"/…), resuelto por grado igual que el resto de las pantallas
+  // de Unidades — nunca "unidad temática" fijo. Ojo: `unidad.instrumento` es
+  // un campo homónimo pero DISTINTO (Instrumento de evaluación: Rúbrica/
+  // Lista de cotejo/Escala), no sirve acá.
+  const instrumentoLabel = useUnidadInstrumentoLabel(unidad.gradoId)
+  const instrumentoLower = rotuloEnMinuscula(instrumentoLabel)
+  const articulo = articuloDefinido(instrumentoLabel)
+
   const deleteMutation = useDeleteUnidad({
     mutationConfig: {
       onSuccess: (result) => {
@@ -48,12 +62,12 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
           notify(result.message, { variant: "error" })
           return
         }
-        notify("Unidad temática eliminada correctamente.")
+        notify(`${instrumentoLabel} eliminad${articulo === "el" ? "o" : "a"} correctamente.`)
         setOpen(false)
         onDeleted?.()
       },
       onError: () => {
-        notify("No se pudo eliminar la unidad temática.", { variant: "error" })
+        notify(`No se pudo eliminar ${articulo === "el" ? "el" : "la"} ${instrumentoLower}.`, { variant: "error" })
       },
     },
   })
@@ -86,10 +100,11 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar unidad temática</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar {instrumentoLower}</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente la unidad &ldquo;{unidad.nombre}&rdquo;, junto con sus
-            criterios y actividades vinculadas. Esta acción no se puede deshacer.
+            Se eliminará permanentemente {articulo === "el" ? "el" : "la"} {instrumentoLower} &ldquo;
+            {unidad.nombre}&rdquo;, junto con sus criterios y actividades vinculadas. Esta acción no
+            se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
