@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
@@ -217,6 +217,20 @@ const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {
   Enlace: "Enlace (video, blog, presentación)",
   "Observación directa": "Observación directa",
   "Registro en campo": "Registro en campo",
+}
+
+/**
+ * Checkbox de "Opciones de entrega" que se marca por defecto al elegir cada
+ * "Tipo de evidencia esperada" (pedido explícito de QA). Solo prende el que
+ * corresponde — nunca apaga el otro — porque ambos checkboxes siguen siendo
+ * independientes entre sí: el docente puede además habilitar el que falta si
+ * lo desea.
+ */
+const TIPO_EVIDENCIA_CHECKBOX_DEFAULT: Record<string, "archivo" | "texto"> = {
+  Archivo: "archivo",
+  Enlace: "texto",
+  "Observación directa": "texto",
+  "Registro en campo": "texto",
 }
 
 /**
@@ -3989,7 +4003,10 @@ function InstrumentoPersonalizadoSection({
     camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
       ? camposOtro.metodoValoracion.catalogo
       : METODO_VALORACION_CATALOGO_DEFAULT
-  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 4000
+  // Regla 41: tope fijo de 200, no un piso genérico — antes caía a 4000
+  // mientras `camposOtro` no resolvía (foto vieja, endpoint viejo) y dejaba
+  // escribir mucho más de lo que el backend acepta.
+  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 200
 
   return (
     <Card className="gap-4 p-4">
@@ -4015,6 +4032,7 @@ function InstrumentoPersonalizadoSection({
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
                 />
+                <CharacterCounter value={value.descripcion} max={descripcionMaxLength} />
               </Field>
 
               <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
@@ -4024,7 +4042,15 @@ function InstrumentoPersonalizadoSection({
                   </FieldLabel>
                   <Select
                     value={value.tipoEvidenciaEsperada}
-                    onValueChange={(v) => v && patch({ tipoEvidenciaEsperada: v })}
+                    onValueChange={(v) => {
+                      if (!v) return
+                      const defecto = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[v]
+                      patch({
+                        tipoEvidenciaEsperada: v,
+                        ...(defecto === "archivo" ? { requiereArchivo: true } : {}),
+                        ...(defecto === "texto" ? { requiereRespuestaTexto: true } : {}),
+                      })
+                    }}
                     disabled={disabled}
                   >
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
@@ -4092,24 +4118,27 @@ function InstrumentoPersonalizadoSection({
                 />
               ) : null}
 
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={value.requiereArchivo}
-                    onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
-                    disabled={disabled}
-                  />
-                  El estudiante debe adjuntar un archivo
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={value.requiereRespuestaTexto}
-                    onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
-                    disabled={disabled}
-                  />
-                  El estudiante debe escribir una respuesta (texto)
-                </label>
-              </div>
+              <FieldSet>
+                <FieldLegend variant="label">Opciones de entrega</FieldLegend>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={value.requiereArchivo}
+                      onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
+                      disabled={disabled}
+                    />
+                    El estudiante debe adjuntar un archivo
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={value.requiereRespuestaTexto}
+                      onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
+                      disabled={disabled}
+                    />
+                    El estudiante debe escribir una respuesta (texto)
+                  </label>
+                </div>
+              </FieldSet>
             </>
           )
         }}
