@@ -44,7 +44,8 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
-import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
@@ -157,13 +158,18 @@ function PlaneadorPageContent() {
   })
 
   // Pestaña de Rótulo de Ejecución activa (`?rotulo=`, `planeador-tabs.tsx`)
-  // — solo tiene efecto si el docente tiene más de un rótulo; con uno solo,
-  // se comporta como hoy (sin filtro).
+  // — SIEMPRE se resuelve, aunque el docente tenga un solo rótulo: ese único
+  // rótulo no necesariamente cubre todo el catálogo del docente (puede dictar
+  // grados que no entran en ningún `TDOCENTE_ASIGNATURA` resuelto acá), así
+  // que saltear el filtro con una sola pestaña dejaba el alta sin acotar.
   const { data: actividadTabs = [] } = useActividadesTabsQuery()
-  const tabActiva =
-    actividadTabs.length > 1
-      ? (actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0])
-      : undefined
+  const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
+  // Botón "Nueva {rótulo}" — género correcto vía `articuloDefinido` (mismo
+  // helper que ya resuelve "un"/"una" en `dialog-agregar-actividad.tsx`):
+  // un rótulo configurado a futuro puede ser masculino ("Proyecto") o
+  // femenino, nunca se asume "Nueva" a secas.
+  const nuevoRotuloLabel = tabActiva?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+  const nuevoGenero = articuloDefinido(nuevoRotuloLabel) === "el" ? "o" : "a"
 
   // `search`/`estados` ya filtran del lado del servidor — `filtro`
   // (instrumento) queda armado para la próxima iteración, cuando llegue su
@@ -332,7 +338,7 @@ function PlaneadorPageContent() {
                   color="primary"
                   size="sm"
                   variant="fill"
-                  aria-label="Nueva actividad"
+                  aria-label={`Nuev${nuevoGenero} ${rotuloEnMinuscula(nuevoRotuloLabel)}`}
                   className="rounded-r-none border-r-0"
                   render={
                     <Link
@@ -342,7 +348,7 @@ function PlaneadorPageContent() {
                   }
                 >
                   <PlusCircleIcon data-icon="inline-start" />
-                  Nueva actividad
+                  Nuev{nuevoGenero} {rotuloEnMinuscula(nuevoRotuloLabel)}
                 </Button>
               )}
               <DropdownMenu>

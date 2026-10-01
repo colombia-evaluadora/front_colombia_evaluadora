@@ -32,6 +32,7 @@ import {
   ROTULO_ACTIVIDAD_FALLBACK,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -186,7 +187,12 @@ export function UnidadInfoGeneralFields({
     draft.gradoId ?? tab?.grados[0]?.id,
     draft.asignaturaId,
   )
-  const rotuloActividadesLower = `${(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK).toLowerCase()}s`
+  // Siempre en singular: el rótulo no es un dato controlado, concatenar "s"
+  // a mano rompe con cualquiera que no termine en consonante simple (ver el
+  // bug de "Actividad2s").
+  const rotuloActividadLabel = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+  const rotuloActividadLower = rotuloActividadLabel.toLowerCase()
+  const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
@@ -445,11 +451,11 @@ export function UnidadInfoGeneralFields({
               `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
               el label chico de un field, no como título de sección. */}
           <legend className="mb-0 text-base font-semibold">
-            Forma en que se van a calcular las {rotuloActividadesLower}.
+            Forma en que se calcula cada {rotuloActividadLower}.
           </legend>
           <FieldDescription>
-            Selecciona el método que se va a utilizar para definir el resultado a partir de las{" "}
-            {rotuloActividadesLower} calificadas al estudiante.
+            Selecciona el método que se va a utilizar para definir el resultado a partir de cada{" "}
+            {rotuloActividadLower} calificad{rotuloActividadGenero} al estudiante.
           </FieldDescription>
 
           <RadioGroup

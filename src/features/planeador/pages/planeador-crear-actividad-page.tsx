@@ -85,8 +85,14 @@ function PlaneadorCrearActividadPageContent() {
   // Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
   // (`planeador-tabs.tsx`/`planeador-page.tsx`) — acota Grado/Asignatura a
   // esa pestaña, mismo criterio que `tab` en `planeador-crear-unidad-page.tsx`.
+  // Con un solo rótulo disponible, se usa igual aunque `?rotulo=` no haya
+  // llegado (entrada directa por URL, sin pasar por el botón): no hay
+  // ambigüedad que resolver, y saltear el acotamiento ahí dejaba el alta
+  // viendo todo el catálogo del docente en vez de solo lo de esa pestaña.
   const { data: actividadTabs } = useActividadesTabsQuery()
-  const tabDesdeAgregar: ActividadTab | undefined = actividadTabs?.find((t) => t.rotulo === rotulo)
+  const tabDesdeAgregar: ActividadTab | undefined =
+    actividadTabs?.find((t) => t.rotulo === rotulo) ??
+    (actividadTabs?.length === 1 ? actividadTabs[0] : undefined)
   // Mismo listado que ya usa `EditarActividadForm` para "Unidad temática
   // asociada" — se reusa acá solo para resolver `grado`/`asignatura` (los
   // NOMBRES; `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del

@@ -443,14 +443,15 @@ export function EditarActividadForm({
   useRecuperacionAutoFill(form)
 
   // Cómo se llama "la actividad" en ESTE grado ("Actividad"/"Experiencia"/
-  // "Proyecto"…, `docs/rotulo-actividad.md`) — deshabilitada (cae al
-  // fallback genérico) hasta que Grado esté elegido, igual que el resto de
-  // lo que depende de él (`disabled` arriba). Nunca hardcodear "actividad"
-  // en los textos de este form.
+  // "Proyecto"…, `docs/rotulo-actividad.md`). Antes de elegir Grado cae a
+  // `tab?.rotulo` (la pestaña desde la que se abrió "Nueva {rótulo}", ya
+  // sabido sin esperar ninguna consulta) y solo si tampoco hay `tab` (alta
+  // genérica sin pestaña, o edición) cae al fallback fijo. Nunca
+  // hardcodear "actividad" en los textos de este form.
   const gradoIdActual = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaIdActual = useSelector(form.store, (state) => state.values.asignaturaId)
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdActual, asignaturaIdActual)
-  const rotulo = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+  const rotulo = rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
 
   return (
     <form
@@ -506,6 +507,7 @@ export function EditarActividadForm({
             form={form}
             disabled={disabled}
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
+            tab={tab}
           />
         </div>
       </Card>
@@ -1051,6 +1053,7 @@ function IdentificacionSection({
   form,
   disabled,
   bloqueadoPorRecuperacion,
+  tab,
 }: {
   form: FormActividad
   disabled: boolean
@@ -1058,17 +1061,21 @@ function IdentificacionSection({
    *  llenó `useRecuperacionAutoFill` con el de la actividad original + el
    *  sufijo " (R)") mientras esto sea `true`. */
   bloqueadoPorRecuperacion: boolean
+  /** Pestaña de Rótulo de Ejecución activa — ver el mismo prop en
+   *  `EditarActividadFormProps`. */
+  tab?: ActividadTab
 }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
   const nombreInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.nombre?.trim()))
   const tipoInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.tipo))
   // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
-  // `EditarActividadForm`.
+  // `EditarActividadForm` (incluido el fallback a `tab?.rotulo` antes de
+  // elegir Grado).
   const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdSel, asignaturaIdSel)
-  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
 
   return (
     <>
@@ -1623,7 +1630,7 @@ function AsignaturaGradoSection({
   // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
   // `EditarActividadForm`.
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoId, asignaturaId)
-  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
