@@ -28,7 +28,6 @@ import {
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface CeldaNotaPopoverProps {
   actividadId: number
@@ -149,7 +148,6 @@ export function CeldaNotaPopover({
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
   const { notify } = useNotify()
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
 
   const { data: instrumento } = useInstrumentoActividadQuery(actividadId)
   const { data: notaActual } = useNotaEstudianteQuery(open ? pkTactividadEstudiante : undefined)
@@ -179,8 +177,6 @@ export function CeldaNotaPopover({
     if (!input) return
     calificar.mutate(input)
   }
-
-  if (!puedeEditar) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

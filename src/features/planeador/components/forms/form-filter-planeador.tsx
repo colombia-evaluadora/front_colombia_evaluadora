@@ -31,6 +31,8 @@ interface FilterPlaneadorFormProps {
   // la pestaña "Unidad temática" comparte este form pero no tiene
   // instrumento que filtrar.
   instrumentoOptions?: string[]
+  /** Rótulo real (Regla 13) para la opción "Actividad" de "Ver por". */
+  rotuloLabel: string
 }
 
 /**
@@ -47,6 +49,7 @@ export function FilterPlaneadorForm({
   defaultValues,
   onSubmit,
   instrumentoOptions = [],
+  rotuloLabel,
 }: FilterPlaneadorFormProps) {
   const form = useForm({
     defaultValues,
@@ -62,9 +65,14 @@ export function FilterPlaneadorForm({
     () => Object.fromEntries(instrumentoOptions.map((nombre) => [nombre, nombre])),
     [instrumentoOptions],
   )
+  // Rótulo real (Regla 13) en vez del literal "Actividad" — el caller ya
+  // resuelve si todas las filas filtradas comparten uno.
   const vistaItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(VIEW_OPTIONS.map((o) => [o.value, o.label])),
-    [],
+    () =>
+      Object.fromEntries(
+        VIEW_OPTIONS.map((o) => [o.value, o.value === "actividad" ? rotuloLabel : o.label]),
+      ),
+    [rotuloLabel],
   )
 
   return (
@@ -87,11 +95,11 @@ export function FilterPlaneadorForm({
                 onValueChange={(value) => field.handleChange(value ?? "")}
               >
                 <ComboboxFieldTrigger id={field.name} size="sm" className="w-full">
-                  <ComboboxFieldValue placeholder="Actividad" />
+                  <ComboboxFieldValue placeholder={rotuloLabel} />
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
                   <ComboboxGroup>
-                    <ComboboxFieldItem value={ALL_VALUE}>Actividad</ComboboxFieldItem>
+                    <ComboboxFieldItem value={ALL_VALUE}>{rotuloLabel}</ComboboxFieldItem>
                     {VIEW_OPTIONS.filter((o) => o.value !== "actividad").map((option) => (
                       <ComboboxFieldItem key={option.value} value={option.value}>
                         {option.label}

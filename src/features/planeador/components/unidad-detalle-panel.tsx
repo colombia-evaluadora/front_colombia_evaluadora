@@ -71,7 +71,11 @@ interface PanelTabDef {
 // `resolverInstrumentoUnico`); con ninguna vinculada, o con varias que usan
 // instrumentos distintos, no hay un único rótulo que mostrar y se cae al
 // genérico "Rúbricas" de siempre.
-function getVisibleTabs(esFormativo: boolean, instrumentoLabel: string | undefined): PanelTabDef[] {
+function getVisibleTabs(
+  esFormativo: boolean,
+  instrumentoLabel: string | undefined,
+  rotuloActividadesLabel: string,
+): PanelTabDef[] {
   const tabs: PanelTabDef[] = [
     { value: "general", label: "Información general", Icon: ClipboardTextIcon },
     {
@@ -79,7 +83,7 @@ function getVisibleTabs(esFormativo: boolean, instrumentoLabel: string | undefin
       label: instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Rúbricas",
       Icon: FolderOpenIcon,
     },
-    { value: "actividades", label: "Actividades", Icon: ClipboardCheckIcon },
+    { value: "actividades", label: rotuloActividadesLabel, Icon: ClipboardCheckIcon },
   ]
   if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
@@ -279,6 +283,8 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // (ver el comentario de `fn_actividad_es_formativa`).
   const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
   const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
+  // Rótulo real (Regla 13) — nunca "actividades" fijo.
+  const rotuloActividadesLower = `${(unidad.rotuloEjecucion ?? "Actividad").toLowerCase()}s`
 
   return (
     <div className="flex flex-col gap-6">
@@ -331,7 +337,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
-              Forma en que se van a calcular las actividades dentro de la unidad
+              Forma en que se van a calcular las {rotuloActividadesLower} dentro de la unidad
             </h4>
             <p className="text-muted-foreground text-sm">
               Método Seleccionado:{" "}
@@ -488,8 +494,17 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         esFormativa,
         puedeEditar,
         puedeEliminar,
+        unidad.rotuloEjecucion,
       ),
-    [unidad.id, unidad.metodoCalculo, totalPonderacion, esFormativa, puedeEditar, puedeEliminar],
+    [
+      unidad.id,
+      unidad.metodoCalculo,
+      totalPonderacion,
+      esFormativa,
+      puedeEditar,
+      puedeEliminar,
+      unidad.rotuloEjecucion,
+    ],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
@@ -523,10 +538,15 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // (mismo motivo que "Objetivos", ver `Columna` más abajo) ni de variar
   // por método de cálculo, que termina siendo ruido cuando ni siquiera hay
   // un instrumento que mostrar.
-  const tituloActividades = instrumentoLabel ? `Actividades en ${instrumentoLabel}` : "Actividades"
+  // Rótulo real de "las actividades" para el grado de esta unidad (Regla
+  // 13, sso V488/V511) — nunca el literal "Actividades" fijo.
+  const rotuloActividadesLabel = `${unidad.rotuloEjecucion ?? "Actividad"}s`
+  const tituloActividades = instrumentoLabel
+    ? `${rotuloActividadesLabel} en ${instrumentoLabel}`
+    : rotuloActividadesLabel
   const descripcionActividades = instrumentoLabel
-    ? `Actividades vinculadas en ${instrumentoLabel}.`
-    : "Las actividades vinculadas."
+    ? `${rotuloActividadesLabel} vinculadas en ${instrumentoLabel}.`
+    : `Las ${rotuloActividadesLabel.toLowerCase()} vinculadas.`
 
   return (
     <div>
@@ -557,7 +577,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
+        emptyMessage={`Esta unidad todavía no tiene ${rotuloActividadesLabel.toLowerCase()} vinculadas.`}
       />
     </div>
   )
@@ -602,9 +622,12 @@ function UnidadTabs({
     () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
     [unidad.instrumento, actividadesVinculadas],
   )
+  // Rótulo real de "las actividades" para el grado de esta unidad (Regla
+  // 13, sso V488/V511) — nunca el literal "Actividades" fijo.
+  const rotuloActividadesLabel = `${unidad.rotuloEjecucion ?? "Actividad"}s`
   const visibleTabs = React.useMemo(
-    () => getVisibleTabs(esFormativo, instrumentoLabel),
-    [esFormativo, instrumentoLabel],
+    () => getVisibleTabs(esFormativo, instrumentoLabel, rotuloActividadesLabel),
+    [esFormativo, instrumentoLabel, rotuloActividadesLabel],
   )
 
   React.useEffect(() => {
