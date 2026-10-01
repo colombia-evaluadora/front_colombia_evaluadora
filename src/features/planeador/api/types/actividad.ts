@@ -188,20 +188,39 @@ export interface Unidad {
  * que devuelve `useCalificacionesQuery`) que reciben la adaptación. Con
  * "A todo el grupo" queda vacío — no hace falta elegir a nadie.
  */
+/**
+ * Un archivo de la plantilla en modo "archivo" (hasta 3 por adaptación,
+ * `TACTIVIDAD_ADAPTACION_ARCHIVO` — sso V496.1/.2). `fkTarchivo` identifica
+ * uno YA GUARDADO; uno recién elegido en el picker todavía no lo tiene y en
+ * cambio trae `blobUrl` (un `blob:` URL local, se sube al guardar — mismo
+ * patrón que `Recurso.archivoId`/`versionModificadaRef`: evita guardar el
+ * `File` crudo en el estado del form, que no es serializable para el borrador
+ * de `actividad-form-draft.ts`).
+ */
+export interface AdaptacionArchivo {
+  fkTarchivo?: number
+  /** Nombre con extensión — el backend infiere el `Content-Type` real por
+   *  acá, no por el `Content-Type` del multipart (ver `subirArchivoAdaptacion`). */
+  nombre: string
+  blobUrl?: string
+}
+
 export interface Adaptacion {
   tipo: string
   /**
-   * Justificación libre, obligatoria cuando `tipo === "Otro"` (sso V532,
-   * `TACTIVIDAD_ADAPTACION.TIPO_OTRO`) — ningún otro valor del catálogo la
-   * usa.
+   * Justificación libre, obligatoria cuando `tipo === "Otro"` (sso V496.1,
+   * `TACTIVIDAD_ADAPTACION.ESPECIFICACION_TIPO` / JSON `especificacionTipo`
+   * — el nombre no es "tipoOtro", el validador del backend
+   * (`fn_actividad_validar_adaptaciones`) rechaza esa clave) — máx. 150
+   * caracteres, ningún otro valor del catálogo la usa.
    */
-  tipoOtro: string
+  especificacionTipo: string
   descripcion: string
   versionModificada: "no" | "archivo" | "enlace" | "biblioteca" | ""
   versionModificadaRef: string
   /**
    * Rótulo que el docente le da a la plantilla (archivo o enlace) para
-   * reconocerla después en la Biblioteca institucional (sso V532,
+   * reconocerla después en la Biblioteca institucional (sso V496.1,
    * `TACTIVIDAD_ADAPTACION.NOMBRE_PLANTILLA`) — máx. 100 caracteres,
    * obligatorio con `versionModificada` en `"archivo"`/`"enlace"`. No
    * aplica a `"biblioteca"`: ahí se reusa el nombre que ya tiene la
@@ -211,24 +230,17 @@ export interface Adaptacion {
   aplicaA: string
   estudiantesIds: number[]
   /**
-   * `PK_TARCHIVO` de una adaptación con `versionModificada === "archivo"` YA
-   * GUARDADA — mismo rol que `Recurso.archivoId` y misma razón: `PUT
-   * .../adaptaciones` es de reemplazo total y exige `fkTarchivo` cuando
-   * `formatoAdaptacion = ARCHIVO`, así que sin este id el archivo se cae en
-   * el siguiente guardado si el usuario no vuelve a elegirlo.
+   * Archivos de la plantilla en modo "archivo" — hasta 3
+   * (`fn_actividad_validar_adaptaciones` rechaza un cuarto). Vacío en los
+   * demás modos.
+   */
+  archivos: AdaptacionArchivo[]
+  /**
+   * `PK_TARCHIVO` elegido del modo "biblioteca" (`AdaptacionBibliotecaField`)
+   * — referencia un archivo YA existente (de otra actividad), no uno que se
+   * suba acá, así que es una sola referencia y no un array como `archivos`.
    */
   archivoId?: number
-  /**
-   * Nombre original del archivo recién elegido en el formulario (con
-   * extensión) — `versionModificadaRef` es un `blob:` URL y no lo trae.
-   *
-   * Sin esto, la subida (`subirArchivoAdaptacion`) no tenía de dónde sacar
-   * un nombre y mandaba uno fijo sin extensión ("plantilla"): el backend
-   * infiere el `Content-Type` real del archivo por la extensión del
-   * nombre, así que cualquier plantilla terminaba sirviéndose como
-   * `application/octet-stream` — el navegador la descargaba en vez de
-   * mostrarla, sin importar qué binario fuera.
-   */
   archivoNombre?: string
 }
 
