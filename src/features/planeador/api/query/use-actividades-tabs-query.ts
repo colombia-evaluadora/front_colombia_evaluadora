@@ -26,7 +26,6 @@ interface ActividadTabPairRow {
 }
 interface ActividadTabRow {
   rotulo_ejecucion: string
-  rotulo_ejecucion_plural?: string | null
   pk_referente_curricular?: number | null
   grados?: (number | ActividadTabOptionRow)[]
   asignaturas?: (number | ActividadTabOptionRow)[]
@@ -45,13 +44,13 @@ export interface ActividadTabPair {
 
 export interface ActividadTab {
   /** Singular ("Actividad", "Experiencia de aprendizaje") — la clave de
-   *  identidad: lo que viaja en `?rotulo=` y lo que se matchea contra la
-   *  pestaña activa. */
+   *  identidad (lo que viaja en `?rotulo=`) Y el texto que se pinta en la
+   *  pestaña, igual que "Unidad temática"/"Proyecto pedagógico" (un nombre
+   *  de categoría, no una lista pluralizada). Nunca se pluraliza: el texto
+   *  no es un dato controlado, y concatenar "s" a mano (o confiar en una
+   *  forma plural configurada aparte) rompe con cualquier palabra no
+   *  prevista (ver el bug de "Actividads"). */
   rotulo: string
-  /** Plural, ya resuelto en el servidor (`ROTULO_EJECUCION_PLURAL` o un
-   *  fallback best-effort) — es lo que se pinta en la pestaña/botón, nunca
-   *  se concatena "s" acá. */
-  rotuloPlural: string
   referenteId: number | null
   grados: ActividadTabOption[]
   asignaturas: ActividadTabOption[]
@@ -79,7 +78,6 @@ function toActividadTab(row: ActividadTabRow): ActividadTab {
   const grados = toOptions(row.grados)
   return {
     rotulo: row.rotulo_ejecucion,
-    rotuloPlural: row.rotulo_ejecucion_plural || row.rotulo_ejecucion,
     referenteId: row.pk_referente_curricular ?? null,
     grados,
     asignaturas: toOptions(row.asignaturas),

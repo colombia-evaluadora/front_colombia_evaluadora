@@ -82,11 +82,6 @@ function rotuloEjecucionMock(grado: string): string {
   return esFormativo ? "Experiencia de aprendizaje" : "Actividad"
 }
 
-const ROTULO_PLURAL_MOCK: Record<string, string> = {
-  Actividad: "Actividades",
-  "Experiencia de aprendizaje": "Experiencias de aprendizaje",
-}
-
 // Rótulos dinámicos de los dos niveles del árbol de referente curricular
 // (colección Postman `planeador-flujo-unidad-actividad`: "Propósito"/
 // "Imprescindible" en Preescolar, "Enunciado"/"Evidencia" en Primaria). El
@@ -599,7 +594,6 @@ export const planeadorHandlers = [
     }
     const rows = Array.from(porRotulo.entries()).map(([rotulo, { grados, asignaturas, pares }]) => ({
       rotulo_ejecucion: rotulo,
-      rotulo_ejecucion_plural: ROTULO_PLURAL_MOCK[rotulo] ?? rotulo,
       pk_referente_curricular: hashString(`referente-rotulo-${rotulo}`) % 1000000,
       grados: Array.from(grados, ([pk, nombre]) => ({ pk, nombre })),
       asignaturas: Array.from(asignaturas, ([pk, nombre]) => ({ pk, nombre })),
