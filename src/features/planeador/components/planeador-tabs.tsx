@@ -39,9 +39,12 @@ export const UNIDAD_TAB_FALLBACK = "Unidad temática"
  *   como `?instrumento=`.
  * - Actividades, una por cada Rótulo de Ejecución resuelto por par
  *   grado+asignatura (`GET /planeador/actividades/tabs`): "Actividad",
- *   "Experiencia de aprendizaje", … — encodeado como `?rotulo=` (el
- *   singular, clave de identidad; el texto que se pinta es el plural ya
- *   resuelto por el servidor).
+ *   "Experiencia de aprendizaje", … — encodeado como `?rotulo=`. Se pinta
+ *   en SINGULAR, igual que "Unidad temática"/"Proyecto pedagógico" (un
+ *   nombre de categoría, no una lista pluralizada): el rótulo no es un
+ *   dato controlado y pluralizarlo a mano (o confiar en una forma plural
+ *   configurada aparte) puede romper con cualquier palabra no prevista
+ *   (ver el bug de "Actividads").
  *
  * Las pestañas de Actividades se pintan primero, las de Unidades después —
  * mismo orden visual que antes de que Actividades tuviera más de una.
@@ -65,17 +68,17 @@ export function PlaneadorTabs() {
       ? [UNIDAD_TAB_FALLBACK]
       : []
   const rotulos = actividadTabs?.length
-    ? actividadTabs.map((t) => t.rotuloPlural)
+    ? actividadTabs.map((t) => t.rotulo)
     : isPendingActividades
       ? [ACTIVIDAD_TAB_FALLBACK]
       : []
 
   const views = [
-    ...rotulos.map((rotuloPlural, i) => ({
-      key: `actividad:${rotuloPlural}`,
-      label: rotuloPlural,
+    ...rotulos.map((rotulo) => ({
+      key: `actividad:${rotulo}`,
+      label: rotulo,
       to: paths.app.planeadorActividades.getHref(),
-      rotulo: actividadTabs?.[i]?.rotulo as string | undefined,
+      rotulo: rotulo as string | undefined,
       instrumento: undefined as string | undefined,
     })),
     ...instrumentos.map((instrumento) => ({
