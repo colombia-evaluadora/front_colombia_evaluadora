@@ -482,11 +482,16 @@ export const planeadorHandlers = [
     const estadosDerivados = estadosParam ? estadosParam.split(",") : null
     const dia = url.searchParams.get("dia")
     // `?grado_asignatura_pares=` — pestaña de Rótulo de Ejecución activa
-    // (`ACTIVIDAD_TABS_URL` más abajo), mismo contrato que sso V526: un par
-    // con `asignatura: null` matchea cualquier asignatura de ese grado.
+    // (`ACTIVIDAD_TABS_URL` más abajo). CSV de "grado:asignatura" (asignatura
+    // vacío = comodín), NO JSON: mismo contrato que sso V526/V527 — un
+    // parámetro de query string de un GET siempre llega como string al
+    // binder real, nunca como objeto/arreglo (ver `paresToQueryParam`).
     const paresParam = url.searchParams.get("grado_asignatura_pares")
     const pares = paresParam
-      ? (JSON.parse(paresParam) as { grado: number; asignatura: number | null }[])
+      ? paresParam.split(",").map((par) => {
+          const [gradoStr, asignaturaStr] = par.split(":")
+          return { grado: Number(gradoStr), asignatura: asignaturaStr ? Number(asignaturaStr) : null }
+        })
       : null
 
     const filtered = planeadorDb.filter((row) => {
