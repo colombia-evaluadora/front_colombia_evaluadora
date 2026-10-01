@@ -14,6 +14,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { asistenciaSeguimientoRoute } from "@/router"
 import { useAsistenciaSeguimientoQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-seguimiento-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
@@ -143,7 +144,7 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
     ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
     TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
   }
-  const { data, isPending, isError, refetch } = useAsistenciaSeguimientoQuery(
+  const { data, isPending, isError, error, refetch } = useAsistenciaSeguimientoQuery(
     {
       FILTERS: queryFilters,
       SORTING: { ID: primary?.id ?? null, DESC: primary ? primary.desc : null },
@@ -233,7 +234,7 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
         emptyMessage={
           hasFilter ? "Sin registros de asistencia para los filtros aplicados." : <SeguimientoSinFiltroMensaje />
         }
-        errorMessage="Ocurrió un error al cargar el seguimiento."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
 
       <Pagination

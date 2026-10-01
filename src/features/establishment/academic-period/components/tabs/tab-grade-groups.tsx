@@ -9,6 +9,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
+import { getErrorMessage } from "@/lib/api-client"
 import { createGradeGroupColumns } from "@/features/establishment/academic-period/components/table/columns-grade-groups"
 import { CreateGradeGroupDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade-group"
 import { DeleteSelectedGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-grade-groups"
@@ -30,7 +31,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
     [academicPeriodId],
   )
 
-  const { data, isPending, isError, refetch } = useGradeGroupsQuery({
+  const { data, isPending, isError, error, refetch } = useGradeGroupsQuery({
     filters: {},
     sorting,
     pageIndex,
@@ -107,7 +108,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
         isError={isError}
         onRetry={refetch}
         emptyMessage="Aún no hay grupos."
-        errorMessage="Ocurrió un error al cargar los grupos."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {data && (
         <Pagination

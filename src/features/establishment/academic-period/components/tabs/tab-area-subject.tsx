@@ -14,6 +14,7 @@ import { DeleteSelectedAreaSubjectsDialog } from "@/features/establishment/acade
 import { ExportAreaSubjectsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-area-subjects"
 import { ExportSelectedAreaSubjectsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-area-subjects"
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/use-area-subject"
+import { getErrorMessage } from "@/lib/api-client"
 
 interface TabAreaSubjectProps {
   academicPeriodId?: number
@@ -27,7 +28,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
 
   const queryFilters = useMemo(() => ({ nombreInterno: search.trim() || undefined }), [search])
 
-  const { data, isPending, isError, refetch } = useAreaSubjectQuery({
+  const { data, isPending, isError, error, refetch } = useAreaSubjectQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -112,7 +113,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
         isError={isError}
         onRetry={refetch}
         emptyMessage="Aún no hay áreas/asignaturas."
-        errorMessage="Ocurrió un error al cargar las áreas/asignaturas."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {data && (
         <Pagination

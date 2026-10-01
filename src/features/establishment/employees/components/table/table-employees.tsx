@@ -60,7 +60,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   // `queryFilters.roles`/`workSchedules` ya traen el `id` (como texto, ver
   // search-employees.tsx) — `useEmployeesQuery` solo necesita convertirlos a
   // número, no resolverlos contra ningún catálogo.
-  const { data, isPending, isError, refetch } = useEmployeesQuery({
+  const { data, isPending, isError, error, refetch } = useEmployeesQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -177,7 +177,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar los funcionarios."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
 
         {data && (

@@ -8,6 +8,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useGradesQuery } from "@/features/establishment/academic-period/api/query/use-grades"
+import { getErrorMessage } from "@/lib/api-client"
 import { createGradeColumns } from "@/features/establishment/academic-period/components/table/columns-grades"
 import { CreateGradeDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade"
 import { DeleteSelectedGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-grades"
@@ -26,7 +27,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isPending, isError, refetch } = useGradesQuery({
+  const { data, isPending, isError, error, refetch } = useGradesQuery({
     filters: {},
     sorting,
     pageIndex,
@@ -98,7 +99,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
         isError={isError}
         onRetry={refetch}
         emptyMessage="Aún no hay grados."
-        errorMessage="Ocurrió un error al cargar los grados."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {data && (
         <Pagination

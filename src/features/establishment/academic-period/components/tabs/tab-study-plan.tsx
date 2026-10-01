@@ -9,6 +9,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
+import { getErrorMessage } from "@/lib/api-client"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
@@ -28,7 +29,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar, isFormat
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isPending, isError, refetch } = useStudyPlansQuery({
+  const { data, isPending, isError, error, refetch } = useStudyPlansQuery({
     filters: {},
     sorting,
     pageIndex,
@@ -114,7 +115,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar, isFormat
         isError={isError}
         onRetry={refetch}
         emptyMessage="Aún no hay elementos en el plan de estudio."
-        errorMessage="Ocurrió un error al cargar el plan de estudio."
+        errorMessage={error ? getErrorMessage(error) : undefined}
         containerClassName="max-h-96 overflow-y-auto"
       />
       {data && (
