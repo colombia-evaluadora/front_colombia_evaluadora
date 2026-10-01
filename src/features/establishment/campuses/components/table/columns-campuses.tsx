@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Checkbox } from "@/components/ui/checkbox"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { toSentenceCase } from "@/lib/utils"
 
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import { DeleteCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-delete"
@@ -79,7 +80,7 @@ export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campu
       <DataTableColumnHeader column={column} title="Nombre de la sede" />
     ),
     cell: ({ row }) => (
-      <p className="uppercase font-bold">{row.getValue("name")}</p>
+      <p className="font-bold">{toSentenceCase(row.original.name)}</p>
     ),
   },
   {

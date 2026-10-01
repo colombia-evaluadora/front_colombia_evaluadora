@@ -85,7 +85,7 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
         <InfoField label="Rótulo de Área">
           {reference.subjectLabel ? toSentenceCase(reference.subjectLabel.name) : "—"}
         </InfoField>
-        <InfoField label="Rótulo de Secuencia de Actividades">{reference.instrument || "—"}</InfoField>
+        <InfoField label="Rótulo de Secuencia de Actividades">{reference.instrument ? toSentenceCase(reference.instrument) : "—"}</InfoField>
         <InfoField label="Rótulo de Ejecución">{reference.executionLabel || "—"}</InfoField>
 
         {/* Solo lectura: agregado de los grados de los enunciados de Nivel 1. `[]` = Todos. */}
