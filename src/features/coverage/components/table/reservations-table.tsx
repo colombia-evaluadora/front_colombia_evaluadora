@@ -16,6 +16,7 @@ import {
 } from "@/components/layout/table-screen"
 
 import { useReservationsQuery } from "@/features/coverage/api/query/use-reservations-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { useReservationFilters } from "@/features/coverage/hooks/use-reservation-filters"
 
 import { columns } from "@/features/coverage/components/table/columns-reservations"
@@ -34,7 +35,7 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useReservationFilters()
-  const { data, isPending, isError, refetch } = useReservationsQuery({
+  const { data, isPending, isError, error, refetch } = useReservationsQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -100,7 +101,7 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las reservas."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination

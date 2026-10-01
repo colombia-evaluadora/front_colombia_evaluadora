@@ -15,6 +15,7 @@ import {
 } from "@/components/layout/table-screen"
 
 import { useTableOperationsQuery } from "@/features/administration/audits/api/query/use-table-operations-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { useAuditTableQuery } from "@/features/administration/audits/api/query/use-audit-table-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useTableOperationsFilters } from "@/features/administration/audits/hooks/use-table-operations-filters"
@@ -38,7 +39,7 @@ export function TableOperationsDataTable({ title, action }: TableOperationsDataT
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useTableOperationsFilters()
-  const { data, isPending, isError, refetch } = useTableOperationsQuery({
+  const { data, isPending, isError, error, refetch } = useTableOperationsQuery({
     tableSlug,
     filters: queryFilters,
     sorting,
@@ -117,7 +118,7 @@ export function TableOperationsDataTable({ title, action }: TableOperationsDataT
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las operaciones."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination

@@ -8,6 +8,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
+import { getErrorMessage } from "@/lib/api-client"
 import { createEvaluationPeriodColumns } from "@/features/establishment/academic-period/components/table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-evaluation-period"
 import { DeleteSelectedEvaluationPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-evaluation-periods"
@@ -24,7 +25,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isPending, isError, refetch } = useEvaluationPeriodsQuery({
+  const { data, isPending, isError, error, refetch } = useEvaluationPeriodsQuery({
     filters: {},
     sorting,
     pageIndex,
@@ -97,7 +98,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
         isError={isError}
         onRetry={refetch}
         emptyMessage="Aún no hay periodos de evaluación."
-        errorMessage="Ocurrió un error al cargar los periodos de evaluación."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {data && (
         <Pagination

@@ -39,6 +39,7 @@ import { Pagination } from "@/components/pagination"
 import { SearchPreMatricula } from "@/features/coverage/components/search/search-pre-matricula"
 import { usePreMatriculaFilters } from "@/features/coverage/hooks/use-pre-matricula-filters"
 import { usePreMatriculaQuery } from "@/features/coverage/api/query/use-pre-matricula-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { columnsPreMatricula } from "@/features/coverage/components/table/columns-pre-matricula"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -53,7 +54,7 @@ export function PreMatriculaPage() {
 
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
-  const { data, isPending, isError, refetch } = usePreMatriculaQuery({
+  const { data, isPending, isError, error, refetch } = usePreMatriculaQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -202,7 +203,7 @@ export function PreMatriculaPage() {
               isError={isError}
               onRetry={refetch}
               emptyMessage="Sin resultados."
-              errorMessage="Ocurrió un error al cargar la prematrícula."
+              errorMessage={error ? getErrorMessage(error) : undefined}
             />
             {data && (
               <Pagination
