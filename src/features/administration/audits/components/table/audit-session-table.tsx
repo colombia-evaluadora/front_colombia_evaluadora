@@ -15,6 +15,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useAuditsQuery } from "@/features/administration/audits/api/query/use-audits-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -36,7 +37,7 @@ export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAuditSessionFilters()
-  const { data, isPending, isError, refetch } = useAuditsQuery({
+  const { data, isPending, isError, error, refetch } = useAuditsQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -111,7 +112,7 @@ export function AuditSessionDataTable() {
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las sesiones."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination

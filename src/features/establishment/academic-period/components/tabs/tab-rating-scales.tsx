@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import type { SortingState } from "@tanstack/react-table"
 import { PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 
@@ -69,6 +70,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     data,
     isPending: scalesPending,
     isError,
+    error,
     refetch,
   } = useRatingScalesQuery({
     filters: {},
@@ -193,7 +195,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         growColumnId="nombre"
         growColumnClassName="pl-6"
         emptyMessage="Aún no se agregaron escalas de valoración."
-        errorMessage="Ocurrió un error al cargar las escalas."
+        errorMessage={error ? getErrorMessage(error) : undefined}
         renderSubRow={(row) => {
           const level = row.original as TeachingLevel
           if (expandedId !== level.id) return null

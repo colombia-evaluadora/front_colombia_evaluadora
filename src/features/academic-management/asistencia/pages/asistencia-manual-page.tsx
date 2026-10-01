@@ -15,6 +15,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
@@ -185,6 +186,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     porBloque: rosterPorBloque,
     isPending,
     isError,
+    error,
     refetch,
   } = useAsistenciaRosterPorBloquesQuery(
     {
@@ -466,7 +468,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         isError={isError}
         onRetry={refetch}
         emptyMessage="Este grupo no tiene estudiantes."
-        errorMessage="Ocurrió un error al cargar el roster del grupo."
+        errorMessage={error ? getErrorMessage(error) : undefined}
         cellClassName="py-1"
       />
 

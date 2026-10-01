@@ -17,6 +17,7 @@ import {
 } from "@/components/layout/table-screen"
 
 import { useEnrollmentsQuery } from "@/features/coverage/api/query/use-enrollments-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { useEnrollmentFilters } from "@/features/coverage/hooks/use-enrollment-filters"
 import { columnsEnrollments } from "@/features/coverage/components/table/columns-enrollments"
 import { SearchEnrollments } from "@/features/coverage/components/search/search-enrollments"
@@ -36,7 +37,7 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEnrollmentFilters()
-  const { data, isPending, isError, refetch } = useEnrollmentsQuery({
+  const { data, isPending, isError, error, refetch } = useEnrollmentsQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -123,7 +124,7 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las inscripciones."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination

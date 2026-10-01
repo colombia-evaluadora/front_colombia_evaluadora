@@ -18,6 +18,7 @@ import { NoticeProvider } from "@/components/notice/notice-context"
 
 import { useMatriculaFilters } from "@/features/coverage/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/api/query/use-matricula-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { columnsMatricula, MATRICULA_EXPORT_COLUMN_KEYS } from "@/features/coverage/components/table/columns-matricula"
 import { SearchMatricula } from "@/features/coverage/components/search/search-matricula"
 import { ExportMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-export-matricula"
@@ -37,7 +38,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useMatriculaFilters()
 
-  const { data, isPending, isError, refetch } = useMatriculaQuery({
+  const { data, isPending, isError, error, refetch } = useMatriculaQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -121,7 +122,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
             isError={isError}
             onRetry={refetch}
             emptyMessage="Sin resultados."
-            errorMessage="Ocurrió un error al cargar la matrícula."
+            errorMessage={error ? getErrorMessage(error) : undefined}
           />
 
           {data && (
