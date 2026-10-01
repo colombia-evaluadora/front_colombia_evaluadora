@@ -16,6 +16,7 @@ import {
 } from "@/components/layout/table-screen"
 
 import { useAcademicPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-academic-periods"
+import { getErrorMessage } from "@/lib/api-client"
 import { useAcademicPeriodFilters } from "@/features/establishment/academic-period/hooks/use-academic-period-filters"
 import { columns } from "@/features/establishment/academic-period/components/table/columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-periods"
@@ -37,7 +38,7 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAcademicPeriodFilters()
 
-  const { data, isPending, isError, refetch } = useAcademicPeriodsQuery({
+  const { data, isPending, isError, error, refetch } = useAcademicPeriodsQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -112,7 +113,7 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar los periodos académicos."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination

@@ -41,6 +41,9 @@ export function useAsistenciaRosterPorBloquesQuery(
 
   const isPending = queries.some((q) => q.isPending)
   const isError = queries.some((q) => q.isError)
+  // Un solo bloque alcanza para el mensaje: son la misma consulta repetida
+  // por bloque, así que comparten el mismo motivo de error.
+  const error = queries.find((q) => q.error)?.error
   const porBloque = new Map<number | null, RosterEstudiante[]>()
   bloques.forEach((bloque, index) => {
     const data = queries[index]?.data
@@ -48,5 +51,5 @@ export function useAsistenciaRosterPorBloquesQuery(
   })
   const refetch = () => Promise.all(queries.map((q) => q.refetch()))
 
-  return { porBloque, isPending, isError, refetch }
+  return { porBloque, isPending, isError, error, refetch }
 }

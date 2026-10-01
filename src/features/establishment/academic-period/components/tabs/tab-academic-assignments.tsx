@@ -16,6 +16,7 @@ import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academ
 import { ExportSelectedAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-assignments"
 
 import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
+import { getErrorMessage } from "@/lib/api-client"
 import type {
   EmployeeListItem,
   EmployeeStatus,
@@ -88,7 +89,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
   })
 
 
-  const { data, isPending, isError, refetch } = useAssignmentTeachersQuery({
+  const { data, isPending, isError, error, refetch } = useAssignmentTeachersQuery({
     academicPeriodId,
     search: queryFilters.search,
     status,
@@ -189,7 +190,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         isError={isError}
         onRetry={refetch}
         emptyMessage="Sin docentes."
-        errorMessage="Ocurrió un error al cargar los docentes."
+        errorMessage={error ? getErrorMessage(error) : undefined}
         cellClassName="py-1.5"
         renderSubRow={(row) => {
           const employee = row.original as EmployeeListItem

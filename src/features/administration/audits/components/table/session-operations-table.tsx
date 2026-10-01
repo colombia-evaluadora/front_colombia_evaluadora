@@ -15,6 +15,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { useSessionOperationsQuery } from "@/features/administration/audits/api/query/use-session-operations-query"
+import { getErrorMessage } from "@/lib/api-client"
 import { useSessionOperationsFilters } from "@/features/administration/audits/hooks/use-session-operations-filters"
 
 import { columns } from "@/features/administration/audits/components/table/columns-session-operations"
@@ -39,7 +40,7 @@ export function SessionOperationsDataTable({
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useSessionOperationsFilters()
 
-  const { data, isPending, isError, refetch } = useSessionOperationsQuery({
+  const { data, isPending, isError, error, refetch } = useSessionOperationsQuery({
     sessionId,
     filters: queryFilters,
     sorting,
@@ -97,7 +98,7 @@ export function SessionOperationsDataTable({
           isError={isError}
           onRetry={refetch}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las operaciones."
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
         {data && (
           <Pagination
