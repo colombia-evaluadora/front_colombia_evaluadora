@@ -66,6 +66,14 @@ const NAV_PATH_ALIASES: Array<[from: string, to: string]> = [
   // `/tablas`) pero un solo item de menú, que apunta a la de sesiones: todo
   // lo que cuelgue del prefijo lo marca activo, esté en la vista que esté.
   ["/app/registro-de-actividad", "/app/registro-de-actividad/sesiones"],
+  // El Planeador tiene varias vistas hermanas (actividades, unidades,
+  // planilla, vista previa de recurso) bajo el mismo prefijo `planeador`,
+  // pero un solo item de menú, que apunta a actividades (ver el comentario
+  // de `planeadorActividades` en `config/paths.ts`) — sin esto, el item se
+  // apagaba al entrar a Unidades o Planilla (reportado en vivo).
+  ["/app/planeador/unidades", "/app/planeador/actividades"],
+  ["/app/planeador/planilla", "/app/planeador/actividades"],
+  ["/app/planeador/recursos", "/app/planeador/actividades"],
 ]
 
 function resolveNavPathname(pathname: string) {
