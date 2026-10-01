@@ -106,9 +106,15 @@ export function useActividadesTabsQuery() {
   })
 }
 
-/** Serializa los pares de una pestaña para `?grado_asignatura_pares=`
- *  (`use-actividades-mias-query.ts`) — `asignaturaId: null` se preserva tal
- *  cual: matchea CUALQUIER asignatura de ese grado en el backend. */
+/**
+ * Serializa los pares de una pestaña para `?grado_asignatura_pares=`
+ * (`use-actividades-mias-query.ts`) — CSV de `"grado:asignatura"`
+ * (`asignaturaId == null` → `"grado:"`, comodín de cualquier asignatura de
+ * ese grado), NO JSON: un parámetro de query string de un GET siempre llega
+ * como `String` al binder del backend (sso V253/V526/V527) — un valor JSON
+ * ahí rompe en runtime ("La consulta está mal definida en el catálogo"),
+ * nunca lo deserializa como objeto/arreglo.
+ */
 export function paresToQueryParam(pares: ActividadTabPair[]): string {
-  return JSON.stringify(pares.map((p) => ({ grado: p.gradoId, asignatura: p.asignaturaId })))
+  return pares.map((p) => `${p.gradoId}:${p.asignaturaId ?? ""}`).join(",")
 }
