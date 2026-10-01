@@ -4355,15 +4355,20 @@ function CriterioItem({
                 value={criterio.excelentePonderacion ?? ""}
                 onChange={(e) => {
                   const raw = e.target.value
+                  // Regla 42: "Excelente" cuenta para el Puntaje de solo
+                  // lectura del criterio igual que cualquier otro nivel
+                  // (`maxPonderacionCriterio`, más abajo).
                   if (raw === "") {
-                    onChange({ ...criterio, excelentePonderacion: undefined })
+                    const next = { ...criterio, excelentePonderacion: undefined }
+                    onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
                     return
                   }
                   const num = Number(raw)
-                  onChange({
+                  const next = {
                     ...criterio,
                     excelentePonderacion: Number.isNaN(num) ? undefined : Math.min(100, Math.max(0, num)),
-                  })
+                  }
+                  onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
                 }}
                 disabled={disabled}
               />
@@ -4381,9 +4386,10 @@ function CriterioItem({
                   type="button"
                   aria-label="Quitar excelente"
                   disabled={disabled}
-                  onClick={() =>
-                    onChange({ ...criterio, excelente: "", excelentePonderacion: undefined })
-                  }
+                  onClick={() => {
+                    const next = { ...criterio, excelente: "", excelentePonderacion: undefined }
+                    onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
+                  }}
                 />
               }
             >
@@ -4466,7 +4472,14 @@ function CriterioItem({
                         ponderacion: Number.isNaN(num) ? undefined : Math.min(100, Math.max(0, num)),
                       }
                     }
-                    onChange({ ...criterio, niveles: next })
+                    // Regla 42: el Puntaje del criterio no se captura aparte
+                    // — es de solo lectura, el máximo entre los puntajes de
+                    // sus niveles (`maxPonderacionCriterio`, más abajo).
+                    onChange({
+                      ...criterio,
+                      niveles: next,
+                      ponderacion: maxPonderacionCriterio({ ...criterio, niveles: next }),
+                    })
                   }}
                   disabled={disabled}
                 />
@@ -4485,7 +4498,11 @@ function CriterioItem({
                     onClick={() => {
                       const next = criterio.niveles.slice()
                       next.splice(nIndex, 1)
-                      onChange({ ...criterio, niveles: next })
+                      onChange({
+                        ...criterio,
+                        niveles: next,
+                        ponderacion: maxPonderacionCriterio({ ...criterio, niveles: next }),
+                      })
                     }}
                   />
                 }
@@ -4554,21 +4571,32 @@ function CriterioItem({
         </div>
       </Field>
 
+      {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
+          como el máximo entre los puntajes de sus niveles (de facto, el
+          peso relativo de este criterio frente a los demás de la Rúbrica).
+          No se captura aparte para no duplicar esa información en un campo
+          independiente. */}
       <Field variant="outlined" className="mt-4 max-w-48">
         <FieldLabel>Puntaje</FieldLabel>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          value={criterio.ponderacion}
-          onChange={(e) => {
-            const num = Number(e.target.value)
-            onChange({ ...criterio, ponderacion: Number.isNaN(num) ? 0 : Math.min(100, Math.max(0, num)) })
-          }}
-          disabled={disabled}
-        />
+        <Input type="number" value={criterio.ponderacion} disabled readOnly />
       </Field>
     </li>
+  )
+}
+
+/** Regla 42: el Puntaje de un criterio de Rúbrica no se captura — es el
+ *  máximo entre los puntajes de sus niveles, incluido "Excelente"
+ *  (`excelentePonderacion`), que es en los hechos el nivel más alto del
+ *  criterio aunque viva como campo propio y no dentro de `niveles[]` —
+ *  ver el comentario de ese bloque, más arriba. 0 sin niveles o si ninguno
+ *  tiene puntaje cargado todavía. */
+function maxPonderacionCriterio(criterio: {
+  niveles: { ponderacion?: number }[]
+  excelentePonderacion?: number
+}): number {
+  return criterio.niveles.reduce(
+    (max, n) => Math.max(max, n.ponderacion ?? 0),
+    criterio.excelentePonderacion ?? 0,
   )
 }
 
