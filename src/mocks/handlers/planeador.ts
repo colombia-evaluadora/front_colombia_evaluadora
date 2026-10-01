@@ -68,6 +68,25 @@ function asignaturaIdMock(asignatura: string): number {
   return hashString(`asignatura-${asignatura}`) % 1000000
 }
 
+/**
+ * Rótulo de Ejecución mock para una actividad (grado+asignatura) — el mock
+ * no modela `TREFERENTE_CURRICULAR` real, así que se aproxima mirando si ESE
+ * grado tiene alguna unidad Formativa en `unidadesTematicasDb` (mismo criterio
+ * que ya usa `UNIDAD_TABS_URL` para "instrumento"): un grado con unidades
+ * Formativas es "Experiencia de aprendizaje", el resto "Actividad".
+ */
+function rotuloEjecucionMock(grado: string): string {
+  const esFormativo = unidadesTematicasDb.some(
+    (u) => u.grado === grado && u.enfoquePedagogico === "Formativo",
+  )
+  return esFormativo ? "Experiencia de aprendizaje" : "Actividad"
+}
+
+const ROTULO_PLURAL_MOCK: Record<string, string> = {
+  Actividad: "Actividades",
+  "Experiencia de aprendizaje": "Experiencias de aprendizaje",
+}
+
 // Rótulos dinámicos de los dos niveles del árbol de referente curricular
 // (colección Postman `planeador-flujo-unidad-actividad`: "Propósito"/
 // "Imprescindible" en Preescolar, "Enunciado"/"Evidencia" en Primaria). El
@@ -116,6 +135,7 @@ const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_STATS_URL = "/api/eval-col/planeador/actividades/stats"
 const ACTIVIDAD_CALENDARIO_URL = "/api/eval-col/planeador/actividades/calendario"
 const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
+const ACTIVIDAD_TABS_URL = "/api/eval-col/planeador/actividades/tabs"
 const PLANEADOR_ESTUDIANTES_URL = "/api/eval-col/planeador/estudiantes"
 const ACTIVIDAD_CONFIGURACION_CONTEXTO_URL = "/api/eval-col/planeador/actividades/configuracion"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
@@ -466,9 +486,26 @@ export const planeadorHandlers = [
     const estadosParam = url.searchParams.get("estados")
     const estadosDerivados = estadosParam ? estadosParam.split(",") : null
     const dia = url.searchParams.get("dia")
+    // `?grado_asignatura_pares=` — pestaña de Rótulo de Ejecución activa
+    // (`ACTIVIDAD_TABS_URL` más abajo), mismo contrato que sso V526: un par
+    // con `asignatura: null` matchea cualquier asignatura de ese grado.
+    const paresParam = url.searchParams.get("grado_asignatura_pares")
+    const pares = paresParam
+      ? (JSON.parse(paresParam) as { grado: number; asignatura: number | null }[])
+      : null
 
     const filtered = planeadorDb.filter((row) => {
       if (estadosDerivados && !estadosDerivados.includes(statusToEstadoDerivado(row.status))) {
+        return false
+      }
+      if (
+        pares &&
+        !pares.some(
+          (p) =>
+            p.grado === gradoIdMock(row.grado) &&
+            (p.asignatura == null || p.asignatura === asignaturaIdMock(row.asignatura)),
+        )
+      ) {
         return false
       }
       if (!search) return true
@@ -524,6 +561,8 @@ export const planeadorHandlers = [
       grado: row.grado,
       grado_codigo: null,
       grado_grupo: gradoGrupoMock(row.grado, row.grupo),
+      fk_tgrado: gradoIdMock(row.grado),
+      rotulo_ejecucion: rotuloEjecucionMock(row.grado),
       grupo: row.grupo,
       unidad: row.unidad.nombre || null,
       instrumento_evaluacion: row.instrumento,
@@ -536,6 +575,35 @@ export const planeadorHandlers = [
       dia: porDia.dia,
       dia_anterior: porDia.diaAnterior,
       dia_siguiente: porDia.diaSiguiente,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Pestañas de "Actividades" por Rótulo de Ejecución (sso V525) — agrupa
+  // por PAR (grado, asignatura), no por grado solo: ver `rotuloEjecucionMock`.
+  http.get(ACTIVIDAD_TABS_URL, async () => {
+    await delay(120)
+    const porRotulo = new Map<
+      string,
+      { grados: Map<number, string>; asignaturas: Map<number, string>; pares: Map<string, { grado: number; asignatura: number | null }> }
+    >()
+    for (const actividad of planeadorDb) {
+      const rotulo = rotuloEjecucionMock(actividad.grado)
+      const entry = porRotulo.get(rotulo) ?? { grados: new Map(), asignaturas: new Map(), pares: new Map() }
+      const gradoId = gradoIdMock(actividad.grado)
+      const asignaturaId = asignaturaIdMock(actividad.asignatura)
+      entry.grados.set(gradoId, actividad.grado)
+      entry.asignaturas.set(asignaturaId, actividad.asignatura)
+      entry.pares.set(`${gradoId}:${asignaturaId}`, { grado: gradoId, asignatura: asignaturaId })
+      porRotulo.set(rotulo, entry)
+    }
+    const rows = Array.from(porRotulo.entries()).map(([rotulo, { grados, asignaturas, pares }]) => ({
+      rotulo_ejecucion: rotulo,
+      rotulo_ejecucion_plural: ROTULO_PLURAL_MOCK[rotulo] ?? rotulo,
+      pk_referente_curricular: hashString(`referente-rotulo-${rotulo}`) % 1000000,
+      grados: Array.from(grados, ([pk, nombre]) => ({ pk, nombre })),
+      asignaturas: Array.from(asignaturas, ([pk, nombre]) => ({ pk, nombre })),
+      grado_asignatura_pares: Array.from(pares.values()),
     }))
     return HttpResponse.json({ rows })
   }),

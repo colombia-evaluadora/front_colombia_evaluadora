@@ -24,6 +24,7 @@ import {
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { useAgregarCriterioUnidadActividad } from "@/features/planeador/api/mutations/agregar-criterio-unidad-actividad"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useActividadesTabsQuery, type ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
@@ -75,11 +76,17 @@ function PlaneadorCrearActividadPageContent() {
   // `planeadorActividadCrearSearchSchema`. `strict: false` porque esta
   // página también se monta sin ningún search (desde "Nueva actividad" del
   // listado general).
-  const { unidadId, fechaInicio, fechaCierre } = useSearch({ strict: false }) as {
+  const { unidadId, fechaInicio, fechaCierre, rotulo } = useSearch({ strict: false }) as {
     unidadId?: string
     fechaInicio?: string
     fechaCierre?: string
+    rotulo?: string
   }
+  // Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
+  // (`planeador-tabs.tsx`/`planeador-page.tsx`) — acota Grado/Asignatura a
+  // esa pestaña, mismo criterio que `tab` en `planeador-crear-unidad-page.tsx`.
+  const { data: actividadTabs } = useActividadesTabsQuery()
+  const tabDesdeAgregar: ActividadTab | undefined = actividadTabs?.find((t) => t.rotulo === rotulo)
   // Mismo listado que ya usa `EditarActividadForm` para "Unidad temática
   // asociada" — se reusa acá solo para resolver `grado`/`asignatura` (los
   // NOMBRES; `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del
@@ -231,6 +238,7 @@ function PlaneadorCrearActividadPageContent() {
             unidadPreseleccionada={unidadPreseleccionada}
             fechaInicio={fechaInicio}
             fechaCierre={fechaCierre}
+            tab={tabDesdeAgregar}
             formId={FORM_ID}
             onDirtyChange={setIsDirty}
             onSubmit={handleSubmit}
@@ -291,6 +299,7 @@ function CrearActividadForm({
   unidadPreseleccionada,
   fechaInicio,
   fechaCierre,
+  tab,
   formId,
   onDirtyChange,
   onSubmit,
@@ -300,6 +309,9 @@ function CrearActividadForm({
    *  `onDayClick` en `planeador-page.tsx`). */
   fechaInicio?: string
   fechaCierre?: string
+  /** Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
+   *  (`?rotulo=`) — acota Grado/Asignatura en `AsignaturaGradoSection`. */
+  tab?: ActividadTab
   formId: string
   onDirtyChange: (dirty: boolean) => void
   onSubmit: (values: Actividad) => void | Promise<void>
@@ -338,6 +350,7 @@ function CrearActividadForm({
       actividad={actividad}
       formId={formId}
       esNueva
+      tab={tab}
       onDirtyChange={onDirtyChange}
       onSubmit={onSubmit}
     />

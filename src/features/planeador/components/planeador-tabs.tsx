@@ -5,8 +5,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
 
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
 
-const ACTIVIDADES_KEY = "actividades"
+/**
+ * Fallback SOLO mientras `/actividades/tabs` está cargando — una pestaña
+ * "Actividades" sin filtrar por `?rotulo=`, mismo criterio que
+ * `UNIDAD_TAB_FALLBACK`.
+ */
+export const ACTIVIDAD_TAB_FALLBACK = "Actividades"
 
 /**
  * Fallback SOLO mientras `/unidades/tabs` está cargando (`data` todavía
@@ -22,53 +28,72 @@ const ACTIVIDADES_KEY = "actividades"
 export const UNIDAD_TAB_FALLBACK = "Unidad temática"
 
 /**
- * Las vistas del Planeador. "Actividades" es fija; la de "Unidad temática"
- * en realidad puede ser VARIAS — una por cada referente curricular
- * (`instrumento`) de los niveles educativos que dicta el docente
- * autenticado (`GET /planeador/unidades/tabs`, colección Postman
- * `planeador-flujo-unidad-actividad`): un docente de Preescolar ve
- * "Proyecto pedagógico", uno de Primaria "Unidad temática", uno con
- * grados de los dos niveles ve las dos pestañas. Elegir una filtra el
- * listado de unidades a los grados/asignaturas de ese referente (ver
- * `planeador-unidades-page.tsx`) — encodeado en la URL como
- * `?instrumento=`, no como parte del path, porque todas viven en la misma
- * ruta (`planeadorUnidadesRoute`).
+ * Las vistas del Planeador. Tanto "Actividades" como "Unidad temática"
+ * pueden ser VARIAS pestañas:
+ * - Unidades, una por cada referente curricular (`instrumento`) de los
+ *   niveles educativos que dicta el docente (`GET /planeador/unidades/tabs`):
+ *   un docente de Preescolar ve "Proyecto pedagógico", uno de Primaria
+ *   "Unidad temática", uno con grados de los dos niveles ve las dos.
+ *   Elegir una filtra el listado de unidades a los grados/asignaturas de
+ *   ese referente (ver `planeador-unidades-page.tsx`) — encodeado en la URL
+ *   como `?instrumento=`.
+ * - Actividades, una por cada Rótulo de Ejecución resuelto por par
+ *   grado+asignatura (`GET /planeador/actividades/tabs`): "Actividad",
+ *   "Experiencia de aprendizaje", … — encodeado como `?rotulo=` (el
+ *   singular, clave de identidad; el texto que se pinta es el plural ya
+ *   resuelto por el servidor).
+ *
+ * Las pestañas de Actividades se pintan primero, las de Unidades después —
+ * mismo orden visual que antes de que Actividades tuviera más de una.
  */
 export function PlaneadorTabs() {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  // `strict: false`: este componente se monta tanto en la ruta de
-  // Actividades como en la de Unidades, y solo la segunda declara
-  // `?instrumento=` en su search schema.
-  const search = useSearch({ strict: false }) as { instrumento?: string }
+  // `strict: false`: este componente se monta en la ruta de Actividades y en
+  // la de Unidades, y cada una declara un search param distinto.
+  const search = useSearch({ strict: false }) as { instrumento?: string; rotulo?: string }
 
-  const { data: unidadTabs, isPending } = useUnidadesTabsQuery()
+  const { data: unidadTabs, isPending: isPendingUnidades } = useUnidadesTabsQuery()
+  const { data: actividadTabs, isPending: isPendingActividades } = useActividadesTabsQuery()
+
   // `undefined` (todavía cargando) -> fallback para no parpadear. `[]` (ya
   // cargó y no hay ninguna pestaña real) -> ninguna, no el fallback: un
-  // usuario sin acceso a ningún nivel/referente debe quedar solo con
-  // "Actividades", no con un "Unidad temática" que no le corresponde.
+  // usuario sin acceso a ningún nivel/referente debe quedar sin esa pestaña.
   const instrumentos = unidadTabs?.length
     ? unidadTabs.map((t) => t.instrumento)
-    : isPending
+    : isPendingUnidades
       ? [UNIDAD_TAB_FALLBACK]
+      : []
+  const rotulos = actividadTabs?.length
+    ? actividadTabs.map((t) => t.rotuloPlural)
+    : isPendingActividades
+      ? [ACTIVIDAD_TAB_FALLBACK]
       : []
 
   const views = [
-    { key: ACTIVIDADES_KEY, label: "Actividades", to: paths.app.planeadorActividades.getHref(), instrumento: undefined as string | undefined },
+    ...rotulos.map((rotuloPlural, i) => ({
+      key: `actividad:${rotuloPlural}`,
+      label: rotuloPlural,
+      to: paths.app.planeadorActividades.getHref(),
+      rotulo: actividadTabs?.[i]?.rotulo as string | undefined,
+      instrumento: undefined as string | undefined,
+    })),
     ...instrumentos.map((instrumento) => ({
       key: `unidad:${instrumento}`,
       label: instrumento,
       to: paths.app.planeadorUnidades.getHref(),
+      rotulo: undefined as string | undefined,
       instrumento,
     })),
   ]
 
   const enUnidades = pathname.startsWith(paths.app.planeadorUnidades.getHref())
-  const activeUnidadTab = enUnidades
-    ? (views.find((v) => v.key !== ACTIVIDADES_KEY && v.instrumento === search.instrumento) ??
-      views.find((v) => v.key !== ACTIVIDADES_KEY))
-    : undefined
-  const active = activeUnidadTab?.key ?? ACTIVIDADES_KEY
+  const activeView = enUnidades
+    ? (views.find((v) => v.key.startsWith("unidad:") && v.instrumento === search.instrumento) ??
+      views.find((v) => v.key.startsWith("unidad:")))
+    : (views.find((v) => v.key.startsWith("actividad:") && v.rotulo === search.rotulo) ??
+      views.find((v) => v.key.startsWith("actividad:")))
+  const active = activeView?.key
 
   return (
     <TableScreenTabs>
@@ -80,7 +105,14 @@ export function PlaneadorTabs() {
         onValueChange={(value) => {
           const view = views.find((v) => v.key === value)
           if (!view) return
-          navigate({ to: view.to, search: view.instrumento ? { instrumento: view.instrumento } : undefined })
+          navigate({
+            to: view.to,
+            search: view.instrumento
+              ? { instrumento: view.instrumento }
+              : view.rotulo
+                ? { rotulo: view.rotulo }
+                : undefined,
+          })
         }}
         aria-label="Vistas del planeador"
       >
@@ -95,7 +127,12 @@ export function PlaneadorTabs() {
             <TabsTrigger
               key={view.key}
               value={view.key}
-              render={<Link to={view.to} search={view.instrumento ? { instrumento: view.instrumento } : undefined} />}
+              render={
+                <Link
+                  to={view.to}
+                  search={view.instrumento ? { instrumento: view.instrumento } : view.rotulo ? { rotulo: view.rotulo } : undefined}
+                />
+              }
               className="data-active:bg-card dark:data-active:bg-card"
             >
               {view.label}
