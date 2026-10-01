@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
+import {
+  paresToQueryParam,
+  type ActividadTabPair,
+} from "@/features/planeador/api/query/use-actividades-tabs-query"
 
 /**
  * `GET /planeador/actividades/stats` (V250, ver colección Postman
@@ -21,8 +25,24 @@ interface ActividadesStatsRow {
 
 export type ActividadesStatsCounts = Record<ActividadStatus, number>
 
-async function fetchActividadesStats(): Promise<ActividadesStatsCounts> {
-  const rows = await evalCol.getRows<ActividadesStatsRow>("/planeador/actividades/stats")
+export interface UseActividadesStatsParams {
+  /** Pestaña de Rótulo de Ejecución activa (ver `use-actividades-mias-query.ts`)
+   *  — sin esto las 4 tarjetas sumaban todos los rótulos del docente y no
+   *  cambiaban al moverse entre pestañas. */
+  gradoAsignaturaPares?: ActividadTabPair[]
+}
+
+async function fetchActividadesStats(
+  params: UseActividadesStatsParams,
+): Promise<ActividadesStatsCounts> {
+  const query = new URLSearchParams()
+  if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
+    query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
+  }
+  const qs = query.toString()
+  const rows = await evalCol.getRows<ActividadesStatsRow>(
+    `/planeador/actividades/stats${qs ? `?${qs}` : ""}`,
+  )
   const row = rows[0]
   return {
     pending: row?.pending ?? 0,
@@ -32,12 +52,13 @@ async function fetchActividadesStats(): Promise<ActividadesStatsCounts> {
   }
 }
 
-export const actividadesStatsQueryKey = () => ["planeador", "actividades-stats"] as const
+export const actividadesStatsQueryKey = (params: UseActividadesStatsParams) =>
+  ["planeador", "actividades-stats", params] as const
 
-export function useActividadesStatsQuery() {
+export function useActividadesStatsQuery(params: UseActividadesStatsParams = {}) {
   return useQuery({
-    queryKey: actividadesStatsQueryKey(),
-    queryFn: fetchActividadesStats,
+    queryKey: actividadesStatsQueryKey(params),
+    queryFn: () => fetchActividadesStats(params),
     staleTime: 1000 * 30,
   })
 }
