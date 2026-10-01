@@ -12,6 +12,7 @@ import {
   type Actividad,
   type ActividadRecuperable,
   type Adaptacion,
+  type AdaptacionArchivo,
   type ListaValorOption,
   type Recurso,
   type RecursoTipo,
@@ -366,9 +367,19 @@ function nombreConExtension(row: MaterialArchivoRow): string {
  * cuál de los tres tipos ("archivo"/"enlace"/"biblioteca") cayó, que sería
  * peor que no mostrar nada.
  *
- * `tipoOtro`/`nombrePlantilla` (sso V532) sí tienen campo confirmado:
- * `TACTIVIDAD_ADAPTACION.TIPO_OTRO`/`.NOMBRE_PLANTILLA`, expuestos tal cual
- * en el JSONB de `fn_actividad_buscar_por_pk`.
+ * `especificacionTipo`/`nombrePlantilla` (sso V496.1) sí tienen campo
+ * confirmado: `TACTIVIDAD_ADAPTACION.ESPECIFICACION_TIPO`/`.NOMBRE_PLANTILLA`,
+ * expuestos tal cual en el JSONB de `fn_actividad_buscar_por_pk` — OJO: la
+ * clave es `especificacionTipo`, no `tipoOtro` (ese nombre no existe en el
+ * contrato, ni para leer ni para guardar).
+ *
+ * `archivos` (sso V496.1/.2, `TACTIVIDAD_ADAPTACION_ARCHIVO`) trae hasta 3
+ * `{fkTarchivo, nombre, peso}` del modo "archivo" — confirmado contra
+ * `fn_actividad_buscar_por_pk` (V452). `fkTarchivo`/`url` sueltos siguen
+ * existiendo en la fila (el primero de `archivos` queda ahí también, por
+ * compatibilidad), pero para el modo "archivo" se lee de `archivos`; para
+ * "biblioteca" (una sola referencia, no hasta 3) se sigue leyendo de
+ * `fkTarchivo` sin pasar por el array.
  */
 function adaptacionFromRaw(
   raw: unknown,
@@ -412,18 +423,34 @@ function adaptacionFromRaw(
         ? formatoLower
         : "no"
   const versionModificadaRef = versionModificada === "enlace" && typeof urlRaw === "string" ? urlRaw : ""
-  const tipoOtroRaw = item.tipoOtro ?? item.tipo_otro
+  const especificacionTipoRaw = item.especificacionTipo ?? item.especificacion_tipo
   const nombrePlantillaRaw = item.nombrePlantilla ?? item.nombre_plantilla
+  const archivosRaw = item.archivos
+  const archivos: AdaptacionArchivo[] = Array.isArray(archivosRaw)
+    ? archivosRaw
+        .map((a) => (a ?? {}) as Record<string, unknown>)
+        .map((a) => {
+          const fk = a.fkTarchivo ?? a.fk_tarchivo
+          const nombre = a.nombre ?? a.NOMBRE
+          return typeof fk === "number" ? { fkTarchivo: fk, nombre: typeof nombre === "string" ? nombre : "" } : null
+        })
+        .filter((a): a is { fkTarchivo: number; nombre: string } => a !== null)
+    : []
   return {
     tipo,
-    tipoOtro: typeof tipoOtroRaw === "string" ? tipoOtroRaw : "",
+    especificacionTipo: typeof especificacionTipoRaw === "string" ? especificacionTipoRaw : "",
     descripcion: typeof descripcionRaw === "string" ? descripcionRaw : "",
     versionModificada,
     versionModificadaRef,
     nombrePlantilla: typeof nombrePlantillaRaw === "string" ? nombrePlantillaRaw : "",
     aplicaA,
     estudiantesIds: [],
-    ...(typeof fkTarchivoRaw === "number" ? { archivoId: fkTarchivoRaw } : {}),
+    archivos: versionModificada === "archivo" ? archivos : [],
+    // "biblioteca" referencia un solo archivo ya existente, no hasta 3 — se
+    // sigue leyendo del `fkTarchivo` suelto, igual que antes de V496.1.
+    ...(versionModificada === "biblioteca" && typeof fkTarchivoRaw === "number"
+      ? { archivoId: fkTarchivoRaw }
+      : {}),
   }
 }
 

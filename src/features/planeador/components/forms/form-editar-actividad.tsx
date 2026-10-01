@@ -116,6 +116,7 @@ import { paths } from "@/config/paths"
 import type {
   Actividad,
   Adaptacion,
+  AdaptacionArchivo,
   Criterio,
   EscalaValoracion,
   EscalaValoracionTipo,
@@ -2703,7 +2704,27 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
 
         <form.Subscribe selector={(state) => state.values.fechaInicio}>
           {(fechaInicio) => (
-            <form.Field name="fechaCierre" validators={{ onChange: ({ value }) => requerido(value) }}>
+            <form.Field
+              name="fechaCierre"
+              validators={{
+                // `onChangeListenTo` revalida este campo cuando cambia
+                // "Fecha inicio" aunque "Fecha cierre" no se toque de nuevo:
+                // sin esto, elegir primero el cierre y DESPUÉS mover el
+                // inicio a una fecha posterior dejaba el combo inválido sin
+                // avisar (el `minDate` del picker de cierre solo protege
+                // mientras se elige el cierre, no ya elegido).
+                onChangeListenTo: ["fechaInicio"],
+                onChange: ({ value, fieldApi }) => {
+                  const faltante = requerido(value)
+                  if (faltante) return faltante
+                  const inicio = fieldApi.form.getFieldValue("fechaInicio")
+                  if (inicio && value < inicio) {
+                    return "La fecha de cierre no puede ser anterior a la fecha de inicio."
+                  }
+                  return undefined
+                },
+              }}
+            >
               {(field) => {
                 const isInvalid =
                   (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
@@ -4573,13 +4594,14 @@ function AdaptacionesSection({
               ...adaptaciones,
               {
                 tipo: "",
-                tipoOtro: "",
+                especificacionTipo: "",
                 descripcion: "",
                 versionModificada: "no",
                 versionModificadaRef: "",
                 nombrePlantilla: "",
                 aplicaA: "",
                 estudiantesIds: [],
+                archivos: [],
               },
             ])
           // Header persistente: el botón "+" vive SIEMPRE acá, mismo lugar
@@ -4812,8 +4834,8 @@ function esUrlValida(value: string): boolean {
  * `FieldLabel` adentro —mismo patrón que el resto del form— y arrancan
  * con `Seleccione` como placeholder hasta que se elija un valor real.
  *
- * `tipoOtro`/`nombrePlantilla` ya viajan al backend (sso V532, ver
- * `update-adaptaciones-actividad.ts`) pero no tenían campo acá — sin
+ * `especificacionTipo`/`nombrePlantilla` ya viajan al backend (sso V496.1,
+ * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — sin
  * `form` disponible (este componente no lo recibe, solo `adaptacion`/
  * `onChange`), la validación de "obligatorio" es local por `blur`, no por
  * intento de guardar como el resto del form.
@@ -4837,14 +4859,15 @@ function AdaptacionItem({
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
-  const [tocoTipoOtro, setTocoTipoOtro] = useState(false)
+  const [tocoEspecificacionTipo, setTocoEspecificacionTipo] = useState(false)
   const [tocoNombrePlantilla, setTocoNombrePlantilla] = useState(false)
   // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
   // `adaptacion`, así que no alcanza con derivarlo de ahí.
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
   const [tocoEnlace, setTocoEnlace] = useState(false)
 
-  const tipoOtroInvalido = tocoTipoOtro && adaptacion.tipo === "Otro" && !adaptacion.tipoOtro.trim()
+  const especificacionTipoInvalida =
+    tocoEspecificacionTipo && adaptacion.tipo === "Otro" && !adaptacion.especificacionTipo.trim()
   const nombrePlantillaInvalida =
     tocoNombrePlantilla &&
     (adaptacion.versionModificada === "archivo" || adaptacion.versionModificada === "enlace") &&
@@ -4917,22 +4940,22 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Solo "Otro" la exige (fn_actividad_validar_adaptaciones, V532) —
+      {/* Solo "Otro" la exige (fn_actividad_validar_adaptaciones, V496.1) —
           el resto del catálogo no tiene dónde usarla. */}
       {adaptacion.tipo === "Otro" && (
-        <Field variant="outlined" className="mt-4" data-invalid={tipoOtroInvalido}>
+        <Field variant="outlined" className="mt-4" data-invalid={especificacionTipoInvalida}>
           <FieldLabel>Especifique el tipo de adaptación *</FieldLabel>
           <Input
-            maxLength={100}
+            maxLength={150}
             placeholder="Describa el tipo de adaptación…"
-            value={adaptacion.tipoOtro}
-            onChange={(e) => onChange({ ...adaptacion, tipoOtro: e.target.value })}
-            onBlur={() => setTocoTipoOtro(true)}
-            aria-invalid={tipoOtroInvalido}
+            value={adaptacion.especificacionTipo}
+            onChange={(e) => onChange({ ...adaptacion, especificacionTipo: e.target.value })}
+            onBlur={() => setTocoEspecificacionTipo(true)}
+            aria-invalid={especificacionTipoInvalida}
             disabled={disabled}
           />
-          <CharacterCounter value={adaptacion.tipoOtro} max={100} />
-          {tipoOtroInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
+          <CharacterCounter value={adaptacion.especificacionTipo} max={150} />
+          {especificacionTipoInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}
 
@@ -4966,6 +4989,7 @@ function AdaptacionItem({
               versionModificadaRef: "",
               archivoNombre: undefined,
               archivoId: undefined,
+              archivos: [],
             })
           }
           disabled={disabled}
@@ -4991,57 +5015,97 @@ function AdaptacionItem({
       {adaptacion.versionModificada === "archivo" && (
         <>
           <Field variant="outlined" className="mt-4" data-invalid={Boolean(errorArchivo)}>
-            <FieldLabel>Archivo de plantilla</FieldLabel>
-            <div className="relative">
-              <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                type="file"
-                // `<input type="file">` no acepta `value` programático (el
-                // browser tira `InvalidStateError` con cualquier valor que no
-                // sea `""`) — el archivo se lee de `e.target.files`, no de un
-                // `value` controlado. Mismo criterio que el file picker de
-                // "Recursos" (`RecursosSection`, más arriba en este archivo).
-                // A diferencia de ese, acá SÍ se valida tipo/tamaño — ver
-                // `ADAPTACION_ARCHIVO_ACCEPT`.
-                accept={ADAPTACION_ARCHIVO_ACCEPT}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) {
+            <FieldLabel>Archivos de plantilla (hasta 3) *</FieldLabel>
+            {adaptacion.archivos.length > 0 && (
+              <ul className="mb-2 flex flex-col gap-1">
+                {adaptacion.archivos.map((archivo, archivoIndex) => (
+                  <li
+                    // El id de uno ya guardado es estable; uno recién
+                    // elegido todavía no lo tiene, así que cae al `blobUrl`
+                    // (único por archivo, igual de estable mientras vive).
+                    key={archivo.fkTarchivo ?? archivo.blobUrl}
+                    className="flex items-center justify-between gap-2 rounded-sm border px-2 py-1 text-sm"
+                  >
+                    <span className="truncate">{archivo.nombre}</span>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {archivo.fkTarchivo !== undefined && !archivo.blobUrl && (
+                        <VerPlantillaAdaptacion archivoId={archivo.fkTarchivo} />
+                      )}
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              color="neutral"
+                              size="icon-sm"
+                              type="button"
+                              aria-label={`Quitar ${archivo.nombre}`}
+                              disabled={disabled}
+                              onClick={() => {
+                                if (archivo.blobUrl) URL.revokeObjectURL(archivo.blobUrl)
+                                onChange({
+                                  ...adaptacion,
+                                  archivos: adaptacion.archivos.filter((_, i) => i !== archivoIndex),
+                                })
+                              }}
+                            />
+                          }
+                        >
+                          <RemoveCircleOutlineIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>{`Quitar ${archivo.nombre}`}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {adaptacion.archivos.length < 3 && (
+              <div className="relative">
+                <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  type="file"
+                  // `<input type="file">` no acepta `value` programático (el
+                  // browser tira `InvalidStateError` con cualquier valor que
+                  // no sea `""`) — el archivo se lee de `e.target.files`, no
+                  // de un `value` controlado. Mismo criterio que el file
+                  // picker de "Recursos" (`RecursosSection`, más arriba en
+                  // este archivo). A diferencia de ese, acá SÍ se valida
+                  // tipo/tamaño — ver `ADAPTACION_ARCHIVO_ACCEPT`. Se limpia
+                  // el propio input tras cada elección (`e.target.value =
+                  // ""`) para poder elegir el mismo archivo otra vez después
+                  // de quitarlo, y para que cada selección agregue un item en
+                  // vez de reemplazar el único archivo de antes del límite
+                  // de 3.
+                  accept={ADAPTACION_ARCHIVO_ACCEPT}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (!ADAPTACION_ARCHIVO_MIME_ACCEPT.includes(file.type)) {
+                      setErrorArchivo("Formato no permitido. Usá PDF, Word (.doc/.docx), JPG o PNG.")
+                      e.target.value = ""
+                      return
+                    }
+                    if (file.size > ADAPTACION_ARCHIVO_MAX_BYTES) {
+                      setErrorArchivo("El archivo supera el tamaño máximo permitido (10 MB).")
+                      e.target.value = ""
+                      return
+                    }
                     setErrorArchivo(null)
-                    return
-                  }
-                  if (!ADAPTACION_ARCHIVO_MIME_ACCEPT.includes(file.type)) {
-                    setErrorArchivo("Formato no permitido. Usá PDF, Word (.doc/.docx), JPG o PNG.")
+                    const nuevo: AdaptacionArchivo = { nombre: file.name, blobUrl: URL.createObjectURL(file) }
+                    onChange({ ...adaptacion, archivos: [...adaptacion.archivos, nuevo] })
                     e.target.value = ""
-                    return
-                  }
-                  if (file.size > ADAPTACION_ARCHIVO_MAX_BYTES) {
-                    setErrorArchivo("El archivo supera el tamaño máximo permitido (10 MB).")
-                    e.target.value = ""
-                    return
-                  }
-                  setErrorArchivo(null)
-                  if (adaptacion.versionModificadaRef.startsWith("blob:")) {
-                    URL.revokeObjectURL(adaptacion.versionModificadaRef)
-                  }
-                  onChange({
-                    ...adaptacion,
-                    versionModificadaRef: URL.createObjectURL(file),
-                    archivoNombre: file.name,
-                  })
-                }}
-                className="pl-9"
-                disabled={disabled}
-              />
-            </div>
+                  }}
+                  className="pl-9"
+                  disabled={disabled}
+                />
+              </div>
+            )}
             {errorArchivo && <FieldError errors={[{ message: errorArchivo }]} />}
-            {adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef && (
-              <>
-                <FieldDescription>
-                  Ya hay una plantilla cargada. Elegí un archivo solo si querés reemplazarla.
-                </FieldDescription>
-                <VerPlantillaAdaptacion archivoId={adaptacion.archivoId} />
-              </>
+            {adaptacion.archivos.length === 0 && !errorArchivo && (
+              <FieldDescription>
+                Hasta 3 archivos — PDF, Word (.doc/.docx), JPG o PNG, máx. 10 MB cada uno.
+              </FieldDescription>
             )}
           </Field>
           <Field variant="outlined" className="mt-4" data-invalid={nombrePlantillaInvalida}>
