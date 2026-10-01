@@ -6,7 +6,7 @@ import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
-import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
+import { contenidosABody, type UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 /**
@@ -54,7 +54,7 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadRespon
     FK_TGRADO: data.gradoId,
     FK_TLV_CALCULO_DEFINITIVA: calculoDefinitivaId,
     OBJETIVOS: data.objetivos,
-    CONTENIDOS: data.contenidos,
+    ...contenidosABody(data.contenidos),
   }
   // NO se manda `FK_TLV_INSTRUMENTO_EVALUACION`: desde el backend real (sso
   // V488) esa columna de `TUNIDAD` ya no existe — el instrumento de la

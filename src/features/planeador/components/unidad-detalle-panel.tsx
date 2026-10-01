@@ -26,6 +26,7 @@ import { paths } from "@/config/paths"
 import { cn } from "@/lib/utils"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { ContenidosList } from "@/features/planeador/components/unidad-evidencias-section"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useResolvedSubjectLabelQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-resolution"
@@ -323,7 +324,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
           <BulletList items={unidad.objetivos} />
         </Columna>
         <Columna title="Contenidos" className="md:pl-6">
-          <BulletList items={unidad.contenidos} />
+          <ContenidosList items={unidad.contenidos} />
         </Columna>
       </div>
 

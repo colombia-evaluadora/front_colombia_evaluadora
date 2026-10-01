@@ -112,7 +112,14 @@ export interface UnidadTematica {
   fechaFin: string
   descripcion: string
   objetivos: string[]
-  contenidos: string[]
+  /**
+   * "Estructura de la Unidad/Proyecto" — cada sección tiene una
+   * `descripcion` (texto libre) y, opcionalmente, un `titulo` (sso V492,
+   * `TUNIDAD_CONTENIDO.TITULO`, máx. 200) para rotular la sección (p. ej.
+   * "Fase 1", "Recursos"). `titulo` queda `undefined`/`""` en secciones
+   * creadas antes de V492 o guardadas sin título — no es obligatorio.
+   */
+  contenidos: { titulo?: string; descripcion: string }[]
   metodoCalculo: MetodoCalculo
   grado: string
   asignatura: string
