@@ -35,6 +35,8 @@ interface CeldaObservacionTriggerProps {
    *  de una actividad) — la invalidación propia de la mutación no las
    *  alcanza. */
   onGuardado?: () => void
+  /** Motivo por el que no se puede observar (No asistido, No presentó). */
+  bloqueo?: string | null
 }
 
 /**
@@ -52,6 +54,7 @@ export function CeldaObservacionTrigger({
   evidenciasActuales,
   actividadSinComenzar,
   onGuardado,
+  bloqueo,
 }: CeldaObservacionTriggerProps) {
   const [abierto, setAbierto] = useState(false)
   const { notify } = useNotify()
@@ -100,7 +103,7 @@ export function CeldaObservacionTrigger({
             variant="outline"
             color="neutral"
             size="icon-xs"
-            disabled={fecha === null}
+            disabled={fecha === null || Boolean(bloqueo)}
             aria-label={etiqueta}
             onClick={() => setAbierto(true)}
           >
@@ -108,7 +111,9 @@ export function CeldaObservacionTrigger({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {fecha === null
+          {bloqueo
+            ? bloqueo
+            : fecha === null
             ? actividadSinComenzar
               ? "Esta actividad todavía no comienza: no se puede observar todavía."
               : `Sin asistencia registrada para ${estudianteNombre}`

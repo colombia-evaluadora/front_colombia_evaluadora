@@ -21,7 +21,10 @@ import { cn } from "@/lib/utils"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 
 import { useAsistenciaEditarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
-import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
+import {
+  TIPOS_JUSTIFICADOS,
+  useTipoAsistenciaCatalogQuery,
+} from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { nombreMateriaSeguimiento } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -30,6 +33,9 @@ interface EditarSeguimientoDialogProps {
   row: AsistenciaQueryRow
 }
 
+
+/** 3/6 son históricos: se editan como su tipo base. */
+const TIPO_BASE: Partial<Record<number, number>> = { 3: 2, 6: 5 }
 
 const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
@@ -77,13 +83,17 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
   const [confirmDiscardOpen, setConfirmDiscardOpen] = React.useState(false)
 
   const editar = useAsistenciaEditarMutation()
-  const { data: tipoOptions = [] } = useTipoAsistenciaCatalogQuery()
+  const { data: catalogo = [] } = useTipoAsistenciaCatalogQuery()
+  // Solo se escriben 1/2/5: la excusa va como archivo de soporte.
+  const tipoOptions = catalogo.filter((o) => !TIPOS_JUSTIFICADOS.includes(o.value))
+  // Un 3/6 histórico se edita como su tipo base (2/5).
+  const tipoActual = String(TIPO_BASE[row.tipo_asistencia_valor] ?? row.tipo_asistencia_valor)
 
   // El diálogo reabre siempre con los valores actuales de la fila -- si se
   // editó una vez y se vuelve a abrir, no debe arrastrar el borrador anterior.
   function handleOpenChange(next: boolean) {
     if (next) {
-      setTipo(row.tipo_asistencia_valor.toString())
+      setTipo(tipoActual)
       setObservacion(row.observacion ?? "")
       setSoporteNuevo(null)
       setSoporteEliminado(false)
@@ -97,7 +107,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
   const haySoporte = Boolean(soporteNuevo || soporteExistenteNombre)
 
   const isDirty =
-    tipo !== row.tipo_asistencia_valor.toString() ||
+    tipo !== tipoActual ||
     observacion.trim() !== (row.observacion ?? "") ||
     soporteNuevo !== null ||
     soporteEliminado

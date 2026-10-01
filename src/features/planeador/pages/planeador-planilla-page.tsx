@@ -150,6 +150,7 @@ export function PlaneadorPlanillaPage() {
 
   const estudiantesEnBulk = filas.map((fila) => ({
     id: fila.pkTestudiante,
+    matriculaId: fila.pkTmatricula,
     nombres: fila.nombreEstudiante,
     apellidos: "",
   }))

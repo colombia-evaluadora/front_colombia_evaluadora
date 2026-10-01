@@ -20,7 +20,11 @@ import {
   updateUnidadInfoGeneral,
 } from "@/mocks/db/unidades-tematicas"
 import { nextId } from "@/mocks/db/next-id"
-import { buildEstudiantes, getCalificacionesByActividad } from "@/mocks/db/calificaciones"
+import {
+  actualizarCalificacionEstudiante,
+  buildEstudiantes,
+  getCalificacionesByActividad,
+} from "@/mocks/db/calificaciones"
 import { campusesDb } from "@/mocks/db/campuses"
 import { establishmentsRowsDb } from "@/mocks/db/establishments"
 
@@ -136,6 +140,8 @@ const ACTIVIDAD_CONFIGURACION_CONTEXTO_URL = "/api/eval-col/planeador/actividade
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
+const ESTUDIANTE_ASISTENCIA_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/asistencia"
+const ESTUDIANTE_ESTADO_RESULTADO_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/estado-resultado"
 const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/evidencias"
 const ACTIVIDAD_CRITERIOS_URL = "/api/eval-col/planeador/actividades/:id/criterios"
 const ACTIVIDAD_MATERIALES_URL = "/api/eval-col/planeador/actividades/:id/materiales"
@@ -1132,6 +1138,31 @@ export const planeadorHandlers = [
     return HttpResponse.json({
       rows: getCalificacionesByActividad(id, planeadorDb),
     })
+  }),
+
+  // Asistencia de la actividad marcada desde el Planeador.
+  http.put(ESTUDIANTE_ASISTENCIA_URL, async ({ params, request }) => {
+    await delay(120)
+    const body = (await request.json()) as { TIPO_ASISTENCIA?: number }
+    const estado = body.TIPO_ASISTENCIA === 2 ? "no-asistio" : body.TIPO_ASISTENCIA === 5 ? "llego-tarde" : "asistio"
+    const fila = actualizarCalificacionEstudiante(Number(params.id), (c) => ({
+      ...c,
+      asistencia: { ...c.asistencia, estado },
+    }))
+    if (!fila) return HttpResponse.json({ message: "Asignación no encontrada." }, { status: 404 })
+    return HttpResponse.json({ rows: [{ estado_resultado: fila.estadoResultado }] })
+  }),
+
+  // Regla 62: No presentó / Pendiente.
+  http.put(ESTUDIANTE_ESTADO_RESULTADO_URL, async ({ params, request }) => {
+    await delay(120)
+    const body = (await request.json()) as { ESTADO?: string }
+    const fila = actualizarCalificacionEstudiante(Number(params.id), (c) => ({
+      ...c,
+      noPresento: body.ESTADO === "NO_PRESENTO",
+    }))
+    if (!fila) return HttpResponse.json({ message: "Asignación no encontrada." }, { status: 404 })
+    return HttpResponse.json({ rows: [{ estado_resultado: fila.estadoResultado }] })
   }),
 
   // Unidades temáticas: mismo par listado/detalle y el mismo sobre, para que
