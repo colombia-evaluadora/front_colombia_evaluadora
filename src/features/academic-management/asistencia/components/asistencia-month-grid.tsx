@@ -357,6 +357,8 @@ function DayCellPopover({
             Todavía no se puede tomar asistencia: es una fecha futura.
           </p>
         ) : (
+          <>
+          {/* Solo la lista hace scroll; "Asistencia manual" queda siempre visible. */}
           <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {hayMezcla && (
               <div className="flex flex-col gap-2">
@@ -384,6 +386,7 @@ function DayCellPopover({
                 />
               ))}
             </ul>
+          </div>
 
             <Button
               variant="ghost"
@@ -401,7 +404,7 @@ function DayCellPopover({
               <ClipboardTextIcon className="size-4" />
               Asistencia manual
             </Button>
-          </div>
+          </>
         )}
       </PopoverContent>
     </Popover>

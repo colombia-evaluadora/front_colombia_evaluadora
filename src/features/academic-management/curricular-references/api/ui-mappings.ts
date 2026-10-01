@@ -1,7 +1,4 @@
-export function toSentenceCase(value: string): string {
-  const lower = value.toLowerCase()
-  return lower.charAt(0).toUpperCase() + lower.slice(1)
-}
+export { toSentenceCase } from "@/lib/utils"
 
 type BadgeColor = "success" | "destructive"
 
