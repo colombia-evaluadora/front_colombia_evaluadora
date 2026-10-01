@@ -180,13 +180,13 @@ export function PlaneadorUnidadesPage() {
                 <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
                   {isPending && (
                     <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-                      <Spinner /> Cargando unidades…
+                      <Spinner /> Cargando…
                     </div>
                   )}
 
                   {isError && (
                     <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                      <p className="text-red text-sm">Ocurrió un error al cargar las unidades.</p>
+                      <p className="text-red text-sm">Ocurrió un error al cargar el listado.</p>
                       <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                         Reintentar
                       </Button>
@@ -195,7 +195,7 @@ export function PlaneadorUnidadesPage() {
 
                   {!isPending && !isError && filtered.length === 0 && (
                     <div className="text-muted-foreground px-6 py-8 text-center text-sm">
-                      {buscar ? `Sin unidades que coincidan con "${buscar}".` : "Sin unidades temáticas."}
+                      {buscar ? `Sin registros que coincidan con "${buscar}".` : "Sin registros."}
                     </div>
                   )}
 
