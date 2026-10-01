@@ -2703,7 +2703,27 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
 
         <form.Subscribe selector={(state) => state.values.fechaInicio}>
           {(fechaInicio) => (
-            <form.Field name="fechaCierre" validators={{ onChange: ({ value }) => requerido(value) }}>
+            <form.Field
+              name="fechaCierre"
+              validators={{
+                // `onChangeListenTo` revalida este campo cuando cambia
+                // "Fecha inicio" aunque "Fecha cierre" no se toque de nuevo:
+                // sin esto, elegir primero el cierre y DESPUÉS mover el
+                // inicio a una fecha posterior dejaba el combo inválido sin
+                // avisar (el `minDate` del picker de cierre solo protege
+                // mientras se elige el cierre, no ya elegido).
+                onChangeListenTo: ["fechaInicio"],
+                onChange: ({ value, fieldApi }) => {
+                  const faltante = requerido(value)
+                  if (faltante) return faltante
+                  const inicio = fieldApi.form.getFieldValue("fechaInicio")
+                  if (inicio && value < inicio) {
+                    return "La fecha de cierre no puede ser anterior a la fecha de inicio."
+                  }
+                  return undefined
+                },
+              }}
+            >
               {(field) => {
                 const isInvalid =
                   (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
