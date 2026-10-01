@@ -81,8 +81,11 @@ export function UnidadFormTabs({
           <span className="inline-flex items-center gap-1.5">
             <ClipboardCheckIcon data-icon="inline-start" />
             {/* Rótulo real (Regla 13) — sin unidad todavía (alta) cae al
-                genérico, igual que `puedeEditarListas`. */}
-            {unidad?.rotuloEjecucion ?? "Actividad"}s
+                genérico, igual que `puedeEditarListas`. Siempre en
+                singular: el texto no es un dato controlado, concatenar "s"
+                a mano rompe con cualquiera que no termine en consonante
+                simple (ver "Actividads"). */}
+            {unidad?.rotuloEjecucion ?? "Actividad"}
           </span>
         </TabsTrigger>
       </TabsList>

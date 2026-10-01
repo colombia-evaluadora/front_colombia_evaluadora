@@ -134,6 +134,14 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   const rotuloLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const rotuloLabelLower = rotuloEnMinuscula(rotuloLabel)
   const rotuloIndefinido = articuloDefinido(rotuloLabel) === "el" ? "un" : "una"
+  // Terminación de género para participios/pronombres ("creado"/"creada",
+  // "vincularlo"/"vincularla") — nunca se pluraliza el rótulo (no es un
+  // dato controlado: un referente puede traer cualquier texto, y
+  // concatenar "s" a mano rompe con cualquiera que no termine en
+  // consonante simple, ver "Actividads"). Las frases de acá se redactan
+  // siempre en singular.
+  const rotuloGenero = rotuloIndefinido === "un" ? "o" : "a"
+  const rotuloNingun = rotuloGenero === "o" ? "ningún" : "ninguna"
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -240,9 +248,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
             </div>
 
             <p className="text-sm">
-              <span className="font-semibold">{rotuloLabel}s disponibles:</span> selecciona{" "}
-              {rotuloIndefinido} {rotuloLabelLower} creada previamente para vincularla con{" "}
-              {instrumentoConArticulo}.
+              <span className="font-semibold">Disponibles para vincular:</span> selecciona{" "}
+              {rotuloIndefinido} {rotuloLabelLower} ya cread{rotuloGenero} para vincularl
+              {rotuloGenero} con {instrumentoConArticulo}.
             </p>
 
             {/* `table-fixed` + un ancho por columna: sin esto, "Instrumento"
@@ -293,8 +301,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                       className="h-20 text-center text-muted-foreground"
                     >
                       {search
-                        ? `Sin ${rotuloLabelLower}s que coincidan con la búsqueda.`
-                        : `No hay ${rotuloLabelLower}s disponibles para vincular.`}
+                        ? `No se encontró ${rotuloNingun} ${rotuloLabelLower} que coincida con la búsqueda.`
+                        : `No hay ${rotuloNingun} ${rotuloLabelLower} disponible para vincular.`}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -419,8 +427,9 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  {demostrativo} {instrumentoLabelLower} suma los puntajes de sus {rotuloLabelLower}s.
-                  Al vincular {rotuloIndefinido} {rotuloLabelLower}, asigná el puntaje que tendrá —
+                  {demostrativo} {instrumentoLabelLower} suma el puntaje de cada {rotuloLabelLower}{" "}
+                  vinculad{rotuloGenero}. Al vincular {rotuloIndefinido} {rotuloLabelLower}, asigná
+                  el puntaje que tendrá —
                   el sistema calcula el porcentaje que le corresponde dentro {deInstrumento}{" "}
                   {instrumentoLabelLower}.
                 </p>
@@ -436,8 +445,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />
                 <p>
-                  {demostrativo} {instrumentoLabelLower} promedia sus {rotuloLabelLower}s: todas
-                  cuentan por igual, no hay un peso ni un puntaje que asignar.
+                  {demostrativo} {instrumentoLabelLower} promedia el puntaje de cada{" "}
+                  {rotuloLabelLower} por igual: no hay un peso ni un puntaje que asignar.
                 </p>
               </div>
             )}
