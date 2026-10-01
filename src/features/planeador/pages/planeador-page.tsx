@@ -152,10 +152,6 @@ function PlaneadorPageContent() {
     () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0)),
     [displayMonth],
   )
-  const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
-    fechaDesde: mesDesde,
-    fechaHasta: mesHasta,
-  })
 
   // Pestaña de Rótulo de Ejecución activa (`?rotulo=`, `planeador-tabs.tsx`)
   // — SIEMPRE se resuelve, aunque el docente tenga un solo rótulo: ese único
@@ -164,6 +160,12 @@ function PlaneadorPageContent() {
   // que saltear el filtro con una sola pestaña dejaba el alta sin acotar.
   const { data: actividadTabs = [] } = useActividadesTabsQuery()
   const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
+
+  const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
+    fechaDesde: mesDesde,
+    fechaHasta: mesHasta,
+    gradoAsignaturaPares: tabActiva?.pares,
+  })
   // Botón "Nueva {rótulo}" — género correcto vía `articuloDefinido` (mismo
   // helper que ya resuelve "un"/"una" en `dialog-agregar-actividad.tsx`):
   // un rótulo configurado a futuro puede ser masculino ("Proyecto") o
