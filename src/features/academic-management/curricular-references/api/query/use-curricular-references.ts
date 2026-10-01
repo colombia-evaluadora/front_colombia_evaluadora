@@ -89,7 +89,7 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
   }
 }
 
-async function fetchCurricularReferences(
+export async function fetchCurricularReferences(
   params: UseCurricularReferencesQueryParams,
 ): Promise<CurricularReferencesQueryResponse> {
   const url = apiPath(
