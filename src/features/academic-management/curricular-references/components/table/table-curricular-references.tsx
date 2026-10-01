@@ -8,6 +8,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   TableScreen,
   TableScreenActions,
@@ -38,7 +39,7 @@ export function CurricularReferencesDataTable() {
   const { data: pedagogicalApproaches = [] } = usePedagogicalApproachesQuery()
   const { data: evaluationTypes = [] } = useEvaluationTypesQuery()
 
-  const { data, isPending, isError, refetch } = useCurricularReferencesQuery({
+  const { data, isPending, isError, error, refetch } = useCurricularReferencesQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
@@ -98,7 +99,7 @@ export function CurricularReferencesDataTable() {
               className="text-sm [&_svg:not([class*='size-'])]:size-4"
             >
               <ControlPointIcon data-icon="inline-start" />
-              Agregar referente
+              Nuevo referente
             </Button>
             <ExportCurricularReferencesDialog filters={queryFilters} />
           </TableScreenActions>
@@ -114,7 +115,11 @@ export function CurricularReferencesDataTable() {
           // Inactivo: visible y filtrable, pero atenuado (Regla 5).
           isRowMuted={(row) => !(row.original as CurricularReference).active}
           emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar los referentes curriculares."
+          // El mensaje real del backend (403 -> "No tienes permisos para
+          // realizar esta acción.", getErrorMessage lo resuelve solo) en vez
+          // de un genérico fijo que no distinguía un error de permisos de
+          // uno de red.
+          errorMessage={error ? getErrorMessage(error) : undefined}
         />
 
         {data && (

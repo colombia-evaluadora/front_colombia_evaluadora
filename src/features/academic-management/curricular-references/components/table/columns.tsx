@@ -181,7 +181,7 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       header: ({ column }) => <DataTableColumnHeader column={column} title="Rótulo de secuencia de actividades" />,
       cell: ({ row }) => (
         <TitleWithDescriptionCell
-          title={row.original.instrument}
+          title={toSentenceCase(row.original.instrument)}
           description={row.original.instrumentDescription}
         />
       ),

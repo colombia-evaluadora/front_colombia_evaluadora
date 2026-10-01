@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { paresToQueryParam, type ActividadTabPair } from "@/features/planeador/api/query/use-actividades-tabs-query"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -158,6 +159,12 @@ export interface UseActividadesMiasParams {
    *  solo actividades cuya ventana `[fechaInicio, fechaCierre]` CUBRE ese
    *  día. Sin esto, el listado no cambia (comportamiento previo). */
   dia?: string
+  /** Pestaña de Rótulo de Ejecución activa (`ActividadTab.pares`, `GET
+   *  /planeador/actividades/tabs`) — acota el listado server-side a esos
+   *  pares grado+asignatura (sso V526). `undefined` = sin pestaña activa
+   *  (una sola pestaña real, o todavía no resolvió): comportamiento actual,
+   *  sin cambios. */
+  gradoAsignaturaPares?: ActividadTabPair[]
 }
 
 interface ActividadesMiasResult {
@@ -182,6 +189,9 @@ async function fetchActividadesMias(
   if (params.estados) query.set("estados", params.estados)
   if (params.diasGracia != null) query.set("dias_gracia", String(params.diasGracia))
   if (params.dia) query.set("dia", params.dia)
+  if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
+    query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
+  }
   query.set("size", String(params.size ?? 20))
   query.set("offset", String(params.offset ?? 0))
 

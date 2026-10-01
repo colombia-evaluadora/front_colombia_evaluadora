@@ -27,6 +27,7 @@ import {
   fetchTodasLasActividadesMias,
   useActividadesMiasQuery,
 } from "@/features/planeador/api/query/use-actividades-mias-query"
+import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
@@ -155,6 +156,15 @@ function PlaneadorPageContent() {
     fechaHasta: mesHasta,
   })
 
+  // Pestaña de Rótulo de Ejecución activa (`?rotulo=`, `planeador-tabs.tsx`)
+  // — solo tiene efecto si el docente tiene más de un rótulo; con uno solo,
+  // se comporta como hoy (sin filtro).
+  const { data: actividadTabs = [] } = useActividadesTabsQuery()
+  const tabActiva =
+    actividadTabs.length > 1
+      ? (actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0])
+      : undefined
+
   // `search`/`estados` ya filtran del lado del servidor — `filtro`
   // (instrumento) queda armado para la próxima iteración, cuando llegue su
   // catálogo.
@@ -169,6 +179,7 @@ function PlaneadorPageContent() {
     size: 50,
     offset: 0,
     dia,
+    gradoAsignaturaPares: tabActiva?.pares,
   })
   const filtered = miasResult?.rows ?? []
   const diaAnterior = miasResult?.diaAnterior ?? null
@@ -323,7 +334,12 @@ function PlaneadorPageContent() {
                   variant="fill"
                   aria-label="Nueva actividad"
                   className="rounded-r-none border-r-0"
-                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
+                  render={
+                    <Link
+                      to={paths.app.planeadorActividadCrear.getHref()}
+                      search={tabActiva ? { rotulo: tabActiva.rotulo } : undefined}
+                    />
+                  }
                 >
                   <PlusCircleIcon data-icon="inline-start" />
                   Nueva actividad
@@ -590,7 +606,11 @@ function PlaneadorPageContent() {
                     const fecha = toDateOnly(date)
                     navigate({
                       to: paths.app.planeadorActividadCrear.getHref(),
-                      search: { fechaInicio: fecha, fechaCierre: fecha },
+                      search: {
+                        fechaInicio: fecha,
+                        fechaCierre: fecha,
+                        rotulo: tabActiva?.rotulo,
+                      },
                     })
                   }}
                   // Click en una actividad ya listada en la celda: abre ESA

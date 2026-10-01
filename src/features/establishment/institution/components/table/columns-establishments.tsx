@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { toSentenceCase } from "@/lib/utils"
 import { paths } from "@/config/paths"
 
 import { establishmentStatusBadge, establishmentStatusDisplayLabel } from "@/features/establishment/institution/api/ui-mappings"
@@ -87,7 +88,7 @@ export const columns: ColumnDef<Establishment>[] = [
       <DataTableColumnHeader column={column} title="Establecimiento" />
     ),
     cell: ({ row }) => (
-      <p className="uppercase font-bold">{row.getValue("name")}</p>
+      <p className="font-bold">{toSentenceCase(row.original.name)}</p>
     ),
   },
   {
@@ -102,7 +103,7 @@ export const columns: ColumnDef<Establishment>[] = [
     ),
     cell: ({ row }) => (
       <div className="max-w-lg truncate">
-        {row.original.department}/{row.original.municipality}
+        {toSentenceCase(row.original.department)}/{toSentenceCase(row.original.municipality)}
       </div>
     ),
   },

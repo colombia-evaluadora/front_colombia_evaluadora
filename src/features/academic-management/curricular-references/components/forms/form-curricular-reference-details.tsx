@@ -299,7 +299,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["executionLabel"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de Ejecución</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de Ejecución *</FieldLabel>
           <Input
             id="curricular-reference-execution-label"
             size="sm"
