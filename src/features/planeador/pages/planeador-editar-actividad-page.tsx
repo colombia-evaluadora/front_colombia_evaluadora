@@ -23,7 +23,10 @@ import { useUpdateActividad } from "@/features/planeador/api/mutations/update-ac
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
 import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
-import { useSetEstudiantesActividad } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
+import {
+  useSetEstudiantesActividad,
+  type SetEstudiantesResult,
+} from "@/features/planeador/api/mutations/set-estudiantes-actividad"
 import {
   tieneDefinicionInstrumento,
   useUpdateInstrumentoActividad,
@@ -34,6 +37,26 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "editar-actividad-form"
+
+/**
+ * Resumen en texto plano de `afectadosAdaptacion`/`avisosPiar` (Reglas
+ * 46/48) para agregarlo al aviso de éxito de `PUT .../estudiantes` — el
+ * `NoticeProvider` muestra un solo mensaje por pantalla, así que no hay
+ * dónde más mostrarlos sin perder la confirmación del guardado. Vacío si
+ * ninguna lista trae datos (caso normal).
+ */
+function construirAvisoEstudiantes(resultado: SetEstudiantesResult): string {
+  const partes: string[] = []
+  if (resultado.afectadosAdaptacion.length > 0) {
+    const nombres = resultado.afectadosAdaptacion.map((a) => a.estudiante).join(", ")
+    partes.push(`Al salir de la actividad, ${nombres} también salió(salieron) de una o más adaptaciones curriculares.`)
+  }
+  if (resultado.avisosPiar.length > 0) {
+    const nombres = resultado.avisosPiar.map((a) => a.estudiante).join(", ")
+    partes.push(`${nombres} tiene(n) discapacidad registrada y no quedó(quedaron) en esta actividad.`)
+  }
+  return partes.length > 0 ? ` ${partes.join(" ")}` : ""
+}
 
 /**
  * Edición de una actividad en una ruta aparte (no in-place en el panel).
@@ -305,18 +328,24 @@ function EditarActividadPageContent({
         (!values.asignarTodoElGrupo &&
           JSON.stringify([...values.matriculasIds].sort((a, b) => a - b)) !==
             JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
+      let avisoEstudiantes = ""
       if (estudiantesCambiaron) {
-        await setEstudiantes.mutateAsync({
+        const resultado = await setEstudiantes.mutateAsync({
           actividadId: actividad.id,
           matriculasIds: values.matriculasIds,
           asignarTodoElGrupo: values.asignarTodoElGrupo,
         })
+        avisoEstudiantes = construirAvisoEstudiantes(resultado)
       }
 
       // `queueNotice`, no `notify`: recién ahora se navega, así que el
       // aviso lo tiene que mostrar el `NoticeProvider` del Planeador, no el
-      // de esta pantalla (que está a punto de desmontarse).
-      queueNotice("Actividad actualizada correctamente.")
+      // de esta pantalla (que está a punto de desmontarse). Un solo aviso
+      // por pantalla (reemplaza al anterior) — si hubo estudiantes
+      // afectados por salir de adaptaciones (Regla 46) o con PIAR que
+      // quedaron fuera (Regla 48), se agrega al mismo mensaje en vez de
+      // perderlo.
+      queueNotice(`Actividad actualizada correctamente.${avisoEstudiantes}`)
       setIsDirty(false)
       onClose()
     } catch (error) {
