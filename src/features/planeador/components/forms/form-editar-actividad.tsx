@@ -393,7 +393,11 @@ export function EditarActividadForm({
       fechaFin: "",
       descripcion: data.descripcion,
       objetivos: data.objetivos,
-      contenidos: data.contenidos,
+      // El popover de alta rápida no ofrece título por sección (ver
+      // `ListaAgregableField` más abajo, variante compacta sin ese campo)
+      // — se guardan sin título, igual que cualquier unidad de antes de
+      // V492; el docente puede agregarlos después editando la unidad.
+      contenidos: data.contenidos.map((descripcion) => ({ descripcion })),
       metodoCalculo: data.metodoCalculo,
       grado: data.grado,
       asignatura: data.asignatura,

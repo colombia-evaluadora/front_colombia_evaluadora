@@ -340,6 +340,147 @@ export function ListaAgregableCaja({
   )
 }
 
+export interface ContenidoSeccion {
+  titulo?: string
+  descripcion: string
+}
+
+interface ContenidosCajaProps {
+  title: string
+  description?: string
+  items: ContenidoSeccion[]
+  onChange: (items: ContenidoSeccion[]) => void
+  disabled?: boolean
+}
+
+/**
+ * Variante de `ListaAgregableCaja` para "Estructura de la Unidad/Proyecto"
+ * (antes "Contenidos" a secas, §4): cada sección tiene un Título opcional
+ * además de la Descripción — por eso no reusa `ListaAgregableCaja` (esa es
+ * genérica `string[]`, la sigue usando "Objetivos" sin cambios).
+ *
+ * El Título es opcional por fila en la UI, pero el backend real
+ * (`fn_unidad_validar_contenidos_titulos`, sso V492) es TODO O NADA para
+ * `CONTENIDOS_TITULOS`: si se manda, tiene que traer un título no vacío por
+ * CADA sección, en la misma posición que `CONTENIDOS` — no admite mezclar
+ * secciones con título y sin título en el mismo guardado. Por eso el
+ * armado del body (`update-unidad.ts`/`create-unidad.ts`) solo manda
+ * `CONTENIDOS_TITULOS` cuando TODAS las secciones ya tienen uno; mientras
+ * falte alguno, los títulos tipeados quedan en el borrador sin perderse,
+ * pero no se persisten todavía — evita bloquear el guardado de la
+ * Descripción (el dato principal) por un título a medio completar.
+ */
+export function ContenidosCaja({ title, description, items, onChange, disabled = false }: ContenidosCajaProps) {
+  const [draftTitulo, setDraftTitulo] = useState("")
+  const [draftDescripcion, setDraftDescripcion] = useState("")
+
+  function agregar() {
+    const descripcion = draftDescripcion.trim()
+    if (!descripcion) return
+    onChange([...items, { titulo: draftTitulo.trim() || undefined, descripcion }])
+    setDraftTitulo("")
+    setDraftDescripcion("")
+  }
+
+  function quitar(index: number) {
+    onChange(items.filter((_, i) => i !== index))
+  }
+
+  function editar(index: number, next: Partial<ContenidoSeccion>) {
+    onChange(items.map((item, i) => (i === index ? { ...item, ...next } : item)))
+  }
+
+  return (
+    <FieldSet className="gap-2">
+      <legend className="mb-0 text-base font-semibold">{title}</legend>
+      {description && <FieldDescription>{description}</FieldDescription>}
+
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {items.map((item, index) => (
+            <li key={index} className="flex flex-col gap-1.5 rounded-md border bg-card p-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  variant="outlined"
+                  className="flex-1"
+                  placeholder="Título de la sección (opcional)"
+                  maxLength={200}
+                  value={item.titulo ?? ""}
+                  onChange={(e) => editar(index, { titulo: e.target.value || undefined })}
+                  disabled={disabled}
+                  aria-label={`Título de la sección ${index + 1}`}
+                />
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-sm"
+                        aria-label={`Quitar sección ${index + 1}`}
+                        onClick={() => quitar(index)}
+                        disabled={disabled}
+                      />
+                    }
+                  >
+                    <TrashIcon />
+                  </TooltipTrigger>
+                  <TooltipContent>{`Quitar sección ${index + 1}`}</TooltipContent>
+                </Tooltip>
+              </div>
+              <Input
+                variant="outlined"
+                placeholder="Descripción de la sección"
+                maxLength={500}
+                value={item.descripcion}
+                onChange={(e) => editar(index, { descripcion: e.target.value })}
+                disabled={disabled}
+                aria-label={`Descripción de la sección ${index + 1}`}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-col gap-1.5 rounded-md border border-dashed p-3">
+        <Input
+          variant="outlined"
+          placeholder="Título de la sección (opcional)"
+          maxLength={200}
+          value={draftTitulo}
+          onChange={(e) => setDraftTitulo(e.target.value)}
+          disabled={disabled}
+        />
+        <div className="flex items-start gap-2">
+          <Input
+            variant="outlined"
+            className="flex-1"
+            placeholder="Descripción de la sección"
+            maxLength={500}
+            value={draftDescripcion}
+            onChange={(e) => setDraftDescripcion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                agregar()
+              }
+            }}
+            onBlur={agregar}
+            disabled={disabled}
+          />
+          {draftDescripcion.trim() && (
+            <Button type="button" variant="fill" color="primary" size="default" onClick={agregar} disabled={disabled}>
+              <PlusCircleIcon data-icon="inline-start" />
+              Agregar sección
+            </Button>
+          )}
+        </div>
+      </div>
+    </FieldSet>
+  )
+}
+
 /** Opción con id real — a diferencia de `ListaAgregableCaja` (texto libre),
  *  acá el catálogo importa por su `id` (lo que el backend real espera
  *  mandar, ej. `ENUNCIADOS: [ids]`), no solo por su texto. */

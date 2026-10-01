@@ -44,7 +44,9 @@ interface UnidadRealRow {
   /** sso V488/V511 — Regla 13, ver `UnidadTematica.rotuloEjecucion`. */
   rotulo_ejecucion?: string
   objetivos?: { pk: number; orden: number; descripcion: string }[]
-  contenidos?: { pk: number; orden: number; descripcion: string }[]
+  /** `titulo` (sso V492, `TUNIDAD_CONTENIDO.TITULO`) — `null`/ausente en
+   *  secciones sin título (antes de V492, o guardadas sin uno). */
+  contenidos?: { pk: number; orden: number; titulo?: string | null; descripcion: string }[]
   active?: boolean
   /** Estado derivado de la unidad (`fn_unidad_listar`/`_buscar_por_pk`) —
    *  los MISMOS cuatro valores que ya deriva `/actividades` (colección
@@ -101,7 +103,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     fechaFin: row.fecha_fin ?? "",
     descripcion: row.descripcion ?? "",
     objetivos: (row.objetivos ?? []).map((o) => o.descripcion),
-    contenidos: (row.contenidos ?? []).map((c) => c.descripcion),
+    contenidos: (row.contenidos ?? []).map((c) => ({ titulo: c.titulo ?? undefined, descripcion: c.descripcion })),
     metodoCalculo: metodoCalculoFromLabel(row.calculo_definitiva),
     grado: row.grado,
     asignatura: row.asignatura,
