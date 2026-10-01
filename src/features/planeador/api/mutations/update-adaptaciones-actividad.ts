@@ -27,20 +27,25 @@ interface UpdateAdaptacionesInput {
  * `use-formato-adaptacion-catalog.ts`), obligatorio con
  * `usaVersionModificada = "S"`.
  *
- * `fkTarchivo`/`url` — la referencia de la versión modificada en sí (el
- * archivo, el enlace, o la plantilla de biblioteca):
- * - ARCHIVO: se sube primero por `POST /files/eval-col/planeador/
- *   actividades/:id/adaptaciones/archivo` (V470, mismo patrón que
- *   `subirArchivoMaterial` — un binario por petición, file-service en el
- *   medio) y se manda el `fk_tarchivo` resultante.
+ * `archivos`/`url`/`fkTarchivo` — la referencia de la versión modificada en
+ * sí (el archivo, el enlace, o la plantilla de biblioteca):
+ * - ARCHIVO: hasta 3 (`fn_actividad_validar_adaptaciones` rechaza un
+ *   cuarto). Cada uno nuevo se sube por separado por
+ *   `POST /files/eval-col/planeador/actividades/:id/adaptaciones/archivo`
+ *   (V496.4, mismo patrón que `subirArchivoMaterial` — un binario por
+ *   petición, file-service en el medio); uno ya guardado se reenvía por su
+ *   `fkTarchivo` sin volver a subir nada. El array resultante de ids viaja
+ *   como `archivos` (clave nueva; `fkTarchivo` suelto es el contrato
+ *   anterior de un solo archivo, el backend lo sigue aceptando pero ya no
+ *   hace falta mandarlo acá).
  * - ENLACE: `versionModificadaRef` YA es la URL, se manda tal cual.
  * - BIBLIOTECA: el picker (`AdaptacionBibliotecaField`, V471) elige un
  *   `PK_TARCHIVO` que YA existe (de otra actividad) — no hay nada que
- *   subir, se manda directo como `fkTarchivo`, igual que reusar un archivo
- *   ya guardado.
+ *   subir, se manda directo como `fkTarchivo` (acá sí el contrato viejo:
+ *   es una sola referencia, no hasta 3).
  */
 /**
- * El nombre viaja con su extensión real (`adaptacion.archivoNombre`, el
+ * El nombre viaja con su extensión real (`AdaptacionArchivo.nombre`, el
  * `file.name` original) y no fijo ("plantilla") a propósito: el backend
  * infiere el `Content-Type` de cada archivo por la extensión del nombre, no
  * por el `Content-Type` que mande el multipart — confirmado en producción,
@@ -48,9 +53,12 @@ interface UpdateAdaptacionesInput {
  * stream` y el navegador lo descargaba en vez de mostrarlo, sin importar
  * qué binario fuera.
  */
-async function subirArchivoAdaptacion(actividadId: number, adaptacion: Adaptacion): Promise<number> {
-  const blob = await fetch(adaptacion.versionModificadaRef).then((r) => r.blob())
-  const nombre = adaptacion.archivoNombre || "plantilla"
+async function subirArchivoAdaptacion(
+  actividadId: number,
+  archivo: { blobUrl: string; nombre: string },
+): Promise<number> {
+  const blob = await fetch(archivo.blobUrl).then((r) => r.blob())
+  const nombre = archivo.nombre || "plantilla"
   const respuesta = await postMultipart<RowsEnvelope<{ fk_tarchivo: number }> | { fk_tarchivo: number }>(
     `/eval-col/planeador/actividades/${actividadId}/adaptaciones/archivo`,
     {},
@@ -65,13 +73,19 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
       const usaVersionModificada = adaptacion.versionModificada && adaptacion.versionModificada !== "no" ? "S" : "N"
       const base = {
         tipoAdaptacion: await resolveTipoAdaptacionId(adaptacion.tipo),
-        // Solo "Otro" lo exige (fn_actividad_validar_adaptaciones, V532);
+        // Solo "Otro" lo exige (fn_actividad_validar_adaptaciones, V496.1);
         // el resto del catálogo no tiene dónde usarlo, así que se omite en
-        // vez de mandar un string vacío.
-        ...(adaptacion.tipo === "Otro" ? { tipoOtro: adaptacion.tipoOtro } : {}),
+        // vez de mandar un string vacío. OJO: la clave es `especificacionTipo`,
+        // no `tipoOtro` — el validador del backend rechaza cualquier clave
+        // no declarada.
+        ...(adaptacion.tipo === "Otro" ? { especificacionTipo: adaptacion.especificacionTipo } : {}),
         descripcion: adaptacion.descripcion,
         usaVersionModificada,
         aplicaA: await resolveAplicaAId(adaptacion.aplicaA),
+        // Regla 47: solo "Estudiantes específicos" los exige; con "A todo
+        // el grupo" el backend rechaza mandarlos (ver el validador más
+        // abajo en el guard de `estudiantes` del mismo bloque 6).
+        ...(adaptacion.aplicaA === "Estudiantes específicos" ? { estudiantes: adaptacion.estudiantesIds } : {}),
       }
       // Solo se manda si aplica — con "N" el backend rechaza tanto
       // formatoAdaptacion/fkTarchivo/url como con "S" sin ellos, así que
@@ -87,34 +101,42 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
           nombrePlantilla: adaptacion.nombrePlantilla,
         }
       }
-      // BIBLIOTECA: el archivo elegido ya existe (subido en otra
-      // actividad, `AdaptacionBibliotecaField`) — se manda directo, sin
-      // subir nada. Sin `nombrePlantilla`: esa plantilla ya tiene el suyo
-      // propio, fijado cuando se creó.
+      // BIBLIOTECA: el recurso elegido ya existe (registrado en otra
+      // actividad propia, `AdaptacionBibliotecaField`) — se manda directo,
+      // sin subir nada. Puede ser un archivo (fkTarchivo) o, si la
+      // plantilla de origen era de solo enlace, una URL
+      // (`versionModificadaRef`, reutilizado acá igual que en "enlace").
+      // Sin `nombrePlantilla`: esa plantilla ya tiene el suyo propio,
+      // fijado cuando se creó.
       if (adaptacion.versionModificada === "biblioteca") {
-        if (adaptacion.archivoId === undefined) {
-          throw new Error(
-            "Elegí una plantilla de la biblioteca institucional para la adaptación marcada como \"Biblioteca\".",
-          )
+        if (adaptacion.archivoId !== undefined) {
+          return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
         }
-        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId }
+        if (adaptacion.versionModificadaRef) {
+          return { ...base, formatoAdaptacion, url: adaptacion.versionModificadaRef }
+        }
+        throw new Error(
+          "Elegí una plantilla de la biblioteca institucional para la adaptación marcada como \"Biblioteca\".",
+        )
       }
-      // "archivo" — el único caso que sube un binario.
-      //
-      // Una adaptación YA guardada se reenvía por `archivoId`, sin volver a
-      // subir nada — mismo motivo que `subirArchivoMaterial`: el PUT es de
-      // REEMPLAZO TOTAL, así que reabrir la actividad y guardar cualquier
-      // otro campo (sin tocar la plantilla) se llevaba puesto el archivo.
-      if (adaptacion.archivoId !== undefined && !adaptacion.versionModificadaRef.startsWith("blob:")) {
-        return { ...base, formatoAdaptacion, fkTarchivo: adaptacion.archivoId, nombrePlantilla: adaptacion.nombrePlantilla }
+      // "archivo" — hasta 3, el único caso que sube binarios. Uno YA
+      // guardado se reenvía por su `fkTarchivo` sin volver a subirlo —
+      // mismo motivo que `subirArchivoMaterial`: el PUT es de REEMPLAZO
+      // TOTAL, así que reabrir la actividad y guardar cualquier otro campo
+      // (sin tocar la plantilla) se llevaba puestos los archivos. Uno
+      // recién elegido en el picker todavía no tiene `fkTarchivo` — solo
+      // `blobUrl` — y se sube acá mismo.
+      if (adaptacion.archivos.length === 0) {
+        throw new Error("Adjuntá al menos un archivo de plantilla para la adaptación marcada como \"Archivo\".")
       }
-      // Sin blob URL y sin id no hay nada que enlazar: el docente eligió
-      // "Sí, adjuntar plantilla (archivo)" pero no llegó a elegir un archivo.
-      if (!adaptacion.versionModificadaRef.startsWith("blob:")) {
-        throw new Error("Elegí un archivo de plantilla para la adaptación marcada como \"Archivo\".")
-      }
-      const fkTarchivo = await subirArchivoAdaptacion(actividadId, adaptacion)
-      return { ...base, formatoAdaptacion, fkTarchivo, nombrePlantilla: adaptacion.nombrePlantilla }
+      const archivos = await Promise.all(
+        adaptacion.archivos.map((archivo) =>
+          archivo.fkTarchivo !== undefined
+            ? archivo.fkTarchivo
+            : subirArchivoAdaptacion(actividadId, { blobUrl: archivo.blobUrl ?? "", nombre: archivo.nombre }),
+        ),
+      )
+      return { ...base, formatoAdaptacion, archivos, nombrePlantilla: adaptacion.nombrePlantilla }
     }),
   )
   await api.put(`/eval-col/planeador/actividades/${actividadId}/adaptaciones`, {
