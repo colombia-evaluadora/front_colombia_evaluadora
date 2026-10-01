@@ -283,6 +283,8 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // (ver el comentario de `fn_actividad_es_formativa`).
   const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
   const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
+  // Rótulo real (Regla 13) — nunca "actividades" fijo.
+  const rotuloActividadesLower = `${(unidad.rotuloEjecucion ?? "Actividad").toLowerCase()}s`
 
   return (
     <div className="flex flex-col gap-6">
@@ -335,7 +337,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
-              Forma en que se van a calcular las actividades dentro de la unidad
+              Forma en que se van a calcular las {rotuloActividadesLower} dentro de la unidad
             </h4>
             <p className="text-muted-foreground text-sm">
               Método Seleccionado:{" "}
