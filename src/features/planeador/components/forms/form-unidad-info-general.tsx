@@ -28,6 +28,10 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  useRotuloActividadQuery,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -175,6 +179,14 @@ export function UnidadInfoGeneralFields({
   // consulta mientras no haya uno elegido — mismo criterio que ya aplica
   // `subjectLabel` un poco más abajo.
   const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId ?? tab?.grados[0]?.id, draft.asignaturaId)
+  // Rótulo real (Regla 13) — mismo criterio que `enfoqueDerivado`/
+  // `subjectLabel`: con `tab`, cualquiera de `tab.grados` ya resuelve el
+  // mismo referente mientras no haya un grado puntual elegido.
+  const { data: rotuloActividad } = useRotuloActividadQuery(
+    draft.gradoId ?? tab?.grados[0]?.id,
+    draft.asignaturaId,
+  )
+  const rotuloActividadesLower = `${(rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK).toLowerCase()}s`
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
@@ -433,11 +445,11 @@ export function UnidadInfoGeneralFields({
               `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
               el label chico de un field, no como título de sección. */}
           <legend className="mb-0 text-base font-semibold">
-            Forma en que se van a calcular las actividades.
+            Forma en que se van a calcular las {rotuloActividadesLower}.
           </legend>
           <FieldDescription>
-            Selecciona el método que se va a utilizar para definir el resultado a partir de las
-            actividades calificadas al estudiante.
+            Selecciona el método que se va a utilizar para definir el resultado a partir de las{" "}
+            {rotuloActividadesLower} calificadas al estudiante.
           </FieldDescription>
 
           <RadioGroup
