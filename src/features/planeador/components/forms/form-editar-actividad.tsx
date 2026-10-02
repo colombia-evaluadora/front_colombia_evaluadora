@@ -5803,11 +5803,17 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                       <SelectTrigger id={tipoField.name}>
                         <SelectValue />
                       </SelectTrigger>
+                      {/* Valores = `nombre` real de la categoría `TLISTA_VALOR`
+                          `TIPO_EVIDENCIA` (confirmado, V224: Archivo/Enlace/
+                          Imagen/Video/Observación) — antes decía "Link"/
+                          "Texto", que no existen en ese catálogo y por eso
+                          `resolveTipoEvidenciaId` nunca podía resolverlos
+                          (ver `use-tipo-evidencia-catalog.ts`). */}
                       <SelectContent>
                         <SelectItem value="Archivo">Archivo</SelectItem>
-                        <SelectItem value="Link">Link</SelectItem>
-                        <SelectItem value="Texto">Texto</SelectItem>
+                        <SelectItem value="Enlace">Enlace</SelectItem>
                         <SelectItem value="Imagen">Imagen</SelectItem>
+                        <SelectItem value="Observación">Observación</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>
