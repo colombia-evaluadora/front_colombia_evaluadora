@@ -4394,7 +4394,7 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                     ...rubrica,
                     criterios: [
                       ...rubrica.criterios,
-                      { id: cryptoId(), nombre: "", excelente: "", niveles: [], ponderacion: 0 },
+                      { id: cryptoId(), nombre: "", descripcion: "", excelente: "", niveles: [], ponderacion: 0 },
                     ],
                   })
                 }}
@@ -4538,6 +4538,24 @@ function CriterioItem({
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
           disabled={disabled}
         />
+      </Field>
+
+      {/* Distinta de la `descripcion` de cada nivel (el indicador de logro
+          por nivel, más abajo): esta es la del criterio en sí
+          (`TACTIVIDAD_RUBRICA_CRITERIO.DESCRIPCION`) — no tenía campo acá,
+          así que nunca viajaba ni al guardar ni al leer. */}
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Descripción o Juicio de valor</FieldLabel>
+        <Textarea
+          className={TEXTAREA_OUTLINED}
+          rows={2}
+          placeholder="Describe qué evalúa este criterio en general"
+          maxLength={4000}
+          value={criterio.descripcion}
+          onChange={(e) => onChange({ ...criterio, descripcion: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={criterio.descripcion} max={4000} />
       </Field>
 
       {/* `Excelente` va como label estático a la izquierda del textarea:
