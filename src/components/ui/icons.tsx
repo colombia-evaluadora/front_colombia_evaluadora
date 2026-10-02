@@ -113,6 +113,7 @@ import {
   MdOutlineSmartDisplay,
   MdOutlineNotifications,
   MdSupportAgent,
+  MdSwitchAccount,
   MdTableChart,
   MdTimelapse,
   MdTransgender,
@@ -218,6 +219,7 @@ export const GenderIntersexIcon = makeIcon(MdTransgender)
 export const GlobeIcon = makeIcon(MdPublic)
 export const GraduationCapIcon = makeIcon(MdSchool)
 export const HeadsetIcon = makeIcon(MdSupportAgent)
+export const UserSwitchIcon = makeIcon(MdSwitchAccount)
 export const HouseIcon = makeIcon(MdHome)
 export const HouseLineIcon = makeIcon(MdHomeWork)
 export const IdentificationCardIcon = makeIcon(MdBadge)
