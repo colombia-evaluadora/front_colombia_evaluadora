@@ -120,7 +120,16 @@ function EditarUnidadPageContent({
         // `onClose` navega de vuelta al listado de unidades — un `notify()`
         // acá se perdería con el `NoticeProvider` de esta pantalla al
         // desmontarse.
-        queueNotice(mensajeUnidadGuardada("actualizado", instrumento))
+        // Regla 28: si el criterio de cálculo cambió con actividades ya
+        // vinculadas, el backend ya convirtió su peso/puntaje — se avisa
+        // cuáles, en vez de que el docente lo descubra reabriéndolas una
+        // por una. Un solo aviso por pantalla (`queueNotice`), así que se
+        // agrega al mismo mensaje de éxito en vez de perderlo.
+        const avisoConversion =
+          result.actividadesAfectadas.length > 0
+            ? ` Se convirtió el peso/puntaje de: ${result.actividadesAfectadas.map((a) => a.titulo).join(", ")}.`
+            : ""
+        queueNotice(`${mensajeUnidadGuardada("actualizado", instrumento)}${avisoConversion}`)
         onClose()
       },
       // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
