@@ -4206,10 +4206,9 @@ function InstrumentoPersonalizadoSection({
     camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
       ? camposOtro.metodoValoracion.catalogo
       : METODO_VALORACION_CATALOGO_DEFAULT
-  // Regla 41: tope fijo de 200, no un piso genérico — antes caía a 4000
-  // mientras `camposOtro` no resolvía (foto vieja, endpoint viejo) y dejaba
-  // escribir mucho más de lo que el backend acepta.
-  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 200
+  // Regla 41: tope de 200. El endpoint de campos permitidos reporta 4000
+  // para este campo, así que se acota con `min` en vez de confiar en él.
+  const descripcionMaxLength = Math.min(camposOtro?.descripcionInstrumento.maxLength ?? 200, 200)
 
   return (
     <Card className="gap-4 p-4">
@@ -4232,8 +4231,10 @@ function InstrumentoPersonalizadoSection({
                 <FieldLabel htmlFor="instrumentoPersonalizado-descripcion">
                   Descripción del instrumento
                 </FieldLabel>
-                <Input
+                <Textarea
                   id="instrumentoPersonalizado-descripcion"
+                  className={TEXTAREA_OUTLINED}
+                  rows={3}
                   placeholder="Agregar descripción breve"
                   maxLength={descripcionMaxLength}
                   value={value.descripcion}
