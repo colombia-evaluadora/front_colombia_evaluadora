@@ -13,18 +13,29 @@ interface DecidirInput {
   motivo: string
 }
 
+interface ResultadoMasivo {
+  resueltas: number[]
+  fallidas: { id: number; codigo: string; error: string }[]
+}
+
+type RespuestaMasivo = { rows: { resultado: ResultadoMasivo }[] } | { resultado: ResultadoMasivo }[] | { resultado: ResultadoMasivo }
+
+function leerResultado(raw: RespuestaMasivo): ResultadoMasivo {
+  const fila = Array.isArray(raw) ? raw[0] : "rows" in raw ? raw.rows[0] : raw
+  return fila?.resultado ?? { resueltas: [], fallidas: [] }
+}
+
 /**
- * Regla 75: el backend resuelve una solicitud por llamada. Se mandan todas y
- * se reporta cuántas fallaron, para no dejar la selección a medias sin aviso.
+ * Regla 75: una sola llamada para todo el lote. El backend resuelve cada
+ * solicitud por separado y devuelve las que fallaron con su motivo.
  */
 async function decidir({ decision, ids, motivo }: DecidirInput): Promise<{ fallidas: number }> {
-  const resultados = await Promise.allSettled(
-    ids.map((id) =>
-      api.post(`/eval-col/aprobaciones/${id}/${decision}`, motivo.trim() ? { MOTIVO: motivo.trim() } : {}),
-    ),
-  )
-  const fallidas = resultados.filter((r) => r.status === "rejected")
-  if (fallidas.length === ids.length) throw (fallidas[0] as PromiseRejectedResult).reason
+  const raw = await api.post<RespuestaMasivo>(`/eval-col/aprobaciones/${decision}-masivo`, {
+    IDS: ids,
+    ...(motivo.trim() ? { MOTIVO: motivo.trim() } : {}),
+  })
+  const { resueltas, fallidas } = leerResultado(raw)
+  if (resueltas.length === 0 && fallidas.length > 0) throw new Error(fallidas[0].error)
   return { fallidas: fallidas.length }
 }
 
