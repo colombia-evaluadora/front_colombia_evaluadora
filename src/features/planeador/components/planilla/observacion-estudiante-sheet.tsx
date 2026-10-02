@@ -38,7 +38,6 @@ import {
   ImageIcon,
   InfoIcon,
   InsertLinkOutlinedIcon,
-  LinkBreakIcon,
   SpinnerIcon,
   WarningCircleIcon,
   XIcon,
@@ -384,7 +383,20 @@ export function ObservacionEstudianteSheet({
                 </div>
               ))}
               {tieneEnlace && !enlaceInvalido && (
-                <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} className="size-20 object-cover" />
+                <div className="group relative">
+                  <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} className="size-20 object-cover" />
+                  <Button
+                    type="button"
+                    variant="fill"
+                    color="destructive"
+                    size="icon-xs"
+                    className="absolute -top-1.5 -right-1.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label="Quitar el enlace"
+                    onClick={() => setEnlace("")}
+                  >
+                    <XIcon />
+                  </Button>
+                </div>
               )}
               <Tooltip>
                 {/* El trigger va en un `span`: un <button disabled> nativo no dispara el hover del Tooltip. */}
@@ -422,12 +434,6 @@ export function ObservacionEstudianteSheet({
                         <InsertLinkOutlinedIcon />
                         {tieneEnlace ? "Cambiar enlace" : "Imagen por enlace"}
                       </DropdownMenuItem>
-                      {tieneEnlace && (
-                        <DropdownMenuItem onClick={() => setEnlace("")}>
-                          <LinkBreakIcon />
-                          Quitar enlace
-                        </DropdownMenuItem>
-                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TooltipTrigger>
