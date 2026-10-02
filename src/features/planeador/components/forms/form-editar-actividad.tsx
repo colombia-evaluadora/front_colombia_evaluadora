@@ -3594,7 +3594,7 @@ function InstrumentoEvaluacionSection({
         // sección de Criterios sin que el docente hubiera elegido nada en
         // "Instrumento de evaluación".
         !instrumento ? null : instrumento === "Lista de cotejo" ? (
-          <ListaCotejoSection form={form} disabled={disabled} />
+          <ListaCotejoSection form={form} unidades={unidades} disabled={disabled} />
         ) : instrumento === "Escala de valoración" ? (
           <EscalaValoracionSection
             form={form}
@@ -3614,7 +3614,7 @@ function InstrumentoEvaluacionSection({
             disabled={disabled}
           />
         ) : (
-          <RubricasSection form={form} disabled={disabled} />
+          <RubricasSection form={form} unidades={unidades} disabled={disabled} />
         )
       }
     </form.Subscribe>
@@ -3629,11 +3629,30 @@ function InstrumentoEvaluacionSection({
  * `esEvaluativa`). Estructura paralela a `RubricasSection`: mismo header
  * con botón "+" para agregar, mismo empty state.
  */
-function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function ListaCotejoSection({
+  form,
+  unidades,
+  disabled,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  disabled: boolean
+}) {
   // Mismo fallback que `RubricasSection`: tras un intento de guardar, los
   // ítems marcan en rojo sus campos obligatorios aunque el usuario nunca
   // los haya tocado (`fn_actividad_validar_cotejo_definicion`, sso V496.5).
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
+  // elemento solo es obligatorio si la Unidad vinculada en el Bloque 1
+  // calcula su definitiva por Ponderado o Suma de puntos. Promedio simple,
+  // o la actividad sin unidad (`unidad.id === 0`, no matchea ningún id real
+  // de `unidades`), lo dejan opcional — mismo patrón de `unidadActual` que
+  // `EscalaValoracionSection`. Esto es independiente de `esEvaluativa`: ese
+  // flag decide si el campo de puntaje SE MUESTRA, este decide si además,
+  // mostrándose, es obligatorio.
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
+  const unidadActual = unidades.find((u) => u.id === unidadId)
+  const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -3708,6 +3727,7 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       item={item}
                       index={index}
                       esEvaluativa={esEvaluativa}
+                      puntajeObligatorio={puntajeObligatorio}
                       disabled={disabled}
                       submissionAttempts={submissionAttempts}
                       onChange={(next) => {
@@ -3779,6 +3799,7 @@ function ListaCotejoItemCard({
   item,
   index,
   esEvaluativa,
+  puntajeObligatorio,
   disabled,
   submissionAttempts,
   onChange,
@@ -3787,15 +3808,23 @@ function ListaCotejoItemCard({
   item: ListaCotejoItem
   index: number
   esEvaluativa: boolean
-  disabled: boolean
   /**
    * `fn_actividad_validar_cotejo_definicion` (sso V496.5) exige una
-   * descripción no vacía por elemento; el puntaje, a diferencia del de un
-   * nivel de rúbrica, es OPCIONAL —un elemento sin puntaje pesa 1
-   * (`buildListaCotejoDefinicion`/el comentario de la función SQL)— pero SI
-   * se carga debe quedar entre 0 y 100. Mismo mecanismo de "tocado" local +
-   * fallback por intento de guardar que `CriterioItem`, pasado desde
-   * `ListaCotejoSection` (este componente tampoco recibe el `form`).
+   * descripción no vacía por elemento. El puntaje es obligatorio SOLO si la
+   * Unidad vinculada a la actividad calcula su definitiva por Ponderado o
+   * Suma de puntos (`puntajeObligatorio`, resuelto por `ListaCotejoSection`
+   * con el mismo `unidadActual` que `EscalaValoracionSection`); con
+   * Promedio simple, o sin unidad vinculada, un elemento sin puntaje pesa 1
+   * (`buildListaCotejoDefinicion`/el comentario de la función SQL) y solo
+   * se valida su rango si se carga. En ambos casos, si hay valor, debe
+   * quedar entre 0 y 100.
+   */
+  puntajeObligatorio: boolean
+  disabled: boolean
+  /**
+   * Mismo mecanismo de "tocado" local + fallback por intento de guardar que
+   * `CriterioItem`, pasado desde `ListaCotejoSection` (este componente
+   * tampoco recibe el `form`).
    */
   submissionAttempts: number
   onChange: (next: ListaCotejoItem) => void
@@ -3805,10 +3834,11 @@ function ListaCotejoItemCard({
   const [tocoPonderacion, setTocoPonderacion] = useState(false)
 
   const descripcionInvalida = (tocoDescripcion || submissionAttempts > 0) && !item.descripcion.trim()
-  const ponderacionInvalida =
-    (tocoPonderacion || submissionAttempts > 0) &&
-    item.ponderacion != null &&
-    (item.ponderacion < 0 || item.ponderacion > 100)
+  const tocoOIntento = tocoPonderacion || submissionAttempts > 0
+  const ponderacionAusente = puntajeObligatorio && tocoOIntento && item.ponderacion == null
+  const ponderacionFueraDeRango =
+    tocoOIntento && item.ponderacion != null && (item.ponderacion < 0 || item.ponderacion > 100)
+  const ponderacionInvalida = ponderacionAusente || ponderacionFueraDeRango
 
   return (
     <div className="rounded-md border bg-card p-3">
@@ -3878,7 +3908,9 @@ function ListaCotejoItemCard({
               disabled={disabled}
             />
             {ponderacionInvalida && (
-              <FieldError errors={[{ message: "El puntaje debe estar entre 0 y 100." }]} />
+              <FieldError
+                errors={ponderacionAusente ? ERROR_OBLIGATORIO : [{ message: "El puntaje debe estar entre 0 y 100." }]}
+              />
             )}
           </Field>
         )}
@@ -4509,9 +4541,9 @@ function InstrumentoPersonalizadoSection({
                   (misma sección/mismos datos que si fuera el `instrumento`
                   de arriba), antes de las preguntas de entrega. */}
               {value.metodoValoracion === "Rúbrica" ? (
-                <RubricasSection form={form} disabled={disabled} />
+                <RubricasSection form={form} unidades={unidades} disabled={disabled} />
               ) : value.metodoValoracion === "Lista de cotejo" ? (
-                <ListaCotejoSection form={form} disabled={disabled} />
+                <ListaCotejoSection form={form} unidades={unidades} disabled={disabled} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
                 <EscalaValoracionSection
                   form={form}
@@ -4550,7 +4582,15 @@ function InstrumentoPersonalizadoSection({
   )
 }
 
-function RubricasSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function RubricasSection({
+  form,
+  unidades,
+  disabled,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  disabled: boolean
+}) {
   // Se llega a esta sección solo cuando el instrumento elegido exige una
   // rúbrica (ver `InstrumentoEvaluacionSection`: cualquier valor que no sea
   // "Lista de cotejo"/"Escala de valoración"/"Otro" cae acá), así que al
@@ -4560,6 +4600,14 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
   // Mismo patrón que `fechaInicio`/`fechaCierre` más arriba: el error solo
   // se marca tras tocar el campo o tras un intento de guardar.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
+  // nivel solo es obligatorio si la Unidad vinculada en el Bloque 1 calcula
+  // su definitiva por Ponderado o Suma de puntos. Promedio simple, o la
+  // actividad sin unidad, lo dejan opcional (pesa 1) — mismo `unidadActual`
+  // que `EscalaValoracionSection`/`ListaCotejoSection`.
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
+  const unidadActual = unidades.find((u) => u.id === unidadId)
+  const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -4638,6 +4686,7 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                         criterio={criterio}
                         index={index}
                         esEvaluativa={esEvaluativa}
+                        puntajeObligatorio={puntajeObligatorio}
                         disabled={disabled}
                         submissionAttempts={submissionAttempts}
                         onChange={(next) => {
@@ -4697,6 +4746,7 @@ function CriterioItem({
   criterio,
   index,
   esEvaluativa,
+  puntajeObligatorio,
   disabled,
   submissionAttempts,
   onChange,
@@ -4712,13 +4762,23 @@ function CriterioItem({
    * no se muestra — el peso del nivel no aplica si no pondera nota.
    */
   esEvaluativa: boolean
-  disabled: boolean
   /**
    * `fn_actividad_validar_rubrica_definicion` (sso V496.5) exige nombre de
-   * criterio, y por cada nivel —"Excelente" incluido, que viaja como el
+   * criterio y, por cada nivel —"Excelente" incluido, que viaja como el
    * primer nivel del array (`criterioABody`, `update-instrumento-actividad.ts`)—
-   * una descripción/juicio de valor no vacía y un puntaje NOT NULL entre 0 y
-   * 100. Este componente no recibe el `form` (solo `criterio`/`onChange`
+   * una descripción/juicio de valor no vacía siempre. El puntaje de cada
+   * nivel es obligatorio SOLO si la Unidad vinculada a la actividad calcula
+   * su definitiva por Ponderado o Suma de puntos (`puntajeObligatorio`,
+   * resuelto por `RubricasSection` con el mismo `unidadActual` que
+   * `EscalaValoracionSection`/`ListaCotejoSection`); con Promedio simple, o
+   * sin unidad vinculada, un nivel sin puntaje pesa 1 y no se marca en rojo.
+   * En ambos casos, si hay valor, debe quedar entre 0 y 100 (ver el `Input`
+   * de cada nivel, que ya acota con `min`/`max`).
+   */
+  puntajeObligatorio: boolean
+  disabled: boolean
+  /**
+   * Este componente no recibe el `form` (solo `criterio`/`onChange`
    * planos, como `AdaptacionItem`), así que la validación de "obligatorio"
    * es local por `blur` de cada campo, con `submissionAttempts` —pasado
    * desde `RubricasSection`, que sí tiene el `form`— como fallback para
@@ -4751,7 +4811,7 @@ function CriterioItem({
   const excelenteDescripcionInvalida =
     (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
   const excelentePonderacionInvalida =
-    (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
+    puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -4942,7 +5002,9 @@ function CriterioItem({
           const descripcionInvalida =
             (tocadosNivelDescripcion.has(nivel.id) || submissionAttempts > 0) && !nivel.descripcion.trim()
           const ponderacionInvalida =
-            (tocadosNivelPonderacion.has(nivel.id) || submissionAttempts > 0) && nivel.ponderacion == null
+            puntajeObligatorio &&
+            (tocadosNivelPonderacion.has(nivel.id) || submissionAttempts > 0) &&
+            nivel.ponderacion == null
           return (
           <li
             key={nivel.id}
