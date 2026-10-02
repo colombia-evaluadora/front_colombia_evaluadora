@@ -3668,11 +3668,32 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
           de lista de cotejo solo pondera si la actividad es sumativa. */}
       <form.Subscribe selector={(state) => state.values.esEvaluativa}>
         {(esEvaluativa) => (
-          <form.Field name="listaCotejo">
+          <form.Field
+            name="listaCotejo"
+            validators={{
+              onChange: ({ value }) => {
+                const listaCotejo = value as ListaCotejo
+                return listaCotejo.items.length === 0
+                  ? { message: "Agrega al menos un ítem de la lista de cotejo." }
+                  : undefined
+              },
+            }}
+          >
             {(field) => {
               const listaCotejo = field.state.value as ListaCotejo
+              const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
               if (listaCotejo.items.length === 0) {
-                return null
+                return (
+                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid}>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        Agrega al menos un ítem con el botón de arriba.
+                      </p>
+                    )}
+                  </div>
+                )
               }
               const totalPosible = listaCotejo.items.reduce(
                 (acc, it) => acc + (Number.isFinite(it.ponderacion) ? (it.ponderacion as number) : 0),
@@ -3712,6 +3733,31 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       </Field>
                     </div>
                   )}
+                  {/* Mismo botón del header, repetido al pie de la grilla:
+                      con varios ítems largos cargados, el botón de arriba
+                      queda fuera de la vista y hay que scrollear hasta el
+                      inicio de la sección para agregar uno más (QA Bloque 5,
+                      criterio de aceptación #3). Mismo patrón que "Agregar
+                      nivel" dentro de cada criterio de rúbrica, que ya vive
+                      al final de su propio bloque. */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      color="neutral"
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        const current = field.state.value as ListaCotejo
+                        field.handleChange({
+                          ...current,
+                          items: [...current.items, { id: cryptoId(), descripcion: "" }],
+                        })
+                      }}
+                    >
+                      <PlusCircleIcon data-icon="inline-start" />
+                      Agregar ítem
+                    </Button>
+                  </div>
                 </>
               )
             }}
@@ -4584,30 +4630,60 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                 )
               }
               return (
-                <ul className="flex flex-col gap-6">
-                  {rubrica.criterios.map((criterio, index) => (
-                    <CriterioItem
-                      key={criterio.id}
-                      criterio={criterio}
-                      index={index}
-                      esEvaluativa={esEvaluativa}
+                <>
+                  <ul className="flex flex-col gap-6">
+                    {rubrica.criterios.map((criterio, index) => (
+                      <CriterioItem
+                        key={criterio.id}
+                        criterio={criterio}
+                        index={index}
+                        esEvaluativa={esEvaluativa}
+                        disabled={disabled}
+                        submissionAttempts={submissionAttempts}
+                        onChange={(next) => {
+                          const current = field.state.value as { id: number; criterios: Criterio[] }
+                          const next_criterios = current.criterios.slice()
+                          next_criterios[index] = next
+                          field.handleChange({ ...current, criterios: next_criterios })
+                        }}
+                        onRemove={() => {
+                          const current = field.state.value as { id: number; criterios: Criterio[] }
+                          const next_criterios = current.criterios.slice()
+                          next_criterios.splice(index, 1)
+                          field.handleChange({ ...current, criterios: next_criterios })
+                        }}
+                      />
+                    ))}
+                  </ul>
+                  {/* Mismo botón del header, repetido al pie de la lista:
+                      con varios criterios largos cargados, el botón de
+                      arriba queda fuera de la vista y hay que scrollear
+                      hasta el inicio de la sección para agregar uno más
+                      (QA Bloque 5, criterio de aceptación #3). Mismo patrón
+                      que "Agregar nivel" dentro de cada criterio, que ya
+                      vive al final de su propio bloque. */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      color="neutral"
+                      type="button"
                       disabled={disabled}
-                      submissionAttempts={submissionAttempts}
-                      onChange={(next) => {
+                      onClick={() => {
                         const current = field.state.value as { id: number; criterios: Criterio[] }
-                        const next_criterios = current.criterios.slice()
-                        next_criterios[index] = next
-                        field.handleChange({ ...current, criterios: next_criterios })
+                        field.handleChange({
+                          ...current,
+                          criterios: [
+                            ...current.criterios,
+                            { id: cryptoId(), nombre: "", descripcion: "", excelente: "", niveles: [], ponderacion: 0 },
+                          ],
+                        })
                       }}
-                      onRemove={() => {
-                        const current = field.state.value as { id: number; criterios: Criterio[] }
-                        const next_criterios = current.criterios.slice()
-                        next_criterios.splice(index, 1)
-                        field.handleChange({ ...current, criterios: next_criterios })
-                      }}
-                    />
-                  ))}
-                </ul>
+                    >
+                      <PlusCircleIcon data-icon="inline-start" />
+                      Agregar criterio
+                    </Button>
+                  </div>
+                </>
               )
             }}
           </form.Field>
