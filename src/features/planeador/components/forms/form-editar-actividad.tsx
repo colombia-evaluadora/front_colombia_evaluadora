@@ -3565,6 +3565,10 @@ function InstrumentoEvaluacionSection({
  * con botón "+" para agregar, mismo empty state.
  */
 function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Mismo fallback que `RubricasSection`: tras un intento de guardar, los
+  // ítems marcan en rojo sus campos obligatorios aunque el usuario nunca
+  // los haya tocado (`fn_actividad_validar_cotejo_definicion`, sso V496.5).
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -3619,6 +3623,7 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       index={index}
                       esEvaluativa={esEvaluativa}
                       disabled={disabled}
+                      submissionAttempts={submissionAttempts}
                       onChange={(next) => {
                         const current = field.state.value as ListaCotejo
                         const nextItems = current.items.slice()
@@ -3664,6 +3669,7 @@ function ListaCotejoItemCard({
   index,
   esEvaluativa,
   disabled,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
@@ -3671,9 +3677,28 @@ function ListaCotejoItemCard({
   index: number
   esEvaluativa: boolean
   disabled: boolean
+  /**
+   * `fn_actividad_validar_cotejo_definicion` (sso V496.5) exige una
+   * descripción no vacía por elemento; el puntaje, a diferencia del de un
+   * nivel de rúbrica, es OPCIONAL —un elemento sin puntaje pesa 1
+   * (`buildListaCotejoDefinicion`/el comentario de la función SQL)— pero SI
+   * se carga debe quedar entre 0 y 100. Mismo mecanismo de "tocado" local +
+   * fallback por intento de guardar que `CriterioItem`, pasado desde
+   * `ListaCotejoSection` (este componente tampoco recibe el `form`).
+   */
+  submissionAttempts: number
   onChange: (next: ListaCotejoItem) => void
   onRemove: () => void
 }) {
+  const [tocoDescripcion, setTocoDescripcion] = useState(false)
+  const [tocoPonderacion, setTocoPonderacion] = useState(false)
+
+  const descripcionInvalida = (tocoDescripcion || submissionAttempts > 0) && !item.descripcion.trim()
+  const ponderacionInvalida =
+    (tocoPonderacion || submissionAttempts > 0) &&
+    item.ponderacion != null &&
+    (item.ponderacion < 0 || item.ponderacion > 100)
+
   return (
     <div className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
@@ -3706,7 +3731,7 @@ function ListaCotejoItemCard({
           el campo de ponderación no se monta —no queda un hueco vacío
           al lado del textarea. */}
       <div className="mt-3 flex items-start gap-3">
-        <Field variant="outlined" className="min-w-0 flex-1">
+        <Field variant="outlined" className="min-w-0 flex-1" data-invalid={descripcionInvalida}>
           <FieldLabel htmlFor={`${item.id}-descripcion`}>Descripción del elemento</FieldLabel>
           <Textarea
             id={`${item.id}-descripcion`}
@@ -3715,12 +3740,15 @@ function ListaCotejoItemCard({
             maxLength={500}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
+            onBlur={() => setTocoDescripcion(true)}
+            aria-invalid={descripcionInvalida}
             disabled={disabled}
           />
+          {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
 
         {esEvaluativa && (
-          <Field variant="outlined" className="w-44 shrink-0">
+          <Field variant="outlined" className="w-44 shrink-0" data-invalid={ponderacionInvalida}>
             <FieldLabel htmlFor={`${item.id}-ponderacion`}>Puntaje del elemento</FieldLabel>
             <Input
               id={`${item.id}-ponderacion`}
@@ -3734,8 +3762,13 @@ function ListaCotejoItemCard({
                 // "fantasma" mientras el usuario borra para reescribir.
                 onChange({ ...item, ponderacion: raw === "" ? undefined : Number(raw) })
               }}
+              onBlur={() => setTocoPonderacion(true)}
+              aria-invalid={ponderacionInvalida}
               disabled={disabled}
             />
+            {ponderacionInvalida && (
+              <FieldError errors={[{ message: "El puntaje debe estar entre 0 y 100." }]} />
+            )}
           </Field>
         )}
       </div>
@@ -4453,6 +4486,7 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                       index={index}
                       esEvaluativa={esEvaluativa}
                       disabled={disabled}
+                      submissionAttempts={submissionAttempts}
                       onChange={(next) => {
                         const current = field.state.value as { id: number; criterios: Criterio[] }
                         const next_criterios = current.criterios.slice()
@@ -4482,6 +4516,7 @@ function CriterioItem({
   index,
   esEvaluativa,
   disabled,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
@@ -4496,6 +4531,19 @@ function CriterioItem({
    */
   esEvaluativa: boolean
   disabled: boolean
+  /**
+   * `fn_actividad_validar_rubrica_definicion` (sso V496.5) exige nombre de
+   * criterio, y por cada nivel —"Excelente" incluido, que viaja como el
+   * primer nivel del array (`criterioABody`, `update-instrumento-actividad.ts`)—
+   * una descripción/juicio de valor no vacía y un puntaje NOT NULL entre 0 y
+   * 100. Este componente no recibe el `form` (solo `criterio`/`onChange`
+   * planos, como `AdaptacionItem`), así que la validación de "obligatorio"
+   * es local por `blur` de cada campo, con `submissionAttempts` —pasado
+   * desde `RubricasSection`, que sí tiene el `form`— como fallback para
+   * marcar todo en rojo tras un intento de guardar aunque el campo nunca se
+   * haya tocado.
+   */
+  submissionAttempts: number
   onChange: (next: Criterio) => void
   onRemove: () => void
 }) {
@@ -4504,6 +4552,24 @@ function CriterioItem({
   // "Agregar nivel". Tenerlo en estado local evita que cada tecleo toque
   // el `onChange` del criterio padre y dispare `dirty` antes de confirmar.
   const [nivelInput, setNivelInput] = useState("")
+
+  const [tocoNombre, setTocoNombre] = useState(false)
+  const [tocoExcelenteDescripcion, setTocoExcelenteDescripcion] = useState(false)
+  const [tocoExcelentePonderacion, setTocoExcelentePonderacion] = useState(false)
+  // Los niveles son una lista dinámica (agregar/quitar), así que el "tocado"
+  // no puede ser un solo booleano: se guarda por `nivel.id` en un Set.
+  const [tocadosNivelDescripcion, setTocadosNivelDescripcion] = useState<Set<number>>(new Set())
+  const [tocadosNivelPonderacion, setTocadosNivelPonderacion] = useState<Set<number>>(new Set())
+  const marcarNivelDescripcionTocado = (id: number) =>
+    setTocadosNivelDescripcion((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  const marcarNivelPonderacionTocado = (id: number) =>
+    setTocadosNivelPonderacion((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+
+  const nombreInvalido = (tocoNombre || submissionAttempts > 0) && !criterio.nombre.trim()
+  const excelenteDescripcionInvalida =
+    (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
+  const excelentePonderacionInvalida =
+    (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -4533,15 +4599,18 @@ function CriterioItem({
           adentro: el label queda flotando sobre el borde (estilo MUI
           TextField). `text-sm font-semibold` del `Criterio N` y de
           `Excelente` son títulos estáticos, no labels de campo. */}
-      <Field variant="outlined" className="mt-3">
+      <Field variant="outlined" className="mt-3" data-invalid={nombreInvalido}>
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
           placeholder="Ej: Expresión oral de ideas y experiencias"
           maxLength={50}
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
+          onBlur={() => setTocoNombre(true)}
+          aria-invalid={nombreInvalido}
           disabled={disabled}
         />
+        {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
       </Field>
 
       {/* Distinta de la `descripcion` de cada nivel (el indicador de logro
@@ -4595,20 +4664,25 @@ function CriterioItem({
           )}
         >
           <p className="pt-2 text-sm font-semibold">Excelente</p>
-          <Textarea
-            className={TEXTAREA_OUTLINED}
-            rows={2}
-            placeholder="Describe el desempeño esperado en este nivel"
-            maxLength={500}
-            value={criterio.excelente}
-            onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
-            disabled={disabled}
-          />
+          <Field data-invalid={excelenteDescripcionInvalida}>
+            <Textarea
+              className={TEXTAREA_OUTLINED}
+              rows={2}
+              placeholder="Describe el desempeño esperado en este nivel"
+              maxLength={500}
+              value={criterio.excelente}
+              onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
+              onBlur={() => setTocoExcelenteDescripcion(true)}
+              aria-invalid={excelenteDescripcionInvalida}
+              disabled={disabled}
+            />
+            {excelenteDescripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+          </Field>
           {/* Input de ponderación de "Excelente" — mismo campo y mismo
               manejo del `undefined` que el de cada nivel intermedio (ver
               más abajo): string vacío no se guarda como `0`. */}
           {esEvaluativa && (
-            <Field variant="outlined">
+            <Field variant="outlined" data-invalid={excelentePonderacionInvalida}>
               <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
                 Puntaje
               </FieldLabel>
@@ -4635,8 +4709,11 @@ function CriterioItem({
                   }
                   onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
                 }}
+                onBlur={() => setTocoExcelentePonderacion(true)}
+                aria-invalid={excelentePonderacionInvalida}
                 disabled={disabled}
               />
+              {excelentePonderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
           {/* Tachito a la derecha del textarea — quita el bloque entero
@@ -4679,7 +4756,12 @@ function CriterioItem({
           el flag —así el textarea y el input quedan alineados a la
           derecha con un `gap` consistente. */}
       <ul className="mt-4 flex flex-col gap-3">
-        {criterio.niveles.map((nivel, nIndex) => (
+        {criterio.niveles.map((nivel, nIndex) => {
+          const descripcionInvalida =
+            (tocadosNivelDescripcion.has(nivel.id) || submissionAttempts > 0) && !nivel.descripcion.trim()
+          const ponderacionInvalida =
+            (tocadosNivelPonderacion.has(nivel.id) || submissionAttempts > 0) && nivel.ponderacion == null
+          return (
           <li
             key={nivel.id}
             className={cn(
@@ -4690,19 +4772,24 @@ function CriterioItem({
             )}
           >
             <p className="pt-2 text-sm font-semibold">{nivel.nombre}</p>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Describe el desempeño esperado en este nivel"
-              maxLength={500}
-              value={nivel.descripcion}
-              onChange={(e) => {
-                const next = criterio.niveles.slice()
-                next[nIndex] = { ...nivel, descripcion: e.target.value }
-                onChange({ ...criterio, niveles: next })
-              }}
-              disabled={disabled}
-            />
+            <Field data-invalid={descripcionInvalida}>
+              <Textarea
+                className={TEXTAREA_OUTLINED}
+                rows={2}
+                placeholder="Describe el desempeño esperado en este nivel"
+                maxLength={500}
+                value={nivel.descripcion}
+                onChange={(e) => {
+                  const next = criterio.niveles.slice()
+                  next[nIndex] = { ...nivel, descripcion: e.target.value }
+                  onChange({ ...criterio, niveles: next })
+                }}
+                onBlur={() => marcarNivelDescripcionTocado(nivel.id)}
+                aria-invalid={descripcionInvalida}
+                disabled={disabled}
+              />
+              {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+            </Field>
             {/* Input de ponderación por nivel — solo cuando la actividad es
                 sumativa. Mismo idioma visual que la ponderación del
                 criterio de arriba (size="sm" h-10, número con `min={0}`
@@ -4710,7 +4797,7 @@ function CriterioItem({
                 (opcional), así que al renderizarlo convertimos `undefined`
                 a "" para que el input no muestre "NaN". */}
             {esEvaluativa && (
-              <Field variant="outlined">
+              <Field variant="outlined" data-invalid={ponderacionInvalida}>
                 <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
                   Puntaje
                 </FieldLabel>
@@ -4746,8 +4833,11 @@ function CriterioItem({
                       ponderacion: maxPonderacionCriterio({ ...criterio, niveles: next }),
                     })
                   }}
+                  onBlur={() => marcarNivelPonderacionTocado(nivel.id)}
+                  aria-invalid={ponderacionInvalida}
                   disabled={disabled}
                 />
+                {ponderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
               </Field>
             )}
             <Tooltip>
@@ -4777,7 +4867,8 @@ function CriterioItem({
               <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
             </Tooltip>
           </li>
-        ))}
+          )
+        })}
       </ul>
 
       {/* Split-button con Input + botón al borde derecho (la captura los

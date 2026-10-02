@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { queryClient } from "@/lib/query-client"
+import type { AuthResponse } from "@/types/api"
 
 declare module "axios" {
   export interface AxiosInstance {
@@ -242,7 +243,7 @@ api.interceptors.response.use(
   // El response interceptor desenvuelve `response.data` — todas las llamadas
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
   (response) => response.data,
-  (error) => {
+  async (error) => {
     // /auth/refresh se llama para *comprobar* si hay sesión (no hay /auth/me
     // en el backend real) — un 401 ahí es una respuesta normal ("no
     // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
@@ -255,7 +256,7 @@ api.interceptors.response.use(
     // Sin guard, un 401 en /login mismo (todavía no existe esa página)
     // reintentaría redirigir a /login en loop infinito.
     const onLoginPage = window.location.pathname === paths.auth.login.path
-    const isExpiredSession = isUnauthorized && !onLoginPage && !isPublicEndpoint
+    let isExpiredSession = isUnauthorized && !onLoginPage && !isPublicEndpoint
 
     // El backend dice explícitamente que el token no sirve (vencido, mal
     // firmado, revocado). Hay que soltarlo SIEMPRE, incluso en la pantalla de
@@ -268,6 +269,28 @@ api.interceptors.response.use(
       setAuthToken(null)
     }
 
+    // Un 403 fuera de login/públicos es ambiguo: puede ser "de verdad no
+    // tenés permiso para esto" o "tu sesión ya no es la que el backend
+    // reconoce" (p. ej. alguien te cambió el correo desde Funcionarios
+    // mientras tenías la sesión abierta en otra pestaña — el bug de QA que
+    // dio origen a esto). El backend no distingue los dos casos con el
+    // status: acá se revalida contra /auth/refresh antes de decidir cuál
+    // toast mostrar, en vez de dejar que la persona vea varios "no tenés
+    // acceso" sueltos hasta que ALGO más adelante dispare el cierre real.
+    // Nunca se repite para /auth/refresh en sí (está en PUBLIC_ENDPOINTS,
+    // nunca llega hasta acá) ni mientras ya se está resolviendo una sesión
+    // vencida (evita pedir el refresh una vez por cada request que venía
+    // en vuelo).
+    const isForbidden = error.response?.status === 403
+    if (isForbidden && !onLoginPage && !isPublicEndpoint && !isHandlingExpiredSession) {
+      try {
+        const { token }: AuthResponse = await api.post("/auth/refresh")
+        setAuthToken(token)
+      } catch {
+        isExpiredSession = true
+      }
+    }
+
     // Una sesión caída hace fallar *todas* las queries en vuelo a la vez.
     // Sin este latch salía un toast y un `window.location.href` por cada
     // una. El latch no se resetea: la redirección recarga la página entera
@@ -278,7 +301,7 @@ api.interceptors.response.use(
 
     const isProbe = PROBE_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
 
-    if (!isProbe && !suppressGlobalErrorToast) {
+    if (!isProbe && !suppressGlobalErrorToast && !isExpiredSession) {
       toast.error(getErrorMessage(error))
     }
 
