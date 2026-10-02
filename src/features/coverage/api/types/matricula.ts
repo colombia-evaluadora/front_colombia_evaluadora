@@ -93,6 +93,9 @@ export interface MatriculaMutationResult {
 }
 
 export interface MatriculaDetails extends CreateMatriculaInput {
+  /** La sede exacta de la matrícula: de ella sale el colegio cuya
+   *  configuración de campos aplica (el nombre puede repetirse). */
+  sedeId?: number | null
   status: MatriculaStatus
   pkTpadre: number | null
   pkUsuarioEstudiante: number | null

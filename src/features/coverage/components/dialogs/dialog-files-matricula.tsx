@@ -9,6 +9,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
+import { useEstablecimientoDeSede } from "@/features/coverage/api/query/use-establecimiento-de-sede"
 import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
 import { addMatriculaDocumento } from "@/features/coverage/api/mutations/add-matricula-documento"
 import { buildMatriculaFieldSettings, isFieldVisible } from "@/features/coverage/utils/matricula-field-settings"
@@ -52,7 +53,15 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   // Solo se pide mientras el sheet está abierto -- evita una consulta por
   // fila de la tabla apenas se renderiza.
   const { data } = useMatriculaDetailQuery(open ? matricula.id : undefined)
-  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  // La configuración de campos es la del colegio de la sede de la matrícula.
+  const colegio = useEstablecimientoDeSede({
+    sedeId: data?.details?.sedeId,
+    sedeNombre: data?.details?.academic.campus,
+  })
+  const { data: fieldConfig } = useMatriculaFieldConfigQuery({
+    establecimientoId: colegio.establecimientoId,
+    enabled: open && colegio.resuelto,
+  })
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],

@@ -18,6 +18,7 @@ import { coberturaMatriculaEditarRoute } from "@/router"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
+import { useEstablecimientoDeSede } from "@/features/coverage/api/query/use-establecimiento-de-sede"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useUpdateMatricula } from "@/features/coverage/api/mutations/update-matricula"
@@ -83,10 +84,15 @@ function MatriculaEditPageContent() {
   const { notify, dismiss } = useNotify()
   const { user } = useAuth()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
+  // La configuración de campos es la del colegio de la sede de la matrícula.
+  const colegio = useEstablecimientoDeSede({
+    sedeId: data?.details?.sedeId,
+    sedeNombre: data?.details?.academic.campus,
+  })
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
-    useMatriculaFieldConfigQuery()
+    useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],

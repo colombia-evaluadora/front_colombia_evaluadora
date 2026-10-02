@@ -172,6 +172,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
   }
 
   const details: MatriculaDetails = {
+    sedeId: m.fk_tsede ?? null,
     status,
     pkTpadre: m.fk_tpadre,
     pkUsuarioEstudiante: est.fk_tusuario,
