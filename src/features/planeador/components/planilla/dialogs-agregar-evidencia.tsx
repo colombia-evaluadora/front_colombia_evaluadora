@@ -94,7 +94,7 @@ export function DialogSubirEvidencia({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Subir evidencia</DialogTitle>
           <DialogDescription>
