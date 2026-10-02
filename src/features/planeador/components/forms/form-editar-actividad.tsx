@@ -4192,8 +4192,10 @@ function InstrumentoPersonalizadoSection({
       <form.Field name="instrumentoPersonalizado">
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
-          // Opción de entrega que dicta el tipo de evidencia; la otra queda
-          // deshabilitada y apagada (también al editar datos viejos con ambas).
+          // Opción de entrega que dicta el tipo de evidencia: ESA casilla
+          // queda siempre marcada y deshabilitada (Regla 41 — "la casilla
+          // activada queda siempre marcada"); la OTRA queda libre para que
+          // el docente la sume además si lo desea.
           const entregaPorTipo = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[value.tipoEvidenciaEsperada]
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
@@ -4309,17 +4311,17 @@ function InstrumentoPersonalizadoSection({
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereArchivo && entregaPorTipo !== "texto"}
+                      checked={entregaPorTipo === "archivo" || value.requiereArchivo}
                       onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
-                      disabled={disabled || entregaPorTipo === "texto"}
+                      disabled={disabled || entregaPorTipo === "archivo"}
                     />
                     El estudiante debe adjuntar un archivo
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereRespuestaTexto && entregaPorTipo !== "archivo"}
+                      checked={entregaPorTipo === "texto" || value.requiereRespuestaTexto}
                       onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
-                      disabled={disabled || entregaPorTipo === "archivo"}
+                      disabled={disabled || entregaPorTipo === "texto"}
                     />
                     El estudiante debe escribir una respuesta (texto)
                   </label>
