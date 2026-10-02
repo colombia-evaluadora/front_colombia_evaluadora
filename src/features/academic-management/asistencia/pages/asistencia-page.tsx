@@ -15,6 +15,7 @@ import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import { AsistenciaCambiosPendientesBanner } from "@/features/academic-management/asistencia/components/asistencia-cambios-pendientes-banner"
 import { AsistenciaSedeSelector } from "@/features/academic-management/asistencia/components/asistencia-sede-selector"
 import { AsistenciaMonthDayPicker } from "@/features/academic-management/asistencia/components/asistencia-month-day-picker"
 import { AsistenciaSummaryCards } from "@/features/academic-management/asistencia/components/asistencia-summary-cards"
@@ -43,7 +44,7 @@ export function AsistenciaPage() {
 
 function AsistenciaPageContent() {
   const { notify } = useNotify()
-  const { isDocente, esDocentePuro } = useAsistenciaAccess()
+  const { isDocente, esDocentePuro, puedeAprobar } = useAsistenciaAccess()
   const { data: sedes } = useSedesOpcionesQuery()
   const navigate = useNavigate()
   const search = asistenciaRoute.useSearch()
@@ -162,7 +163,7 @@ function AsistenciaPageContent() {
       // Una clase de varios bloques continuos es UNA sola sesión en la
       // grilla, pero cada bloque es su propia fila de TASISTENCIA -- marcar
       // solo `entry.bloque` (el primero) dejaba el resto sin registrar.
-      await Promise.all(
+      const solicitudes = await Promise.all(
         entry.bloques.map((bloque) =>
           registrar.mutateAsync({
             GRUPO: entry.fkGrupo,
@@ -174,7 +175,13 @@ function AsistenciaPageContent() {
           }),
         ),
       )
-      notify(`Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`)
+      const pendiente = solicitudes.some((s) => s.length > 0)
+      notify(
+        pendiente
+          ? `El período ya no es calificable: ${entry.grupo} · ${nombreSesion(entry)} quedó pendiente de aprobación del coordinador.`
+          : `Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`,
+        pendiente ? { variant: "info" } : undefined,
+      )
       setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
@@ -219,6 +226,8 @@ function AsistenciaPageContent() {
             <TooltipContent>Ir a Seguimiento</TooltipContent>
           </Tooltip>
         </div>
+
+        {puedeAprobar && <AsistenciaCambiosPendientesBanner />}
 
         <div className="mb-4">
           <AsistenciaSummaryCards resumen={resumen} />

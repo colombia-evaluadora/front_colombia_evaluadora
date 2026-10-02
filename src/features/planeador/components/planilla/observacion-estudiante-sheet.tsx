@@ -50,9 +50,9 @@ import {
   extensionEvidencia,
   validarEvidencia,
 } from "@/features/planeador/lib/observacion"
+import { useMomentoRegistroCatalog } from "@/features/planeador/api/query/use-momento-registro-catalog"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
-const MOMENTOS_REGISTRO = ["Inicio", "Proceso", "Cierre"] as const
 
 /** Evidencia que no es imagen (PDF, DOC…): tarjeta con ícono que la abre en otra pestaña. */
 function EvidenciaDocumento({ evidencia }: { evidencia: CeldaEvidencia }) {
@@ -121,8 +121,9 @@ export function ObservacionEstudianteSheet({
   actividadSinComenzar,
 }: ObservacionEstudianteSheetProps) {
   const [texto, setTexto] = useState("")
-  // "Momento": sin endpoint todavía, queda como borrador local sin persistir.
+  // "Momento": id de TLISTA_VALOR (MOMENTO_REGISTRO), borrador local sin persistir.
   const [momento, setMomento] = useState("")
+  const { data: momentos = [] } = useMomentoRegistroCatalog()
   const [copiado, setCopiado] = useState(false)
   const [errorPortapapeles, setErrorPortapapeles] = useState<string | null>(null)
 
@@ -296,12 +297,14 @@ export function ObservacionEstudianteSheet({
               </FieldLabel>
               <Select value={momento} onValueChange={(v) => setMomento(v ? String(v) : "")}>
                 <SelectTrigger id="momento-estudiante">
-                  <SelectValue>{(v) => (v ? String(v) : "Seleccione")}</SelectValue>
+                  <SelectValue>
+                    {(v) => momentos.find((m) => String(m.id) === v)?.nombre ?? "Seleccione"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {MOMENTOS_REGISTRO.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
+                  {momentos.map((m) => (
+                    <SelectItem key={m.id} value={String(m.id)}>
+                      {m.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>

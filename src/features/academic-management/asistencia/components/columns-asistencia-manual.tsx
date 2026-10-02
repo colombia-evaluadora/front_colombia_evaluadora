@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
 import { EyeIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
@@ -53,6 +54,8 @@ interface BuildColumnsParams {
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   bloqueTarde: Record<number, number>
   onBloqueTardeChange: (fkMatricula: number, bloque: number) => void
+  /** Regla 75: matrículas con un cambio esperando aprobación. */
+  conPendiente: Set<number>
 }
 
 export function buildColumnsAsistenciaManual({
@@ -68,6 +71,7 @@ export function buildColumnsAsistenciaManual({
   horasPorBloque,
   bloqueTarde,
   onBloqueTardeChange,
+  conPendiente,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
   const bloqueItems = Object.fromEntries(
     bloques.map((b) => {
@@ -85,7 +89,16 @@ export function buildColumnsAsistenciaManual({
       meta: { label: "Nombres" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
       enableHiding: false,
-      cell: ({ row }) => <span className="font-medium uppercase">{row.original.estudiante}</span>,
+      cell: ({ row }) => (
+        <span className="flex items-center gap-2">
+          <span className="font-medium uppercase">{row.original.estudiante}</span>
+          {conPendiente.has(row.original.fk_tmatricula) && (
+            <Badge variant="soft" color="orange">
+              Pendiente de aprobación
+            </Badge>
+          )}
+        </span>
+      ),
     },
     {
       id: "tipoAsistencia",

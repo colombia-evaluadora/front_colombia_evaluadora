@@ -100,8 +100,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   }
 
   return (
-    <div className="border-input overflow-hidden rounded-md border">
-      <table className="w-full table-fixed text-sm">
+    <div className="border-input scrollbar-slim overflow-x-auto rounded-md border">
+      <table className="w-full min-w-[1100px] table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           <tr>
             <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>

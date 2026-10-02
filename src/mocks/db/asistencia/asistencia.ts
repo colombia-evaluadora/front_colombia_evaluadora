@@ -1,4 +1,6 @@
 import type {
+  AsistenciaEditarRequest,
+  AsistenciaEditarResponse,
   AsistenciaQueryFilters,
   AsistenciaQueryRow,
   AsistenciaRegistrarRequest,
@@ -7,7 +9,9 @@ import type {
   ResumenHoras,
   RosterEstudiante,
   SesionCalendario,
+  SolicitudAprobacionAsistencia,
   TipoAsistencia,
+  ValorSolicitudAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 // `grupo` es el NOMBRE de TGRUPO ("02"), no el curso: el curso va aparte en
@@ -300,6 +304,7 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
           es_formativa: false,
           fk_tactividad: null,
           actividad: null,
+          cambio_pendiente: false,
           // Agrupación y ventanas las resuelve `generarSeguimiento` sobre el set
           // YA filtrado -- acá quedan en 0 como placeholder.
           pks: [],
@@ -354,6 +359,7 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         es_formativa: true,
         fk_tactividad: actividad.fk_tactividad,
         actividad: actividad.actividad,
+        cambio_pendiente: false,
         pks: [],
         registros: 0,
         bloques: [],
@@ -457,6 +463,7 @@ export function generarSeguimiento(
     const override = editOverrides.get(row.pk_tasistencia)
     return override ? { ...row, ...override } : row
   })
+  for (const row of rows) filasSeguimiento.set(row.pk_tasistencia, row)
 
   if (filters.FECHA_DESDE) rows = rows.filter((r) => r.fecha >= filters.FECHA_DESDE!)
   if (filters.FECHA_HASTA) rows = rows.filter((r) => r.fecha <= filters.FECHA_HASTA!)
@@ -517,6 +524,7 @@ export function generarSeguimiento(
     ausentes,
     tarde,
     total_count: agrupadas.length,
+    cambio_pendiente: r.pks.some((pk) => solicitudPorAsistencia.has(pk)),
   }))
 }
 
@@ -545,6 +553,15 @@ interface RegistroManual {
   observacion: string | null
   fk_soporte_archivo: number | null
   soporte_nombre: string | null
+  /** Para que el PATCH arme la solicitud con grupo, materia y fecha. */
+  contexto: {
+    fkMatricula: number
+    fkGrupo: number
+    fecha: string
+    bloque: number | null
+    asignatura?: number
+    actividad?: number
+  }
 }
 
 // ── Subida de soporte (paso 1 de 2, POST /files/eval-col/tmp-icono-simbolo) ─
@@ -584,9 +601,9 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
   ).length
 
   return base.map((est) => {
-    const registro = registrosManuales.get(
-      claveRegistroManual(est.fkMatricula, params.GRUPO, identidad, params.FECHA, bloque),
-    )
+    const clave = claveRegistroManual(est.fkMatricula, params.GRUPO, identidad, params.FECHA, bloque)
+    const registro = registrosManuales.get(clave)
+    const solicitud = solicitudPendienteDe(registro?.pk_tasistencia ?? altasPendientes.get(clave) ?? null)
     return {
       fk_tmatricula: est.fkMatricula,
       fk_testudiante: est.fkMatricula,
@@ -601,47 +618,330 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
       hora_inicio: null,
       hora_fin: null,
       fk_tperiodo_evaluacion: 1,
+      periodo_calificable: periodoCalificable(params.FECHA),
+      // Pedidos al backend: hoy no vienen en el padrón real.
+      pk_tsolicitud_aprobacion: solicitud?.fila.pk_tsolicitud_aprobacion ?? null,
+      cambio_tipo_asistencia_valor:
+        solicitud?.fila.valor_propuesto.tipoAsistencia != null
+          ? (Number(solicitud.fila.valor_propuesto.tipoAsistencia) as TipoAsistencia)
+          : null,
       total_estudiantes: base.length,
       registrados,
     }
   })
 }
 
-/** POST /asistencias/registrar -- persiste `MARCAR_TODOS`/`REGISTROS` en `registrosManuales` y marca la sesión. */
-export function registrarAsistenciaManual(body: AsistenciaRegistrarRequest): number {
+/**
+ * POST /asistencias/registrar -- persiste `MARCAR_TODOS`/`REGISTROS` en
+ * `registrosManuales` y marca la sesión. Regla 75, como el backend: en período
+ * no calificable no escribe; corregir o capturar tarde abre solicitudes.
+ * `directo` solo lo usa la semilla.
+ */
+export function registrarAsistenciaManual(
+  body: AsistenciaRegistrarRequest,
+  directo = false,
+): { registros_afectados: number; solicitudes_pendientes: number[] } {
   const identidad = body.ASIGNATURA ?? body.ACTIVIDAD ?? 0
   const bloque = body.ASIGNATURA != null ? (body.BLOQUE ?? 1) : 0
-  marcarSesionRegistrada(body.GRUPO, identidad, body.FECHA, bloque)
+  const cerrado = !directo && !periodoCalificable(body.FECHA)
+  const resultado = { registros_afectados: 0, solicitudes_pendientes: [] as number[] }
 
   function guardar(fkMatricula: number, tipo: TipoAsistencia, observacion?: string | null, fkArchivo?: unknown) {
     const key = claveRegistroManual(fkMatricula, body.GRUPO, identidad, body.FECHA, bloque)
     const existente = registrosManuales.get(key)
-    const tieneArchivoNuevo = fkArchivo != null
-    registrosManuales.set(key, {
-      pk_tasistencia: existente?.pk_tasistencia ?? siguientePkManual++,
-      tipo_asistencia_valor: tipo,
-      observacion: observacion ?? existente?.observacion ?? null,
-      fk_soporte_archivo: tieneArchivoNuevo ? Number(fkArchivo) : (existente?.fk_soporte_archivo ?? null),
-      soporte_nombre: tieneArchivoNuevo
-        ? (archivosSubidos.get(Number(fkArchivo)) ?? "soporte.pdf")
-        : (existente?.soporte_nombre ?? null),
-    })
+    const archivo = fkArchivo != null ? Number(fkArchivo) : null
+    const contexto = {
+      fkMatricula,
+      fkGrupo: body.GRUPO,
+      fecha: body.FECHA,
+      bloque: body.ASIGNATURA != null ? bloque : null,
+      asignatura: body.ASIGNATURA,
+      actividad: body.ACTIVIDAD,
+    }
+    const escribir = (pk?: number) => {
+      marcarSesionRegistrada(body.GRUPO, identidad, body.FECHA, bloque)
+      registrosManuales.set(key, {
+        pk_tasistencia: existente?.pk_tasistencia ?? pk ?? siguientePkManual++,
+        tipo_asistencia_valor: tipo,
+        observacion: observacion ?? existente?.observacion ?? null,
+        fk_soporte_archivo: archivo ?? existente?.fk_soporte_archivo ?? null,
+        soporte_nombre: archivo != null
+          ? (archivosSubidos.get(archivo) ?? "soporte.pdf")
+          : (existente?.soporte_nombre ?? null),
+        contexto,
+      })
+    }
+
+    if (!cerrado) {
+      escribir()
+      resultado.registros_afectados++
+      return
+    }
+
+    if (existente) {
+      const cambia = tipo !== existente.tipo_asistencia_valor || (archivo != null && archivo !== existente.fk_soporte_archivo)
+      if (!cambia) return
+      const r = editarAsistencia(existente.pk_tasistencia, {
+        TIPO_ASISTENCIA: tipo,
+        ...(archivo != null && { SOPORTE_ARCHIVO: archivo }),
+      })
+      if (r) resultado.solicitudes_pendientes.push(...r.solicitudes_pendientes)
+      return
+    }
+
+    // Captura tardía: la fila "espera" sin escribirse, como la inactiva del backend.
+    const pkAlta = altasPendientes.get(key) ?? siguientePkManual++
+    altasPendientes.set(key, pkAlta)
+    resultado.solicitudes_pendientes.push(
+      abrirSolicitud(
+        pkAlta,
+        { ...sesionDeContexto(contexto), anterior: { tipoAsistencia: null, observacion: null, soporteArchivo: null, fecha: body.FECHA, bloque: contexto.bloque } },
+        { alta: true, tipoAsistencia: tipo, observacion: observacion ?? null, soporteArchivo: archivo },
+        () => {
+          altasPendientes.delete(key)
+          escribir(pkAlta)
+        },
+      ),
+    )
   }
 
   if (body.REGISTROS?.length) {
-    for (const r of body.REGISTROS) {
-      guardar(r.fkMatricula, r.tipoAsistencia, r.observacion, r.fkArchivo)
-    }
-    return body.REGISTROS.length
+    for (const r of body.REGISTROS) guardar(r.fkMatricula, r.tipoAsistencia, r.observacion, r.fkArchivo)
+  } else if (body.MARCAR_TODOS != null) {
+    for (const est of padronBaseGrupo(body.GRUPO)) guardar(est.fkMatricula, body.MARCAR_TODOS)
   }
-
-  if (body.MARCAR_TODOS != null) {
-    const base = padronBaseGrupo(body.GRUPO)
-    for (const est of base) {
-      guardar(est.fkMatricula, body.MARCAR_TODOS)
-    }
-    return base.length
-  }
-
-  return 0
+  return resultado
 }
+
+// ── Regla 75: solicitudes de aprobación (V496.18-21) ───────────────────────
+
+/** El mock da por No calificable todo lo anterior al día 8 del mes actual. */
+export function periodoCalificable(fecha: string): boolean {
+  const hoy = new Date()
+  const corte = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-08`
+  return fecha.slice(0, 10) >= corte
+}
+
+interface SolicitudMock {
+  fila: SolicitudAprobacionAsistencia
+  aplicar: () => void
+}
+
+const solicitudes = new Map<number, SolicitudMock>()
+// Una pendiente por registro: la propuesta nueva reemplaza la anterior.
+const solicitudPorAsistencia = new Map<number, number>()
+let siguientePkSolicitud = 5900
+const DOCENTE_MOCK = "Carlos Mejía"
+
+// Capturas tardías pendientes por clave de sesión, con el pk que tendrán al aprobarse.
+const altasPendientes = new Map<string, number>()
+
+// Filas de Seguimiento por pk: el PATCH no manda la sede para regenerarlas.
+const filasSeguimiento = new Map<number, AsistenciaQueryRow>()
+
+function solicitudPendienteDe(pkTasistencia: number | null): SolicitudMock | undefined {
+  if (pkTasistencia == null) return undefined
+  const pk = solicitudPorAsistencia.get(pkTasistencia)
+  return pk != null ? solicitudes.get(pk) : undefined
+}
+
+interface RegistroEditable {
+  fecha: string
+  fkMatricula: number | null
+  bloque: number | null
+  fkGrupo: number
+  asignatura: string | null
+  fkAsignatura: number | null
+  actividad: string | null
+  fkActividad: number | null
+  estudiante: string
+  anterior: ValorSolicitudAsistencia
+  aplicar: (body: AsistenciaEditarRequest) => void
+}
+
+type ContextoRegistro = RegistroManual["contexto"]
+
+/** Grupo, materia y estudiante de un registro manual, para armar su solicitud. */
+function sesionDeContexto(c: ContextoRegistro): Omit<RegistroEditable, "anterior" | "aplicar"> {
+  return {
+    fecha: c.fecha,
+    fkMatricula: c.fkMatricula,
+    bloque: c.bloque,
+    fkGrupo: c.fkGrupo,
+    asignatura: ASIGNATURAS.find((a) => a.fk_asignatura === c.asignatura)?.asignatura ?? null,
+    fkAsignatura: c.asignatura ?? null,
+    actividad: ACTIVIDADES.find((a) => a.fk_tactividad === c.actividad)?.actividad ?? null,
+    fkActividad: c.actividad ?? null,
+    estudiante: padronBaseGrupo(c.fkGrupo).find((e) => e.fkMatricula === c.fkMatricula)?.nombre ?? "",
+  }
+}
+
+function buscarRegistro(pk: number): RegistroEditable | null {
+  for (const registro of registrosManuales.values()) {
+    if (registro.pk_tasistencia !== pk) continue
+    const c = registro.contexto
+    return {
+      ...sesionDeContexto(c),
+      anterior: {
+        tipoAsistencia: String(registro.tipo_asistencia_valor),
+        observacion: registro.observacion,
+        soporteArchivo: registro.fk_soporte_archivo,
+        fecha: c.fecha,
+        bloque: c.bloque,
+      },
+      aplicar: (body) => {
+        if (body.TIPO_ASISTENCIA != null) registro.tipo_asistencia_valor = body.TIPO_ASISTENCIA
+        if (body.LIMPIAR_OBSERVACION) registro.observacion = null
+        else if (body.OBSERVACION != null) registro.observacion = body.OBSERVACION
+        if (body.LIMPIAR_ARCHIVO) {
+          registro.fk_soporte_archivo = null
+          registro.soporte_nombre = null
+        } else if (body.SOPORTE_ARCHIVO != null) {
+          registro.fk_soporte_archivo = body.SOPORTE_ARCHIVO
+          registro.soporte_nombre = archivosSubidos.get(body.SOPORTE_ARCHIVO) ?? "soporte.pdf"
+        }
+      },
+    }
+  }
+
+  const fila = filasSeguimiento.get(pk)
+  if (!fila) return null
+  const grupo = [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === fila.grupo)
+  return {
+    fecha: fila.fecha,
+    fkMatricula: null,
+    bloque: fila.bloque,
+    fkGrupo: grupo?.fk_grupo ?? 0,
+    asignatura: fila.es_formativa ? null : fila.asignatura,
+    fkAsignatura: fila.es_formativa
+      ? null
+      : (ASIGNATURAS.find((a) => a.asignatura === fila.asignatura)?.fk_asignatura ?? null),
+    actividad: fila.actividad,
+    fkActividad: fila.fk_tactividad,
+    estudiante: fila.estudiante,
+    anterior: {
+      tipoAsistencia: String(fila.tipo_asistencia_valor),
+      observacion: fila.observacion,
+      soporteArchivo: fila.fk_soporte_archivo,
+      fecha: fila.fecha,
+      bloque: fila.bloque,
+    },
+    aplicar: (body) =>
+      aplicarEdicionAsistencia(pk, {
+        ...(body.TIPO_ASISTENCIA != null && {
+          tipo_asistencia_valor: body.TIPO_ASISTENCIA,
+          tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[body.TIPO_ASISTENCIA],
+        }),
+        ...(body.LIMPIAR_OBSERVACION
+          ? { observacion: null }
+          : body.OBSERVACION != null && { observacion: body.OBSERVACION }),
+        ...(body.LIMPIAR_ARCHIVO && { tiene_soporte: false, fk_soporte_archivo: null, soporte_nombre: null }),
+      }),
+  }
+}
+
+/** PATCH /asistencias/:ID -- en período no calificable abre (o reemplaza) la solicitud (fn_asistencia_editar, V138). */
+export function editarAsistencia(pk: number, body: AsistenciaEditarRequest): AsistenciaEditarResponse | null {
+  const registro = buscarRegistro(pk)
+  if (!registro) return null
+  if (periodoCalificable(registro.fecha)) {
+    registro.aplicar(body)
+    return { pk_tasistencia: pk, solicitudes_pendientes: [] }
+  }
+
+  const pkSolicitud = abrirSolicitud(
+    pk,
+    registro,
+    {
+      tipoAsistencia: body.TIPO_ASISTENCIA ?? null,
+      observacion: body.OBSERVACION ?? null,
+      soporteArchivo: body.SOPORTE_ARCHIVO ?? null,
+      limpiarArchivo: body.LIMPIAR_ARCHIVO ?? false,
+      limpiarObservacion: body.LIMPIAR_OBSERVACION ?? false,
+    },
+    () => registro.aplicar(body),
+  )
+  return { pk_tasistencia: pk, solicitudes_pendientes: [pkSolicitud] }
+}
+
+/** Abre o reemplaza la pendiente del registro `pk` (una por registro). */
+function abrirSolicitud(
+  pk: number,
+  registro: Omit<RegistroEditable, "aplicar">,
+  propuesto: ValorSolicitudAsistencia,
+  aplicar: () => void,
+): number {
+  const pkSolicitud = solicitudPorAsistencia.get(pk) ?? siguientePkSolicitud++
+  solicitudPorAsistencia.set(pk, pkSolicitud)
+  solicitudes.set(pkSolicitud, {
+    aplicar,
+    fila: {
+      pk_tsolicitud_aprobacion: pkSolicitud,
+      tipo: "CORRECCION_ASISTENCIA",
+      estado: "PENDIENTE",
+      tabla_objeto: "TASISTENCIA",
+      fk_objeto: pk,
+      fk_tgrupo: registro.fkGrupo,
+      grupo: [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.fk_grupo === registro.fkGrupo)?.grupo ?? "",
+      fk_tasignatura: registro.fkAsignatura,
+      asignatura: registro.asignatura,
+      fk_tperiodo_evaluacion: 1,
+      periodo_evaluacion: "Primer periodo",
+      fk_tactividad: registro.fkActividad,
+      actividad: registro.actividad,
+      estudiante: registro.estudiante,
+      valor_anterior: registro.anterior,
+      valor_propuesto: propuesto,
+      solicitante: DOCENTE_MOCK,
+      fecha_solicitud: new Date().toISOString(),
+      motivo: null,
+      fk_tmatricula: registro.fkMatricula,
+      fecha: registro.fecha.slice(0, 10),
+      bloque: registro.bloque,
+    },
+  })
+  return pkSolicitud
+}
+
+/** GET /aprobaciones/pendientes */
+export function listarSolicitudes(tipo: string | null): SolicitudAprobacionAsistencia[] {
+  return [...solicitudes.values()].map((s) => s.fila).filter((s) => tipo == null || s.tipo === tipo)
+}
+
+/** POST /aprobaciones/:ID/aprobar|rechazar -- `null` = no existe (404). */
+export function resolverSolicitud(pk: number, aprobar: boolean): Record<string, unknown> | null {
+  const solicitud = solicitudes.get(pk)
+  if (!solicitud) return null
+  if (aprobar) solicitud.aplicar()
+  solicitudes.delete(pk)
+  solicitudPorAsistencia.delete(solicitud.fila.fk_objeto)
+  return aprobar
+    ? {
+        pkSolicitud: pk,
+        estado: "APROBADA",
+        tipo: solicitud.fila.tipo,
+        resultado: { aplicada: true, pk_tasistencia: solicitud.fila.fk_objeto },
+        informeDesactualizado: false,
+      }
+    : { pkSolicitud: pk, estado: "RECHAZADA", valorVigente: solicitud.fila.valor_anterior }
+}
+
+// Semilla: una clase de dos bloques del docente en el mes anterior con dos
+// correcciones pendientes, para ver el banner sin pasar antes por el docente.
+function sembrarSolicitudesDemo(): void {
+  const hoy = new Date()
+  const mesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
+  const sesion = generarSesionesMes(0, mesAnterior.getFullYear(), mesAnterior.getMonth() + 1).find(
+    (s) => GRUPOS_DEL_DOCENTE.includes(s.fk_grupo) && s.bloque === 1,
+  )
+  if (!sesion) return
+  for (const bloque of [1, 2]) {
+    const params = { GRUPO: sesion.fk_grupo, ASIGNATURA: sesion.fk_asignatura, FECHA: sesion.fecha, BLOQUE: bloque }
+    registrarAsistenciaManual({ ...params, MARCAR_TODOS: 1 }, true)
+    for (const est of generarEstudiantesSesion(params).slice(0, 2)) {
+      if (est.pk_tasistencia != null) editarAsistencia(est.pk_tasistencia, { TIPO_ASISTENCIA: 2 })
+    }
+  }
+}
+
+sembrarSolicitudesDemo()
