@@ -119,9 +119,9 @@ interface DialogGenerarBoletinProps {
   grupoId: number | null
   /** Un solo período: un boletín es de un período. */
   periodos: number[]
-  /** Las matrículas seleccionadas en la tabla: un boletín es de un estudiante. */
+  /** Las matrículas seleccionadas en la tabla: todas van en el mismo PDF. */
   matriculas: number[]
-  /** Falso mientras no haya exactamente un período y un estudiante. */
+  /** Falso mientras no haya exactamente un período y al menos un estudiante. */
   listo: boolean
   /** El boletín en PDF solo sabe imprimir dimensiones cualitativas (ver
    *  `boletin-preescolar.md`): sobre un grupo numérico el backend igual
@@ -130,8 +130,8 @@ interface DialogGenerarBoletinProps {
 }
 
 /**
- * EL BOLETÍN. No es la tabla exportada: es el PDF armado aparte —una página
- * por (estudiante, asignatura/dimensión), con foto, evidencias y fondo
+ * EL BOLETÍN. No es la tabla exportada: es el PDF armado aparte —un boletín
+ * por estudiante, uno detrás de otro, con foto, evidencias y fondo
  * institucional— que arma `/reportes/boletin-preescolar` (ver
  * `boletin-preescolar.md`). Por eso no comparte el diálogo de PDF/Excel de
  * `DialogDescarga`: solo hay un formato, así que el botón dispara directo.
@@ -154,10 +154,11 @@ export function DialogGenerarBoletin({
   })
 
   const puede = listo && esPreescolar && grupoId != null
+  const varios = matriculas.length > 1
 
   function handleClick() {
     if (!puede || grupoId == null) return
-    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaId: matriculas[0] })
+    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaIds: matriculas })
   }
 
   return (
@@ -180,15 +181,17 @@ export function DialogGenerarBoletin({
           ) : (
             <FileTextIcon data-icon="inline-start" />
           )}
-          Generar boletín
+          {varios ? `Generar ${matriculas.length} boletines` : "Generar boletín"}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
         {!listo
-          ? "Selecciona un único período arriba y un estudiante en la tabla para generar su boletín."
+          ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
           : !esPreescolar
             ? "El boletín en PDF solo está disponible para preescolar."
-            : "Generar el boletín del estudiante seleccionado"}
+            : varios
+              ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
+              : "Generar el boletín del estudiante seleccionado."}
       </TooltipContent>
     </Tooltip>
   )
