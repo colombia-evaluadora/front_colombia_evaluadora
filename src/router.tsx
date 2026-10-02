@@ -479,6 +479,8 @@ export const coberturaMatriculaAgregarRoute = createRoute({
 export const coberturaMatriculaEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatriculaEditar.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: matriculaSearchSchema,
   staticData: {
     breadcrumb: [
       COBERTURA_CRUMB,
@@ -511,6 +513,8 @@ export const coberturaMatriculaConfiguracionRoute = createRoute({
 export const coberturaMatriculaDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatriculaDetalle.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: matriculaSearchSchema,
   staticData: {
     breadcrumb: [
       COBERTURA_CRUMB,
@@ -623,6 +627,8 @@ export const employeesRoute = createRoute({
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: establishmentsSearchSchema,
   staticData: {
     breadcrumb: [
       ESTABLECIMIENTO_CRUMB,
@@ -636,6 +642,8 @@ export const addEstablishmentRoute = createRoute({
 export const editEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: establishmentsSearchSchema,
   // El `establishmentId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [

@@ -73,7 +73,7 @@ function MatriculaDetailPageContent() {
         <TableScreenTitle
           action={
             <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} />}
+              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => prev} />}
               variant="fill"
               color="neutral"
               size="sm"

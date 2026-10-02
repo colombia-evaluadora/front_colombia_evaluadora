@@ -168,7 +168,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
                 color="neutral"
                 size="icon-sm"
                 aria-label={`Ver ${row.original.firstName} ${row.original.lastName}`}
-                render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} />}
+                render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} search={(prev) => prev} />}
                 nativeButton={false}
               />
             }
@@ -187,7 +187,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
                   color="neutral"
                   size="icon-sm"
                   aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-                  render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} />}
+                  render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} search={(prev) => prev} />}
                   nativeButton={false}
                 />
               }
