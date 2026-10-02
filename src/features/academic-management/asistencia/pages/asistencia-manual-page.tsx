@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -20,6 +20,7 @@ import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
+import { useAsistenciaEditarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { buildColumnsAsistenciaManual } from "@/features/academic-management/asistencia/components/columns-asistencia-manual"
@@ -171,10 +172,23 @@ function registroAutoritativo(
   return candidato
 }
 
+/** Regla 75: con una solicitud pendiente el docente ve lo que propuso, no lo oficial. */
+function conCambioPendiente(row: RosterEstudiante): RosterEstudiante {
+  if (row.pk_tsolicitud_aprobacion == null || row.cambio_tipo_asistencia_valor == null) return row
+  return { ...row, tipo_asistencia_valor: row.cambio_tipo_asistencia_valor }
+}
+
+/** Hay algo que corregir respecto a lo que la pantalla ya muestra para ese registro. */
+function cambiaRegistro(registro: AsistenciaRegistroManual, actual: RosterEstudiante, quitaSoporte: boolean): boolean {
+  // 3/6 históricos equivalen a 2/5: la excusa es el archivo.
+  const tipoActual = actual.tipo_asistencia_valor == null ? null : tipoBase(actual.tipo_asistencia_valor)
+  return tipoBase(registro.tipoAsistencia) !== tipoActual || registro.fkArchivo instanceof File || quitaSoporte
+}
+
 function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string }) {
   const { notify } = useNotify()
   const {
-    porBloque: rosterPorBloque,
+    porBloque: rosterOficial,
     isPending,
     isError,
     error,
@@ -191,6 +205,26 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     },
     sesion.bloques,
   )
+  const rosterPorBloque = React.useMemo(
+    () => new Map([...rosterOficial].map(([bloque, rows]) => [bloque, rows.map(conCambioPendiente)])),
+    [rosterOficial],
+  )
+  // `periodo_calificable` y la solicitud en el padrón todavía no los manda el backend.
+  const periodoCerrado = [...rosterOficial.values()].some((rows) => rows.some((r) => r.periodo_calificable === false))
+  // Lo que el PATCH devolvió pendiente en esta sesión: hoy es la única señal para el badge.
+  const [pendientesLocales, setPendientesLocales] = React.useState<Set<number>>(new Set())
+  // String estable para no rearmar las columnas en cada render.
+  const clavePendientes = [
+    ...pendientesLocales,
+    ...[...rosterOficial.values()].flatMap((rows) =>
+      rows.filter((r) => r.pk_tsolicitud_aprobacion != null).map((r) => r.fk_tmatricula),
+    ),
+  ].join(",")
+  const conPendiente = React.useMemo(
+    () => new Set(clavePendientes ? clavePendientes.split(",").map(Number) : []),
+    [clavePendientes],
+  )
+  const editar = useAsistenciaEditarMutation()
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
@@ -285,8 +319,10 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         bloqueTarde,
         onBloqueTardeChange: (fkMatricula, bloque) =>
           setBloqueTarde((prev) => ({ ...prev, [fkMatricula]: bloque })),
+        conPendiente,
       }),
     [
+      conPendiente,
       fecha,
       sesion.horaInicio,
       sesion.horaFin,
@@ -371,19 +407,67 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     )
     const seleccionGuardada = seleccionLista
     setAutoguardando(true)
+    // Regla 75: `registrar` hace upsert sin pedir aprobación (V138), así que
+    // un registro que ya existe se corrige por PATCH, que es el que la pide.
+    // Lo que ya quedó propuesto en esta sesión no se vuelve a mandar.
+    const yaPropuesto = (registro: AsistenciaRegistroManual) =>
+      pendientesLocales.has(registro.fkMatricula) &&
+      tipoBase(registro.tipoAsistencia) === baseline.current[registro.fkMatricula] &&
+      !(registro.fkArchivo instanceof File)
+    const nuevos = new Map<number | null, AsistenciaRegistroManual[]>()
+    const correcciones: { fkMatricula: number; pk: number; registro: AsistenciaRegistroManual }[] = []
+    for (const [bloque, registros] of porBloque) {
+      for (const registro of registros) {
+        const actual = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === registro.fkMatricula)
+        if (actual?.pk_tasistencia == null) {
+          // Una captura tardía que ya espera aprobación no se reenvía igual.
+          const yaPendiente = actual?.pk_tsolicitud_aprobacion != null && !cambiaRegistro(registro, actual, false)
+          if (!yaPendiente && !yaPropuesto(registro)) nuevos.set(bloque, [...(nuevos.get(bloque) ?? []), registro])
+        } else if (
+          cambiaRegistro(registro, actual, soporteEliminado[registro.fkMatricula] ?? false) &&
+          !yaPropuesto(registro)
+        ) {
+          correcciones.push({ fkMatricula: registro.fkMatricula, pk: actual.pk_tasistencia, registro })
+        }
+      }
+    }
     try {
-      await Promise.all(
-        [...porBloque.entries()].map(([bloque, registros]) =>
-          registrar.mutateAsync({
-            GRUPO: sesion.fkGrupo,
-            FECHA: fecha,
-            REGISTROS: registros,
-            ...(sesion.esFormativa
-              ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
-              : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
+      const [altas, solicitudes] = await Promise.all([
+        Promise.all(
+          [...nuevos.entries()].map(async ([bloque, registros]) => {
+            // Captura tardía en período cerrado: también queda pendiente (Regla 75).
+            const pendientes = await registrar.mutateAsync({
+              GRUPO: sesion.fkGrupo,
+              FECHA: fecha,
+              REGISTROS: registros,
+              ...(sesion.esFormativa
+                ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
+                : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
+            })
+            return pendientes.length > 0 ? registros.map((r) => r.fkMatricula) : []
           }),
         ),
-      )
+        Promise.all(
+          correcciones.map(async ({ fkMatricula, pk, registro }) => {
+            const pendientes = await editar.mutateAsync({
+              pks: [pk],
+              body: {
+                TIPO_ASISTENCIA: registro.tipoAsistencia,
+                ...(registro.fkArchivo instanceof File && { SOPORTE_ARCHIVO: registro.fkArchivo }),
+                ...(soporteEliminado[fkMatricula] && { LIMPIAR_ARCHIVO: true }),
+              },
+            })
+            return pendientes.length > 0 ? fkMatricula : null
+          }),
+        ),
+      ])
+      const quedaronPendientes = [...altas.flat(), ...solicitudes.filter((fk): fk is number => fk !== null)]
+      if (quedaronPendientes.length > 0) {
+        setPendientesLocales((prev) => new Set([...prev, ...quedaronPendientes]))
+        notify("El período ya no es calificable: los cambios quedaron pendientes de aprobación del coordinador.", {
+          variant: "info",
+        })
+      }
       baseline.current = { ...baseline.current, ...seleccionGuardada }
       bloqueTardeBaseline.current = {
         ...bloqueTardeBaseline.current,
@@ -453,6 +537,16 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         </Button>
       </div>
 
+      {periodoCerrado && (
+        <div role="status" className="flex items-start gap-2 rounded-md border border-orange-stroke bg-orange-22 px-4 py-3 text-sm">
+          <InfoIcon className="mt-0.5 size-4 shrink-0 text-orange" />
+          <p className="text-muted-foreground">
+            <span className="font-semibold text-foreground">El período ya no es calificable.</span> Lo que
+            registres o corrijas queda pendiente hasta que el coordinador académico lo apruebe.
+          </p>
+        </div>
+      )}
+
       <DataTable
         table={table}
         isPending={isPending}
@@ -506,11 +600,11 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
             type="button"
             color="primary"
             size="sm"
-            disabled={registrar.isPending}
-            aria-busy={registrar.isPending}
+            disabled={registrar.isPending || editar.isPending}
+            aria-busy={registrar.isPending || editar.isPending}
             onClick={handleGuardar}
           >
-            {registrar.isPending ? (
+            {registrar.isPending || editar.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
               <CheckIcon data-icon="inline-start" />
@@ -588,7 +682,7 @@ export function AsistenciaManualPage() {
                   color="neutral"
                   size="icon-xs"
                   aria-label="Volver a Asistencia"
-                  render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
+                  render={<Link to={paths.app.asistencia.getHref()} search={{ sede, fecha }} />}
                   nativeButton={false}
                 />
               }

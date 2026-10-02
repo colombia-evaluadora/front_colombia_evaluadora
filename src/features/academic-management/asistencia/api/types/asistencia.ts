@@ -88,8 +88,61 @@ export interface RosterEstudiante {
   hora_inicio: string | null
   hora_fin: string | null
   fk_tperiodo_evaluacion: number | null
+  /** Regla 75, pedido al backend (hoy no viene): `false` = período No calificable. */
+  periodo_calificable?: boolean
+  /** Regla 75, pedido al backend: solicitud pendiente sobre este registro. */
+  pk_tsolicitud_aprobacion?: number | null
+  cambio_tipo_asistencia_valor?: TipoAsistencia | null
   total_estudiantes: number
   registrados: number
+}
+
+/** `PATCH /asistencias/:ID`: con elementos, el cambio quedó pendiente (Regla 75). */
+export interface AsistenciaEditarResponse {
+  pk_tasistencia: number
+  solicitudes_pendientes: number[]
+}
+
+/** JSON de `valor_anterior` / `valor_propuesto` (fn_asistencia_correccion_solicitar_interno, V496.19). */
+export interface ValorSolicitudAsistencia {
+  /** El anterior llega como texto (VALOR del catálogo); el propuesto, `null` si no cambia. */
+  tipoAsistencia: string | number | null
+  observacion: string | null
+  soporteArchivo: number | null
+  /** Solo en `valor_anterior`: la sesión. */
+  fecha?: string
+  bloque?: number | null
+  /** Solo en `valor_propuesto`: captura tardía, el registro todavía no existe. */
+  alta?: boolean
+  limpiarArchivo?: boolean
+  limpiarObservacion?: boolean
+}
+
+/** Fila de `GET /aprobaciones/pendientes?tipo=CORRECCION_ASISTENCIA`: una por registro. */
+export interface SolicitudAprobacionAsistencia {
+  pk_tsolicitud_aprobacion: number
+  tipo: string
+  estado: string
+  tabla_objeto: string
+  fk_objeto: number
+  fk_tgrupo: number
+  grupo: string
+  fk_tasignatura: number | null
+  asignatura: string | null
+  fk_tperiodo_evaluacion: number | null
+  periodo_evaluacion: string | null
+  fk_tactividad: number | null
+  actividad: string | null
+  estudiante: string
+  valor_anterior: ValorSolicitudAsistencia
+  valor_propuesto: ValorSolicitudAsistencia
+  solicitante: string | null
+  fecha_solicitud: string
+  motivo: string | null
+  /** La sesión de la solicitud (null en las de notas). */
+  fk_tmatricula: number | null
+  fecha: string | null
+  bloque: number | null
 }
 
 /**
@@ -180,6 +233,8 @@ export interface AsistenciaQueryRow {
   es_formativa: boolean
   fk_tactividad: number | null
   actividad: string | null
+  /** Regla 75, pedido al backend (hoy no viene): la fila tiene una solicitud pendiente. */
+  cambio_pendiente?: boolean
 }
 
 

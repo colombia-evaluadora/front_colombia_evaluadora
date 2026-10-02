@@ -26,7 +26,7 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
     <div className="flex flex-wrap items-center justify-end gap-2">
       {showModificar && !NOT_EDITABLE_STATUSES.includes(matricula.status) && (
         <Button
-          render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} />}
+          render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} search={(prev) => prev} />}
           variant="fill"
           color="primary"
           size="sm"

@@ -36,7 +36,7 @@ const BANNER_COLOR_CLASSES: Record<BannerProps["color"], string> = {
   orange: "border-orange-stroke bg-orange-22 text-orange",
 }
 
-function Banner({ color, titulo, descripcion, children }: BannerProps) {
+export function Banner({ color, titulo, descripcion, children }: BannerProps) {
   return (
     <div
       role="alert"
@@ -57,16 +57,16 @@ function Banner({ color, titulo, descripcion, children }: BannerProps) {
   )
 }
 
-interface FilaAlerta {
+export interface FilaAlerta<T> {
   key: string
   docente: string
   asignatura: string
   grupo: string
   detalle: string
-  destino: DestinoPlanilla
+  destino: T
 }
 
-function ListaAlerta({
+export function ListaAlerta<T>({
   titulo,
   descripcion,
   filas,
@@ -74,8 +74,8 @@ function ListaAlerta({
 }: {
   titulo: string
   descripcion: string
-  filas: FilaAlerta[]
-  onIr: (destino: DestinoPlanilla) => void
+  filas: FilaAlerta<T>[]
+  onIr: (destino: T) => void
 }) {
   return (
     <PopoverContent align="end" className="w-96">

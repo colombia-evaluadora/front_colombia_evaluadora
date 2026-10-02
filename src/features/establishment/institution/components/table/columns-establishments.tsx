@@ -30,7 +30,7 @@ function ActionsCell({ establishment }: { establishment: Establishment }) {
                 color="neutral"
                 size="icon-sm"
                 aria-label={`Editar ${establishment.name}`}
-                render={<Link to={paths.app.establishments.edit.getHref(establishment.id)} />}
+                render={<Link to={paths.app.establishments.edit.getHref(establishment.id)} search={(prev) => prev} />}
                 nativeButton={false}
               />
             }

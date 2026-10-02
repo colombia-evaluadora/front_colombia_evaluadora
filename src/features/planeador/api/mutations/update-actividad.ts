@@ -98,17 +98,16 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
   // normal) son excluyentes — mismo contrato que `p_recuperacion`/
-  // `p_quitar_recuperacion` de `fn_actividad_actualizar`. `recuperacionDestino`
-  // solo llega lleno si el backend ya expone los catálogos
-  // (`campos_disponibles.recuperacion`, ver `RecuperacionSection` — todavía
-  // no desplegado en producción a la fecha de este comentario, confirmado
-  // contra una respuesta real de `GET .../configuracion-actividad`).
-  //
-  // NUNCA se manda `QUITAR_RECUPERACION` sin esa prueba de que el backend
-  // soporta el parámetro: mandarlo siempre que `esRecuperacion` sea `false`
-  // (el caso de la inmensa mayoría de las actividades, que no son
-  // recuperación) rompía el PUT general de CUALQUIER actividad mientras el
-  // backend no reconociera ese parámetro — no solo el flujo de recuperación.
+  // `p_quitar_recuperacion` de `fn_actividad_actualizar` (confirmado por
+  // lectura directa de sso V496.2/V496.3/V496.4: `QUITAR_RECUPERACION` SÍ
+  // está en `param_types` como `BOOLEAN`, con `COALESCE(...,FALSE)`, y
+  // `fn_actividad_recuperacion_configurar_interno` trata `p_config IS NULL`
+  // como un revert idempotente — no falla si la actividad no era una
+  // recuperación). El comentario anterior ("mandarlo rompía el PUT
+  // general") describía una versión vieja del backend, de antes de que
+  // V496.x terminara de exponer el parámetro — confirmado ya no aplica.
+  // `recuperacionDestino` solo llega lleno si el backend ya expone los
+  // catálogos (`campos_disponibles.recuperacion`, ver `RecuperacionSection`).
   if (data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino) {
     body.RECUPERACION = {
       destino: data.recuperacionDestino,
@@ -123,6 +122,13 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
         data.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : data.recuperacionTipoCalculo,
       valorPonderacion: data.recuperacionValorPonderacion,
     }
+  } else if (!data.esRecuperacion) {
+    // El docente apagó el switch "Es una recuperación" (o la actividad
+    // nunca lo fue): se manda SIEMPRE que no se esté configurando una en
+    // esta misma llamada (mutuamente excluyentes, ver arriba) — es
+    // idempotente en el backend, así que no hace daño mandarlo también
+    // sobre una actividad que nunca fue recuperación.
+    body.QUITAR_RECUPERACION = true
   }
   // `EVIDENCIAS`/`CRITERIOS`: reemplazo COMPLETO en el mismo PUT (contrato
   // confirmado, igual que `ENUNCIADOS` en `update-unidad.ts`). Antes se
