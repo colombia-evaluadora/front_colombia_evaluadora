@@ -75,7 +75,6 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   ComboboxField,
@@ -101,6 +100,7 @@ import {
   METODO_CALCULO_OPTIONS,
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
+  CheckCircleFillIcon,
   EyeIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
@@ -114,8 +114,13 @@ import {
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   TrashIcon,
+  XCircleIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import {
+  esDominioPermitido,
+  useDominioMaterialCatalog,
+} from "@/features/planeador/api/query/use-dominio-material-catalog"
 
 import type {
   Actividad,
@@ -536,13 +541,16 @@ export function EditarActividadForm({
         </div>
       </Card>
       <UnidadSection form={form} unidades={unidades} />
-      <MaterialesSection form={form} disabled={disabled} />
-      <RecursosSection
-        form={form}
-        draftKey={draftKey}
-        disabled={disabled}
-        actividadId={actividad.id}
-      />
+      <Card className="gap-6 p-4">
+        <h3 className="text-base font-semibold">Recursos y Materiales</h3>
+        <MaterialesSection form={form} disabled={disabled} />
+        <RecursosSection
+          form={form}
+          draftKey={draftKey}
+          disabled={disabled}
+          actividadId={actividad.id}
+        />
+      </Card>
       <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
@@ -1975,9 +1983,17 @@ function AsignaturaGradoSection({
   )
 }
 
+/**
+ * "Materiales requeridos" — mitad del Bloque 3 ("Recursos y Materiales");
+ * la otra mitad es `RecursosSection` ("Materiales de apoyo"), que va justo
+ * después en el render. Antes esta sección no tenía título propio: sin un
+ * `<h3>` que la separe, un `Card` en blanco pegado a "Identificación" se
+ * leía como si siguiera siendo parte de ese bloque (pedido de QA).
+ */
 function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
-    <Card className="gap-4 p-4">
+    <div className="flex flex-col gap-4">
+      <h4 className="text-sm font-semibold">Materiales requeridos</h4>
       <form.Field name="materiales">
         {(field) => (
           <Field variant="outlined">
@@ -1993,10 +2009,11 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               rows={4}
               disabled={disabled}
             />
+            <CharacterCounter value={field.state.value} max={500} />
           </Field>
         )}
       </form.Field>
-    </Card>
+    </div>
   )
 }
 
@@ -2022,6 +2039,53 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
+/** Regla 82: tope de "Materiales de apoyo" por actividad. */
+const RECURSO_MAX_ITEMS = 10
+
+/**
+ * Formatos permitidos en "Archivo en PC" (Regla 82) — los ejecutables
+ * (.exe/.bat/.sh) quedan prohibidos por no estar en esta lista, no por un
+ * chequeo aparte. A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía del
+ * picker, pensada solo para lo que `recurso-preview.tsx` sabe mostrar:
+ * imagen/audio/video/pdf), acá SÍ se valida en el cliente: pedido explícito
+ * de QA, mismo criterio que el archivo de plantilla de Adaptaciones.
+ */
+const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+  "jpg", "jpeg", "png", "gif", "mp3", "mp4", "webm", "txt",
+]
+const RECURSO_ARCHIVO_ACCEPT_VALIDADO = RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.map((ext) => `.${ext}`).join(",")
+const RECURSO_ARCHIVO_MAX_BYTES = 20 * 1024 * 1024
+
+/** `javascript:`/`data:` no son un dominio a rechazar por lista blanca —son
+ *  un ESQUEMA a rechazar siempre, antes de siquiera mirar el host. */
+const ESQUEMAS_URL_PELIGROSOS = ["javascript:", "data:"]
+
+function extensionDe(nombre: string): string {
+  return nombre.split(".").pop()?.toLowerCase() ?? ""
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B"
+  const unidades = ["B", "KB", "MB", "GB"]
+  const indice = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), unidades.length - 1)
+  return `${(bytes / 1024 ** indice).toFixed(indice === 0 ? 0 : 1)} ${unidades[indice]}`
+}
+
+/** `esquemaPeligroso` se chequea ANTES: `new URL("javascript:...")` no tira
+ *  (es sintácticamente válida), así que sin este chequeo explícito pasaba
+ *  derecho el resto de la validación. */
+function esUrlDeRecursoValida(value: string): boolean {
+  const lower = value.trim().toLowerCase()
+  if (ESQUEMAS_URL_PELIGROSOS.some((esquema) => lower.startsWith(esquema))) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 function RecursosSection({
   form,
   draftKey,
@@ -2039,6 +2103,29 @@ function RecursosSection({
   // resolver el alcance del usuario mientras la actividad no existe (al
   // crear); editando manda la actividad y esto queda de respaldo.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // Regla 82: máximo 10 materiales de apoyo por actividad — tope del
+  // backend (`fn_actividad_validar_materiales`), repetido acá para avisar
+  // antes de llegar al guardado.
+  const recursosCount = useSelector(
+    form.store,
+    (state) => (state.values.recursos as Recurso[]).length,
+  )
+  const limiteAlcanzado = recursosCount >= RECURSO_MAX_ITEMS
+
+  // Mismo catálogo que valida `fn_actividad_validar_url_dominio` al
+  // guardar (Regla 82) — se consulta acá para avisar en el cliente apenas
+  // se tipea el enlace. `undefined` mientras no resuelve: no bloquea (el
+  // guardado real sigue cayendo en la validación del backend).
+  const { data: dominiosUrl } = useDominioMaterialCatalog("DOMINIO_MATERIAL_URL")
+  const { data: dominiosRepositorio } = useDominioMaterialCatalog("DOMINIO_MATERIAL_REPOSITORIO")
+
+  function draftUrlInvalida(d: RecursoDraft): boolean {
+    if (d.tipo === "Archivo" || !d.url.trim()) return false
+    if (!esUrlDeRecursoValida(d.url)) return true
+    const dominios = d.tipo === "Unidad virtual" ? dominiosRepositorio : dominiosUrl
+    if (!dominios) return false
+    return !esDominioPermitido(d.url, dominios)
+  }
 
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
@@ -2063,7 +2150,9 @@ function RecursosSection({
     // aporta nada en la lista de "Recursos agregados" (se vería como
     // una línea vacía con un tag).
     if (!draft.url.trim() && !draft.fuente.trim()) return
+    if (draftUrlInvalida(draft)) return
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [
       ...list,
       { id: cryptoId(), ...draft },
@@ -2079,13 +2168,14 @@ function RecursosSection({
   // recursos podrían colisionar en el `<ul>` (la key es el id).
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [...list, { id: cryptoId(), ...recurso }])
   }
 
   return (
-    <Card className="gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Materiales de apoyo (agrega varios recursos)</h3>
+        <h4 className="text-sm font-semibold">Materiales de apoyo (agrega varios recursos)</h4>
         <div className="flex gap-2">
           {/* Biblioteca: abre el modal de "galería de recursos del docente"
               — todos los recursos que el usuario ha subido en sus
@@ -2109,7 +2199,7 @@ function RecursosSection({
                   // la actividad al editar, el grupo al crear (V429). Sin
                   // ninguna de las dos el backend responde 400, así que el
                   // botón espera a que se elija el grupo.
-                  disabled={disabled || (actividadId <= 0 && !grupoId)}
+                  disabled={disabled || limiteAlcanzado || (actividadId <= 0 && !grupoId)}
                 />
               }
             >
@@ -2168,18 +2258,26 @@ function RecursosSection({
               tipeado se perdía en silencio. `handleAddDraft` ya no hace
               nada si el borrador está vacío, así que no agrega filas
               fantasma solo por tabular de un campo a otro. */}
-          <div
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
-            }}
-          >
-            <RecursoForm
-              draft={draft}
-              onChange={updateDraft}
-              onAdd={handleAddDraft}
-              disabled={disabled}
-            />
-          </div>
+          {limiteAlcanzado ? (
+            <p className="text-muted-foreground text-sm">
+              Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
+              alguno de la lista para agregar otro.
+            </p>
+          ) : (
+            <div
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
+              }}
+            >
+              <RecursoForm
+                draft={draft}
+                onChange={updateDraft}
+                onAdd={handleAddDraft}
+                urlInvalida={draftUrlInvalida(draft)}
+                disabled={disabled}
+              />
+            </div>
+          )}
 
           <form.Field name="recursos">
             {(field) => {
@@ -2240,7 +2338,7 @@ function RecursosSection({
           />
         )}
       </form.Subscribe>
-    </Card>
+    </div>
   )
 }
 
@@ -2258,13 +2356,29 @@ function RecursoForm({
   draft,
   onChange,
   onAdd,
+  urlInvalida,
   disabled,
 }: {
   draft: RecursoDraft
   onChange: (patch: Partial<RecursoDraft>) => void
   onAdd: () => void
+  /** Calculado por el padre (`RecursosSection`): formato de URL + dominio
+   *  permitido, según `draft.tipo` (ver `draftUrlInvalida`). `false`
+   *  mientras `draft.url` está vacío — recién se marca inválido con algo
+   *  tipeado que no pasa la validación. */
+  urlInvalida: boolean
   disabled: boolean
 }) {
+  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
+  // `draft`, así que no alcanza con derivarlo de ahí.
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
+  // Tamaño del archivo recién elegido, solo para el preview "nombre · peso"
+  // de abajo — `Recurso`/`RecursoDraft` no guardan el tamaño (no viaja al
+  // backend), así que vive aparte, nunca en el draft commiteado.
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<{ nombre: string; size: number } | null>(
+    null,
+  )
+
   const FuenteIcon =
     draft.tipo === "Unidad virtual"
       ? ImageIcon
@@ -2292,12 +2406,26 @@ function RecursoForm({
         <h4 className="text-sm font-semibold">Recurso - Fuente</h4>
       </div>
 
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Nombre</FieldLabel>
+        <Input
+          maxLength={100}
+          placeholder="Nombre con el que se identifica este recurso…"
+          value={draft.titulo}
+          onChange={(e) => onChange({ titulo: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={draft.titulo} max={100} />
+      </Field>
+
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr]">
         <Field variant="outlined">
           <FieldLabel>Tipo</FieldLabel>
           <Select
             value={draft.tipo}
-            onValueChange={(v) =>
+            onValueChange={(v) => {
+              setErrorArchivo(null)
+              setArchivoSeleccionado(null)
               onChange({
                 tipo: (v ?? "URL") as Recurso["tipo"],
                 // Al pasar a "Archivo" la URL previa pierde sentido (el
@@ -2307,7 +2435,7 @@ function RecursoForm({
                 // ya tipeó.
                 url: v === "Archivo" ? "" : draft.url,
               })
-            }
+            }}
             disabled={disabled}
           >
             <SelectTrigger>
@@ -2357,10 +2485,11 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
-              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
-              // no validación: el `accept` se puede esquivar y quien decide
-              // de verdad es `file-service`.
-              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
+              // A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía de
+              // "Adjuntar desde biblioteca"/preview, que no valida nada),
+              // acá el `accept` SÍ va acompañado del chequeo real en
+              // `onChange` — pedido explícito de QA (Regla 82).
+              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT_VALIDADO } : {})}
               placeholder={fuentePlaceholder}
               maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
@@ -2386,15 +2515,36 @@ function RecursoForm({
                     URL.revokeObjectURL(draft.url)
                   }
                   if (!file) {
+                    setErrorArchivo(null)
+                    setArchivoSeleccionado(null)
                     onChange({ url: "", fuente: "" })
                     return
                   }
+                  const extension = extensionDe(file.name)
+                  if (!RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.includes(extension)) {
+                    setErrorArchivo(
+                      `Formato ".${extension || "desconocido"}" no permitido. Usá: ${RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.join(", ")}.`,
+                    )
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  if (file.size > RECURSO_ARCHIVO_MAX_BYTES) {
+                    setErrorArchivo("El archivo supera el tamaño máximo permitido (20 MB).")
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  setErrorArchivo(null)
+                  setArchivoSeleccionado({ nombre: file.name, size: file.size })
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se 
-                  // lo pasa al resolver, que lo usa como fallback para 
-                  // detectar la extensión — los blob URLs no tienen 
-                  // extensión en el path y no queríamos meterla en el 
-                  // hash (algunos parsers se confunden con el `#`). 
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -2404,9 +2554,35 @@ function RecursoForm({
                 }
               }}
               className={FuenteIcon ? "pl-9" : undefined}
+              aria-invalid={Boolean(errorArchivo) || urlInvalida}
               disabled={disabled}
             />
           </div>
+          {/* Preview "nombre · peso" + ícono de estado antes de confirmar
+              la carga (pedido explícito de QA) — éxito en verde si pasó
+              las validaciones de arriba, error en rojo si no. */}
+          {draft.tipo === "Archivo" && archivoSeleccionado && !errorArchivo && (
+            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <CheckCircleFillIcon className="text-green size-3.5 shrink-0" />
+              {archivoSeleccionado.nombre} · {formatBytes(archivoSeleccionado.size)}
+            </p>
+          )}
+          {errorArchivo && (
+            <p className="text-red flex items-center gap-1.5 text-xs">
+              <XCircleIcon className="size-3.5 shrink-0" />
+              {errorArchivo}
+            </p>
+          )}
+          {draft.tipo !== "Archivo" && urlInvalida && (
+            <FieldError
+              errors={[
+                {
+                  message:
+                    "El enlace no es una URL válida o su dominio no está en la lista de sitios admitidos.",
+                },
+              ]}
+            />
+          )}
         </Field>
       </div>
 
@@ -2436,7 +2612,7 @@ function RecursoForm({
             size="sm"
             type="button"
             onClick={onAdd}
-            disabled={disabled}
+            disabled={disabled || Boolean(errorArchivo) || urlInvalida}
           >
             <PlusIcon data-icon="inline-start" />
             {/* NO "Guardar" — este botón no guarda la actividad, solo
@@ -2682,6 +2858,15 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
     ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
     : null
 
+  // Cuántos dígitos hacen falta para poder tipear el `max` real de
+  // "Duración estimada" (p. ej. 1200 → 4), no un "hasta 999" fijo. Sin
+  // `max` todavía resuelto, 3 dígitos como piso conservador (no corta de
+  // más mientras carga, y es el mínimo razonable para minutos).
+  const duracionEstimadaMaxDigitos = Math.max(
+    String(programacion?.duracionEstimada.max ?? 999).length,
+    3,
+  )
+
   return (
     <Card className="gap-4 p-4">
       <div>
@@ -2794,16 +2979,22 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad mezclada en
-                  el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
-                  válida. */}
+                  el valor, y sin `0` (`toPositiveDigitsInput`): "0 minutos"
+                  no es una duración válida.
+                  El tope de dígitos sale del `max` real que manda el
+                  backend (`programacion.duracionEstimada.max`), no de un
+                  "hasta 999" fijo: antes el `3` hardcodeado le ganaba al
+                  `max` de verdad (p. ej. 1200, 4 dígitos) y el docente no
+                  podía ni terminar de tipear un valor válido. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
-                maxLength={3}
+                maxLength={duracionEstimadaMaxDigitos}
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                onChange={(e) =>
+                  field.handleChange(toPositiveDigitsInput(e.target.value, duracionEstimadaMaxDigitos))
+                }
                 // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
                 // picker), acá no hay forma de impedir tipear un número fuera
                 // de rango mientras se escribe sin trabar al usuario a mitad
@@ -2904,7 +3095,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   <SelectItem value="__none__">Seleccione</SelectItem>
                   <SelectItem value="Presencial">Presencial</SelectItem>
                   <SelectItem value="Virtual">Virtual</SelectItem>
-                  <SelectItem value="Mixta">Mixta</SelectItem>
+                  <SelectItem value="Híbrida">Híbrida</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -3572,13 +3763,24 @@ function ListaCotejoItemCard({
  * se siembran los 3 niveles por defecto —Bajo/Medio/Alto— de una: el
  * usuario ve algo que completar en vez de una lista vacía + un paso
  * extra para crear cada nivel. El botón "+" del header agrega más
- * niveles después de esos tres, tomando el siguiente nombre de
- * `NIVELES_CUALITATIVOS_DEFAULT` o cayendo a "Nivel N".
+ * niveles después de esos tres, tomando el primero de
+ * `NIVELES_CUALITATIVOS_DEFAULT` que todavía no esté en uso, o cayendo a
+ * "Nivel N".
  */
 const NIVELES_CUALITATIVOS_DEFAULT = ["Bajo", "Medio", "Alto"]
 
-function nextNivelCualitativoNombre(existingCount: number): string {
-  return NIVELES_CUALITATIVOS_DEFAULT[existingCount] ?? `Nivel ${existingCount + 1}`
+/**
+ * Elige el default por NOMBRE YA USADO, no por posición/cantidad: antes
+ * indexaba `NIVELES_CUALITATIVOS_DEFAULT` por `niveles.length`, así que
+ * borrar un nivel de en medio (p. ej. "Medio", `removeNivel`) y agregar
+ * uno nuevo volvía a calcular el mismo índice que un nivel YA presente
+ * ("Alto") — quedaban dos niveles con el mismo nombre en vez de avanzar
+ * al siguiente default disponible.
+ */
+function nextNivelCualitativoNombre(nivelesActuales: { nombre: string }[]): string {
+  const nombresUsados = new Set(nivelesActuales.map((nivel) => nivel.nombre))
+  const siguienteDefault = NIVELES_CUALITATIVOS_DEFAULT.find((nombre) => !nombresUsados.has(nombre))
+  return siguienteDefault ?? `Nivel ${nivelesActuales.length + 1}`
 }
 
 /**
@@ -3842,7 +4044,7 @@ function EscalaValoracionSection({
                                   ...escala.niveles,
                                   {
                                     id: cryptoId(),
-                                    nombre: nextNivelCualitativoNombre(escala.niveles.length),
+                                    nombre: nextNivelCualitativoNombre(escala.niveles),
                                     descripcion: "",
                                   },
                                 ],
@@ -4007,10 +4209,9 @@ function InstrumentoPersonalizadoSection({
     camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
       ? camposOtro.metodoValoracion.catalogo
       : METODO_VALORACION_CATALOGO_DEFAULT
-  // Regla 41: tope fijo de 200, no un piso genérico — antes caía a 4000
-  // mientras `camposOtro` no resolvía (foto vieja, endpoint viejo) y dejaba
-  // escribir mucho más de lo que el backend acepta.
-  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 200
+  // Regla 41: tope de 200. El endpoint de campos permitidos reporta 4000
+  // para este campo, así que se acota con `min` en vez de confiar en él.
+  const descripcionMaxLength = Math.min(camposOtro?.descripcionInstrumento.maxLength ?? 200, 200)
 
   return (
     <Card className="gap-4 p-4">
@@ -4019,6 +4220,11 @@ function InstrumentoPersonalizadoSection({
       <form.Field name="instrumentoPersonalizado">
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
+          // Opción de entrega que dicta el tipo de evidencia: ESA casilla
+          // queda siempre marcada y deshabilitada (Regla 41 — "la casilla
+          // activada queda siempre marcada"); la OTRA queda libre para que
+          // el docente la sume además si lo desea.
+          const entregaPorTipo = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[value.tipoEvidenciaEsperada]
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
           }
@@ -4028,8 +4234,10 @@ function InstrumentoPersonalizadoSection({
                 <FieldLabel htmlFor="instrumentoPersonalizado-descripcion">
                   Descripción del instrumento
                 </FieldLabel>
-                <Input
+                <Textarea
                   id="instrumentoPersonalizado-descripcion"
+                  className={TEXTAREA_OUTLINED}
+                  rows={3}
                   placeholder="Agregar descripción breve"
                   maxLength={descripcionMaxLength}
                   value={value.descripcion}
@@ -4049,10 +4257,16 @@ function InstrumentoPersonalizadoSection({
                     onValueChange={(v) => {
                       if (!v) return
                       const defecto = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[v]
+                      // Reinicia ambos: cada tipo habilita una sola opción de
+                      // entrega y la otra queda apagada y deshabilitada.
                       patch({
                         tipoEvidenciaEsperada: v,
-                        ...(defecto === "archivo" ? { requiereArchivo: true } : {}),
-                        ...(defecto === "texto" ? { requiereRespuestaTexto: true } : {}),
+                        ...(defecto
+                          ? {
+                              requiereArchivo: defecto === "archivo",
+                              requiereRespuestaTexto: defecto === "texto",
+                            }
+                          : {}),
                       })
                     }}
                     disabled={disabled}
@@ -4127,17 +4341,17 @@ function InstrumentoPersonalizadoSection({
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereArchivo}
+                      checked={entregaPorTipo === "archivo" || value.requiereArchivo}
                       onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "archivo"}
                     />
                     El estudiante debe adjuntar un archivo
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereRespuestaTexto}
+                      checked={entregaPorTipo === "texto" || value.requiereRespuestaTexto}
                       onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "texto"}
                     />
                     El estudiante debe escribir una respuesta (texto)
                   </label>
@@ -4184,7 +4398,7 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                     ...rubrica,
                     criterios: [
                       ...rubrica.criterios,
-                      { id: cryptoId(), nombre: "", excelente: "", niveles: [], ponderacion: 0 },
+                      { id: cryptoId(), nombre: "", descripcion: "", excelente: "", niveles: [], ponderacion: 0 },
                     ],
                   })
                 }}
@@ -4328,6 +4542,24 @@ function CriterioItem({
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
           disabled={disabled}
         />
+      </Field>
+
+      {/* Distinta de la `descripcion` de cada nivel (el indicador de logro
+          por nivel, más abajo): esta es la del criterio en sí
+          (`TACTIVIDAD_RUBRICA_CRITERIO.DESCRIPCION`) — no tenía campo acá,
+          así que nunca viajaba ni al guardar ni al leer. */}
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Descripción o Juicio de valor</FieldLabel>
+        <Textarea
+          className={TEXTAREA_OUTLINED}
+          rows={2}
+          placeholder="Describe qué evalúa este criterio en general"
+          maxLength={4000}
+          value={criterio.descripcion}
+          onChange={(e) => onChange({ ...criterio, descripcion: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={criterio.descripcion} max={4000} />
       </Field>
 
       {/* `Excelente` va como label estático a la izquierda del textarea:

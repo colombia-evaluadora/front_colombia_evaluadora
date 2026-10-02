@@ -97,6 +97,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 103,
           nombre: "Diseño",
+          descripcion: "",
           excelente: "Cumple con todos los criterios de diseño y aporta innovación.",
           ponderacion: 30,
           niveles: [],
@@ -104,6 +105,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 104,
           nombre: "Funcionalidad",
+          descripcion: "",
           excelente: "El prototipo resuelve el problema identificado.",
           ponderacion: 40,
           niveles: [],
@@ -111,6 +113,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 105,
           nombre: "Presentación",
+          descripcion: "",
           excelente: "Comunicación clara y profesional.",
           ponderacion: 30,
           niveles: [],
@@ -164,7 +167,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     ],
     duracionEstimada: "12",
     semana: "3",
-    modalidad: "Mixta",
+    modalidad: "Híbrida",
     esEvaluativa: false,
     instrumento: "—",
     ponderacion: 0,
@@ -182,6 +185,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 103,
           nombre: "Calidad del boceto",
+          descripcion: "",
           excelente: "Trazo limpio, proporciones correctas.",
           ponderacion: 50,
           niveles: [],
@@ -189,6 +193,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 104,
           nombre: "Iteración",
+          descripcion: "",
           excelente: "Múltiples versiones progresivas.",
           ponderacion: 50,
           niveles: [],
@@ -251,6 +256,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 103,
           nombre: "Coherencia",
+          descripcion: "",
           excelente: "Hitos alineados con objetivos.",
           ponderacion: 100,
           niveles: [],
@@ -516,7 +522,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     recursos: [],
     duracionEstimada: "40",
     semana: "10",
-    modalidad: "Mixta",
+    modalidad: "Híbrida",
     esEvaluativa: false,
     instrumento: "Rúbrica analítica",
     ponderacion: 0,
@@ -534,6 +540,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 103,
           nombre: "Calidad técnica",
+          descripcion: "",
           excelente: "Solución robusta y escalable.",
           ponderacion: 50,
           niveles: [],
@@ -541,6 +548,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 104,
           nombre: "Calidad estética",
+          descripcion: "",
           excelente: "Diseño visual coherente y atractivo.",
           ponderacion: 30,
           niveles: [],
@@ -548,6 +556,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 105,
           nombre: "Documentación",
+          descripcion: "",
           excelente: "Bitácora completa y bien escrita.",
           ponderacion: 20,
           niveles: [],
@@ -610,6 +619,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
         {
           id: 103,
           nombre: "Reflexión",
+          descripcion: "",
           excelente: "Reflexión profunda y autocrítica honesta.",
           ponderacion: 100,
           niveles: [],

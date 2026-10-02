@@ -85,7 +85,7 @@ function criterioABody(criterio: Criterio) {
     })
   }
   niveles.push(...criterio.niveles.map(nivelABody))
-  return { nombre: criterio.nombre, niveles }
+  return { nombre: criterio.nombre, descripcion: criterio.descripcion || undefined, niveles }
 }
 
 function rubricaVacia(rubrica: Rubrica): boolean {
