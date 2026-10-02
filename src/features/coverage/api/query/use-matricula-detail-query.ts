@@ -179,6 +179,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
     pkUsuarioAcudiente: guardianRaw?.fk_tusuario ?? null,
     academic: {
       campus: m.sede_nombre,
+      campusId: m.fk_tsede != null ? String(m.fk_tsede) : "",
       shift: m.jornada_nombre,
       grade: toIdString(gradoValor ?? m.fk_tgrado),
       group: toIdString(m.fk_tgrupo),

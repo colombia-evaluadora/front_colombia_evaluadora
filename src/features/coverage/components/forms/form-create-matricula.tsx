@@ -49,6 +49,7 @@ import {
 } from "@/features/coverage/api/query/use-matricula-catalog-select"
 import { usePeriodoResolverMatriculaQuery } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { resolverSede } from "@/features/coverage/utils/sede-matricula"
 import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
@@ -395,6 +396,7 @@ export function MatriculaAcademicSection({
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
   const { data: dependentCatalogs, isPeriodoError, periodoError } = useMatriculaDependentCatalogsQuery({
+    campusId: value.campusId || undefined,
     campus: value.campus || undefined,
     shift: value.shift || undefined,
     grade: value.grade ? Number(value.grade) : undefined,
@@ -410,7 +412,12 @@ export function MatriculaAcademicSection({
 
 
   const { data: sedes } = useSedeOptionsQuery()
-  const sedeId = value.campus ? sedes?.find((sede) => sede.nombre === value.campus)?.pk_sede : undefined
+  const sedeId = resolverSede(sedes, { campusId: value.campusId, campus: value.campus }).sede?.pk_sede
+  // El select guarda el id; un valor viejo que solo trae el nombre se muestra
+  // igual si ese nombre es único.
+  const campusIdEfectivo = value.campusId || (sedeId != null ? String(sedeId) : "")
+  const sedeOptions = catalogs?.sedes ?? []
+  const etiquetaSede = new Map(sedeOptions.map((sede) => [sede.id, sede.label]))
   const { data: jornadasActivas } = useSedeJornadasActivasQuery(sedeId ?? null)
   const jornadaId = value.shift ? jornadasActivas?.find((j) => j.nombre === value.shift)?.id : undefined
   const { data: periodoId } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
@@ -423,11 +430,21 @@ export function MatriculaAcademicSection({
         id="matricula-campus"
         label="Sede"
         required
-        value={value.campus}
-        options={catalogs?.campuses ?? []}
+        value={campusIdEfectivo}
+        options={sedeOptions.map((sede) => sede.id)}
+        labelFor={(id) => etiquetaSede.get(id) ?? id}
         disabled={academicDisabled}
         invalid={invalidFields.includes("matricula-campus")}
-        onChange={(campus) => onChange({ ...value, campus, shift: "", grade: "", group: "" })}
+        onChange={(id) =>
+          onChange({
+            ...value,
+            campusId: id,
+            campus: sedeOptions.find((sede) => sede.id === id)?.nombre ?? "",
+            shift: "",
+            grade: "",
+            group: "",
+          })
+        }
       />
       <MatriculaSelectField
         id="matricula-shift"

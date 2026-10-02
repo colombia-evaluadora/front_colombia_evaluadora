@@ -110,6 +110,9 @@ function MatriculaEditPageContent() {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const initialGradeRef = useRef<string | null>(null)
   const initialSedeRef = useRef<string | null>(null)
+  // El cambio de sede se detecta por id: dos colegios pueden tener sedes con
+  // el mismo nombre.
+  const initialSedeIdRef = useRef<string | null>(null)
   const initialGroupRef = useRef<string | null>(null)
   // Documento con el que se cargó el acudiente -- si el usuario lo cambia
   // en el formulario, ya no es "editar en sitio" sino sustituir por otra
@@ -134,6 +137,7 @@ function MatriculaEditPageContent() {
       setValues(resolved)
       initialGradeRef.current = resolved.academic.grade
       initialSedeRef.current = resolved.academic.campus
+      initialSedeIdRef.current = resolved.academic.campusId || null
       initialGroupRef.current = resolved.academic.group
       initialGuardianDocumentRef.current = {
         documentType: resolved.guardian.documentType,
@@ -206,6 +210,7 @@ function MatriculaEditPageContent() {
   }, [guardianDocumentType, guardianDocumentNumber])
 
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
+    campusId: values?.academic.campusId || undefined,
     campus: values?.academic.campus || undefined,
     shift: values?.academic.shift || undefined,
     grade: values?.academic.grade ? Number(values.academic.grade) : undefined,
@@ -410,7 +415,14 @@ function MatriculaEditPageContent() {
 
   function handleSedeChangeCancel() {
     if (sedeChange && values && initialSedeRef.current) {
-      setValues({ ...values, academic: { ...values.academic, campus: initialSedeRef.current } })
+      setValues({
+        ...values,
+        academic: {
+          ...values.academic,
+          campus: initialSedeRef.current,
+          campusId: initialSedeIdRef.current ?? values.academic.campusId,
+        },
+      })
     }
     setSedeChange(null)
   }
@@ -514,12 +526,20 @@ function MatriculaEditPageContent() {
 
     const originalSede = initialSedeRef.current
     const currentSede = values.academic.campus
-    if (originalSede && currentSede && originalSede !== currentSede) {
+    const originalSedeId = initialSedeIdRef.current
+    const currentSedeId = values.academic.campusId
+    const cambioDeSede =
+      originalSedeId && currentSedeId
+        ? originalSedeId !== currentSedeId
+        : Boolean(originalSede && currentSede && originalSede !== currentSede)
+    if (originalSede && currentSede && cambioDeSede) {
       const originalGrade = Number(initialGradeRef.current)
       const currentGrade = Number(values.academic.grade)
+      const etiqueta = (id: string | null | undefined, nombre: string) =>
+        catalogs?.sedes.find((sede) => sede.id === id)?.label ?? nombre
       setSedeChange({
-        fromSede: originalSede,
-        toSede: currentSede,
+        fromSede: etiqueta(originalSedeId, originalSede),
+        toSede: etiqueta(currentSedeId, currentSede),
         fromGrade: originalGrade,
         toGrade: currentGrade,
         fromGroup: data?.matricula?.group ?? "",

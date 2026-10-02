@@ -98,7 +98,10 @@ function AddMatriculaPageContent() {
 
   // La configuración es del colegio de la sede elegida: un rector de varios
   // colegios no puede pedirla sin decir cuál (el backend respondería 22023).
-  const colegio = useEstablecimientoDeSede({ sedeNombre: values.academic.campus })
+  const colegio = useEstablecimientoDeSede({
+    sedeId: values.academic.campusId ? Number(values.academic.campusId) : null,
+    sedeNombre: values.academic.campus,
+  })
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
     useMatriculaFieldConfigQuery({
       establecimientoId: colegio.establecimientoId,
