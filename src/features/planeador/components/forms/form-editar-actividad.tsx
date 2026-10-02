@@ -541,13 +541,16 @@ export function EditarActividadForm({
         </div>
       </Card>
       <UnidadSection form={form} unidades={unidades} />
-      <MaterialesSection form={form} disabled={disabled} />
-      <RecursosSection
-        form={form}
-        draftKey={draftKey}
-        disabled={disabled}
-        actividadId={actividad.id}
-      />
+      <Card className="gap-6 p-4">
+        <h3 className="text-base font-semibold">Recursos y Materiales</h3>
+        <MaterialesSection form={form} disabled={disabled} />
+        <RecursosSection
+          form={form}
+          draftKey={draftKey}
+          disabled={disabled}
+          actividadId={actividad.id}
+        />
+      </Card>
       <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
@@ -1989,8 +1992,8 @@ function AsignaturaGradoSection({
  */
 function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
-    <Card className="gap-4 p-4">
-      <h3 className="text-base font-semibold">Materiales requeridos</h3>
+    <div className="flex flex-col gap-4">
+      <h4 className="text-sm font-semibold">Materiales requeridos</h4>
       <form.Field name="materiales">
         {(field) => (
           <Field variant="outlined">
@@ -2010,7 +2013,7 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
           </Field>
         )}
       </form.Field>
-    </Card>
+    </div>
   )
 }
 
@@ -2170,9 +2173,9 @@ function RecursosSection({
   }
 
   return (
-    <Card className="gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Materiales de apoyo (agrega varios recursos)</h3>
+        <h4 className="text-sm font-semibold">Materiales de apoyo (agrega varios recursos)</h4>
         <div className="flex gap-2">
           {/* Biblioteca: abre el modal de "galería de recursos del docente"
               — todos los recursos que el usuario ha subido en sus
@@ -2335,7 +2338,7 @@ function RecursosSection({
           />
         )}
       </form.Subscribe>
-    </Card>
+    </div>
   )
 }
 
