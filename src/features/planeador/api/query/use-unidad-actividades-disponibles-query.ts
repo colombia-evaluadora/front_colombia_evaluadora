@@ -16,16 +16,15 @@ import { evalCol } from "@/lib/eval-col-client"
  * `/unidades/:id/ponderacion-disponible` (1.5) aparte para pintar
  * "Disponible para asignar: X%".
  *
- * SIN captura real confirmada — misma reserva que
- * `use-unidad-actividades-query.ts`: los nombres de campo son la mejor
- * aproximación siguiendo el patrón de otros endpoints del módulo, no una
- * respuesta verificada.
+ * Confirmado por lectura directa de `fn_actividad_disponibles_listar`
+ * (sso V223): no trae `es_evaluativa` (eso solo lo expone
+ * `fn_unidad_actividades_listar`, un endpoint distinto) — `tipo` sale de
+ * `tipo_actividad` tal cual.
  */
 interface ActividadDisponibleRow {
   pk_tactividad: number
   titulo: string
   tipo_actividad?: string | null
-  es_evaluativa?: "S" | "N"
   instrumento_evaluacion?: string | null
   grupo?: string | null
   porcentaje_disponible?: number | null
@@ -44,7 +43,7 @@ function toActividadDisponible(row: ActividadDisponibleRow): ActividadDisponible
   return {
     id: row.pk_tactividad,
     nombre: row.titulo,
-    tipo: row.es_evaluativa != null ? (row.es_evaluativa === "S" ? "Sumativa" : "Formativa") : (row.tipo_actividad ?? ""),
+    tipo: row.tipo_actividad ?? "",
     instrumento: row.instrumento_evaluacion ?? "",
     grupo: row.grupo ?? "",
     porcentajeDisponible: row.porcentaje_disponible ?? null,
