@@ -220,6 +220,18 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       { valor: 5, nombre: "Llegó tarde" },
       { valor: 6, nombre: "Llegó tarde (justificado)" },
     ].map((opt, i) => ({ pk_lista_valor: i + 1, nombre: opt.nombre, valor: String(opt.valor), accion: null })),
+  // Lista blanca de "Materiales de apoyo" (Regla 82, `use-dominio-material-
+  // catalog.ts`) — sin esto, el catálogo real resuelve `[]` (categoría
+  // desconocida, no 404: ver el fallback del handler) y bloqueaba CUALQUIER
+  // URL con mocks activos, no solo las que de verdad hay que rechazar.
+  DOMINIO_MATERIAL_URL: () =>
+    ["classroom.google.com", "youtube.com", "wikipedia.org", "moodle.org", "khanacademy.org"].map(
+      (dominio, i) => ({ pk_lista_valor: i + 1, nombre: dominio, valor: dominio, accion: null }),
+    ),
+  DOMINIO_MATERIAL_REPOSITORIO: () =>
+    ["drive.google.com", "dropbox.com", "onedrive.live.com", "mega.nz", "sharepoint.com"].map(
+      (dominio, i) => ({ pk_lista_valor: i + 1, nombre: dominio, valor: dominio, accion: null }),
+    ),
 }
 
 export const selectCatalogHandlers = [
