@@ -4019,6 +4019,9 @@ function InstrumentoPersonalizadoSection({
       <form.Field name="instrumentoPersonalizado">
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
+          // Opción de entrega que dicta el tipo de evidencia; la otra queda
+          // deshabilitada y apagada (también al editar datos viejos con ambas).
+          const entregaPorTipo = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[value.tipoEvidenciaEsperada]
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
           }
@@ -4049,10 +4052,16 @@ function InstrumentoPersonalizadoSection({
                     onValueChange={(v) => {
                       if (!v) return
                       const defecto = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[v]
+                      // Reinicia ambos: cada tipo habilita una sola opción de
+                      // entrega y la otra queda apagada y deshabilitada.
                       patch({
                         tipoEvidenciaEsperada: v,
-                        ...(defecto === "archivo" ? { requiereArchivo: true } : {}),
-                        ...(defecto === "texto" ? { requiereRespuestaTexto: true } : {}),
+                        ...(defecto
+                          ? {
+                              requiereArchivo: defecto === "archivo",
+                              requiereRespuestaTexto: defecto === "texto",
+                            }
+                          : {}),
                       })
                     }}
                     disabled={disabled}
@@ -4127,17 +4136,17 @@ function InstrumentoPersonalizadoSection({
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereArchivo}
+                      checked={value.requiereArchivo && entregaPorTipo !== "texto"}
                       onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "texto"}
                     />
                     El estudiante debe adjuntar un archivo
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereRespuestaTexto}
+                      checked={value.requiereRespuestaTexto && entregaPorTipo !== "archivo"}
                       onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "archivo"}
                     />
                     El estudiante debe escribir una respuesta (texto)
                   </label>
