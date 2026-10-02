@@ -161,8 +161,12 @@ export interface InstrumentoPersonalizado {
    *  personalizado" de nuevo) — un instrumento a medida igual se valora
    *  siguiendo la lógica de uno de los tres estándar. */
   metodoValoracion: "Rúbrica" | "Lista de cotejo" | "Escala de valoración" | ""
-  /** Los dos checkboxes son independientes entre sí y del select de
-   *  arriba: pueden marcarse ambos, uno solo, o ninguno. */
+  /** Pueden marcarse ambos, uno solo, o ninguno — son independientes entre
+   *  sí. Elegir "Tipo de evidencia esperada" sí los toca una vez, prendiendo
+   *  por defecto el que le corresponde (`TIPO_EVIDENCIA_CHECKBOX_DEFAULT` en
+   *  `form-editar-actividad.tsx`, pedido de QA), pero sin apagar el otro ni
+   *  seguir atado después: el docente puede desmarcar el que se prendió solo
+   *  o marcar el que falta. */
   requiereArchivo: boolean
   requiereRespuestaTexto: boolean
 }
