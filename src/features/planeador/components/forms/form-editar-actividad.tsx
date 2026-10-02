@@ -137,9 +137,8 @@ import type {
   Recurso,
 } from "@/features/planeador/api/types/actividad"
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import type { Estudiante } from "@/features/planeador/api/types/calificacion"
+import type { MatriculaGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
-import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
@@ -313,12 +312,6 @@ export function EditarActividadForm({
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
-  // Estudiantes del grupo de la actividad — mismo query que alimenta la
-  // vista de calificaciones. Se usa acá para el checklist "Seleccionar
-  // estudiantes (múltiple)" cuando una adaptación aplica a "Estudiantes
-  // específicos" (ver `AdaptacionItem`). `undefined` en el alta: ver la
-  // nota de `esNueva` en `EditarActividadFormProps`.
-  const { data: estudiantes = [] } = useCalificacionesQuery(esNueva ? undefined : actividad.id)
 
   // Unidades creadas al vuelo desde `CrearUnidadPopover`. `useCreateUnidad`
   // ya las persiste de verdad (`POST /planeador/unidades`), pero invalidar
@@ -449,6 +442,27 @@ export function EditarActividadForm({
   // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
+  // Padrón de matrículas del grupo de la actividad — mismo query que
+  // alimenta "Estudiantes de la {rótulo}" en `AsignaturaGradoSection`
+  // (`useActividadMatriculasGrupoQuery`, misma `queryKey` por `grupoId`:
+  // react-query dedupea, no duplica el pedido al backend). Se usa acá para
+  // el checklist "Seleccionar estudiantes (múltiple)" de cada adaptación
+  // (ver `AdaptacionItem`). ANTES este checklist salía de
+  // `useCalificacionesQuery(actividad.id)` (`GET
+  // /planeador/actividades/:id/calificaciones`), que (a) viene `undefined`
+  // en el alta —`esNueva`— porque esa actividad todavía no existe en el
+  // backend, dejando el checklist vacío al crear, y (b) devuelve
+  // `pk_tactividad_estudiante` como `id` (ver `Estudiante`/`CalificacionRow`
+  // en `use-calificaciones-query.ts`), NO `pk_tmatricula` — el validador
+  // `fn_actividad_validar_adaptacion_estudiantes` (V496.1) espera
+  // `pk_tmatricula` en `estudiantesIds`, así que marcar casillas con el id
+  // viejo siempre terminaba rechazado por el backend ("Uno de los
+  // estudiantes de la adaptación no está entre los estudiantes de..."),
+  // sin importar cuáles/cuántas se marcaran. `matriculas` no depende de la
+  // actividad ya guardada (solo de `grupoId`), así que está disponible
+  // desde el alta.
+  const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
+  const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
   // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
   // `DialogAgregarActividad`, `unidadId` de la URL en
@@ -570,7 +584,7 @@ export function EditarActividadForm({
           Seguimiento sigue atado a `esFormativa` como antes: existe para
           hacerle ajustes a una evaluación sumativa, y su propio gate
           interno (`hasAdaptaciones`) ya decide si se muestra. */}
-      <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} actividadId={actividad.id} />
+      <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
   )
@@ -4958,16 +4972,21 @@ function maxPonderacionCriterio(criterio: {
 
 function AdaptacionesSection({
   form,
-  estudiantes,
+  matriculas,
   disabled,
   actividadId,
 }: {
   form: FormActividad
-  estudiantes: Estudiante[]
+  matriculas: MatriculaGrupo[]
   disabled: boolean
   actividadId: number
 }) {
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // Mismo criterio que `CriterioItem`/`ListaCotejoItemCard` (arrays de
+  // sub-items sin `form.Field` propio por fila): el error de "obligatorio"
+  // de cada adaptación combina el `useState` local "tocado" de ESE item con
+  // un intento de guardar a nivel del form entero.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -5033,10 +5052,11 @@ function AdaptacionesSection({
                       key={aIndex}
                       index={aIndex}
                       adaptacion={adapt}
-                      estudiantes={estudiantes}
+                      matriculas={matriculas}
                       disabled={disabled}
                       actividadId={actividadId}
                       grupoId={grupoId ?? 0}
+                      submissionAttempts={submissionAttempts}
                       onChange={(next) => {
                         const list = adaptaciones.slice()
                         list[aIndex] = next
@@ -5236,27 +5256,37 @@ function esUrlValida(value: string): boolean {
  * con `Seleccione` como placeholder hasta que se elija un valor real.
  *
  * `especificacionTipo`/`nombrePlantilla` ya viajan al backend (sso V496.1,
- * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — sin
- * `form` disponible (este componente no lo recibe, solo `adaptacion`/
- * `onChange`), la validación de "obligatorio" es local por `blur`, no por
- * intento de guardar como el resto del form.
+ * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — este
+ * componente no recibe `form` (solo `adaptacion`/`onChange`), así que la
+ * validación de "obligatorio" de esos dos campos es local por `blur`, sin
+ * combinarse con un intento de guardar. El checklist de estudiantes SÍ
+ * recibe `submissionAttempts` desde `AdaptacionesSection` (que sí tiene
+ * `form`) y lo combina con su propio "tocado" local, igual que
+ * `CriterioItem`/`ListaCotejoItemCard`: a diferencia de
+ * especificacionTipo/nombrePlantilla, acá el backend (`fn_actividad_
+ * validar_adaptacion_estudiantes`, V496.1) rechaza directamente el guardado
+ * completo de la actividad si la lista queda vacía — sin aviso en el
+ * intento de guardar, el docente solo se enteraba al ver el error genérico
+ * del toast tras el submit.
  */
 function AdaptacionItem({
   index,
   adaptacion,
-  estudiantes,
+  matriculas,
   disabled,
   actividadId,
   grupoId,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
   index: number
   adaptacion: Adaptacion
-  estudiantes: Estudiante[]
+  matriculas: MatriculaGrupo[]
   disabled: boolean
   actividadId: number
   grupoId: number
+  submissionAttempts: number
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
@@ -5266,6 +5296,7 @@ function AdaptacionItem({
   // `adaptacion`, así que no alcanza con derivarlo de ahí.
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
   const [tocoEnlace, setTocoEnlace] = useState(false)
+  const [tocoEstudiantes, setTocoEstudiantes] = useState(false)
 
   const especificacionTipoInvalida =
     tocoEspecificacionTipo && adaptacion.tipo === "Otro" && !adaptacion.especificacionTipo.trim()
@@ -5276,6 +5307,10 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
+  const estudiantesInvalido =
+    (tocoEstudiantes || submissionAttempts > 0) &&
+    adaptacion.aplicaA === "Estudiantes específicos" &&
+    adaptacion.estudiantesIds.length === 0
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5614,43 +5649,61 @@ function AdaptacionItem({
           "Estudiantes específicos". Mismo idioma que el resto del form:
           `Field variant="outlined"` con el label flotando en el borde
           superior, acá conteniendo una lista vertical de checkboxes en
-          vez de un input. Vacío si el grupo todavía no tiene estudiantes
-          cargados (actividad recién creada, sin `useCalificacionesQuery`
-          resuelto todavía). */}
+          vez de un input. Mismo padrón que "Estudiantes de la {rótulo}"
+          (Bloque 1, `useActividadMatriculasGrupoQuery`/`matriculas`), NO
+          `useCalificacionesQuery`: ese query viene vacío en el alta (la
+          actividad todavía no existe) y, aun en edición, devuelve
+          `pk_tactividad_estudiante` como id en vez del `pk_tmatricula` que
+          exige `estudiantesIds` (`fn_actividad_validar_adaptacion_
+          estudiantes`, V496.1) — ver el comentario de `grupoIdActual` en
+          `EditarActividadForm`. Vacío si el grupo todavía no tiene
+          matrículas cargadas.
+
+          Validación "obligatorio" (estudiantesInvalido más arriba): el
+          `onBlur` va en el contenedor de checkboxes, no en cada uno — React
+          hace burbujear `blur` (desde v17), así que alcanza con que el foco
+          salga de CUALQUIER checkbox del checklist para marcarlo "tocado",
+          sin depender de cuál en particular perdió el foco. */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
-        <Field variant="outlined" className="mt-4">
+        <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
           <FieldLabel>Seleccionar estudiantes (múltiple)</FieldLabel>
-          {estudiantes.length === 0 ? (
+          {matriculas.length === 0 ? (
             <p className="text-muted-foreground px-1 py-2 text-sm">
               Este grupo todavía no tiene estudiantes cargados.
             </p>
           ) : (
-            <div className="flex flex-col gap-1 py-1">
-              {estudiantes.map((estudiante) => {
-                const checked = adaptacion.estudiantesIds.includes(estudiante.id)
+            <div
+              className="flex flex-col gap-1 py-1"
+              aria-invalid={estudiantesInvalido}
+              onBlur={() => setTocoEstudiantes(true)}
+            >
+              {matriculas.map((matricula) => {
+                const checked = adaptacion.estudiantesIds.includes(matricula.id)
                 return (
                   <label
-                    key={estudiante.id}
+                    key={matricula.id}
                     className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(next) =>
+                      onCheckedChange={(next) => {
+                        setTocoEstudiantes(true)
                         onChange({
                           ...adaptacion,
                           estudiantesIds: next
-                            ? [...adaptacion.estudiantesIds, estudiante.id]
-                            : adaptacion.estudiantesIds.filter((id) => id !== estudiante.id),
+                            ? [...adaptacion.estudiantesIds, matricula.id]
+                            : adaptacion.estudiantesIds.filter((id) => id !== matricula.id),
                         })
-                      }
+                      }}
                       disabled={disabled}
                     />
-                    {toTitleCase(`${estudiante.nombres} ${estudiante.apellidos}`)}
+                    {toTitleCase(matricula.nombre)}
                   </label>
                 )
               })}
             </div>
           )}
+          {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}
     </li>
