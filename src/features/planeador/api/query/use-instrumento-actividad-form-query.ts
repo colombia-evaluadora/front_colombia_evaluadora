@@ -141,6 +141,7 @@ function criterioDesdeRaw(criterio: RawCriterio): Criterio {
   return {
     id: syntheticId(criterio.pk),
     nombre: criterio.nombre,
+    descripcion: criterio.descripcion ?? "",
     excelente: excelente?.descripcion ?? "",
     excelentePonderacion: excelente?.ponderacion ?? undefined,
     niveles: resto.map(nivelDesdeRaw),
