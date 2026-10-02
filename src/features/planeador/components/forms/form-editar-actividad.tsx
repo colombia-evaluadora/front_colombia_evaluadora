@@ -3760,13 +3760,24 @@ function ListaCotejoItemCard({
  * se siembran los 3 niveles por defecto —Bajo/Medio/Alto— de una: el
  * usuario ve algo que completar en vez de una lista vacía + un paso
  * extra para crear cada nivel. El botón "+" del header agrega más
- * niveles después de esos tres, tomando el siguiente nombre de
- * `NIVELES_CUALITATIVOS_DEFAULT` o cayendo a "Nivel N".
+ * niveles después de esos tres, tomando el primero de
+ * `NIVELES_CUALITATIVOS_DEFAULT` que todavía no esté en uso, o cayendo a
+ * "Nivel N".
  */
 const NIVELES_CUALITATIVOS_DEFAULT = ["Bajo", "Medio", "Alto"]
 
-function nextNivelCualitativoNombre(existingCount: number): string {
-  return NIVELES_CUALITATIVOS_DEFAULT[existingCount] ?? `Nivel ${existingCount + 1}`
+/**
+ * Elige el default por NOMBRE YA USADO, no por posición/cantidad: antes
+ * indexaba `NIVELES_CUALITATIVOS_DEFAULT` por `niveles.length`, así que
+ * borrar un nivel de en medio (p. ej. "Medio", `removeNivel`) y agregar
+ * uno nuevo volvía a calcular el mismo índice que un nivel YA presente
+ * ("Alto") — quedaban dos niveles con el mismo nombre en vez de avanzar
+ * al siguiente default disponible.
+ */
+function nextNivelCualitativoNombre(nivelesActuales: { nombre: string }[]): string {
+  const nombresUsados = new Set(nivelesActuales.map((nivel) => nivel.nombre))
+  const siguienteDefault = NIVELES_CUALITATIVOS_DEFAULT.find((nombre) => !nombresUsados.has(nombre))
+  return siguienteDefault ?? `Nivel ${nivelesActuales.length + 1}`
 }
 
 /**
@@ -4030,7 +4041,7 @@ function EscalaValoracionSection({
                                   ...escala.niveles,
                                   {
                                     id: cryptoId(),
-                                    nombre: nextNivelCualitativoNombre(escala.niveles.length),
+                                    nombre: nextNivelCualitativoNombre(escala.niveles),
                                     descripcion: "",
                                   },
                                 ],
