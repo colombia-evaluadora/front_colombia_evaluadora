@@ -82,6 +82,8 @@ export type CalificacionEstudiante = Estudiante & {
   observacion?: string | null
   /** Regla 61: enlace de la evidencia (`evidencia_enlace`), alternativo a los archivos. */
   evidenciaEnlace?: string | null
+  /** Momento del registro guardado (`momento`: INICIO/PROCESO/CIERRE). */
+  momento?: string | null
   /** `yyyy-MM-dd` — `fecha_asistencia` (V442/V443): el día con asistencia
    *  válida de ESE estudiante, que es el que hay que mandar en `BODY.FECHA`
    *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en
@@ -105,7 +107,7 @@ export function bloqueoCalificar(e: CalificacionEstudiante): string | null {
     e.estadoResultado?.startsWith("NO_ASISTIO") ||
     (e.asistencia.estado === "no-asistio" && e.estadoResultado !== "CALIFICADO")
   ) {
-    return "No asistió: cambie su asistencia para registrar el resultado."
+    return "El estudiante no asistió"
   }
   // Un resultado ya registrado (congelado) se puede corregir.
   if (e.asistencia.estado === "sin-registrar" && e.estadoResultado !== "CALIFICADO") {

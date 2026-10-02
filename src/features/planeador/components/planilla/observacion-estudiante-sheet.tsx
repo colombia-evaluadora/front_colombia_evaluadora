@@ -98,6 +98,8 @@ export interface EstudianteObservable {
   observacion: string | null
   /** Regla 61: enlace guardado; `undefined` si la vista no lo trae. */
   enlace?: string | null
+  /** Momento guardado (VALOR: INICIO/PROCESO/CIERRE); `undefined` si la vista no lo trae. */
+  momento?: string | null
   fecha: string | null
 }
 
@@ -109,7 +111,7 @@ interface ObservacionEstudianteSheetProps {
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   /** `enlace` solo viaja si cambió: omitido no lo toca, vacío lo quita. */
-  onGuardar: (estudiante: EstudianteObservable, texto: string, enlace?: string) => void
+  onGuardar: (estudiante: EstudianteObservable, texto: string, enlace?: string, momento?: string) => void
   onAgregarEvidencia?: (archivo: File) => void
   agregandoEvidencia?: boolean
   onQuitarEvidencia?: (evidencia: CeldaEvidencia) => void
@@ -171,6 +173,7 @@ export function ObservacionEstudianteSheet({
   const textoGuardadoRef = useRef("")
   const [enlace, setEnlace] = useState("")
   const enlaceGuardadoRef = useRef("")
+  const momentoGuardadoRef = useRef("")
 
   useEffect(() => {
     if (estudiante) {
@@ -179,10 +182,21 @@ export function ObservacionEstudianteSheet({
       enlaceGuardadoRef.current = estudiante.enlace ?? ""
       setEnlace(enlaceGuardadoRef.current)
       setMomento("")
+      momentoGuardadoRef.current = ""
       setErrorLocal(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estudiante?.id])
+
+  // Precarga el momento guardado; espera al catálogo para resolver su id.
+  useEffect(() => {
+    const guardado = estudiante?.momento?.trim().toUpperCase()
+    if (!guardado) return
+    const match = momentos.find((m) => m.nombre.trim().toUpperCase() === guardado)
+    if (!match) return
+    momentoGuardadoRef.current = String(match.id)
+    setMomento((actual) => actual || String(match.id))
+  }, [estudiante?.id, estudiante?.momento, momentos])
 
   const sinAsistencia = estudiante?.fecha == null
   const enlaceLimpio = enlace.trim()
@@ -195,7 +209,7 @@ export function ObservacionEstudianteSheet({
   const limiteEvidenciasAlcanzado = evidencias.length >= OBSERVACION_EVIDENCIAS_MAX
 
   function handleOpenChange(open: boolean) {
-    if (!open && (texto !== textoGuardadoRef.current || enlace !== enlaceGuardadoRef.current || momento !== "")) {
+    if (!open && (texto !== textoGuardadoRef.current || enlace !== enlaceGuardadoRef.current || momento !== momentoGuardadoRef.current)) {
       setConfirmarSalida(true)
       return
     }
@@ -501,7 +515,8 @@ export function ObservacionEstudianteSheet({
               const enlaceCambio = enlaceLimpio !== enlaceGuardadoRef.current
               enlaceGuardadoRef.current = enlaceLimpio
               setEnlace(enlaceLimpio)
-              onGuardar(estudiante, texto, enlaceCambio ? enlaceLimpio : undefined)
+              const momentoNombre = momentos.find((m) => String(m.id) === momento)?.nombre
+              onGuardar(estudiante, texto, enlaceCambio ? enlaceLimpio : undefined, momentoNombre)
             }}
           >
             {guardando ? (

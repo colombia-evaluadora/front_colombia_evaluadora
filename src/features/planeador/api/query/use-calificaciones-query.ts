@@ -56,6 +56,8 @@ interface CalificacionRow {
   calificable: "S" | "N"
   nota_observacion: string | null
   evidencia_enlace?: string | null
+  /** `VALOR` del catálogo MOMENTO_REGISTRO (INICIO/PROCESO/CIERRE). */
+  momento?: string | null
   /** `1` Asistió, `2` No asistió, `5` Llegó tarde (3/6 solo en históricos). */
   tipo_asistencia_valor: string | null
   /** Hay excusa (archivo) ese día. */
@@ -104,6 +106,7 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
     evidenciaEnlace: row.evidencia_enlace ?? null,
+    momento: row.momento ?? null,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
     noPresento: row.estado_resultado === "NO_PRESENTO",
     estadoResultado: row.estado_resultado ?? undefined,
