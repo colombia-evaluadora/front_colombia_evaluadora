@@ -75,7 +75,6 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   ComboboxField,
@@ -101,6 +100,7 @@ import {
   METODO_CALCULO_OPTIONS,
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
+  CheckCircleFillIcon,
   EyeIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
@@ -114,8 +114,13 @@ import {
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   TrashIcon,
+  XCircleIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import {
+  esDominioPermitido,
+  useDominioMaterialCatalog,
+} from "@/features/planeador/api/query/use-dominio-material-catalog"
 
 import type {
   Actividad,
@@ -1975,9 +1980,17 @@ function AsignaturaGradoSection({
   )
 }
 
+/**
+ * "Materiales requeridos" — mitad del Bloque 3 ("Recursos y Materiales");
+ * la otra mitad es `RecursosSection` ("Materiales de apoyo"), que va justo
+ * después en el render. Antes esta sección no tenía título propio: sin un
+ * `<h3>` que la separe, un `Card` en blanco pegado a "Identificación" se
+ * leía como si siguiera siendo parte de ese bloque (pedido de QA).
+ */
 function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <Card className="gap-4 p-4">
+      <h3 className="text-base font-semibold">Materiales requeridos</h3>
       <form.Field name="materiales">
         {(field) => (
           <Field variant="outlined">
@@ -1993,6 +2006,7 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               rows={4}
               disabled={disabled}
             />
+            <CharacterCounter value={field.state.value} max={500} />
           </Field>
         )}
       </form.Field>
@@ -2022,6 +2036,53 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
+/** Regla 82: tope de "Materiales de apoyo" por actividad. */
+const RECURSO_MAX_ITEMS = 10
+
+/**
+ * Formatos permitidos en "Archivo en PC" (Regla 82) — los ejecutables
+ * (.exe/.bat/.sh) quedan prohibidos por no estar en esta lista, no por un
+ * chequeo aparte. A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía del
+ * picker, pensada solo para lo que `recurso-preview.tsx` sabe mostrar:
+ * imagen/audio/video/pdf), acá SÍ se valida en el cliente: pedido explícito
+ * de QA, mismo criterio que el archivo de plantilla de Adaptaciones.
+ */
+const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+  "jpg", "jpeg", "png", "gif", "mp3", "mp4", "webm", "txt",
+]
+const RECURSO_ARCHIVO_ACCEPT_VALIDADO = RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.map((ext) => `.${ext}`).join(",")
+const RECURSO_ARCHIVO_MAX_BYTES = 20 * 1024 * 1024
+
+/** `javascript:`/`data:` no son un dominio a rechazar por lista blanca —son
+ *  un ESQUEMA a rechazar siempre, antes de siquiera mirar el host. */
+const ESQUEMAS_URL_PELIGROSOS = ["javascript:", "data:"]
+
+function extensionDe(nombre: string): string {
+  return nombre.split(".").pop()?.toLowerCase() ?? ""
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B"
+  const unidades = ["B", "KB", "MB", "GB"]
+  const indice = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), unidades.length - 1)
+  return `${(bytes / 1024 ** indice).toFixed(indice === 0 ? 0 : 1)} ${unidades[indice]}`
+}
+
+/** `esquemaPeligroso` se chequea ANTES: `new URL("javascript:...")` no tira
+ *  (es sintácticamente válida), así que sin este chequeo explícito pasaba
+ *  derecho el resto de la validación. */
+function esUrlDeRecursoValida(value: string): boolean {
+  const lower = value.trim().toLowerCase()
+  if (ESQUEMAS_URL_PELIGROSOS.some((esquema) => lower.startsWith(esquema))) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 function RecursosSection({
   form,
   draftKey,
@@ -2039,6 +2100,29 @@ function RecursosSection({
   // resolver el alcance del usuario mientras la actividad no existe (al
   // crear); editando manda la actividad y esto queda de respaldo.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // Regla 82: máximo 10 materiales de apoyo por actividad — tope del
+  // backend (`fn_actividad_validar_materiales`), repetido acá para avisar
+  // antes de llegar al guardado.
+  const recursosCount = useSelector(
+    form.store,
+    (state) => (state.values.recursos as Recurso[]).length,
+  )
+  const limiteAlcanzado = recursosCount >= RECURSO_MAX_ITEMS
+
+  // Mismo catálogo que valida `fn_actividad_validar_url_dominio` al
+  // guardar (Regla 82) — se consulta acá para avisar en el cliente apenas
+  // se tipea el enlace. `undefined` mientras no resuelve: no bloquea (el
+  // guardado real sigue cayendo en la validación del backend).
+  const { data: dominiosUrl } = useDominioMaterialCatalog("DOMINIO_MATERIAL_URL")
+  const { data: dominiosRepositorio } = useDominioMaterialCatalog("DOMINIO_MATERIAL_REPOSITORIO")
+
+  function draftUrlInvalida(d: RecursoDraft): boolean {
+    if (d.tipo === "Archivo" || !d.url.trim()) return false
+    if (!esUrlDeRecursoValida(d.url)) return true
+    const dominios = d.tipo === "Unidad virtual" ? dominiosRepositorio : dominiosUrl
+    if (!dominios) return false
+    return !esDominioPermitido(d.url, dominios)
+  }
 
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
@@ -2063,7 +2147,9 @@ function RecursosSection({
     // aporta nada en la lista de "Recursos agregados" (se vería como
     // una línea vacía con un tag).
     if (!draft.url.trim() && !draft.fuente.trim()) return
+    if (draftUrlInvalida(draft)) return
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [
       ...list,
       { id: cryptoId(), ...draft },
@@ -2079,6 +2165,7 @@ function RecursosSection({
   // recursos podrían colisionar en el `<ul>` (la key es el id).
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [...list, { id: cryptoId(), ...recurso }])
   }
 
@@ -2109,7 +2196,7 @@ function RecursosSection({
                   // la actividad al editar, el grupo al crear (V429). Sin
                   // ninguna de las dos el backend responde 400, así que el
                   // botón espera a que se elija el grupo.
-                  disabled={disabled || (actividadId <= 0 && !grupoId)}
+                  disabled={disabled || limiteAlcanzado || (actividadId <= 0 && !grupoId)}
                 />
               }
             >
@@ -2168,18 +2255,26 @@ function RecursosSection({
               tipeado se perdía en silencio. `handleAddDraft` ya no hace
               nada si el borrador está vacío, así que no agrega filas
               fantasma solo por tabular de un campo a otro. */}
-          <div
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
-            }}
-          >
-            <RecursoForm
-              draft={draft}
-              onChange={updateDraft}
-              onAdd={handleAddDraft}
-              disabled={disabled}
-            />
-          </div>
+          {limiteAlcanzado ? (
+            <p className="text-muted-foreground text-sm">
+              Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
+              alguno de la lista para agregar otro.
+            </p>
+          ) : (
+            <div
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
+              }}
+            >
+              <RecursoForm
+                draft={draft}
+                onChange={updateDraft}
+                onAdd={handleAddDraft}
+                urlInvalida={draftUrlInvalida(draft)}
+                disabled={disabled}
+              />
+            </div>
+          )}
 
           <form.Field name="recursos">
             {(field) => {
@@ -2258,13 +2353,29 @@ function RecursoForm({
   draft,
   onChange,
   onAdd,
+  urlInvalida,
   disabled,
 }: {
   draft: RecursoDraft
   onChange: (patch: Partial<RecursoDraft>) => void
   onAdd: () => void
+  /** Calculado por el padre (`RecursosSection`): formato de URL + dominio
+   *  permitido, según `draft.tipo` (ver `draftUrlInvalida`). `false`
+   *  mientras `draft.url` está vacío — recién se marca inválido con algo
+   *  tipeado que no pasa la validación. */
+  urlInvalida: boolean
   disabled: boolean
 }) {
+  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
+  // `draft`, así que no alcanza con derivarlo de ahí.
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
+  // Tamaño del archivo recién elegido, solo para el preview "nombre · peso"
+  // de abajo — `Recurso`/`RecursoDraft` no guardan el tamaño (no viaja al
+  // backend), así que vive aparte, nunca en el draft commiteado.
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<{ nombre: string; size: number } | null>(
+    null,
+  )
+
   const FuenteIcon =
     draft.tipo === "Unidad virtual"
       ? ImageIcon
@@ -2292,12 +2403,26 @@ function RecursoForm({
         <h4 className="text-sm font-semibold">Recurso - Fuente</h4>
       </div>
 
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Nombre</FieldLabel>
+        <Input
+          maxLength={100}
+          placeholder="Nombre con el que se identifica este recurso…"
+          value={draft.titulo}
+          onChange={(e) => onChange({ titulo: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={draft.titulo} max={100} />
+      </Field>
+
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr]">
         <Field variant="outlined">
           <FieldLabel>Tipo</FieldLabel>
           <Select
             value={draft.tipo}
-            onValueChange={(v) =>
+            onValueChange={(v) => {
+              setErrorArchivo(null)
+              setArchivoSeleccionado(null)
               onChange({
                 tipo: (v ?? "URL") as Recurso["tipo"],
                 // Al pasar a "Archivo" la URL previa pierde sentido (el
@@ -2307,7 +2432,7 @@ function RecursoForm({
                 // ya tipeó.
                 url: v === "Archivo" ? "" : draft.url,
               })
-            }
+            }}
             disabled={disabled}
           >
             <SelectTrigger>
@@ -2357,10 +2482,11 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
-              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
-              // no validación: el `accept` se puede esquivar y quien decide
-              // de verdad es `file-service`.
-              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
+              // A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía de
+              // "Adjuntar desde biblioteca"/preview, que no valida nada),
+              // acá el `accept` SÍ va acompañado del chequeo real en
+              // `onChange` — pedido explícito de QA (Regla 82).
+              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT_VALIDADO } : {})}
               placeholder={fuentePlaceholder}
               maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
@@ -2386,15 +2512,36 @@ function RecursoForm({
                     URL.revokeObjectURL(draft.url)
                   }
                   if (!file) {
+                    setErrorArchivo(null)
+                    setArchivoSeleccionado(null)
                     onChange({ url: "", fuente: "" })
                     return
                   }
+                  const extension = extensionDe(file.name)
+                  if (!RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.includes(extension)) {
+                    setErrorArchivo(
+                      `Formato ".${extension || "desconocido"}" no permitido. Usá: ${RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.join(", ")}.`,
+                    )
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  if (file.size > RECURSO_ARCHIVO_MAX_BYTES) {
+                    setErrorArchivo("El archivo supera el tamaño máximo permitido (20 MB).")
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  setErrorArchivo(null)
+                  setArchivoSeleccionado({ nombre: file.name, size: file.size })
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se 
-                  // lo pasa al resolver, que lo usa como fallback para 
-                  // detectar la extensión — los blob URLs no tienen 
-                  // extensión en el path y no queríamos meterla en el 
-                  // hash (algunos parsers se confunden con el `#`). 
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -2404,9 +2551,35 @@ function RecursoForm({
                 }
               }}
               className={FuenteIcon ? "pl-9" : undefined}
+              aria-invalid={Boolean(errorArchivo) || urlInvalida}
               disabled={disabled}
             />
           </div>
+          {/* Preview "nombre · peso" + ícono de estado antes de confirmar
+              la carga (pedido explícito de QA) — éxito en verde si pasó
+              las validaciones de arriba, error en rojo si no. */}
+          {draft.tipo === "Archivo" && archivoSeleccionado && !errorArchivo && (
+            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <CheckCircleFillIcon className="text-green size-3.5 shrink-0" />
+              {archivoSeleccionado.nombre} · {formatBytes(archivoSeleccionado.size)}
+            </p>
+          )}
+          {errorArchivo && (
+            <p className="text-red flex items-center gap-1.5 text-xs">
+              <XCircleIcon className="size-3.5 shrink-0" />
+              {errorArchivo}
+            </p>
+          )}
+          {draft.tipo !== "Archivo" && urlInvalida && (
+            <FieldError
+              errors={[
+                {
+                  message:
+                    "El enlace no es una URL válida o su dominio no está en la lista de sitios admitidos.",
+                },
+              ]}
+            />
+          )}
         </Field>
       </div>
 
@@ -2436,7 +2609,7 @@ function RecursoForm({
             size="sm"
             type="button"
             onClick={onAdd}
-            disabled={disabled}
+            disabled={disabled || Boolean(errorArchivo) || urlInvalida}
           >
             <PlusIcon data-icon="inline-start" />
             {/* NO "Guardar" — este botón no guarda la actividad, solo
