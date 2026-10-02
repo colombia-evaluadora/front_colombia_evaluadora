@@ -40,10 +40,27 @@ interface UpdateUnidadInput {
   data: UnidadInfoGeneral
 }
 
+/** Una actividad cuyo peso (%) o puntaje se CONVIRTIÓ automáticamente al
+ *  cambiar el criterio de cálculo de la unidad con actividades ya
+ *  vinculadas (Regla 28) — informativo, el valor ya quedó guardado. */
+export interface ActividadAfectada {
+  pk: number
+  titulo: string
+}
+
 interface UpdateUnidadResponse {
   status: "ok" | "error"
   message?: string
   unidad?: UnidadTematica
+  /** Solo en el backend real: `actividades_afectadas` ([], si el criterio
+   *  de cálculo no cambió o la unidad no tenía actividades vinculadas). El
+   *  mock no modela esta conversión, así que ahí siempre queda vacío. */
+  actividadesAfectadas: ActividadAfectada[]
+}
+
+interface UpdateUnidadRealRow {
+  fn_unidad_actualizar: number
+  actividades_afectadas?: ActividadAfectada[]
 }
 
 /**
@@ -56,7 +73,11 @@ interface UpdateUnidadResponse {
  */
 async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<UpdateUnidadResponse> {
   if (env.ENABLE_API_MOCKING) {
-    return api.put(`/eval-col/planeador/unidades/${unidadId}`, data)
+    const result = await api.put<Omit<UpdateUnidadResponse, "actividadesAfectadas">>(
+      `/eval-col/planeador/unidades/${unidadId}`,
+      data,
+    )
+    return { ...result, actividadesAfectadas: [] }
   }
   const body: Record<string, unknown> = {
     NOMBRE: data.nombre,
@@ -84,7 +105,8 @@ async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<Upda
   // array (nunca `undefined`, ver `UNIDAD_DRAFT_VACIO`), así que se manda
   // tal cual: un array vacío es una desvinculación total válida.
   body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
-  return api.put(`/eval-col/planeador/unidades/${unidadId}`, body)
+  const row = await api.put<UpdateUnidadRealRow>(`/eval-col/planeador/unidades/${unidadId}`, body)
+  return { status: "ok", actividadesAfectadas: row.actividades_afectadas ?? [] }
 }
 
 interface UseUpdateUnidadOptions {
