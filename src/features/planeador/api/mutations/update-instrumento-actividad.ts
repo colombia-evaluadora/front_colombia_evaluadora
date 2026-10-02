@@ -61,10 +61,15 @@ function pkDeVarianteEscala(
  * coincide) — por eso `create-actividad.ts`/`update-actividad.ts` mandan ese
  * campo ANTES de llamar acá.
  */
-type NivelBody = { etiqueta: string; descripcion?: string; ponderacion: number }
+// `ponderacion` es opcional: antes se mandaba `?? 0` siempre, lo que pisaba
+// el default "pesa 1" de `fn_actividad_validar_rubrica_definicion`/
+// `fn_actividad_rubrica_definir_interno` (sso V496.5/V496.6) con un 0
+// explícito. Ahora, si el nivel no tiene puntaje, se omite la clave (el
+// backend decide: 1 si la Unidad no lo exige, 400 si sí lo exige).
+type NivelBody = { etiqueta: string; descripcion?: string; ponderacion?: number }
 
 function nivelABody(nivel: Nivel): NivelBody {
-  return { etiqueta: nivel.nombre, descripcion: nivel.descripcion || undefined, ponderacion: nivel.ponderacion ?? 0 }
+  return { etiqueta: nivel.nombre, descripcion: nivel.descripcion || undefined, ponderacion: nivel.ponderacion }
 }
 
 /**
@@ -81,7 +86,7 @@ function criterioABody(criterio: Criterio) {
     niveles.push({
       etiqueta: "Excelente",
       descripcion: criterio.excelente || undefined,
-      ponderacion: criterio.excelentePonderacion ?? 0,
+      ponderacion: criterio.excelentePonderacion,
     })
   }
   niveles.push(...criterio.niveles.map(nivelABody))
