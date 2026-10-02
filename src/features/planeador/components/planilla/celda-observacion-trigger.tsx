@@ -28,6 +28,8 @@ interface CeldaObservacionTriggerProps {
    *  el estudiante tiene o no observación. */
   observacionActual: string | null
   evidenciasActuales: CeldaEvidencia[]
+  /** Enlace de evidencia guardado; `undefined` si la vista no lo trae. */
+  enlaceActual?: string | null
   /** `true` si la ventana de la actividad todavía no empieza — matiza el
    *  aviso de "sin asistencia" en el panel. */
   actividadSinComenzar?: boolean
@@ -52,6 +54,7 @@ export function CeldaObservacionTrigger({
   contexto,
   observacionActual,
   evidenciasActuales,
+  enlaceActual,
   actividadSinComenzar,
   onGuardado,
   bloqueo,
@@ -128,6 +131,7 @@ export function CeldaObservacionTrigger({
                 id: pkTactividadEstudiante,
                 nombreCompleto: estudianteNombre,
                 observacion: notaActual?.observacion ?? observacionActual,
+                enlace: enlaceActual,
                 fecha,
               }
             : null
@@ -145,9 +149,9 @@ export function CeldaObservacionTrigger({
             quitarEvidencia.reset()
           }
         }}
-        onGuardar={(estudiante, texto) => {
+        onGuardar={(estudiante, texto, enlace) => {
           if (!fecha) return
-          observar.mutate({ pkTactividadEstudiante: estudiante.id, observacion: texto.trim(), fecha })
+          observar.mutate({ pkTactividadEstudiante: estudiante.id, observacion: texto.trim(), fecha, enlace })
         }}
         onAgregarEvidencia={(archivo) => {
           if (!fecha) return

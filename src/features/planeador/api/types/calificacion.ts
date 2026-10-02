@@ -80,6 +80,8 @@ export type CalificacionEstudiante = Estudiante & {
   /** Observación del docente (`nota_observacion`) — en una actividad de
    *  referente FORMATIVO reemplaza a la nota, que viene siempre `null`. */
   observacion?: string | null
+  /** Regla 61: enlace de la evidencia (`evidencia_enlace`), alternativo a los archivos. */
+  evidenciaEnlace?: string | null
   /** `yyyy-MM-dd` — `fecha_asistencia` (V442/V443): el día con asistencia
    *  válida de ESE estudiante, que es el que hay que mandar en `BODY.FECHA`
    *  al calificar u observar. `null` = no hay ninguno todavía; `undefined` en

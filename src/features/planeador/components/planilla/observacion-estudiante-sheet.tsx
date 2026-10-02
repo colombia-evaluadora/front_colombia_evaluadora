@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -84,8 +85,12 @@ export interface EstudianteObservable {
   id: number
   nombreCompleto: string
   observacion: string | null
+  /** Regla 61: enlace guardado; `undefined` si la vista no lo trae. */
+  enlace?: string | null
   fecha: string | null
 }
+
+const ENLACE_VALIDO = /^https?:\/\/\S+$/i
 
 interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
@@ -93,7 +98,8 @@ interface ObservacionEstudianteSheetProps {
   evidencias?: CeldaEvidencia[]
   guardando?: boolean
   onOpenChange: (open: boolean) => void
-  onGuardar: (estudiante: EstudianteObservable, texto: string) => void
+  /** `enlace` solo viaja si cambió: omitido no lo toca, vacío lo quita. */
+  onGuardar: (estudiante: EstudianteObservable, texto: string, enlace?: string) => void
   onAgregarEvidencia?: (archivo: File) => void
   agregandoEvidencia?: boolean
   onQuitarEvidencia?: (evidencia: CeldaEvidencia) => void
@@ -153,11 +159,15 @@ export function ObservacionEstudianteSheet({
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const inputArchivoRef = useRef<HTMLInputElement>(null)
   const textoGuardadoRef = useRef("")
+  const [enlace, setEnlace] = useState("")
+  const enlaceGuardadoRef = useRef("")
 
   useEffect(() => {
     if (estudiante) {
       textoGuardadoRef.current = estudiante.observacion ?? ""
       setTexto(textoGuardadoRef.current)
+      enlaceGuardadoRef.current = estudiante.enlace ?? ""
+      setEnlace(enlaceGuardadoRef.current)
       setMomento("")
       setErrorLocal(null)
     }
@@ -165,11 +175,17 @@ export function ObservacionEstudianteSheet({
   }, [estudiante?.id])
 
   const sinAsistencia = estudiante?.fecha == null
-  const puedeGuardar = (Boolean(texto.trim()) || evidencias.length > 0) && !sinAsistencia && !guardando
+  const enlaceLimpio = enlace.trim()
+  const enlaceInvalido = enlaceLimpio !== "" && !ENLACE_VALIDO.test(enlaceLimpio)
+  // Regla 61: archivos o enlace, no los dos.
+  const tieneEnlace = enlaceLimpio !== ""
+  const tieneArchivos = evidencias.length > 0
+  const puedeGuardar =
+    (Boolean(texto.trim()) || tieneArchivos || tieneEnlace) && !enlaceInvalido && !sinAsistencia && !guardando
   const limiteEvidenciasAlcanzado = evidencias.length >= OBSERVACION_EVIDENCIAS_MAX
 
   function handleOpenChange(open: boolean) {
-    if (!open && (texto !== textoGuardadoRef.current || momento !== "")) {
+    if (!open && (texto !== textoGuardadoRef.current || enlace !== enlaceGuardadoRef.current || momento !== "")) {
       setConfirmarSalida(true)
       return
     }
@@ -371,7 +387,7 @@ export function ObservacionEstudianteSheet({
                     size="icon"
                     className="size-20 flex-col gap-1 text-xs"
                     disabled={
-                      !onAgregarEvidencia || sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado
+                      !onAgregarEvidencia || sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado || tieneEnlace
                     }
                     onClick={() => inputArchivoRef.current?.click()}
                   >
@@ -388,7 +404,9 @@ export function ObservacionEstudianteSheet({
                     ? actividadSinComenzar
                       ? "La actividad todavía no comienza: no se puede adjuntar evidencia todavía."
                       : "Sin asistencia registrada todavía no se puede adjuntar evidencia."
-                    : limiteEvidenciasAlcanzado
+                    : tieneEnlace
+                      ? "Ya hay un enlace de evidencia: quítalo para adjuntar archivos."
+                      : limiteEvidenciasAlcanzado
                       ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
                       : `Subir un archivo ${OBSERVACION_EVIDENCIA_TIPOS_LABEL} (máx. ${OBSERVACION_EVIDENCIA_MAX_MB} MB).`}
                 </TooltipContent>
@@ -409,6 +427,30 @@ export function ObservacionEstudianteSheet({
               {OBSERVACION_EVIDENCIA_TIPOS_LABEL} · máx. {OBSERVACION_EVIDENCIA_MAX_MB} MB por archivo · hasta{" "}
               {OBSERVACION_EVIDENCIAS_MAX} archivos
             </p>
+            <Field variant="outlined" className="mt-2">
+              <FieldLabel htmlFor="enlace-evidencia">O un enlace de evidencia</FieldLabel>
+              <Input
+                id="enlace-evidencia"
+                type="url"
+                inputMode="url"
+                value={enlace}
+                maxLength={1000}
+                disabled={sinAsistencia || tieneArchivos}
+                aria-invalid={enlaceInvalido || undefined}
+                onChange={(e) => setEnlace(e.target.value)}
+                placeholder="https://…"
+              />
+              <span className="text-xs text-muted-foreground">
+                {tieneArchivos
+                  ? "Ya hay archivos adjuntos: quítalos para usar un enlace."
+                  : "Video, documento o carpeta compartida (http o https)."}
+              </span>
+              {enlaceInvalido && (
+                <p role="alert" className="text-destructive text-xs">
+                  El enlace debe empezar por http:// o https://
+                </p>
+              )}
+            </Field>
             {mensajeErrorEvidencia && (
               <p role="alert" className="flex items-start gap-1.5 text-xs text-red">
                 <WarningCircleIcon className="mt-0.5 size-3.5 shrink-0" />
@@ -432,7 +474,10 @@ export function ObservacionEstudianteSheet({
             onClick={() => {
               if (!estudiante) return
               textoGuardadoRef.current = texto
-              onGuardar(estudiante, texto)
+              const enlaceCambio = enlaceLimpio !== enlaceGuardadoRef.current
+              enlaceGuardadoRef.current = enlaceLimpio
+              setEnlace(enlaceLimpio)
+              onGuardar(estudiante, texto, enlaceCambio ? enlaceLimpio : undefined)
             }}
           >
             {guardando ? (

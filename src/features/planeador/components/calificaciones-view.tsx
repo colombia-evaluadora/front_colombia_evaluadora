@@ -241,6 +241,7 @@ function CalificacionRow({
               estudianteNombre={nombreCompleto}
               observacionActual={estudiante.observacion ?? null}
               evidenciasActuales={[]}
+              enlaceActual={estudiante.evidenciaEnlace}
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
               bloqueo={bloqueo}

@@ -11,18 +11,22 @@ export interface ObservarEstudianteInput {
   observacion: string
   fecha: string
   evidencias?: number[]
+  /** Regla 61: omitido no lo toca; vacío lo quita. */
+  enlace?: string
 }
 
 function buildObservarBody(input: {
   observacion: string
   fecha: string
   evidencias?: number[]
+  enlace?: string
 }): Record<string, unknown> {
   const body: Record<string, unknown> = {
     OBSERVACION: input.observacion,
     FECHA: input.fecha,
   }
   if (input.evidencias) body.EVIDENCIAS = input.evidencias
+  if (input.enlace !== undefined) body.ENLACE = input.enlace
   return body
 }
 
