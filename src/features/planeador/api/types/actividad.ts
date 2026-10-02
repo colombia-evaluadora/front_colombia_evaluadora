@@ -22,7 +22,7 @@ export type ActividadStatus = "pending" | "in-progress" | "completed" | "cancell
  */
 export type ActividadTipo = string
 
-export type Modalidad = "Presencial" | "Virtual" | "Mixta"
+export type Modalidad = "Presencial" | "Virtual" | "Híbrida"
 
 export type RecursoTipo = "URL" | "Unidad virtual" | "Archivo"
 

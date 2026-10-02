@@ -6,7 +6,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
  * `resolveTipoActividadId`/`resolveInstrumentoEvaluacionId`.
  *
  * A diferencia de esos dos, "Modalidad" (`ProgramacionSection`, `<Select
- * value="Presencial"|"Virtual"|"Mixta">`) NO sale de un catálogo real: sus
+ * value="Presencial"|"Virtual"|"Híbrida">`) NO sale de un catálogo real: sus
  * tres opciones están hardcodeadas en el form, y `"MODALIDAD"` acá abajo es
  * un NOMBRE DE CATEGORÍA SIN CONFIRMAR contra `GET /eval-col/select/`. Si
  * el nombre real es otro, esto resuelve `undefined` en silencio y
