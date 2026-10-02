@@ -56,6 +56,26 @@ import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
 
 /** Evidencia que no es imagen (PDF, DOC…): tarjeta con ícono que la abre en otra pestaña. */
+/** Regla 61: el enlace es una imagen (Imgur, Discord…); si no carga se muestra el enlace. */
+function EnlaceImagen({ url }: { url: string }) {
+  const [fallo, setFallo] = useState(false)
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="block w-fit rounded-md">
+      {fallo ? (
+        <span className="text-xs break-all text-primary underline">{url}</span>
+      ) : (
+        <img
+          src={url}
+          alt="Evidencia enlazada"
+          referrerPolicy="no-referrer"
+          className="max-h-40 rounded-md border object-contain"
+          onError={() => setFallo(true)}
+        />
+      )}
+    </a>
+  )
+}
+
 function EvidenciaDocumento({ evidencia }: { evidencia: CeldaEvidencia }) {
   const { data: url, isPending } = useArchivoViewUrl(evidencia.fkTarchivo)
   const nombre = evidencia.nombre ?? "Documento"
@@ -428,7 +448,7 @@ export function ObservacionEstudianteSheet({
               {OBSERVACION_EVIDENCIAS_MAX} archivos
             </p>
             <Field variant="outlined" className="mt-2">
-              <FieldLabel htmlFor="enlace-evidencia">O un enlace de evidencia</FieldLabel>
+              <FieldLabel htmlFor="enlace-evidencia">O un enlace a la imagen</FieldLabel>
               <Input
                 id="enlace-evidencia"
                 type="url"
@@ -443,13 +463,14 @@ export function ObservacionEstudianteSheet({
               <span className="text-xs text-muted-foreground">
                 {tieneArchivos
                   ? "Ya hay archivos adjuntos: quítalos para usar un enlace."
-                  : "Video, documento o carpeta compartida (http o https)."}
+                  : "Enlace directo a la imagen (Imgur, Discord…)."}
               </span>
               {enlaceInvalido && (
                 <p role="alert" className="text-destructive text-xs">
                   El enlace debe empezar por http:// o https://
                 </p>
               )}
+              {tieneEnlace && !enlaceInvalido && <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} />}
             </Field>
             {mensajeErrorEvidencia && (
               <p role="alert" className="flex items-start gap-1.5 text-xs text-red">
