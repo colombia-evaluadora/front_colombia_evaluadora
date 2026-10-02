@@ -4234,6 +4234,14 @@ function InstrumentoPersonalizadoSection({
   camposOtro: InstrumentoPermitidoCampos | null
   disabled: boolean
 }) {
+  // Mismo fallback que `RubricasSection`/`ListaCotejoSection`: tras un
+  // intento de guardar, "Tipo de evidencia esperada"/"Método de valoración"
+  // marcan en rojo aunque el docente nunca los haya tocado
+  // (`fn_actividad_validar_otro_definicion`, sso V496.5 — ambos son los
+  // únicos dos campos que ese validador exige para "Otro (personalizado)",
+  // antes de delegar en el validador del método elegido). Sin esto se podía
+  // guardar la actividad con el instrumento "Otro" completamente vacío.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const tipoEvidenciaCatalogo =
     camposOtro?.tipoEvidencia.catalogo && camposOtro.tipoEvidencia.catalogo.length > 0
       ? camposOtro.tipoEvidencia.catalogo
@@ -4250,7 +4258,23 @@ function InstrumentoPersonalizadoSection({
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición del instrumento personalizado</h3>
 
-      <form.Field name="instrumentoPersonalizado">
+      <form.Field
+        name="instrumentoPersonalizado"
+        validators={{
+          onChange: ({ value }) => {
+            const v = value as InstrumentoPersonalizado
+            // Mismo orden que el validador real: primero exige tipo de
+            // evidencia, después método de valoración.
+            if (!v.tipoEvidenciaEsperada) {
+              return { message: "Indique el tipo de evidencia esperada." }
+            }
+            if (!v.metodoValoracion) {
+              return { message: "Indique el método de valoración." }
+            }
+            return undefined
+          },
+        }}
+      >
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
           // Opción de entrega que dicta el tipo de evidencia: ESA casilla
@@ -4261,6 +4285,18 @@ function InstrumentoPersonalizadoSection({
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
           }
+          // El validador de arriba es uno solo para todo el objeto (no hay
+          // forma de atar un error de TanStack Form a un sub-campo
+          // puntual), así que acá se recalcula cuál de los dos selects está
+          // vacío para marcar solo ESE en rojo — igual que
+          // `tipoEvidenciaEsperada`/`metodoValoracion` son los únicos dos
+          // campos obligatorios de "Otro" (los tres builders que cuelgan de
+          // `metodoValoracion`, Rúbrica/Lista de cotejo/Escala, ya traen su
+          // propia validación al reusar los campos `rubrica`/`listaCotejo`/
+          // `escalaValoracion`).
+          const tocado = field.state.meta.isTouched || submissionAttempts > 0
+          const tipoEvidenciaInvalido = tocado && !value.tipoEvidenciaEsperada
+          const metodoValoracionInvalido = tocado && !value.metodoValoracion
           return (
             <>
               <Field variant="outlined">
@@ -4281,9 +4317,9 @@ function InstrumentoPersonalizadoSection({
               </Field>
 
               <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                <Field variant="outlined">
+                <Field variant="outlined" data-invalid={tipoEvidenciaInvalido}>
                   <FieldLabel htmlFor="instrumentoPersonalizado-tipo-evidencia">
-                    Tipo de evidencia esperada
+                    Tipo de evidencia esperada *
                   </FieldLabel>
                   <Select
                     value={value.tipoEvidenciaEsperada}
@@ -4304,7 +4340,7 @@ function InstrumentoPersonalizadoSection({
                     }}
                     disabled={disabled}
                   >
-                    <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
+                    <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia" aria-invalid={tipoEvidenciaInvalido}>
                       <SelectValue placeholder="Seleccione">
                         {(v) =>
                           // `??` no sirve acá: sin selección `v` llega como
@@ -4322,11 +4358,12 @@ function InstrumentoPersonalizadoSection({
                       ))}
                     </SelectContent>
                   </Select>
+                  {tipoEvidenciaInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                 </Field>
 
-                <Field variant="outlined">
+                <Field variant="outlined" data-invalid={metodoValoracionInvalido}>
                   <FieldLabel htmlFor="instrumentoPersonalizado-metodo-valoracion">
-                    Método de valoración
+                    Método de valoración *
                   </FieldLabel>
                   <Select
                     value={value.metodoValoracion}
@@ -4338,7 +4375,10 @@ function InstrumentoPersonalizadoSection({
                     }
                     disabled={disabled}
                   >
-                    <SelectTrigger id="instrumentoPersonalizado-metodo-valoracion">
+                    <SelectTrigger
+                      id="instrumentoPersonalizado-metodo-valoracion"
+                      aria-invalid={metodoValoracionInvalido}
+                    >
                       <SelectValue placeholder="Seleccione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -4349,6 +4389,7 @@ function InstrumentoPersonalizadoSection({
                       ))}
                     </SelectContent>
                   </Select>
+                  {metodoValoracionInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                 </Field>
               </div>
 
