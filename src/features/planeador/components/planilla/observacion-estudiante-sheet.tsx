@@ -14,7 +14,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Select,
   SelectContent,
@@ -29,8 +34,10 @@ import {
   BrushIcon,
   CheckIcon,
   FileTextIcon,
+  FileUploadOutlinedIcon,
   ImageIcon,
   InfoIcon,
+  InsertLinkOutlinedIcon,
   SpinnerIcon,
   WarningCircleIcon,
   XIcon,
@@ -40,42 +47,26 @@ import { cn } from "@/lib/utils"
 
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
+import {
+  DialogEnlaceEvidencia,
+  DialogSubirEvidencia,
+  ENLACE_VALIDO,
+  EnlaceImagen,
+} from "@/features/planeador/components/planilla/dialogs-agregar-evidencia"
 import { EvidenciaFavoritoButton } from "@/features/planeador/components/planilla/evidencia-favorito-button"
 import {
   OBSERVACION_EVIDENCIAS_MAX,
-  OBSERVACION_EVIDENCIA_ACCEPT,
   OBSERVACION_EVIDENCIA_MAX_MB,
   OBSERVACION_EVIDENCIA_TIPOS_LABEL,
   OBSERVACION_MAX_CARACTERES as MAX_CARACTERES,
   esEvidenciaImagen,
   extensionEvidencia,
-  validarEvidencia,
 } from "@/features/planeador/lib/observacion"
 import { useMomentoRegistroCatalog } from "@/features/planeador/api/query/use-momento-registro-catalog"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
 
 /** Evidencia que no es imagen (PDF, DOC…): tarjeta con ícono que la abre en otra pestaña. */
-/** Regla 61: el enlace es una imagen (Imgur, Discord…); si no carga se muestra el enlace. */
-function EnlaceImagen({ url }: { url: string }) {
-  const [fallo, setFallo] = useState(false)
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="block w-fit rounded-md">
-      {fallo ? (
-        <span className="text-xs break-all text-primary underline">{url}</span>
-      ) : (
-        <img
-          src={url}
-          alt="Evidencia enlazada"
-          referrerPolicy="no-referrer"
-          className="max-h-40 rounded-md border object-contain"
-          onError={() => setFallo(true)}
-        />
-      )}
-    </a>
-  )
-}
-
 function EvidenciaDocumento({ evidencia }: { evidencia: CeldaEvidencia }) {
   const { data: url, isPending } = useArchivoViewUrl(evidencia.fkTarchivo)
   const nombre = evidencia.nombre ?? "Documento"
@@ -110,7 +101,6 @@ export interface EstudianteObservable {
   fecha: string | null
 }
 
-const ENLACE_VALIDO = /^https?:\/\/\S+$/i
 
 interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
@@ -177,7 +167,7 @@ export function ObservacionEstudianteSheet({
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
-  const inputArchivoRef = useRef<HTMLInputElement>(null)
+  const [dialogo, setDialogo] = useState<"archivo" | "enlace" | null>(null)
   const textoGuardadoRef = useRef("")
   const [enlace, setEnlace] = useState("")
   const enlaceGuardadoRef = useRef("")
@@ -212,12 +202,9 @@ export function ObservacionEstudianteSheet({
     onOpenChange(open)
   }
 
-  function handleSeleccionArchivo(archivo: File | undefined) {
-    if (!archivo) return
-    // El error se muestra dentro de la sección Evidencias, no arriba.
-    const error = validarEvidencia(archivo, evidencias.length)
-    setErrorLocal(error)
-    if (error) return
+  function subirArchivo(archivo: File) {
+    setErrorLocal(null)
+    setDialogo(null)
     onAgregarEvidencia?.(archivo)
   }
 
@@ -395,83 +382,99 @@ export function ObservacionEstudianteSheet({
                   )}
                 </div>
               ))}
-              <Tooltip>
-                {/* El trigger va en un `span`, no en el propio Button: un
-                    <button disabled> nativo no dispara los eventos de hover
-                    que necesita el Tooltip para abrirse. */}
-                <TooltipTrigger render={<span className="inline-flex" />}>
+              {tieneEnlace && !enlaceInvalido && (
+                <div className="group relative">
+                  <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} className="size-20 object-cover" />
                   <Button
                     type="button"
-                    variant="outline"
-                    color="neutral"
-                    size="icon"
-                    className="size-20 flex-col gap-1 text-xs"
-                    disabled={
-                      !onAgregarEvidencia || sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado || tieneEnlace
-                    }
-                    onClick={() => inputArchivoRef.current?.click()}
+                    variant="fill"
+                    color="destructive"
+                    size="icon-xs"
+                    className="absolute -top-1.5 -right-1.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label="Quitar el enlace"
+                    onClick={() => setEnlace("")}
                   >
-                    {agregandoEvidencia ? (
-                      <SpinnerIcon className="size-5 animate-spin" />
-                    ) : (
-                      <ImageIcon className="size-5" />
-                    )}
-                    Agregar
+                    <XIcon />
                   </Button>
+                </div>
+              )}
+              <Tooltip>
+                {/* El trigger va en un `span`: un <button disabled> nativo no dispara el hover del Tooltip. */}
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="neutral"
+                          size="icon"
+                          className="size-20 flex-col gap-1 text-xs"
+                          disabled={sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado}
+                        />
+                      }
+                    >
+                      {agregandoEvidencia ? (
+                        <SpinnerIcon className="size-5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="size-5" />
+                      )}
+                      Agregar
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="min-w-48">
+                      {/* Regla 61: archivos o enlace, no los dos. */}
+                      <DropdownMenuItem
+                        disabled={!onAgregarEvidencia || tieneEnlace || limiteEvidenciasAlcanzado}
+                        onClick={() => setDialogo("archivo")}
+                      >
+                        <FileUploadOutlinedIcon />
+                        Subir imagen o archivo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled={tieneArchivos} onClick={() => setDialogo("enlace")}>
+                        <InsertLinkOutlinedIcon />
+                        {tieneEnlace ? "Cambiar enlace" : "Imagen por enlace"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TooltipTrigger>
                 <TooltipContent>
                   {sinAsistencia
                     ? actividadSinComenzar
                       ? "La actividad todavía no comienza: no se puede adjuntar evidencia todavía."
                       : "Sin asistencia registrada todavía no se puede adjuntar evidencia."
-                    : tieneEnlace
-                      ? "Ya hay un enlace de evidencia: quítalo para adjuntar archivos."
-                      : limiteEvidenciasAlcanzado
-                      ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
-                      : `Subir un archivo ${OBSERVACION_EVIDENCIA_TIPOS_LABEL} (máx. ${OBSERVACION_EVIDENCIA_MAX_MB} MB).`}
+                    : tieneArchivos
+                      ? "Archivos adjuntos: quítalos para usar un enlace."
+                      : tieneEnlace
+                        ? "Hay un enlace: quítalo para adjuntar archivos."
+                        : limiteEvidenciasAlcanzado
+                          ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
+                          : "Subir un archivo o pegar el enlace de una imagen."}
                 </TooltipContent>
               </Tooltip>
-              <input
-                ref={inputArchivoRef}
-                type="file"
-                accept={OBSERVACION_EVIDENCIA_ACCEPT}
-                className="hidden"
-                onChange={(e) => {
-                  const archivo = e.target.files?.[0]
-                  e.target.value = ""
-                  handleSeleccionArchivo(archivo)
-                }}
-              />
             </div>
             <p className="text-xs text-muted-foreground">
               {OBSERVACION_EVIDENCIA_TIPOS_LABEL} · máx. {OBSERVACION_EVIDENCIA_MAX_MB} MB por archivo · hasta{" "}
-              {OBSERVACION_EVIDENCIAS_MAX} archivos
+              {OBSERVACION_EVIDENCIAS_MAX} archivos, o un enlace a una imagen
             </p>
-            <Field variant="outlined" className="mt-2">
-              <FieldLabel htmlFor="enlace-evidencia">O un enlace a la imagen</FieldLabel>
-              <Input
-                id="enlace-evidencia"
-                type="url"
-                inputMode="url"
-                value={enlace}
-                maxLength={1000}
-                disabled={sinAsistencia || tieneArchivos}
-                aria-invalid={enlaceInvalido || undefined}
-                onChange={(e) => setEnlace(e.target.value)}
-                placeholder="https://…"
-              />
-              <span className="text-xs text-muted-foreground">
-                {tieneArchivos
-                  ? "Ya hay archivos adjuntos: quítalos para usar un enlace."
-                  : "Enlace directo a la imagen (Imgur, Discord…)."}
-              </span>
-              {enlaceInvalido && (
-                <p role="alert" className="text-destructive text-xs">
-                  El enlace debe empezar por http:// o https://
-                </p>
-              )}
-              {tieneEnlace && !enlaceInvalido && <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} />}
-            </Field>
+            {tieneEnlace && enlace !== enlaceGuardadoRef.current && (
+              <p className="text-xs text-muted-foreground">El enlace se guarda al pulsar Guardar.</p>
+            )}
+            <DialogSubirEvidencia
+              open={dialogo === "archivo"}
+              onOpenChange={(open) => !open && setDialogo(null)}
+              cantidadActual={evidencias.length}
+              subiendo={agregandoEvidencia}
+              onSubir={subirArchivo}
+            />
+            <DialogEnlaceEvidencia
+              open={dialogo === "enlace"}
+              onOpenChange={(open) => !open && setDialogo(null)}
+              inicial={enlaceLimpio}
+              onConfirmar={(url) => {
+                setEnlace(url)
+                setDialogo(null)
+              }}
+            />
             {mensajeErrorEvidencia && (
               <p role="alert" className="flex items-start gap-1.5 text-xs text-red">
                 <WarningCircleIcon className="mt-0.5 size-3.5 shrink-0" />
