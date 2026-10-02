@@ -1522,7 +1522,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                     <TableCell className="font-medium">{permission.order}</TableCell>
                     <TableCell>{permission.role.name}</TableCell>
                     <TableCell>{permission.campus.name}</TableCell>
-                    <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
+                    <TableCell>{permission.workSchedule.name}</TableCell>
                     <TableCell>
                       <Badge {...PERMISSION_STATUS_BADGE[permission.status]}>
                         {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}

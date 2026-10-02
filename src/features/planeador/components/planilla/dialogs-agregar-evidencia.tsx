@@ -183,7 +183,7 @@ export function DialogEnlaceEvidencia({ open, onOpenChange, inicial, onConfirmar
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Imagen por enlace</DialogTitle>
           <DialogDescription>Pega el enlace directo a la imagen (Imgur, Discord…).</DialogDescription>

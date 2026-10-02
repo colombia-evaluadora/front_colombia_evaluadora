@@ -151,7 +151,7 @@ export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<Emp
               // El ancho es lo que dispara los puntos suspensivos: con el tope
               // anterior (16rem) casi ningún rol llegaba a recortarse y el
               // tooltip aparecía sin que nada avisara que había más texto.
-              <span className="block max-w-[12rem] truncate text-sm text-foreground uppercase" />
+              <span className="block max-w-[12rem] truncate text-sm text-foreground" />
             }
           >
             {fullText}
@@ -211,7 +211,7 @@ export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<Emp
       }
 
       // Un funcionario puede tener permisos en varias jornadas: se listan
-      // separadas por comas y en mayúsculas, igual que la columna "Rol".
+      // separadas por comas, tal como las devuelve el back, igual que "Rol".
       const fullText = formatCatalogNames(workSchedules)
 
       return (
@@ -220,7 +220,7 @@ export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<Emp
             render={
               // Mismo tope que "Rol": con varias jornadas el texto se recorta
               // con "…" y el tooltip trae la lista completa.
-              <span className="block max-w-[12rem] truncate text-sm text-foreground uppercase" />
+              <span className="block max-w-[12rem] truncate text-sm text-foreground" />
             }
           >
             {fullText}
