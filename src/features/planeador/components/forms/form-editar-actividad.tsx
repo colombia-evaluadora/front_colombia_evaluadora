@@ -488,11 +488,22 @@ export function EditarActividadForm({
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault()
+        // Se captura ACÁ, no dentro del `.then()`: con React 17+ el evento
+        // sintético no se "poolea", pero `e` igual puede no sobrevivir el
+        // ciclo de vida del handler en algún entorno — el nodo del form sí.
+        const formEl = e.currentTarget
         const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
         if (faltantes.length > 0) {
           notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
         }
-        form.handleSubmit()
+        // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
+        // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
+        // de campos con `validators` de TanStack como los de
+        // `useErrorObligatorio`) — si falló, se espera a que termine para
+        // recién ahí llevar la vista al primer campo marcado en rojo. Con un
+        // form de ~5000 líneas el aviso de arriba con la lista de nombres no
+        // alcanza para encontrar DÓNDE está el problema.
+        void form.handleSubmit().then(() => scrollToFirstInvalidField(formEl))
       }}
     >
       {/* Va primero, antes de "Identificación": es la única pregunta que
@@ -599,6 +610,46 @@ function camposObligatoriosFaltantes(
     faltantes.push("Instrumento de evaluación")
   }
   return faltantes
+}
+
+/**
+ * Tras un intento de guardar fallido, lleva la vista (y el foco) al primer
+ * campo marcado inválido DENTRO de este form — nunca a otro elemento
+ * `data-invalid`/`aria-invalid` que pueda haber en el resto de la pantalla
+ * (un diálogo abierto, por ejemplo). Con un form de ~5000 líneas, el aviso
+ * de arriba con la lista de nombres de campos (`camposObligatoriosFaltantes`)
+ * no alcanza para encontrar DÓNDE está el problema.
+ *
+ * `submissionAttempts` es el valor que leen TODOS los `isInvalid` de este
+ * form (tanto los campos con `validators` de TanStack —rúbrica, lista de
+ * cotejo, instrumento personalizado…— como los que usan
+ * `useErrorObligatorio` —nombre, tipo, fechas…—) para decidir si pintan
+ * `data-invalid`/`aria-invalid`, y lo sube `form.handleSubmit()` de forma
+ * asíncrona. Buscar en el DOM apenas se llama a `handleSubmit()` (sin
+ * esperar) encuentra el estado ANTERIOR (nada marcado todavía, o lo
+ * marcado en un intento previo) — hay que esperar a que la promesa
+ * resuelva y, encima, a que React haya pintado el re-render que ese
+ * cambio de estado dispara. Un solo `requestAnimationFrame` alcanzaría casi
+ * siempre, pero se usa uno doble (uno para que React procese el commit,
+ * otro para que el navegador ya haya hecho el layout) para no depender de
+ * en qué punto exacto del ciclo de eventos cae el cambio de estado.
+ */
+function scrollToFirstInvalidField(formEl: HTMLFormElement) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const invalido = formEl.querySelector<HTMLElement>('[data-invalid="true"], [aria-invalid="true"]')
+      if (!invalido) return
+      invalido.scrollIntoView({ behavior: "smooth", block: "center" })
+      // Si el elemento marcado no es en sí mismo enfocable (ej. el `<Field>`
+      // contenedor, que es donde vive `data-invalid`, no el `<input>`/
+      // `<Select>` de adentro), se enfoca el primer control enfocable que
+      // tenga dentro.
+      const foco = invalido.matches("input, select, textarea, button, [tabindex]")
+        ? invalido
+        : invalido.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]")
+      foco?.focus({ preventScroll: true })
+    })
+  })
 }
 
 /** Error inline de "obligatorio" tras un intento de guardar. */
