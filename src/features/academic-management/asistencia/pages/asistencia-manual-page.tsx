@@ -682,7 +682,7 @@ export function AsistenciaManualPage() {
                   color="neutral"
                   size="icon-xs"
                   aria-label="Volver a Asistencia"
-                  render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
+                  render={<Link to={paths.app.asistencia.getHref()} search={{ sede, fecha }} />}
                   nativeButton={false}
                 />
               }

@@ -33,6 +33,13 @@ function toIsoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
+function fromIsoDate(fecha: string | undefined): Date {
+  if (!fecha) return new Date()
+  const [anio, mes, dia] = fecha.split("-").map(Number)
+  const date = new Date(anio, mes - 1, dia)
+  return Number.isNaN(date.getTime()) ? new Date() : date
+}
+
 
 export function AsistenciaPage() {
   return (
@@ -49,7 +56,16 @@ function AsistenciaPageContent() {
   const navigate = useNavigate()
   const search = asistenciaRoute.useSearch()
   const [sedeId, setSedeIdState] = React.useState<number | null>(search.sede ?? null)
-  const [selectedDay, setSelectedDay] = React.useState(() => new Date())
+  const [selectedDay, setSelectedDayState] = React.useState(() => fromIsoDate(search.fecha))
+
+  function setSelectedDay(next: Date) {
+    setSelectedDayState(next)
+    navigate({
+      to: asistenciaRoute.id,
+      search: (prev) => ({ ...prev, fecha: toIsoDate(next) }),
+      replace: true,
+    })
+  }
 
   function setSedeId(next: number) {
     setSedeIdState(next)
