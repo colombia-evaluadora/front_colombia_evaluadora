@@ -65,6 +65,16 @@ export const authUsers: (User & {
     roles: ["USER", "CEVAL-DIRECTOR_GRUPO"],
     document: "1033445566",
   },
+  {
+    // Aprueba o rechaza correcciones de asistencia (Regla 75).
+    id: "7",
+    email: "coordinador@example.com",
+    password: "password",
+    name: "Coordinador Demo",
+    role: "USER",
+    roles: ["USER", "CEVAL-COORDINADOR"],
+    document: "1044556677",
+  },
 ]
 
 /** El usuario con el que se ingresa es el correo. */

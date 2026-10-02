@@ -1,15 +1,16 @@
 import { delay, http, HttpResponse } from "msw"
 
 import {
-  aplicarEdicionAsistencia,
+  editarAsistencia,
   generarEstudiantesSesion,
   generarResumenHoras,
   generarSeguimiento,
   generarSesionesMes,
+  listarSolicitudes,
   registrarArchivoSubido,
   registrarAsistenciaManual,
+  resolverSolicitud,
   soloMisClases,
-  TIPO_ASISTENCIA_NOMBRE,
 } from "@/mocks/db/asistencia/asistencia"
 
 import type {
@@ -119,45 +120,54 @@ export const asistenciaHandlers = [
     )
   }),
 
-  // Edita la corrida completa: IDS son los `pks` de la fila agrupada.
+  // Como el real (V438): delega en el PATCH por registro, pero solo devuelve
+  // el conteo, sin `solicitudes_pendientes`. El front ya no lo usa.
   http.post("*/api/eval-col/asistencias/editar-masivo", async ({ request }) => {
     await delay(250)
 
     const { IDS = [], ...body } = (await request.json()) as AsistenciaEditarRequest & { IDS?: number[] }
-
-    for (const pkTasistencia of IDS) {
-      aplicarEdicionAsistencia(pkTasistencia, {
-        ...(body.TIPO_ASISTENCIA != null && {
-          tipo_asistencia_valor: body.TIPO_ASISTENCIA,
-          tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[body.TIPO_ASISTENCIA],
-        }),
-        ...(body.LIMPIAR_OBSERVACION
-          ? { observacion: null }
-          : body.OBSERVACION != null && { observacion: body.OBSERVACION }),
-        ...(body.LIMPIAR_ARCHIVO && { tiene_soporte: false, fk_soporte_archivo: null, soporte_nombre: null }),
-      })
-    }
-
+    for (const pk of IDS) editarAsistencia(pk, body)
     return HttpResponse.json(IDS.length)
   }),
 
+  // Regla 75: en período no calificable abre la solicitud en vez de editar.
   http.patch("*/api/eval-col/asistencias/:id", async ({ request, params }) => {
     await delay(250)
 
-    const pkTasistencia = Number(params.id)
-    const body = (await request.json()) as AsistenciaEditarRequest
+    const respuesta = editarAsistencia(Number(params.id), (await request.json()) as AsistenciaEditarRequest)
+    if (!respuesta) {
+      return HttpResponse.json(
+        { status: "error", message: "El registro de asistencia no existe o no está activo." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(respuesta)
+  }),
 
-    aplicarEdicionAsistencia(pkTasistencia, {
-      ...(body.TIPO_ASISTENCIA != null && {
-        tipo_asistencia_valor: body.TIPO_ASISTENCIA,
-        tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[body.TIPO_ASISTENCIA],
-      }),
-      ...(body.LIMPIAR_OBSERVACION
-        ? { observacion: null }
-        : body.OBSERVACION != null && { observacion: body.OBSERVACION }),
-      ...(body.LIMPIAR_ARCHIVO && { tiene_soporte: false, fk_soporte_archivo: null, soporte_nombre: null }),
-    })
+  http.get("*/api/eval-col/aprobaciones/pendientes", async ({ request }) => {
+    await delay(200)
+    return HttpResponse.json(listarSolicitudes(new URL(request.url).searchParams.get("tipo")))
+  }),
 
-    return HttpResponse.json(pkTasistencia)
+  http.post("*/api/eval-col/aprobaciones/:id/:decision", async ({ request, params }) => {
+    await delay(250)
+
+    const { MOTIVO } = ((await request.json().catch(() => ({}))) ?? {}) as { MOTIVO?: string }
+    const aprobar = params.decision === "aprobar"
+    if (!aprobar && !MOTIVO?.trim()) {
+      return HttpResponse.json(
+        { status: "error", message: "Debe indicar el motivo del rechazo." },
+        { status: 400 },
+      )
+    }
+    const resultado = resolverSolicitud(Number(params.id), aprobar)
+    if (!resultado) {
+      return HttpResponse.json(
+        { status: "error", message: "La solicitud no existe o ya fue resuelta." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(resultado)
   }),
 ]
+

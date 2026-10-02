@@ -138,8 +138,14 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
         },
       },
       {
-        onSuccess: () => {
-          notify("Registro actualizado.")
+        onSuccess: (solicitudes) => {
+          const pendiente = solicitudes.length > 0
+          notify(
+            pendiente
+              ? "El período ya no es calificable: el cambio quedó pendiente de aprobación del coordinador."
+              : "Registro actualizado.",
+            pendiente ? { variant: "info" } : undefined,
+          )
           setOpen(false)
         },
       },

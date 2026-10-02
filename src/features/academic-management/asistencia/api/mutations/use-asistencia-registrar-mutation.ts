@@ -37,9 +37,21 @@ async function resolverRegistros(
   )
 }
 
-async function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<number> {
+interface RegistrarResponse {
+  registros_afectados: number
+  /** Regla 75: en período no calificable no se escribe; vienen las solicitudes abiertas. */
+  solicitudes_pendientes?: number[]
+}
+
+/** Devuelve las solicitudes abiertas; vacío = se guardó directo. */
+async function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<number[]> {
   const REGISTROS = await resolverRegistros(body.REGISTROS)
-  return api.post<number>("/eval-col/asistencias/registrar", { ...body, REGISTROS })
+  const raw = await api.post<RegistrarResponse | RegistrarResponse[] | number>("/eval-col/asistencias/registrar", {
+    ...body,
+    REGISTROS,
+  })
+  if (typeof raw === "number") return []
+  return (Array.isArray(raw) ? raw[0] : raw)?.solicitudes_pendientes ?? []
 }
 
 export function useAsistenciaRegistrarMutation() {
