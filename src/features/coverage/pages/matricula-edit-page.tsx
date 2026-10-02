@@ -340,7 +340,7 @@ function MatriculaEditPageContent() {
             return
           }
           notify("Matrícula actualizada correctamente.")
-          navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId) })
+          navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId), search: (prev) => prev })
         },
       },
     )
@@ -399,7 +399,7 @@ function MatriculaEditPageContent() {
 
   function handleGradeChangeSummaryClose() {
     setGradeChangeSummary(null)
-    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(summaryNavigateIdRef.current) })
+    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(summaryNavigateIdRef.current), search: (prev) => prev })
   }
 
   function handleSedeChangeCancel() {
@@ -552,7 +552,7 @@ function MatriculaEditPageContent() {
         <TableScreenTitle
           action={
             <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} />}
+              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => prev} />}
               variant="fill"
               color="neutral"
               size="sm"

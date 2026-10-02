@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
 import { PaperclipIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -50,6 +51,11 @@ export function buildColumnsSeguimiento(canEditar: boolean): ColumnDef<Asistenci
               aria-hidden="true"
             />
             {row.original.tipo_asistencia}
+            {row.original.cambio_pendiente && (
+              <Badge variant="soft" color="orange">
+                Pendiente de aprobación
+              </Badge>
+            )}
           </span>
           {bloques && (
             <span className="text-xs text-muted-foreground">

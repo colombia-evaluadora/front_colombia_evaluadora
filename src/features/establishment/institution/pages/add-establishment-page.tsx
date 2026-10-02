@@ -246,7 +246,7 @@ export function AddEstablishmentPage() {
           return
         }
         notify(SUCCESS_MESSAGES.establishment.updated)
-        navigate({ to: paths.app.establishments.general.getHref() })
+        navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
       },
       onError: (error) => {
         notify(getErrorMessage(error) || "No se pudo actualizar el establecimiento.", {
@@ -545,7 +545,7 @@ export function AddEstablishmentPage() {
     }
 
     notify(SUCCESS_MESSAGES.establishment.created)
-    navigate({ to: paths.app.establishments.general.getHref() })
+    navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -561,7 +561,7 @@ export function AddEstablishmentPage() {
         <TableScreenTitle
           action={
             <Button
-              render={<Link to={paths.app.establishments.general.getHref()} />}
+              render={<Link to={paths.app.establishments.general.getHref()} search={(prev) => prev} />}
               variant="fill"
               color="neutral"
               size="sm"

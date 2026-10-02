@@ -4,6 +4,7 @@ const DOCENTE_ROLE = "CEVAL-DOCENTE"
 const DIRECTOR_GRUPO_ROLE = "CEVAL-DIRECTOR_GRUPO"
 const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
 const JEFE_AREA_ROLE = "CEVAL-JEFE_AREA"
+const SUPER_ADMIN_ROLE = "CEVAL-SUPER_ADMINISTRADOR"
 
 export function useEsDocente(): boolean {
   const { user } = useAuth()
@@ -26,6 +27,8 @@ export interface AsistenciaAccess {
   isCoordinador: boolean
   esDocentePuro: boolean
   puedeRegistrar: boolean
+  /** Regla 75: resuelve solicitudes de corrección (roles de `/aprobaciones`). */
+  puedeAprobar: boolean
 }
 
 /** Regla 74: resuelve de una vez el alcance de lectura/escritura de asistencia para el usuario actual, incluyendo el caso de doble rol (docente + director de grupo). */
@@ -44,5 +47,6 @@ export function useAsistenciaAccess(): AsistenciaAccess {
     isCoordinador,
     esDocentePuro,
     puedeRegistrar: isDocente,
+    puedeAprobar: isCoordinador || roles.includes(SUPER_ADMIN_ROLE),
   }
 }

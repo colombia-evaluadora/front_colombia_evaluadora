@@ -2,6 +2,8 @@ import { z } from "zod"
 
 export const asistenciaSearchSchema = z.object({
   sede: z.coerce.number().optional(),
+  // Día visible del calendario (YYYY-MM-DD): al volver se conserva el mes.
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
 })
 export type AsistenciaSearch = z.infer<typeof asistenciaSearchSchema>
 
