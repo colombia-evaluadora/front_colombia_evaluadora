@@ -2855,6 +2855,15 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
     ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
     : null
 
+  // Cuántos dígitos hacen falta para poder tipear el `max` real de
+  // "Duración estimada" (p. ej. 1200 → 4), no un "hasta 999" fijo. Sin
+  // `max` todavía resuelto, 3 dígitos como piso conservador (no corta de
+  // más mientras carga, y es el mínimo razonable para minutos).
+  const duracionEstimadaMaxDigitos = Math.max(
+    String(programacion?.duracionEstimada.max ?? 999).length,
+    3,
+  )
+
   return (
     <Card className="gap-4 p-4">
       <div>
@@ -2967,16 +2976,22 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad mezclada en
-                  el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
-                  válida. */}
+                  el valor, y sin `0` (`toPositiveDigitsInput`): "0 minutos"
+                  no es una duración válida.
+                  El tope de dígitos sale del `max` real que manda el
+                  backend (`programacion.duracionEstimada.max`), no de un
+                  "hasta 999" fijo: antes el `3` hardcodeado le ganaba al
+                  `max` de verdad (p. ej. 1200, 4 dígitos) y el docente no
+                  podía ni terminar de tipear un valor válido. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
-                maxLength={3}
+                maxLength={duracionEstimadaMaxDigitos}
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                onChange={(e) =>
+                  field.handleChange(toPositiveDigitsInput(e.target.value, duracionEstimadaMaxDigitos))
+                }
                 // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
                 // picker), acá no hay forma de impedir tipear un número fuera
                 // de rango mientras se escribe sin trabar al usuario a mitad
@@ -3077,7 +3092,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   <SelectItem value="__none__">Seleccione</SelectItem>
                   <SelectItem value="Presencial">Presencial</SelectItem>
                   <SelectItem value="Virtual">Virtual</SelectItem>
-                  <SelectItem value="Mixta">Mixta</SelectItem>
+                  <SelectItem value="Híbrida">Híbrida</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
