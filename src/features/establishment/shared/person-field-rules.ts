@@ -21,8 +21,8 @@ import { z } from "zod"
  */
 export const NOMBRE_PERSONA = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$/
 
-/** Documento: entre 3 y 10 dígitos, sin separadores. */
-export const DOCUMENTO = /^\d{3,10}$/
+/** Documento: entre 3 y 15 dígitos, sin separadores. */
+export const DOCUMENTO = /^\d{3,15}$/
 
 /** Teléfono: hasta 10 dígitos. */
 export const TELEFONO = /^\d{1,10}$/
@@ -37,7 +37,7 @@ export const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const MENSAJES = {
   nombre: "No uses números ni caracteres especiales.",
-  documento: "El documento debe tener entre 3 y 10 dígitos.",
+  documento: "El documento debe tener entre 3 y 15 dígitos.",
   telefono: "El teléfono no debe superar los 10 dígitos.",
   correo: "Ingresa un correo electrónico válido.",
   menorDeEdad: "La persona debe ser mayor de edad.",

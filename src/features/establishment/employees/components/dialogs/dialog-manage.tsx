@@ -310,7 +310,7 @@ const employeePersonSchema = z
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
     // Formato de cada campo — nombres sin caracteres especiales, documento
-    // de 3 a 10 dígitos, teléfono de hasta 10, correo válido y mayoría de
+    // de 3 a 15 dígitos, teléfono de hasta 10, correo válido y mayoría de
     // edad. Vive en un módulo compartido con rector/secretaria: las dos
     // pantallas dan de alta a la misma clase de persona, y cuando cada una
     // tenía su copia se desincronizaron (institución verificaba el correo y
