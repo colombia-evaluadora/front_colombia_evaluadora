@@ -72,8 +72,14 @@ interface DialogAgregarActividadProps {
  *     visible (a diferencia de los otros dos modos, donde permanece oculto
  *     hasta que se tipea un valor mayor a 0: no tiene sentido vincular con
  *     un peso/puntaje en blanco).
- * `porcentajeDisponible` viene YA CALCULADO por fila (unidad + grupo de esa
- * actividad), no hace falta pedirlo aparte (1.5).
+ * `porcentajeDisponible` viene YA CALCULADO por fila por el backend
+ * (`fn_unidad_ponderacion_disponible`, sso V223), no hace falta pedirlo
+ * aparte (1.5). Es el tope REAL: topa por (grado, asignatura, grupo) de esa
+ * actividad, no por (unidad, grupo) — una misma asignatura/grado puede
+ * tener actividades repartidas en varias unidades, y este valor ya las
+ * cuenta a todas, a diferencia del tope optimista que calcula
+ * `columns-unidad-actividades.tsx` para las actividades YA vinculadas a
+ * esta unidad (ver el comentario de `maxDisponible` ahí).
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
   const { puedeCrear } = useMenuPermission("PLANEADOR")
