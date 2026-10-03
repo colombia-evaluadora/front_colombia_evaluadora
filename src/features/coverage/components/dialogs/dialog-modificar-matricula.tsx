@@ -97,7 +97,10 @@ export function ModificarMatriculaDialog({
   const [queue, setQueue] = useState<ConfirmStep[]>([])
   const [queueIndex, setQueueIndex] = useState(0)
 
+  // `sede` es el nombre, para mostrar y comparar con el origen; `sedeId` es
+  // la sede elegida de verdad (dos colegios pueden repetir el nombre).
   const [sede, setSede] = useState("")
+  const [sedeId, setSedeId] = useState("")
   const [jornada, setJornada] = useState("")
   const [grado, setGrado] = useState("")
   const [grupo, setGrupo] = useState("")
@@ -131,6 +134,7 @@ export function ModificarMatriculaDialog({
     isPeriodoError,
     periodoError,
   } = useMatriculaDependentCatalogsQuery({
+    campusId: sedeId || undefined,
     campus: sede || undefined,
     shift: jornada || undefined,
     grade: grado ? Number(grado) : undefined,
@@ -150,6 +154,7 @@ export function ModificarMatriculaDialog({
     setQueue([])
     setQueueIndex(0)
     setSede("")
+    setSedeId("")
     setJornada("")
     setGrado("")
     setGrupo("")
@@ -165,8 +170,9 @@ export function ModificarMatriculaDialog({
   // archivo). Acá solo se limpian los valores dependientes cuando cambia un
   // prerequisito, para no dejar seleccionada una combinación que ya no
   // aplica.
-  function handleSedeChange(value: string) {
-    setSede(value)
+  function handleSedeChange(id: string) {
+    setSedeId(id)
+    setSede(catalogs?.sedes.find((s) => s.id === id)?.nombre ?? "")
     setJornada("")
     setGrado("")
     setGrupo("")
@@ -193,7 +199,11 @@ export function ModificarMatriculaDialog({
   const sameGroupOrigin = selected.every((m) => m.group === selected[0]?.group)
   const commonGroup = sameGroupOrigin ? selected[0]?.group : undefined
 
-  const sedeChanged = sede !== "" && sede !== commonCampus
+  // El origen solo se conoce por nombre (las filas del listado no traen la
+  // sede): si ese nombre lo tienen sedes de dos colegios, se trata como cambio
+  // para que pase por la confirmación en vez de darlo por igual.
+  const nombreRepetido = (catalogs?.sedes.filter((s) => s.nombre === sede).length ?? 0) > 1
+  const sedeChanged = sedeId !== "" && (sede !== commonCampus || nombreRepetido)
   const gradoChanged = grado !== "" && Number(grado) !== commonGrade
   const grupoChanged = grupo !== "" && grupo !== commonGroup
 
@@ -550,7 +560,11 @@ export function ModificarMatriculaDialog({
                 <Field variant="outlined">
                   <FieldLabel>Sede</FieldLabel>
                   <ComboboxField
-                    value={sede}
+                    items={{
+                      "": "Seleccionar",
+                      ...Object.fromEntries((catalogs?.sedes ?? []).map((s) => [s.id, s.label])),
+                    }}
+                    value={sedeId}
                     onValueChange={(v) => handleSedeChange(v ?? "")}
                     disabled={!allCursando}
                   >
@@ -561,9 +575,9 @@ export function ModificarMatriculaDialog({
                       <ComboboxFieldItem key="__empty__" value="">
                         Seleccionar
                       </ComboboxFieldItem>
-                      {(catalogs?.campuses ?? []).map((campus) => (
-                        <ComboboxFieldItem key={campus} value={campus}>
-                          {campus}
+                      {(catalogs?.sedes ?? []).map((s) => (
+                        <ComboboxFieldItem key={s.id} value={s.id}>
+                          {s.label}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>
@@ -718,7 +732,7 @@ export function ModificarMatriculaDialog({
         <CambioSedeMatriculaDialog
           open={open && step === "sede"}
           fromSede={sameCampus && commonCampus ? commonCampus : first.campus}
-          toSede={sede || first.campus}
+          toSede={catalogs?.sedes.find((s) => s.id === sedeId)?.label || sede || first.campus}
           fromGrade={first.grade}
           toGrade={grado ? Number(grado) : first.grade}
           fromGroup={first.group}
