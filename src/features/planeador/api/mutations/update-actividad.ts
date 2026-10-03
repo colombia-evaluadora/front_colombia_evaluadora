@@ -8,6 +8,7 @@ import { invalidarListadosActividades } from "@/features/planeador/api/query/inv
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
+import { resolveTipoEvidenciaId } from "@/features/planeador/api/query/use-tipo-evidencia-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 interface UpdateActividadInput {
@@ -55,14 +56,23 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     FECHA_CIERRE: data.fechaCierre,
     MATERIAL_REQUERIDO: data.materiales,
     // Mismo arreglo que `create-actividad.ts`: "Seguimiento" se capturaba
-    // pero nunca viajaba en el PUT.
+    // pero nunca viajaba en el PUT. `REQUIERE_VALIDACION_COORDINADOR` sigue
+    // la misma convención "S"/"N" que `GENERA_EVIDENCIAS` — confirmado real
+    // (V246/V496.4, cast a `academico_test.bool_sn`).
     GENERA_EVIDENCIAS: data.generaEvidencias ? "S" : "N",
+    REQUIERE_VALIDACION_COORDINADOR: data.requiereValidacion ? "S" : "N",
     OBSERVACIONES_DOCENTE: data.observaciones,
   }
   // Mismo arreglo que `create-actividad.ts`: se capturaban en el form pero
   // nunca viajaban en el PUT.
   if (data.duracionEstimada) body.DURACION_ESTIMADA = Number(data.duracionEstimada)
   if (data.semana) body.SEMANA_CRONOGRAMA = data.semana
+  // `FK_TLV_TIPO_EVIDENCIA`: mismo arreglo (y mismo criterio best-effort)
+  // que `create-actividad.ts` — ver `use-tipo-evidencia-catalog.ts`.
+  if (data.tipoEvidencia) {
+    const tipoEvidenciaId = await resolveTipoEvidenciaId(data.tipoEvidencia)
+    if (tipoEvidenciaId != null) body.FK_TLV_TIPO_EVIDENCIA = tipoEvidenciaId
+  }
   // Ver el comentario de `resolveModalidadId`: categoría sin confirmar
   // contra el backend real, best-effort.
   if (data.modalidad) {
