@@ -59,10 +59,6 @@ import {
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
 
-/*const LandingPage = lazyRouteComponent(
-  () => import("@/features/landing/pages/landing-page"),
-  "LandingPage"
-)*/
 const LoginPage = lazyRouteComponent(() => import("@/features/auth/pages/login-page"), "LoginPage")
 const ForgotPasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-password-page"),
@@ -208,9 +204,6 @@ interface RouterContext {
 }
 
 const APP_NAME = "Colombia Evaluadora"
-// const APP_DESCRIPTION = "Colombia Evaluadora: gestión de pagos con filtros, orden y paginación."
-// const SITE_URL = env.APP_URL
-// const OG_IMAGE = `${SITE_URL}/favicon.svg`
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Outlet,
@@ -218,29 +211,6 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
     meta: [{ title: APP_NAME }],
   }),
 })
-
-/*
-const landingRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: paths.home.path,
-  head: () => ({
-    meta: [
-      { title: APP_NAME },
-      { name: "description", content: APP_DESCRIPTION },
-      { property: "og:title", content: APP_NAME },
-      { property: "og:description", content: APP_DESCRIPTION },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: SITE_URL },
-      { property: "og:image", content: OG_IMAGE },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: APP_NAME },
-      { name: "twitter:description", content: APP_DESCRIPTION },
-      { name: "twitter:image", content: OG_IMAGE },
-    ],
-    links: [{ rel: "canonical", href: SITE_URL }],
-  }),
-  component: LandingPage,
-})*/
 
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -892,7 +862,6 @@ export const asistenciaManualRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  //  landingRoute,
   homeRoute,
   authLayoutRoute.addChildren([
     loginRoute,
