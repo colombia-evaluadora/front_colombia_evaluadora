@@ -351,16 +351,6 @@ export const curricularReferencesHandlers = [
       return HttpResponse.json({ status: "ok", message: "Valor eliminado." })
     },
   ),
-
-  http.post("*/api/academic-management/curricular-references/export", async ({ request }) => {
-    await delay(600)
-
-    const body = (await request.json()) as { filters?: CurricularReferencesQueryRequest["filters"] }
-    const count = applyFilters(curricularReferencesDb, body?.filters ?? {}).length
-
-    return HttpResponse.json({
-      status: "ok",
-      message: `${count} referente(s) curricular(es) exportado(s).`,
-    })
-  }),
+  // El export ya no tiene handler propio: va por `POST /reportes/referentes-curriculares`
+  // (ver `mocks/handlers/reportes.ts`), igual que con el backend real.
 ]
