@@ -1,13 +1,13 @@
 import { createChat } from "@shadcn/helpers/tanstack-ai"
 
+import { ASSISTANT_PROXIMAMENTE_MENSAJE } from "@/features/assistant/lib/availability"
+
+// Conexión de ejemplo con respuestas fijas. Se reemplaza por la conexión real cuando
+// el backend del asistente exista; ver `availability.ts`.
 export const assistantChat = createChat().assistant(
-  "¡Hola! Soy el asistente de Colombia Evaluadora. Esta es una demo: " +
-    "puedo responder con mensajes de ejemplo mientras conectamos un " +
-    "modelo real.",
+  "¡Hola! Soy el asistente de Colombia Evaluadora. ¿En qué puedo ayudarte?",
 )
 
 export const assistantConnection = assistantChat.transport({
-  fallback:
-    "Esta es una demo sin modelo conectado todavía, así que no puedo " +
-    "responder a mensajes libres por ahora.",
+  fallback: ASSISTANT_PROXIMAMENTE_MENSAJE,
 })

@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/message-scroller"
 
 import { StreamingText } from "@/features/assistant/components/streaming-text"
+import {
+  ASSISTANT_DISPONIBLE,
+  ASSISTANT_PROXIMAMENTE_MENSAJE,
+} from "@/features/assistant/lib/availability"
 
 interface ChatMessageListProps {
   messages: UIMessage[]
@@ -49,8 +53,12 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
           <EmptyMedia variant="icon">
             <ChatCircleDotsIcon />
           </EmptyMedia>
-          <EmptyTitle>Asistente</EmptyTitle>
-          <EmptyDescription>Escribe un mensaje para comenzar la conversación.</EmptyDescription>
+          <EmptyTitle>{ASSISTANT_DISPONIBLE ? "Asistente" : "Próximamente"}</EmptyTitle>
+          <EmptyDescription>
+            {ASSISTANT_DISPONIBLE
+              ? "Escribe un mensaje para comenzar la conversación."
+              : ASSISTANT_PROXIMAMENTE_MENSAJE}
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     )
