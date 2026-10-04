@@ -1,6 +1,11 @@
 import { useState } from "react"
 
-import { FileDownloadOutlinedIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  FileDownloadOutlinedIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -14,22 +19,30 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useExport } from "@/features/academic-management/curricular-references/api/mutations/export"
 import type { CurricularReferencesQueryRequest } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
-import { useNotify } from "@/components/notice/notice-context"
+import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
 
 interface ExportCurricularReferencesDialogProps {
   filters: CurricularReferencesQueryRequest["filters"]
+  sorting: CurricularReferencesQueryRequest["sorting"]
+  /** Columnas visibles de la tabla, ya traducidas a claves del reporte (ver
+   * `CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS` en `columns.tsx`). */
+  columns: string[]
 }
 
-export function ExportCurricularReferencesDialog({ filters }: ExportCurricularReferencesDialogProps) {
+export function ExportCurricularReferencesDialog({ filters, sorting, columns }: ExportCurricularReferencesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
   const exportAll = useExport({
     mutationConfig: {
       onSuccess: (result) => {
+        // `downloadReport` no tira: un 422 (demasiadas filas) o cualquier
+        // otro error del servicio llega acá como `status: "error"`.
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
@@ -37,8 +50,17 @@ export function ExportCurricularReferencesDialog({ filters }: ExportCurricularRe
         notify(result.message)
         setOpen(false)
       },
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
+      },
     },
   })
+
+  function handleExport(format: ExportFormat) {
+    exportAll.mutate({ filters, sorting, format, columns })
+  }
+
+  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -66,28 +88,46 @@ export function ExportCurricularReferencesDialog({ filters }: ExportCurricularRe
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Exporta todos los referentes curriculares que coincidan con los filtros activos.
+            Elige un formato para exportar todos los referentes curriculares que coincidan con los
+            filtros activos, con las columnas que tengas visibles en la tabla.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
           <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
             Cancelar
           </DialogClose>
-          <Button
-            size="sm"
-            type="button"
-            color="primary"
-            disabled={exportAll.isPending}
-            aria-busy={exportAll.isPending}
-            onClick={() => exportAll.mutate({ filters })}
-          >
-            {exportAll.isPending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <FileDownloadOutlinedIcon data-icon="inline-start" />
-            )}
-            Exportar
-          </Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              disabled={exportAll.isPending}
+              aria-busy={pendingFormat === "excel"}
+              onClick={() => handleExport("excel")}
+            >
+              {pendingFormat === "excel" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <FileXlsIcon data-icon="inline-start" />
+              )}
+              Excel
+            </Button>
+            <Button
+              size="sm"
+              type="button"
+              color="primary"
+              disabled={exportAll.isPending}
+              aria-busy={pendingFormat === "pdf"}
+              onClick={() => handleExport("pdf")}
+            >
+              {pendingFormat === "pdf" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <FilePdfIcon data-icon="inline-start" />
+              )}
+              PDF
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

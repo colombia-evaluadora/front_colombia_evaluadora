@@ -3,7 +3,7 @@ import { HttpResponse, delay, http } from "msw"
 import { auditsDb } from "@/mocks/db/audits"
 import { tableOperationsDb } from "@/mocks/db/table-operations"
 import { planeadorDb } from "@/mocks/db/planeador"
-import { getSessionOperations } from "@/mocks/handlers/_session-operations"
+import { getSessionOperations } from "@/mocks/handlers/session-operations-helpers"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 
 import type { Actividad } from "@/features/planeador/api/types/actividad"
@@ -61,6 +61,7 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   matricula: "matricula",
   informes: "informes",
   "informes-tabla": "informe-tabla",
+  "referentes-curriculares": "referentes-curriculares",
 }
 
 function fecha() {

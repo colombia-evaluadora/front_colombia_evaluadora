@@ -20,7 +20,10 @@ import {
 
 import { useCurricularReferencesFilters } from "@/features/academic-management/curricular-references/hooks/use-filters"
 import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
-import { createColumns } from "@/features/academic-management/curricular-references/components/table/columns"
+import {
+  createColumns,
+  CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS,
+} from "@/features/academic-management/curricular-references/components/table/columns"
 import { SearchCurricularReferences } from "@/features/academic-management/curricular-references/components/search/search-curricular-references"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
 import { ExportCurricularReferencesDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-export"
@@ -75,6 +78,12 @@ export function CurricularReferencesDataTable() {
     columnVisibilityStorageKey: "table-curricular-references-column-visibility",
   })
 
+  // Columnas visibles, en orden, traducidas a claves del reporte: el archivo
+  // sale con lo mismo que el usuario está viendo.
+  const exportColumns = table
+    .getVisibleLeafColumns()
+    .flatMap((column) => CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS[column.id] ?? [])
+
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -101,7 +110,7 @@ export function CurricularReferencesDataTable() {
               <ControlPointIcon data-icon="inline-start" />
               Nuevo referente
             </Button>
-            <ExportCurricularReferencesDialog filters={queryFilters} />
+            <ExportCurricularReferencesDialog filters={queryFilters} sorting={sorting} columns={exportColumns} />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>

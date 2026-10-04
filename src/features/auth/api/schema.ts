@@ -21,7 +21,7 @@ export const loginFormSchema = loginInputSchema.extend({
 export type LoginFormValues = z.infer<typeof loginFormSchema>
 
 export const loginSearchSchema = z.object({
-  redirectTo: z.string().optional(),
+  redirectTo: z.string().optional().catch(undefined),
 })
 export type LoginSearch = z.infer<typeof loginSearchSchema>
 
@@ -96,7 +96,7 @@ export const passwordRules: readonly PasswordRule[] = [
 // el email destino, cuándo se envió y cuánto le queda. Nada de eso viaja en
 // la URL, así la página es recargable/compartible sin exponer el correo.
 export const checkEmailSearchSchema = z.object({
-  token: z.string().optional(),
+  token: z.string().optional().catch(undefined),
 })
 export type CheckEmailSearch = z.infer<typeof checkEmailSearchSchema>
 
@@ -125,7 +125,7 @@ export const restorePasswordFormSchema = z
 export type RestorePasswordFormValues = z.infer<typeof restorePasswordFormSchema>
 
 export const restorePasswordSearchSchema = z.object({
-  token: z.string().optional(),
+  token: z.string().optional().catch(undefined),
 })
 export type RestorePasswordSearch = z.infer<typeof restorePasswordSearchSchema>
 
@@ -133,6 +133,6 @@ export type RestorePasswordSearch = z.infer<typeof restorePasswordSearchSchema>
 // reutiliza restorePasswordFormSchema tal cual (el form también es el
 // mismo componente) — solo cambia a qué endpoint se postea el valor.
 export const activateSearchSchema = z.object({
-  token: z.string().optional(),
+  token: z.string().optional().catch(undefined),
 })
 export type ActivateSearch = z.infer<typeof activateSearchSchema>

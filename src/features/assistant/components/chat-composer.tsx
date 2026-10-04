@@ -18,9 +18,10 @@ import {
 interface ChatComposerProps {
   onSend: (text: string) => void
   disabled: boolean
+  placeholder?: string
 }
 
-export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
+export function ChatComposer({ onSend, disabled, placeholder = "Escribe un mensaje..." }: ChatComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm({
@@ -62,7 +63,7 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
                   form.handleSubmit()
                 }
               }}
-              placeholder="Escribe un mensaje..."
+              placeholder={placeholder}
               disabled={disabled}
               rows={1}
               className="min-h-9 border-none bg-transparent px-2 py-1.5"
@@ -75,8 +76,9 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
             <DropdownMenuTrigger
               render={
                 <InputGroupButton
-                  aria-label="Add files"
+                  aria-label="Adjuntar archivos"
                   type="button"
+                  disabled={disabled}
                   size="icon-sm"
                   variant="outline"
                 >
@@ -87,14 +89,20 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
             <DropdownMenuContent align="start" side="top" className="w-44">
               <DropdownMenuItem>
                 <PaperclipIcon />
-                Add Photos & Files
+                Adjuntar fotos y archivos
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <InputGroupButton type="submit" variant="fill" size="icon-sm" className="ml-auto">
+          <InputGroupButton
+            type="submit"
+            variant="fill"
+            size="icon-sm"
+            className="ml-auto"
+            disabled={disabled}
+          >
             <ArrowUpIcon />
-            <span className="sr-only">Send</span>
+            <span className="sr-only">Enviar</span>
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>

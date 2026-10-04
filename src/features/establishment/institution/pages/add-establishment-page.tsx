@@ -31,7 +31,7 @@ import { useEstablishmentQuery } from "@/features/establishment/institution/api/
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
-import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
+import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 

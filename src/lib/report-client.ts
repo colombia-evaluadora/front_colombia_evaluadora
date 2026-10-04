@@ -49,6 +49,7 @@ export type ReportKey =
   | "informes-tabla"
   | "boletin-preescolar"
   | "planeador-actividades"
+  | "referentes-curriculares"
   | "auditoria-sesiones"
   | "auditoria-tabla-operaciones"
   | "auditoria-sesion-operaciones"
