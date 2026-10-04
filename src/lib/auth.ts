@@ -30,18 +30,19 @@ export const loginInputSchema = z.object({
 export type LoginInput = z.infer<typeof loginInputSchema>
 
 /**
- * `rememberMe` solo afecta al cliente: si el usuario lo marca, persistimos
- * el token en localStorage. Si no, el token queda en memoria y muere con la
- * pestaña. El backend real maneja el "remember" con un refresh cookie, pero
- * acá el token del mock es lo único que tenemos.
+ * `rememberMe` ("Mantener sesión iniciada") no cambia dónde vive el token: el
+ * access token queda SIEMPRE solo en memoria (ver `setAuthToken` en
+ * `api-client.ts`). El flag viaja al backend como header `x-remember-me`, y
+ * es el backend el que decide cuánto dura la sesión ajustando el `Max-Age`
+ * de la cookie httpOnly `sso_refresh`.
  */
 interface LoginInputWithRemember extends LoginInput {
   rememberMe: boolean
 }
 
 const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthResponse> => {
-  // El endpoint real solo valida credenciales: mandamos el flag como header
-  // para que el backend decida el `expiresIn` cuando lo soporte.
+  // El flag va como header para que el backend fije el `Max-Age` de la
+  // cookie de refresh; sin el header la cookie dura lo que el default.
   return api.post("/auth/login", data, {
     headers: data.rememberMe ? { "x-remember-me": "true" } : {},
   })

@@ -1,7 +1,7 @@
 "use no memo"
 
 import * as React from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, Navigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -619,6 +619,17 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
 
 export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
+  // A esta pantalla solo se llega desde el calendario (`asistencia-month-grid`),
+  // que siempre manda `fecha` y `sede`. Si faltan o son inválidas (URL editada a
+  // mano, enlace viejo) el schema las deja en `undefined` en vez de tirar, y
+  // volvemos al calendario conservando lo que sí haya llegado.
+  if (!fecha || sede == null) {
+    return <Navigate to={paths.app.asistencia.getHref()} search={{ sede, fecha }} replace />
+  }
+  return <AsistenciaManualContent fecha={fecha} sede={sede} />
+}
+
+function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number }) {
   const [anio, mes] = fecha.split("-").map(Number)
 
   const { isDocente } = useAsistenciaAccess()

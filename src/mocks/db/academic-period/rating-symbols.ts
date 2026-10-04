@@ -8,18 +8,21 @@ import type {
 // "consulta" los íconos como si el backend devolviera URLs de imagen.
 //
 // ── Convención de nombres de archivo ─────────────────────────────────────────
-// Caritas   (assets/caras/):  "<n>_<expresion>/<n>_<expresion>_<color>.png"
-//     ej: "02_muy_feliz/02_muy_feliz_verde.png"
+// Caritas   (assets/caras/):  "<n>-<expresion>/<n>-<expresion>-<color>.png"
+//     ej: "02-muy-feliz/02-muy-feliz-verde.png"
 //     · `<n>` es un prefijo numérico de 2 dígitos que define el orden de la
 //       escala emocional (01=riendo, 02=muy feliz, …, 08=llorando).
 //     · `<color>` debe ser uno de CARITA_COLOR_ORDER (define el orden de
 //       columnas dentro de cada fila).
-//     · `<expresion>` es el resto antes del último `_`; se humaniza con
-//       espacios en el label.
+//     · `<expresion>` es el resto antes del último `-`; se humaniza con
+//       espacios en el label. En el `id` del símbolo se conserva con `_`
+//       (`carita-02-muy_feliz-verde`), igual que cuando los archivos usaban
+//       guiones bajos, para no cambiar los ids existentes.
 //
-// Letras    (assets/letras/): "letra_<LETRA>_<color>.png"
-//     ej: "letra_A_azul.png", "letra_B_rosa.png"
-//     · `<LETRA>` es una sola letra (A, B, D, E, I…).
+// Letras    (assets/letras/): "letra-<letra>-<color>.png"
+//     ej: "letra-a-azul.png", "letra-b-rosa.png"
+//     · `<letra>` es una sola letra (a, b, d, e, i…), en minúscula por la
+//       regla kebab-case de nombres de archivo; se pasa a mayúscula al parsear.
 //     · `<color>` define la tonalidad de la imagen; no se usa para separar
 //       ni para el label (la letra sola alcanza).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,24 +67,24 @@ const CARITA_COLOR_ORDER = [
 const LETRA_ORDER = ["A", "I", "S", "D", "E", "B", "Bj"]
 
 function humanize(text: string): string {
-  const words = text.replace(/_/g, " ").trim()
+  const words = text.replace(/[_-]/g, " ").trim()
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-// Parsea "<n>_<expresion>_<color>". Devuelve `null` si el nombre no respeta
+// Parsea "<n>-<expresion>-<color>". Devuelve `null` si el nombre no respeta
 // la convención (en ese caso el archivo se ignora).
 function parseCara(name: string):
   | { number: string; expression: string; color: string }
   | null {
-  const match = name.match(/^(\d{2})_(.+)_([a-záéíóúñ]+)$/i)
+  const match = name.match(/^(\d{2})-(.+)-([a-záéíóúñ]+)$/i)
   if (!match) return null
   const color = match[3].toLowerCase()
   if (!CARITA_COLOR_ORDER.includes(color)) return null
-  return { number: match[1], expression: match[2], color }
+  return { number: match[1], expression: match[2].replace(/-/g, "_"), color }
 }
 
 function parseLetra(name: string): { letter: string; color: string } | null {
-  const match = name.match(/^letra_([A-Z])_([a-záéíóúñ]+)$/i)
+  const match = name.match(/^letra-([A-Z])-([a-záéíóúñ]+)$/i)
   if (!match) return null
   return { letter: match[1].toUpperCase(), color: match[2].toLowerCase() }
 }
