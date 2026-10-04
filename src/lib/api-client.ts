@@ -29,15 +29,6 @@ declare module "axios" {
   }
 }
 
-// Persistido en localStorage solo cuando el usuario marcó "Mantener sesión".
-// Si no, el token vive en memoria y muere con la pestaña — mismo efecto que
-// un refresh token que expira al cerrar el navegador.
-//
-// La clave va namespaced por modo: el token que emite MSW es un JWT sin
-// firma (`alg: none`, ver mocks/db/auth.ts) que el gateway real rechaza con
-// 401 `invalid_token`. Con una sola clave compartida, cambiar
-// ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
-// se lo mandaba al backend equivocado.
 /**
  * El access token vive SOLO en memoria — nunca en `localStorage`.
  *
@@ -68,10 +59,9 @@ export function setAuthToken(token: string | null) {
  * El gateway valida el Bearer en un filtro, antes de mirar qué endpoint es: si
  * el token está vencido responde 401 `invalid_token` y nunca llega a procesar
  * la petición. Mandarle un token viejo a `/auth/login` volvía el login
- * imposible —"JWT expired ... ago"— y como el 401 en la pantalla de login no
- * limpia nada (ver el interceptor de respuesta), la única salida era borrar
- * localStorage a mano. Loguearse es justamente lo que se hace cuando NO se
- * tiene una credencial válida; el header sobra.
+ * imposible —"JWT expired ... ago"— mientras ese token viejo siguiera en
+ * memoria. Loguearse es justamente lo que se hace cuando NO se tiene una
+ * credencial válida; el header sobra.
  *
  * `/auth/refresh` no está acá: en el mock es el Bearer lo que identifica al
  * usuario (no hay cookie que mandar).
@@ -144,12 +134,12 @@ const PROBE_ENDPOINTS = [
   "/eval-col/planeador/actividad/calificaciones",
 ]
 
-// El módulo de periodos académicos ya muestra sus propios avisos (banner
-// inline en el diálogo o `notify()`/NoticeOutlet de página) para cada
-// mutación — el toast global duplicaba el mismo mensaje de error. En vez de
-// mantener una lista de endpoints (se desactualiza apenas cambia una ruta),
-// el propio módulo prende/apaga este flag al montarse/desmontarse
-// (ver `useSuppressGlobalErrorToast` en el layout del módulo).
+// Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
+// inline en el diálogo o `notify()`/NoticeOutlet de página) para cada error —
+// el toast global duplicaba el mismo mensaje. En vez de mantener una lista de
+// endpoints (se desactualiza apenas cambia una ruta), `NoticeProvider`
+// prende este flag al montarse y lo apaga cuando se desmonta el último
+// provider activo (conteo de referencias en `components/notice/notice-context.tsx`).
 let suppressGlobalErrorToast = false
 
 export function setSuppressGlobalErrorToast(value: boolean) {
@@ -261,10 +251,9 @@ api.interceptors.response.use(
     // El backend dice explícitamente que el token no sirve (vencido, mal
     // firmado, revocado). Hay que soltarlo SIEMPRE, incluso en la pantalla de
     // login y en los endpoints públicos: son justo los casos que el guard de
-    // arriba excluye del manejo de "sesión vencida", y por eso un token
-    // vencido en storage podía dejar el login trabado en bucle —cada intento
-    // volvía a mandarlo y el gateway volvía a rechazarlo— sin más salida que
-    // borrar localStorage a mano.
+    // arriba excluye del manejo de "sesión vencida", y por eso, sin esto, un
+    // token vencido en memoria podía dejar el login trabado en bucle —cada
+    // intento volvía a mandarlo y el gateway volvía a rechazarlo—.
     if (isUnauthorized && error.response?.data?.error === "invalid_token") {
       setAuthToken(null)
     }

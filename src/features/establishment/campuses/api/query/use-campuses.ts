@@ -15,14 +15,14 @@ import type {
 /**
  * Normaliza los filtros de la UI a lo que espera el backend.
  *
- * Los `<Select>` del buscador mandan el id como TEXTO (`String(item.id)`),
- * pero los binds del catálogo están declarados `BIGINT[]` y el query-service
- * valida el tipo de cada elemento: un `["1"]` donde espera `[1]` se rechaza
- * con 400.
+ * Hoy no convierte tipos: `zones` viaja como CÓDIGOS (texto) porque desde
+ * V116 el backend filtra por código (binds `VARCHAR[]`), no por id. Lo único
+ * que hace es garantizar un array vacío en lugar de `undefined`, para que el
+ * bind siempre reciba un array.
  *
  * Se exporta —y no queda embebido en el body de la consulta— porque la
  * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
- * misma conversión. Cuando esto vivía solo dentro del hook de listado, la
+ * misma normalización. Cuando esto vivía solo dentro del hook de listado, la
  * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
  */
 export function toCampusesQueryFilters(filters: CampusesQueryRequest["filters"]) {

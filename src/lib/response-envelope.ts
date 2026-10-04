@@ -28,12 +28,11 @@ export function unwrapRows<T>(response: RowsEnvelope<T> | T[]): T[] {
  * (eso ya lo señaliza el 404 HTTP) — por eso tira en vez de devolver
  * `undefined` silenciosamente.
  *
- * Nota para los callers: el resultado de `api.get/post/put/patch` viene
- * tipado como `AxiosResponse` aunque en runtime ya es el body desenvuelto
- * (ver el response interceptor en api-client.ts) — cuando haga falta,
- * casteá esa respuesta a `unknown` y de ahí a la forma real
- * (`T | RowsEnvelope<T>`) antes de pasarla acá, como en
- * use-user-by-document.ts.
+ * Nota para los callers: `api.get/post/put/patch<T>` ya resuelve al body
+ * desenvuelto y está tipado así (`Promise<T>`, ver el `declare module
+ * "axios"` y el response interceptor en api-client.ts). Pedile directamente
+ * la forma real que llega del backend, p. ej.
+ * `api.get<RowsEnvelope<Row> | Row>(...)`, y pasá el resultado acá.
  */
 export function unwrapRow<T>(response: RowsEnvelope<T> | T): T {
   if (env.ENABLE_API_MOCKING) return response as T
