@@ -4,6 +4,16 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   TableScreen,
   TableScreenBody,
   TableScreenFooter,
@@ -18,7 +28,9 @@ import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useUpdateUnidad } from "@/features/planeador/api/mutations/update-unidad"
+import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import {
   UnidadInfoGeneralFields,
   draftFromUnidad,
@@ -31,6 +43,19 @@ import {
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+
+/** Actividades vinculadas sin peso capturado para el método de cálculo
+ *  destino — "Ponderado" mira `ponderacion`, "Suma de puntos" mira
+ *  `notaMaxima` (0/`null` cuentan como "sin capturar"). "Promedio simple"
+ *  no usa ninguna columna de peso, así que no aplica (siempre `[]`). */
+function actividadesSinPeso(
+  actividades: UnidadActividad[],
+  metodoDestino: UnidadDraft["metodoCalculo"],
+): UnidadActividad[] {
+  if (metodoDestino === "Ponderado") return actividades.filter((a) => !a.ponderacion)
+  if (metodoDestino === "Suma de puntos") return actividades.filter((a) => !a.notaMaxima)
+  return []
+}
 
 const FORM_ID = "editar-unidad-form"
 
@@ -107,6 +132,20 @@ function EditarUnidadPageContent({
   // salen de acá, para precargar el picker de "Derechos Básicos de
   // Aprendizaje" con el borrador inicial.
   const { data: referente, isPending: referentePending } = useUnidadReferenteQuery(unidad?.id)
+
+  // Regla pedida: si el docente cambia el método de cálculo de "Promedio
+  // simple" (donde ninguna actividad tiene peso propio) a "Ponderado" o
+  // "Suma de puntos" (donde SÍ lo tiene), y ya hay actividades vinculadas
+  // sin ese peso capturado, se avisa ANTES de guardar — si no, el docente
+  // se entera recién al reabrir cada actividad una por una y encontrarlas
+  // en 0/sin puntaje. Reusa `useUnidadActividadesQuery`: el panel de
+  // detalle ya consulta este mismo endpoint, no hace falta una query nueva.
+  const { data: actividadesVinculadas = [], isPending: actividadesPending } = useUnidadActividadesQuery(unidad?.id)
+  const [confirmacionCambioMetodo, setConfirmacionCambioMetodo] = useState<{
+    unidadId: number
+    data: ReturnType<typeof draftToPayload>
+    sinPeso: UnidadActividad[]
+  } | null>(null)
 
   const updateMutation = useUpdateUnidad({
     mutationConfig: {
@@ -196,11 +235,29 @@ function EditarUnidadPageContent({
             id={FORM_ID}
             onSubmit={(e) => {
               e.preventDefault()
+              const data = draftToPayload(current)
+              // Método ANTERIOR = el que trae `unidad` (lo que ya está
+              // guardado, de antes de que el docente tocara nada) — NO
+              // `initialDraft.metodoCalculo`, que es lo mismo pero por
+              // claridad se compara contra la fuente real. Método NUEVO =
+              // lo que el docente eligió en el form (`current`).
+              const metodoAnterior = unidad.metodoCalculo
+              const metodoNuevo = current.metodoCalculo
+              const cambiaDesdePromedioSimple =
+                metodoAnterior === "Promedio simple" && metodoNuevo !== "Promedio simple"
+
+              if (cambiaDesdePromedioSimple) {
+                const sinPeso = actividadesSinPeso(actividadesVinculadas, metodoNuevo)
+                if (sinPeso.length > 0) {
+                  setConfirmacionCambioMetodo({ unidadId: unidad.id, data, sinPeso })
+                  return
+                }
+              }
               // `ENUNCIADOS` en el PUT (sso V492) reemplaza la lista
               // completa en una sola llamada — agregados y quitados del
               // picker de "Derechos Básicos de Aprendizaje" viajan juntos
               // en `useUpdateUnidad`, no hace falta desvincular aparte.
-              updateMutation.mutate({ unidadId: unidad.id, data: draftToPayload(current) })
+              updateMutation.mutate({ unidadId: unidad.id, data })
             }}
           >
             <UnidadFormTabs
@@ -227,7 +284,7 @@ function EditarUnidadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!current?.nombre.trim() || updateMutation.isPending}
+              disabled={!current?.nombre.trim() || updateMutation.isPending || actividadesPending}
             >
               {updateMutation.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
@@ -241,6 +298,60 @@ function EditarUnidadPageContent({
           <span />
         )}
       </TableScreenFooter>
+
+      {/* Alerta del cambio de método de cálculo (Regla pedida, ver el
+          comentario de `actividadesVinculadas` más arriba): se abre
+          programáticamente desde el submit, no desde un trigger — por eso
+          no lleva `AlertDialogTrigger`, mismo patrón que otros diálogos
+          controlados del repo. */}
+      <AlertDialog
+        open={confirmacionCambioMetodo != null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmacionCambioMetodo(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Actividades sin peso capturado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Al cambiar de &ldquo;Promedio simple&rdquo; a &ldquo;{confirmacionCambioMetodo?.data.metodoCalculo}
+              &rdquo;,{" "}
+              {confirmacionCambioMetodo && confirmacionCambioMetodo.sinPeso.length === 1
+                ? "la siguiente actividad vinculada no tiene"
+                : "las siguientes actividades vinculadas no tienen"}{" "}
+              {confirmacionCambioMetodo?.data.metodoCalculo === "Suma de puntos" ? "puntaje" : "ponderación"} capturado
+              y quedarán en 0 hasta que se edite cada una:{" "}
+              <strong>{confirmacionCambioMetodo?.sinPeso.map((a) => a.nombre).join(", ")}</strong>. ¿Guardar de todas
+              formas?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              color="primary"
+              disabled={updateMutation.isPending}
+              aria-busy={updateMutation.isPending}
+              onClick={() => {
+                if (!confirmacionCambioMetodo) return
+                updateMutation.mutate({
+                  unidadId: confirmacionCambioMetodo.unidadId,
+                  data: confirmacionCambioMetodo.data,
+                })
+                setConfirmacionCambioMetodo(null)
+              }}
+            >
+              {updateMutation.isPending ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              Guardar de todas formas
+            </AlertDialogAction>
+            <AlertDialogCancel variant="fill" color="neutral" disabled={updateMutation.isPending}>
+              Volver a revisar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TableScreen>
   )
 }
