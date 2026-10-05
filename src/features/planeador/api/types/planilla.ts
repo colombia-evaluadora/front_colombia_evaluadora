@@ -6,6 +6,8 @@
  * de acá calca el contrato de un endpoint puntual.
  */
 
+import type { EstadoResultado } from "@/features/planeador/api/types/calificacion"
+
 /** Una columna de la grilla = una actividad del (grado, grupo, asignatura)
  *  filtrado — `GET /planeador/planilla/columnas`. */
 export interface PlanillaColumna {
@@ -77,6 +79,8 @@ export interface PlanillaCelda {
   /** `false` → la celda se pinta gris: no se puede calificar hasta que se
    *  registre asistencia. Es una foto del momento de la lectura. */
   tieneAsistencia: boolean
+  /** Regla 62: No presentó / No asistió bloquean la nota, como en el Planeador. */
+  estadoResultado?: EstadoResultado | null
   evidencias: CeldaEvidencia[]
 }
 

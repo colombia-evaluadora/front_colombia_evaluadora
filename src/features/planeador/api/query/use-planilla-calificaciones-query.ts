@@ -8,6 +8,7 @@ import type {
   PlanillaFila,
 } from "@/features/planeador/api/types/planilla"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import type { EstadoResultado } from "@/features/planeador/api/types/calificacion"
 
 /** `GET /planeador/planilla/calificaciones` (confirmado real, ver colección
  *  Postman `planeador-planilla-flujo-completo`, paso 2.2).
@@ -34,6 +35,7 @@ interface PlanillaCeldaRow {
   esFormativa?: boolean | "S" | "N" | null
   fechaAsistencia?: string | null
   tieneAsistencia?: boolean | null
+  estadoResultado?: EstadoResultado | null
   evidencias?: CeldaEvidenciaRow[] | null
 }
 
