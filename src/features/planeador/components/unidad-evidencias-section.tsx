@@ -151,6 +151,8 @@ interface EnunciadosEvidenciasChecklistProps {
    *  form, con `PUT /actividades/:id` (reemplazo completo, ver
    *  `update-actividad.ts`), así que tildar y destildar funciona igual. */
   disabledIds?: number[]
+  /** Deshabilita TODO el checklist (form de actividad en solo lectura). */
+  disabled?: boolean
   /** Id de la evidencia que se está guardando ahora mismo (panel de
    *  detalle, guardado inmediato) — le muestra un spinner en vez del
    *  checkbox mientras la mutación está en vuelo. */
@@ -182,6 +184,7 @@ export function EnunciadosEvidenciasChecklist({
   seleccionadas,
   onToggle,
   disabledIds = [],
+  disabled: disabledTodo = false,
   pendingId = null,
   className,
 }: EnunciadosEvidenciasChecklistProps) {
@@ -220,7 +223,7 @@ export function EnunciadosEvidenciasChecklist({
             <ul className="flex flex-col gap-2">
               {enunciado.evidencias.map((evidencia) => {
                 const checked = seleccionadas.includes(evidencia.id)
-                const disabled = disabledIds.includes(evidencia.id)
+                const disabled = disabledTodo || disabledIds.includes(evidencia.id)
                 const pending = pendingId === evidencia.id
                 return (
                   <li key={evidencia.id} className="flex items-start gap-2">
@@ -264,6 +267,8 @@ interface CriteriosUnidadChecklistProps {
    *  editar actividad no pasa esta prop: guarda la selección completa al
    *  enviar el form (`PUT /actividades/:id`, reemplazo completo). */
   disabledIds?: number[]
+  /** Deshabilita TODO el checklist (form de actividad en solo lectura). */
+  disabled?: boolean
   className?: string
 }
 
@@ -280,6 +285,7 @@ export function CriteriosUnidadChecklist({
   seleccionados,
   onToggle,
   disabledIds = [],
+  disabled: disabledTodo = false,
   className,
 }: CriteriosUnidadChecklistProps) {
   if (criterios.length === 0) return null
@@ -290,7 +296,7 @@ export function CriteriosUnidadChecklist({
       <ul className="flex flex-col gap-2">
         {criterios.map((criterio) => {
           const checked = seleccionados.includes(criterio.id)
-          const disabled = disabledIds.includes(criterio.id)
+          const disabled = disabledTodo || disabledIds.includes(criterio.id)
           return (
             <li key={criterio.id} className="flex items-start gap-2">
               <Checkbox

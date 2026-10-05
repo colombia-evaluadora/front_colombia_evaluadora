@@ -14,7 +14,7 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
@@ -60,7 +60,7 @@ function PlaneadorCrearUnidadPageContent() {
   // Mismo guard de permiso que `planeador-crear-actividad-page.tsx`: sin
   // "crear" en Planeador, redirige al listado apenas se sabe que no hay
   // permiso.
-  const { puedeCrear, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
       navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })

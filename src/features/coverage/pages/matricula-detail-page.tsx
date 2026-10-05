@@ -103,7 +103,7 @@ function MatriculaDetailPageContent() {
 
       {isError && (
         <div className="p-10 text-center text-sm text-destructive">
-          No se pudo cargar la matrícula.
+          {getErrorMessage(error)}
         </div>
       )}
 

@@ -64,7 +64,7 @@ import {
 import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
@@ -88,7 +88,7 @@ type VerPorOption = AgrupacionPlanillaKey
  * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
-  const { puedeCrear, puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, puedeEditar } = usePlaneadorSoloLectura()
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
