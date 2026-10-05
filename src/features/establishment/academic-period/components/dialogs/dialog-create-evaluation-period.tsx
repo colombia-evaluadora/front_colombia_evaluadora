@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { addDays } from "date-fns"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { useForm } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -18,22 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from "@/components/ui/input-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
@@ -42,7 +26,6 @@ import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/acade
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
-import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import {
@@ -88,6 +71,7 @@ export function CreateEvaluationPeriodDialog({
   }
 
   const { data: statusOptions = [] } = useEvaluationPeriodStatusesQuery()
+  const statusSelectOptions = statusOptions.map((o) => ({ value: o.id, label: o.label }))
 
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const academicPeriodStart = academicPeriod?.startDate ?? ""
@@ -177,15 +161,16 @@ export function CreateEvaluationPeriodDialog({
 
   const isSaving = createEvaluation.isPending || updateEvaluation.isPending
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: {
       onChange: evaluationPeriodFormSchema,
       onSubmit: evaluationPeriodFormSchema,
     },
+    // `onSubmit` solo corre si el validador de submit pasó: no hace falta
+    // volver a parsear (el schema no transforma valores).
     onSubmit: ({ value }) => {
-      const values = evaluationPeriodFormSchema.parse(value)
-      const payload = { ...values }
+      const payload = { ...value }
       if (isEditing) {
         updateEvaluation.mutate({
           academicPeriodId,
@@ -269,71 +254,19 @@ export function CreateEvaluationPeriodDialog({
           }}
           className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
         >
-          <form.Field name="codigo">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Código*</FieldLabel>
-                  <Input
-                    id={field.name}
-                    type="text"
-                    maxLength={30}
-                    placeholder="Agregar"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <form.AppField name="codigo">
+            {(field) => <field.TextField label="Código" required maxLength={30} />}
+          </form.AppField>
 
-          <form.Field name="nombre">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
-                  <Input
-                    id={field.name}
-                    maxLength={130}
-                    placeholder="Agregar"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <form.AppField name="nombre">
+            {(field) => <field.TextField label="Nombre" required maxLength={130} />}
+          </form.AppField>
 
-          <form.Field name="abreviacion">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
-                  <Input
-                    id={field.name}
-                    maxLength={30}
-                    placeholder="Agregar"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <form.AppField name="abreviacion">
+            {(field) => <field.TextField label="Abreviación" required maxLength={30} />}
+          </form.AppField>
 
-          <form.Field
+          <form.AppField
             name="startDate"
             validators={{
               onChange: ({ value }) => {
@@ -359,34 +292,22 @@ export function CreateEvaluationPeriodDialog({
               },
             }}
           >
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <form.Subscribe selector={(state) => state.values.endDate}>
-                  {(endDate) => {
-                    const outOfRange =
-                      !!field.state.value && !!endDate && field.state.value >= endDate
-                    const noAvailableEndDate =
-                      !isInvalid && !!field.state.value && !hasAvailableEndDate(field.state.value)
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
-                        <DatePicker
-                          mode="date"
-                          id={field.name}
-                          value={parseDateValue(field.state.value)}
-                          onChange={(date) => {
-                            field.handleChange(formatDateValue(date))
-                            field.handleBlur()
-                          }}
-                          disabledRanges={otherPeriodsDateRanges}
-                          minDate={academicPeriodMinDate}
-                          maxDate={academicPeriodMaxDate}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : noAvailableEndDate ? (
+            {(field) => (
+              <form.Subscribe selector={(state) => [state.values.startDate, state.values.endDate]}>
+                {([startDate, endDate]) => {
+                  // Avisos que no son errores de validación: el campo los
+                  // muestra solo mientras no tenga un error propio.
+                  const outOfRange = !!startDate && !!endDate && startDate >= endDate
+                  const noAvailableEndDate = !!startDate && !hasAvailableEndDate(startDate)
+                  return (
+                    <field.DateField
+                      label="Fecha inicio"
+                      required
+                      disabledRanges={otherPeriodsDateRanges}
+                      minDate={academicPeriodMinDate}
+                      maxDate={academicPeriodMaxDate}
+                      description={
+                        noAvailableEndDate ? (
                           <p role="alert" className="text-red text-xs">
                             No queda ningún día disponible para la fecha de fin después de esta
                             fecha de inicio: el siguiente día ya pertenece a otro periodo de
@@ -397,16 +318,16 @@ export function CreateEvaluationPeriodDialog({
                             La fecha de inicio debe ser anterior a la fecha de fin del período de
                             evaluación.
                           </p>
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Subscribe>
-              )
-            }}
-          </form.Field>
+                        ) : null
+                      }
+                    />
+                  )
+                }}
+              </form.Subscribe>
+            )}
+          </form.AppField>
 
-          <form.Field
+          <form.AppField
             name="endDate"
             validators={{
               onChange: ({ value }) => {
@@ -432,53 +353,40 @@ export function CreateEvaluationPeriodDialog({
               },
             }}
           >
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <form.Subscribe selector={(state) => state.values.startDate}>
-                  {(startDate) => {
-                    const dayAfterStart = startDate
-                      ? addDays(parseDateValue(startDate) as Date, 1)
-                      : undefined
-                    const minEndDate =
-                      dayAfterStart && (!academicPeriodMinDate || dayAfterStart > academicPeriodMinDate)
-                        ? dayAfterStart
-                        : academicPeriodMinDate
-                    const nextStart = startDate ? nextOtherPeriodStart(startDate) : undefined
-                    const dayBeforeNextStart = nextStart
-                      ? addDays(parseDateValue(nextStart) as Date, -1)
-                      : undefined
-                    const maxEndDate =
-                      dayBeforeNextStart &&
-                      (!academicPeriodMaxDate || dayBeforeNextStart < academicPeriodMaxDate)
-                        ? dayBeforeNextStart
-                        : academicPeriodMaxDate
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Fecha fin*</FieldLabel>
-                        <DatePicker
-                          mode="date"
-                          id={field.name}
-                          value={parseDateValue(field.state.value)}
-                          onChange={(date) => {
-                            field.handleChange(formatDateValue(date))
-                            field.handleBlur()
-                          }}
-                          disabledRanges={otherPeriodsDateRanges}
-                          minDate={minEndDate}
-                          maxDate={maxEndDate}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    )
-                  }}
-                </form.Subscribe>
-              )
-            }}
-          </form.Field>
+            {(field) => (
+              <form.Subscribe selector={(state) => state.values.startDate}>
+                {(startDate) => {
+                  const dayAfterStart = startDate
+                    ? addDays(parseDateValue(startDate) as Date, 1)
+                    : undefined
+                  const minEndDate =
+                    dayAfterStart && (!academicPeriodMinDate || dayAfterStart > academicPeriodMinDate)
+                      ? dayAfterStart
+                      : academicPeriodMinDate
+                  const nextStart = startDate ? nextOtherPeriodStart(startDate) : undefined
+                  const dayBeforeNextStart = nextStart
+                    ? addDays(parseDateValue(nextStart) as Date, -1)
+                    : undefined
+                  const maxEndDate =
+                    dayBeforeNextStart &&
+                    (!academicPeriodMaxDate || dayBeforeNextStart < academicPeriodMaxDate)
+                      ? dayBeforeNextStart
+                      : academicPeriodMaxDate
+                  return (
+                    <field.DateField
+                      label="Fecha fin"
+                      required
+                      disabledRanges={otherPeriodsDateRanges}
+                      minDate={minEndDate}
+                      maxDate={maxEndDate}
+                    />
+                  )
+                }}
+              </form.Subscribe>
+            )}
+          </form.AppField>
 
-          <form.Field
+          <form.AppField
             name="peso"
             validators={{
               onChange: ({ value }) => {
@@ -492,97 +400,38 @@ export function CreateEvaluationPeriodDialog({
               },
             }}
           >
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
-                  <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                    <InputGroupInput
-                      id={field.name}
-                      type="number"
-                      min={0}
-                      max={maxAllowedWeight}
-                      step={1}
-                      placeholder="Agregar"
-                      className="px-0"
-                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                      onBlur={field.handleBlur}
-                      onKeyDown={(e) => {
-                        if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                          e.preventDefault()
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber
-                        if (e.target.value === "" || !Number.isNaN(value)) {
-                          field.handleChange(value)
-                        }
-                      }}
-                      aria-invalid={isInvalid}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>%</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : (
-                    <p className="text-muted-foreground text-xs"></p>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
+            {(field) => (
+              <field.NumberField
+                label="Peso porcentual (%)"
+                required
+                valueAs="number"
+                maxDigits={3}
+                suffix="%"
+              />
+            )}
+          </form.AppField>
 
-          <form.Field name="estadoId">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
-                  <Select
-                    value={field.state.value ? String(field.state.value) : ""}
-                    onValueChange={(value) =>
-                      value && field.handleChange(Number(value))
-                    }
-                    disabled={!isEditing}
-                  >
-                    <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      <SelectValue>
-                        {(value) => {
-                          const option = statusOptions.find(
-                            (o) => String(o.id) === value
-                          )
-                          if (!option) return "Seleccionar"
-                          const badge = EVALUATION_PERIOD_STATUS_BADGE[option.key]
-                          return (
-                            <Badge {...badge} className="text-xs">
-                              {option.label}
-                            </Badge>
-                          )
-                        }}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {statusOptions.map((option) => (
-                          <SelectItem
-                            key={option.id}
-                            value={String(option.id)}
-                            title={option.label}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <form.AppField name="estadoId">
+            {(field) => (
+              <field.SelectField
+                label="Estado"
+                required
+                options={statusSelectOptions}
+                emptyValue={0}
+                placeholder="Seleccionar"
+                disabled={!isEditing}
+                renderValue={(option) => {
+                  const status = statusOptions.find((o) => o.id === option.value)
+                  const badge = status ? EVALUATION_PERIOD_STATUS_BADGE[status.key] : undefined
+                  return (
+                    <Badge {...badge} className="text-xs">
+                      {option.label}
+                    </Badge>
+                  )
+                }}
+              />
+            )}
+          </form.AppField>
         </form>
         <DialogFooter>
           <form.Subscribe selector={(state) => state.values}>
