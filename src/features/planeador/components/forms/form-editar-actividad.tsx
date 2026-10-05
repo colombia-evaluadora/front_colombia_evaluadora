@@ -147,6 +147,7 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -355,6 +356,12 @@ export function EditarActividadForm({
     defaultValues: actividadOriginal,
     onSubmit: ({ value }) => {
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
+      // El instrumento se guarda en un PUT APARTE, después de crear/
+      // actualizar la actividad (ver `instrumento-faltantes.ts`): si se
+      // dejara pasar incompleto, la actividad quedaría guardada y el
+      // instrumento rechazado (o, con una escala vacía, ni siquiera
+      // enviado). Se frena acá, antes de mandar nada.
+      if (faltantesDelInstrumento(value).length > 0) return
       return onSubmit?.(value)
     },
   })
@@ -430,6 +437,21 @@ export function EditarActividadForm({
   )
   const camposEfectivosRef = useRef({ camposEfectivos, esFormativa })
   camposEfectivosRef.current = { camposEfectivos, esFormativa }
+  const unidadesRef = useRef(unidades)
+  unidadesRef.current = unidades
+
+  /** Faltantes del instrumento de evaluación (Bloque 5). El puntaje es
+   *  obligatorio con el mismo criterio que `puntajeObligatorio` de
+   *  `RubricasSection`/`ListaCotejoSection`: la unidad vinculada calcula
+   *  por Ponderado o Suma de puntos. En un referente formativo no hay
+   *  instrumento que validar (Bloque 5 ni se muestra). */
+  function faltantesDelInstrumento(values: Actividad): string[] {
+    if (camposEfectivosRef.current.esFormativa) return []
+    const unidad = unidadesRef.current.find((u) => u.id === values.unidad.id)
+    return faltantesInstrumento(values, {
+      puntajeObligatorio: unidad != null && unidad.metodoCalculo !== "Promedio simple",
+    })
+  }
 
   // Grado + Asignatura son el punto de partida de toda la actividad: el
   // resto de los campos (nombre, tipo, unidad asociada, materiales,
@@ -507,9 +529,16 @@ export function EditarActividadForm({
         // ciclo de vida del handler en algún entorno — el nodo del form sí.
         const formEl = e.currentTarget
         const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
-        if (faltantes.length > 0) {
-          notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
+        const faltantesInstr = faltantesDelInstrumento(form.state.values)
+        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): si
+        // faltan campos generales Y la definición del instrumento, van los
+        // dos en el mismo mensaje en vez de que uno pise al otro.
+        const avisos: string[] = []
+        if (faltantes.length > 0) avisos.push(`Complete los campos obligatorios: ${faltantes.join(", ")}.`)
+        if (faltantesInstr.length > 0) {
+          avisos.push(`Complete la definición del instrumento de evaluación: ${faltantesInstr.join(" ")}`)
         }
+        if (avisos.length > 0) notify(avisos.join(" "), { variant: "error" })
         // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
         // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
         // de campos con `validators` de TanStack como los de
@@ -4006,6 +4035,11 @@ function EscalaValoracionSection({
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
+  // Errores inline tras un intento de guardar — mismas reglas que
+  // `faltantesEscala` (`lib/instrumento-faltantes.ts`), que es la que de
+  // verdad frena el guardado; acá solo se marca en rojo QUÉ campo falta
+  // (y `scrollToFirstInvalidField` lleva la vista hasta él).
+  const intentoGuardar = useSelector(form.store, (state) => state.submissionAttempts) > 0
 
   // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
   // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
@@ -4053,6 +4087,15 @@ function EscalaValoracionSection({
                 next.splice(nIndex, 1)
                 field.handleChange({ ...escala, niveles: next })
               }
+
+              const minimoAusente = intentoGuardar && escala.valorMinimo == null
+              const maximoAusente = intentoGuardar && escala.valorMaximo == null
+              const rangoInvertido =
+                intentoGuardar &&
+                escala.valorMinimo != null &&
+                escala.valorMaximo != null &&
+                escala.valorMinimo >= escala.valorMaximo
+              const sinNiveles = intentoGuardar && escala.niveles.length === 0
 
               return (
                 <>
@@ -4125,9 +4168,9 @@ function EscalaValoracionSection({
                     {escala.tipo === "Numérica" && (
                       <>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={minimoAusente}>
                             <FieldLabel htmlFor={`${escala.id}-valor-minimo`}>
-                              Valor mínimo
+                              Valor mínimo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-minimo`}
@@ -4140,12 +4183,14 @@ function EscalaValoracionSection({
                                   valorMinimo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={minimoAusente}
                               disabled={disabled}
                             />
+                            {minimoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
                           </Field>
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={maximoAusente || rangoInvertido}>
                             <FieldLabel htmlFor={`${escala.id}-valor-maximo`}>
-                              Valor máximo
+                              Valor máximo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-maximo`}
@@ -4158,8 +4203,13 @@ function EscalaValoracionSection({
                                   valorMaximo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={maximoAusente || rangoInvertido}
                               disabled={disabled}
                             />
+                            {maximoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
+                            {rangoInvertido && (
+                              <FieldError errors={[{ message: "Debe ser mayor que el valor mínimo." }]} />
+                            )}
                           </Field>
                         </div>
 
@@ -4236,12 +4286,26 @@ function EscalaValoracionSection({
                         </div>
 
                         {escala.niveles.length === 0 ? (
-                          <p className="text-muted-foreground text-sm">
-                            Esta escala todavía no tiene definiciones cualitativas.
-                          </p>
+                          <div data-invalid={sinNiveles}>
+                            {sinNiveles ? (
+                              <FieldError errors={[{ message: "Agrega al menos una definición cualitativa." }]} />
+                            ) : (
+                              <p className="text-muted-foreground text-sm">
+                                Esta escala todavía no tiene definiciones cualitativas.
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <ul className="flex flex-col gap-3">
-                            {escala.niveles.map((nivel, nIndex) => (
+                            {escala.niveles.map((nivel, nIndex) => {
+                              const descripcionInvalida = intentoGuardar && !nivel.descripcion.trim()
+                              // El backend exige SIEMPRE el puntaje de cada
+                              // nivel de la escala (0-100), sin importar el
+                              // cálculo de la unidad.
+                              const puntajeInvalido =
+                                intentoGuardar &&
+                                (nivel.ponderacion == null || nivel.ponderacion < 0 || nivel.ponderacion > 100)
+                              return (
                               <li
                                 key={nivel.id}
                                 className={cn(
@@ -4265,25 +4329,29 @@ function EscalaValoracionSection({
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
                                 />
-                                <Input
-                                  variant="outlined"
-                                  placeholder="Interpretación / descriptor"
-                                  maxLength={50}
-                                  value={nivel.descripcion}
-                                  onChange={(e) =>
-                                    updateNivel(nIndex, { descripcion: e.target.value })
-                                  }
-                                  disabled={disabled}
-                                />
+                                <Field data-invalid={descripcionInvalida}>
+                                  <Input
+                                    variant="outlined"
+                                    placeholder="Interpretación / descriptor"
+                                    maxLength={50}
+                                    value={nivel.descripcion}
+                                    onChange={(e) =>
+                                      updateNivel(nIndex, { descripcion: e.target.value })
+                                    }
+                                    aria-invalid={descripcionInvalida}
+                                    disabled={disabled}
+                                  />
+                                  {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+                                </Field>
                                 {/* Ponderación por nivel — solo si la
                                     actividad es sumativa. Mismo patrón que
                                     los niveles intermedios de un criterio
                                     de rúbrica: cada definición pesa lo
                                     suyo, no la escala como un bloque único. */}
                                 {esEvaluativa && (
-                                  <Field variant="outlined">
+                                  <Field variant="outlined" data-invalid={puntajeInvalido}>
                                     <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
-                                      Puntaje
+                                      Puntaje *
                                     </FieldLabel>
                                     <Input
                                       id={`${nivel.id}-ponderacion`}
@@ -4297,8 +4365,18 @@ function EscalaValoracionSection({
                                           ponderacion: raw === "" ? undefined : Number(raw),
                                         })
                                       }}
+                                      aria-invalid={puntajeInvalido}
                                       disabled={disabled}
                                     />
+                                    {puntajeInvalido && (
+                                      <FieldError
+                                        errors={
+                                          nivel.ponderacion == null
+                                            ? ERROR_OBLIGATORIO
+                                            : [{ message: "El puntaje debe estar entre 0 y 100." }]
+                                        }
+                                      />
+                                    )}
                                   </Field>
                                 )}
                                 <Tooltip>
@@ -4320,7 +4398,8 @@ function EscalaValoracionSection({
                                   <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
                                 </Tooltip>
                               </li>
-                            ))}
+                              )
+                            })}
                           </ul>
                         )}
                       </div>
@@ -4812,6 +4891,15 @@ function CriterioItem({
     (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
   const excelentePonderacionInvalida =
     puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
+  // `fn_actividad_validar_rubrica_definicion` exige al menos un nivel por
+  // criterio ("Excelente" cuenta como nivel si tiene contenido, ver
+  // `criterioABody`); antes un criterio sin niveles no marcaba nada en
+  // rojo y el guardado seguía hasta que el backend lo rechazaba.
+  const sinNiveles =
+    submissionAttempts > 0 &&
+    criterio.niveles.length === 0 &&
+    !criterio.excelente.trim() &&
+    criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5131,6 +5219,7 @@ function CriterioItem({
       <Field
         variant="outlined"
         className="mt-6 [&_[data-slot=input]]:rounded-r-none [&_[data-slot=input]]:border-r-0"
+        data-invalid={sinNiveles}
       >
         <FieldLabel>Niveles de desempeño (agregar niveles)</FieldLabel>
         <div className="flex items-center gap-0">
@@ -5169,6 +5258,7 @@ function CriterioItem({
             Agregar nivel
           </Button>
         </div>
+        {sinNiveles && <FieldError errors={[{ message: "Agrega al menos un nivel de desempeño." }]} />}
       </Field>
 
       {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
