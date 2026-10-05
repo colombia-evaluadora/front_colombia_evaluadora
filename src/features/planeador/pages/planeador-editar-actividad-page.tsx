@@ -34,6 +34,7 @@ import {
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "editar-actividad-form"
@@ -312,12 +313,13 @@ function EditarActividadPageContent({
         await updateInstrumento.mutateAsync({ actividadId: actividad.id, actividad: values })
       }
 
-      // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
-      // "solo si cambió" que `updateMateriales`.
-      if (JSON.stringify(values.adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
-        await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones: values.adaptaciones })
-      }
-
+      // "Estudiantes" va ANTES que las adaptaciones (mismo orden que
+      // `fn_actividad_crear_interno`, V496.2: "estudiantes antes que
+      // adaptaciones"): `fn_actividad_validar_adaptacion_estudiantes` exige
+      // que cada estudiante de la adaptación ya esté en la actividad, así
+      // que sumar a alguien en "Estudiantes de la {rótulo}" y marcarlo en
+      // una adaptación en el MISMO guardado se rechazaba si las
+      // adaptaciones salían primero.
       // "Estudiantes": solo si de verdad cambió (ver el comentario de
       // `setEstudiantes` arriba) — cubre tanto puntualizar a un subconjunto
       // como volver a "Todo el grupo" (`asignarTodoElGrupo` pasa de `false` a
@@ -336,6 +338,14 @@ function EditarActividadPageContent({
           asignarTodoElGrupo: values.asignarTodoElGrupo,
         })
         avisoEstudiantes = construirAvisoEstudiantes(resultado)
+      }
+
+      // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
+      // "solo si cambió" que `updateMateriales`. Sin los estudiantes que el
+      // docente sacó de la actividad (ver `adaptacionesConEstudiantesDeLaActividad`).
+      const adaptaciones = adaptacionesConEstudiantesDeLaActividad(values)
+      if (JSON.stringify(adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
+        await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones })
       }
 
       // `queueNotice`, no `notify`: recién ahora se navega, así que el

@@ -362,11 +362,16 @@ function nombreConExtension(row: MaterialArchivoRow): string {
  * pista de sus campos: `{tipoAdaptacion, descripcion, usaVersionModificada,
  * aplicaA}`. Se lee tolerando `snake_case` igual que los materiales.
  *
- * `versionModificadaRef`/`estudiantesIds` NO tienen campo confirmado ni
- * para guardar ni para leer (mismo gap documentado en
- * `update-adaptaciones-actividad.ts`) — quedan vacíos en vez de inventar en
- * cuál de los tres tipos ("archivo"/"enlace"/"biblioteca") cayó, que sería
- * peor que no mostrar nada.
+ * `estudiantes` (sso V452, `fn_actividad_buscar_por_pk`) es un array de
+ * `FK_TMATRICULA` (vía `TACTIVIDAD_ADAPTACION_ESTUDIANTE` →
+ * `TACTIVIDAD_ESTUDIANTE`): el MISMO espacio de ids que se guarda (la clave
+ * `estudiantes` del `PUT .../adaptaciones`, que
+ * `fn_actividad_adaptacion_reemplazar_interno` —V496.2— resuelve por
+ * `FK_TMATRICULA`) y que maneja el checklist (`MatriculaGrupo.id` =
+ * `pk_tmatricula`). ANTES esto quedaba fijo en `[]`: la selección SÍ se
+ * guardaba, pero al reabrir la actividad salía vacía, y el siguiente
+ * guardado que tocara las adaptaciones mandaba "Estudiantes específicos"
+ * sin nadie (el backend lo rechaza) o pisaba la selección real.
  *
  * `especificacionTipo`/`nombrePlantilla` (sso V496.1) sí tienen campo
  * confirmado: `TACTIVIDAD_ADAPTACION.ESPECIFICACION_TIPO`/`.NOMBRE_PLANTILLA`,
@@ -382,7 +387,7 @@ function nombreConExtension(row: MaterialArchivoRow): string {
  * "biblioteca" (una sola referencia, no hasta 3) se sigue leyendo de
  * `fkTarchivo` sin pasar por el array.
  */
-function adaptacionFromRaw(
+export function adaptacionFromRaw(
   raw: unknown,
   tipoAdaptacionOptions: TipoAdaptacionOption[],
   aplicaAOptions: AplicaAOption[],
@@ -427,6 +432,7 @@ function adaptacionFromRaw(
   const especificacionTipoRaw = item.especificacionTipo ?? item.especificacion_tipo
   const nombrePlantillaRaw = item.nombrePlantilla ?? item.nombre_plantilla
   const archivosRaw = item.archivos
+  const estudiantesRaw = item.estudiantes ?? item.estudiantesIds
   const archivos: AdaptacionArchivo[] = Array.isArray(archivosRaw)
     ? archivosRaw
         .map((a) => (a ?? {}) as Record<string, unknown>)
@@ -445,7 +451,9 @@ function adaptacionFromRaw(
     versionModificadaRef,
     nombrePlantilla: typeof nombrePlantillaRaw === "string" ? nombrePlantillaRaw : "",
     aplicaA,
-    estudiantesIds: [],
+    estudiantesIds: Array.isArray(estudiantesRaw)
+      ? estudiantesRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+      : [],
     archivos: versionModificada === "archivo" ? archivos : [],
     // "biblioteca" referencia un solo archivo ya existente, no hasta 3 — se
     // sigue leyendo del `fkTarchivo` suelto, igual que antes de V496.1.
