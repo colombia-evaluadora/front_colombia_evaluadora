@@ -37,7 +37,7 @@ import {
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 interface DialogAgregarActividadProps {
   unidad: UnidadTematica
@@ -80,7 +80,7 @@ interface DialogAgregarActividadProps {
  * asignatura/grado NO cuentan: cada unidad reparte su propio 100% por grupo.
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+  const { puedeCrear } = usePlaneadorSoloLectura()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   // Borrador de peso por actividad — vive acá, no en el form de la fila:

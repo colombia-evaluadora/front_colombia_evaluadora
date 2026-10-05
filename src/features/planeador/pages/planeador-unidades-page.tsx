@@ -26,7 +26,7 @@ import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-fil
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 import { planeadorUnidadesRoute } from "@/router"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { getErrorMessage } from "@/lib/api-client"
 
 /**
@@ -38,7 +38,7 @@ import { getErrorMessage } from "@/lib/api-client"
 export function PlaneadorUnidadesPage() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+  const { puedeCrear } = usePlaneadorSoloLectura()
 
   const buscar = search.buscar ?? ""
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useUnidadesFilters()

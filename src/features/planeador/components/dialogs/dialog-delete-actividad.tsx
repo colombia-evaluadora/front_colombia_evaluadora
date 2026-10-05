@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useDeleteActividad } from "@/features/planeador/api/mutations/delete-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
@@ -78,7 +78,7 @@ export function DialogDeleteActividad({
     },
   })
 
-  const { puedeEliminar } = useMenuPermission("PLANEADOR")
+  const { puedeEliminar } = usePlaneadorSoloLectura()
   if (!puedeEliminar) return null
 
   return (
