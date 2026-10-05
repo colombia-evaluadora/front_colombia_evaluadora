@@ -47,22 +47,14 @@ function CeldaPonderacion({
   /** Tope OPTIMISTA para esta fila: `100 - (suma de ponderación del RESTO
    *  de actividades YA VINCULADAS A ESTA UNIDAD) `— no un `100` fijo, para
    *  que subir el % de una actividad no deje a simple vista esta unidad por
-   *  encima del 100%. NO es el tope real/autoritativo: el backend (sso
-   *  V223) topa el 100% por (grado, asignatura, grupo) de la actividad —
-   *  o sea, sumando TAMBIÉN las actividades que esa misma asignatura/grado
-   *  tiene en OTRAS unidades, no solo las de esta — y esta pantalla no
-   *  conoce esas otras unidades (solo tiene la lista de actividades de
-   *  `unidadId`, vía `useUnidadActividadesQuery`). Si otra unidad ya usó
-   *  parte del 100% real, este clamp cliente puede dejar escribir un valor
-   *  que el backend va a rechazar (`tr_tactividad_ponderacion_unidad`,
-   *  23514) al guardar — el error se muestra en el toast de
-   *  `onError` más abajo. El modal "Vincular actividad"
-   *  (`DialogAgregarActividad`) sí usa el tope real por fila
-   *  (`porcentajeDisponible`, ya resuelto por el backend vía
-   *  `fn_unidad_ponderacion_disponible`); traer ese mismo valor acá por
-   *  fila (grupo puede variar entre actividades de una misma unidad)
-   *  requeriría una query por grupo distinto — fuera de alcance de este
-   *  fix, que se limita a corregir el tope real en el backend. */
+   *  encima del 100%. NO es el tope autoritativo: el backend (sso V223,
+   *  `tr_tactividad_ponderacion_unidad`) topa el 100% por (unidad, grupo),
+   *  y este clamp suma las actividades de TODOS los grupos de la unidad, así
+   *  que con varios grupos es más estricto que el real. Si el backend rechaza
+   *  un valor (23514), el error se muestra en el toast de `onError` más abajo.
+   *  El modal "Vincular actividad" (`DialogAgregarActividad`) sí usa el tope
+   *  real por fila (`porcentajeDisponible`, de
+   *  `fn_unidad_ponderacion_disponible`). */
   maxDisponible: number
 }) {
   const [editando, setEditando] = useState(false)
@@ -321,10 +313,9 @@ function BotonDesvincular({
  * vinculadas A ESTA UNIDAD (la pasa el caller, que ya tiene esa lista) — de
  * ahí sale el tope OPTIMISTA de cada fila en modo Ponderado (`100 -
  * totalPonderacion + actividad.ponderacion`, sumando de vuelta lo que la
- * fila YA aporta al total). Ojo: ya NO es el tope real — ver el comentario
- * de `maxDisponible` en `CeldaPonderacion` más arriba, el backend topa por
- * grado+asignatura+grupo (sso V223), que puede incluir actividades de OTRAS
- * unidades que esta pantalla no ve. No aplica en Suma de puntos: el puntaje
+ * fila YA aporta al total). Ojo: no es el tope real — el backend topa por
+ * (unidad, grupo) (sso V223); ver el comentario de `maxDisponible` en
+ * `CeldaPonderacion` más arriba. No aplica en Suma de puntos: el puntaje
  * no tiene tope, el reparto proporcional lo hace el backend.
  */
 export function createUnidadActividadesColumns(
