@@ -301,6 +301,13 @@ interface EditarActividadFormProps {
    * un solo Rótulo de Ejecución (nada que acotar).
    */
   tab?: ActividadTab
+  /**
+   * Solo lectura: el usuario puede VER el planeador pero no editarlo (p. ej.
+   * el Coordinador, con el menú PLANEADOR en "Solo lectura"). Deshabilita
+   * todas las secciones con el mismo `disabled` explícito de siempre (Base
+   * UI ignora `<fieldset disabled>`) y el submit no hace nada.
+   */
+  readOnly?: boolean
 }
 
 /**
@@ -317,6 +324,7 @@ export function EditarActividadForm({
   onSubmit,
   esNueva = false,
   tab,
+  readOnly = false,
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
@@ -362,6 +370,7 @@ export function EditarActividadForm({
   const form = useForm({
     defaultValues: actividadOriginal,
     onSubmit: ({ value }) => {
+      if (readOnly) return
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
       // El instrumento se guarda en un PUT APARTE, después de crear/
       // actualizar la actividad (ver `instrumento-faltantes.ts`): si se
@@ -472,7 +481,8 @@ export function EditarActividadForm({
   // `<Switch>`, `<DatePicker>`, …) leen su propio prop `disabled`, no el
   // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
-  const disabled = !useHasGradoAsignatura(form)
+  const sinGradoAsignatura = !useHasGradoAsignatura(form)
+  const disabled = readOnly || sinGradoAsignatura
   // Padrón de matrículas del grupo de la actividad — mismo query que
   // alimenta "Estudiantes de la {rótulo}" en `AsignaturaGradoSection`
   // (`useActividadMatriculasGrupoQuery`, misma `queryKey` por `grupoId`:
@@ -534,6 +544,7 @@ export function EditarActividadForm({
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault()
+        if (readOnly) return
         // Se captura ACÁ, no dentro del `.then()`: con React 17+ el evento
         // sintético no se "poolea", pero `e` igual puede no sobrevivir el
         // ciclo de vida del handler en algún entorno — el nodo del form sí.
@@ -568,7 +579,7 @@ export function EditarActividadForm({
         // TERMINA llenando Grado/Asignatura (`useRecuperacionAutoFill`),
         // así que exigirlos antes sería un candado sin salida.
         form={form}
-        disabled={false}
+        disabled={readOnly}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
@@ -578,7 +589,9 @@ export function EditarActividadForm({
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <AsignaturaGradoSection
             form={form}
-            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
+            // En solo lectura se reusa el mismo candado que deja fijos
+            // Grado/Grupo, Asignatura y Estudiantes en una recuperación.
+            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion || readOnly}
             unidadBloqueada={unidadBloqueada}
             tab={tab}
             unidadSlot={
@@ -603,7 +616,7 @@ export function EditarActividadForm({
           />
         </div>
       </Card>
-      <UnidadSection form={form} unidades={unidades} />
+      <UnidadSection form={form} unidades={unidades} readOnly={readOnly} />
       <Card className="gap-6 p-4">
         <h3 className="text-base font-semibold">Recursos y Materiales</h3>
         <MaterialesSection form={form} disabled={disabled} />
@@ -1242,6 +1255,32 @@ function IdentificacionSection({
             </Field>
           )}
         </form.Field>
+
+        {/* Antes vivía en "Seguimiento", que solo se muestra con
+            adaptaciones y referente no formativo: así casi nunca se veía.
+            Es una propiedad de la actividad entera (el Coordinador de la
+            sede valida su planeación, sso V531.x), por eso va acá. Se sigue
+            guardando igual: `REQUIERE_VALIDACION_COORDINADOR`. */}
+        <form.Field name="requiereValidacion">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>¿Requiere validación del coordinador?</FieldLabel>
+              <Select
+                value={field.state.value ? "si" : "no"}
+                onValueChange={(value) => field.handleChange(value === "si")}
+                disabled={disabled}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="si">Sí</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
     </>
   )
 }
@@ -1480,9 +1519,12 @@ function UnidadAsociadaSection({
 function UnidadSection({
   form,
   unidades,
+  readOnly = false,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  /** Solo lectura: las evidencias y criterios se ven pero no se marcan. */
+  readOnly?: boolean
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
@@ -1499,6 +1541,7 @@ function UnidadSection({
                     nombreFallback={seleccionada.nombre}
                     seleccionadas={evidenciasField.state.value}
                     onToggle={(evidenciaId) => {
+                      if (readOnly) return
                       const actual = evidenciasField.state.value
                       evidenciasField.handleChange(
                         actual.includes(evidenciaId)
@@ -1508,6 +1551,7 @@ function UnidadSection({
                     }}
                     criteriosSeleccionados={criteriosField.state.value}
                     onToggleCriterio={(criterioId) => {
+                      if (readOnly) return
                       const actual = criteriosField.state.value
                       criteriosField.handleChange(
                         actual.includes(criterioId)
@@ -6016,7 +6060,8 @@ function AdaptacionItem({
  * coordinador" son parte del seguimiento DE esas adaptaciones—, así que la
  * sección entera desaparece (no se deshabilita) mientras `adaptaciones` esté
  * vacío, igual que "Ponderación" desaparece cuando la actividad no es
- * sumativa.
+ * sumativa. "¿Requiere validación del coordinador?" ya no vive acá: pasó a
+ * "Identificación" (`IdentificacionSection`).
  */
 function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   // Solo se monta con referente no Formativo (`!esFormativa` en el padre),
@@ -6089,27 +6134,6 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                 )}
               </form.Field>
             </>
-          )}
-        </form.Field>
-
-        <form.Field name="requiereValidacion">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>¿Requiere validación del coordinador?</FieldLabel>
-              <Select
-                value={field.state.value ? "si" : "no"}
-                onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={disabled}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="si">Sí</SelectItem>
-                  <SelectItem value="no">No</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
           )}
         </form.Field>
       </div>
