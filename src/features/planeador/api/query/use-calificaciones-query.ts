@@ -8,19 +8,12 @@ import type {
   EstadoAsistencia,
   EstadoResultado,
 } from "@/features/planeador/api/types/calificacion"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 function calificacionesUrl(id: number, fecha?: string): string {
   const base = `/planeador/actividades/${id}/calificaciones`
   return fecha ? `${base}?fecha=${fecha}` : base
 }
-
-/** La fecha va DESPUÉS del sufijo `"calificaciones"`, no dentro: así una
- *  invalidación por `calificacionesQueryKey(id)` sigue alcanzando a todas las
- *  fechas (react-query matchea por prefijo). */
-export const calificacionesQueryKey = (id: number, fecha?: string) =>
-  fecha
-    ? (["planeador", "actividad", id, "calificaciones", fecha] as const)
-    : (["planeador", "actividad", id, "calificaciones"] as const)
 
 /**
  * Fila real de `GET /planeador/actividades/:id/calificaciones` (confirmada
@@ -130,7 +123,7 @@ async function fetchCalificaciones(id: number, fecha?: string): Promise<Califica
  */
 export function calificacionesQueryOptions(id: number, fecha?: string) {
   return queryOptions({
-    queryKey: calificacionesQueryKey(id, fecha),
+    queryKey: planeadorKeys.actividad.calificaciones(id, fecha),
     queryFn: () => fetchCalificaciones(id, fecha),
     staleTime: 1000 * 60,
   })
@@ -144,8 +137,8 @@ export function useCalificacionesQuery(id: number | undefined, fecha?: string) {
   return useQuery({
     queryKey:
       id !== undefined
-        ? calificacionesQueryKey(id, fecha)
-        : ["planeador", "actividad", "none", "calificaciones"],
+        ? planeadorKeys.actividad.calificaciones(id, fecha)
+        : planeadorKeys.actividad.calificaciones("none"),
     queryFn: () => fetchCalificaciones(id!, fecha),
     enabled: id !== undefined,
     staleTime: 1000 * 60,

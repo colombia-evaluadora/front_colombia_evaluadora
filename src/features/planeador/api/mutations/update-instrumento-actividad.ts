@@ -2,8 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
-import { instrumentoActividadQueryKey } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveTipoEscalaId } from "@/features/planeador/api/query/use-tipo-escala-catalog"
 import { resolveTipoEvidenciaOtroId } from "@/features/planeador/api/query/use-tipo-evidencia-otro-catalog"
@@ -16,6 +14,7 @@ import type {
   Nivel,
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Los `pk` de `TLISTA_VALOR` NO son estables entre entornos, y el catálogo
@@ -238,11 +237,11 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
     mutationFn: (input: Omit<UpdateInstrumentoInput, "instrumentosPermitidos">) =>
       updateInstrumentoActividad({
         ...input,
-        instrumentosPermitidos: queryClient.getQueryData<Actividad>(actividadDetalleQueryKey(input.actividadId))
+        instrumentosPermitidos: queryClient.getQueryData<Actividad>(planeadorKeys.actividad.detalle(input.actividadId))
           ?.camposDisponibles?.evaluacion.instrumentosPermitidos,
       }),
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       // Sin esto, "Marcar"/"Aprobar" (InstrumentoGradingFields, vía
       // useInstrumentoActividadQuery) seguían mostrando la rúbrica/lista/
       // escala VIEJA después de editarla -- confirmado en vivo: un criterio
@@ -250,7 +249,7 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
       // el backend rechazaba el guardado con "La rúbrica tiene N
       // criterio(s) activo(s) pero se calificaron M" en cuanto el docente
       // marcaba ese criterio de más.
-      queryClient.invalidateQueries({ queryKey: instrumentoActividadQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.instrumento(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

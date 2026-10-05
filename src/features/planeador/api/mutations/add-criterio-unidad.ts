@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadCriteriosQueryKey } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface AddCriterioInput {
   unidadId: number
@@ -62,7 +62,7 @@ export function useAddCriterioUnidad({ mutationConfig }: UseAddCriterioUnidadOpt
   return useMutation({
     mutationFn: addCriterioUnidad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: unidadCriteriosQueryKey(variables.unidadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.criterios(variables.unidadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

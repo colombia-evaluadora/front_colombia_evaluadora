@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=`
@@ -154,12 +155,6 @@ async function fetchProgramacionActividad(
   }
 }
 
-export const programacionActividadQueryKey = (
-  grupoId: number,
-  asignaturaId: number,
-  unidadId: number | undefined,
-) => ["planeador", "actividades", "configuracion", "programacion", grupoId, asignaturaId, unidadId] as const
-
 /**
  * Topes reales de la sección "Programación", para bloquearlos en el
  * calendario/inputs en vez de dejar que el 22023 de `fn_actividad_crear`/
@@ -179,8 +174,8 @@ export function useProgramacionActividadQuery(
   const unidadIdEfectivo = unidadId || undefined
   return useQuery({
     queryKey: enabled
-      ? programacionActividadQueryKey(grupoId, asignaturaId, unidadIdEfectivo)
-      : (["planeador", "actividades", "configuracion", "programacion", "none"] as const),
+      ? planeadorKeys.actividades.programacion(grupoId, asignaturaId, unidadIdEfectivo)
+      : planeadorKeys.actividades.programacion("none"),
     queryFn: () => fetchProgramacionActividad(grupoId!, asignaturaId!, unidadIdEfectivo),
     enabled,
     staleTime: 1000 * 60,

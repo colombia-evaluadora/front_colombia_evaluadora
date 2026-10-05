@@ -2,9 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
-
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
-import { notaEstudianteQueryKey } from "@/features/planeador/api/query/use-nota-estudiante-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 export interface ObservarEstudianteInput {
   pkTactividadEstudiante: number
@@ -46,9 +44,9 @@ export function useObservarEstudianteMutation({
   return useMutation({
     mutationFn: observarEstudiante,
     onSuccess: (result, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
-        queryKey: notaEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
       onSuccess?.(result, variables, ...rest)
     },

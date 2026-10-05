@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface SetEstudiantesInput {
   actividadId: number
@@ -92,7 +92,7 @@ export function useSetEstudiantesActividad({ mutationConfig }: UseSetEstudiantes
   return useMutation({
     mutationFn: setEstudiantesActividad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/:id/actividades` (real —
@@ -54,15 +55,12 @@ async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad
   return rows.map(toUnidadActividad)
 }
 
-export const unidadActividadesQueryKey = (unidadId: number) =>
-  ["planeador", "unidad", unidadId, "actividades"] as const
-
 export function useUnidadActividadesQuery(unidadId: number | undefined) {
   return useQuery({
     queryKey:
       unidadId != null
-        ? unidadActividadesQueryKey(unidadId)
-        : (["planeador", "unidad", "none", "actividades"] as const),
+        ? planeadorKeys.unidad.actividades(unidadId)
+        : planeadorKeys.unidad.actividades("none"),
     queryFn: () => fetchUnidadActividades(unidadId!),
     enabled: unidadId != null,
     staleTime: 1000 * 30,

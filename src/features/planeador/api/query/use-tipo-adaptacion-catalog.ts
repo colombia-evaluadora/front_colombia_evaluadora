@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Catálogo `TIPO_ADAPTACION` de `TLISTA_VALOR` — resuelve el `tipoAdaptacion`
@@ -53,7 +54,7 @@ export async function resolveTipoAdaptacionId(tipo: string): Promise<number | un
  *  esperar a armar el body del PUT — catálogo, `staleTime: Infinity`. */
 export function useTipoAdaptacionCatalogQuery() {
   return useQuery({
-    queryKey: ["planeador", "tipo-adaptacion-catalog"],
+    queryKey: planeadorKeys.tipoAdaptacionCatalog(),
     queryFn: fetchTipoAdaptacionOptions,
     staleTime: Infinity,
   })
