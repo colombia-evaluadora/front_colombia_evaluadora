@@ -6,8 +6,7 @@ import type {
   MutationResult,
   SaveTeacherAssignmentsRequest,
 } from "@/features/establishment/academic-period/api/types/academic-assignment"
-import { teacherAssignmentsQueryKey } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
-import { assignmentSubjectsQueryKey } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 export function saveTeacherAssignments({
   academicPeriodId,
@@ -35,13 +34,13 @@ export function useSaveTeacherAssignments({
     onSuccess: (...args) => {
       const [, variables] = args
       queryClient.invalidateQueries({
-        queryKey: teacherAssignmentsQueryKey(
+        queryKey: academicPeriodKeys.teacherAssignments.detail(
           variables.academicPeriodId,
           variables.funcionarioId
         ),
       })
       queryClient.invalidateQueries({
-        queryKey: assignmentSubjectsQueryKey(variables.academicPeriodId),
+        queryKey: academicPeriodKeys.assignmentSubjects.byPeriod(variables.academicPeriodId),
       })
       mutationConfig?.onSuccess?.(...args)
     },

@@ -7,6 +7,7 @@ import type {
   UpdateGradeGroupRequest,
 } from "@/features/establishment/academic-period/api/types/grade-group"
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateGradeGroupInput {
   id: number
@@ -36,17 +37,17 @@ export function useUpdateGradeGroup({ mutationConfig }: UseUpdateGradeGroupOptio
     mutationFn: updateGradeGroup,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.gradeGroups.all })
       // Cambiar el director del grupo re-sincroniza sus asignaciones
       // académicas en preescolar (V285/fn_docente_director_grupo_sync) —
       // sin esto el transfer-list de Asignaciones Académicas quedaba con
       // datos viejos hasta recargar la página.
-      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
       // Las asignaturas YA asignadas a cada docente viven en otra query
       // ("teacher-assignments", una por funcionario) — también cambian
       // cuando el sync de preescolar mueve auto-asignaciones entre el
       // director viejo y el nuevo.
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

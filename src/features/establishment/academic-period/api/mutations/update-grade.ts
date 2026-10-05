@@ -7,6 +7,7 @@ import type {
   UpdateGradeRequest,
 } from "@/features/establishment/academic-period/api/types/grade"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateGradeInput {
   id: number
@@ -39,7 +40,7 @@ export function useUpdateGrade({ mutationConfig }: UseUpdateGradeOptions = {}) {
     mutationFn: updateGrade,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

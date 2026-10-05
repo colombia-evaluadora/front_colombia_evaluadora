@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm, useSelector } from "@tanstack/react-form"
 import {
@@ -47,10 +46,7 @@ import {
   ComboboxFieldValue,
   ComboboxGroup,
 } from "@/components/ui/combobox"
-import {
-  availableStudyPlanSubjectsQueryKey,
-  useAvailableStudyPlanSubjectsQuery,
-} from "../../api/query/use-available-study-plan-subjects-query"
+import { useAvailableStudyPlanSubjectsQuery } from "../../api/query/use-available-study-plan-subjects-query"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
 import { QuickCreateSubjectDialog } from "./dialog-quick-create-subject"
@@ -106,7 +102,6 @@ export function CreateStudyPlanDialog({
   const subjectLabelPlural = pluralizeSubjectLabel(subjectLabel)
 
   const { notify } = useNotify()
-  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -289,11 +284,9 @@ export function CreateStudyPlanDialog({
     if (!personalizar) form.setFieldValue("criterioNota", criterioHeredado)
   }, [criterioHeredado, personalizar, form])
 
-  async function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
-    await queryClient.invalidateQueries({
-      queryKey: availableStudyPlanSubjectsQueryKey(gradeId, academicPeriodId),
-    })
-    queryClient.invalidateQueries({ queryKey: ["subject-details", academicPeriodId] })
+  // `useCreateSubject` ya invalidó el detalle de asignaturas y esperó el
+  // refetch de las disponibles para el plan: la nueva ya es una opción.
+  function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
     form.setFieldValue("asignaturaId", created.id)
     setSubjectName(created.nombreInterno)
   }
@@ -545,9 +538,7 @@ export function CreateStudyPlanDialog({
                   subjectLabel={subjectLabel}
                   notify={notifyInDialog}
                   onSaved={(saved) => {
-                    queryClient.invalidateQueries({
-                      queryKey: ["subject-details", academicPeriodId],
-                    })
+                    // El detalle de asignaturas ya lo invalidó `useUpdateSubject`.
                     if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
                   }}
                 >

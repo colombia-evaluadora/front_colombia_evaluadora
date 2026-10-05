@@ -1,4 +1,8 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+
 import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { extractWriteResultId, type WriteResultResponse } from "./extract-write-result"
 
 interface CreateSubjectInput {
@@ -13,6 +17,8 @@ interface CreateSubjectInput {
   // (de un énfasis o de una especialidad global — lo desambigua
   // internamente vía `fn_enfasis_desde_seleccion`).
   enfasisId?: number
+  /** Solo para invalidar las áreas del periodo; no viaja en el body. */
+  academicPeriodId?: number
 }
 
 // `POST /eval-col/areas/:FK_AREA/asignaturas` (`fn_subject_crear`, id_query 39)
@@ -20,7 +26,7 @@ interface CreateSubjectInput {
 // del bulk (`fn_subject_guardar_bulk`, usado por `create-area-subject.ts`),
 // esta sí devuelve el id real de la fila creada, necesario para
 // autoseleccionarla de inmediato en otro selector (p.ej. Plan de Estudio).
-export async function createSubject(input: CreateSubjectInput): Promise<number> {
+async function createSubject(input: CreateSubjectInput): Promise<number> {
   const raw: WriteResultResponse = await api.post(`/eval-col/areas/${input.areaId}/asignaturas`, {
     FK_AREA_ASIGNATURA: input.areaGeneralId,
     NOMBRE_INTERNO: input.nombreInterno,
@@ -30,4 +36,31 @@ export async function createSubject(input: CreateSubjectInput): Promise<number> 
     FK_ENFASIS: input.enfasisId,
   })
   return extractWriteResultId(raw)
+}
+
+interface UseCreateSubjectOptions {
+  mutationConfig?: MutationConfig<typeof createSubject>
+}
+
+export function useCreateSubject({ mutationConfig }: UseCreateSubjectOptions = {}) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createSubject,
+    ...mutationConfig,
+    onSuccess: async (...args) => {
+      const [, variables] = args
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.areaSubjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.subjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.periodAreas.byPeriod(variables.academicPeriodId) })
+      queryClient.invalidateQueries({
+        queryKey: academicPeriodKeys.subjectDetails.byPeriod(variables.academicPeriodId),
+      })
+      // Se ESPERA el refetch de las disponibles para el plan de estudio: el
+      // diálogo del plan autoselecciona la asignatura recién creada apenas
+      // resuelve `mutateAsync`, y el combobox necesita tenerla ya entre sus
+      // opciones.
+      await queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
+      await mutationConfig?.onSuccess?.(...args)
+    },
+  })
 }

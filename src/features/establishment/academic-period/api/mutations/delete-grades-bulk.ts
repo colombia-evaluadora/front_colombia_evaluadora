@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `PUT /eval-col/grados/eliminacion-masiva` (`fn_grado_bulk_delete`,
 // id_query 69 — PUT desde V67, no PATCH). Body espera `IDS` (mayúsculas).
@@ -20,7 +21,7 @@ export function useDeleteGradesBulk({ mutationConfig }: UseDeleteGradesBulkOptio
     mutationFn: deleteGradesBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

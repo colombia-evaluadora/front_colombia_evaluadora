@@ -7,6 +7,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 async function createStudyPlanItem(
   input: CreateStudyPlanItemRequest
@@ -38,12 +39,12 @@ export function useCreateStudyPlanItem({ mutationConfig }: UseCreateStudyPlanIte
     mutationFn: createStudyPlanItem,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["study-plans"] })
-      queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
-      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlans.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
       // En preescolar el backend arma el horario solo al guardar el plan (V437).
-      queryClient.invalidateQueries({ queryKey: ["horario"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.horario.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

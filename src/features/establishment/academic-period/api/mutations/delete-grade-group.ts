@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/grade-group"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `PUT /eval-col/grupos/:ID/eliminar` (`fn_grupo_soft_delete`, id_query 64 —
 // PUT desde V68). Usa el PK real, no `codigo`.
@@ -20,7 +21,7 @@ export function useDeleteGradeGroup({ mutationConfig }: UseDeleteGradeGroupOptio
     mutationFn: deleteGradeGroup,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.gradeGroups.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

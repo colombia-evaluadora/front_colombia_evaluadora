@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface AssignmentIdRow {
   assignment_id: string
@@ -24,17 +25,12 @@ async function fetchTeacherAssignments(
   return (raw.rows ?? []).map((row) => row.assignment_id)
 }
 
-export const teacherAssignmentsQueryKey = (
-  academicPeriodId: number,
-  funcionarioId: string
-) => ["teacher-assignments", academicPeriodId, funcionarioId]
-
 export function useTeacherAssignmentsQuery(
   academicPeriodId: number | undefined,
   funcionarioId: string | undefined
 ) {
   return useQuery({
-    queryKey: teacherAssignmentsQueryKey(
+    queryKey: academicPeriodKeys.teacherAssignments.detail(
       academicPeriodId ?? 0,
       funcionarioId ?? ""
     ),
