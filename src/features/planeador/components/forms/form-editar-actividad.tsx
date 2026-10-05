@@ -63,6 +63,7 @@ import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-gr
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
+import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
@@ -147,6 +148,7 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -355,6 +357,12 @@ export function EditarActividadForm({
     defaultValues: actividadOriginal,
     onSubmit: ({ value }) => {
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
+      // El instrumento se guarda en un PUT APARTE, después de crear/
+      // actualizar la actividad (ver `instrumento-faltantes.ts`): si se
+      // dejara pasar incompleto, la actividad quedaría guardada y el
+      // instrumento rechazado (o, con una escala vacía, ni siquiera
+      // enviado). Se frena acá, antes de mandar nada.
+      if (faltantesDelInstrumento(value).length > 0) return
       return onSubmit?.(value)
     },
   })
@@ -430,6 +438,21 @@ export function EditarActividadForm({
   )
   const camposEfectivosRef = useRef({ camposEfectivos, esFormativa })
   camposEfectivosRef.current = { camposEfectivos, esFormativa }
+  const unidadesRef = useRef(unidades)
+  unidadesRef.current = unidades
+
+  /** Faltantes del instrumento de evaluación (Bloque 5). El puntaje es
+   *  obligatorio con el mismo criterio que `puntajeObligatorio` de
+   *  `RubricasSection`/`ListaCotejoSection`: la unidad vinculada calcula
+   *  por Ponderado o Suma de puntos. En un referente formativo no hay
+   *  instrumento que validar (Bloque 5 ni se muestra). */
+  function faltantesDelInstrumento(values: Actividad): string[] {
+    if (camposEfectivosRef.current.esFormativa) return []
+    const unidad = unidadesRef.current.find((u) => u.id === values.unidad.id)
+    return faltantesInstrumento(values, {
+      puntajeObligatorio: unidad != null && unidad.metodoCalculo !== "Promedio simple",
+    })
+  }
 
   // Grado + Asignatura son el punto de partida de toda la actividad: el
   // resto de los campos (nombre, tipo, unidad asociada, materiales,
@@ -507,9 +530,16 @@ export function EditarActividadForm({
         // ciclo de vida del handler en algún entorno — el nodo del form sí.
         const formEl = e.currentTarget
         const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
-        if (faltantes.length > 0) {
-          notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
+        const faltantesInstr = faltantesDelInstrumento(form.state.values)
+        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): si
+        // faltan campos generales Y la definición del instrumento, van los
+        // dos en el mismo mensaje en vez de que uno pise al otro.
+        const avisos: string[] = []
+        if (faltantes.length > 0) avisos.push(`Complete los campos obligatorios: ${faltantes.join(", ")}.`)
+        if (faltantesInstr.length > 0) {
+          avisos.push(`Complete la definición del instrumento de evaluación: ${faltantesInstr.join(" ")}`)
         }
+        if (avisos.length > 0) notify(avisos.join(" "), { variant: "error" })
         // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
         // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
         // de campos con `validators` de TanStack como los de
@@ -623,6 +653,18 @@ function camposObligatoriosFaltantes(
   if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
     faltantes.push("Instrumento de evaluación")
   }
+  // Regla 47: "Estudiantes específicos" sin nadie (de la actividad) lo
+  // rechaza el backend (`fn_actividad_validar_adaptaciones`, V496.1) — se
+  // frena acá para no crear la actividad y fallar recién en el `PUT
+  // .../adaptaciones`.
+  values.adaptaciones.forEach((adaptacion, i) => {
+    if (
+      adaptacion.aplicaA === "Estudiantes específicos" &&
+      !adaptacion.estudiantesIds.some((id) => esEstudianteDeLaActividad(values, id))
+    ) {
+      faltantes.push(`Estudiantes de la adaptación ${i + 1}`)
+    }
+  })
   return faltantes
 }
 
@@ -4006,6 +4048,11 @@ function EscalaValoracionSection({
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
+  // Errores inline tras un intento de guardar — mismas reglas que
+  // `faltantesEscala` (`lib/instrumento-faltantes.ts`), que es la que de
+  // verdad frena el guardado; acá solo se marca en rojo QUÉ campo falta
+  // (y `scrollToFirstInvalidField` lleva la vista hasta él).
+  const intentoGuardar = useSelector(form.store, (state) => state.submissionAttempts) > 0
 
   // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
   // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
@@ -4053,6 +4100,15 @@ function EscalaValoracionSection({
                 next.splice(nIndex, 1)
                 field.handleChange({ ...escala, niveles: next })
               }
+
+              const minimoAusente = intentoGuardar && escala.valorMinimo == null
+              const maximoAusente = intentoGuardar && escala.valorMaximo == null
+              const rangoInvertido =
+                intentoGuardar &&
+                escala.valorMinimo != null &&
+                escala.valorMaximo != null &&
+                escala.valorMinimo >= escala.valorMaximo
+              const sinNiveles = intentoGuardar && escala.niveles.length === 0
 
               return (
                 <>
@@ -4125,9 +4181,9 @@ function EscalaValoracionSection({
                     {escala.tipo === "Numérica" && (
                       <>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={minimoAusente}>
                             <FieldLabel htmlFor={`${escala.id}-valor-minimo`}>
-                              Valor mínimo
+                              Valor mínimo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-minimo`}
@@ -4140,12 +4196,14 @@ function EscalaValoracionSection({
                                   valorMinimo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={minimoAusente}
                               disabled={disabled}
                             />
+                            {minimoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
                           </Field>
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={maximoAusente || rangoInvertido}>
                             <FieldLabel htmlFor={`${escala.id}-valor-maximo`}>
-                              Valor máximo
+                              Valor máximo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-maximo`}
@@ -4158,8 +4216,13 @@ function EscalaValoracionSection({
                                   valorMaximo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={maximoAusente || rangoInvertido}
                               disabled={disabled}
                             />
+                            {maximoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
+                            {rangoInvertido && (
+                              <FieldError errors={[{ message: "Debe ser mayor que el valor mínimo." }]} />
+                            )}
                           </Field>
                         </div>
 
@@ -4236,12 +4299,26 @@ function EscalaValoracionSection({
                         </div>
 
                         {escala.niveles.length === 0 ? (
-                          <p className="text-muted-foreground text-sm">
-                            Esta escala todavía no tiene definiciones cualitativas.
-                          </p>
+                          <div data-invalid={sinNiveles}>
+                            {sinNiveles ? (
+                              <FieldError errors={[{ message: "Agrega al menos una definición cualitativa." }]} />
+                            ) : (
+                              <p className="text-muted-foreground text-sm">
+                                Esta escala todavía no tiene definiciones cualitativas.
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <ul className="flex flex-col gap-3">
-                            {escala.niveles.map((nivel, nIndex) => (
+                            {escala.niveles.map((nivel, nIndex) => {
+                              const descripcionInvalida = intentoGuardar && !nivel.descripcion.trim()
+                              // El backend exige SIEMPRE el puntaje de cada
+                              // nivel de la escala (0-100), sin importar el
+                              // cálculo de la unidad.
+                              const puntajeInvalido =
+                                intentoGuardar &&
+                                (nivel.ponderacion == null || nivel.ponderacion < 0 || nivel.ponderacion > 100)
+                              return (
                               <li
                                 key={nivel.id}
                                 className={cn(
@@ -4265,25 +4342,29 @@ function EscalaValoracionSection({
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
                                 />
-                                <Input
-                                  variant="outlined"
-                                  placeholder="Interpretación / descriptor"
-                                  maxLength={50}
-                                  value={nivel.descripcion}
-                                  onChange={(e) =>
-                                    updateNivel(nIndex, { descripcion: e.target.value })
-                                  }
-                                  disabled={disabled}
-                                />
+                                <Field data-invalid={descripcionInvalida}>
+                                  <Input
+                                    variant="outlined"
+                                    placeholder="Interpretación / descriptor"
+                                    maxLength={50}
+                                    value={nivel.descripcion}
+                                    onChange={(e) =>
+                                      updateNivel(nIndex, { descripcion: e.target.value })
+                                    }
+                                    aria-invalid={descripcionInvalida}
+                                    disabled={disabled}
+                                  />
+                                  {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+                                </Field>
                                 {/* Ponderación por nivel — solo si la
                                     actividad es sumativa. Mismo patrón que
                                     los niveles intermedios de un criterio
                                     de rúbrica: cada definición pesa lo
                                     suyo, no la escala como un bloque único. */}
                                 {esEvaluativa && (
-                                  <Field variant="outlined">
+                                  <Field variant="outlined" data-invalid={puntajeInvalido}>
                                     <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
-                                      Puntaje
+                                      Puntaje *
                                     </FieldLabel>
                                     <Input
                                       id={`${nivel.id}-ponderacion`}
@@ -4297,8 +4378,18 @@ function EscalaValoracionSection({
                                           ponderacion: raw === "" ? undefined : Number(raw),
                                         })
                                       }}
+                                      aria-invalid={puntajeInvalido}
                                       disabled={disabled}
                                     />
+                                    {puntajeInvalido && (
+                                      <FieldError
+                                        errors={
+                                          nivel.ponderacion == null
+                                            ? ERROR_OBLIGATORIO
+                                            : [{ message: "El puntaje debe estar entre 0 y 100." }]
+                                        }
+                                      />
+                                    )}
                                   </Field>
                                 )}
                                 <Tooltip>
@@ -4320,7 +4411,8 @@ function EscalaValoracionSection({
                                   <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
                                 </Tooltip>
                               </li>
-                            ))}
+                              )
+                            })}
                           </ul>
                         )}
                       </div>
@@ -4812,6 +4904,15 @@ function CriterioItem({
     (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
   const excelentePonderacionInvalida =
     puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
+  // `fn_actividad_validar_rubrica_definicion` exige al menos un nivel por
+  // criterio ("Excelente" cuenta como nivel si tiene contenido, ver
+  // `criterioABody`); antes un criterio sin niveles no marcaba nada en
+  // rojo y el guardado seguía hasta que el backend lo rechazaba.
+  const sinNiveles =
+    submissionAttempts > 0 &&
+    criterio.niveles.length === 0 &&
+    !criterio.excelente.trim() &&
+    criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5131,6 +5232,7 @@ function CriterioItem({
       <Field
         variant="outlined"
         className="mt-6 [&_[data-slot=input]]:rounded-r-none [&_[data-slot=input]]:border-r-0"
+        data-invalid={sinNiveles}
       >
         <FieldLabel>Niveles de desempeño (agregar niveles)</FieldLabel>
         <div className="flex items-center gap-0">
@@ -5169,6 +5271,7 @@ function CriterioItem({
             Agregar nivel
           </Button>
         </div>
+        {sinNiveles && <FieldError errors={[{ message: "Agrega al menos un nivel de desempeño." }]} />}
       </Field>
 
       {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
@@ -5217,6 +5320,14 @@ function AdaptacionesSection({
   // de cada adaptación combina el `useState` local "tocado" de ESE item con
   // un intento de guardar a nivel del form entero.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla 47: la adaptación solo puede elegir entre los estudiantes DE LA
+  // ACTIVIDAD ("Estudiantes de la {rótulo}"), no entre todo el grupo — el
+  // backend rechaza el resto (ver `esEstudianteDeLaActividad`).
+  const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
+  const matriculasIds = useSelector(form.store, (state) => state.values.matriculasIds)
+  const estudiantesActividad = matriculas.filter((m) =>
+    esEstudianteDeLaActividad({ asignarTodoElGrupo, matriculasIds }, m.id),
+  )
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -5282,7 +5393,7 @@ function AdaptacionesSection({
                       key={aIndex}
                       index={aIndex}
                       adaptacion={adapt}
-                      matriculas={matriculas}
+                      matriculas={estudiantesActividad}
                       disabled={disabled}
                       actividadId={actividadId}
                       grupoId={grupoId ?? 0}
@@ -5307,18 +5418,6 @@ function AdaptacionesSection({
       </form.Field>
     </Card>
   )
-}
-
-/**
- * `nombres`/`apellidos` en el mock viven en MAYÚSCULAS (así arma los
- * documentos oficiales `mocks/db/calificaciones.ts`), pero el checklist
- * de estudiantes se lee como cualquier lista de nombres propios — Título
- * Caso, no gritado. Es un ajuste solo de presentación acá; no toca el
- * dato guardado ni a otros consumidores (la tabla de calificaciones sigue
- * mostrando el nombre tal cual viene).
- */
-function toTitleCase(value: string): string {
-  return value.toLowerCase().replace(/\p{L}+/gu, (word) => word[0]!.toUpperCase() + word.slice(1))
 }
 
 /**
@@ -5537,10 +5636,16 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
+  // Solo cuentan los que siguen siendo estudiantes de la actividad: si el
+  // docente sacó a alguien en "Estudiantes de la {rótulo}" después de
+  // marcarlo acá, deja de verse marcado (y al guardar se poda, ver
+  // `adaptacionesConEstudiantesDeLaActividad`).
+  const estudiantesSeleccionados = adaptacion.estudiantesIds.filter((id) => matriculas.some((m) => m.id === id))
+  const todosSeleccionados = matriculas.length > 0 && estudiantesSeleccionados.length === matriculas.length
   const estudiantesInvalido =
     (tocoEstudiantes || submissionAttempts > 0) &&
     adaptacion.aplicaA === "Estudiantes específicos" &&
-    adaptacion.estudiantesIds.length === 0
+    estudiantesSeleccionados.length === 0
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5875,64 +5980,49 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Checklist de estudiantes — solo cuando la adaptación aplica a
-          "Estudiantes específicos". Mismo idioma que el resto del form:
-          `Field variant="outlined"` con el label flotando en el borde
-          superior, acá conteniendo una lista vertical de checkboxes en
-          vez de un input. Mismo padrón que "Estudiantes de la {rótulo}"
-          (Bloque 1, `useActividadMatriculasGrupoQuery`/`matriculas`), NO
-          `useCalificacionesQuery`: ese query viene vacío en el alta (la
-          actividad todavía no existe) y, aun en edición, devuelve
-          `pk_tactividad_estudiante` como id en vez del `pk_tmatricula` que
-          exige `estudiantesIds` (`fn_actividad_validar_adaptacion_
-          estudiantes`, V496.1) — ver el comentario de `grupoIdActual` en
-          `EditarActividadForm`. Vacío si el grupo todavía no tiene
-          matrículas cargadas.
+      {/* Estudiantes de la adaptación — solo con "Estudiantes específicos".
+          Mismo control que "Estudiantes de la {rótulo}" del Bloque 1
+          (`EstudiantesMultiSelect`: trigger con resumen + menú de checkboxes
+          con "Seleccionar todos"), en vez de la lista de checkboxes suelta
+          de antes, que con un grupo de 40 estudiantes estiraba la tarjeta.
 
-          Validación "obligatorio" (estudiantesInvalido más arriba): el
-          `onBlur` va en el contenedor de checkboxes, no en cada uno — React
-          hace burbujear `blur` (desde v17), así que alcanza con que el foco
-          salga de CUALQUIER checkbox del checklist para marcarlo "tocado",
-          sin depender de cuál en particular perdió el foco. */}
+          Opciones: solo los estudiantes DE LA ACTIVIDAD (`matriculas` ya
+          viene filtrado en `AdaptacionesSection`, Regla 47 —
+          `fn_actividad_validar_adaptacion_estudiantes`, V496.1, rechaza
+          cualquier otro). Ids `pk_tmatricula`, los mismos que guarda y
+          devuelve el backend (ver `adaptacionFromRaw`).
+
+          A diferencia del Bloque 1, "todos" acá NO es un estado aparte: la
+          adaptación siempre guarda la lista explícita (el backend exige un
+          array no vacío con "Estudiantes específicos"), así que
+          `allSelected` se deriva de la selección y "Seleccionar todos"
+          escribe todos los ids.
+
+          "Tocado" al cerrar el menú (no hay `blur` útil en un trigger que
+          abre un popup). */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
         <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
-          <FieldLabel>Seleccionar estudiantes (múltiple)</FieldLabel>
-          {matriculas.length === 0 ? (
-            <p className="text-muted-foreground px-1 py-2 text-sm">
-              Este grupo todavía no tiene estudiantes cargados.
-            </p>
-          ) : (
-            <div
-              className="flex flex-col gap-1 py-1"
-              aria-invalid={estudiantesInvalido}
-              onBlur={() => setTocoEstudiantes(true)}
-            >
-              {matriculas.map((matricula) => {
-                const checked = adaptacion.estudiantesIds.includes(matricula.id)
-                return (
-                  <label
-                    key={matricula.id}
-                    className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(next) => {
-                        setTocoEstudiantes(true)
-                        onChange({
-                          ...adaptacion,
-                          estudiantesIds: next
-                            ? [...adaptacion.estudiantesIds, matricula.id]
-                            : adaptacion.estudiantesIds.filter((id) => id !== matricula.id),
-                        })
-                      }}
-                      disabled={disabled}
-                    />
-                    {toTitleCase(matricula.nombre)}
-                  </label>
-                )
-              })}
-            </div>
-          )}
+          <FieldLabel htmlFor={`adaptacion-${index}-estudiantes`}>Estudiantes de la adaptación</FieldLabel>
+          <EstudiantesMultiSelect
+            id={`adaptacion-${index}-estudiantes`}
+            estudiantes={matriculas}
+            value={estudiantesSeleccionados}
+            allSelected={todosSeleccionados}
+            allSelectedLabel="Todos los estudiantes de la actividad"
+            onChange={({ matriculaIds, allSelected }) => {
+              setTocoEstudiantes(true)
+              onChange({
+                ...adaptacion,
+                estudiantesIds: allSelected ? matriculas.map((m) => m.id) : matriculaIds,
+              })
+            }}
+            onOpenChange={(open) => {
+              if (!open) setTocoEstudiantes(true)
+            }}
+            invalid={estudiantesInvalido}
+            disabled={disabled}
+            placeholder="La actividad todavía no tiene estudiantes"
+          />
           {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}
