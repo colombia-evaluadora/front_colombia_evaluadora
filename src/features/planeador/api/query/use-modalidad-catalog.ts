@@ -1,4 +1,4 @@
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 /**
  * Catálogo `TLISTA_VALOR` que resolvería `FK_TLV_MODALIDAD` en
@@ -17,7 +17,5 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
  * directo en vez de resolver un pk).
  */
 export async function resolveModalidadId(modalidad: string): Promise<number | undefined> {
-  if (!modalidad) return undefined
-  const rows = await fetchSelectCategory("MODALIDAD")
-  return rows.find((row) => row.nombre === modalidad)?.pk_lista_valor
+  return resolveCatalogId(undefined, "MODALIDAD", modalidad)
 }

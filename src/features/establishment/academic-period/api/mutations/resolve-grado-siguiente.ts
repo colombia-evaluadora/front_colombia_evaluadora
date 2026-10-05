@@ -1,4 +1,4 @@
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 // `fn_grado_crear`/`fn_grado_actualizar` piden `FK_GRADO_SIGUIENTE` como PK de
 // `TLISTA_VALOR` (categoría GRADOS), pero el front solo tiene el VALOR
@@ -7,8 +7,5 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 export async function resolveGradoSiguienteId(
   valor: string | undefined
 ): Promise<number | null> {
-  if (!valor) return null
-  const rows = await fetchSelectCategory("GRADOS")
-  const match = rows.find((row) => row.valor === valor || row.nombre === valor)
-  return match ? match.pk_lista_valor : null
+  return (await resolveCatalogId(undefined, "GRADOS", valor, { match: "valorOrNombre" })) ?? null
 }

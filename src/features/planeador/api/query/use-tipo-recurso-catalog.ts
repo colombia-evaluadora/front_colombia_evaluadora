@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { RecursoTipo } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -41,6 +42,5 @@ export async function fetchTipoRecursoOptions(): Promise<TipoRecursoOption[]> {
 }
 
 export async function resolveTipoRecursoId(tipo: RecursoTipo): Promise<number | undefined> {
-  const options = await fetchTipoRecursoOptions()
-  return options.find((o) => o.tipo === tipo)?.id
+  return resolveCatalogId(undefined, "TIPO_RECURSO", tipo, { normalize: (row) => toRecursoTipo(row.nombre) })
 }

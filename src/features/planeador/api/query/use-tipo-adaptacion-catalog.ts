@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
@@ -45,8 +46,9 @@ export async function fetchTipoAdaptacionOptions(): Promise<TipoAdaptacionOption
 }
 
 export async function resolveTipoAdaptacionId(tipo: string): Promise<number | undefined> {
-  const options = await fetchTipoAdaptacionOptions()
-  return options.find((o) => o.tipo === tipo)?.id
+  return resolveCatalogId(undefined, "TIPO_ADAPTACION", tipo, {
+    normalize: (row) => toTipoAdaptacion(row.nombre),
+  })
 }
 
 /** Para `AdaptacionBibliotecaField`: filtrar por defecto la Biblioteca al
