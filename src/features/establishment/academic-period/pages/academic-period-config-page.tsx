@@ -112,6 +112,7 @@ function AcademicPeriodConfigPageContent() {
         notify(SUCCESS_MESSAGES.academicPeriod.created)
         navigate({
           to: paths.app.periodosAcademicosEditar.getHref(created.id),
+          search: (prev) => prev,
         })
       },
       onError: (error) => {
@@ -238,7 +239,7 @@ function AcademicPeriodConfigPageContent() {
               size="sm"
               variant="fill"
               color="neutral"
-              render={<Link to={paths.app.periodosAcademicos.getHref()} />}
+              render={<Link to={paths.app.periodosAcademicos.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >
               Cerrar

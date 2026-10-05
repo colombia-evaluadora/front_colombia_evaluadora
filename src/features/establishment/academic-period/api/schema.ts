@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { maxLength, required } from "@/lib/forms/messages"
+
 export const ACADEMIC_PERIOD_STATUSES = ["A", "C", "I", "P", "N"] as const
 
 export function timeToMinutes(value: string): number {
@@ -203,21 +205,21 @@ export const evaluationPeriodFormSchema = z
   .object({
     codigo: z
       .string()
-      .min(1, "El código es obligatorio")
-      .max(30, "El código no puede superar los 30 caracteres"),
+      .min(1, required("El código"))
+      .max(30, maxLength(30, "El código")),
     nombre: z
       .string()
-      .min(1, "El nombre es obligatorio")
-      .max(130, "El nombre no puede superar los 130 caracteres")
+      .min(1, required("El nombre"))
+      .max(130, maxLength(130, "El nombre"))
       .refine((value) => value.trim().toLowerCase() !== "final", {
         message: "\"Final\" es un nombre reservado; usa otro para este período.",
       }),
     abreviacion: z
       .string()
-      .min(1, "La abreviación es obligatoria")
-      .max(30, "La abreviación no puede superar los 30 caracteres"),
-    startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
-    endDate: z.string().min(1, "La fecha de fin es obligatoria"),
+      .min(1, required("La abreviación", { femenino: true }))
+      .max(30, maxLength(30, "La abreviación")),
+    startDate: z.string().min(1, required("La fecha de inicio", { femenino: true })),
+    endDate: z.string().min(1, required("La fecha de fin", { femenino: true })),
     peso: z
       .number({
         error: "El peso porcentual es obligatorio.",
@@ -225,7 +227,7 @@ export const evaluationPeriodFormSchema = z
       .min(0, "El peso porcentual no puede ser negativo.")
       .max(100, "El peso porcentual no puede superar el 100%."),
     // Id del estado (PK_LISTA_VALOR); el código/etiqueta se resuelven por catálogo.
-    estadoId: z.number().int().positive("El estado es obligatorio"),
+    estadoId: z.number().int().positive(required("El estado")),
   })
   .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
     message: "La fecha de inicio es posterior o igual a la fecha de finalización",

@@ -8,9 +8,9 @@ import type { ExportFormat, ExportResult } from "@/features/academic-management/
  * Dos descargas distintas, y la diferencia es toda la gracia.
  *
  * El BOLETÍN (`/reportes/boletin-preescolar`) no es la tabla en otro formato:
- * es un PDF armado aparte, una página por (estudiante, asignatura/dimensión),
- * con foto, evidencias y fondo institucional — ver `boletin-preescolar.md`.
- * Por eso solo acepta `pdf` y un único (período, estudiante) a la vez.
+ * es un PDF armado aparte, un boletín por estudiante con foto, evidencias y
+ * fondo institucional — ver `boletin-preescolar.md`. Es de un único período y
+ * acepta varios estudiantes: salen en un solo documento, uno detrás de otro.
  *
  * El DESCARGAR (`/reportes/informes-tabla`) no filtra nada: es la tabla como
  * se está viendo, con la búsqueda aplicada, y cada número viene dicho con
@@ -21,19 +21,28 @@ interface ExportBoletinInput {
   grupoId: number
   /** Un boletín es de un único período. */
   periodoId: number
-  /** Un boletín es de un único estudiante. */
-  matriculaId: number
+  /** Uno o varios: van todos en el mismo PDF. */
+  matriculaIds: number[]
 }
 
-function exportBoletin(input: ExportBoletinInput): Promise<ExportResult> {
-  return downloadReport("boletin-preescolar", {
+async function exportBoletin(input: ExportBoletinInput): Promise<ExportResult> {
+  const result = await downloadReport("boletin-preescolar", {
     format: "pdf",
     filters: {
       FK_TGRUPO: input.grupoId,
       FK_TPERIODO_EVALUACION: input.periodoId,
-      FK_TMATRICULAS: [input.matriculaId],
+      FK_TMATRICULAS: input.matriculaIds,
     },
   })
+  if (result.status === "error") return result
+  if (result.filas === 0) {
+    return { status: "ok", message: "No hay boletines para generar con lo seleccionado." }
+  }
+  const n = input.matriculaIds.length
+  return {
+    status: "ok",
+    message: n === 1 ? "Boletín generado." : `${n} boletines generados en un solo documento.`,
+  }
 }
 
 export function useExportBoletin({

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface AgregarEvidenciaInput {
   actividadId: number
@@ -46,7 +46,7 @@ export function useAgregarEvidenciaActividad({ mutationConfig }: UseAgregarEvide
   return useMutation({
     mutationFn: agregarEvidenciaActividad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

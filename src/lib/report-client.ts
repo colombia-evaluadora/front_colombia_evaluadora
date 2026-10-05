@@ -49,6 +49,7 @@ export type ReportKey =
   | "informes-tabla"
   | "boletin-preescolar"
   | "planeador-actividades"
+  | "referentes-curriculares"
   | "auditoria-sesiones"
   | "auditoria-tabla-operaciones"
   | "auditoria-sesion-operaciones"
@@ -120,11 +121,15 @@ export async function downloadReport(
       // Se descarga igual —el archivo es válido y sirve como constancia de que
       // el filtro no encontró nada—, pero se avisa, porque un archivo vacío
       // que aparece sin explicación se lee como un error del sistema.
-      return { status: "ok", message: "No hay registros que coincidan con los filtros." }
+      return { status: "ok", message: "No hay registros que coincidan con los filtros.", filas }
     }
 
     const cuantos = Number.isFinite(filas) ? `${filas} registro(s)` : "El listado"
-    return { status: "ok", message: `${cuantos} exportado(s) a ${ETIQUETA_FORMATO[format]}.` }
+    return {
+      status: "ok",
+      message: `${cuantos} exportado(s) a ${ETIQUETA_FORMATO[format]}.`,
+      filas: Number.isFinite(filas) ? filas : undefined,
+    }
   } catch (error) {
     return { status: "error", message: await mensajeDeError(error) }
   }

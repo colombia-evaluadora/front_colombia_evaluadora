@@ -22,7 +22,7 @@ export type ActividadStatus = "pending" | "in-progress" | "completed" | "cancell
  */
 export type ActividadTipo = string
 
-export type Modalidad = "Presencial" | "Virtual" | "Mixta"
+export type Modalidad = "Presencial" | "Virtual" | "Híbrida"
 
 export type RecursoTipo = "URL" | "Unidad virtual" | "Archivo"
 
@@ -72,6 +72,15 @@ export interface Nivel {
 export interface Criterio {
   id: number
   nombre: string
+  /**
+   * "Descripción o Juicio de valor" del criterio (distinta de la
+   * `descripcion` de cada nivel, que ya tenía campo propio) —
+   * `TACTIVIDAD_RUBRICA_CRITERIO.DESCRIPCION` (sso V22, confirmada en el
+   * contrato de `fn_actividad_instrumento_definir_interno`, clave
+   * `descripcion` igual que `nombre`). Opcional en el backend: el campo no
+   * tenía UI acá, así que nunca viajaba ni al guardar ni al leer.
+   */
+  descripcion: string
   excelente: string
   /**
    * Peso de "Excelente" dentro del criterio, cuando la actividad es

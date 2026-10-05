@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface TeachingLevelRow {
   id: number
@@ -28,11 +29,9 @@ export async function fetchTeachingLevels(): Promise<TeachingLevel[]> {
     .map((row) => ({ id: row.id, nombre: row.nombre }))
 }
 
-export const teachingLevelsQueryKey = () => ["teaching-levels"]
-
 export function useTeachingLevelsQuery() {
   return useQuery({
-    queryKey: teachingLevelsQueryKey(),
+    queryKey: academicPeriodKeys.teachingLevels(),
     queryFn: fetchTeachingLevels,
     staleTime: Infinity,
   })

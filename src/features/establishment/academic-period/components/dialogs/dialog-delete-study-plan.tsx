@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
@@ -22,7 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/delete-study-plan"
-import { deleteSubject } from "@/features/establishment/academic-period/api/mutations/delete-subject"
+import { useDeleteSubject } from "@/features/establishment/academic-period/api/mutations/delete-subject"
 import { checkPlanDeleteRestrictions } from "@/features/establishment/academic-period/api/mutations/check-plan-delete-restrictions"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
 
@@ -42,10 +41,10 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
   const [canDelete, setCanDelete] = useState(true)
   const [blockedReason, setBlockedReason] = useState<string | null>(null)
   const { notify } = useNotify()
-  const queryClient = useQueryClient()
   const subjectWord = subjectLabel.toLowerCase()
 
   const deleteStudyPlanItem = useDeleteStudyPlanItem()
+  const deleteSubject = useDeleteSubject()
 
   useEffect(() => {
     if (!open) {
@@ -93,11 +92,7 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
       }
 
       try {
-        await deleteSubject(item.asignaturaId)
-        queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
-        queryClient.invalidateQueries({ queryKey: ["subjects"] })
-        queryClient.invalidateQueries({ queryKey: ["subject-details"] })
-        queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
+        await deleteSubject.mutateAsync(item.asignaturaId)
         notify(`${item.asignatura} se quitó del plan y se eliminó permanentemente.`)
       } catch (error) {
         notify(

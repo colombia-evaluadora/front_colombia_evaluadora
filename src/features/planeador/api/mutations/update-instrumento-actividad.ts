@@ -2,8 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
-import { instrumentoActividadQueryKey } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveTipoEscalaId } from "@/features/planeador/api/query/use-tipo-escala-catalog"
 import { resolveTipoEvidenciaOtroId } from "@/features/planeador/api/query/use-tipo-evidencia-otro-catalog"
@@ -16,6 +14,7 @@ import type {
   Nivel,
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Los `pk` de `TLISTA_VALOR` NO son estables entre entornos, y el catálogo
@@ -61,10 +60,15 @@ function pkDeVarianteEscala(
  * coincide) — por eso `create-actividad.ts`/`update-actividad.ts` mandan ese
  * campo ANTES de llamar acá.
  */
-type NivelBody = { etiqueta: string; descripcion?: string; ponderacion: number }
+// `ponderacion` es opcional: antes se mandaba `?? 0` siempre, lo que pisaba
+// el default "pesa 1" de `fn_actividad_validar_rubrica_definicion`/
+// `fn_actividad_rubrica_definir_interno` (sso V496.5/V496.6) con un 0
+// explícito. Ahora, si el nivel no tiene puntaje, se omite la clave (el
+// backend decide: 1 si la Unidad no lo exige, 400 si sí lo exige).
+type NivelBody = { etiqueta: string; descripcion?: string; ponderacion?: number }
 
 function nivelABody(nivel: Nivel): NivelBody {
-  return { etiqueta: nivel.nombre, descripcion: nivel.descripcion || undefined, ponderacion: nivel.ponderacion ?? 0 }
+  return { etiqueta: nivel.nombre, descripcion: nivel.descripcion || undefined, ponderacion: nivel.ponderacion }
 }
 
 /**
@@ -81,11 +85,11 @@ function criterioABody(criterio: Criterio) {
     niveles.push({
       etiqueta: "Excelente",
       descripcion: criterio.excelente || undefined,
-      ponderacion: criterio.excelentePonderacion ?? 0,
+      ponderacion: criterio.excelentePonderacion,
     })
   }
   niveles.push(...criterio.niveles.map(nivelABody))
-  return { nombre: criterio.nombre, niveles }
+  return { nombre: criterio.nombre, descripcion: criterio.descripcion || undefined, niveles }
 }
 
 function rubricaVacia(rubrica: Rubrica): boolean {
@@ -233,11 +237,11 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
     mutationFn: (input: Omit<UpdateInstrumentoInput, "instrumentosPermitidos">) =>
       updateInstrumentoActividad({
         ...input,
-        instrumentosPermitidos: queryClient.getQueryData<Actividad>(actividadDetalleQueryKey(input.actividadId))
+        instrumentosPermitidos: queryClient.getQueryData<Actividad>(planeadorKeys.actividad.detalle(input.actividadId))
           ?.camposDisponibles?.evaluacion.instrumentosPermitidos,
       }),
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       // Sin esto, "Marcar"/"Aprobar" (InstrumentoGradingFields, vía
       // useInstrumentoActividadQuery) seguían mostrando la rúbrica/lista/
       // escala VIEJA después de editarla -- confirmado en vivo: un criterio
@@ -245,7 +249,7 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
       // el backend rechazaba el guardado con "La rúbrica tiene N
       // criterio(s) activo(s) pero se calificaron M" en cuanto el docente
       // marcaba ese criterio de más.
-      queryClient.invalidateQueries({ queryKey: instrumentoActividadQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.instrumento(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

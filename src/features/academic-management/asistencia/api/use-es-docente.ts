@@ -3,7 +3,6 @@ import { useAuth } from "@/features/auth/hooks/use-auth"
 const DOCENTE_ROLE = "CEVAL-DOCENTE"
 const DIRECTOR_GRUPO_ROLE = "CEVAL-DIRECTOR_GRUPO"
 const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
-const JEFE_AREA_ROLE = "CEVAL-JEFE_AREA"
 const SUPER_ADMIN_ROLE = "CEVAL-SUPER_ADMINISTRADOR"
 
 export function useEsDocente(): boolean {
@@ -25,11 +24,19 @@ export interface AsistenciaAccess {
   isDocente: boolean
   isDirectorGrupo: boolean
   isCoordinador: boolean
-  esDocentePuro: boolean
   puedeRegistrar: boolean
   /** Regla 75: resuelve solicitudes de corrección (roles de `/aprobaciones`). */
   puedeAprobar: boolean
 }
+
+/** Regla 75: roles que resuelven solicitudes (`/aprobaciones`); el back acota cada uno a su sede o establecimiento. */
+const APROBADOR_ROLES = [
+  COORDINADOR_ROLE,
+  "CEVAL-RECTOR",
+  "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO",
+  "CEVAL-AUXILIAR_ADMINISTRATIVO",
+  SUPER_ADMIN_ROLE,
+]
 
 /** Regla 74: resuelve de una vez el alcance de lectura/escritura de asistencia para el usuario actual, incluyendo el caso de doble rol (docente + director de grupo). */
 export function useAsistenciaAccess(): AsistenciaAccess {
@@ -38,15 +45,12 @@ export function useAsistenciaAccess(): AsistenciaAccess {
   const isDocente = roles.includes(DOCENTE_ROLE)
   const isDirectorGrupo = roles.includes(DIRECTOR_GRUPO_ROLE)
   const isCoordinador = roles.includes(COORDINADOR_ROLE)
-  const isJefeArea = roles.includes(JEFE_AREA_ROLE)
-  const esDocentePuro = isDocente && !isDirectorGrupo && !isCoordinador && !isJefeArea
 
   return {
     isDocente,
     isDirectorGrupo,
     isCoordinador,
-    esDocentePuro,
     puedeRegistrar: isDocente,
-    puedeAprobar: isCoordinador || roles.includes(SUPER_ADMIN_ROLE),
+    puedeAprobar: APROBADOR_ROLES.some((rol) => roles.includes(rol)),
   }
 }

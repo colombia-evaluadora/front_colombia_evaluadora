@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { z } from "zod"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -78,20 +78,14 @@ interface Draft {
   planId: string
 }
 
-let draftKey = 0
-function nextKey() {
-  draftKey += 1
-  return draftKey
-}
-
-function emptyDraft(): Draft {
-  return { key: nextKey(), name: "", path: "", visible: true, planId: "" }
+function emptyDraft(key: number): Draft {
+  return { key, name: "", path: "", visible: true, planId: "" }
 }
 
 /** Submenú existente, tal como se carga en la tabla al editar su carpeta. */
-function draftFromMenu(child: MenuNode): Draft {
+function draftFromMenu(child: MenuNode, key: number): Draft {
   return {
-    key: nextKey(),
+    key,
     id: child.id,
     name: child.name,
     path: child.path ?? "",
@@ -241,6 +235,15 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
   const [visible, setVisible] = useState(true)
   const [planId, setPlanId] = useState("")
   const [drafts, setDrafts] = useState<Draft[]>([])
+  // `key` de React de cada fila de la tabla de submenús (los nuevos no tienen
+  // `id` todavía). Contador por instancia del diálogo — solo tiene que ser
+  // único dentro de `drafts` — en lugar de una variable de módulo. Se pide
+  // FUERA de los updaters de `setDrafts`: StrictMode los invoca dos veces.
+  const draftKeyRef = useRef(0)
+  function nextDraftKey() {
+    draftKeyRef.current += 1
+    return draftKeyRef.current
+  }
   // Mensaje por campo del menú raíz, indexado por su nombre en el esquema.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -258,7 +261,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     // lo que se está editando. En alta la tabla arranca vacía.
     setDrafts(
       menu != null && menu.idParent == null && "children" in menu
-        ? menu.children.map(draftFromMenu)
+        ? menu.children.map((child) => draftFromMenu(child, nextDraftKey()))
         : [],
     )
     setFieldErrors({})
@@ -634,7 +637,10 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                 <Button
                   type="button"
                   size="icon-sm"
-                  onClick={() => setDrafts((prev) => [...prev, emptyDraft()])}
+                  onClick={() => {
+                    const draft = emptyDraft(nextDraftKey())
+                    setDrafts((prev) => [...prev, draft])
+                  }}
                 >
                   <span className="sr-only">Agregar submenú</span>
                   <ControlPointIcon />

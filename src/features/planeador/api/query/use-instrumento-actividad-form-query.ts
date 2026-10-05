@@ -10,6 +10,7 @@ import type {
   Nivel,
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/:id/instrumento` — el MISMO endpoint que ya
@@ -112,16 +113,25 @@ function metodoValoracionDesdeCodigo(
   return ""
 }
 
-let nivelIdSeed = -1
+type SyntheticId = (pk: number | undefined) => number
+
 /** Ids sintéticos NEGATIVOS para niveles/items/criterios sin `pk` confirmado
  *  en la captura real (el front los usa solo como `key` de lista, nunca
- *  para identificar algo del lado del servidor) — negativos para que nunca
- *  choquen con un `pk` real, que siempre es positivo. */
-function syntheticId(pk: number | undefined): number {
-  return pk ?? nivelIdSeed--
+ *  para identificar algo del lado del servidor: `update-instrumento-actividad.ts`
+ *  no lee `.id` al armar el body) — negativos para que nunca choquen con un
+ *  `pk` real, que siempre es positivo, ni con los ids que genera el form
+ *  para filas nuevas (`cryptoId()`, también positivos).
+ *
+ *  El contador vive en el closure de UNA conversión (`toInstrumentoActividadParaForm`),
+ *  no en una variable de módulo: solo hace falta unicidad dentro de la
+ *  definición que se carga en el form, y así no queda estado global que
+ *  sobreviva entre tests o recargas en caliente. */
+function createSyntheticId(): SyntheticId {
+  let seed = -1
+  return (pk) => pk ?? seed--
 }
 
-function nivelDesdeRaw(nivel: RawNivel): Nivel {
+function nivelDesdeRaw(nivel: RawNivel, syntheticId: SyntheticId): Nivel {
   return {
     id: syntheticId(nivel.pk),
     nombre: nivel.etiqueta,
@@ -135,24 +145,25 @@ function nivelDesdeRaw(nivel: RawNivel): Nivel {
  * "Excelente" vuelve a separarse del array `niveles[]` a los campos propios
  * `criterio.excelente`/`excelentePonderacion` — es como el form los edita.
  */
-function criterioDesdeRaw(criterio: RawCriterio): Criterio {
+function criterioDesdeRaw(criterio: RawCriterio, syntheticId: SyntheticId): Criterio {
   const excelente = criterio.niveles.find((n) => n.etiqueta === "Excelente")
   const resto = criterio.niveles.filter((n) => n.etiqueta !== "Excelente")
   return {
     id: syntheticId(criterio.pk),
     nombre: criterio.nombre,
+    descripcion: criterio.descripcion ?? "",
     excelente: excelente?.descripcion ?? "",
     excelentePonderacion: excelente?.ponderacion ?? undefined,
-    niveles: resto.map(nivelDesdeRaw),
+    niveles: resto.map((nivel) => nivelDesdeRaw(nivel, syntheticId)),
     ponderacion: 0,
   }
 }
 
-function rubricaDesdeRaw(criterios: RawCriterio[]): Rubrica {
-  return { id: 0, criterios: criterios.map(criterioDesdeRaw) }
+function rubricaDesdeRaw(criterios: RawCriterio[], syntheticId: SyntheticId): Rubrica {
+  return { id: 0, criterios: criterios.map((criterio) => criterioDesdeRaw(criterio, syntheticId)) }
 }
 
-function listaCotejoDesdeRaw(items: RawCotejoItem[]): ListaCotejo {
+function listaCotejoDesdeRaw(items: RawCotejoItem[], syntheticId: SyntheticId): ListaCotejo {
   return {
     id: 0,
     items: items.map((item) => ({
@@ -163,7 +174,7 @@ function listaCotejoDesdeRaw(items: RawCotejoItem[]): ListaCotejo {
   }
 }
 
-function escalaDesdeRaw(raw: RawEscala): EscalaValoracion {
+function escalaDesdeRaw(raw: RawEscala, syntheticId: SyntheticId): EscalaValoracion {
   // `tipoEscalaValor`, NO `tipoEscala` — ese es el id numérico de
   // `TLISTA_VALOR` (confirmado real: `{tipoEscala: 52016, tipoEscalaValor:
   // "NUMERICA", ...}`). Comparación tolerante a mayúsculas/espacios por las
@@ -185,7 +196,7 @@ function escalaDesdeRaw(raw: RawEscala): EscalaValoracion {
     criteriosGenerales: raw.criteriosGenerales ?? "",
     tipo: "Cualitativa",
     interpretacionRangos: "",
-    niveles: (raw.niveles ?? []).map(nivelDesdeRaw),
+    niveles: (raw.niveles ?? []).map((nivel) => nivelDesdeRaw(nivel, syntheticId)),
   }
 }
 
@@ -220,22 +231,23 @@ function vacioParaForm(): InstrumentoActividadParaForm {
   }
 }
 
-function toInstrumentoActividadParaForm(row: RawInstrumentoActividadRow | undefined): InstrumentoActividadParaForm {
+export function toInstrumentoActividadParaForm(row: RawInstrumentoActividadRow | undefined): InstrumentoActividadParaForm {
   const base = vacioParaForm()
   if (!row || row.instrumento == null) return base
+  const syntheticId = createSyntheticId()
 
   // Defensivo más allá de lo que el tipo promete: el mock, por ejemplo,
   // responde `definicion: null` para "OTRO" (ver `instrumentoActividadDe` en
   // `mocks/db/planilla.ts` — todavía no lo modela) aunque el tipo real
   // documentado por Postman diga que siempre viene un objeto.
   if (row.instrumento === "RUBRICA") {
-    return row.definicion ? { ...base, rubrica: rubricaDesdeRaw(row.definicion) } : base
+    return row.definicion ? { ...base, rubrica: rubricaDesdeRaw(row.definicion, syntheticId) } : base
   }
   if (row.instrumento === "LISTA_COTEJO") {
-    return row.definicion ? { ...base, listaCotejo: listaCotejoDesdeRaw(row.definicion) } : base
+    return row.definicion ? { ...base, listaCotejo: listaCotejoDesdeRaw(row.definicion, syntheticId) } : base
   }
   if (row.instrumento === "ESCALA_VALORACION") {
-    return row.definicion ? { ...base, escalaValoracion: escalaDesdeRaw(row.definicion) } : base
+    return row.definicion ? { ...base, escalaValoracion: escalaDesdeRaw(row.definicion, syntheticId) } : base
   }
   // "OTRO" delega en uno de los tres métodos (ver `InstrumentoPersonalizadoSection`):
   // la definición interna se carga en la MISMA sección (`rubrica`/
@@ -251,20 +263,20 @@ function toInstrumentoActividadParaForm(row: RawInstrumentoActividadRow | undefi
     requiereRespuestaTexto: false,
   }
   if (metodoValoracion === "Rúbrica") {
-    return { ...base, instrumentoPersonalizado, rubrica: rubricaDesdeRaw(otro.definicion as RawCriterio[]) }
+    return { ...base, instrumentoPersonalizado, rubrica: rubricaDesdeRaw(otro.definicion as RawCriterio[], syntheticId) }
   }
   if (metodoValoracion === "Lista de cotejo") {
     return {
       ...base,
       instrumentoPersonalizado,
-      listaCotejo: listaCotejoDesdeRaw(otro.definicion as RawCotejoItem[]),
+      listaCotejo: listaCotejoDesdeRaw(otro.definicion as RawCotejoItem[], syntheticId),
     }
   }
   if (metodoValoracion === "Escala de valoración") {
     return {
       ...base,
       instrumentoPersonalizado,
-      escalaValoracion: escalaDesdeRaw(otro.definicion as RawEscala),
+      escalaValoracion: escalaDesdeRaw(otro.definicion as RawEscala, syntheticId),
     }
   }
   return { ...base, instrumentoPersonalizado }
@@ -276,9 +288,6 @@ async function fetchInstrumentoActividadParaForm(actividadId: number): Promise<I
   )
   return toInstrumentoActividadParaForm(rows[0])
 }
-
-export const instrumentoActividadFormQueryKey = (actividadId: number) =>
-  ["planeador", "actividad", actividadId, "instrumento", "form"] as const
 
 /**
  * Precarga la definición YA GUARDADA del instrumento (rúbrica/lista de
@@ -292,8 +301,8 @@ export function useInstrumentoActividadFormQuery(actividadId: number | undefined
   return useQuery({
     queryKey:
       actividadId != null
-        ? instrumentoActividadFormQueryKey(actividadId)
-        : (["planeador", "actividad", "none", "instrumento", "form"] as const),
+        ? planeadorKeys.actividad.instrumentoForm(actividadId)
+        : planeadorKeys.actividad.instrumentoForm("none"),
     queryFn: () => fetchInstrumentoActividadParaForm(actividadId!),
     enabled: enabled && actividadId != null,
     staleTime: 1000 * 60,

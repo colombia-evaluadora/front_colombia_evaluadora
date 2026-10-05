@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/adaptaciones-reutilizables` —
@@ -120,9 +121,6 @@ async function fetchAdaptacionesReutilizables({
   }
 }
 
-export const adaptacionesReutilizablesQueryKey = (params: Params) =>
-  ["planeador", "adaptaciones-reutilizables", params] as const
-
 /**
  * `enabled` cubre los mismos dos casos que la biblioteca de materiales: el
  * combobox cerrado/sin abrir (no hace falta consultar hasta que el docente
@@ -130,7 +128,7 @@ export const adaptacionesReutilizablesQueryKey = (params: Params) =>
  */
 export function useAdaptacionesReutilizablesQuery(params: Params, enabled: boolean) {
   return useQuery({
-    queryKey: adaptacionesReutilizablesQueryKey(params),
+    queryKey: planeadorKeys.adaptacionesReutilizables(params),
     queryFn: () => fetchAdaptacionesReutilizables(params),
     enabled: enabled && (params.actividadId > 0 || params.grupoId > 0),
     staleTime: 1000 * 60,

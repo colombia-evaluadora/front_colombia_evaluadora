@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/grade"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `PUT /eval-col/grados/:ID/eliminar` (`fn_grado_soft_delete`, id_query 59 —
 // PUT desde V67). DELETE no está permitido en el catálogo del SSO.
@@ -20,7 +21,7 @@ export function useDeleteGrade({ mutationConfig }: UseDeleteGradeOptions = {}) {
     mutationFn: deleteGrade,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

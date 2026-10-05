@@ -7,6 +7,7 @@ import type {
   PlanillaCelda,
   PlanillaFila,
 } from "@/features/planeador/api/types/planilla"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** `GET /planeador/planilla/calificaciones` (confirmado real, ver colección
  *  Postman `planeador-planilla-flujo-completo`, paso 2.2).
@@ -100,16 +101,6 @@ interface PlanillaCalificacionesResult {
   totalCount: number
 }
 
-export const planillaCalificacionesQueryKey = (params: UsePlanillaCalificacionesParams) =>
-  ["planeador", "planilla", "calificaciones", params] as const
-
-/** Prefijo común de la query key — se usa para invalidar TODAS las páginas
- *  de calificaciones (cualquier filtro) después de una mutación de
- *  calificar, sin tener que reconstruir los params exactos con los que se
- *  pidió cada una. */
-export const planillaCalificacionesQueryKeyPrefix = () =>
-  ["planeador", "planilla", "calificaciones"] as const
-
 async function fetchPlanillaCalificaciones(
   params: UsePlanillaCalificacionesParams,
 ): Promise<PlanillaCalificacionesResult> {
@@ -142,8 +133,8 @@ async function fetchPlanillaCalificaciones(
 export function usePlanillaCalificacionesQuery(params: UsePlanillaCalificacionesParams | null) {
   return useQuery({
     queryKey: params
-      ? planillaCalificacionesQueryKey(params)
-      : (["planeador", "planilla", "calificaciones", "none"] as const),
+      ? planeadorKeys.planilla.calificaciones.lista(params)
+      : planeadorKeys.planilla.calificaciones.lista("none"),
     queryFn: () => fetchPlanillaCalificaciones(params!),
     enabled: params !== null,
     staleTime: 1000 * 10,

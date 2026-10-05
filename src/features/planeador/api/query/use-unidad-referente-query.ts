@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/:id/referente` (confirmado real, colección
@@ -157,9 +158,6 @@ function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente
   }
 }
 
-export const unidadReferenteQueryKey = (unidadId: number) =>
-  ["planeador", "unidad", unidadId, "referente"] as const
-
 /** Misma forma "objeto suelto, no `{rows}`" confirmada para
  *  `/referente-curricular` — se tolera igual acá por si esta ruta hermana
  *  comparte el mismo comportamiento (ver el comentario de `firstRow` en
@@ -181,7 +179,7 @@ async function fetchUnidadReferente(unidadId: number): Promise<UnidadReferente> 
 export function useUnidadReferenteQuery(unidadId: number | undefined) {
   return useQuery({
     queryKey:
-      unidadId != null ? unidadReferenteQueryKey(unidadId) : (["planeador", "unidad", "none", "referente"] as const),
+      unidadId != null ? planeadorKeys.unidad.referente(unidadId) : planeadorKeys.unidad.referente("none"),
     queryFn: () => fetchUnidadReferente(unidadId!),
     enabled: unidadId != null,
     staleTime: 1000 * 60,

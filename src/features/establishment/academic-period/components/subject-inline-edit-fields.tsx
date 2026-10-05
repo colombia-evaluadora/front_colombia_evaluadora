@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { getErrorMessage } from "@/lib/api-client"
 import type { NoticeVariant } from "@/components/notice/notice-banner"
@@ -15,7 +14,7 @@ import {
   useSubjectDetailsQuery,
   type SubjectDetail,
 } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
-import { updateSubject } from "@/features/establishment/academic-period/api/mutations/update-subject"
+import { useUpdateSubject } from "@/features/establishment/academic-period/api/mutations/update-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
 
 interface SubjectInlineEditFieldsProps {
@@ -53,7 +52,7 @@ export const SubjectInlineEditFields = forwardRef<
 ) {
   const subjectWord = subjectLabel.toLowerCase()
   const subjectWordCap = subjectLabel
-  const queryClient = useQueryClient()
+  const updateSubject = useUpdateSubject()
 
   const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
   const [abreviacion, setAbreviacion] = useState("")
@@ -143,7 +142,7 @@ export const SubjectInlineEditFields = forwardRef<
         : (areaGeneralNameToId(asignaturaGeneral) ?? undefined)
       if (subjectGeneralId == null) return false
 
-      await updateSubject({
+      await updateSubject.mutateAsync({
         subjectId: subject.id,
         areaGeneralId: subjectGeneralId,
         nombreInterno: nombreTrim,
@@ -151,10 +150,8 @@ export const SubjectInlineEditFields = forwardRef<
         ordenReportes,
         color,
         enfasisId: isPreescolar ? undefined : especialidadNombreToId(especialidad),
+        academicPeriodId,
       })
-      queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["subject-details", academicPeriodId] })
       onSaved({ id: subject.id, nombreInterno: nombreTrim })
       return true
     } catch (error) {

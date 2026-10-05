@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { EvaluationCriteria } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Fila cruda de `GET /eval-col/periodos/:ID/criterio-evaluacion`
 // (`fn_criterio_eval_obtener`, id_query 50) — snake_case, tal como declara la
@@ -80,14 +81,9 @@ async function fetchEvaluationCriteria(
   return toEvaluationCriteria(row)
 }
 
-export const evaluationCriteriaQueryKey = (academicPeriodId: number) => [
-  "evaluation-criteria",
-  academicPeriodId,
-]
-
 export function useEvaluationCriteriaQuery(academicPeriodId: number | undefined) {
   return useQuery({
-    queryKey: evaluationCriteriaQueryKey(academicPeriodId ?? 0),
+    queryKey: academicPeriodKeys.evaluationCriteria.byPeriod(academicPeriodId ?? 0),
     queryFn: () => fetchEvaluationCriteria(academicPeriodId as number),
     enabled: academicPeriodId != null,
   })

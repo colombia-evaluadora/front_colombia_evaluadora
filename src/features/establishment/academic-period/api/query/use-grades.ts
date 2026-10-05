@@ -6,6 +6,8 @@ import type {
   GradesQueryRequest,
   GradesQueryResponse,
 } from "@/features/establishment/academic-period/api/types/grade"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseGradesQueryParams {
   filters: GradesQueryRequest["filters"]
@@ -66,23 +68,21 @@ async function fetchGrades(
       SORTING_DESC: primary ? String(primary.desc) : null,
     }
   )
-  let rows = (raw.rows ?? []).map(toGrade)
+  // El total es el del servidor (pagina él); el filtro de abajo es solo de la página.
+  const page = toPaginated(raw.rows, { pageSize: params.pageSize, map: toGrade })
+  let rows = page.rows
   // `fn_grado_listar` no filtra por nivel de enseñanza; se filtra en cliente.
   if (params.filters.teachingLevelIds?.length) {
     rows = rows.filter((row) =>
       params.filters.teachingLevelIds?.includes(row.teachingLevelId)
     )
   }
-  const totalCount = raw.rows?.[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return { rows, pageCount, totalCount }
+  return { ...page, rows }
 }
-
-export const gradesQueryKey = (params: UseGradesQueryParams) => ["grades", params]
 
 export function useGradesQuery(params: UseGradesQueryParams) {
   return useQuery({
-    queryKey: gradesQueryKey(params),
+    queryKey: academicPeriodKeys.grades.list(params),
     queryFn: () => fetchGrades(params),
     placeholderData: (previous) => previous,
   })

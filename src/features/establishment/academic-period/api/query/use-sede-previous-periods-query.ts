@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { PreviousPeriodOption } from "../types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Candidatos a "periodo anterior" de una sede
 // (`academico_test.fn_periodo_anteriores_por_sede`). El backend ya devuelve
@@ -31,17 +32,12 @@ async function fetchSedePreviousPeriods(
   return raw.rows ?? []
 }
 
-export const sedePreviousPeriodsQueryKey = (
-  sedeId: string,
-  excludeId?: number
-) => ["academic-periods", "previous", sedeId, excludeId ?? null]
-
 export function useSedePreviousPeriodsQuery(
   sedeId: string | undefined,
   excludeId?: number
 ) {
   return useQuery({
-    queryKey: sedePreviousPeriodsQueryKey(sedeId ?? "", excludeId),
+    queryKey: academicPeriodKeys.academicPeriods.previousBySede(sedeId ?? "", excludeId),
     queryFn: () => fetchSedePreviousPeriods(sedeId as string, excludeId),
     enabled: !!sedeId,
   })

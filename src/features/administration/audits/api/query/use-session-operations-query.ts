@@ -17,6 +17,7 @@ import type {
   SessionOperationsResponse,
 } from "@/features/administration/audits/api/types/audit"
 import type { OperationType } from "@/features/administration/audits/api/types/audit-table"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseSessionOperationsQueryParams {
   sessionId: string
@@ -88,7 +89,7 @@ async function fetchSessionOperations(
   const tableSlug = params.filters.tableSlug?.trim().toLowerCase()
   const rawRows = unwrapRows(response)
   // V376 (sso): el servidor ya pagina de verdad -- esto es la página real.
-  const totalCount = rawRows[0]?.totalCount ?? 0
+  const { totalCount, pageCount } = toPaginated(rawRows, { pageSize: params.pageSize, totalKey: "totalCount" })
   const rows = sortWindow(
     rawRows
       .map(toSessionOperation)
@@ -99,7 +100,7 @@ async function fetchSessionOperations(
 
   return {
     rows,
-    pageCount: Math.max(1, Math.ceil(totalCount / params.pageSize)),
+    pageCount,
     totalCount,
   }
 }

@@ -6,6 +6,7 @@ import type {
   MutationResult,
   PromotionCriteria,
 } from "@/features/establishment/academic-period/api/types/promotion-criteria"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdatePromotionCriteriaInput {
   academicPeriodId: number
@@ -66,7 +67,7 @@ export function useUpdatePromotionCriteria({
     mutationFn: updatePromotionCriteria,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["promotion-criteria"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.promotionCriteria.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

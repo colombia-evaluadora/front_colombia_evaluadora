@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/tabs` — las pestañas de "Actividades", una por
@@ -89,8 +90,6 @@ function toActividadTab(row: ActividadTabRow): ActividadTab {
   }
 }
 
-export const actividadesTabsQueryKey = () => ["planeador", "actividades-tabs"] as const
-
 async function fetchActividadesTabs(): Promise<ActividadTab[]> {
   const rows = await evalCol.getRows<ActividadTabRow>("/planeador/actividades/tabs")
   return rows.map(toActividadTab)
@@ -100,7 +99,7 @@ async function fetchActividadesTabs(): Promise<ActividadTab[]> {
  *  dicta/administra un docente no cambia dentro de una sesión. */
 export function useActividadesTabsQuery() {
   return useQuery({
-    queryKey: actividadesTabsQueryKey(),
+    queryKey: planeadorKeys.actividades.tabs(),
     queryFn: fetchActividadesTabs,
     staleTime: 1000 * 60 * 5,
   })

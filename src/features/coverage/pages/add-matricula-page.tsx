@@ -17,6 +17,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useCreateMatricula } from "@/features/coverage/api/mutations/create-matricula"
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
+import { useEstablecimientoDeSede } from "@/features/coverage/api/query/use-establecimiento-de-sede"
 import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
@@ -93,8 +94,19 @@ function AddMatriculaPageContent() {
   const { notify, dismiss } = useNotify()
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const [values, setValues] = useState<CreateMatriculaInput>(createInitialMatriculaValues)
+
+  // La configuración es del colegio de la sede elegida: un rector de varios
+  // colegios no puede pedirla sin decir cuál (el backend respondería 22023).
+  const colegio = useEstablecimientoDeSede({
+    sedeId: values.academic.campusId ? Number(values.academic.campusId) : null,
+    sedeNombre: values.academic.campus,
+  })
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
-    useMatriculaFieldConfigQuery()
+    useMatriculaFieldConfigQuery({
+      establecimientoId: colegio.establecimientoId,
+      enabled: colegio.resuelto,
+    })
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],
@@ -104,7 +116,14 @@ function AddMatriculaPageContent() {
     if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
   }, [isFieldConfigError, fieldConfigError, notify])
 
-  const [values, setValues] = useState<CreateMatriculaInput>(createInitialMatriculaValues)
+  useEffect(() => {
+    if (colegio.ambigua) {
+      notify(
+        `Hay una sede llamada "${values.academic.campus}" en más de uno de tus establecimientos: no se puede saber cuál configuración de campos aplicar.`,
+        { variant: "error" },
+      )
+    }
+  }, [colegio.ambigua, values.academic.campus, notify])
   const [files, setFiles] = useState<MatriculaSupportFiles>(createEmptySupportFiles)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)

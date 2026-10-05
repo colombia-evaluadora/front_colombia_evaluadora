@@ -1,23 +1,46 @@
-import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
+import { createFormHook } from "@tanstack/react-form"
+
+import {
+  fieldContext,
+  formContext,
+  useFieldContext,
+  useFormContext,
+} from "@/lib/forms/form-context"
+import {
+  CheckboxField,
+  DateField,
+  NumberField,
+  SelectField,
+  TextareaField,
+  TextField,
+} from "@/lib/forms/fields"
 
 /**
- * Contexto compartido de formularios para todos los `useForm`/`useField` de
- * la app. La gracia es que `useFieldContext` y `useAppForm` comparten los
- * mismos `fieldContext`/`formContext`, así un helper como `TextFilter`
- * definido en un archivo puede leer el `field` actual sin recibirlo por
- * props — basta con que el padre lo monte dentro de `<form.AppField>`.
+ * Hook de formularios de la app. `useAppForm` + `<form.AppField>` exponen
+ * los campos registrados como `field.TextField`, `field.SelectField`, etc.
+ * (ver `fields.tsx`), que ya traen label, error, estado inválido y
+ * `disabled` del `FormDisabledProvider`.
  *
- * Las primitivas (`TextField`, `SelectField`, …) se dejan vacías a propósito:
- * cada form registra las suyas localmente si las necesita. Mantener este
- * módulo chico evita que el resto de la app herede opinionated components.
+ * `useFieldContext`/`useFormContext` comparten los mismos contextos, así un
+ * componente propio (un combobox, un campo muy particular) puede leer el
+ * `field` actual sin recibirlo por props: basta con montarlo dentro de
+ * `<form.AppField>`.
  */
-const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
-
 export const { useAppForm, withForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: {},
+  fieldComponents: {
+    TextField,
+    TextareaField,
+    NumberField,
+    SelectField,
+    DateField,
+    CheckboxField,
+  },
   formComponents: {},
 })
 
 export { useFieldContext, useFormContext }
+export { isFieldInvalid, toFieldErrors } from "@/lib/forms/field-state"
+export { FormDisabledContext, useFormDisabled } from "@/lib/forms/form-disabled-context"
+export { FormDisabledProvider } from "@/lib/forms/form-disabled-provider"

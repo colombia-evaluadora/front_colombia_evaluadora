@@ -1,4 +1,4 @@
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 /**
  * Catálogo `TLISTA_VALOR` que resolvería `FK_TLV_MODALIDAD` en
@@ -6,7 +6,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
  * `resolveTipoActividadId`/`resolveInstrumentoEvaluacionId`.
  *
  * A diferencia de esos dos, "Modalidad" (`ProgramacionSection`, `<Select
- * value="Presencial"|"Virtual"|"Mixta">`) NO sale de un catálogo real: sus
+ * value="Presencial"|"Virtual"|"Híbrida">`) NO sale de un catálogo real: sus
  * tres opciones están hardcodeadas en el form, y `"MODALIDAD"` acá abajo es
  * un NOMBRE DE CATEGORÍA SIN CONFIRMAR contra `GET /eval-col/select/`. Si
  * el nombre real es otro, esto resuelve `undefined` en silencio y
@@ -17,7 +17,5 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
  * directo en vez de resolver un pk).
  */
 export async function resolveModalidadId(modalidad: string): Promise<number | undefined> {
-  if (!modalidad) return undefined
-  const rows = await fetchSelectCategory("MODALIDAD")
-  return rows.find((row) => row.nombre === modalidad)?.pk_lista_valor
+  return resolveCatalogId(undefined, "MODALIDAD", modalidad)
 }

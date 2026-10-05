@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { EspecialidadEnfasisRow, EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface EspecialidadesResponse {
   rows: EspecialidadEnfasisRow[]
@@ -26,14 +27,9 @@ async function fetchEspecialidades(
   }))
 }
 
-export const especialidadesQueryKey = (academicPeriodId?: number) => [
-  "especialidades",
-  academicPeriodId,
-]
-
 export function useEspecialidadesQuery(academicPeriodId?: number) {
   return useQuery({
-    queryKey: especialidadesQueryKey(academicPeriodId),
+    queryKey: academicPeriodKeys.especialidades.byPeriod(academicPeriodId),
     queryFn: () => fetchEspecialidades(academicPeriodId),
   })
 }

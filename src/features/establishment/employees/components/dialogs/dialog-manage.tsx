@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -53,6 +55,8 @@ import { getErrorMessage } from "@/lib/api-client"
 import { optionalImageFile } from "@/lib/image-file"
 import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
+import { paths } from "@/config/paths"
+import { useLogout, useUser } from "@/lib/auth"
 
 import { useCreate } from "@/features/establishment/employees/api/mutations/use-create"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
@@ -86,8 +90,9 @@ import {
   EmployeeAdditionalInfoForm,
   type EmployeeAdditionalInfoValue,
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
-import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
+import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -310,7 +315,7 @@ const employeePersonSchema = z
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
     // Formato de cada campo — nombres sin caracteres especiales, documento
-    // de 3 a 10 dígitos, teléfono de hasta 10, correo válido y mayoría de
+    // de 3 a 15 dígitos, teléfono de hasta 10, correo válido y mayoría de
     // edad. Vive en un módulo compartido con rector/secretaria: las dos
     // pantallas dan de alta a la misma clase de persona, y cuando cada una
     // tenía su copia se desincronizaron (institución verificaba el correo y
@@ -431,6 +436,16 @@ export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
 function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
   const { notify, dismiss } = useNotify()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const { data: currentUser } = useUser()
+  // El `sub` del JWT (y por lo tanto `AuthUser.email`/`.id`) ES el correo:
+  // si este guardado edita al usuario actualmente autenticado y le cambia
+  // el correo, el próximo `POST /auth/refresh` ya no encuentra a ese `sub`
+  // en la base (user_not_found) — la sesión queda viva unos minutos más
+  // por el token en memoria, hasta que algo dispara un refresh. Se cierra
+  // la sesión de forma controlada en vez de dejar que eso pase en silencio.
+  const logoutMutation = useLogout()
+  const [selfEmailChangedDialogOpen, setSelfEmailChangedDialogOpen] = useState(false)
   const isEditMode = Boolean(employeeId)
   /**
    * id del empleado recién creado en esta sesión. Mientras está vacío no
@@ -498,6 +513,15 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // PUT /funcionario/:ID/permisos — ver closePermissionsDialog.
   const originalPermissionIdsRef = useRef<Set<number>>(new Set())
   const [isSavingPermissions, setIsSavingPermissions] = useState(false)
+  // Correo con el que se cargó este funcionario al abrir el diálogo —
+  // `person.email` ya lo pisa el formulario apenas el usuario lo edita, así
+  // que sin esto no hay forma de saber si el correo CAMBIÓ al guardar.
+  const originalEmailRef = useRef<string | undefined>(undefined)
+  // Se arma en `handleMainSave`, antes de guardar, y lo lee el `onSuccess`
+  // de `updateMutation`: si el correo editado es el de la sesión actual Y
+  // cambió de verdad, dispara el aviso de cierre de sesión en vez del
+  // mensaje normal de "funcionario actualizado".
+  const selfEmailJustChangedRef = useRef(false)
   const cleanSnapshotRef = useRef<string | null>(null)
   const permissionsSnapshotRef = useRef<string>(JSON.stringify([]))
   const additionalInfoSnapshotRef = useRef<string>(JSON.stringify(createInitialAdditionalInfo()))
@@ -567,6 +591,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     const loadedPerson = { ...employee.person, accountExists: true, password: PASSWORD_PLACEHOLDER }
     const loadedAdditionalInfo = createAdditionalInfoFromEmployee(employee)
 
+    originalEmailRef.current = employee.person.email
     setPerson(loadedPerson)
     setPermissions(employee.permissions)
     originalPermissionIdsRef.current = new Set(
@@ -594,11 +619,10 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
   }
 
-
   // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
   // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
   // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
-  // que el documento cambió tras el match, `form-user-datails.tsx`). Sin
+  // que el documento cambió tras el match, `form-user-details.tsx`). Sin
   // esto, `createdEmployeeId` quedaba apuntando al funcionario equivocado:
   // "Permisos"/"Información complementaria" seguían habilitados y
   // `handleMainSave` tomaba la rama de edición (PUT) en vez de crear a la
@@ -711,6 +735,16 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       onSuccess: (result) => {
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
+          return
+        }
+
+        // Guardó bien un correo propio distinto del que trae la sesión
+        // actual: el aviso de cierre de sesión REEMPLAZA al mensaje y
+        // cierre normales (no los dos) — el diálogo sigue montado para
+        // mostrar el modal bloqueante.
+        if (selfEmailJustChangedRef.current) {
+          selfEmailJustChangedRef.current = false
+          setSelfEmailChangedDialogOpen(true)
           return
         }
 
@@ -918,6 +952,15 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     }
 
     // Empleado ya enlazado: editamos con PUT.
+    // Comparación sin importar mayúsculas: el correo es case-insensitive
+    // tanto para el login como para el `sub` del JWT.
+    selfEmailJustChangedRef.current = Boolean(
+      isEditMode &&
+        currentUser?.email &&
+        originalEmailRef.current &&
+        originalEmailRef.current.toLowerCase() === currentUser.email.toLowerCase() &&
+        persistedPerson.email.toLowerCase() !== originalEmailRef.current.toLowerCase(),
+    )
     await updateMutation.mutateAsync({
       employeeId: activeEmployeeId,
       values: payload,
@@ -925,6 +968,20 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       removePhoto: photoRemoved,
     })
     setPhotoRemoved(false)
+  }
+
+  /**
+   * Botón "Entendido" del modal de "correo propio actualizado" — y también
+   * lo que corre si alguien lo cierra por otra vía (Escape/backdrop):
+   * quedarse logueado con un token que ya no resuelve en el backend es
+   * justo el estado roto que este aviso previene, así que no hay un
+   * "cancelar" real acá.
+   */
+  async function handleConfirmSelfEmailChanged() {
+    setSelfEmailChangedDialogOpen(false)
+    onOpenChange(false)
+    await logoutMutation.mutateAsync(undefined)
+    navigate({ to: paths.auth.login.path })
   }
 
   function findCampusById(campusId: number): Campus | undefined {
@@ -1065,7 +1122,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
       void queryClient.invalidateQueries({ queryKey: ["employees"] })
-      void queryClient.invalidateQueries({ queryKey: ["assignment-teachers"] })
+      void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
@@ -1522,7 +1579,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                     <TableCell className="font-medium">{permission.order}</TableCell>
                     <TableCell>{permission.role.name}</TableCell>
                     <TableCell>{permission.campus.name}</TableCell>
-                    <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
+                    <TableCell>{permission.workSchedule.name}</TableCell>
                     <TableCell>
                       <Badge {...PERMISSION_STATUS_BADGE[permission.status]}>
                         {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
@@ -1617,6 +1674,36 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             >
               <XIcon data-icon="inline-start" />
               Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bloqueante a propósito: no hay "Cancelar" — ver el comentario de
+          `handleConfirmSelfEmailChanged`. */}
+      <Dialog
+        open={selfEmailChangedDialogOpen}
+        onOpenChange={(next) => {
+          if (!next) void handleConfirmSelfEmailChanged()
+        }}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Correo electrónico actualizado</DialogTitle>
+            <DialogDescription>
+              El correo electrónico se actualizó correctamente. Por seguridad, se cerrará su sesión.
+              Deberá iniciar sesión nuevamente con su nuevo correo electrónico.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="px-6 pb-6 sm:justify-end">
+            <Button
+              variant="fill"
+              color="primary"
+              size="sm"
+              onClick={() => void handleConfirmSelfEmailChanged()}
+              disabled={logoutMutation.isPending}
+            >
+              {logoutMutation.isPending ? "Cerrando sesión..." : "Entendido"}
             </Button>
           </DialogFooter>
         </DialogContent>

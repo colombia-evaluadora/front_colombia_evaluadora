@@ -72,8 +72,12 @@ interface DialogAgregarActividadProps {
  *     visible (a diferencia de los otros dos modos, donde permanece oculto
  *     hasta que se tipea un valor mayor a 0: no tiene sentido vincular con
  *     un peso/puntaje en blanco).
- * `porcentajeDisponible` viene YA CALCULADO por fila (unidad + grupo de esa
- * actividad), no hace falta pedirlo aparte (1.5).
+ * `porcentajeDisponible` viene YA CALCULADO por fila por el backend
+ * (`fn_unidad_ponderacion_disponible`, sso V223), no hace falta pedirlo
+ * aparte (1.5). Es el tope REAL: lo que queda del 100% de esta unidad en el
+ * grupo de esa actividad (bucket (unidad, grupo) del trigger
+ * `tr_tactividad_ponderacion_unidad`). Otras unidades de la misma
+ * asignatura/grado NO cuentan: cada unidad reparte su propio 100% por grupo.
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
   const { puedeCrear } = useMenuPermission("PLANEADOR")
@@ -281,7 +285,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                   {pideValor && (
                     <>
                       <TableHead className="w-[10%] text-right">
-                        {esPonderado ? "(%)" : "Puntaje"}
+                        {esPonderado ? "(%)" : "(Σ)"}
                       </TableHead>
                       {/* Header vacío a propósito: esta columna solo muestra
                           "Disponible para asignar" o el botón "Vincular" —

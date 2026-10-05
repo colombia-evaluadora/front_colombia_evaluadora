@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `PUT /eval-col/enfasis/eliminar/:ID` (`fn_enfasis_soft_delete`, id_query 104).
 function deleteEnfasis(id: number): Promise<unknown> {
@@ -20,7 +21,7 @@ export function useDeleteEnfasis({
     mutationFn: deleteEnfasis,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["especialidades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.especialidades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

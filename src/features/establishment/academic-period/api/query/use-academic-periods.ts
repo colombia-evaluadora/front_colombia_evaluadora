@@ -7,6 +7,8 @@ import type {
   AcademicPeriodsQueryRequest,
   AcademicPeriodsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseAcademicPeriodsQueryParams {
   filters: AcademicPeriodsQueryRequest["filters"]
@@ -155,23 +157,12 @@ async function fetchAcademicPeriods(
   )
   const backendRows = raw.rows ?? []
   // `total_count` viene repetido por fila (window count); el front arma el envelope.
-  const totalCount = backendRows[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return {
-    rows: backendRows.map(toAcademicPeriod),
-    pageCount,
-    totalCount,
-  }
+  return toPaginated(backendRows, { pageSize: params.pageSize, map: toAcademicPeriod })
 }
-
-export const academicPeriodsQueryKey = (params: UseAcademicPeriodsQueryParams) => [
-  "academic-periods",
-  params,
-]
 
 export function useAcademicPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
   return useQuery({
-    queryKey: academicPeriodsQueryKey(params),
+    queryKey: academicPeriodKeys.academicPeriods.list(params),
     queryFn: () => fetchAcademicPeriods(params),
     placeholderData: (previous) => previous,
   })

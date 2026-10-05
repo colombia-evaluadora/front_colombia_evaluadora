@@ -3,6 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { defaultRecuperacionCampoDisponible, type Actividad } from "@/features/planeador/api/types/actividad"
 import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/:id/configuracion-actividad?ES_SUMATIVO=S|N`
@@ -68,9 +69,6 @@ async function fetchConfiguracionActividad(
   }
 }
 
-export const configuracionActividadQueryKey = (unidadId: number, esEvaluativa: boolean) =>
-  ["planeador", "unidad", unidadId, "configuracion-actividad", esEvaluativa] as const
-
 /**
  * Campos obligatorios/visibles para crear una actividad EN esta unidad,
  * antes de que la actividad exista todavía — la misma fuente de verdad que
@@ -82,8 +80,8 @@ export function useConfiguracionActividadQuery(unidadId: number | undefined, esE
   return useQuery({
     queryKey:
       unidadId != null
-        ? configuracionActividadQueryKey(unidadId, esEvaluativa)
-        : (["planeador", "unidad", "none", "configuracion-actividad", esEvaluativa] as const),
+        ? planeadorKeys.unidad.configuracionActividad(unidadId, esEvaluativa)
+        : planeadorKeys.unidad.configuracionActividad("none", esEvaluativa),
     queryFn: () => fetchConfiguracionActividad(unidadId!, esEvaluativa),
     enabled: unidadId != null,
     staleTime: 1000 * 60,
@@ -144,12 +142,6 @@ async function fetchConfiguracionContexto(
   }
 }
 
-export const configuracionContextoActividadQueryKey = (
-  grupoId: number,
-  asignaturaId: number,
-  esEvaluativa: boolean,
-) => ["planeador", "actividad", "configuracion-contexto", grupoId, asignaturaId, esEvaluativa] as const
-
 /**
  * Igual que `useConfiguracionActividadQuery`, para cuando la actividad
  * TODAVÍA no tiene (ni va a tener) una unidad asociada — por ejemplo, al
@@ -164,16 +156,13 @@ export function useConfiguracionContextoActividadQuery(
   const enabled = grupoId != null && asignaturaId != null
   return useQuery({
     queryKey: enabled
-      ? configuracionContextoActividadQueryKey(grupoId, asignaturaId, esEvaluativa)
-      : (["planeador", "actividad", "configuracion-contexto", "none", esEvaluativa] as const),
+      ? planeadorKeys.actividad.configuracionContexto(grupoId, asignaturaId, esEvaluativa)
+      : planeadorKeys.actividad.configuracionContexto("none", undefined, esEvaluativa),
     queryFn: () => fetchConfiguracionContexto(grupoId!, asignaturaId!, esEvaluativa),
     enabled,
     staleTime: 1000 * 60,
   })
 }
-
-export const actividadesRecuperablesQueryKey = (grupoId: number, asignaturaId: number) =>
-  ["planeador", "actividad", "actividades-recuperables", grupoId, asignaturaId] as const
 
 /**
  * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=&ES_SUMATIVO=S&RECUPERAR=S`
@@ -203,7 +192,7 @@ export const actividadesRecuperablesQueryKey = (grupoId: number, asignaturaId: n
  */
 export function actividadesRecuperablesQueryOptions(grupoId: number, asignaturaId: number) {
   return queryOptions({
-    queryKey: actividadesRecuperablesQueryKey(grupoId, asignaturaId),
+    queryKey: planeadorKeys.actividad.recuperables(grupoId, asignaturaId),
     queryFn: () => fetchConfiguracionContexto(grupoId, asignaturaId, true, true),
     select: (campos) => campos?.recuperacion.actividadesRecuperables ?? [],
     staleTime: 1000 * 30,
@@ -214,8 +203,8 @@ export function useActividadesRecuperablesQuery(grupoId: number | undefined, asi
   const enabled = grupoId != null && asignaturaId != null
   return useQuery({
     queryKey: enabled
-      ? actividadesRecuperablesQueryKey(grupoId, asignaturaId)
-      : (["planeador", "actividad", "actividades-recuperables", "none"] as const),
+      ? planeadorKeys.actividad.recuperables(grupoId, asignaturaId)
+      : planeadorKeys.actividad.recuperables("none"),
     queryFn: () => fetchConfiguracionContexto(grupoId!, asignaturaId!, true, true),
     select: (campos) => campos?.recuperacion.actividadesRecuperables ?? [],
     enabled,

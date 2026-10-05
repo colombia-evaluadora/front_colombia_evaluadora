@@ -44,10 +44,17 @@ function CeldaPonderacion({
 }: {
   actividad: UnidadActividad
   unidadId: number
-  /** Tope real para esta fila: `100 - (suma de ponderación del RESTO de
-   *  actividades de la unidad)` — no un `100` fijo. Sin esto, subir el % de
-   *  una actividad hasta 100 mientras otras ya suman podía dejar la unidad
-   *  por encima del 100% total. */
+  /** Tope OPTIMISTA para esta fila: `100 - (suma de ponderación del RESTO
+   *  de actividades YA VINCULADAS A ESTA UNIDAD) `— no un `100` fijo, para
+   *  que subir el % de una actividad no deje a simple vista esta unidad por
+   *  encima del 100%. NO es el tope autoritativo: el backend (sso V223,
+   *  `tr_tactividad_ponderacion_unidad`) topa el 100% por (unidad, grupo),
+   *  y este clamp suma las actividades de TODOS los grupos de la unidad, así
+   *  que con varios grupos es más estricto que el real. Si el backend rechaza
+   *  un valor (23514), el error se muestra en el toast de `onError` más abajo.
+   *  El modal "Vincular actividad" (`DialogAgregarActividad`) sí usa el tope
+   *  real por fila (`porcentajeDisponible`, de
+   *  `fn_unidad_ponderacion_disponible`). */
   maxDisponible: number
 }) {
   const [editando, setEditando] = useState(false)
@@ -303,11 +310,13 @@ function BotonDesvincular({
  * evaluación— la columna "Instrumento" tampoco se muestra: quedaba siempre
  * vacía.
  * `totalPonderacion` es la suma de `ponderacion` de TODAS las actividades ya
- * vinculadas (la pasa el caller, que ya tiene la lista completa) — de ahí
- * sale el tope real de cada fila en modo Ponderado (`100 - totalPonderacion
- * + actividad.ponderacion`, sumando de vuelta lo que la fila YA aporta al
- * total). No aplica en Suma de puntos: el puntaje no tiene tope, el reparto
- * proporcional lo hace el backend.
+ * vinculadas A ESTA UNIDAD (la pasa el caller, que ya tiene esa lista) — de
+ * ahí sale el tope OPTIMISTA de cada fila en modo Ponderado (`100 -
+ * totalPonderacion + actividad.ponderacion`, sumando de vuelta lo que la
+ * fila YA aporta al total). Ojo: no es el tope real — el backend topa por
+ * (unidad, grupo) (sso V223); ver el comentario de `maxDisponible` en
+ * `CeldaPonderacion` más arriba. No aplica en Suma de puntos: el puntaje
+ * no tiene tope, el reparto proporcional lo hace el backend.
  */
 export function createUnidadActividadesColumns(
   unidadId: number,
@@ -343,8 +352,10 @@ export function createUnidadActividadesColumns(
             {
               id: "puntaje",
               accessorKey: "notaMaxima",
-              meta: { label: "Puntaje" },
-              header: ({ column }) => <DataTableColumnHeader column={column} title="Puntaje" />,
+              // "(Σ)" es el par de "(%)" de Ponderado: la reunión del 22-sep pidió
+              // el símbolo de sumatoria en la cabecera (min. 36:57).
+              meta: { label: "(Σ) Puntaje" },
+              header: ({ column }) => <DataTableColumnHeader column={column} title="(Σ)" />,
               cell: ({ row }) => <CeldaPuntaje actividad={row.original} unidadId={unidadId} />,
             },
           ]

@@ -2,8 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
-
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `PUT /planeador/actividades/:id/calificar-bulk/<tipo>` (confirmado real,
@@ -91,7 +90,7 @@ export function useCalificarBulkMutation({ mutationConfig }: UseCalificarBulkOpt
   return useMutation({
     mutationFn: calificarBulk,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       onSuccess?.(...args)
     },
     ...restConfig,

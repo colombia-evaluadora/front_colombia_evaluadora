@@ -149,6 +149,22 @@ export const asistenciaHandlers = [
     return HttpResponse.json(listarSolicitudes(new URL(request.url).searchParams.get("tipo")))
   }),
 
+  http.post("*/api/eval-col/aprobaciones/:accion", async ({ request, params }) => {
+    await delay(300)
+    const { IDS = [], MOTIVO } = ((await request.json().catch(() => ({}))) ?? {}) as { IDS?: number[]; MOTIVO?: string }
+    const aprobar = params.accion === "aprobar-masivo"
+    if (!aprobar && !MOTIVO?.trim()) {
+      return HttpResponse.json({ status: "error", message: "Indique el motivo del rechazo" }, { status: 400 })
+    }
+    const resueltas: number[] = []
+    const fallidas: { id: number; codigo: string; error: string }[] = []
+    for (const id of IDS) {
+      if (resolverSolicitud(id, aprobar)) resueltas.push(id)
+      else fallidas.push({ id, codigo: "22023", error: "La solicitud no existe o ya fue resuelta." })
+    }
+    return HttpResponse.json({ rows: [{ resultado: { resueltas, fallidas } }] })
+  }),
+
   http.post("*/api/eval-col/aprobaciones/:id/:decision", async ({ request, params }) => {
     await delay(250)
 

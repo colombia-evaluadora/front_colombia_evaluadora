@@ -6,6 +6,8 @@ import type {
   EvaluationPeriodsQueryFilters,
   EvaluationPeriodsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseEvaluationPeriodsQueryParams {
   filters: EvaluationPeriodsQueryFilters
@@ -96,23 +98,12 @@ async function fetchEvaluationPeriods(
     toListRequest(params)
   )
   const backendRows = raw.rows ?? []
-  const totalCount = backendRows[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return {
-    rows: backendRows.map(toEvaluationPeriod),
-    pageCount,
-    totalCount,
-  }
-}
-
-export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => {
-  const { enabled: _enabled, ...key } = params
-  return ["evaluation-periods", key]
+  return toPaginated(backendRows, { pageSize: params.pageSize, map: toEvaluationPeriod })
 }
 
 export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
-    queryKey: evaluationPeriodsQueryKey(params),
+    queryKey: academicPeriodKeys.evaluationPeriods.list(params),
     queryFn: () => fetchEvaluationPeriods(params),
     placeholderData: (previous) => previous,
     enabled: params.enabled ?? true,

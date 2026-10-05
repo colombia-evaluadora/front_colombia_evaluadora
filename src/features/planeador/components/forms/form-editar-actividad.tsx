@@ -75,7 +75,6 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   ComboboxField,
@@ -101,6 +100,7 @@ import {
   METODO_CALCULO_OPTIONS,
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
+  CheckCircleFillIcon,
   EyeIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
@@ -114,8 +114,13 @@ import {
   RemoveCircleOutlineIcon,
   SpinnerIcon,
   TrashIcon,
+  XCircleIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import {
+  esDominioPermitido,
+  useDominioMaterialCatalog,
+} from "@/features/planeador/api/query/use-dominio-material-catalog"
 
 import type {
   Actividad,
@@ -132,9 +137,8 @@ import type {
   Recurso,
 } from "@/features/planeador/api/types/actividad"
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import type { Estudiante } from "@/features/planeador/api/types/calificacion"
+import type { MatriculaGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
-import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
@@ -308,12 +312,6 @@ export function EditarActividadForm({
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
-  // Estudiantes del grupo de la actividad — mismo query que alimenta la
-  // vista de calificaciones. Se usa acá para el checklist "Seleccionar
-  // estudiantes (múltiple)" cuando una adaptación aplica a "Estudiantes
-  // específicos" (ver `AdaptacionItem`). `undefined` en el alta: ver la
-  // nota de `esNueva` en `EditarActividadFormProps`.
-  const { data: estudiantes = [] } = useCalificacionesQuery(esNueva ? undefined : actividad.id)
 
   // Unidades creadas al vuelo desde `CrearUnidadPopover`. `useCreateUnidad`
   // ya las persiste de verdad (`POST /planeador/unidades`), pero invalidar
@@ -444,6 +442,27 @@ export function EditarActividadForm({
   // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
   const disabled = !useHasGradoAsignatura(form)
+  // Padrón de matrículas del grupo de la actividad — mismo query que
+  // alimenta "Estudiantes de la {rótulo}" en `AsignaturaGradoSection`
+  // (`useActividadMatriculasGrupoQuery`, misma `queryKey` por `grupoId`:
+  // react-query dedupea, no duplica el pedido al backend). Se usa acá para
+  // el checklist "Seleccionar estudiantes (múltiple)" de cada adaptación
+  // (ver `AdaptacionItem`). ANTES este checklist salía de
+  // `useCalificacionesQuery(actividad.id)` (`GET
+  // /planeador/actividades/:id/calificaciones`), que (a) viene `undefined`
+  // en el alta —`esNueva`— porque esa actividad todavía no existe en el
+  // backend, dejando el checklist vacío al crear, y (b) devuelve
+  // `pk_tactividad_estudiante` como `id` (ver `Estudiante`/`CalificacionRow`
+  // en `use-calificaciones-query.ts`), NO `pk_tmatricula` — el validador
+  // `fn_actividad_validar_adaptacion_estudiantes` (V496.1) espera
+  // `pk_tmatricula` en `estudiantesIds`, así que marcar casillas con el id
+  // viejo siempre terminaba rechazado por el backend ("Uno de los
+  // estudiantes de la adaptación no está entre los estudiantes de..."),
+  // sin importar cuáles/cuántas se marcaran. `matriculas` no depende de la
+  // actividad ya guardada (solo de `grupoId`), así que está disponible
+  // desde el alta.
+  const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
+  const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
   // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
   // `DialogAgregarActividad`, `unidadId` de la URL en
@@ -483,11 +502,22 @@ export function EditarActividadForm({
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault()
+        // Se captura ACÁ, no dentro del `.then()`: con React 17+ el evento
+        // sintético no se "poolea", pero `e` igual puede no sobrevivir el
+        // ciclo de vida del handler en algún entorno — el nodo del form sí.
+        const formEl = e.currentTarget
         const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
         if (faltantes.length > 0) {
           notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
         }
-        form.handleSubmit()
+        // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
+        // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
+        // de campos con `validators` de TanStack como los de
+        // `useErrorObligatorio`) — si falló, se espera a que termine para
+        // recién ahí llevar la vista al primer campo marcado en rojo. Con un
+        // form de ~5000 líneas el aviso de arriba con la lista de nombres no
+        // alcanza para encontrar DÓNDE está el problema.
+        void form.handleSubmit().then(() => scrollToFirstInvalidField(formEl))
       }}
     >
       {/* Va primero, antes de "Identificación": es la única pregunta que
@@ -536,13 +566,16 @@ export function EditarActividadForm({
         </div>
       </Card>
       <UnidadSection form={form} unidades={unidades} />
-      <MaterialesSection form={form} disabled={disabled} />
-      <RecursosSection
-        form={form}
-        draftKey={draftKey}
-        disabled={disabled}
-        actividadId={actividad.id}
-      />
+      <Card className="gap-6 p-4">
+        <h3 className="text-base font-semibold">Recursos y Materiales</h3>
+        <MaterialesSection form={form} disabled={disabled} />
+        <RecursosSection
+          form={form}
+          draftKey={draftKey}
+          disabled={disabled}
+          actividadId={actividad.id}
+        />
+      </Card>
       <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
@@ -562,7 +595,7 @@ export function EditarActividadForm({
           Seguimiento sigue atado a `esFormativa` como antes: existe para
           hacerle ajustes a una evaluación sumativa, y su propio gate
           interno (`hasAdaptaciones`) ya decide si se muestra. */}
-      <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} actividadId={actividad.id} />
+      <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
   )
@@ -591,6 +624,46 @@ function camposObligatoriosFaltantes(
     faltantes.push("Instrumento de evaluación")
   }
   return faltantes
+}
+
+/**
+ * Tras un intento de guardar fallido, lleva la vista (y el foco) al primer
+ * campo marcado inválido DENTRO de este form — nunca a otro elemento
+ * `data-invalid`/`aria-invalid` que pueda haber en el resto de la pantalla
+ * (un diálogo abierto, por ejemplo). Con un form de ~5000 líneas, el aviso
+ * de arriba con la lista de nombres de campos (`camposObligatoriosFaltantes`)
+ * no alcanza para encontrar DÓNDE está el problema.
+ *
+ * `submissionAttempts` es el valor que leen TODOS los `isInvalid` de este
+ * form (tanto los campos con `validators` de TanStack —rúbrica, lista de
+ * cotejo, instrumento personalizado…— como los que usan
+ * `useErrorObligatorio` —nombre, tipo, fechas…—) para decidir si pintan
+ * `data-invalid`/`aria-invalid`, y lo sube `form.handleSubmit()` de forma
+ * asíncrona. Buscar en el DOM apenas se llama a `handleSubmit()` (sin
+ * esperar) encuentra el estado ANTERIOR (nada marcado todavía, o lo
+ * marcado en un intento previo) — hay que esperar a que la promesa
+ * resuelva y, encima, a que React haya pintado el re-render que ese
+ * cambio de estado dispara. Un solo `requestAnimationFrame` alcanzaría casi
+ * siempre, pero se usa uno doble (uno para que React procese el commit,
+ * otro para que el navegador ya haya hecho el layout) para no depender de
+ * en qué punto exacto del ciclo de eventos cae el cambio de estado.
+ */
+function scrollToFirstInvalidField(formEl: HTMLFormElement) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const invalido = formEl.querySelector<HTMLElement>('[data-invalid="true"], [aria-invalid="true"]')
+      if (!invalido) return
+      invalido.scrollIntoView({ behavior: "smooth", block: "center" })
+      // Si el elemento marcado no es en sí mismo enfocable (ej. el `<Field>`
+      // contenedor, que es donde vive `data-invalid`, no el `<input>`/
+      // `<Select>` de adentro), se enfoca el primer control enfocable que
+      // tenga dentro.
+      const foco = invalido.matches("input, select, textarea, button, [tabindex]")
+        ? invalido
+        : invalido.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]")
+      foco?.focus({ preventScroll: true })
+    })
+  })
 }
 
 /** Error inline de "obligatorio" tras un intento de guardar. */
@@ -1975,9 +2048,17 @@ function AsignaturaGradoSection({
   )
 }
 
+/**
+ * "Materiales requeridos" — mitad del Bloque 3 ("Recursos y Materiales");
+ * la otra mitad es `RecursosSection` ("Materiales de apoyo"), que va justo
+ * después en el render. Antes esta sección no tenía título propio: sin un
+ * `<h3>` que la separe, un `Card` en blanco pegado a "Identificación" se
+ * leía como si siguiera siendo parte de ese bloque (pedido de QA).
+ */
 function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
-    <Card className="gap-4 p-4">
+    <div className="flex flex-col gap-4">
+      <h4 className="text-sm font-semibold">Materiales requeridos</h4>
       <form.Field name="materiales">
         {(field) => (
           <Field variant="outlined">
@@ -1993,10 +2074,11 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               rows={4}
               disabled={disabled}
             />
+            <CharacterCounter value={field.state.value} max={500} />
           </Field>
         )}
       </form.Field>
-    </Card>
+    </div>
   )
 }
 
@@ -2022,6 +2104,53 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
+/** Regla 82: tope de "Materiales de apoyo" por actividad. */
+const RECURSO_MAX_ITEMS = 10
+
+/**
+ * Formatos permitidos en "Archivo en PC" (Regla 82) — los ejecutables
+ * (.exe/.bat/.sh) quedan prohibidos por no estar en esta lista, no por un
+ * chequeo aparte. A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía del
+ * picker, pensada solo para lo que `recurso-preview.tsx` sabe mostrar:
+ * imagen/audio/video/pdf), acá SÍ se valida en el cliente: pedido explícito
+ * de QA, mismo criterio que el archivo de plantilla de Adaptaciones.
+ */
+const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+  "jpg", "jpeg", "png", "gif", "mp3", "mp4", "webm", "txt",
+]
+const RECURSO_ARCHIVO_ACCEPT_VALIDADO = RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.map((ext) => `.${ext}`).join(",")
+const RECURSO_ARCHIVO_MAX_BYTES = 20 * 1024 * 1024
+
+/** `javascript:`/`data:` no son un dominio a rechazar por lista blanca —son
+ *  un ESQUEMA a rechazar siempre, antes de siquiera mirar el host. */
+const ESQUEMAS_URL_PELIGROSOS = ["javascript:", "data:"]
+
+function extensionDe(nombre: string): string {
+  return nombre.split(".").pop()?.toLowerCase() ?? ""
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B"
+  const unidades = ["B", "KB", "MB", "GB"]
+  const indice = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), unidades.length - 1)
+  return `${(bytes / 1024 ** indice).toFixed(indice === 0 ? 0 : 1)} ${unidades[indice]}`
+}
+
+/** `esquemaPeligroso` se chequea ANTES: `new URL("javascript:...")` no tira
+ *  (es sintácticamente válida), así que sin este chequeo explícito pasaba
+ *  derecho el resto de la validación. */
+function esUrlDeRecursoValida(value: string): boolean {
+  const lower = value.trim().toLowerCase()
+  if (ESQUEMAS_URL_PELIGROSOS.some((esquema) => lower.startsWith(esquema))) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 function RecursosSection({
   form,
   draftKey,
@@ -2039,6 +2168,29 @@ function RecursosSection({
   // resolver el alcance del usuario mientras la actividad no existe (al
   // crear); editando manda la actividad y esto queda de respaldo.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // Regla 82: máximo 10 materiales de apoyo por actividad — tope del
+  // backend (`fn_actividad_validar_materiales`), repetido acá para avisar
+  // antes de llegar al guardado.
+  const recursosCount = useSelector(
+    form.store,
+    (state) => (state.values.recursos as Recurso[]).length,
+  )
+  const limiteAlcanzado = recursosCount >= RECURSO_MAX_ITEMS
+
+  // Mismo catálogo que valida `fn_actividad_validar_url_dominio` al
+  // guardar (Regla 82) — se consulta acá para avisar en el cliente apenas
+  // se tipea el enlace. `undefined` mientras no resuelve: no bloquea (el
+  // guardado real sigue cayendo en la validación del backend).
+  const { data: dominiosUrl } = useDominioMaterialCatalog("DOMINIO_MATERIAL_URL")
+  const { data: dominiosRepositorio } = useDominioMaterialCatalog("DOMINIO_MATERIAL_REPOSITORIO")
+
+  function draftUrlInvalida(d: RecursoDraft): boolean {
+    if (d.tipo === "Archivo" || !d.url.trim()) return false
+    if (!esUrlDeRecursoValida(d.url)) return true
+    const dominios = d.tipo === "Unidad virtual" ? dominiosRepositorio : dominiosUrl
+    if (!dominios) return false
+    return !esDominioPermitido(d.url, dominios)
+  }
 
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
@@ -2063,7 +2215,9 @@ function RecursosSection({
     // aporta nada en la lista de "Recursos agregados" (se vería como
     // una línea vacía con un tag).
     if (!draft.url.trim() && !draft.fuente.trim()) return
+    if (draftUrlInvalida(draft)) return
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [
       ...list,
       { id: cryptoId(), ...draft },
@@ -2079,13 +2233,14 @@ function RecursosSection({
   // recursos podrían colisionar en el `<ul>` (la key es el id).
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
+    if (list.length >= RECURSO_MAX_ITEMS) return
     form.setFieldValue("recursos", [...list, { id: cryptoId(), ...recurso }])
   }
 
   return (
-    <Card className="gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Materiales de apoyo (agrega varios recursos)</h3>
+        <h4 className="text-sm font-semibold">Materiales de apoyo (agrega varios recursos)</h4>
         <div className="flex gap-2">
           {/* Biblioteca: abre el modal de "galería de recursos del docente"
               — todos los recursos que el usuario ha subido en sus
@@ -2109,7 +2264,7 @@ function RecursosSection({
                   // la actividad al editar, el grupo al crear (V429). Sin
                   // ninguna de las dos el backend responde 400, así que el
                   // botón espera a que se elija el grupo.
-                  disabled={disabled || (actividadId <= 0 && !grupoId)}
+                  disabled={disabled || limiteAlcanzado || (actividadId <= 0 && !grupoId)}
                 />
               }
             >
@@ -2168,18 +2323,26 @@ function RecursosSection({
               tipeado se perdía en silencio. `handleAddDraft` ya no hace
               nada si el borrador está vacío, así que no agrega filas
               fantasma solo por tabular de un campo a otro. */}
-          <div
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
-            }}
-          >
-            <RecursoForm
-              draft={draft}
-              onChange={updateDraft}
-              onAdd={handleAddDraft}
-              disabled={disabled}
-            />
-          </div>
+          {limiteAlcanzado ? (
+            <p className="text-muted-foreground text-sm">
+              Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
+              alguno de la lista para agregar otro.
+            </p>
+          ) : (
+            <div
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) handleAddDraft()
+              }}
+            >
+              <RecursoForm
+                draft={draft}
+                onChange={updateDraft}
+                onAdd={handleAddDraft}
+                urlInvalida={draftUrlInvalida(draft)}
+                disabled={disabled}
+              />
+            </div>
+          )}
 
           <form.Field name="recursos">
             {(field) => {
@@ -2240,7 +2403,7 @@ function RecursosSection({
           />
         )}
       </form.Subscribe>
-    </Card>
+    </div>
   )
 }
 
@@ -2258,13 +2421,29 @@ function RecursoForm({
   draft,
   onChange,
   onAdd,
+  urlInvalida,
   disabled,
 }: {
   draft: RecursoDraft
   onChange: (patch: Partial<RecursoDraft>) => void
   onAdd: () => void
+  /** Calculado por el padre (`RecursosSection`): formato de URL + dominio
+   *  permitido, según `draft.tipo` (ver `draftUrlInvalida`). `false`
+   *  mientras `draft.url` está vacío — recién se marca inválido con algo
+   *  tipeado que no pasa la validación. */
+  urlInvalida: boolean
   disabled: boolean
 }) {
+  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
+  // `draft`, así que no alcanza con derivarlo de ahí.
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
+  // Tamaño del archivo recién elegido, solo para el preview "nombre · peso"
+  // de abajo — `Recurso`/`RecursoDraft` no guardan el tamaño (no viaja al
+  // backend), así que vive aparte, nunca en el draft commiteado.
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState<{ nombre: string; size: number } | null>(
+    null,
+  )
+
   const FuenteIcon =
     draft.tipo === "Unidad virtual"
       ? ImageIcon
@@ -2292,12 +2471,26 @@ function RecursoForm({
         <h4 className="text-sm font-semibold">Recurso - Fuente</h4>
       </div>
 
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Nombre</FieldLabel>
+        <Input
+          maxLength={100}
+          placeholder="Nombre con el que se identifica este recurso…"
+          value={draft.titulo}
+          onChange={(e) => onChange({ titulo: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={draft.titulo} max={100} />
+      </Field>
+
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr]">
         <Field variant="outlined">
           <FieldLabel>Tipo</FieldLabel>
           <Select
             value={draft.tipo}
-            onValueChange={(v) =>
+            onValueChange={(v) => {
+              setErrorArchivo(null)
+              setArchivoSeleccionado(null)
               onChange({
                 tipo: (v ?? "URL") as Recurso["tipo"],
                 // Al pasar a "Archivo" la URL previa pierde sentido (el
@@ -2307,7 +2500,7 @@ function RecursoForm({
                 // ya tipeó.
                 url: v === "Archivo" ? "" : draft.url,
               })
-            }
+            }}
             disabled={disabled}
           >
             <SelectTrigger>
@@ -2357,10 +2550,11 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
-              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
-              // no validación: el `accept` se puede esquivar y quien decide
-              // de verdad es `file-service`.
-              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
+              // A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía de
+              // "Adjuntar desde biblioteca"/preview, que no valida nada),
+              // acá el `accept` SÍ va acompañado del chequeo real en
+              // `onChange` — pedido explícito de QA (Regla 82).
+              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT_VALIDADO } : {})}
               placeholder={fuentePlaceholder}
               maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
@@ -2386,15 +2580,36 @@ function RecursoForm({
                     URL.revokeObjectURL(draft.url)
                   }
                   if (!file) {
+                    setErrorArchivo(null)
+                    setArchivoSeleccionado(null)
                     onChange({ url: "", fuente: "" })
                     return
                   }
+                  const extension = extensionDe(file.name)
+                  if (!RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.includes(extension)) {
+                    setErrorArchivo(
+                      `Formato ".${extension || "desconocido"}" no permitido. Usá: ${RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.join(", ")}.`,
+                    )
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  if (file.size > RECURSO_ARCHIVO_MAX_BYTES) {
+                    setErrorArchivo("El archivo supera el tamaño máximo permitido (20 MB).")
+                    setArchivoSeleccionado(null)
+                    onChange({ url: "", fuente: "" })
+                    e.target.value = ""
+                    return
+                  }
+                  setErrorArchivo(null)
+                  setArchivoSeleccionado({ nombre: file.name, size: file.size })
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se 
-                  // lo pasa al resolver, que lo usa como fallback para 
-                  // detectar la extensión — los blob URLs no tienen 
-                  // extensión en el path y no queríamos meterla en el 
-                  // hash (algunos parsers se confunden con el `#`). 
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -2404,9 +2619,35 @@ function RecursoForm({
                 }
               }}
               className={FuenteIcon ? "pl-9" : undefined}
+              aria-invalid={Boolean(errorArchivo) || urlInvalida}
               disabled={disabled}
             />
           </div>
+          {/* Preview "nombre · peso" + ícono de estado antes de confirmar
+              la carga (pedido explícito de QA) — éxito en verde si pasó
+              las validaciones de arriba, error en rojo si no. */}
+          {draft.tipo === "Archivo" && archivoSeleccionado && !errorArchivo && (
+            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <CheckCircleFillIcon className="text-green size-3.5 shrink-0" />
+              {archivoSeleccionado.nombre} · {formatBytes(archivoSeleccionado.size)}
+            </p>
+          )}
+          {errorArchivo && (
+            <p className="text-red flex items-center gap-1.5 text-xs">
+              <XCircleIcon className="size-3.5 shrink-0" />
+              {errorArchivo}
+            </p>
+          )}
+          {draft.tipo !== "Archivo" && urlInvalida && (
+            <FieldError
+              errors={[
+                {
+                  message:
+                    "El enlace no es una URL válida o su dominio no está en la lista de sitios admitidos.",
+                },
+              ]}
+            />
+          )}
         </Field>
       </div>
 
@@ -2436,7 +2677,7 @@ function RecursoForm({
             size="sm"
             type="button"
             onClick={onAdd}
-            disabled={disabled}
+            disabled={disabled || Boolean(errorArchivo) || urlInvalida}
           >
             <PlusIcon data-icon="inline-start" />
             {/* NO "Guardar" — este botón no guarda la actividad, solo
@@ -2682,6 +2923,15 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
     ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
     : null
 
+  // Cuántos dígitos hacen falta para poder tipear el `max` real de
+  // "Duración estimada" (p. ej. 1200 → 4), no un "hasta 999" fijo. Sin
+  // `max` todavía resuelto, 3 dígitos como piso conservador (no corta de
+  // más mientras carga, y es el mínimo razonable para minutos).
+  const duracionEstimadaMaxDigitos = Math.max(
+    String(programacion?.duracionEstimada.max ?? 999).length,
+    3,
+  )
+
   return (
     <Card className="gap-4 p-4">
       <div>
@@ -2794,16 +3044,22 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad mezclada en
-                  el valor, a lo sumo 3 (hasta 999) y sin `0`
-                  (`toPositiveDigitsInput`): "0 minutos" no es una duración
-                  válida. */}
+                  el valor, y sin `0` (`toPositiveDigitsInput`): "0 minutos"
+                  no es una duración válida.
+                  El tope de dígitos sale del `max` real que manda el
+                  backend (`programacion.duracionEstimada.max`), no de un
+                  "hasta 999" fijo: antes el `3` hardcodeado le ganaba al
+                  `max` de verdad (p. ej. 1200, 4 dígitos) y el docente no
+                  podía ni terminar de tipear un valor válido. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
-                maxLength={3}
+                maxLength={duracionEstimadaMaxDigitos}
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                onChange={(e) =>
+                  field.handleChange(toPositiveDigitsInput(e.target.value, duracionEstimadaMaxDigitos))
+                }
                 // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
                 // picker), acá no hay forma de impedir tipear un número fuera
                 // de rango mientras se escribe sin trabar al usuario a mitad
@@ -2904,7 +3160,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   <SelectItem value="__none__">Seleccione</SelectItem>
                   <SelectItem value="Presencial">Presencial</SelectItem>
                   <SelectItem value="Virtual">Virtual</SelectItem>
-                  <SelectItem value="Mixta">Mixta</SelectItem>
+                  <SelectItem value="Híbrida">Híbrida</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -3338,7 +3594,7 @@ function InstrumentoEvaluacionSection({
         // sección de Criterios sin que el docente hubiera elegido nada en
         // "Instrumento de evaluación".
         !instrumento ? null : instrumento === "Lista de cotejo" ? (
-          <ListaCotejoSection form={form} disabled={disabled} />
+          <ListaCotejoSection form={form} unidades={unidades} disabled={disabled} />
         ) : instrumento === "Escala de valoración" ? (
           <EscalaValoracionSection
             form={form}
@@ -3358,7 +3614,7 @@ function InstrumentoEvaluacionSection({
             disabled={disabled}
           />
         ) : (
-          <RubricasSection form={form} disabled={disabled} />
+          <RubricasSection form={form} unidades={unidades} disabled={disabled} />
         )
       }
     </form.Subscribe>
@@ -3373,7 +3629,30 @@ function InstrumentoEvaluacionSection({
  * `esEvaluativa`). Estructura paralela a `RubricasSection`: mismo header
  * con botón "+" para agregar, mismo empty state.
  */
-function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function ListaCotejoSection({
+  form,
+  unidades,
+  disabled,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  disabled: boolean
+}) {
+  // Mismo fallback que `RubricasSection`: tras un intento de guardar, los
+  // ítems marcan en rojo sus campos obligatorios aunque el usuario nunca
+  // los haya tocado (`fn_actividad_validar_cotejo_definicion`, sso V496.5).
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
+  // elemento solo es obligatorio si la Unidad vinculada en el Bloque 1
+  // calcula su definitiva por Ponderado o Suma de puntos. Promedio simple,
+  // o la actividad sin unidad (`unidad.id === 0`, no matchea ningún id real
+  // de `unidades`), lo dejan opcional — mismo patrón de `unidadActual` que
+  // `EscalaValoracionSection`. Esto es independiente de `esEvaluativa`: ese
+  // flag decide si el campo de puntaje SE MUESTRA, este decide si además,
+  // mostrándose, es obligatorio.
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
+  const unidadActual = unidades.find((u) => u.id === unidadId)
+  const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -3408,11 +3687,32 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
           de lista de cotejo solo pondera si la actividad es sumativa. */}
       <form.Subscribe selector={(state) => state.values.esEvaluativa}>
         {(esEvaluativa) => (
-          <form.Field name="listaCotejo">
+          <form.Field
+            name="listaCotejo"
+            validators={{
+              onChange: ({ value }) => {
+                const listaCotejo = value as ListaCotejo
+                return listaCotejo.items.length === 0
+                  ? { message: "Agrega al menos un ítem de la lista de cotejo." }
+                  : undefined
+              },
+            }}
+          >
             {(field) => {
               const listaCotejo = field.state.value as ListaCotejo
+              const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
               if (listaCotejo.items.length === 0) {
-                return null
+                return (
+                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid}>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        Agrega al menos un ítem con el botón de arriba.
+                      </p>
+                    )}
+                  </div>
+                )
               }
               const totalPosible = listaCotejo.items.reduce(
                 (acc, it) => acc + (Number.isFinite(it.ponderacion) ? (it.ponderacion as number) : 0),
@@ -3427,7 +3727,9 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       item={item}
                       index={index}
                       esEvaluativa={esEvaluativa}
+                      puntajeObligatorio={puntajeObligatorio}
                       disabled={disabled}
+                      submissionAttempts={submissionAttempts}
                       onChange={(next) => {
                         const current = field.state.value as ListaCotejo
                         const nextItems = current.items.slice()
@@ -3451,6 +3753,31 @@ function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled:
                       </Field>
                     </div>
                   )}
+                  {/* Mismo botón del header, repetido al pie de la grilla:
+                      con varios ítems largos cargados, el botón de arriba
+                      queda fuera de la vista y hay que scrollear hasta el
+                      inicio de la sección para agregar uno más (QA Bloque 5,
+                      criterio de aceptación #3). Mismo patrón que "Agregar
+                      nivel" dentro de cada criterio de rúbrica, que ya vive
+                      al final de su propio bloque. */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      color="neutral"
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        const current = field.state.value as ListaCotejo
+                        field.handleChange({
+                          ...current,
+                          items: [...current.items, { id: cryptoId(), descripcion: "" }],
+                        })
+                      }}
+                    >
+                      <PlusCircleIcon data-icon="inline-start" />
+                      Agregar ítem
+                    </Button>
+                  </div>
                 </>
               )
             }}
@@ -3472,17 +3799,47 @@ function ListaCotejoItemCard({
   item,
   index,
   esEvaluativa,
+  puntajeObligatorio,
   disabled,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
   item: ListaCotejoItem
   index: number
   esEvaluativa: boolean
+  /**
+   * `fn_actividad_validar_cotejo_definicion` (sso V496.5) exige una
+   * descripción no vacía por elemento. El puntaje es obligatorio SOLO si la
+   * Unidad vinculada a la actividad calcula su definitiva por Ponderado o
+   * Suma de puntos (`puntajeObligatorio`, resuelto por `ListaCotejoSection`
+   * con el mismo `unidadActual` que `EscalaValoracionSection`); con
+   * Promedio simple, o sin unidad vinculada, un elemento sin puntaje pesa 1
+   * (`buildListaCotejoDefinicion`/el comentario de la función SQL) y solo
+   * se valida su rango si se carga. En ambos casos, si hay valor, debe
+   * quedar entre 0 y 100.
+   */
+  puntajeObligatorio: boolean
   disabled: boolean
+  /**
+   * Mismo mecanismo de "tocado" local + fallback por intento de guardar que
+   * `CriterioItem`, pasado desde `ListaCotejoSection` (este componente
+   * tampoco recibe el `form`).
+   */
+  submissionAttempts: number
   onChange: (next: ListaCotejoItem) => void
   onRemove: () => void
 }) {
+  const [tocoDescripcion, setTocoDescripcion] = useState(false)
+  const [tocoPonderacion, setTocoPonderacion] = useState(false)
+
+  const descripcionInvalida = (tocoDescripcion || submissionAttempts > 0) && !item.descripcion.trim()
+  const tocoOIntento = tocoPonderacion || submissionAttempts > 0
+  const ponderacionAusente = puntajeObligatorio && tocoOIntento && item.ponderacion == null
+  const ponderacionFueraDeRango =
+    tocoOIntento && item.ponderacion != null && (item.ponderacion < 0 || item.ponderacion > 100)
+  const ponderacionInvalida = ponderacionAusente || ponderacionFueraDeRango
+
   return (
     <div className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
@@ -3515,7 +3872,7 @@ function ListaCotejoItemCard({
           el campo de ponderación no se monta —no queda un hueco vacío
           al lado del textarea. */}
       <div className="mt-3 flex items-start gap-3">
-        <Field variant="outlined" className="min-w-0 flex-1">
+        <Field variant="outlined" className="min-w-0 flex-1" data-invalid={descripcionInvalida}>
           <FieldLabel htmlFor={`${item.id}-descripcion`}>Descripción del elemento</FieldLabel>
           <Textarea
             id={`${item.id}-descripcion`}
@@ -3524,12 +3881,15 @@ function ListaCotejoItemCard({
             maxLength={500}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
+            onBlur={() => setTocoDescripcion(true)}
+            aria-invalid={descripcionInvalida}
             disabled={disabled}
           />
+          {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
 
         {esEvaluativa && (
-          <Field variant="outlined" className="w-44 shrink-0">
+          <Field variant="outlined" className="w-44 shrink-0" data-invalid={ponderacionInvalida}>
             <FieldLabel htmlFor={`${item.id}-ponderacion`}>Puntaje del elemento</FieldLabel>
             <Input
               id={`${item.id}-ponderacion`}
@@ -3543,8 +3903,15 @@ function ListaCotejoItemCard({
                 // "fantasma" mientras el usuario borra para reescribir.
                 onChange({ ...item, ponderacion: raw === "" ? undefined : Number(raw) })
               }}
+              onBlur={() => setTocoPonderacion(true)}
+              aria-invalid={ponderacionInvalida}
               disabled={disabled}
             />
+            {ponderacionInvalida && (
+              <FieldError
+                errors={ponderacionAusente ? ERROR_OBLIGATORIO : [{ message: "El puntaje debe estar entre 0 y 100." }]}
+              />
+            )}
           </Field>
         )}
       </div>
@@ -3572,13 +3939,24 @@ function ListaCotejoItemCard({
  * se siembran los 3 niveles por defecto —Bajo/Medio/Alto— de una: el
  * usuario ve algo que completar en vez de una lista vacía + un paso
  * extra para crear cada nivel. El botón "+" del header agrega más
- * niveles después de esos tres, tomando el siguiente nombre de
- * `NIVELES_CUALITATIVOS_DEFAULT` o cayendo a "Nivel N".
+ * niveles después de esos tres, tomando el primero de
+ * `NIVELES_CUALITATIVOS_DEFAULT` que todavía no esté en uso, o cayendo a
+ * "Nivel N".
  */
 const NIVELES_CUALITATIVOS_DEFAULT = ["Bajo", "Medio", "Alto"]
 
-function nextNivelCualitativoNombre(existingCount: number): string {
-  return NIVELES_CUALITATIVOS_DEFAULT[existingCount] ?? `Nivel ${existingCount + 1}`
+/**
+ * Elige el default por NOMBRE YA USADO, no por posición/cantidad: antes
+ * indexaba `NIVELES_CUALITATIVOS_DEFAULT` por `niveles.length`, así que
+ * borrar un nivel de en medio (p. ej. "Medio", `removeNivel`) y agregar
+ * uno nuevo volvía a calcular el mismo índice que un nivel YA presente
+ * ("Alto") — quedaban dos niveles con el mismo nombre en vez de avanzar
+ * al siguiente default disponible.
+ */
+function nextNivelCualitativoNombre(nivelesActuales: { nombre: string }[]): string {
+  const nombresUsados = new Set(nivelesActuales.map((nivel) => nivel.nombre))
+  const siguienteDefault = NIVELES_CUALITATIVOS_DEFAULT.find((nombre) => !nombresUsados.has(nombre))
+  return siguienteDefault ?? `Nivel ${nivelesActuales.length + 1}`
 }
 
 /**
@@ -3842,7 +4220,7 @@ function EscalaValoracionSection({
                                   ...escala.niveles,
                                   {
                                     id: cryptoId(),
-                                    nombre: nextNivelCualitativoNombre(escala.niveles.length),
+                                    nombre: nextNivelCualitativoNombre(escala.niveles),
                                     descripcion: "",
                                   },
                                 ],
@@ -3999,6 +4377,14 @@ function InstrumentoPersonalizadoSection({
   camposOtro: InstrumentoPermitidoCampos | null
   disabled: boolean
 }) {
+  // Mismo fallback que `RubricasSection`/`ListaCotejoSection`: tras un
+  // intento de guardar, "Tipo de evidencia esperada"/"Método de valoración"
+  // marcan en rojo aunque el docente nunca los haya tocado
+  // (`fn_actividad_validar_otro_definicion`, sso V496.5 — ambos son los
+  // únicos dos campos que ese validador exige para "Otro (personalizado)",
+  // antes de delegar en el validador del método elegido). Sin esto se podía
+  // guardar la actividad con el instrumento "Otro" completamente vacío.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const tipoEvidenciaCatalogo =
     camposOtro?.tipoEvidencia.catalogo && camposOtro.tipoEvidencia.catalogo.length > 0
       ? camposOtro.tipoEvidencia.catalogo
@@ -4007,29 +4393,63 @@ function InstrumentoPersonalizadoSection({
     camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
       ? camposOtro.metodoValoracion.catalogo
       : METODO_VALORACION_CATALOGO_DEFAULT
-  // Regla 41: tope fijo de 200, no un piso genérico — antes caía a 4000
-  // mientras `camposOtro` no resolvía (foto vieja, endpoint viejo) y dejaba
-  // escribir mucho más de lo que el backend acepta.
-  const descripcionMaxLength = camposOtro?.descripcionInstrumento.maxLength ?? 200
+  // Regla 41: tope de 200. El endpoint de campos permitidos reporta 4000
+  // para este campo, así que se acota con `min` en vez de confiar en él.
+  const descripcionMaxLength = Math.min(camposOtro?.descripcionInstrumento.maxLength ?? 200, 200)
 
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición del instrumento personalizado</h3>
 
-      <form.Field name="instrumentoPersonalizado">
+      <form.Field
+        name="instrumentoPersonalizado"
+        validators={{
+          onChange: ({ value }) => {
+            const v = value as InstrumentoPersonalizado
+            // Mismo orden que el validador real: primero exige tipo de
+            // evidencia, después método de valoración.
+            if (!v.tipoEvidenciaEsperada) {
+              return { message: "Indique el tipo de evidencia esperada." }
+            }
+            if (!v.metodoValoracion) {
+              return { message: "Indique el método de valoración." }
+            }
+            return undefined
+          },
+        }}
+      >
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
+          // Opción de entrega que dicta el tipo de evidencia: ESA casilla
+          // queda siempre marcada y deshabilitada (Regla 41 — "la casilla
+          // activada queda siempre marcada"); la OTRA queda libre para que
+          // el docente la sume además si lo desea.
+          const entregaPorTipo = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[value.tipoEvidenciaEsperada]
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
           }
+          // El validador de arriba es uno solo para todo el objeto (no hay
+          // forma de atar un error de TanStack Form a un sub-campo
+          // puntual), así que acá se recalcula cuál de los dos selects está
+          // vacío para marcar solo ESE en rojo — igual que
+          // `tipoEvidenciaEsperada`/`metodoValoracion` son los únicos dos
+          // campos obligatorios de "Otro" (los tres builders que cuelgan de
+          // `metodoValoracion`, Rúbrica/Lista de cotejo/Escala, ya traen su
+          // propia validación al reusar los campos `rubrica`/`listaCotejo`/
+          // `escalaValoracion`).
+          const tocado = field.state.meta.isTouched || submissionAttempts > 0
+          const tipoEvidenciaInvalido = tocado && !value.tipoEvidenciaEsperada
+          const metodoValoracionInvalido = tocado && !value.metodoValoracion
           return (
             <>
               <Field variant="outlined">
                 <FieldLabel htmlFor="instrumentoPersonalizado-descripcion">
                   Descripción del instrumento
                 </FieldLabel>
-                <Input
+                <Textarea
                   id="instrumentoPersonalizado-descripcion"
+                  className={TEXTAREA_OUTLINED}
+                  rows={3}
                   placeholder="Agregar descripción breve"
                   maxLength={descripcionMaxLength}
                   value={value.descripcion}
@@ -4040,24 +4460,30 @@ function InstrumentoPersonalizadoSection({
               </Field>
 
               <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                <Field variant="outlined">
+                <Field variant="outlined" data-invalid={tipoEvidenciaInvalido}>
                   <FieldLabel htmlFor="instrumentoPersonalizado-tipo-evidencia">
-                    Tipo de evidencia esperada
+                    Tipo de evidencia esperada *
                   </FieldLabel>
                   <Select
                     value={value.tipoEvidenciaEsperada}
                     onValueChange={(v) => {
                       if (!v) return
                       const defecto = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[v]
+                      // Reinicia ambos: cada tipo habilita una sola opción de
+                      // entrega y la otra queda apagada y deshabilitada.
                       patch({
                         tipoEvidenciaEsperada: v,
-                        ...(defecto === "archivo" ? { requiereArchivo: true } : {}),
-                        ...(defecto === "texto" ? { requiereRespuestaTexto: true } : {}),
+                        ...(defecto
+                          ? {
+                              requiereArchivo: defecto === "archivo",
+                              requiereRespuestaTexto: defecto === "texto",
+                            }
+                          : {}),
                       })
                     }}
                     disabled={disabled}
                   >
-                    <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
+                    <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia" aria-invalid={tipoEvidenciaInvalido}>
                       <SelectValue placeholder="Seleccione">
                         {(v) =>
                           // `??` no sirve acá: sin selección `v` llega como
@@ -4075,11 +4501,12 @@ function InstrumentoPersonalizadoSection({
                       ))}
                     </SelectContent>
                   </Select>
+                  {tipoEvidenciaInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                 </Field>
 
-                <Field variant="outlined">
+                <Field variant="outlined" data-invalid={metodoValoracionInvalido}>
                   <FieldLabel htmlFor="instrumentoPersonalizado-metodo-valoracion">
-                    Método de valoración
+                    Método de valoración *
                   </FieldLabel>
                   <Select
                     value={value.metodoValoracion}
@@ -4091,7 +4518,10 @@ function InstrumentoPersonalizadoSection({
                     }
                     disabled={disabled}
                   >
-                    <SelectTrigger id="instrumentoPersonalizado-metodo-valoracion">
+                    <SelectTrigger
+                      id="instrumentoPersonalizado-metodo-valoracion"
+                      aria-invalid={metodoValoracionInvalido}
+                    >
                       <SelectValue placeholder="Seleccione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -4102,6 +4532,7 @@ function InstrumentoPersonalizadoSection({
                       ))}
                     </SelectContent>
                   </Select>
+                  {metodoValoracionInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                 </Field>
               </div>
 
@@ -4110,9 +4541,9 @@ function InstrumentoPersonalizadoSection({
                   (misma sección/mismos datos que si fuera el `instrumento`
                   de arriba), antes de las preguntas de entrega. */}
               {value.metodoValoracion === "Rúbrica" ? (
-                <RubricasSection form={form} disabled={disabled} />
+                <RubricasSection form={form} unidades={unidades} disabled={disabled} />
               ) : value.metodoValoracion === "Lista de cotejo" ? (
-                <ListaCotejoSection form={form} disabled={disabled} />
+                <ListaCotejoSection form={form} unidades={unidades} disabled={disabled} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
                 <EscalaValoracionSection
                   form={form}
@@ -4127,17 +4558,17 @@ function InstrumentoPersonalizadoSection({
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereArchivo}
+                      checked={entregaPorTipo === "archivo" || value.requiereArchivo}
                       onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "archivo"}
                     />
                     El estudiante debe adjuntar un archivo
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox
-                      checked={value.requiereRespuestaTexto}
+                      checked={entregaPorTipo === "texto" || value.requiereRespuestaTexto}
                       onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
-                      disabled={disabled}
+                      disabled={disabled || entregaPorTipo === "texto"}
                     />
                     El estudiante debe escribir una respuesta (texto)
                   </label>
@@ -4151,7 +4582,15 @@ function InstrumentoPersonalizadoSection({
   )
 }
 
-function RubricasSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function RubricasSection({
+  form,
+  unidades,
+  disabled,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  disabled: boolean
+}) {
   // Se llega a esta sección solo cuando el instrumento elegido exige una
   // rúbrica (ver `InstrumentoEvaluacionSection`: cualquier valor que no sea
   // "Lista de cotejo"/"Escala de valoración"/"Otro" cae acá), así que al
@@ -4161,6 +4600,14 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
   // Mismo patrón que `fechaInicio`/`fechaCierre` más arriba: el error solo
   // se marca tras tocar el campo o tras un intento de guardar.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
+  // nivel solo es obligatorio si la Unidad vinculada en el Bloque 1 calcula
+  // su definitiva por Ponderado o Suma de puntos. Promedio simple, o la
+  // actividad sin unidad, lo dejan opcional (pesa 1) — mismo `unidadActual`
+  // que `EscalaValoracionSection`/`ListaCotejoSection`.
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
+  const unidadActual = unidades.find((u) => u.id === unidadId)
+  const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -4184,7 +4631,7 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                     ...rubrica,
                     criterios: [
                       ...rubrica.criterios,
-                      { id: cryptoId(), nombre: "", excelente: "", niveles: [], ponderacion: 0 },
+                      { id: cryptoId(), nombre: "", descripcion: "", excelente: "", niveles: [], ponderacion: 0 },
                     ],
                   })
                 }}
@@ -4231,29 +4678,61 @@ function RubricasSection({ form, disabled }: { form: FormActividad; disabled: bo
                 )
               }
               return (
-                <ul className="flex flex-col gap-6">
-                  {rubrica.criterios.map((criterio, index) => (
-                    <CriterioItem
-                      key={criterio.id}
-                      criterio={criterio}
-                      index={index}
-                      esEvaluativa={esEvaluativa}
+                <>
+                  <ul className="flex flex-col gap-6">
+                    {rubrica.criterios.map((criterio, index) => (
+                      <CriterioItem
+                        key={criterio.id}
+                        criterio={criterio}
+                        index={index}
+                        esEvaluativa={esEvaluativa}
+                        puntajeObligatorio={puntajeObligatorio}
+                        disabled={disabled}
+                        submissionAttempts={submissionAttempts}
+                        onChange={(next) => {
+                          const current = field.state.value as { id: number; criterios: Criterio[] }
+                          const next_criterios = current.criterios.slice()
+                          next_criterios[index] = next
+                          field.handleChange({ ...current, criterios: next_criterios })
+                        }}
+                        onRemove={() => {
+                          const current = field.state.value as { id: number; criterios: Criterio[] }
+                          const next_criterios = current.criterios.slice()
+                          next_criterios.splice(index, 1)
+                          field.handleChange({ ...current, criterios: next_criterios })
+                        }}
+                      />
+                    ))}
+                  </ul>
+                  {/* Mismo botón del header, repetido al pie de la lista:
+                      con varios criterios largos cargados, el botón de
+                      arriba queda fuera de la vista y hay que scrollear
+                      hasta el inicio de la sección para agregar uno más
+                      (QA Bloque 5, criterio de aceptación #3). Mismo patrón
+                      que "Agregar nivel" dentro de cada criterio, que ya
+                      vive al final de su propio bloque. */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      color="neutral"
+                      type="button"
                       disabled={disabled}
-                      onChange={(next) => {
+                      onClick={() => {
                         const current = field.state.value as { id: number; criterios: Criterio[] }
-                        const next_criterios = current.criterios.slice()
-                        next_criterios[index] = next
-                        field.handleChange({ ...current, criterios: next_criterios })
+                        field.handleChange({
+                          ...current,
+                          criterios: [
+                            ...current.criterios,
+                            { id: cryptoId(), nombre: "", descripcion: "", excelente: "", niveles: [], ponderacion: 0 },
+                          ],
+                        })
                       }}
-                      onRemove={() => {
-                        const current = field.state.value as { id: number; criterios: Criterio[] }
-                        const next_criterios = current.criterios.slice()
-                        next_criterios.splice(index, 1)
-                        field.handleChange({ ...current, criterios: next_criterios })
-                      }}
-                    />
-                  ))}
-                </ul>
+                    >
+                      <PlusCircleIcon data-icon="inline-start" />
+                      Agregar criterio
+                    </Button>
+                  </div>
+                </>
               )
             }}
           </form.Field>
@@ -4267,7 +4746,9 @@ function CriterioItem({
   criterio,
   index,
   esEvaluativa,
+  puntajeObligatorio,
   disabled,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
@@ -4281,7 +4762,30 @@ function CriterioItem({
    * no se muestra — el peso del nivel no aplica si no pondera nota.
    */
   esEvaluativa: boolean
+  /**
+   * `fn_actividad_validar_rubrica_definicion` (sso V496.5) exige nombre de
+   * criterio y, por cada nivel —"Excelente" incluido, que viaja como el
+   * primer nivel del array (`criterioABody`, `update-instrumento-actividad.ts`)—
+   * una descripción/juicio de valor no vacía siempre. El puntaje de cada
+   * nivel es obligatorio SOLO si la Unidad vinculada a la actividad calcula
+   * su definitiva por Ponderado o Suma de puntos (`puntajeObligatorio`,
+   * resuelto por `RubricasSection` con el mismo `unidadActual` que
+   * `EscalaValoracionSection`/`ListaCotejoSection`); con Promedio simple, o
+   * sin unidad vinculada, un nivel sin puntaje pesa 1 y no se marca en rojo.
+   * En ambos casos, si hay valor, debe quedar entre 0 y 100 (ver el `Input`
+   * de cada nivel, que ya acota con `min`/`max`).
+   */
+  puntajeObligatorio: boolean
   disabled: boolean
+  /**
+   * Este componente no recibe el `form` (solo `criterio`/`onChange`
+   * planos, como `AdaptacionItem`), así que la validación de "obligatorio"
+   * es local por `blur` de cada campo, con `submissionAttempts` —pasado
+   * desde `RubricasSection`, que sí tiene el `form`— como fallback para
+   * marcar todo en rojo tras un intento de guardar aunque el campo nunca se
+   * haya tocado.
+   */
+  submissionAttempts: number
   onChange: (next: Criterio) => void
   onRemove: () => void
 }) {
@@ -4290,6 +4794,24 @@ function CriterioItem({
   // "Agregar nivel". Tenerlo en estado local evita que cada tecleo toque
   // el `onChange` del criterio padre y dispare `dirty` antes de confirmar.
   const [nivelInput, setNivelInput] = useState("")
+
+  const [tocoNombre, setTocoNombre] = useState(false)
+  const [tocoExcelenteDescripcion, setTocoExcelenteDescripcion] = useState(false)
+  const [tocoExcelentePonderacion, setTocoExcelentePonderacion] = useState(false)
+  // Los niveles son una lista dinámica (agregar/quitar), así que el "tocado"
+  // no puede ser un solo booleano: se guarda por `nivel.id` en un Set.
+  const [tocadosNivelDescripcion, setTocadosNivelDescripcion] = useState<Set<number>>(new Set())
+  const [tocadosNivelPonderacion, setTocadosNivelPonderacion] = useState<Set<number>>(new Set())
+  const marcarNivelDescripcionTocado = (id: number) =>
+    setTocadosNivelDescripcion((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  const marcarNivelPonderacionTocado = (id: number) =>
+    setTocadosNivelPonderacion((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+
+  const nombreInvalido = (tocoNombre || submissionAttempts > 0) && !criterio.nombre.trim()
+  const excelenteDescripcionInvalida =
+    (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
+  const excelentePonderacionInvalida =
+    puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -4319,15 +4841,36 @@ function CriterioItem({
           adentro: el label queda flotando sobre el borde (estilo MUI
           TextField). `text-sm font-semibold` del `Criterio N` y de
           `Excelente` son títulos estáticos, no labels de campo. */}
-      <Field variant="outlined" className="mt-3">
+      <Field variant="outlined" className="mt-3" data-invalid={nombreInvalido}>
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
           placeholder="Ej: Expresión oral de ideas y experiencias"
           maxLength={50}
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
+          onBlur={() => setTocoNombre(true)}
+          aria-invalid={nombreInvalido}
           disabled={disabled}
         />
+        {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
+      </Field>
+
+      {/* Distinta de la `descripcion` de cada nivel (el indicador de logro
+          por nivel, más abajo): esta es la del criterio en sí
+          (`TACTIVIDAD_RUBRICA_CRITERIO.DESCRIPCION`) — no tenía campo acá,
+          así que nunca viajaba ni al guardar ni al leer. */}
+      <Field variant="outlined" className="mt-3">
+        <FieldLabel>Descripción o Juicio de valor</FieldLabel>
+        <Textarea
+          className={TEXTAREA_OUTLINED}
+          rows={2}
+          placeholder="Describe qué evalúa este criterio en general"
+          maxLength={4000}
+          value={criterio.descripcion}
+          onChange={(e) => onChange({ ...criterio, descripcion: e.target.value })}
+          disabled={disabled}
+        />
+        <CharacterCounter value={criterio.descripcion} max={4000} />
       </Field>
 
       {/* `Excelente` va como label estático a la izquierda del textarea:
@@ -4363,20 +4906,25 @@ function CriterioItem({
           )}
         >
           <p className="pt-2 text-sm font-semibold">Excelente</p>
-          <Textarea
-            className={TEXTAREA_OUTLINED}
-            rows={2}
-            placeholder="Describe el desempeño esperado en este nivel"
-            maxLength={500}
-            value={criterio.excelente}
-            onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
-            disabled={disabled}
-          />
+          <Field data-invalid={excelenteDescripcionInvalida}>
+            <Textarea
+              className={TEXTAREA_OUTLINED}
+              rows={2}
+              placeholder="Describe el desempeño esperado en este nivel"
+              maxLength={500}
+              value={criterio.excelente}
+              onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
+              onBlur={() => setTocoExcelenteDescripcion(true)}
+              aria-invalid={excelenteDescripcionInvalida}
+              disabled={disabled}
+            />
+            {excelenteDescripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+          </Field>
           {/* Input de ponderación de "Excelente" — mismo campo y mismo
               manejo del `undefined` que el de cada nivel intermedio (ver
               más abajo): string vacío no se guarda como `0`. */}
           {esEvaluativa && (
-            <Field variant="outlined">
+            <Field variant="outlined" data-invalid={excelentePonderacionInvalida}>
               <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
                 Puntaje
               </FieldLabel>
@@ -4403,8 +4951,11 @@ function CriterioItem({
                   }
                   onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
                 }}
+                onBlur={() => setTocoExcelentePonderacion(true)}
+                aria-invalid={excelentePonderacionInvalida}
                 disabled={disabled}
               />
+              {excelentePonderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
           {/* Tachito a la derecha del textarea — quita el bloque entero
@@ -4447,7 +4998,14 @@ function CriterioItem({
           el flag —así el textarea y el input quedan alineados a la
           derecha con un `gap` consistente. */}
       <ul className="mt-4 flex flex-col gap-3">
-        {criterio.niveles.map((nivel, nIndex) => (
+        {criterio.niveles.map((nivel, nIndex) => {
+          const descripcionInvalida =
+            (tocadosNivelDescripcion.has(nivel.id) || submissionAttempts > 0) && !nivel.descripcion.trim()
+          const ponderacionInvalida =
+            puntajeObligatorio &&
+            (tocadosNivelPonderacion.has(nivel.id) || submissionAttempts > 0) &&
+            nivel.ponderacion == null
+          return (
           <li
             key={nivel.id}
             className={cn(
@@ -4458,19 +5016,24 @@ function CriterioItem({
             )}
           >
             <p className="pt-2 text-sm font-semibold">{nivel.nombre}</p>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Describe el desempeño esperado en este nivel"
-              maxLength={500}
-              value={nivel.descripcion}
-              onChange={(e) => {
-                const next = criterio.niveles.slice()
-                next[nIndex] = { ...nivel, descripcion: e.target.value }
-                onChange({ ...criterio, niveles: next })
-              }}
-              disabled={disabled}
-            />
+            <Field data-invalid={descripcionInvalida}>
+              <Textarea
+                className={TEXTAREA_OUTLINED}
+                rows={2}
+                placeholder="Describe el desempeño esperado en este nivel"
+                maxLength={500}
+                value={nivel.descripcion}
+                onChange={(e) => {
+                  const next = criterio.niveles.slice()
+                  next[nIndex] = { ...nivel, descripcion: e.target.value }
+                  onChange({ ...criterio, niveles: next })
+                }}
+                onBlur={() => marcarNivelDescripcionTocado(nivel.id)}
+                aria-invalid={descripcionInvalida}
+                disabled={disabled}
+              />
+              {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+            </Field>
             {/* Input de ponderación por nivel — solo cuando la actividad es
                 sumativa. Mismo idioma visual que la ponderación del
                 criterio de arriba (size="sm" h-10, número con `min={0}`
@@ -4478,7 +5041,7 @@ function CriterioItem({
                 (opcional), así que al renderizarlo convertimos `undefined`
                 a "" para que el input no muestre "NaN". */}
             {esEvaluativa && (
-              <Field variant="outlined">
+              <Field variant="outlined" data-invalid={ponderacionInvalida}>
                 <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
                   Puntaje
                 </FieldLabel>
@@ -4514,8 +5077,11 @@ function CriterioItem({
                       ponderacion: maxPonderacionCriterio({ ...criterio, niveles: next }),
                     })
                   }}
+                  onBlur={() => marcarNivelPonderacionTocado(nivel.id)}
+                  aria-invalid={ponderacionInvalida}
                   disabled={disabled}
                 />
+                {ponderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
               </Field>
             )}
             <Tooltip>
@@ -4545,7 +5111,8 @@ function CriterioItem({
               <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
             </Tooltip>
           </li>
-        ))}
+          )
+        })}
       </ul>
 
       {/* Split-button con Input + botón al borde derecho (la captura los
@@ -4635,16 +5202,21 @@ function maxPonderacionCriterio(criterio: {
 
 function AdaptacionesSection({
   form,
-  estudiantes,
+  matriculas,
   disabled,
   actividadId,
 }: {
   form: FormActividad
-  estudiantes: Estudiante[]
+  matriculas: MatriculaGrupo[]
   disabled: boolean
   actividadId: number
 }) {
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // Mismo criterio que `CriterioItem`/`ListaCotejoItemCard` (arrays de
+  // sub-items sin `form.Field` propio por fila): el error de "obligatorio"
+  // de cada adaptación combina el `useState` local "tocado" de ESE item con
+  // un intento de guardar a nivel del form entero.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -4710,10 +5282,11 @@ function AdaptacionesSection({
                       key={aIndex}
                       index={aIndex}
                       adaptacion={adapt}
-                      estudiantes={estudiantes}
+                      matriculas={matriculas}
                       disabled={disabled}
                       actividadId={actividadId}
                       grupoId={grupoId ?? 0}
+                      submissionAttempts={submissionAttempts}
                       onChange={(next) => {
                         const list = adaptaciones.slice()
                         list[aIndex] = next
@@ -4913,27 +5486,37 @@ function esUrlValida(value: string): boolean {
  * con `Seleccione` como placeholder hasta que se elija un valor real.
  *
  * `especificacionTipo`/`nombrePlantilla` ya viajan al backend (sso V496.1,
- * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — sin
- * `form` disponible (este componente no lo recibe, solo `adaptacion`/
- * `onChange`), la validación de "obligatorio" es local por `blur`, no por
- * intento de guardar como el resto del form.
+ * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — este
+ * componente no recibe `form` (solo `adaptacion`/`onChange`), así que la
+ * validación de "obligatorio" de esos dos campos es local por `blur`, sin
+ * combinarse con un intento de guardar. El checklist de estudiantes SÍ
+ * recibe `submissionAttempts` desde `AdaptacionesSection` (que sí tiene
+ * `form`) y lo combina con su propio "tocado" local, igual que
+ * `CriterioItem`/`ListaCotejoItemCard`: a diferencia de
+ * especificacionTipo/nombrePlantilla, acá el backend (`fn_actividad_
+ * validar_adaptacion_estudiantes`, V496.1) rechaza directamente el guardado
+ * completo de la actividad si la lista queda vacía — sin aviso en el
+ * intento de guardar, el docente solo se enteraba al ver el error genérico
+ * del toast tras el submit.
  */
 function AdaptacionItem({
   index,
   adaptacion,
-  estudiantes,
+  matriculas,
   disabled,
   actividadId,
   grupoId,
+  submissionAttempts,
   onChange,
   onRemove,
 }: {
   index: number
   adaptacion: Adaptacion
-  estudiantes: Estudiante[]
+  matriculas: MatriculaGrupo[]
   disabled: boolean
   actividadId: number
   grupoId: number
+  submissionAttempts: number
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
@@ -4943,6 +5526,7 @@ function AdaptacionItem({
   // `adaptacion`, así que no alcanza con derivarlo de ahí.
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
   const [tocoEnlace, setTocoEnlace] = useState(false)
+  const [tocoEstudiantes, setTocoEstudiantes] = useState(false)
 
   const especificacionTipoInvalida =
     tocoEspecificacionTipo && adaptacion.tipo === "Otro" && !adaptacion.especificacionTipo.trim()
@@ -4953,6 +5537,10 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
+  const estudiantesInvalido =
+    (tocoEstudiantes || submissionAttempts > 0) &&
+    adaptacion.aplicaA === "Estudiantes específicos" &&
+    adaptacion.estudiantesIds.length === 0
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5291,43 +5879,61 @@ function AdaptacionItem({
           "Estudiantes específicos". Mismo idioma que el resto del form:
           `Field variant="outlined"` con el label flotando en el borde
           superior, acá conteniendo una lista vertical de checkboxes en
-          vez de un input. Vacío si el grupo todavía no tiene estudiantes
-          cargados (actividad recién creada, sin `useCalificacionesQuery`
-          resuelto todavía). */}
+          vez de un input. Mismo padrón que "Estudiantes de la {rótulo}"
+          (Bloque 1, `useActividadMatriculasGrupoQuery`/`matriculas`), NO
+          `useCalificacionesQuery`: ese query viene vacío en el alta (la
+          actividad todavía no existe) y, aun en edición, devuelve
+          `pk_tactividad_estudiante` como id en vez del `pk_tmatricula` que
+          exige `estudiantesIds` (`fn_actividad_validar_adaptacion_
+          estudiantes`, V496.1) — ver el comentario de `grupoIdActual` en
+          `EditarActividadForm`. Vacío si el grupo todavía no tiene
+          matrículas cargadas.
+
+          Validación "obligatorio" (estudiantesInvalido más arriba): el
+          `onBlur` va en el contenedor de checkboxes, no en cada uno — React
+          hace burbujear `blur` (desde v17), así que alcanza con que el foco
+          salga de CUALQUIER checkbox del checklist para marcarlo "tocado",
+          sin depender de cuál en particular perdió el foco. */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
-        <Field variant="outlined" className="mt-4">
+        <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
           <FieldLabel>Seleccionar estudiantes (múltiple)</FieldLabel>
-          {estudiantes.length === 0 ? (
+          {matriculas.length === 0 ? (
             <p className="text-muted-foreground px-1 py-2 text-sm">
               Este grupo todavía no tiene estudiantes cargados.
             </p>
           ) : (
-            <div className="flex flex-col gap-1 py-1">
-              {estudiantes.map((estudiante) => {
-                const checked = adaptacion.estudiantesIds.includes(estudiante.id)
+            <div
+              className="flex flex-col gap-1 py-1"
+              aria-invalid={estudiantesInvalido}
+              onBlur={() => setTocoEstudiantes(true)}
+            >
+              {matriculas.map((matricula) => {
+                const checked = adaptacion.estudiantesIds.includes(matricula.id)
                 return (
                   <label
-                    key={estudiante.id}
+                    key={matricula.id}
                     className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(next) =>
+                      onCheckedChange={(next) => {
+                        setTocoEstudiantes(true)
                         onChange({
                           ...adaptacion,
                           estudiantesIds: next
-                            ? [...adaptacion.estudiantesIds, estudiante.id]
-                            : adaptacion.estudiantesIds.filter((id) => id !== estudiante.id),
+                            ? [...adaptacion.estudiantesIds, matricula.id]
+                            : adaptacion.estudiantesIds.filter((id) => id !== matricula.id),
                         })
-                      }
+                      }}
                       disabled={disabled}
                     />
-                    {toTitleCase(`${estudiante.nombres} ${estudiante.apellidos}`)}
+                    {toTitleCase(matricula.nombre)}
                   </label>
                 )
               })}
             </div>
           )}
+          {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}
     </li>
@@ -5388,11 +5994,17 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                       <SelectTrigger id={tipoField.name}>
                         <SelectValue />
                       </SelectTrigger>
+                      {/* Valores = `nombre` real de la categoría `TLISTA_VALOR`
+                          `TIPO_EVIDENCIA` (confirmado, V224: Archivo/Enlace/
+                          Imagen/Video/Observación) — antes decía "Link"/
+                          "Texto", que no existen en ese catálogo y por eso
+                          `resolveTipoEvidenciaId` nunca podía resolverlos
+                          (ver `use-tipo-evidencia-catalog.ts`). */}
                       <SelectContent>
                         <SelectItem value="Archivo">Archivo</SelectItem>
-                        <SelectItem value="Link">Link</SelectItem>
-                        <SelectItem value="Texto">Texto</SelectItem>
+                        <SelectItem value="Enlace">Enlace</SelectItem>
                         <SelectItem value="Imagen">Imagen</SelectItem>
+                        <SelectItem value="Observación">Observación</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>

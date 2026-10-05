@@ -24,7 +24,7 @@ export function EditAcademicPeriodButton({ period }: EditAcademicPeriodButtonPro
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            render={<Link to={paths.app.periodosAcademicosEditar.getHref(period.id)} />}
+            render={<Link to={paths.app.periodosAcademicosEditar.getHref(period.id)} search={(prev) => prev} />}
             nativeButton={false}
           />
         }

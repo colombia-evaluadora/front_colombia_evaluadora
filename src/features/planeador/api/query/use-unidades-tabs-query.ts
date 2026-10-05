@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/tabs` (confirmado real, colección Postman
@@ -88,8 +89,6 @@ function toUnidadTab(row: UnidadTabRow): UnidadTab {
   }
 }
 
-export const unidadesTabsQueryKey = () => ["planeador", "unidades-tabs"] as const
-
 async function fetchUnidadesTabs(): Promise<UnidadTab[]> {
   const rows = await evalCol.getRows<UnidadTabRow>("/planeador/unidades/tabs")
   return rows.map(toUnidadTab)
@@ -102,7 +101,7 @@ async function fetchUnidadesTabs(): Promise<UnidadTab[]> {
  */
 export function useUnidadesTabsQuery() {
   return useQuery({
-    queryKey: unidadesTabsQueryKey(),
+    queryKey: planeadorKeys.unidades.tabs(),
     queryFn: fetchUnidadesTabs,
     staleTime: 1000 * 60 * 5,
   })

@@ -7,6 +7,7 @@ import {
   paresToQueryParam,
   type ActividadTabPair,
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/calendario` (V251, ver colección Postman
@@ -108,12 +109,9 @@ async function fetchActividadesCalendario(
   return rows.map(toActividadCalendario)
 }
 
-export const actividadesCalendarioQueryKey = (params: UseActividadesCalendarioParams) =>
-  ["planeador", "actividades-calendario", params] as const
-
 export function useActividadesCalendarioQuery(params: UseActividadesCalendarioParams) {
   return useQuery({
-    queryKey: actividadesCalendarioQueryKey(params),
+    queryKey: planeadorKeys.actividades.calendario(params),
     queryFn: () => fetchActividadesCalendario(params),
     // SIN `placeholderData`, a propósito: la grilla mensual mapea estas
     // actividades por día-DE-MES (`date.getDate()`, ver
