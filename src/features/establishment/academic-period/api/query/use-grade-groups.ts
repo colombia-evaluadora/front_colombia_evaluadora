@@ -7,6 +7,7 @@ import type {
   GradeGroupsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/grade-group"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseGradeGroupsQueryParams {
   filters: GradeGroupsQueryRequest["filters"]
@@ -65,16 +66,16 @@ async function fetchGradeGroups(
     `/eval-col/grados/${params.gradeId}/grupos/query`,
     body,
   )
-  let rows = (raw.rows ?? []).map(toGradeGroup)
+  // El total es el del servidor (pagina él); el filtro de abajo es solo de la página.
+  const page = toPaginated(raw.rows, { pageSize: params.pageSize, map: toGradeGroup })
+  let rows = page.rows
   if (params.filters.jornada) {
     rows = rows.filter((row) => row.jornada === params.filters.jornada)
   }
   if (params.filters.directorName) {
     rows = rows.filter((row) => row.directorName === params.filters.directorName)
   }
-  const totalCount = raw.rows?.[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return { rows, pageCount, totalCount }
+  return { ...page, rows }
 }
 
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
