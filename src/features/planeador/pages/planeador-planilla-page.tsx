@@ -58,10 +58,6 @@ import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-/** Fallback mientras carga (o si el mock no tiene) el catálogo real
- *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
- *  unidad temática de cada actividad (`PlanillaColumna.unidad`);
- *  "Actividades" las deja sueltas. */
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
   { key: "unidad", label: "Unidad" },
@@ -107,32 +103,25 @@ export function PlaneadorPlanillaPage() {
   // columnas/calificaciones reales — antes de eso no tiene sentido pegarle
   // al backend adivinando.
   const params = filtro
-    ? { grupoId: filtro.grupoId, asignaturaId: filtro.asignaturaId, gradoId: filtro.gradoId }
+    ? {
+        grupoId: filtro.grupoId,
+        asignaturaId: filtro.asignaturaId,
+        gradoId: filtro.gradoId,
+        periodoId: filtro.periodoEvaluacion.id,
+      }
     : null
 
   const { data: todasLasColumnas = [], isPending: isPendingColumnas } = usePlanillaColumnasQuery(params)
   const { data: calificacionesResult, isPending: isPendingCalificaciones } =
     usePlanillaCalificacionesQuery(params)
   const filas = calificacionesResult?.rows ?? []
-  // Ambos endpoints pueden tardar (el de calificaciones resuelve notas de
-  // TODAS las actividades filtradas) -- sin esto, mientras cargan, `filas`
-  // vale [] igual que "sin estudiantes" y la grilla muestra por un momento
-  // el mensaje vacío en vez de un loading.
   const cargandoPlanilla = filtro !== null && (isPendingColumnas || isPendingCalificaciones)
 
   const columnas = useMemo(() => {
     if (!filtro) return []
     const term = buscar.trim().toLowerCase()
     return todasLasColumnas.filter((columna) => {
-      // Solapamiento de rangos `yyyy-MM-dd` contra el periodo elegido —
-      // comparación lexicográfica válida porque todas son ISO del mismo
-      // largo. El endpoint no filtra por periodo, así que se hace acá.
-      if (columna.fechaCierre < filtro.periodoEvaluacion.startDate) return false
-      if (columna.fechaInicio > filtro.periodoEvaluacion.endDate) return false
       if (!term) return true
-      // "Ver por: Unidad" busca por el nombre de la unidad (agrupa por
-      // eso); "Actividades" busca por el título de la actividad — mismo
-      // criterio que el placeholder del buscador.
       const campo = verPor === "unidad" ? (columna.unidad ?? "") : columna.titulo
       return campo.toLowerCase().includes(term)
     })
@@ -148,7 +137,14 @@ export function PlaneadorPlanillaPage() {
     [filas, columnaIds],
   )
 
-  const estudiantesEnBulk = filas.map((fila) => ({
+  // Solo los asignados a la actividad: un no asignado no se califica.
+  const estudiantesEnBulk = filas
+    .filter((fila) => {
+      if (!columnaEnBulk) return true
+      const celda = fila.celdas.find((c) => c.pkTactividad === columnaEnBulk.pkTactividad)
+      return celda != null && celda.estado !== "NO_ASIGNADA"
+    })
+    .map((fila) => ({
     id: fila.pkTestudiante,
     matriculaId: fila.pkTmatricula,
     nombres: fila.nombreEstudiante,

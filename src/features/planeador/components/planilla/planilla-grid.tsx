@@ -303,7 +303,18 @@ export function PlanillaGrid({
                       </td>
                     )
                   }
-                  const claveCelda = `${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
+                  // Sin nota y No presentó / No asistió: no se ofrece agregar.
+                  const bloqueo = nota === null ? BLOQUEO_RESULTADO[celda?.estadoResultado ?? ""] : undefined
+                  if (bloqueo) {
+                    return (
+                      <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
+                        <span className="text-muted-foreground" title={bloqueo.titulo}>
+                          {bloqueo.texto}
+                        </span>
+                      </td>
+                    )
+                  }
+                  const claveCelda =`${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
                   const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
@@ -344,6 +355,13 @@ export function PlanillaGrid({
       </table>
     </div>
   )
+}
+
+/** Estados de resultado que impiden calificar (Regla 62), con su rótulo. */
+const BLOQUEO_RESULTADO: Record<string, { texto: string; titulo: string }> = {
+  NO_PRESENTO: { texto: "No presentó", titulo: "El estudiante no presentó." },
+  NO_ASISTIO_JUSTIFICADA: { texto: "No asistió (J)", titulo: "No asistió, con excusa." },
+  NO_ASISTIO_NO_JUSTIFICADA: { texto: "No asistió (NJ)", titulo: "No asistió, sin excusa." },
 }
 
 /** Ancho fijo por columna de actividad — así ninguna actividad hace más
