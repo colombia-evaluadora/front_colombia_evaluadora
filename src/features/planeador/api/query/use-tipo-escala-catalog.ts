@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { EscalaValoracionTipo } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -42,6 +43,5 @@ export async function fetchTipoEscalaOptions(): Promise<TipoEscalaOption[]> {
 }
 
 export async function resolveTipoEscalaId(tipo: EscalaValoracionTipo): Promise<number | undefined> {
-  const options = await fetchTipoEscalaOptions()
-  return options.find((o) => o.tipo === tipo)?.id
+  return resolveCatalogId(undefined, "TIPO_ESCALA", tipo, { normalize: (row) => toEscalaTipo(row.valor) })
 }

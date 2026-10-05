@@ -14,6 +14,7 @@ import type {
   AuditTablesQueryRequest,
   AuditTablesQueryResponse,
 } from "@/features/administration/audits/api/types/audit-table"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseAuditTablesQueryParams {
   filters: AuditTablesQueryRequest["filters"]
@@ -63,12 +64,12 @@ async function fetchAuditTables(
   })
   const rawRows = unwrapRows(response)
   // V376 (sso): el servidor ya pagina de verdad -- esto es la página real.
-  const totalCount = rawRows[0]?.totalCount ?? 0
+  const { totalCount, pageCount } = toPaginated(rawRows, { pageSize: params.pageSize, totalKey: "totalCount" })
   const rows = sortWindow(rawRows.map(toAuditTable), params.sorting)
 
   return {
     rows,
-    pageCount: Math.max(1, Math.ceil(totalCount / params.pageSize)),
+    pageCount,
     totalCount,
   }
 }

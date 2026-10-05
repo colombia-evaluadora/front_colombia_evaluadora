@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -45,6 +46,7 @@ export async function resolveFormatoAdaptacionId(
   versionModificada: Adaptacion["versionModificada"],
 ): Promise<number | undefined> {
   if (versionModificada === "no" || versionModificada === "") return undefined
-  const options = await fetchFormatoAdaptacionOptions()
-  return options.find((o) => o.formato === versionModificada)?.id
+  return resolveCatalogId(undefined, "FORMATO_ADAPTACION", versionModificada, {
+    normalize: (row) => FORMATO_ADAPTACION_VALORES[row.valor],
+  })
 }
