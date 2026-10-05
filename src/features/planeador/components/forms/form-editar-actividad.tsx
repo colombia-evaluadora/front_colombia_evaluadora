@@ -4785,8 +4785,8 @@ function RubricasSection({
                       vive al final de su propio bloque. */}
                   <div className="flex justify-end">
                     <Button
-                      variant="outline"
-                      color="neutral"
+                      variant="fill"
+                      color="primary"
                       type="button"
                       disabled={disabled}
                       onClick={() => {
