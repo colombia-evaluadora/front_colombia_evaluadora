@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { usePeriodoResolverMatriculaQuery } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
+import { resolverSede } from "@/features/coverage/utils/sede-matricula"
 import type {
   MatriculaDependentCatalogsRequest,
   MatriculaDependentCatalogsResponse,
@@ -69,10 +70,10 @@ async function fetchGrupos(gradoId: number, jornadaName?: string): Promise<Matri
 
 
 export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCatalogsRequest) {
-  const { campus, shift, grade } = params
+  const { campusId, campus, shift, grade } = params
 
   const { data: sedes } = useSedeOptionsQuery()
-  const sedeId = campus ? sedes?.find((sede) => sede.nombre === campus)?.pk_sede : undefined
+  const sedeId = resolverSede(sedes, { campusId, campus }).sede?.pk_sede
 
   const { data: jornadasActivas } = useSedeJornadasActivasQuery(sedeId ?? null)
   const shifts = (jornadasActivas ?? []).map((jornada) => jornada.nombre)

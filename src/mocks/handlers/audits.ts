@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { getSessionOperations } from "@/mocks/handlers/_session-operations"
+import { getSessionOperations } from "@/mocks/handlers/session-operations-helpers"
 
 import { auditsDb } from "@/mocks/db/audits"
 import type {
@@ -127,7 +127,7 @@ function applySortingSessionOps(
 }
 
 // Genera las operaciones de una sesión (delegado al módulo compartido
-// `_session-operations` que cachea por sesión para que el listing y el
+// `session-operations-helpers` que cachea por sesión para que el listing y el
 // dialog de "Ver cambios" vean los mismos datos).
 
 function applySorting(

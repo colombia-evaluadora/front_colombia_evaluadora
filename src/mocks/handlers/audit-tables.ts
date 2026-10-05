@@ -4,7 +4,7 @@ import {
   getSessionOperationById,
   getSessionOperationChanges,
   applySessionOperationRevert,
-} from "@/mocks/handlers/_session-operations"
+} from "@/mocks/handlers/session-operations-helpers"
 
 import { auditsDb } from "@/mocks/db/audits"
 import { auditTablesDb } from "@/mocks/db/audit-tables"

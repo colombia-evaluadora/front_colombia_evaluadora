@@ -183,7 +183,6 @@ function GrupoTabContent({
   React.useEffect(() => {
     onEsCualitativoChange(esCualitativo)
   }, [esCualitativo, onEsCualitativoChange])
-
   const haySinConsolidar = filas.some(
     (fila) =>
       seleccionados.has(fila.matriculaId) &&
@@ -438,7 +437,7 @@ function ReportsPageContent() {
     return partes.join("   ·   ")
   }, [grupos, grupoActivoId, periodos, periodosDisponibles, busqueda])
 
-  const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size === 1
+  const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size > 0
 
   function toggleEstudiante(matriculaId: number) {
     setSeleccionPorGrupo((prev) => {

@@ -89,6 +89,28 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
   }
 }
 
+/**
+ * Filtros de la tabla → `FILTERS` del backend real (`fn_refcurr_listar`).
+ * Exportado porque el reporte PDF/Excel (`/reportes/referentes-curriculares`)
+ * llama a la MISMA función sin paginar y tiene que filtrar exactamente igual
+ * que lo que se ve en pantalla.
+ */
+export function toCurricularReferencesFilters(filters: CurricularReferencesQueryRequest["filters"]) {
+  return {
+    SEARCH: filters.search || null,
+    NIVEL_EDUCATIVO: filters.educationLevels?.[0] ? Number(filters.educationLevels[0]) : null,
+    ENFOQUE_PEDAGOGICO: filters.pedagogicalApproaches?.[0] ? Number(filters.pedagogicalApproaches[0]) : null,
+    TIPO_EVALUACION: filters.evaluationTypes?.[0] ? Number(filters.evaluationTypes[0]) : null,
+    ESTADO: filters.active ? (filters.active === "true" ? "A" : "I") : null,
+  }
+}
+
+/** Orden de la tabla → `SORTING` del backend real (un solo criterio). */
+export function toCurricularReferencesSorting(sorting: CurricularReferencesQueryRequest["sorting"]) {
+  const [primary] = sorting
+  return primary ? { ID: primary.id, DESC: primary.desc } : { ID: null, DESC: null }
+}
+
 export async function fetchCurricularReferences(
   params: UseCurricularReferencesQueryParams,
 ): Promise<CurricularReferencesQueryResponse> {
@@ -106,18 +128,9 @@ export async function fetchCurricularReferences(
     })
   }
 
-  const [primary] = params.sorting
   const raw = await api.query(url, {
-    FILTERS: {
-      SEARCH: params.filters.search || null,
-      NIVEL_EDUCATIVO: params.filters.educationLevels?.[0] ? Number(params.filters.educationLevels[0]) : null,
-      ENFOQUE_PEDAGOGICO: params.filters.pedagogicalApproaches?.[0]
-        ? Number(params.filters.pedagogicalApproaches[0])
-        : null,
-      TIPO_EVALUACION: params.filters.evaluationTypes?.[0] ? Number(params.filters.evaluationTypes[0]) : null,
-      ESTADO: params.filters.active ? (params.filters.active === "true" ? "A" : "I") : null,
-    },
-    SORTING: primary ? { ID: primary.id, DESC: primary.desc } : { ID: null, DESC: null },
+    FILTERS: toCurricularReferencesFilters(params.filters),
+    SORTING: toCurricularReferencesSorting(params.sorting),
     PAGEINDEX: params.pageIndex,
     PAGESIZE: params.pageSize,
   })

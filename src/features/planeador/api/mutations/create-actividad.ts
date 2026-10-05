@@ -9,6 +9,7 @@ import { invalidarListadosActividades } from "@/features/planeador/api/query/inv
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
+import { resolveTipoEvidenciaId } from "@/features/planeador/api/query/use-tipo-evidencia-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -64,18 +65,23 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     MATERIAL_REQUERIDO: actividad.materiales,
     // "Seguimiento" (`generaEvidencias`/`observaciones`) se capturaba en el
     // form pero nunca viajaba acá — mismo hueco que Programación arriba.
-    // `GENERA_EVIDENCIAS` sigue la convención "S"/"N" de `ES_EVALUATIVA`
-    // (no confirmado que sea booleano nativo, pero es la convención que ya
-    // usa el resto de los flags de esta misma función).
+    // `GENERA_EVIDENCIAS`/`REQUIERE_VALIDACION_COORDINADOR` siguen la
+    // convención "S"/"N" de `ES_EVALUATIVA` — confirmado real (V246/V496.4:
+    // `BODY.REQUIERE_VALIDACION_COORDINADOR` cast a `academico_test.bool_sn`,
+    // default 'N').
     GENERA_EVIDENCIAS: actividad.generaEvidencias ? "S" : "N",
+    REQUIERE_VALIDACION_COORDINADOR: actividad.requiereValidacion ? "S" : "N",
     OBSERVACIONES_DOCENTE: actividad.observaciones,
   }
-  // Pendiente, a propósito: `actividad.tipoEvidencia` (→
-  // `FK_TLV_TIPO_EVIDENCIA`, necesita una categoría de catálogo sin
-  // confirmar) — mandarlo a ciegas arriesga un valor que el backend
-  // rechace, a diferencia de `resolveModalidadId` (que si falla resuelve
-  // `undefined` y simplemente no se manda nada).
-  //
+  // `FK_TLV_TIPO_EVIDENCIA`: igual que `resolveModalidadId`, best-effort —
+  // si `actividad.tipoEvidencia` no matchea ningún `nombre` de la categoría
+  // real `TIPO_EVIDENCIA` (confirmado real, V224/V496.1, ver
+  // `use-tipo-evidencia-catalog.ts`), no se manda nada en vez de arriesgar
+  // un valor que el backend rechace.
+  if (actividad.tipoEvidencia) {
+    const tipoEvidenciaId = await resolveTipoEvidenciaId(actividad.tipoEvidencia)
+    if (tipoEvidenciaId != null) body.FK_TLV_TIPO_EVIDENCIA = tipoEvidenciaId
+  }
   // `REQUIERE_ARCHIVO`/`REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO` SÍ tienen
   // nombre confirmado (`campos_disponibles.evaluacion.instrumentosPermitidos
   // [valor=OTRO].campos`, `GET /planeador/actividades/configuracion`): solo

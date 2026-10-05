@@ -90,7 +90,7 @@ import {
   EmployeeAdditionalInfoForm,
   type EmployeeAdditionalInfoValue,
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
-import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
+import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 interface ManageEmployeeDialogProps {
@@ -622,7 +622,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
   // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
   // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
-  // que el documento cambió tras el match, `form-user-datails.tsx`). Sin
+  // que el documento cambió tras el match, `form-user-details.tsx`). Sin
   // esto, `createdEmployeeId` quedaba apuntando al funcionario equivocado:
   // "Permisos"/"Información complementaria" seguían habilitados y
   // `handleMainSave` tomaba la rama de edición (PUT) en vez de crear a la

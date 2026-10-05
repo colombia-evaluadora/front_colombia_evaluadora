@@ -25,6 +25,25 @@ interface CurricularReferenceColumnsOptions {
   onEdit: (curricularReference: CurricularReference) => void
 }
 
+/**
+ * Id de columna de la tabla → claves del reporte `referentes-curriculares`
+ * (whitelist `reporting.reports.referentes-curriculares.columns` del
+ * reporting-service). Una columna de la tabla puede imprimirse en varias del
+ * archivo: la celda apila título + descripción, o estado + vigencia, y en un
+ * PDF/Excel cada dato va en su propia columna. Lo que no esté acá (acciones)
+ * no se exporta.
+ */
+export const CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS: Partial<Record<string, string[]>> = {
+  name: ["nombre", "descripcion"],
+  educationLevel: ["niveles_educativos"],
+  instrument: ["instrumento", "instrumento_info_adicional"],
+  pedagogicalApproach: ["enfoque_pedagogico"],
+  evaluationType: ["tipo_evaluacion"],
+  gradosVinculados: ["grados_vinculados_texto"],
+  active: ["estado_label", "vigencia"],
+  lastModifiedAt: ["modificado_en", "modificado_por"],
+}
+
 const MAX_LINES_CLASS = "line-clamp-5"
 
 function ActionsCell({
