@@ -74,12 +74,10 @@ interface DialogAgregarActividadProps {
  *     un peso/puntaje en blanco).
  * `porcentajeDisponible` viene YA CALCULADO por fila por el backend
  * (`fn_unidad_ponderacion_disponible`, sso V223), no hace falta pedirlo
- * aparte (1.5). Es el tope REAL: topa por (grado, asignatura, grupo) de esa
- * actividad, no por (unidad, grupo) — una misma asignatura/grado puede
- * tener actividades repartidas en varias unidades, y este valor ya las
- * cuenta a todas, a diferencia del tope optimista que calcula
- * `columns-unidad-actividades.tsx` para las actividades YA vinculadas a
- * esta unidad (ver el comentario de `maxDisponible` ahí).
+ * aparte (1.5). Es el tope REAL: lo que queda del 100% de esta unidad en el
+ * grupo de esa actividad (bucket (unidad, grupo) del trigger
+ * `tr_tactividad_ponderacion_unidad`). Otras unidades de la misma
+ * asignatura/grado NO cuentan: cada unidad reparte su propio 100% por grupo.
  */
 export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
   const { puedeCrear } = useMenuPermission("PLANEADOR")
