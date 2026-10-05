@@ -20,6 +20,7 @@ import {
   useCalificarCeldaMutation,
   type CalificarCeldaInput,
 } from "@/features/planeador/api/mutations/use-calificar-celda"
+import { usePrevisualizarNotaMutation } from "@/features/planeador/api/mutations/use-previsualizar-nota"
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
@@ -41,6 +42,21 @@ interface CeldaNotaPopoverProps {
   /** Se dispara justo al guardar, antes de que la Planilla termine de
    *  refrescar — permite mostrar un loading en la celda mientras tanto. */
   onGuardado?: () => void
+  /** Periodo cerrado: no guarda, entrega el cambio a la página para
+   *  enviarlo después como solicitud. */
+  onCambio?: (cambio: CambioPendiente) => void
+  /** Cambio ya hecho y sin enviar: el popover arranca con él. */
+  cambioPendiente?: CambioPendiente
+  /** Body de calificar de una corrección pendiente de aprobación: el
+   *  popover arranca con él y no con la nota oficial. */
+  calificacionPropuesta?: unknown
+}
+
+export interface CambioPendiente {
+  input: CalificarCeldaInput
+  notas: NotaCriterio[]
+  /** Nota nueva ya homologada (vista previa del backend). */
+  notaPropuesta: number | null
 }
 
 /** Arma el body de `calificar` según el instrumento REAL de la actividad —
@@ -130,6 +146,32 @@ export function buildCalificarCeldaInput(
   return null
 }
 
+/** Inverso de `buildCalificacion`: el body de calificar → `NotaCriterio[]`. */
+export function notasDeCalificacion(calificacion: unknown): NotaCriterio[] | null {
+  if (!calificacion || typeof calificacion !== "object") return null
+  const c = calificacion as Record<string, unknown>
+  if (Array.isArray(c.niveles)) {
+    return (c.niveles as { pkCriterio: number; pkNivel: number }[]).map((n) => ({
+      criterioId: n.pkCriterio,
+      nivelId: n.pkNivel,
+    }))
+  }
+  if (Array.isArray(c.itemsMarcados)) {
+    return (c.itemsMarcados as number[]).map((pk) => ({ criterioId: pk, valor: 100 }))
+  }
+  if (Array.isArray(c.criterios)) {
+    return (c.criterios as { criterioIndex: number; pkNivel?: number; valorNumerico?: number }[]).map((n) =>
+      n.pkNivel != null
+        ? { criterioId: n.criterioIndex, nivelId: n.pkNivel }
+        : { criterioId: n.criterioIndex, valor: n.valorNumerico },
+    )
+  }
+  if (typeof c.pkNivel === "number") return [{ criterioId: 0, nivelId: c.pkNivel }]
+  if (typeof c.valorNumerico === "number") return [{ criterioId: 0, valor: c.valorNumerico }]
+  if (typeof c.porcentaje === "number") return [{ criterioId: 0, valor: c.porcentaje }]
+  return null
+}
+
 /**
  * Popover de calificación anclado a UNA celda (estudiante × actividad).
  * Autocontenido: precarga la nota ya guardada del estudiante
@@ -144,6 +186,9 @@ export function CeldaNotaPopover({
   fecha,
   estudianteNombre,
   onGuardado,
+  onCambio,
+  cambioPendiente,
+  calificacionPropuesta,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -153,8 +198,12 @@ export function CeldaNotaPopover({
   const { data: notaActual } = useNotaEstudianteQuery(open ? pkTactividadEstudiante : undefined)
 
   useEffect(() => {
-    if (open) setDraft(notaActual?.notas ?? [])
-  }, [open, notaActual])
+    if (open) {
+      setDraft(
+        cambioPendiente?.notas ?? notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? [],
+      )
+    }
+  }, [open, notaActual, cambioPendiente, calificacionPropuesta])
 
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
@@ -169,12 +218,24 @@ export function CeldaNotaPopover({
     },
   })
 
+  const previsualizar = usePrevisualizarNotaMutation()
   const completitud = instrumentoCompletitud(instrumento, draft)
 
   function guardar() {
     if (!instrumento) return
     const input = buildCalificarCeldaInput(instrumento, draft, pkTactividadEstudiante, fecha)
     if (!input) return
+    if (onCambio) {
+      // Periodo cerrado: no guarda, pero pide la nota exacta que dejaría.
+      previsualizar.mutate(input, {
+        onSuccess: (result) => {
+          onCambio({ input, notas: draft, notaPropuesta: result?.nota_homologada ?? null })
+          setOpen(false)
+        },
+        onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+      })
+      return
+    }
     calificar.mutate(input)
   }
 
@@ -215,10 +276,10 @@ export function CeldaNotaPopover({
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || calificar.isPending}
+            disabled={!completitud.completo || calificar.isPending || previsualizar.isPending}
             onClick={guardar}
           >
-            {calificar.isPending ? (
+            {calificar.isPending || previsualizar.isPending ? (
               <SpinnerIcon className="animate-spin" data-icon="inline-start" />
             ) : (
               <CheckIcon data-icon="inline-start" />

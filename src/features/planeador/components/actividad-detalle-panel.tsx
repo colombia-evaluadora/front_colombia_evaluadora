@@ -1,6 +1,6 @@
 import { IoMdCheckboxOutline } from "react-icons/io"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, ClipboardCheckIcon, PencilIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ClipboardCheckIcon, EyeIcon, PencilIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
@@ -11,8 +11,10 @@ import { CalificacionesAprobacionView } from "@/features/planeador/components/ca
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
+import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { getErrorMessage } from "@/lib/api-client"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -74,8 +76,12 @@ export function ActividadDetallePanel({
   onShowGrades,
   onShowApproval,
 }: ActividadDetallePanelProps) {
-  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
+  const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
+  const { puedeEditar, puedeVer, soloLectura } = usePlaneadorSoloLectura()
+  // En solo lectura (Coordinador): el mismo link abre la actividad completa
+  // sin poder editarla (ver `PlaneadorEditarActividadPage`), y no se
+  // muestran las acciones que modifican (calificar, eliminar).
+  const accionEditar = puedeEditar ? "Editar" : puedeVer ? "Ver" : null
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -123,7 +129,7 @@ export function ActividadDetallePanel({
               nada cuando el panel puede reabrirse con cualquier actividad.
               Mientras carga (`actividad` todavía `undefined`) cae al label
               a secas. */}
-          {puedeEditar && (
+          {accionEditar && (
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -132,17 +138,18 @@ export function ActividadDetallePanel({
                     color="neutral"
                     size="icon-sm"
                     render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
-                    aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
+                    aria-label={actividad ? `${accionEditar} ${actividad.nombre}` : accionEditar}
                   />
                 }
               >
-                <PencilIcon />
+                {puedeEditar ? <PencilIcon /> : <EyeIcon />}
               </TooltipTrigger>
-              <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
+              <TooltipContent>{actividad ? `${accionEditar} ${actividad.nombre}` : accionEditar}</TooltipContent>
             </Tooltip>
           )}
           {ACCIONES.filter(
             (a) =>
+              !soloLectura &&
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
               // observación + asistencia de a un estudiante por vez.
               a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad),
@@ -200,7 +207,7 @@ export function ActividadDetallePanel({
 
         {isError && (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="text-red text-sm">Ocurrió un error al cargar la actividad.</p>
+            <p className="text-red text-sm">{getErrorMessage(error)}</p>
             <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
               Reintentar
             </Button>
@@ -213,7 +220,10 @@ export function ActividadDetallePanel({
           ) : mode === "approval" ? (
             <CalificacionesAprobacionView actividad={actividad} />
           ) : (
-            <DetailSections actividad={actividad} />
+            <div className="flex flex-col gap-3">
+              <ValidacionCoordinadorCard actividadId={actividad.id} requiereValidacion={actividad.requiereValidacion} />
+              <DetailSections actividad={actividad} />
+            </div>
           )
         )}
       </div>

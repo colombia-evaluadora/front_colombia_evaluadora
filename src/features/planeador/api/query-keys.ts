@@ -80,6 +80,9 @@ export const planeadorKeys = {
         ? ([...actividadDetalle(id), "calificaciones", fecha] as const)
         : ([...actividadDetalle(id), "calificaciones"] as const),
     instrumento: actividadInstrumento,
+    /** Validación de la planeación por el Coordinador (cuelga del detalle:
+     *  invalidar el detalle la refresca). */
+    validacionCoordinador: (id: number | "none") => [...actividadDetalle(id), "validacion-coordinador"] as const,
     instrumentoForm: (id: number | "none") => [...actividadInstrumento(id), "form"] as const,
     configuracionContexto: (
       grupoId: number | "none",

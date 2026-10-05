@@ -47,7 +47,7 @@ export type ReportKey =
   | "matricula"
   | "informes"
   | "informes-tabla"
-  | "boletin-preescolar"
+  | "boletin"
   | "planeador-actividades"
   | "referentes-curriculares"
   | "auditoria-sesiones"
@@ -78,6 +78,8 @@ interface ReportInput {
    * como siempre.
    */
   filtersLabel?: string
+  /** Query params de la URL (ej. `nivel` del boletín). */
+  params?: Record<string, string>
 }
 
 const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
@@ -93,7 +95,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
  */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting, columns, filtersLabel }: ReportInput,
+  { format, filters, sorting, columns, filtersLabel, params }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // El genérico explícito NO es decorativo: `api-client` tiene un
@@ -109,7 +111,7 @@ export async function downloadReport(
       sorting,
       columns,
       filtersLabel,
-    })
+    }, { params })
 
     const blob = response.data as Blob
     const filas = Number(response.headers["x-report-rows"])

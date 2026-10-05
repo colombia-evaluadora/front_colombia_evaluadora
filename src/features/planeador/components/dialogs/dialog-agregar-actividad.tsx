@@ -37,10 +37,14 @@ import {
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 interface DialogAgregarActividadProps {
   unidad: UnidadTematica
+  /** Rótulo de la unidad ya resuelto por el panel (el de la pestaña activa)
+   *  — gana sobre la resolución por referente de acá abajo, para que el
+   *  popover diga lo mismo que el resto del panel. */
+  rotuloUnidad?: string
 }
 
 /**
@@ -79,8 +83,8 @@ interface DialogAgregarActividadProps {
  * `tr_tactividad_ponderacion_unidad`). Otras unidades de la misma
  * asignatura/grado NO cuentan: cada unidad reparte su propio 100% por grupo.
  */
-export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarActividadProps) {
+  const { puedeCrear } = usePlaneadorSoloLectura()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   // Borrador de peso por actividad — vive acá, no en el form de la fila:
@@ -118,7 +122,8 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
   // por grado a secas, para no discrepar del `nivel1Etiqueta`/
   // `nivel2Etiqueta` de ESTE MISMO referente ya cargado arriba.
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  const instrumentoLabel = instrumentoLabelFromReferente(unidadReferente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const instrumentoLabel =
+    rotuloUnidad || instrumentoLabelFromReferente(unidadReferente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
   const instrumentoLabelLower = instrumentoLabel.toLowerCase()
   // "la unidad temática"/"el proyecto pedagógico" — mismo helper que ya
   // resuelve el género de este rótulo en `mensajeUnidadGuardada`, en vez de

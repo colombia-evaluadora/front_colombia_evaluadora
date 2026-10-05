@@ -20,6 +20,8 @@ interface CeldaRow {
   nota: number | null
   valoracion: string | null
   observacion: string | null
+  solicitudPendiente?: boolean | null
+  notaAnterior?: number | null
   esEvaluativa: boolean | null
   ponderacion: number | null
   notaMaxima: number | null
@@ -48,6 +50,8 @@ function toCelda(row: CeldaRow): CeldaPlanilla {
     nota: row.nota,
     valoracion: row.valoracion,
     observacion: row.observacion,
+    solicitudPendiente: row.solicitudPendiente === true,
+    notaAnterior: row.notaAnterior ?? null,
     esEvaluativa: row.esEvaluativa ?? true,
     ponderacion: row.ponderacion,
     notaMaxima: row.notaMaxima,

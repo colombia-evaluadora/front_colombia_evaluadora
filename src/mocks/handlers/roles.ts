@@ -145,20 +145,43 @@ export const rolesHandlers = [
       )
     }
 
-    return rows<MenuPermission>(
-      navigationMenu
-        .filter((menu) => menu.roleIds.includes(roleId) && menu.path)
-        .map((menu) => ({
-          pk_tmenu: menu.id,
-          codigo: menuCodigo(menu),
-          nombre: menu.name,
-          path: menu.path!,
-          puede_crear: true,
-          puede_editar: true,
-          puede_eliminar: true,
-          puede_ver: true,
-        })),
-    )
+    const permisos: MenuPermission[] = navigationMenu
+      .filter((menu) => menu.roleIds.includes(roleId) && menu.path)
+      .map((menu) => ({
+        pk_tmenu: menu.id,
+        codigo: menuCodigo(menu),
+        nombre: menu.name,
+        path: menu.path!,
+        puede_crear: true,
+        puede_editar: true,
+        puede_eliminar: true,
+        puede_ver: true,
+      }))
+
+    // El Coordinador recibe el Planeador con todos los permisos, igual que en
+    // testv2 (`permisos-menu` le da editar). Aun así lo ve en solo lectura:
+    // lo decide el rol, ver `usePlaneadorSoloLectura`.
+    if (user?.roles.includes("CEVAL-COORDINADOR")) {
+      const planeador = navigationMenu.find((menu) => menuCodigo(menu) === "PLANEADOR" && menu.path)
+      if (planeador) {
+        const resto = permisos.filter((permiso) => permiso.codigo !== "PLANEADOR")
+        return rows<MenuPermission>([
+          ...resto,
+          {
+            pk_tmenu: planeador.id,
+            codigo: "PLANEADOR",
+            nombre: planeador.name,
+            path: planeador.path!,
+            puede_crear: true,
+            puede_editar: true,
+            puede_eliminar: true,
+            puede_ver: true,
+          },
+        ])
+      }
+    }
+
+    return rows<MenuPermission>(permisos)
   }),
 
   http.post("/api/eval-col/menus", async ({ request }) => {

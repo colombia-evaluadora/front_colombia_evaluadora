@@ -247,6 +247,10 @@ export interface CeldaPlanilla {
   nota: number | null
   valoracion: string | null
   observacion: string | null
+  /** Regla 55: `nota` es la propuesta de una corrección pendiente; la
+   *  vigente queda en `notaAnterior`. "Aprobar" la aplica. */
+  solicitudPendiente: boolean
+  notaAnterior: number | null
   esEvaluativa: boolean
   ponderacion: number | null
   notaMaxima: number | null

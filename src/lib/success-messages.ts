@@ -18,6 +18,10 @@ interface EntityMessages {
   /** Mensaje específico cuando una acción puntual no encaja en
    *  created/updated/deleted (p. ej. "desactivar reserva de cupos"). */
   deactivated?: string
+  /** Validación por un tercero (p. ej. el Coordinador sobre una actividad
+   *  del Planeador): aprobar o declinar. */
+  approved?: string
+  declined?: string
 }
 
 export const SUCCESS_MESSAGES = {
@@ -131,5 +135,12 @@ export const SUCCESS_MESSAGES = {
     created: "La inscripción se registró correctamente.",
     updated: "La inscripción se actualizó correctamente.",
     deleted: "La inscripción se eliminó correctamente.",
+  },
+  actividad: {
+    created: "La actividad se creó correctamente.",
+    updated: "La actividad se actualizó correctamente.",
+    deleted: "La actividad se eliminó correctamente.",
+    approved: "La actividad se aprobó correctamente.",
+    declined: "La actividad se declinó correctamente.",
   },
 } satisfies Record<string, EntityMessages>

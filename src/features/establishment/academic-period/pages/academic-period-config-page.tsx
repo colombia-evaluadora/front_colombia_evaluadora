@@ -184,7 +184,7 @@ function AcademicPeriodConfigPageContent() {
             </div>
           ) : isEditing && isDetailError ? (
             <p className="py-10 text-center text-destructive">
-              Ocurrió un error al cargar el periodo académico.
+              {getErrorMessage(detailError)}
             </p>
           ) : (
             <>

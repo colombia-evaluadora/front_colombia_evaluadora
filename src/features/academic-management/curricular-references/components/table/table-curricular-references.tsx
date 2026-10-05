@@ -124,8 +124,8 @@ export function CurricularReferencesDataTable() {
           // Inactivo: visible y filtrable, pero atenuado (Regla 5).
           isRowMuted={(row) => !(row.original as CurricularReference).active}
           emptyMessage="Sin resultados."
-          // El mensaje real del backend (403 -> "No tienes permisos para
-          // realizar esta acción.", getErrorMessage lo resuelve solo) en vez
+          // El mensaje real del backend (403 -> "El usuario no tiene
+          // permisos.", getErrorMessage lo resuelve solo) en vez
           // de un genérico fijo que no distinguía un error de permisos de
           // uno de red.
           errorMessage={error ? getErrorMessage(error) : undefined}

@@ -31,6 +31,16 @@ interface EstudiantesMultiSelectProps {
   disabled?: boolean
   isPending?: boolean
   placeholder?: string
+  /** Texto del trigger con todos tildados. Default pensado para "Estudiantes
+   *  de la {rótulo}" (todo el grupo); la adaptación curricular lo cambia
+   *  porque sus opciones son los estudiantes DE LA ACTIVIDAD, no del grupo. */
+  allSelectedLabel?: string
+  /** Marca el trigger como inválido (`aria-invalid`), para el "obligatorio"
+   *  de la adaptación. */
+  invalid?: boolean
+  /** Se llama al abrir/cerrar el menú — la adaptación lo usa para marcar
+   *  el campo "tocado" al cerrarlo. */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -58,6 +68,9 @@ export function EstudiantesMultiSelect({
   disabled = false,
   isPending = false,
   placeholder = "Seleccionar",
+  allSelectedLabel = "Todos los estudiantes del grupo",
+  invalid = false,
+  onOpenChange,
 }: EstudiantesMultiSelectProps) {
   const resolvedVariant = useInputVariant()
 
@@ -94,19 +107,20 @@ export function EstudiantesMultiSelect({
     : estudiantes.length === 0
       ? placeholder
       : allSelected
-        ? "Todos los estudiantes del grupo"
+        ? allSelectedLabel
         : value.length === 0
           ? "Ningún estudiante"
           : `${value.length} estudiante${value.length === 1 ? "" : "s"}`
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange ? (open) => onOpenChange(open) : undefined}>
       <DropdownMenuTrigger
         render={
           <button
             id={id}
             type="button"
             disabled={disabled || isPending}
+            aria-invalid={invalid || undefined}
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),

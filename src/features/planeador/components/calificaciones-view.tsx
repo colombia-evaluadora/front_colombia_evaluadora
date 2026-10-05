@@ -47,7 +47,7 @@ interface CalificacionesViewProps {
 }
 
 export function CalificacionesView({ actividad }: CalificacionesViewProps) {
-  const { data: calificaciones = [], isPending, isError, refetch } =
+  const { data: calificaciones = [], isPending, isError, error, refetch } =
     useCalificacionesQuery(actividad.id, actividad.fechaInicio)
   const queryClient = useQueryClient()
   const { notify } = useNotify()
@@ -84,7 +84,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-        <p className="text-red text-sm">Ocurrió un error al cargar las calificaciones.</p>
+        <p className="text-red text-sm">{getErrorMessage(error)}</p>
         <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
           Reintentar
         </Button>

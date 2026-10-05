@@ -6,6 +6,8 @@
  * de acá calca el contrato de un endpoint puntual.
  */
 
+import type { EstadoResultado } from "@/features/planeador/api/types/calificacion"
+
 /** Una columna de la grilla = una actividad del (grado, grupo, asignatura)
  *  filtrado — `GET /planeador/planilla/columnas`. */
 export interface PlanillaColumna {
@@ -77,6 +79,14 @@ export interface PlanillaCelda {
   /** `false` → la celda se pinta gris: no se puede calificar hasta que se
    *  registre asistencia. Es una foto del momento de la lectura. */
   tieneAsistencia: boolean
+  /** Regla 62: No presentó / No asistió bloquean la nota, como en el Planeador. */
+  estadoResultado?: EstadoResultado | null
+  /** Regla 55: corrección pendiente de aprobación (la nota vigente no cambia). */
+  solicitudPendiente?: boolean | null
+  /** Nota propuesta en esa solicitud, en la escala de la asignatura. */
+  notaPropuestaHomologada?: number | null
+  /** Body de calificar de esa corrección (null si vino de un bloque). */
+  calificacionPropuesta?: unknown
   evidencias: CeldaEvidencia[]
 }
 
@@ -90,6 +100,10 @@ export interface PlanillaFila {
   definitivaProyectadaHomologada: number | null
   definitivaRegistrada: number | null
   tendencia: number | null
+  /** Nota máxima de la escala numérica (null si no es numérica). */
+  notaMaxima: number | null
+  /** Definitiva con las correcciones pendientes de aprobación (null si no hay). */
+  definitivaPropuestaHomologada: number | null
   celdas: PlanillaCelda[]
 }
 

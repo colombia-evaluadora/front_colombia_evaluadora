@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
@@ -63,6 +63,7 @@ import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-gr
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
+import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
@@ -147,6 +148,13 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import {
+  avisoCamposObligatorios,
+  camposObligatoriosFaltantes,
+  faltaTipoEvidencia,
+  faltanEstudiantes,
+} from "@/features/planeador/lib/campos-obligatorios-faltantes"
+import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -293,6 +301,13 @@ interface EditarActividadFormProps {
    * un solo Rótulo de Ejecución (nada que acotar).
    */
   tab?: ActividadTab
+  /**
+   * Solo lectura: el usuario puede VER el planeador pero no editarlo (p. ej.
+   * el Coordinador, con el menú PLANEADOR en "Solo lectura"). Deshabilita
+   * todas las secciones con el mismo `disabled` explícito de siempre (Base
+   * UI ignora `<fieldset disabled>`) y el submit no hace nada.
+   */
+  readOnly?: boolean
 }
 
 /**
@@ -309,6 +324,7 @@ export function EditarActividadForm({
   onSubmit,
   esNueva = false,
   tab,
+  readOnly = false,
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
@@ -354,7 +370,14 @@ export function EditarActividadForm({
   const form = useForm({
     defaultValues: actividadOriginal,
     onSubmit: ({ value }) => {
+      if (readOnly) return
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
+      // El instrumento se guarda en un PUT APARTE, después de crear/
+      // actualizar la actividad (ver `instrumento-faltantes.ts`): si se
+      // dejara pasar incompleto, la actividad quedaría guardada y el
+      // instrumento rechazado (o, con una escala vacía, ni siquiera
+      // enviado). Se frena acá, antes de mandar nada.
+      if (faltantesDelInstrumento(value).length > 0) return
       return onSubmit?.(value)
     },
   })
@@ -428,8 +451,25 @@ export function EditarActividadForm({
     actividad.camposDisponibles,
     actividad.unidad.id,
   )
-  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa })
-  camposEfectivosRef.current = { camposEfectivos, esFormativa }
+  // `grupoTieneEstudiantes` se completa más abajo, cuando ya está el padrón
+  // del grupo (`matriculas`): lo lee la regla de "Estudiantes" de
+  // `camposObligatoriosFaltantes`.
+  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa, grupoTieneEstudiantes: false })
+  const unidadesRef = useRef(unidades)
+  unidadesRef.current = unidades
+
+  /** Faltantes del instrumento de evaluación (Bloque 5). El puntaje es
+   *  obligatorio con el mismo criterio que `puntajeObligatorio` de
+   *  `RubricasSection`/`ListaCotejoSection`: la unidad vinculada calcula
+   *  por Ponderado o Suma de puntos. En un referente formativo no hay
+   *  instrumento que validar (Bloque 5 ni se muestra). */
+  function faltantesDelInstrumento(values: Actividad): string[] {
+    if (camposEfectivosRef.current.esFormativa) return []
+    const unidad = unidadesRef.current.find((u) => u.id === values.unidad.id)
+    return faltantesInstrumento(values, {
+      puntajeObligatorio: unidad != null && unidad.metodoCalculo !== "Promedio simple",
+    })
+  }
 
   // Grado + Asignatura son el punto de partida de toda la actividad: el
   // resto de los campos (nombre, tipo, unidad asociada, materiales,
@@ -441,7 +481,8 @@ export function EditarActividadForm({
   // `<Switch>`, `<DatePicker>`, …) leen su propio prop `disabled`, no el
   // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
   // con el `<fieldset>` puesto todo seguía respondiendo al click.
-  const disabled = !useHasGradoAsignatura(form)
+  const sinGradoAsignatura = !useHasGradoAsignatura(form)
+  const disabled = readOnly || sinGradoAsignatura
   // Padrón de matrículas del grupo de la actividad — mismo query que
   // alimenta "Estudiantes de la {rótulo}" en `AsignaturaGradoSection`
   // (`useActividadMatriculasGrupoQuery`, misma `queryKey` por `grupoId`:
@@ -463,6 +504,7 @@ export function EditarActividadForm({
   // desde el alta.
   const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
   const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
+  camposEfectivosRef.current = { camposEfectivos, esFormativa, grupoTieneEstudiantes: matriculas.length > 0 }
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
   // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
   // `DialogAgregarActividad`, `unidadId` de la URL en
@@ -497,19 +539,27 @@ export function EditarActividadForm({
   const rotulo = rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
 
   return (
+    <SoloLecturaActividadContext.Provider value={readOnly}>
     <form
       id={formId}
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault()
+        if (readOnly) return
         // Se captura ACÁ, no dentro del `.then()`: con React 17+ el evento
         // sintético no se "poolea", pero `e` igual puede no sobrevivir el
         // ciclo de vida del handler en algún entorno — el nodo del form sí.
         const formEl = e.currentTarget
-        const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
-        if (faltantes.length > 0) {
-          notify(`Complete los campos obligatorios: ${faltantes.join(", ")}.`, { variant: "error" })
-        }
+        const values = form.state.values
+        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): los
+        // campos generales y lo que le falta al instrumento van en el MISMO
+        // mensaje (ver `avisoCamposObligatorios`) en vez de que uno pise al
+        // otro.
+        const aviso = avisoCamposObligatorios(camposObligatoriosFaltantes(values, camposEfectivosRef.current), {
+          nombre: values.instrumento,
+          faltantes: faltantesDelInstrumento(values),
+        })
+        if (aviso) notify(aviso, { variant: "error" })
         // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
         // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
         // de campos con `validators` de TanStack como los de
@@ -530,7 +580,7 @@ export function EditarActividadForm({
         // TERMINA llenando Grado/Asignatura (`useRecuperacionAutoFill`),
         // así que exigirlos antes sería un candado sin salida.
         form={form}
-        disabled={false}
+        disabled={readOnly}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
@@ -540,7 +590,9 @@ export function EditarActividadForm({
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <AsignaturaGradoSection
             form={form}
-            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion}
+            // En solo lectura se reusa el mismo candado que deja fijos
+            // Grado/Grupo, Asignatura y Estudiantes en una recuperación.
+            bloqueadoPorRecuperacion={bloqueadoPorRecuperacion || readOnly}
             unidadBloqueada={unidadBloqueada}
             tab={tab}
             unidadSlot={
@@ -565,7 +617,7 @@ export function EditarActividadForm({
           />
         </div>
       </Card>
-      <UnidadSection form={form} unidades={unidades} />
+      <UnidadSection form={form} unidades={unidades} readOnly={readOnly} />
       <Card className="gap-6 p-4">
         <h3 className="text-base font-semibold">Recursos y Materiales</h3>
         <MaterialesSection form={form} disabled={disabled} />
@@ -598,32 +650,8 @@ export function EditarActividadForm({
       <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
+    </SoloLecturaActividadContext.Provider>
   )
-}
-
-/** Campos obligatorios vacíos, con el nombre que se ve en pantalla. */
-function camposObligatoriosFaltantes(
-  values: Actividad,
-  {
-    camposEfectivos,
-    esFormativa,
-  }: { camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]; esFormativa: boolean },
-): string[] {
-  // Función plana (sin hooks): usa el rótulo que ya trae `values` de la
-  // actividad original, no el live de `useRotuloActividadQuery` que sí
-  // leen los `<FieldLabel>` — mismo criterio, nunca "actividad" fija.
-  const rotuloLower = rotuloEnMinuscula(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
-  const faltantes: string[] = []
-  if (values.grupoId == null) faltantes.push("Grado / Grupo")
-  if (values.asignaturaId == null) faltantes.push("Asignatura")
-  if (!values.nombre?.trim()) faltantes.push(`Nombre de la ${rotuloLower}`)
-  if (!values.tipo) faltantes.push(`Tipo de ${rotuloLower}`)
-  if (!values.fechaInicio) faltantes.push("Fecha inicio")
-  if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")
-  if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
-    faltantes.push("Instrumento de evaluación")
-  }
-  return faltantes
 }
 
 /**
@@ -673,6 +701,23 @@ function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
 }
 
 const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
+
+/**
+ * Solo lectura del form (`EditarActividadForm.readOnly`). Los campos de datos
+ * siguen visibles y deshabilitados (por el `disabled` de cada sección) para
+ * poder leer la actividad; los botones cuyo único fin es modificar (crear
+ * unidad, agregar/quitar ítems, criterios, niveles, adaptaciones, recursos…)
+ * directamente no se renderizan: van envueltos en `<SoloEdicion>`.
+ */
+const SoloLecturaActividadContext = createContext(false)
+
+function useSoloLecturaActividad(): boolean {
+  return useContext(SoloLecturaActividadContext)
+}
+
+function SoloEdicion({ children }: { children: ReactNode }) {
+  return useSoloLecturaActividad() ? null : <>{children}</>
+}
 
 /**
  * Grado + Asignatura elegidos (los DOS ids, no los nombres): el resto del
@@ -1229,6 +1274,32 @@ function IdentificacionSection({
             </Field>
           )}
         </form.Field>
+
+        {/* Antes vivía en "Seguimiento", que solo se muestra con
+            adaptaciones y referente no formativo: así casi nunca se veía.
+            Es una propiedad de la actividad entera (el Coordinador de la
+            sede valida su planeación, sso V531.x), por eso va acá. Se sigue
+            guardando igual: `REQUIERE_VALIDACION_COORDINADOR`. */}
+        <form.Field name="requiereValidacion">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>¿Requiere validación del coordinador?</FieldLabel>
+              <Select
+                value={field.state.value ? "si" : "no"}
+                onValueChange={(value) => field.handleChange(value === "si")}
+                disabled={disabled}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="si">Sí</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
     </>
   )
 }
@@ -1261,6 +1332,7 @@ function UnidadAsociadaSection({
     asignatura: string
   }) => Promise<UnidadTematica>
 }) {
+  const soloLectura = useSoloLecturaActividad()
   // El rótulo "Unidad temática asociada" está hardcodeado, pero el
   // instrumento real depende del nivel educativo del Grado elegido — mismo
   // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
@@ -1334,7 +1406,12 @@ function UnidadAsociadaSection({
                   <div className="flex items-end gap-0">
                     <Field
                       variant="outlined"
-                      className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
+                      // Pegado al "+" de crear unidad; en solo lectura ese botón
+                      // no se renderiza y el select vuelve a sus esquinas.
+                      className={cn(
+                        "min-w-0 flex-1",
+                        !soloLectura && "[&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0",
+                      )}
                     >
                       <FieldLabel htmlFor={field.name} className="truncate" title={instrumentoLabel}>
                         {instrumentoLabel}
@@ -1408,6 +1485,7 @@ function UnidadAsociadaSection({
                         </SelectContent>
                       </Select>
                     </Field>
+                    <SoloEdicion>
                     <CrearUnidadPopover
                       className="rounded-l-none border-l-0"
                       instrumentoLabel={instrumentoLabel}
@@ -1432,6 +1510,7 @@ function UnidadAsociadaSection({
                         field.handleChange({ id: nueva.id, nombre: nueva.nombre })
                       }}
                     />
+                    </SoloEdicion>
                   </div>
                 )}
               </form.Field>
@@ -1467,9 +1546,12 @@ function UnidadAsociadaSection({
 function UnidadSection({
   form,
   unidades,
+  readOnly = false,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  /** Solo lectura: las evidencias y criterios se ven pero no se marcan. */
+  readOnly?: boolean
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
@@ -1486,6 +1568,7 @@ function UnidadSection({
                     nombreFallback={seleccionada.nombre}
                     seleccionadas={evidenciasField.state.value}
                     onToggle={(evidenciaId) => {
+                      if (readOnly) return
                       const actual = evidenciasField.state.value
                       evidenciasField.handleChange(
                         actual.includes(evidenciaId)
@@ -1493,8 +1576,10 @@ function UnidadSection({
                           : [...actual, evidenciaId],
                       )
                     }}
+                    disabled={readOnly}
                     criteriosSeleccionados={criteriosField.state.value}
                     onToggleCriterio={(criterioId) => {
+                      if (readOnly) return
                       const actual = criteriosField.state.value
                       criteriosField.handleChange(
                         actual.includes(criterioId)
@@ -1524,7 +1609,9 @@ function UnidadFichaYEvidencias({
   onToggle,
   criteriosSeleccionados,
   onToggleCriterio,
+  disabled = false,
 }: {
+  disabled?: boolean
   unidadId: number
   nombreFallback: string
   seleccionadas: number[]
@@ -1571,6 +1658,7 @@ function UnidadFichaYEvidencias({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
+          disabled={disabled}
         />
       )}
       {criterios.length > 0 && (
@@ -1578,6 +1666,7 @@ function UnidadFichaYEvidencias({
           criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
+          disabled={disabled}
         />
       )}
     </div>
@@ -1729,6 +1818,13 @@ function AsignaturaGradoSection({
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
+  )
+  // Misma regla que el aviso de "Complete los campos obligatorios"
+  // (`faltanEstudiantes`): "Ningún estudiante" con un grupo que sí tiene a
+  // quién asignar.
+  const estudiantesInvalido = useErrorObligatorio(
+    form,
+    useSelector(form.store, (state) => faltanEstudiantes(state.values, matriculas.length > 0)),
   )
 
   // El detalle real de la actividad (`toActividadDetalle`) NO trae
@@ -2019,10 +2115,11 @@ function AsignaturaGradoSection({
             de `Actividad.matriculasIds`). */}
         <form.Field name="matriculasIds">
           {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower}</FieldLabel>
+            <Field variant="outlined" data-invalid={estudiantesInvalido}>
+              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower} *</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
+                invalid={estudiantesInvalido}
                 estudiantes={matriculas}
                 value={field.state.value}
                 allSelected={asignarTodoElGrupo}
@@ -2041,6 +2138,7 @@ function AsignaturaGradoSection({
                 isPending={hasGradoAsignatura && isPendingMatriculas}
                 placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}
               />
+              {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
         </form.Field>
@@ -2231,6 +2329,7 @@ function RecursosSection({
   // genera acá: el `Recurso` que viene del modal ya trae un id del
   // recurso original en otra actividad, y si lo reusáramos dos
   // recursos podrían colisionar en el `<ul>` (la key es el id).
+  const soloLectura = useSoloLecturaActividad()
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
     if (list.length >= RECURSO_MAX_ITEMS) return
@@ -2250,6 +2349,7 @@ function RecursosSection({
               otros repositorios de la app). `outline` + `primary` para
               que sea un botón secundario de la cabecera (el primario es
               el toggle de colapsar, que es la acción más usada). */}
+          <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -2276,6 +2376,7 @@ function RecursosSection({
                 : "Elegí el grupo para ver los archivos de otras actividades"}
             </TooltipContent>
           </Tooltip>
+          </SoloEdicion>
           {/* Toggle colapsar/expandir. El ícono cambia entre los dos
               estados: `+` outline (expandir) cuando está colapsado, `-`
               fill (colapsar) cuando está expandido. Mismo idioma visual
@@ -2294,7 +2395,8 @@ function RecursosSection({
                   aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
                   aria-expanded={!collapsed}
                   onClick={() => setCollapsed((v) => !v)}
-                  disabled={disabled}
+                  // Solo muestra/oculta la lista: en solo lectura sigue activo.
+                  disabled={soloLectura ? false : disabled}
                 />
               }
             >
@@ -2323,7 +2425,8 @@ function RecursosSection({
               tipeado se perdía en silencio. `handleAddDraft` ya no hace
               nada si el borrador está vacío, así que no agrega filas
               fantasma solo por tabular de un campo a otro. */}
-          {limiteAlcanzado ? (
+          {/* En solo lectura no hay alta de recursos: solo la lista. */}
+          {soloLectura ? null : limiteAlcanzado ? (
             <p className="text-muted-foreground text-sm">
               Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
               alguno de la lista para agregar otro.
@@ -2836,6 +2939,7 @@ function RecursoItem({
           </TooltipTrigger>
           <TooltipContent>Ver recurso</TooltipContent>
         </Tooltip>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -2854,6 +2958,7 @@ function RecursoItem({
           </TooltipTrigger>
           <TooltipContent>Quitar de la lista</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
     </li>
   )
@@ -3657,6 +3762,7 @@ function ListaCotejoSection({
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición Lista de Cotejo</h3>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -3681,6 +3787,7 @@ function ListaCotejoSection({
           </TooltipTrigger>
           <TooltipContent>Agregar ítem</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Mismo flag que gobierna la ponderación de la rúbrica: un ítem
@@ -3760,10 +3867,11 @@ function ListaCotejoSection({
                       criterio de aceptación #3). Mismo patrón que "Agregar
                       nivel" dentro de cada criterio de rúbrica, que ya vive
                       al final de su propio bloque. */}
+                  <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
-                      variant="outline"
-                      color="neutral"
+                      variant="fill"
+                      color="primary"
                       type="button"
                       disabled={disabled}
                       onClick={() => {
@@ -3778,6 +3886,7 @@ function ListaCotejoSection({
                       Agregar ítem
                     </Button>
                   </div>
+                  </SoloEdicion>
                 </>
               )
             }}
@@ -3844,6 +3953,7 @@ function ListaCotejoItemCard({
     <div className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Ítem {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -3862,6 +3972,7 @@ function ListaCotejoItemCard({
           </TooltipTrigger>
           <TooltipContent>{`Quitar ítem ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Descripción + ponderación en la misma fila: `flex-1` en la
@@ -4006,6 +4117,11 @@ function EscalaValoracionSection({
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
+  // Errores inline tras un intento de guardar — mismas reglas que
+  // `faltantesEscala` (`lib/instrumento-faltantes.ts`), que es la que de
+  // verdad frena el guardado; acá solo se marca en rojo QUÉ campo falta
+  // (y `scrollToFirstInvalidField` lleva la vista hasta él).
+  const intentoGuardar = useSelector(form.store, (state) => state.submissionAttempts) > 0
 
   // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
   // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
@@ -4053,6 +4169,15 @@ function EscalaValoracionSection({
                 next.splice(nIndex, 1)
                 field.handleChange({ ...escala, niveles: next })
               }
+
+              const minimoAusente = intentoGuardar && escala.valorMinimo == null
+              const maximoAusente = intentoGuardar && escala.valorMaximo == null
+              const rangoInvertido =
+                intentoGuardar &&
+                escala.valorMinimo != null &&
+                escala.valorMaximo != null &&
+                escala.valorMinimo >= escala.valorMaximo
+              const sinNiveles = intentoGuardar && escala.niveles.length === 0
 
               return (
                 <>
@@ -4125,9 +4250,9 @@ function EscalaValoracionSection({
                     {escala.tipo === "Numérica" && (
                       <>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={minimoAusente}>
                             <FieldLabel htmlFor={`${escala.id}-valor-minimo`}>
-                              Valor mínimo
+                              Valor mínimo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-minimo`}
@@ -4140,12 +4265,14 @@ function EscalaValoracionSection({
                                   valorMinimo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={minimoAusente}
                               disabled={disabled}
                             />
+                            {minimoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
                           </Field>
-                          <Field variant="outlined">
+                          <Field variant="outlined" data-invalid={maximoAusente || rangoInvertido}>
                             <FieldLabel htmlFor={`${escala.id}-valor-maximo`}>
-                              Valor máximo
+                              Valor máximo *
                             </FieldLabel>
                             <Input
                               id={`${escala.id}-valor-maximo`}
@@ -4158,8 +4285,13 @@ function EscalaValoracionSection({
                                   valorMaximo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              aria-invalid={maximoAusente || rangoInvertido}
                               disabled={disabled}
                             />
+                            {maximoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
+                            {rangoInvertido && (
+                              <FieldError errors={[{ message: "Debe ser mayor que el valor mínimo." }]} />
+                            )}
                           </Field>
                         </div>
 
@@ -4187,6 +4319,7 @@ function EscalaValoracionSection({
                       <div className="mt-4">
                         <div className="mb-3 flex items-center justify-between">
                           <h4 className="text-sm font-semibold">Definiciones cualitativas</h4>
+                          <SoloEdicion>
                           <Tooltip>
                           <TooltipTrigger
                             render={
@@ -4233,15 +4366,30 @@ function EscalaValoracionSection({
                           </TooltipTrigger>
                           <TooltipContent>Agregar definición cualitativa</TooltipContent>
                           </Tooltip>
+                          </SoloEdicion>
                         </div>
 
                         {escala.niveles.length === 0 ? (
-                          <p className="text-muted-foreground text-sm">
-                            Esta escala todavía no tiene definiciones cualitativas.
-                          </p>
+                          <div data-invalid={sinNiveles}>
+                            {sinNiveles ? (
+                              <FieldError errors={[{ message: "Agrega al menos una definición cualitativa." }]} />
+                            ) : (
+                              <p className="text-muted-foreground text-sm">
+                                Esta escala todavía no tiene definiciones cualitativas.
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <ul className="flex flex-col gap-3">
-                            {escala.niveles.map((nivel, nIndex) => (
+                            {escala.niveles.map((nivel, nIndex) => {
+                              const descripcionInvalida = intentoGuardar && !nivel.descripcion.trim()
+                              // El backend exige SIEMPRE el puntaje de cada
+                              // nivel de la escala (0-100), sin importar el
+                              // cálculo de la unidad.
+                              const puntajeInvalido =
+                                intentoGuardar &&
+                                (nivel.ponderacion == null || nivel.ponderacion < 0 || nivel.ponderacion > 100)
+                              return (
                               <li
                                 key={nivel.id}
                                 className={cn(
@@ -4265,25 +4413,29 @@ function EscalaValoracionSection({
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
                                 />
-                                <Input
-                                  variant="outlined"
-                                  placeholder="Interpretación / descriptor"
-                                  maxLength={50}
-                                  value={nivel.descripcion}
-                                  onChange={(e) =>
-                                    updateNivel(nIndex, { descripcion: e.target.value })
-                                  }
-                                  disabled={disabled}
-                                />
+                                <Field data-invalid={descripcionInvalida}>
+                                  <Input
+                                    variant="outlined"
+                                    placeholder="Interpretación / descriptor"
+                                    maxLength={50}
+                                    value={nivel.descripcion}
+                                    onChange={(e) =>
+                                      updateNivel(nIndex, { descripcion: e.target.value })
+                                    }
+                                    aria-invalid={descripcionInvalida}
+                                    disabled={disabled}
+                                  />
+                                  {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+                                </Field>
                                 {/* Ponderación por nivel — solo si la
                                     actividad es sumativa. Mismo patrón que
                                     los niveles intermedios de un criterio
                                     de rúbrica: cada definición pesa lo
                                     suyo, no la escala como un bloque único. */}
                                 {esEvaluativa && (
-                                  <Field variant="outlined">
+                                  <Field variant="outlined" data-invalid={puntajeInvalido}>
                                     <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
-                                      Puntaje
+                                      Puntaje *
                                     </FieldLabel>
                                     <Input
                                       id={`${nivel.id}-ponderacion`}
@@ -4297,10 +4449,21 @@ function EscalaValoracionSection({
                                           ponderacion: raw === "" ? undefined : Number(raw),
                                         })
                                       }}
+                                      aria-invalid={puntajeInvalido}
                                       disabled={disabled}
                                     />
+                                    {puntajeInvalido && (
+                                      <FieldError
+                                        errors={
+                                          nivel.ponderacion == null
+                                            ? ERROR_OBLIGATORIO
+                                            : [{ message: "El puntaje debe estar entre 0 y 100." }]
+                                        }
+                                      />
+                                    )}
                                   </Field>
                                 )}
+                                <SoloEdicion>
                                 <Tooltip>
                                   <TooltipTrigger
                                     render={
@@ -4319,8 +4482,10 @@ function EscalaValoracionSection({
                                   </TooltipTrigger>
                                   <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
                                 </Tooltip>
+                                </SoloEdicion>
                               </li>
-                            ))}
+                              )
+                            })}
                           </ul>
                         )}
                       </div>
@@ -4612,6 +4777,7 @@ function RubricasSection({
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición de Rúbricas *</h3>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -4642,6 +4808,7 @@ function RubricasSection({
           </TooltipTrigger>
           <TooltipContent>Agregar criterio</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Leemos `esEvaluativa` del store del form para decidir si los
@@ -4711,10 +4878,11 @@ function RubricasSection({
                       (QA Bloque 5, criterio de aceptación #3). Mismo patrón
                       que "Agregar nivel" dentro de cada criterio, que ya
                       vive al final de su propio bloque. */}
+                  <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
-                      variant="outline"
-                      color="neutral"
+                      variant="fill"
+                      color="primary"
                       type="button"
                       disabled={disabled}
                       onClick={() => {
@@ -4732,6 +4900,7 @@ function RubricasSection({
                       Agregar criterio
                     </Button>
                   </div>
+                  </SoloEdicion>
                 </>
               )
             }}
@@ -4812,11 +4981,21 @@ function CriterioItem({
     (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
   const excelentePonderacionInvalida =
     puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
+  // `fn_actividad_validar_rubrica_definicion` exige al menos un nivel por
+  // criterio ("Excelente" cuenta como nivel si tiene contenido, ver
+  // `criterioABody`); antes un criterio sin niveles no marcaba nada en
+  // rojo y el guardado seguía hasta que el backend lo rechazaba.
+  const sinNiveles =
+    submissionAttempts > 0 &&
+    criterio.niveles.length === 0 &&
+    !criterio.excelente.trim() &&
+    criterio.excelentePonderacion == null
 
   return (
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -4835,6 +5014,7 @@ function CriterioItem({
           </TooltipTrigger>
           <TooltipContent>{`Quitar criterio ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Cada control usa `Field variant="outlined"` con `FieldLabel`
@@ -4960,6 +5140,7 @@ function CriterioItem({
           )}
           {/* Tachito a la derecha del textarea — quita el bloque entero
               (texto Y puntaje), no solo el texto. */}
+          <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -4981,6 +5162,7 @@ function CriterioItem({
             </TooltipTrigger>
             <TooltipContent>Quitar excelente</TooltipContent>
           </Tooltip>
+          </SoloEdicion>
         </div>
       )}
 
@@ -5084,6 +5266,7 @@ function CriterioItem({
                 {ponderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
               </Field>
             )}
+            <SoloEdicion>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -5110,6 +5293,7 @@ function CriterioItem({
               </TooltipTrigger>
               <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
             </Tooltip>
+            </SoloEdicion>
           </li>
           )
         })}
@@ -5128,9 +5312,11 @@ function CriterioItem({
           ese asomo se come el `mb` de la lista de niveles de arriba y el
           label termina pisando la última fila (visible en la captura).
           24px es lo mínimo para que el label quede libre. */}
+      <SoloEdicion>
       <Field
         variant="outlined"
         className="mt-6 [&_[data-slot=input]]:rounded-r-none [&_[data-slot=input]]:border-r-0"
+        data-invalid={sinNiveles}
       >
         <FieldLabel>Niveles de desempeño (agregar niveles)</FieldLabel>
         <div className="flex items-center gap-0">
@@ -5169,7 +5355,9 @@ function CriterioItem({
             Agregar nivel
           </Button>
         </div>
+        {sinNiveles && <FieldError errors={[{ message: "Agrega al menos un nivel de desempeño." }]} />}
       </Field>
+      </SoloEdicion>
 
       {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
           como el máximo entre los puntajes de sus niveles (de facto, el
@@ -5217,6 +5405,14 @@ function AdaptacionesSection({
   // de cada adaptación combina el `useState` local "tocado" de ESE item con
   // un intento de guardar a nivel del form entero.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla 47: la adaptación solo puede elegir entre los estudiantes DE LA
+  // ACTIVIDAD ("Estudiantes de la {rótulo}"), no entre todo el grupo — el
+  // backend rechaza el resto (ver `esEstudianteDeLaActividad`).
+  const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
+  const matriculasIds = useSelector(form.store, (state) => state.values.matriculasIds)
+  const estudiantesActividad = matriculas.filter((m) =>
+    esEstudianteDeLaActividad({ asignarTodoElGrupo, matriculasIds }, m.id),
+  )
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -5255,6 +5451,7 @@ function AdaptacionesSection({
                     ? "Si aplica, registre las adaptaciones"
                     : "Adaptaciones registradas"}
                 </p>
+                <SoloEdicion>
                 <Tooltip>
                   <TooltipTrigger
                     render={
@@ -5273,6 +5470,7 @@ function AdaptacionesSection({
                   </TooltipTrigger>
                   <TooltipContent>Agregar adaptación</TooltipContent>
                 </Tooltip>
+                </SoloEdicion>
               </div>
 
               {adaptaciones.length > 0 && (
@@ -5282,7 +5480,7 @@ function AdaptacionesSection({
                       key={aIndex}
                       index={aIndex}
                       adaptacion={adapt}
-                      matriculas={matriculas}
+                      matriculas={estudiantesActividad}
                       disabled={disabled}
                       actividadId={actividadId}
                       grupoId={grupoId ?? 0}
@@ -5307,18 +5505,6 @@ function AdaptacionesSection({
       </form.Field>
     </Card>
   )
-}
-
-/**
- * `nombres`/`apellidos` en el mock viven en MAYÚSCULAS (así arma los
- * documentos oficiales `mocks/db/calificaciones.ts`), pero el checklist
- * de estudiantes se lee como cualquier lista de nombres propios — Título
- * Caso, no gritado. Es un ajuste solo de presentación acá; no toca el
- * dato guardado ni a otros consumidores (la tabla de calificaciones sigue
- * mostrando el nombre tal cual viene).
- */
-function toTitleCase(value: string): string {
-  return value.toLowerCase().replace(/\p{L}+/gu, (word) => word[0]!.toUpperCase() + word.slice(1))
 }
 
 /**
@@ -5537,15 +5723,22 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
+  // Solo cuentan los que siguen siendo estudiantes de la actividad: si el
+  // docente sacó a alguien en "Estudiantes de la {rótulo}" después de
+  // marcarlo acá, deja de verse marcado (y al guardar se poda, ver
+  // `adaptacionesConEstudiantesDeLaActividad`).
+  const estudiantesSeleccionados = adaptacion.estudiantesIds.filter((id) => matriculas.some((m) => m.id === id))
+  const todosSeleccionados = matriculas.length > 0 && estudiantesSeleccionados.length === matriculas.length
   const estudiantesInvalido =
     (tocoEstudiantes || submissionAttempts > 0) &&
     adaptacion.aplicaA === "Estudiantes específicos" &&
-    adaptacion.estudiantesIds.length === 0
+    estudiantesSeleccionados.length === 0
 
   return (
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Adaptación {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -5564,6 +5757,7 @@ function AdaptacionItem({
           </TooltipTrigger>
           <TooltipContent>{`Quitar adaptación ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       <Field variant="outlined" className="mt-3">
@@ -5697,6 +5891,7 @@ function AdaptacionItem({
                       {archivo.fkTarchivo !== undefined && !archivo.blobUrl && (
                         <VerPlantillaAdaptacion archivoId={archivo.fkTarchivo} />
                       )}
+                      <SoloEdicion>
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -5721,6 +5916,7 @@ function AdaptacionItem({
                         </TooltipTrigger>
                         <TooltipContent>{`Quitar ${archivo.nombre}`}</TooltipContent>
                       </Tooltip>
+                      </SoloEdicion>
                     </div>
                   </li>
                 ))}
@@ -5875,64 +6071,49 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Checklist de estudiantes — solo cuando la adaptación aplica a
-          "Estudiantes específicos". Mismo idioma que el resto del form:
-          `Field variant="outlined"` con el label flotando en el borde
-          superior, acá conteniendo una lista vertical de checkboxes en
-          vez de un input. Mismo padrón que "Estudiantes de la {rótulo}"
-          (Bloque 1, `useActividadMatriculasGrupoQuery`/`matriculas`), NO
-          `useCalificacionesQuery`: ese query viene vacío en el alta (la
-          actividad todavía no existe) y, aun en edición, devuelve
-          `pk_tactividad_estudiante` como id en vez del `pk_tmatricula` que
-          exige `estudiantesIds` (`fn_actividad_validar_adaptacion_
-          estudiantes`, V496.1) — ver el comentario de `grupoIdActual` en
-          `EditarActividadForm`. Vacío si el grupo todavía no tiene
-          matrículas cargadas.
+      {/* Estudiantes de la adaptación — solo con "Estudiantes específicos".
+          Mismo control que "Estudiantes de la {rótulo}" del Bloque 1
+          (`EstudiantesMultiSelect`: trigger con resumen + menú de checkboxes
+          con "Seleccionar todos"), en vez de la lista de checkboxes suelta
+          de antes, que con un grupo de 40 estudiantes estiraba la tarjeta.
 
-          Validación "obligatorio" (estudiantesInvalido más arriba): el
-          `onBlur` va en el contenedor de checkboxes, no en cada uno — React
-          hace burbujear `blur` (desde v17), así que alcanza con que el foco
-          salga de CUALQUIER checkbox del checklist para marcarlo "tocado",
-          sin depender de cuál en particular perdió el foco. */}
+          Opciones: solo los estudiantes DE LA ACTIVIDAD (`matriculas` ya
+          viene filtrado en `AdaptacionesSection`, Regla 47 —
+          `fn_actividad_validar_adaptacion_estudiantes`, V496.1, rechaza
+          cualquier otro). Ids `pk_tmatricula`, los mismos que guarda y
+          devuelve el backend (ver `adaptacionFromRaw`).
+
+          A diferencia del Bloque 1, "todos" acá NO es un estado aparte: la
+          adaptación siempre guarda la lista explícita (el backend exige un
+          array no vacío con "Estudiantes específicos"), así que
+          `allSelected` se deriva de la selección y "Seleccionar todos"
+          escribe todos los ids.
+
+          "Tocado" al cerrar el menú (no hay `blur` útil en un trigger que
+          abre un popup). */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
         <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
-          <FieldLabel>Seleccionar estudiantes (múltiple)</FieldLabel>
-          {matriculas.length === 0 ? (
-            <p className="text-muted-foreground px-1 py-2 text-sm">
-              Este grupo todavía no tiene estudiantes cargados.
-            </p>
-          ) : (
-            <div
-              className="flex flex-col gap-1 py-1"
-              aria-invalid={estudiantesInvalido}
-              onBlur={() => setTocoEstudiantes(true)}
-            >
-              {matriculas.map((matricula) => {
-                const checked = adaptacion.estudiantesIds.includes(matricula.id)
-                return (
-                  <label
-                    key={matricula.id}
-                    className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(next) => {
-                        setTocoEstudiantes(true)
-                        onChange({
-                          ...adaptacion,
-                          estudiantesIds: next
-                            ? [...adaptacion.estudiantesIds, matricula.id]
-                            : adaptacion.estudiantesIds.filter((id) => id !== matricula.id),
-                        })
-                      }}
-                      disabled={disabled}
-                    />
-                    {toTitleCase(matricula.nombre)}
-                  </label>
-                )
-              })}
-            </div>
-          )}
+          <FieldLabel htmlFor={`adaptacion-${index}-estudiantes`}>Estudiantes de la adaptación</FieldLabel>
+          <EstudiantesMultiSelect
+            id={`adaptacion-${index}-estudiantes`}
+            estudiantes={matriculas}
+            value={estudiantesSeleccionados}
+            allSelected={todosSeleccionados}
+            allSelectedLabel="Todos los estudiantes de la actividad"
+            onChange={({ matriculaIds, allSelected }) => {
+              setTocoEstudiantes(true)
+              onChange({
+                ...adaptacion,
+                estudiantesIds: allSelected ? matriculas.map((m) => m.id) : matriculaIds,
+              })
+            }}
+            onOpenChange={(open) => {
+              if (!open) setTocoEstudiantes(true)
+            }}
+            invalid={estudiantesInvalido}
+            disabled={disabled}
+            placeholder="La actividad todavía no tiene estudiantes"
+          />
           {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}
@@ -5946,9 +6127,17 @@ function AdaptacionItem({
  * coordinador" son parte del seguimiento DE esas adaptaciones—, así que la
  * sección entera desaparece (no se deshabilita) mientras `adaptaciones` esté
  * vacío, igual que "Ponderación" desaparece cuando la actividad no es
- * sumativa.
+ * sumativa. "¿Requiere validación del coordinador?" ya no vive acá: pasó a
+ * "Identificación" (`IdentificacionSection`).
  */
 function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Solo se monta con referente no Formativo (`!esFormativa` en el padre),
+  // por eso `false`; `faltaTipoEvidencia` igual exige que haya
+  // adaptaciones (la sección se oculta sin ellas, y oculta no valida).
+  const tipoEvidenciaInvalido = useErrorObligatorio(
+    form,
+    useSelector(form.store, (state) => faltaTipoEvidencia(state.values, false)),
+  )
   return (
     <form.Subscribe selector={(state) => state.values.adaptaciones.length > 0}>
       {(hasAdaptaciones) =>
@@ -5984,14 +6173,14 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                   tocar. */}
               <form.Field name="tipoEvidencia">
                 {(tipoField) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={tipoField.name}>Tipo de evidencia</FieldLabel>
+                  <Field variant="outlined" data-invalid={tipoEvidenciaInvalido}>
+                    <FieldLabel htmlFor={tipoField.name}>Tipo de evidencia{field.state.value ? " *" : ""}</FieldLabel>
                     <Select
                       value={tipoField.state.value}
                       onValueChange={(v) => v && tipoField.handleChange(v)}
                       disabled={!field.state.value || disabled}
                     >
-                      <SelectTrigger id={tipoField.name}>
+                      <SelectTrigger id={tipoField.name} aria-invalid={tipoEvidenciaInvalido}>
                         <SelectValue />
                       </SelectTrigger>
                       {/* Valores = `nombre` real de la categoría `TLISTA_VALOR`
@@ -6007,31 +6196,11 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                         <SelectItem value="Observación">Observación</SelectItem>
                       </SelectContent>
                     </Select>
+                    {tipoEvidenciaInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                   </Field>
                 )}
               </form.Field>
             </>
-          )}
-        </form.Field>
-
-        <form.Field name="requiereValidacion">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>¿Requiere validación del coordinador?</FieldLabel>
-              <Select
-                value={field.state.value ? "si" : "no"}
-                onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={disabled}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="si">Sí</SelectItem>
-                  <SelectItem value="no">No</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
           )}
         </form.Field>
       </div>

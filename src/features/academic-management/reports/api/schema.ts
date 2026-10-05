@@ -20,5 +20,8 @@ export const informesSearchSchema = z.object({
 
 export type InformesSearch = z.infer<typeof informesSearchSchema>
 
-/** La planilla recibe el mismo estado para devolverlo al volver. */
-export const planillaInformeSearchSchema = informesSearchSchema
+/** La planilla recibe el mismo estado para devolverlo al volver, más el
+ *  rótulo del filtro (grupo / asignatura / periodo) que muestra. */
+export const planillaInformeSearchSchema = informesSearchSchema.extend({
+  filtro: z.string().optional().catch(undefined),
+})

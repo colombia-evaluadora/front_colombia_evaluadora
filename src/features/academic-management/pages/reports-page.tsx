@@ -67,23 +67,10 @@ import {
   type DestinoPlanilla,
 } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
+import { getErrorMessage } from "@/lib/api-client"
 
-/**
- * Los roles que solo alcanzan los grupos que la persona dirige: el espejo de
- * fn_rol_alcance_sede en el backend (V443). El token trae los claims con la
- * forma CEVAL- seguido del CODIGO del rol.
- */
 const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 
-/**
- * Cuántas pestañas de grupo se pueden tener abiertas a la vez.
- *
- * El tope NO es de backend: solo se carga el informe de la pestaña activa, y
- * las alertas —que sí van con todos los grupos abiertos— resultaron planas al
- * medirlas (1 grupo 177 ms, 5 grupos 126 ms). Lo que se satura es la barra de
- * pestañas, que a partir de ocho deja de leerse en una pantalla de portátil.
- * Si hace falta más, subir este número no tiene costo del otro lado.
- */
 const MAX_GRUPOS_ABIERTOS = 8
 
 const PANEL_CLASS =
@@ -131,9 +118,6 @@ function coincide(fila: FilaInforme, busqueda: string): boolean {
 
 interface GrupoTabContentProps {
   grupoId: number
-  /** Título de la columna/sección de observación — viene del referente
-   *  curricular del grado (ver `useStudyPlanSubjectLabel`), nunca un
-   *  literal fijo. */
   observacionLabel: string
   periodos: number[]
   busqueda: string
@@ -144,10 +128,6 @@ interface GrupoTabContentProps {
   onGuardar: () => void
   guardando: boolean
   onAbrirObservacion: (fila: FilaInforme) => void
-  /** El botón "Generar boletín" vive en la cabecera, fuera de este
-   *  componente, pero solo el informe sabe si el grupo salió cualitativo
-   *  (el boletín en PDF, por `boletin-preescolar.md`, solo imprime
-   *  preescolar). */
   onEsCualitativoChange: (esCualitativo: boolean) => void
 }
 
@@ -176,8 +156,6 @@ function GrupoTabContent({
   const estudiantes = React.useMemo(() => agruparPorEstudiante(filas), [filas])
   const columnas = React.useMemo(() => columnasDeFilas(filas), [filas])
 
-  // Preescolar se decide por `formato`, no por el grupo: un grupo mixto sigue
-  // siendo numérico y sus dimensiones cualitativas salen por asignatura.
   const esCualitativo = filas.length > 0 && filas.every((fila) => fila.formato === "cualitativo")
 
   React.useEffect(() => {
@@ -246,7 +224,7 @@ function GrupoTabContent({
       )}
       {informe.isError && (
         <p className="py-8 text-center text-sm text-red">
-          No se pudo cargar el informe de este grupo.
+          {getErrorMessage(informe.error)}
         </p>
       )}
       {!informe.isPending &&
@@ -340,11 +318,6 @@ function ReportsPageContent() {
     [setSearch, filtros, activeTab],
   )
 
-  // El backend recorta los informes a los grupos que la persona dirige cuando
-  // ninguno de sus roles alcanza la sede entera (V443). Acá se repite la
-  // lectura SOLO para elegir el texto del estado vacío: si esta lista se
-  // desactualiza, lo peor que pasa es que se muestre el mensaje genérico,
-  // nunca que alguien vea algo que no debe.
   const roles = usuario.data?.roles ?? []
   const soloSusGrupos =
     roles.length > 0 && roles.every((rol) => ROLES_SOLO_SUS_GRUPOS.includes(rol))
@@ -463,7 +436,6 @@ function ReportsPageContent() {
     }
     const matriculas = Array.from(seleccionActiva)
     try {
-      // Un período por llamada: el endpoint no acepta arreglo a propósito.
       const detalles = await Promise.all(
         periodos.map((periodoId) =>
           guardarInforme.mutateAsync({ grupoId: grupoActivoId, periodoId, matriculas }),
@@ -475,8 +447,6 @@ function ReportsPageContent() {
       // el historial (`IF v_g + v_a > 0` en fn_informe_periodo_guardar), así
       // que el aviso y el historial no pueden contradecirse.
       const escribio = (d: (typeof filas)[number]) => d.guardadas + d.actualizadas > 0
-      // Por matrícula y no por fila: con varios períodos marcados hay una fila
-      // por (estudiante, período), y el mensaje habla de estudiantes.
       const consolidados = new Set(filas.filter(escribio).map((d) => d.matriculaId)).size
       const sinProyeccion = new Set(
         filas.filter((d) => !escribio(d) && d.sinProyeccion > 0).map((d) => d.matriculaId),
@@ -487,9 +457,6 @@ function ReportsPageContent() {
         })
         return
       }
-      // Nada escrito y nada sin proyección: las notas ya estaban consolidadas
-      // con el mismo valor. El guardado es idempotente, así que esto NO es un
-      // error — pero decir «se consolidaron 0 estudiantes» suena a que falló.
       if (consolidados === 0) {
         notify("Lo seleccionado ya estaba consolidado: no hubo cambios.")
         return
@@ -547,8 +514,6 @@ function ReportsPageContent() {
     setGruposAbiertos(restantes, String(grupoId) === activeTab ? restantes[0] : undefined)
   }
 
-  // La planilla se lleva el estado de la pantalla para poder devolverlo:
-  // `Cancelar` y `Aprobar` vuelven acá y las pestañas siguen como estaban.
   function handleIrAPlanilla(destino: DestinoPlanilla) {
     navigate({
       to: paths.app.gestionAcademicaInformesPlanilla.getHref(
@@ -556,7 +521,8 @@ function ReportsPageContent() {
         destino.asignaturaId,
         destino.periodoId,
       ),
-      search,
+      // `to` es un href armado: el search no se tipa contra la ruta de la planilla.
+      search: { ...search, filtro: destino.etiqueta } as typeof search,
     })
   }
 
