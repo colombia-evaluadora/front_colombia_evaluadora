@@ -199,7 +199,7 @@ Toda llamada va a `env.API_URL` (`/api`, mismo origen). En dev lo proxea Vite; e
 - `success-messages.ts` — `SUCCESS_MESSAGES[entidad].{created,updated,deleted,deletedMany(n),deactivated}`. Los toasts de éxito salen de acá, **no** del `message` del backend. Los de error sí usan el mensaje del backend.
 - `text-input.ts` — sanitizadores de `onChange`: `toDigitsOnly(v, max)` (VARCHAR numéricos; **nunca `type="number"`**), `toNitInput`, `toDigitsOrRangeInput`, `toLettersOnly`, `toSafeTextInput`.
 - `image-file.ts` — límites (2 MB, jpeg/png/svg, 4000 px), `imageFileSchema`, `optionalImageFile` (`nullish` = mantener la imagen existente), validadores sync/async.
-- `forms/index.ts` — `useAppForm`, `withForm`, `useFieldContext`, `useFormContext` (`createFormHook` con `fieldComponents`/`formComponents` vacíos a propósito).
+- `forms/` — `useAppForm`, `withForm`, `useFieldContext`, `useFormContext` y los **campos registrados** (`fields.tsx`: `TextField`, `TextareaField`, `NumberField`, `SelectField`, `DateField`, `CheckboxField`), `isFieldInvalid`, `FormDisabledProvider`/`useFormDisabled` y `messages.ts` (mensajes de validación compartidos). Ver §7 "Formularios".
 - `utils.ts` — `cn()`.
 
 ### Variables de entorno (`src/config/env.ts`)
@@ -331,8 +331,26 @@ export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationCo
 - Export: diálogo con PDF/Excel → `downloadReport(key, { format, filters: toThingsFilters(...), columns })`.
 
 ### Formularios
-- Preferido: TanStack Form (`useAppForm` de `@/lib/forms`, o `useForm` directo como en `academic-period`) con zod en `validators: { onChange/onSubmit: schema }` y `<form.Field>` envolviendo `Field`/`FieldLabel`/`FieldError` + inputs de `ui/`. Estado inválido: `isTouched || submissionAttempts > 0`. Botón de submit externo con `form={FORM_ID}`. Create y edit comparten componente.
-- Referencias: `establishment/academic-period/components/forms/form-academic-period.tsx`, `dialogs/dialog-create-grade-group.tsx`, `coverage/components/forms/form-filter-reservations.tsx`.
+- **Preferido**: `useAppForm` de `@/lib/forms` + schema zod en `validators: { onChange/onSubmit: schema }` + **campos registrados** dentro de `<form.AppField>`. No reimplementes `Field`/`FieldLabel`/`FieldError`/`aria-invalid` a mano:
+  ```tsx
+  const form = useAppForm({ defaultValues, validators: { onSubmit: schema }, onSubmit: ({ value }) => save(value) })
+  <form.AppField name="nombre">{(f) => <f.TextField label="Nombre" required maxLength={130} />}</form.AppField>
+  <form.AppField name="peso">{(f) => <f.NumberField label="Peso (%)" valueAs="number" suffix="%" />}</form.AppField>
+  <form.AppField name="estadoId">{(f) => <f.SelectField label="Estado" options={opts} emptyValue={0} clearable />}</form.AppField>
+  <form.AppField name="inicio" validators={{ onChange: fn }}>{(f) => <f.DateField label="Inicio" minDate={min} />}</form.AppField>
+  <FormDisabledProvider disabled={soloLectura}>…sección…</FormDisabledProvider>
+  ```
+  - Props comunes: `label`, `required` (agrega `*`), `description` (se oculta mientras hay error; string → `FieldDescription`, nodo → tal cual), `variant` (default `outlined`), `disabled`, `id` (default el nombre del campo). `placeholder` default "Agregar" en inputs.
+  - `NumberField`: siempre `type="text"` + `toDigitsOnly`. `valueAs="string"` (default, VARCHAR numérico) o `"number"` (vacío → `NaN`, lo rechaza `z.number()`); `maxDigits`, `max`, `suffix`.
+  - `SelectField`: recibe `SelectOption[]` (`value`/`label`), resuelve `toSelectItemsMap` y el centinela `__none__` adentro y devuelve el `value` original (number o string). `emptyValue` (default `""`), `clearable`, `placeholder` (default "Seleccione"), `renderValue` (p. ej. un `Badge`).
+  - `DateField`: `mode="date"` usa `date-value` (vacío → `""`); `nullable` usa el `formatDateValue` de `date-time-value` (vacío → `null`); `mode="datetime"` usa `date-time-value`. Pasa `minDate`/`maxDate`/`disabledRanges`/`enabledDaysOfWeek`.
+  - `TextareaField` muestra `CharacterCounter` si hay `maxLength`. `TextField` acepta `transform` (sanitizadores de `text-input.ts`).
+  - Estado inválido: `isFieldInvalid(field, submissionAttempts)` (`isTouched || submissionAttempts > 0`, y con errores). Usalo también en campos propios (combobox, radio) montados con `useFieldContext`.
+  - `FormDisabledProvider` deshabilita los campos registrados de toda la sección (Base UI ignora `<fieldset disabled>`); los providers anidados se suman.
+  - Mensajes: `@/lib/forms/messages` — `required("El código")`, `required("La fecha", { femenino: true })`, `maxLength(130, "El nombre")`, `minLength`, `range`, `invalidEmail`, `invalidUrl`, `invalidDate`, `fileTooLarge`, `invalidFileType`, `REQUIRED`, `INCOMPLETE_FORM`. No escribas otra vez "El nombre es obligatorio" a mano.
+  - No vuelvas a `parse`/`safeParse` el schema en `onSubmit`: solo corre si el validador pasó.
+- Botón de submit externo con `form={FORM_ID}`. Create y edit comparten componente.
+- Referencia: `establishment/academic-period/components/dialogs/dialog-create-evaluation-period.tsx` (piloto: texto, número con sufijo, fechas con validadores por campo, select con badge). Los demás forms de `academic-period` todavía usan `useForm` + `<form.Field>` a mano: migralos cuando los toques.
 - **No copies** los forms `useState` + `safeParse` manual de campuses/employees/institution/curricular-references (salvo que edites ahí mismo).
 - Diálogo con form: `NoticeBanner` local para errores mientras está abierto; éxito con `notify()` de página y cerrar; `ConfirmDiscardDialog` al cerrar sucio; no cerrar mientras hay save pendiente.
 - Inputs numéricos que son VARCHAR: `toDigitsOnly`, no `type="number"`.
