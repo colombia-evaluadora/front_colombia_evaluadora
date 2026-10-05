@@ -15,6 +15,12 @@
 // las líneas es correcto. Esta directiva deja el archivo fuera de la
 // optimización para que el swap "leer y vaciar" corra tal como está
 // escrito.
+//
+// Hoy ese swap vive dentro de `pendingNoticeStore.take()` (una llamada a
+// función, que el compilador no puede reordenar), pero la directiva se
+// mantiene: el efecto de `NoticeProvider` sigue tocando estado de módulo
+// (`activeNoticeProviders`) y no vale la pena el riesgo de reintroducir el
+// bug por un archivo tan chico.
 
 import {
   createContext,
@@ -29,12 +35,8 @@ import {
 import { toast } from "sonner"
 
 import { NoticeBanner, type Notice, type NoticeVariant } from "@/components/notice/notice-banner"
+import { pendingNoticeStore, type NotifyOptions } from "@/components/notice/pending-notice"
 import { setSuppressGlobalErrorToast } from "@/lib/api-client"
-
-interface NotifyOptions {
-  variant?: NoticeVariant
-  autoCloseMs?: number
-}
 
 interface NoticeDispatch {
   notify: (message: string, options?: NotifyOptions) => void
@@ -70,22 +72,11 @@ export function useNotify(): NoticeDispatch {
 let activeNoticeProviders = 0
 
 /**
- * Aviso encolado para el `NoticeProvider` que monte a continuación —
- * variable de módulo, no estado de React: sobrevive porque es una SPA (no
- * hay reload de página entre rutas), pero SÍ se pierde el `NoticeProvider`
- * actual, que es por pantalla.
- *
- * Existe para el patrón "guardar y navegar" (crear/editar actividad o
- * unidad, `onSuccess` → `notify(...)` → `navigate(...)`): un `notify()`
- * normal ahí actualiza el estado del `NoticeProvider` de la pantalla que se
- * está por DESMONTAR, así que el aviso nunca llega a pintarse. `queueNotice`
- * lo guarda para que el `NoticeProvider` de la pantalla de DESTINO lo
- * muestre apenas se monta.
+ * Encola un aviso para que lo muestre el `NoticeProvider` de la pantalla de
+ * DESTINO al montarse (patrón "guardar y navegar"; ver `pending-notice.ts`).
  */
-let pendingNotice: { message: string; options?: NotifyOptions } | null = null
-
 export function queueNotice(message: string, options?: NotifyOptions) {
-  pendingNotice = { message, options }
+  pendingNoticeStore.set({ message, options })
 }
 
 export function NoticeProvider({ children }: { children: ReactNode }) {
@@ -106,16 +97,11 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     activeNoticeProviders += 1
     setSuppressGlobalErrorToast(true)
-    // `pendingNotice` es una variable de MÓDULO, compartida por cualquier
-    // `NoticeProvider` que esté montado al mismo tiempo (StrictMode
-    // re-invoca este efecto, y dos pantallas pueden solaparse un instante
-    // durante la navegación) — chequear `if (pendingNotice)` y leerla de
-    // nuevo en la línea siguiente no es atómico: otro montaje puede
-    // vaciarla en el medio y dejar `queued` en `null` justo antes de
-    // `queued.message`. Se captura y se vacía en una sola operación, y se
-    // chequea la copia LOCAL (no la global) antes de usarla.
-    const queued = pendingNotice
-    pendingNotice = null
+    // El aviso encolado lo comparte cualquier `NoticeProvider` montado al
+    // mismo tiempo (StrictMode re-invoca este efecto, y dos pantallas pueden
+    // solaparse un instante durante la navegación): `take()` lo lee y lo
+    // vacía en una sola operación, así que se muestra una sola vez.
+    const queued = pendingNoticeStore.take()
     if (queued) {
       notify(queued.message, queued.options)
     }
