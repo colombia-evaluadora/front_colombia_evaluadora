@@ -245,11 +245,11 @@ Todo plano en la raíz del feature (sin sub-carpetas) aunque tiene 4 subdominios
 - `components/forms/form-editar-actividad.tsx` (~5.200 líneas) sirve para crear y editar. `defaultValues` se leen una vez al montar: la página espera los datos y usa `key={id}`. Controles de Base UI ignoran `<fieldset disabled>` → cada sección recibe `disabled` explícito.
 - **Guardado multi-paso con orden obligatorio**: actividad (POST/PUT) → vínculo unidad → evidencias (una por request) → materiales (PUT, reemplazo total) → instrumento (PUT; necesita que el PUT de actividad ya haya fijado `FK_TLV_INSTRUMENTO_EVALUACION`, si no 400/22023) → adaptaciones (reemplazo total) → criterios → estudiantes. Los PUT de reemplazo total **borran archivos que no se reenvíen por `archivoId`**.
 - Contrato: bodies UPPER_SNAKE, flags `"S"|"N"`, **campos JSONB se mandan como string JSON** (`DEFINICION`, `MATERIALES`, `ADAPTACIONES`, `CALIFICACION`), no hay DELETE (bajas por PATCH). Nombres de catálogo → `pk_lista_valor` con `resolveXxxId(nombre)` al armar el body.
-- Query keys bajo `["planeador", ...]` (`"actividades-mias"`, `"actividad", id`, `"unidad", id, <sub>`, `"planilla", ...`).
+- Query keys: **solo desde `planeadorKeys`** (`api/query-keys.ts`), bajo `["planeador", ...]`: `actividades.{all,lista,mias,calendario,stats,programacion}`, `actividad.{detalle,calificaciones,instrumento,…}(id)`, `unidades.{all,lista}`, `unidad.{detalle,criterios,actividades,…}(id)`, `planilla.{calificaciones.{all,lista},columnas}`. Asistencia también la usa (`sedesOpciones`).
 - "Instrumento" tiene **dos significados**: `?instrumento=` / `/unidades/tabs` = etiqueta del referente ("Unidad temática" / "Proyecto pedagógico"); `Actividad.instrumento` = instrumento de evaluación. Además, nombre visible ("Rúbrica") ≠ código de planilla (`RUBRICA`).
 - Detectar unidad formativa con `useUnidadReferenteQuery(...).esFormativo`, no con `enfoquePedagogico` (viene hardcodeado).
 - El mock devuelve objetos camelCase de dominio (no filas snake_case) → ~10 hooks ramifican por `env.ENABLE_API_MOCKING`.
-- Invalidación de actividades: create/update/delete usan `invalidarListadosActividades` (`api/query/invalidar-listados-actividades.ts`), que refresca `actividades-mias`/`-calendario`/`-stats`, el listado legado y el detalle. **Bug conocido**: `importar-actividades-json.ts` todavía invalida solo `["planeador","actividades"]` (+ unidades), que no prefija `actividades-mias`/`-calendario`/`-stats`.
+- Invalidación de actividades: create/update/delete/importar usan `invalidarListadosActividades` (`api/query/invalidar-listados-actividades.ts`), que invalida `planeadorKeys.actividades.all` (prefijo real del rail, calendario, stats, listado legado y programación) y, si se le pasa, el detalle. Las calificaciones de cualquier actividad (id en el medio de la key) se filtran con `esCalificacionesDeActividad`.
 
 ### `administration`
 - `roles-menus/`: asignación de menús a roles (transferencia de dos paneles, "Solo lectura", reordenamiento por drag nativo HTML5), CRUD de menús y planes. El árbol es estrictamente de 2 niveles y el backend rechaza hijos sin su padre → todo guardado pasa por `partitionKnownMenus` + `withRequiredParents` (`api/types/role-menu.ts`, con tests). Todo vía `evalCol`.
@@ -294,6 +294,25 @@ export function useThingsQuery(params: ThingsParams) {
 - Keys: `["<kebab-plural>", params]` para listas; detalle con `enabled: Boolean(id)`. Si el detalle tiene key distinta a la lista, **invalidá ambas** al mutar. Catálogos: `staleTime: Infinity`.
 - `queryOptions()` casi no se usa; no es obligatorio.
 
+### Query keys (`api/query-keys.ts`)
+`planeador` y `establishment/academic-period` tienen una factory que es la **única fuente** de sus keys: lecturas, `invalidateQueries`, `setQueryData`, `getQueryData`, `useIsFetching`, predicados. No escribas arrays literales de key en esos features (ni desde otros features que lean/invaliden sus keys: importá la factory). Para un feature nuevo, o al tocar uno que todavía tiene keys sueltas, seguí el mismo patrón:
+```ts
+// features/<f>/api/query-keys.ts
+const all = ["things"] as const
+const detalle = (id: number | "none") => [...all, id] as const
+export const thingKeys = {
+  all,                                                          // prefijo de TODO el feature
+  lista: <P>(params: P) => [...all, "lista", params] as const,
+  detalle,                                                      // prefijo de lo que cuelga del id
+  hijos: (id: number | "none") => [...detalle(id), "hijos"] as const,
+} as const
+```
+- **Cada nivel se arma extendiendo el anterior** (`[...padre, ...]`): así la key que se invalida es, por construcción, prefijo de las de lectura. Nunca hagas keys "hermanas" con guion (`"actividades-mias"` junto a `"actividades"`): no se prefijan entre sí (ese era el bug de planeador).
+- Invalidá por el nivel más alto que corresponda (`thingKeys.all`, `thingKeys.detalle(id)`), no reconstruyendo params.
+- `"none"` = key de una query deshabilitada (sin id todavía).
+- Si una key ya la usan otros features por su valor, conservá el valor (por eso `academicPeriodKeys` no tiene raíz común: cada entidad tiene su `.all`, p. ej. `academicPeriodKeys.grades.all = ["grades"]`).
+- Las invalidaciones van en el hook de mutación (ver abajo), nunca en el componente. Si un diálogo hace la llamada sin hook, creá el hook en `api/mutations/`.
+
 ### Mutation hook
 ```ts
 export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationConfig<typeof createThing> } = {}) {
@@ -303,7 +322,7 @@ export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationCo
     mutationFn: createThing,
     ...rest,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["things"] }) // prefijo; verificá que realmente prefije las keys de lectura
+      queryClient.invalidateQueries({ queryKey: thingKeys.all }) // desde la factory: prefijo real de las lecturas
       onSuccess?.(...args)
     },
   })
@@ -414,7 +433,7 @@ feature/* ──squash──▶ dev ──merge commit──▶ test ──merge
 ## 11. Trampas rápidas (checklist)
 
 - ¿Endpoint nuevo? Decidí cliente (`evalCol` vs `api` vs `files` vs `downloadReport`), si necesita `apiPath` + handler MSW, y si toca las listas de endpoints de `api-client.ts`.
-- ¿Invalidación? Verificá que la key invalidada sea **prefijo real** de las keys de lectura (hay bugs de esto en planeador).
+- ¿Invalidación? Usá la factory `api/query-keys.ts` (planeador, academic-period) y verificá que la key invalidada sea **prefijo real** de las de lectura. En features sin factory las keys siguen siendo literales sueltos: ojo.
 - ¿Tabla? `"use no memo"`.
 - ¿`<Select items>`? `toSelectItemsMap`.
 - ¿Pantalla con `NoticeProvider`? Los errores de axios ya no salen solos: mostralos vos.
