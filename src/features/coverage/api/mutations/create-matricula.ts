@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { resolverSede } from "@/features/coverage/utils/sede-matricula"
 import { fetchSedeJornadasActivas } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { fetchPeriodoResolverMatricula } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
 import { fetchGrados } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
@@ -114,7 +115,15 @@ async function createMatricula({
   pkUsuarioAcudiente: providedPkUsuarioAcudiente,
 }: CreateMatriculaMutationInput): Promise<CreateMatriculaResult> {
   const sedes = await fetchSedeOptions()
-  const sede = sedes.find((s) => s.nombre === values.academic.campus)
+  const { sede, ambigua } = resolverSede(sedes, {
+    campusId: values.academic.campusId,
+    campus: values.academic.campus,
+  })
+  if (ambigua) {
+    throw new Error(
+      `Hay una sede llamada "${values.academic.campus}" en más de uno de tus establecimientos: vuelve a elegir la sede.`,
+    )
+  }
   if (!sede) {
     throw new Error(`No se encontró la sede "${values.academic.campus}".`)
   }

@@ -14,7 +14,7 @@ interface EstablishmentsOptionsResult {
 // (ver src/lib/response-envelope.ts) y acá el SELECT registrado
 // (`fn_est_listar_todos`) es justo un listado de N filas — la misma forma
 // que ya devuelve el mock. Por eso no usa `unwrapRows` explícito.
-function fetchEstablishmentsOptions(): Promise<EstablishmentsOptionsResult> {
+export function fetchEstablishmentsOptions(): Promise<EstablishmentsOptionsResult> {
   return api.get(apiPath("/establishments/options", "/establecimientos/opciones"))
 }
 
