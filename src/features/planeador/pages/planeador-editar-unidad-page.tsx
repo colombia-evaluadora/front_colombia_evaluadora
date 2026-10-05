@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
@@ -39,9 +39,20 @@ import {
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import { UnidadFormTabs } from "@/features/planeador/components/forms/unidad-form-tabs"
 import {
+  articuloDefinido,
   mensajeUnidadGuardada,
-  useUnidadInstrumentoLabel,
+  useRotuloUnidad,
 } from "@/features/planeador/lib/unidad-instrumento-label"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import {
+  articuloIndefinidoRotulo,
+  pluralizarRotulo,
+  terminacionRotulo,
+} from "@/features/planeador/lib/rotulo-gramatica"
+import { planeadorUnidadEditarRoute } from "@/router"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 /** Actividades vinculadas sin peso capturado para el método de cálculo
@@ -87,7 +98,8 @@ export function PlaneadorEditarUnidadPage() {
         isError={isError}
         error={error}
         unidad={unidad}
-        onClose={() => navigate({ to: paths.app.planeadorUnidades.getHref() })}
+        // `?instrumento=`: vuelve a la pestaña de esta unidad (y su miga).
+        onClose={(instrumento) => navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })}
       />
     </NoticeProvider>
   )
@@ -104,7 +116,7 @@ function EditarUnidadPageContent({
   isError: boolean
   error: unknown
   unidad: ReturnType<typeof useUnidadDetalleQuery>["data"]
-  onClose: () => void
+  onClose: (instrumento: string) => void
 }) {
   const [draft, setDraft] = useState<UnidadDraft | null>(null)
   // Foto del borrador ANTES de que el docente toque nada — la misma que se
@@ -116,7 +128,16 @@ function EditarUnidadPageContent({
   // docente haya hecho nada.
   const [initialDraft, setInitialDraft] = useState<UnidadDraft | null>(null)
   const { notify } = useNotify()
-  const instrumento = useUnidadInstrumentoLabel(unidad?.gradoId)
+  // `?instrumento=` es el rótulo de la pestaña desde la que se entró (ver
+  // `planeador-unidades-page.tsx`); sin él (URL directa) se resuelve por el
+  // referente real de la unidad.
+  const search = useSearch({ from: planeadorUnidadEditarRoute.id })
+  const instrumento = useRotuloUnidad(unidad, search.instrumento)
+  const instrumentoLower = rotuloEnMinuscula(instrumento)
+  // Rótulo de la actividad (Regla 13) para el aviso de cambio de método.
+  const rotuloActividad = unidad?.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
+  const rotuloActividadLower = rotuloEnMinuscula(rotuloActividad)
+  const rotuloActividadGenero = terminacionRotulo(rotuloActividad)
 
   // Mismo guard de permiso que `planeador-editar-actividad-page.tsx`: sin
   // "editar" en Planeador, redirige al listado apenas se sabe que no hay
@@ -154,7 +175,7 @@ function EditarUnidadPageContent({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          notify(result.message ?? `No se pudo actualizar ${instrumento.toLowerCase()}.`, {
+          notify(result.message ?? `No se pudo actualizar ${articuloDefinido(instrumento)} ${instrumentoLower}.`, {
             variant: "error",
           })
           return
@@ -172,7 +193,7 @@ function EditarUnidadPageContent({
             ? ` Se convirtió el peso/puntaje de: ${result.actividadesAfectadas.map((a) => a.titulo).join(", ")}.`
             : ""
         queueNotice(`${mensajeUnidadGuardada("actualizado", instrumento)}${avisoConversion}`)
-        onClose()
+        onClose(instrumento)
       },
       // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
       // `error` de la mutación y mostraba siempre este texto quemado.
@@ -210,7 +231,7 @@ function EditarUnidadPageContent({
               color="neutral"
               size="sm"
               variant="fill"
-              render={<Link to={paths.app.planeadorUnidades.getHref()} />}
+              render={<Link to={paths.app.planeadorUnidades.getHref()} search={{ instrumento }} />}
             >
               Cerrar
             </Button>
@@ -265,11 +286,13 @@ function EditarUnidadPageContent({
           >
             <UnidadFormTabs
               unidad={unidad}
+              rotuloUnidad={instrumento}
               esFormativo={current.enfoquePedagogico === "Formativo"}
               infoGeneralContent={
                 <UnidadInfoGeneralFields
                   draft={current}
                   onChange={(patch) => setDraft({ ...current, ...patch })}
+                  rotuloUnidad={instrumento}
                 />
               }
             />
@@ -315,15 +338,15 @@ function EditarUnidadPageContent({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Actividades sin peso capturado</AlertDialogTitle>
+            <AlertDialogTitle>{pluralizarRotulo(rotuloActividad)} sin peso capturado</AlertDialogTitle>
             <AlertDialogDescription>
               Al cambiar de &ldquo;Promedio simple&rdquo; a &ldquo;{confirmacionCambioMetodo?.data.metodoCalculo}
               &rdquo;,{" "}
               {confirmacionCambioMetodo && confirmacionCambioMetodo.sinPeso.length === 1
-                ? "la siguiente actividad vinculada no tiene"
-                : "las siguientes actividades vinculadas no tienen"}{" "}
+                ? `${articuloDefinido(rotuloActividad)} siguiente ${rotuloActividadLower} vinculad${rotuloActividadGenero} no tiene`
+                : `${rotuloActividadGenero === "o" ? "los" : "las"} siguientes ${pluralizarRotulo(rotuloActividadLower)} vinculad${rotuloActividadGenero}s no tienen`}{" "}
               {confirmacionCambioMetodo?.data.metodoCalculo === "Suma de puntos" ? "puntaje" : "ponderación"} capturado
-              y quedarán en 0 hasta que se edite cada una:{" "}
+              y quedarán en 0 hasta que se edite cada {articuloIndefinidoRotulo(rotuloActividad) === "un" ? "uno" : "una"}:{" "}
               <strong>{confirmacionCambioMetodo?.sinPeso.map((a) => a.nombre).join(", ")}</strong>. ¿Guardar de todas
               formas?
             </AlertDialogDescription>

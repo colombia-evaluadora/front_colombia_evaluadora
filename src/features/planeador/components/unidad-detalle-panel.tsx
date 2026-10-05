@@ -33,7 +33,14 @@ import { useResolvedSubjectLabelQuery } from "@/features/academic-management/cur
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
-import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import { articuloDefinido, useRotuloUnidad } from "@/features/planeador/lib/unidad-instrumento-label"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import {
+  deArticuloRotulo,
+  demostrativoRotulo,
+  pluralizarRotulo,
+  terminacionRotulo,
+} from "@/features/planeador/lib/rotulo-gramatica"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
@@ -120,6 +127,10 @@ const PANEL =
 
 interface UnidadDetallePanelProps {
   unidadId: string
+  /** Rótulo de la pestaña activa ("Unidad temática"/"Proyecto pedagógico"/…)
+   *  que ya resolvió la página. Sin él, cada sección lo resuelve por el
+   *  referente de la unidad (`useRotuloUnidad`). */
+  rotuloUnidad?: string
   /** Llamado cuando la unidad abierta se elimina — la página reselecciona
    *  otra en el rail (esta ya no existe). */
   onDeleted?: () => void
@@ -262,7 +273,18 @@ function ResumenItem({
   )
 }
 
-function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
+/** "esta unidad temática"/"este proyecto pedagógico" — en minúscula, para
+ *  mitad de frase; `capitalizar` para arrancar una oración con él. */
+function conDemostrativo(rotuloUnidad: string): string {
+  return `${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()}`
+}
+
+function capitalizar(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: UnidadTematica; rotuloUnidad?: string }) {
+  const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   // `unidad.enfoquePedagogico` SIEMPRE llega "Evaluativo" desde este listado
   // (el backend real no guarda un enfoque propio por unidad, ver el
   // comentario de `toUnidadTematica` en `use-unidades-query.ts`) — hay que
@@ -290,7 +312,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   // texto no es un dato controlado (puede traer cualquier palabra desde el
   // referente curricular) y concatenar "s" a mano rompe con cualquiera que
   // no termine en consonante simple (ver "Actividads").
-  const rotuloActividadLower = (unidad.rotuloEjecucion ?? "Actividad").toLowerCase()
+  const rotuloActividadLower = (unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK).toLowerCase()
 
   return (
     <div className="flex flex-col gap-6">
@@ -303,8 +325,8 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         <div className="border-orange bg-orange-22 text-orange flex items-start gap-2 rounded-md border p-3 text-sm">
           <WarningIcon className="size-4 shrink-0 translate-y-0.5" aria-hidden="true" />
           <p>
-            El referente curricular de esta unidad ya no está activo. No puede ofrecer enunciados ni
-            evidencias hasta que se le asigne uno vigente.
+            El referente curricular de {conDemostrativo(rotuloUnidad)} ya no está activo. No puede
+            ofrecer enunciados ni evidencias hasta que se le asigne uno vigente.
           </p>
         </div>
       )}
@@ -343,7 +365,8 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
-              Forma en que se calcula cada {rotuloActividadLower} dentro de la unidad
+              Forma en que se calcula cada {rotuloActividadLower} dentro {deArticuloRotulo(rotuloUnidad)}{" "}
+              {rotuloUnidad.toLowerCase()}
             </h4>
             <p className="text-muted-foreground text-sm">
               Método Seleccionado:{" "}
@@ -383,8 +406,11 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
 export function Rubricas({
   unidad,
   instrumentoLabel,
+  rotuloUnidad: rotuloConocido,
 }: {
   unidad: UnidadTematica
+  /** Rótulo de la unidad ya resuelto por el caller (ver `UnidadDetallePanel`). */
+  rotuloUnidad?: string
   /** Ver `resolverInstrumentoUnico`/`getVisibleTabs`: mismo rótulo que ya
    *  resuelve la pestaña, pasado por el caller (`UnidadTabs`) para no volver
    *  a pedir las actividades vinculadas acá adentro. `undefined` cuando no
@@ -405,6 +431,7 @@ export function Rubricas({
   // esta query por unidad — cuando la escala real de la unidad no
   // coincidía con ese derivado (más o menos bandas, nombres distintos), la
   // tabla mostraba menos columnas que niveles tenía cada criterio guardado.
+  const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
   const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
   const columns = React.useMemo(
@@ -448,7 +475,7 @@ export function Rubricas({
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Esta unidad no tiene criterios definidos."
+        emptyMessage={`${capitalizar(conDemostrativo(rotuloUnidad))} no tiene criterios definidos.`}
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {puedeCrear && (
@@ -459,7 +486,15 @@ export function Rubricas({
 }
 
 /** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
-export function Actividades({ unidad }: { unidad: UnidadTematica }) {
+export function Actividades({
+  unidad,
+  rotuloUnidad: rotuloConocido,
+}: {
+  unidad: UnidadTematica
+  /** Rótulo de la unidad ya resuelto por el caller (ver `UnidadDetallePanel`). */
+  rotuloUnidad?: string
+}) {
+  const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
   // del detalle: ese campo queda siempre vacío contra el backend real
   // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
@@ -502,6 +537,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         puedeEditar,
         puedeEliminar,
         unidad.rotuloEjecucion,
+        rotuloUnidad,
       ),
     [
       unidad.id,
@@ -511,6 +547,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
       puedeEditar,
       puedeEliminar,
       unidad.rotuloEjecucion,
+      rotuloUnidad,
     ],
   )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
@@ -549,21 +586,22 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // V488/V511) — nunca el literal "Actividades" fijo, y siempre en
   // singular: el texto no es un dato controlado (ver el comentario de
   // `rotuloActividadLower` más arriba).
-  const rotuloActividadLabel = unidad.rotuloEjecucion ?? "Actividad"
+  const rotuloActividadLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
+  const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLabel.toLowerCase())
   const tituloActividades = instrumentoLabel
     ? `${rotuloActividadLabel} en ${instrumentoLabel}`
     : rotuloActividadLabel
   const descripcionActividades = instrumentoLabel
     ? `Vinculad${rotuloActividadGenero} en ${instrumentoLabel}.`
-    : `Vinculad${rotuloActividadGenero} a esta unidad.`
+    : `Vinculad${rotuloActividadGenero} a ${conDemostrativo(rotuloUnidad)}.`
 
   return (
     <div>
       <TabHeader
         title={tituloActividades}
         description={descripcionActividades}
-        action={<DialogAgregarActividad unidad={unidad} />}
+        action={<DialogAgregarActividad unidad={unidad} rotuloUnidad={rotuloUnidad} />}
       />
       {/* Formativa: SIN banner — no hay nada de calificación que aclarar (la
           unidad se observa, no se califica; "Promedio simple" abajo es un
@@ -577,8 +615,9 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
           <InfoIcon className="size-5 shrink-0" />
           <p>
-            Esta unidad temática promedia sus actividades: todas cuentan por igual, no hay un peso
-            ni un puntaje que asignar.
+            {capitalizar(conDemostrativo(rotuloUnidad))} promedia sus {rotuloActividadPluralLower}:
+            tod{terminacionRotulo(rotuloActividadLabel)}s cuentan por igual, no hay un peso ni un puntaje
+            que asignar.
           </p>
         </div>
       )}
@@ -587,7 +626,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage={`Esta unidad todavía no tiene ningun${rotuloActividadGenero === "o" ? "" : "a"} ${rotuloActividadLabel.toLowerCase()} vinculad${rotuloActividadGenero}.`}
+        emptyMessage={`${capitalizar(conDemostrativo(rotuloUnidad))} todavía no tiene ningun${rotuloActividadGenero === "o" ? "" : "a"} ${rotuloActividadLabel.toLowerCase()} vinculad${rotuloActividadGenero}.`}
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
     </div>
@@ -616,10 +655,12 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
  */
 function UnidadTabs({
   unidad,
+  rotuloUnidad,
   tab,
   onTabChange,
 }: {
   unidad: UnidadTematica
+  rotuloUnidad?: string
   tab: PanelTab
   onTabChange: (tab: PanelTab) => void
 }) {
@@ -636,7 +677,7 @@ function UnidadTabs({
   // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
   // V488/V511) — nunca el literal "Actividades" fijo. Siempre en singular,
   // mismo motivo que `rotuloActividadLower` más arriba.
-  const rotuloActividadLabel = unidad.rotuloEjecucion ?? "Actividad"
+  const rotuloActividadLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const visibleTabs = React.useMemo(
     () => getVisibleTabs(esFormativo, instrumentoLabel, rotuloActividadLabel),
     [esFormativo, instrumentoLabel, rotuloActividadLabel],
@@ -662,15 +703,15 @@ function UnidadTabs({
       </TabsList>
 
       <TabsContent value="general" className={PANEL}>
-        <InformacionGeneral unidad={unidad} />
+        <InformacionGeneral unidad={unidad} rotuloUnidad={rotuloUnidad} />
       </TabsContent>
       {!esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
-          <Rubricas unidad={unidad} instrumentoLabel={instrumentoLabel} />
+          <Rubricas unidad={unidad} instrumentoLabel={instrumentoLabel} rotuloUnidad={rotuloUnidad} />
         </TabsContent>
       )}
       <TabsContent value="actividades" className={PANEL}>
-        <Actividades unidad={unidad} />
+        <Actividades unidad={unidad} rotuloUnidad={rotuloUnidad} />
       </TabsContent>
     </Tabs>
   )
@@ -684,8 +725,9 @@ function UnidadTabs({
  * dos vistas del Planeador—: son secciones del mismo recurso, no pantallas
  * distintas, y no aportan nada como URL enlazable.
  */
-export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelProps) {
+export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onDeleted }: UnidadDetallePanelProps) {
   const { data: unidad, isPending, isError, error, refetch } = useUnidadDetalleQuery(Number(unidadId))
+  const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   const [tab, setTab] = React.useState<PanelTab>("general")
   const { puedeEditar } = usePlaneadorSoloLectura()
 
@@ -708,7 +750,12 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
                       color="neutral"
                       size="icon-sm"
                       aria-label="Editar"
-                      render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
+                      render={
+                        <Link
+                          to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))}
+                          search={{ instrumento: rotuloUnidad }}
+                        />
+                      }
                     />
                   }
                 >
@@ -717,7 +764,7 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
                 <TooltipContent>Editar</TooltipContent>
               </Tooltip>
             )}
-            <DialogDeleteUnidad unidad={unidad} onDeleted={onDeleted} />
+            <DialogDeleteUnidad unidad={unidad} rotuloUnidad={rotuloUnidad} onDeleted={onDeleted} />
           </div>
         )}
       </div>
@@ -739,7 +786,7 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
         )}
 
         {unidad && (
-          <UnidadTabs unidad={unidad} tab={tab} onTabChange={setTab} />
+          <UnidadTabs unidad={unidad} rotuloUnidad={rotuloUnidad} tab={tab} onTabChange={setTab} />
         )}
       </div>
     </div>
