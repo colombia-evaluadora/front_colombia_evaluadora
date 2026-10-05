@@ -756,11 +756,19 @@ function SidebarMenuSubButton({
           // El espaciado entre el punto y el texto lo aporta el `gap-2` del
           // flex parent; un `mr` extra lo separaba demasiado.
           //
+          // El punto es el glifo "•" (hereda el color del texto, incluido el
+          // `text-primary` del activo) y NO un círculo de `size-1` con fondo:
+          // con zoom o escalado de pantalla no entero (110%, 125%…) el círculo
+          // de 4px caía en medio píxel distinto en cada fila y el navegador lo
+          // suavizaba distinto, así que unos puntos se veían corridos o
+          // "dobles". El texto se alinea a la grilla de píxeles y sale igual
+          // en todas las filas.
+          //
           // `min-h-7` + `py-1` (y no `h-7`) por la misma razón que el botón
           // principal: las etiquetas llegan de la API y envuelven en dos líneas
           // cuando hacen falta —"Configuración de roles y menús"— en vez de
           // cortarse con "…".
-          "flex min-h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 py-1 text-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-foreground focus-visible:ring-2 active:text-foreground data-active:text-primary data-active:hover:text-primary data-active:active:text-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs before:content-[''] before:inline-block before:size-1 before:rounded-full before:bg-foreground before:shrink-0 data-active:before:bg-primary data-active:hover:before:bg-primary data-active:active:before:bg-primary [&>span]:min-w-0 [&>span]:break-words [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-foreground data-active:[&>svg]:text-primary data-active:hover:[&>svg]:text-primary data-active:active:[&>svg]:text-primary",
+          "flex min-h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 py-1 text-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-foreground focus-visible:ring-2 active:text-foreground data-active:text-primary data-active:hover:text-primary data-active:active:text-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs before:content-['•'] before:shrink-0 before:leading-none[&>span]:min-w-0 [&>span]:break-words [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-foreground data-active:[&>svg]:text-primary data-active:hover:[&>svg]:text-primary data-active:active:[&>svg]:text-primary",
           className,
         ),
       },
