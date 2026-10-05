@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 export type DominioMaterialCategoria = "DOMINIO_MATERIAL_URL" | "DOMINIO_MATERIAL_REPOSITORIO"
 
@@ -15,7 +16,7 @@ export type DominioMaterialCategoria = "DOMINIO_MATERIAL_URL" | "DOMINIO_MATERIA
  */
 export function useDominioMaterialCatalog(categoria: DominioMaterialCategoria) {
   return useQuery({
-    queryKey: ["planeador", "dominio-material", categoria],
+    queryKey: planeadorKeys.dominioMaterial(categoria),
     queryFn: async () => {
       const rows = await fetchSelectCategory(categoria)
       return rows.map((row) => row.valor.trim().toLowerCase()).filter(Boolean)

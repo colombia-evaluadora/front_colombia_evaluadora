@@ -9,6 +9,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues,
@@ -65,7 +66,7 @@ export function useCreateAcademicPeriod({ mutationConfig }: UseCreateAcademicPer
     mutationFn: createAcademicPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["academic-periods"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -10,6 +10,7 @@ import type {
   Nivel,
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/:id/instrumento` — el MISMO endpoint que ya
@@ -278,9 +279,6 @@ async function fetchInstrumentoActividadParaForm(actividadId: number): Promise<I
   return toInstrumentoActividadParaForm(rows[0])
 }
 
-export const instrumentoActividadFormQueryKey = (actividadId: number) =>
-  ["planeador", "actividad", actividadId, "instrumento", "form"] as const
-
 /**
  * Precarga la definición YA GUARDADA del instrumento (rúbrica/lista de
  * cotejo/escala/personalizado) al editar una actividad — el detalle real
@@ -293,8 +291,8 @@ export function useInstrumentoActividadFormQuery(actividadId: number | undefined
   return useQuery({
     queryKey:
       actividadId != null
-        ? instrumentoActividadFormQueryKey(actividadId)
-        : (["planeador", "actividad", "none", "instrumento", "form"] as const),
+        ? planeadorKeys.actividad.instrumentoForm(actividadId)
+        : planeadorKeys.actividad.instrumentoForm("none"),
     queryFn: () => fetchInstrumentoActividadParaForm(actividadId!),
     enabled: enabled && actividadId != null,
     staleTime: 1000 * 60,

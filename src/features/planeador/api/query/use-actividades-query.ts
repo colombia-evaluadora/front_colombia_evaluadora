@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { normalizeActividad } from "@/features/planeador/lib/normalize-actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 const ACTIVIDAD_LIST_URL = "/planeador/actividades"
 
@@ -12,9 +13,6 @@ const ACTIVIDAD_LIST_URL = "/planeador/actividades"
 // pagina el listado, así que se manda un `size` grande de una sola vez en
 // vez de armar el estado de paginación.
 const PAGE_SIZE = 500
-
-export const actividadesQueryKey = () =>
-  ["planeador", "actividades"] as const
 
 async function fetchActividades(): Promise<Actividad[]> {
   // `evalCol.getRows` desenvuelve el sobre `{rows: [...]}` del gateway.
@@ -34,7 +32,7 @@ async function fetchActividades(): Promise<Actividad[]> {
  */
 export function useActividadesQuery(enabled = true) {
   return useQuery({
-    queryKey: actividadesQueryKey(),
+    queryKey: planeadorKeys.actividades.lista(),
     queryFn: fetchActividades,
     enabled,
     // Mantiene la lista anterior mientras se revalida — evita el flash a

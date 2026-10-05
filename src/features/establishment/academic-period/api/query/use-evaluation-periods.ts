@@ -6,6 +6,7 @@ import type {
   EvaluationPeriodsQueryFilters,
   EvaluationPeriodsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseEvaluationPeriodsQueryParams {
   filters: EvaluationPeriodsQueryFilters
@@ -105,14 +106,9 @@ async function fetchEvaluationPeriods(
   }
 }
 
-export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => {
-  const { enabled: _enabled, ...key } = params
-  return ["evaluation-periods", key]
-}
-
 export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
-    queryKey: evaluationPeriodsQueryKey(params),
+    queryKey: academicPeriodKeys.evaluationPeriods.list(params),
     queryFn: () => fetchEvaluationPeriods(params),
     placeholderData: (previous) => previous,
     enabled: params.enabled ?? true,

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 export interface MomentoRegistroOption {
   id: number
@@ -15,7 +16,7 @@ async function fetchMomentosRegistro(): Promise<MomentoRegistroOption[]> {
 
 export function useMomentoRegistroCatalog() {
   return useQuery({
-    queryKey: ["momento-registro"],
+    queryKey: planeadorKeys.catalogos.momentoRegistro(),
     queryFn: fetchMomentosRegistro,
     staleTime: Infinity,
   })

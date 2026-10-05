@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { CeldaEvidencia, InstrumentoTipo } from "@/features/planeador/api/types/planilla"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** `GET /planeador/actividades/estudiantes/:id/nota` (confirmado real, ver
  *  colección Postman `planeador-planilla-flujo-completo`, paso 5.1). Se usa
@@ -129,9 +130,6 @@ function toNotaEstudiante(row: NotaEstudianteRow | undefined): NotaEstudiante {
   }
 }
 
-export const notaEstudianteQueryKey = (pkTactividadEstudiante: number) =>
-  ["planeador", "actividad-estudiante", pkTactividadEstudiante, "nota"] as const
-
 async function fetchNotaEstudiante(pkTactividadEstudiante: number): Promise<NotaEstudiante> {
   const rows = await evalCol.getRows<NotaEstudianteRow>(
     `/planeador/actividades/estudiantes/${pkTactividadEstudiante}/nota`,
@@ -143,8 +141,8 @@ export function useNotaEstudianteQuery(pkTactividadEstudiante: number | undefine
   return useQuery({
     queryKey:
       pkTactividadEstudiante != null
-        ? notaEstudianteQueryKey(pkTactividadEstudiante)
-        : (["planeador", "actividad-estudiante", "none", "nota"] as const),
+        ? planeadorKeys.actividadEstudiante.nota(pkTactividadEstudiante)
+        : planeadorKeys.actividadEstudiante.nota("none"),
     queryFn: () => fetchNotaEstudiante(pkTactividadEstudiante!),
     enabled: pkTactividadEstudiante != null,
     staleTime: 1000 * 10,

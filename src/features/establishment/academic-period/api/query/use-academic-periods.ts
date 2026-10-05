@@ -7,6 +7,7 @@ import type {
   AcademicPeriodsQueryRequest,
   AcademicPeriodsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseAcademicPeriodsQueryParams {
   filters: AcademicPeriodsQueryRequest["filters"]
@@ -164,14 +165,9 @@ async function fetchAcademicPeriods(
   }
 }
 
-export const academicPeriodsQueryKey = (params: UseAcademicPeriodsQueryParams) => [
-  "academic-periods",
-  params,
-]
-
 export function useAcademicPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
   return useQuery({
-    queryKey: academicPeriodsQueryKey(params),
+    queryKey: academicPeriodKeys.academicPeriods.list(params),
     queryFn: () => fetchAcademicPeriods(params),
     placeholderData: (previous) => previous,
   })

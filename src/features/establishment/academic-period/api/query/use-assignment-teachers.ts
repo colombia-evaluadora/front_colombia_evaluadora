@@ -5,6 +5,7 @@ import type {
   EmployeeListItem,
   EmployeeStatus,
 } from "@/features/establishment/employees/api/types/employee"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseAssignmentTeachersQueryParams {
   academicPeriodId?: number
@@ -83,14 +84,9 @@ async function fetchAssignmentTeachers(
   return { rows, pageCount, totalCount }
 }
 
-export const assignmentTeachersQueryKey = (params: UseAssignmentTeachersQueryParams) => [
-  "assignment-teachers",
-  params,
-]
-
 export function useAssignmentTeachersQuery(params: UseAssignmentTeachersQueryParams) {
   return useQuery({
-    queryKey: assignmentTeachersQueryKey(params),
+    queryKey: academicPeriodKeys.assignmentTeachers.list(params),
     queryFn: () => fetchAssignmentTeachers(params),
     placeholderData: (previous) => previous,
     staleTime: 0,

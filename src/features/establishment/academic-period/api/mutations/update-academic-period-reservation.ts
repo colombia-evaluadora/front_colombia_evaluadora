@@ -5,6 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/academic-period"
 import type { CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateAcademicPeriodReservationInput {
   id: number
@@ -37,8 +38,8 @@ export function useUpdateAcademicPeriodReservation({
       // Invalida tanto el listado como el detalle de un solo periodo, para
       // que el badge "Inactivo"/"Activo" y cualquier pantalla que dependa
       // del flag se refresquen de inmediato.
-      queryClient.invalidateQueries({ queryKey: ["academic-periods"] })
-      queryClient.invalidateQueries({ queryKey: ["academic-period"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriod.all })
       // Cualquier consumidor que dependa de "periodos con reserva activa"
       // (ej. listado de establecimientos con cupos disponibles para
       // reserva) tiene que reconsultar al cambiar el flag.

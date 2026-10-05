@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { AvailableStudyPlanSubject } from "../types/study-plan"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface AvailableStudyPlanSubjectRow {
   id: number
@@ -31,17 +32,12 @@ export async function fetchAvailableStudyPlanSubjects(
   }))
 }
 
-export const availableStudyPlanSubjectsQueryKey = (
-  gradeId?: number,
-  academicPeriodId?: number
-) => ["study-plan-available", gradeId, academicPeriodId]
-
 export function useAvailableStudyPlanSubjectsQuery(
   gradeId?: number,
   academicPeriodId?: number
 ) {
   return useQuery({
-    queryKey: availableStudyPlanSubjectsQueryKey(gradeId, academicPeriodId),
+    queryKey: academicPeriodKeys.studyPlanAvailable.byGrade(gradeId, academicPeriodId),
     queryFn: () => fetchAvailableStudyPlanSubjects(gradeId as number),
     enabled: gradeId != null,
   })

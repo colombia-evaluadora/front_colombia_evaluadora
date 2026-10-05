@@ -4,10 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
-
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
-import { notaEstudianteQueryKey } from "@/features/planeador/api/query/use-nota-estudiante-query"
-import { soportesEstudianteQueryKey } from "@/features/planeador/api/query/use-soportes-estudiante-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Adjuntar/quitar UNA evidencia de la observación de un estudiante
@@ -55,12 +52,12 @@ export function useAgregarObservacionSoporteMutation({
   return useMutation({
     mutationFn: agregarObservacionSoporte,
     onSuccess: (result, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
-        queryKey: notaEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
       queryClient.invalidateQueries({
-        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.soportes(variables.pkTactividadEstudiante),
       })
       onSuccess?.(result, variables, ...rest)
     },
@@ -97,12 +94,12 @@ export function useQuitarObservacionSoporteMutation({
   return useMutation({
     mutationFn: quitarObservacionSoporte,
     onSuccess: (result, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
-        queryKey: notaEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
       queryClient.invalidateQueries({
-        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.soportes(variables.pkTactividadEstudiante),
       })
       onSuccess?.(result, variables, ...rest)
     },
@@ -140,7 +137,7 @@ export function useMarcarFavoritoSoporteMutation({
     mutationFn: marcarFavoritoSoporte,
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({
-        queryKey: soportesEstudianteQueryKey(variables.pkTactividadEstudiante),
+        queryKey: planeadorKeys.actividadEstudiante.soportes(variables.pkTactividadEstudiante),
       })
       onSuccess?.(result, variables, ...rest)
     },

@@ -5,6 +5,7 @@ import { env } from "@/config/env"
 
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
 
@@ -157,9 +158,6 @@ function isSentinel(row: unknown): row is UnidadSentinelRow {
   return (row as { pk_tunidad?: unknown } | null)?.pk_tunidad === null
 }
 
-export const unidadesQueryKey = (params: UseUnidadesParams = {}) =>
-  ["planeador", "unidades", params] as const
-
 async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
   const query = new URLSearchParams({ size: String(PAGE_SIZE), offset: "0" })
   if (params.dia) query.set("dia", params.dia)
@@ -191,7 +189,7 @@ async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult>
 
 export function useUnidadesQuery(params: UseUnidadesParams = {}) {
   return useQuery({
-    queryKey: unidadesQueryKey(params),
+    queryKey: planeadorKeys.unidades.lista(params),
     queryFn: () => fetchUnidades(params),
     // Mantiene la lista anterior mientras se revalida — evita el flash a
     // "Sin unidades" al volver a la pestaña.
@@ -203,9 +201,6 @@ export function useUnidadesQuery(params: UseUnidadesParams = {}) {
 function unidadDetalleUrl(id: number): string {
   return `/planeador/unidades/${id}`
 }
-
-export const unidadDetalleQueryKey = (id: number) =>
-  ["planeador", "unidad", id] as const
 
 /**
  * Detalle de una unidad. El mock responde `{rows: [unidad]}` para mantener
@@ -223,7 +218,7 @@ async function fetchUnidadDetalle(id: number): Promise<UnidadTematica> {
 
 export function useUnidadDetalleQuery(id: number | undefined) {
   return useQuery({
-    queryKey: id !== undefined ? unidadDetalleQueryKey(id) : ["planeador", "unidad", "none"],
+    queryKey: id !== undefined ? planeadorKeys.unidad.detalle(id) : planeadorKeys.unidad.detalle("none"),
     queryFn: () => fetchUnidadDetalle(id!),
     enabled: id !== undefined,
     staleTime: 1000 * 60,

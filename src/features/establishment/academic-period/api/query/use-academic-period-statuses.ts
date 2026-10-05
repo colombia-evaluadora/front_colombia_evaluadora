@@ -5,6 +5,7 @@ import type {
   AcademicPeriodStatusOption,
 } from "../types/academic-period"
 import { fetchSelectCategory } from "./fetch-select-category"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/ESTADOPERIODO`).
 async function fetchAcademicPeriodStatuses(): Promise<
@@ -18,11 +19,9 @@ async function fetchAcademicPeriodStatuses(): Promise<
   }))
 }
 
-export const academicPeriodStatusesQueryKey = () => ["academic-period-statuses"]
-
 export function useAcademicPeriodStatusesQuery() {
   return useQuery({
-    queryKey: academicPeriodStatusesQueryKey(),
+    queryKey: academicPeriodKeys.academicPeriodStatuses(),
     queryFn: fetchAcademicPeriodStatuses,
     staleTime: Infinity,
   })

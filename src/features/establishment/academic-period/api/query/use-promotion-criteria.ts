@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Elemento de `mandatory_subjects` (jsonb) tal como lo arma
 // `fn_criterio_prom_obtener` — ya trae el nombre resuelto, no solo el id.
@@ -71,17 +72,12 @@ async function fetchPromotionCriteria(
   return row ? toPromotionCriteria(row) : null
 }
 
-export const promotionCriteriaQueryKey = (
-  academicPeriodId: number,
-  gradeId?: number
-) => ["promotion-criteria", academicPeriodId, gradeId]
-
 export function usePromotionCriteriaQuery(
   academicPeriodId: number | undefined,
   gradeId?: number
 ) {
   return useQuery({
-    queryKey: promotionCriteriaQueryKey(academicPeriodId ?? 0, gradeId),
+    queryKey: academicPeriodKeys.promotionCriteria.byPeriod(academicPeriodId ?? 0, gradeId),
     queryFn: () => fetchPromotionCriteria(academicPeriodId as number, gradeId),
     enabled: academicPeriodId != null,
   })

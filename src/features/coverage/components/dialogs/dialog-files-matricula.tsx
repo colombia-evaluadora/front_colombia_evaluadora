@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
@@ -11,7 +10,7 @@ import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matri
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useEstablecimientoDeSede } from "@/features/coverage/api/query/use-establecimiento-de-sede"
 import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
-import { addMatriculaDocumento } from "@/features/coverage/api/mutations/add-matricula-documento"
+import { useAddMatriculaDocumentos } from "@/features/coverage/api/mutations/add-matricula-documento"
 import { buildMatriculaFieldSettings, isFieldVisible } from "@/features/coverage/utils/matricula-field-settings"
 import {
   SUPPORT_FILE_FIELDS,
@@ -49,7 +48,6 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const { notify } = useNotify()
-  const queryClient = useQueryClient()
   // Solo se pide mientras el sheet está abierto -- evita una consulta por
   // fila de la tabla apenas se renderiza.
   const { data } = useMatriculaDetailQuery(open ? matricula.id : undefined)
@@ -75,6 +73,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
   const updateFiles = useUpdateMatriculaFiles()
+  const addDocumentos = useAddMatriculaDocumentos()
 
   function toggleRemoveExisting(fileId: number) {
     setRemovedIds((prev) => {
@@ -120,18 +119,13 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
           otrosDocumentosARemover: byCategory.otherDocuments.filter((f) => removedIds.has(f.id)).map((f) => f.id),
         })
       }
+      // Las bajas (`removedIds`) ya van en el PATCH de arriba, cuyo hook
+      // invalida `["matricula"]`; el de documentos invalida al terminar.
       const pendingUploads = files.otherDocuments
-      const failedUploads: File[] = []
-      for (const file of pendingUploads) {
-        try {
-          await addMatriculaDocumento(matricula.id, file)
-        } catch {
-          failedUploads.push(file)
-        }
-      }
-
-      if (pendingUploads.length > 0 || removedIds.size > 0) {
-        queryClient.invalidateQueries({ queryKey: ["matricula"] })
+      let failedUploads: File[] = []
+      if (pendingUploads.length > 0) {
+        const result = await addDocumentos.mutateAsync({ matriculaId: matricula.id, archivos: pendingUploads })
+        failedUploads = result.fallidos
       }
 
       setFiles({ ...createEmptySupportFiles(), otherDocuments: failedUploads })

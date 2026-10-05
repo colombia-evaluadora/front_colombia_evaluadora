@@ -6,6 +6,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "./extract-write-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 export interface UpdateEnfasisInput {
   id: number
@@ -37,7 +38,7 @@ export function useUpdateEnfasis({
     mutationFn: updateEnfasis,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["especialidades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.especialidades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

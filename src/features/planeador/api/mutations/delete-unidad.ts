@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import type { ExportResult } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // `PATCH`, no `DELETE` — el motor real no admite ese verbo (soft-delete).
 // El mock devuelve `{status, message}` directo; el real envuelve el id
@@ -34,7 +34,7 @@ export function useDeleteUnidad({ mutationConfig }: UseDeleteUnidadOptions = {})
     onSuccess: (...args) => {
       // Invalida el listado para que la unidad desaparezca del rail al
       // volver a la pestaña (mismo criterio que `useDeleteActividad`).
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       onSuccess?.(...args)
     },
     ...restConfig,

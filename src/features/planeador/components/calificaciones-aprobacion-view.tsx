@@ -14,10 +14,7 @@ import {
 import { useNotify } from "@/components/notice/notice-context";
 import { getErrorMessage } from "@/lib/api-client";
 
-import {
-  calificacionesQueryKey,
-  useCalificacionesQuery,
-} from "@/features/planeador/api/query/use-calificaciones-query";
+import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query";
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query";
 import { useCalificarBulkMutation } from "@/features/planeador/api/mutations/use-calificar-bulk";
 import { buildBulkInputs } from "@/features/planeador/components/planilla/calificar-actividad-bulk";
@@ -29,6 +26,7 @@ import {
 } from "@/features/planeador/components/planilla/instrumento-grading-fields";
 import type { Actividad } from "@/features/planeador/api/types/actividad";
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion";
+import { planeadorKeys } from "@/features/planeador/api/query-keys";
 
 interface CalificacionesAprobacionViewProps {
   actividad: Actividad;
@@ -106,7 +104,7 @@ export function CalificacionesAprobacionView({
         inputs.map((input) => calificarBulk.mutateAsync(input)),
       );
       queryClient.invalidateQueries({
-        queryKey: calificacionesQueryKey(actividad.id),
+        queryKey: planeadorKeys.actividad.calificaciones(actividad.id),
       });
       notify("Calificación en bloque guardada.");
       setDirty(false);

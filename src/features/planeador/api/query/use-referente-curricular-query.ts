@@ -2,6 +2,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/referente-curricular?grado=&asignatura=` (confirmado
@@ -116,9 +117,6 @@ function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricul
   }
 }
 
-export const referenteCurricularQueryKey = (gradoId: number, asignaturaId: number | undefined) =>
-  ["planeador", "referente-curricular", gradoId, asignaturaId ?? null] as const
-
 /**
  * A diferencia del resto de las rutas de `eval-col` (que siempre envuelven
  * en `{rows: [...]}`, ver `eval-col-client.ts`), esta responde el referente
@@ -157,7 +155,7 @@ async function fetchReferenteCurricular(
  *  referente formativo). Mismo patrón que `actividadesRecuperablesQueryOptions`. */
 export function referenteCurricularQueryOptions(gradoId: number, asignaturaId: number | undefined) {
   return queryOptions({
-    queryKey: referenteCurricularQueryKey(gradoId, asignaturaId),
+    queryKey: planeadorKeys.referenteCurricular(gradoId, asignaturaId),
     queryFn: () => fetchReferenteCurricular(gradoId, asignaturaId),
     staleTime: 1000 * 60,
   })
@@ -172,8 +170,8 @@ export function useReferenteCurricularQuery(gradoId: number | undefined, asignat
   return useQuery({
     queryKey:
       gradoId != null
-        ? referenteCurricularQueryKey(gradoId, asignaturaId)
-        : (["planeador", "referente-curricular", "none"] as const),
+        ? planeadorKeys.referenteCurricular(gradoId, asignaturaId)
+        : planeadorKeys.referenteCurricular("none"),
     queryFn: () => fetchReferenteCurricular(gradoId!, asignaturaId),
     enabled: gradoId != null,
     staleTime: 1000 * 60,

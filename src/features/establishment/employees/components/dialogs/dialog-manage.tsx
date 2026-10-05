@@ -92,6 +92,7 @@ import {
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
 import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -618,7 +619,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
   }
 
-
   // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
   // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
   // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
@@ -1122,7 +1122,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
       void queryClient.invalidateQueries({ queryKey: ["employees"] })
-      void queryClient.invalidateQueries({ queryKey: ["assignment-teachers"] })
+      void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
