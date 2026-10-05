@@ -18,14 +18,17 @@ pnpm format                 # oxfmt . — aplicalo solo sobre archivos que edite
 pnpm preview                # sirve el build
 pnpm storybook              # Storybook en :6006
 pnpm build-storybook
+pnpm test                   # tests unitarios (Vitest, proyecto `unit`, entorno node)
+pnpm test:watch             # ídem en modo watch
 pnpm test-storybook         # tests de interacción/a11y contra Storybook ya levantado en :6006
 pnpm test-storybook:ci      # sirve storybook-static + espera + corre test-runner
 ```
 
-- **No hay script `test` de unidad.** Vitest está configurado con un único proyecto `storybook` (browser mode, Playwright Chromium, `vite.config.ts`). Existen algunos `*.test.ts` sueltos (`components/search/query-syntax.test.ts`, tests de handlers MSW en `establishment/{campuses,employees,institution}`, `administration/roles-menus/api/types/role-menu.test.ts`, `planeador/lib/recurso-preview.test.ts`) pero ningún script de npm los corre.
+- **Tests unitarios**: Vitest tiene dos proyectos en `vite.config.ts`: `unit` (entorno `node`, incluye `src/**/*.test.{ts,tsx}`, excluye stories) y `storybook` (browser mode, Playwright Chromium). `pnpm test` corre solo `unit`, y CI lo corre en el job `test`. Los tests van **junto al archivo que prueban** (`foo.ts` → `foo.test.ts`). Los handlers MSW se prueban con `setupServer` de `msw/node`. Si un test necesita DOM/`window`, poné `// @vitest-environment jsdom` en la primera línea del archivo (jsdom ya está instalado; ver `planeador/lib/recurso-preview.test.ts`) en lugar de cambiar el entorno de todo el proyecto.
+- Test unitario puntual: `pnpm test src/ruta/al/archivo.test.ts` o `pnpm test -t "<nombre>"`.
 - Test puntual de Storybook: `pnpm test-storybook -t "<nombre>"`.
 - `pnpm format:check` falla en ~todo el repo (nunca pasó por oxfmt): **no es gate** y no asumas que el código existente está formateado.
-- Antes de dar algo por terminado: `pnpm exec tsc -b --noEmit` y `pnpm lint`.
+- Antes de dar algo por terminado: `pnpm test`, `pnpm exec tsc -b --noEmit` y `pnpm lint`.
 
 ---
 
@@ -377,7 +380,7 @@ feature/* ──squash──▶ dev ──merge commit──▶ test ──merge
 
 | Workflow | Disparo | Hace |
 |---|---|---|
-| `ci.yml` | PR / push a **`dev`** únicamente | `tsc -b --noEmit`, `pnpm lint`, `pnpm build` |
+| `ci.yml` | PR / push a **`dev`** únicamente | `tsc -b --noEmit`, `pnpm lint`, `pnpm test`, `pnpm build` |
 | `deploy-dev.yml` | CI exitoso por push a `dev` (o manual) | deploy env `dev` del SHA verificado |
 | `deploy-test.yml` | push a `test` (o manual) | deploy env `test` — **no hay CI**: lo que se pushee directo a `test` sale sin verificar |
 | `release.yml` | tag `v*` (`vX.Y.Z[-pre]`) o manual | deploy env `production` (requiere aprobación de reviewer) |
