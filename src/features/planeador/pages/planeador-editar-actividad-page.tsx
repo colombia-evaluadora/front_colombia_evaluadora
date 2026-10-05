@@ -296,6 +296,11 @@ function EditarActividadPageContent({
     // Ahora nada de esto navega ni avisa éxito hasta que TODO lo que tenía
     // algo que guardar terminó bien; el primer error frena el resto y se
     // avisa con la pantalla todavía montada.
+    // Qué paso se estaba guardando cuando falló: pasado el PUT de la
+    // actividad, sus datos YA quedaron guardados aunque falle lo que sigue
+    // (instrumento, materiales…), y el aviso tiene que decirlo — si no, el
+    // docente no sabe qué quedó guardado y qué no.
+    let pasoEnCurso: string | null = null
     try {
       // `EVIDENCIAS`/`CRITERIOS` viajan DENTRO de este mismo PUT como
       // reemplazo completo (ver `update-actividad.ts`) — ya no hace falta
@@ -306,10 +311,12 @@ function EditarActividadPageContent({
       // verdad cambió, para no pegarle al backend en cada guardado cuando el
       // docente tocó otro campo (ej. fechas) y dejó los recursos intactos.
       if (JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)) {
+        pasoEnCurso = "los materiales de apoyo"
         await updateMateriales.mutateAsync({ actividadId: actividad.id, recursos: values.recursos })
       }
 
       if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
+        pasoEnCurso = "la definición del instrumento de evaluación"
         await updateInstrumento.mutateAsync({ actividadId: actividad.id, actividad: values })
       }
 
@@ -332,6 +339,7 @@ function EditarActividadPageContent({
             JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
       let avisoEstudiantes = ""
       if (estudiantesCambiaron) {
+        pasoEnCurso = "los estudiantes de la actividad"
         const resultado = await setEstudiantes.mutateAsync({
           actividadId: actividad.id,
           matriculasIds: values.matriculasIds,
@@ -345,6 +353,7 @@ function EditarActividadPageContent({
       // docente sacó de la actividad (ver `adaptacionesConEstudiantesDeLaActividad`).
       const adaptaciones = adaptacionesConEstudiantesDeLaActividad(values)
       if (JSON.stringify(adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
+        pasoEnCurso = "las adaptaciones curriculares"
         await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones })
       }
 
@@ -359,7 +368,12 @@ function EditarActividadPageContent({
       setIsDirty(false)
       onClose()
     } catch (error) {
-      notify(getErrorMessage(error), { variant: "error" })
+      notify(
+        pasoEnCurso
+          ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${pasoEnCurso}: ${getErrorMessage(error)}`
+          : getErrorMessage(error),
+        { variant: "error" },
+      )
     }
   }
 

@@ -63,7 +63,7 @@ function PlaneadorCrearActividadPageContent() {
   // guard de PERMISO a nivel de página (el router solo gatea por sesión,
   // ver CLAUDE.md) — los puntos de entrada (botones "Nueva actividad") ya
   // estaban ocultos, esto cubre a quien llega por URL directa.
-  const { puedeCrear, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
       navigate({ to: paths.app.planeadorActividades.getHref(), replace: true })
@@ -119,77 +119,48 @@ function PlaneadorCrearActividadPageContent() {
       },
     },
   })
-  const updateMateriales = useUpdateMaterialesActividad({
-    mutationConfig: {
-      // Los materiales son un segundo paso, aparte de crear la actividad
-      // (ver el comentario de `create-actividad.ts`): si este PUT falla, la
-      // actividad YA quedó creada — se avisa aparte en vez de tratarlo como
-      // si la creación entera hubiera fallado.
-      onError: (error) => {
-        notify(`La actividad se creó, pero no se pudieron guardar sus materiales de apoyo: ${getErrorMessage(error)}`, {
-          variant: "error",
-        })
-      },
-    },
-  })
-  const updateInstrumento = useUpdateInstrumentoActividad({
-    mutationConfig: {
-      onError: (error) => {
-        notify(`La actividad se creó, pero no se pudo guardar la definición del instrumento: ${getErrorMessage(error)}`, {
-          variant: "error",
-        })
-      },
-    },
-  })
-  const updateAdaptaciones = useUpdateAdaptacionesActividad({
-    mutationConfig: {
-      onError: (error) => {
-        notify(
-          `La actividad se creó, pero no se pudieron guardar sus adaptaciones curriculares: ${getErrorMessage(error)}`,
-          { variant: "error" },
-        )
-      },
-    },
-  })
+  // Materiales, instrumento y adaptaciones son pasos APARTE de crear la
+  // actividad (rutas dedicadas, ver sus comentarios): si alguno falla, la
+  // actividad YA quedó creada. Sus errores NO se avisan con `notify()` acá
+  // (antes sí, en el `onError` de cada mutación): `handleSubmit` navega
+  // apenas termina, y el `NoticeProvider` de esta pantalla se desmontaba
+  // con el aviso adentro — el docente veía "Actividad creada correctamente"
+  // aunque, por ejemplo, el backend hubiera rechazado la definición del
+  // instrumento (bug de QA: "no sale mensaje de error"). Ahora se juntan en
+  // `handleSubmit` y viajan con `queueNotice()` a la pantalla de destino.
+  const updateMateriales = useUpdateMaterialesActividad()
+  const updateInstrumento = useUpdateInstrumentoActividad()
+  const updateAdaptaciones = useUpdateAdaptacionesActividad()
   // Cada criterio de la unidad marcado es su propio `POST`, DESPUÉS de
   // crear la actividad (recién ahí existe `actividadId`) — a diferencia de
   // `EVIDENCIAS`, que sí viaja directo en el body de `POST /actividades`
   // (ver `create-actividad.ts`).
-  const agregarCriterio = useAgregarCriterioUnidadActividad({
-    mutationConfig: {
-      onError: (error) =>
-        notify(
-          `La actividad se creó, pero no se pudieron relacionar todos los criterios de la unidad: ${getErrorMessage(error)}`,
-          { variant: "error" },
-        ),
-    },
-  })
+  const agregarCriterio = useAgregarCriterioUnidadActividad()
 
   async function handleSubmit(values: Actividad) {
     let id: number
     try {
       ;({ id } = await createMutation.mutateAsync(values))
     } catch {
-      return // `onError` de `createMutation` ya avisó.
+      return // `onError` de `createMutation` ya avisó (la pantalla sigue montada).
     }
 
-    // Materiales e instrumento son pasos APARTE (rutas dedicadas, ver sus
-    // comentarios): si alguno falla, la actividad YA quedó creada — se
-    // avisa con su propio `onError` y de todos modos se navega, en vez de
-    // dejar al docente varado en un form cuya actividad ya existe.
+    // Lo que no se pudo guardar después de crear la actividad, con el motivo
+    // real del backend — ver el comentario de `updateMateriales`.
+    const fallos: string[] = []
     let recursosOmitidos: string[] = []
     if (values.recursos.length > 0) {
       try {
         ;({ recursosOmitidos } = await updateMateriales.mutateAsync({ actividadId: id, recursos: values.recursos }))
-      } catch {
-        // `onError` de `updateMateriales` ya avisó.
+      } catch (error) {
+        fallos.push(`los materiales de apoyo (${getErrorMessage(error)})`)
       }
     }
     if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
       try {
         await updateInstrumento.mutateAsync({ actividadId: id, actividad: values })
-      } catch {
-        // `onError` de `updateInstrumento` ya avisó.
+      } catch (error) {
+        fallos.push(`la definición del instrumento de evaluación (${getErrorMessage(error)})`)
       }
     }
     if (values.adaptaciones.length > 0) {
@@ -199,22 +170,40 @@ function PlaneadorCrearActividadPageContent() {
           // Sin estudiantes que ya no están en la actividad (Regla 47).
           adaptaciones: adaptacionesConEstudiantesDeLaActividad(values),
         })
-      } catch {
-        // `onError` de `updateAdaptaciones` ya avisó.
+      } catch (error) {
+        fallos.push(`las adaptaciones curriculares (${getErrorMessage(error)})`)
       }
     }
-    for (const criterioUnidadId of values.criteriosUnidadIds) {
-      agregarCriterio.mutate({ actividadId: id, criterioUnidadId })
+    const resultadosCriterios = await Promise.allSettled(
+      values.criteriosUnidadIds.map((criterioUnidadId) =>
+        agregarCriterio.mutateAsync({ actividadId: id, criterioUnidadId }),
+      ),
+    )
+    const criterioFallido = resultadosCriterios.find((r) => r.status === "rejected")
+    if (criterioFallido) {
+      fallos.push(`todos los criterios de la unidad (${getErrorMessage(criterioFallido.reason)})`)
+    }
+    if (recursosOmitidos.length > 0) {
+      fallos.push(
+        `estos materiales de tipo "Archivo", porque no tenían un archivo cargado: ${recursosOmitidos.join(", ")}`,
+      )
     }
 
-    if (recursosOmitidos.length > 0) {
-      queueNotice(
-        `Actividad creada. No se guardaron estos materiales de tipo "Archivo" (sin un archivo cargado): ${recursosOmitidos.join(", ")}.`,
-        { variant: "error" },
-      )
+    // `queueNotice`, no `notify`: `navigate` desmonta esta pantalla y su
+    // `NoticeProvider`; el aviso lo muestra el de la pantalla de destino.
+    if (fallos.length > 0) {
+      queueNotice(`La actividad se creó, pero no se pudo guardar ${fallos.join("; ni ")}. Revísala y vuelve a guardar.`, {
+        variant: "error",
+      })
+      // Con algo pendiente se lleva al docente a EDITAR la actividad recién
+      // creada (si tiene permiso), donde puede corregirlo y volver a guardar
+      // — no al listado, donde tendría que buscarla primero. Volver a este
+      // form de alta crearía una actividad duplicada.
+      if (puedeEditar) {
+        navigate({ to: paths.app.planeadorActividadEditar.getHref(String(id)) })
+        return
+      }
     } else {
-      // `navigate` deja el Planeador — un `notify()` acá se perdería con
-      // el `NoticeProvider` de esta pantalla al desmontarse.
       queueNotice("Actividad creada correctamente.")
     }
     navigate({ to: paths.app.planeadorActividades.getHref() })
