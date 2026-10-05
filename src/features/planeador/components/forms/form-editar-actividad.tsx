@@ -1549,6 +1549,7 @@ function UnidadSection({
                           : [...actual, evidenciaId],
                       )
                     }}
+                    disabled={readOnly}
                     criteriosSeleccionados={criteriosField.state.value}
                     onToggleCriterio={(criterioId) => {
                       if (readOnly) return
@@ -1581,7 +1582,9 @@ function UnidadFichaYEvidencias({
   onToggle,
   criteriosSeleccionados,
   onToggleCriterio,
+  disabled = false,
 }: {
+  disabled?: boolean
   unidadId: number
   nombreFallback: string
   seleccionadas: number[]
@@ -1628,6 +1631,7 @@ function UnidadFichaYEvidencias({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
+          disabled={disabled}
         />
       )}
       {criterios.length > 0 && (
@@ -1635,6 +1639,7 @@ function UnidadFichaYEvidencias({
           criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
+          disabled={disabled}
         />
       )}
     </div>
