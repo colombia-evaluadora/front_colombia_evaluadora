@@ -1,4 +1,4 @@
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 // `fn_grupo_crear`/`fn_grupo_actualizar` piden `FK_MODELO_PEDAGOGICO` como PK
 // de `TLISTA_VALOR` (categoría MODELO_PEDAGOGICO), pero el front solo tiene
@@ -7,8 +7,5 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 export async function resolveMetodologiaId(
   valor: string | undefined
 ): Promise<number | null> {
-  if (!valor) return null
-  const rows = await fetchSelectCategory("MODELO_PEDAGOGICO")
-  const match = rows.find((row) => row.valor === valor || row.nombre === valor)
-  return match ? match.pk_lista_valor : null
+  return (await resolveCatalogId(undefined, "MODELO_PEDAGOGICO", valor, { match: "valorOrNombre" })) ?? null
 }

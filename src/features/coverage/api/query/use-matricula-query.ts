@@ -8,6 +8,7 @@ import type {
   MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 import type { EducationLevel } from "@/features/coverage/api/types/reservation"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseMatriculaQueryParams {
   filters: MatriculaQueryRequest["filters"]
@@ -106,13 +107,7 @@ async function fetchMatricula(params: UseMatriculaQueryParams): Promise<Matricul
   )
   const backendRows = raw.rows ?? []
   // `total_count` viene repetido por fila (window count); el front arma el envelope.
-  const totalCount = backendRows[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return {
-    rows: backendRows.map(toMatricula),
-    pageCount,
-    totalCount,
-  }
+  return toPaginated(backendRows, { pageSize: params.pageSize, map: toMatricula })
 }
 
 export const matriculaQueryKey = (params: UseMatriculaQueryParams) => ["matricula", params]

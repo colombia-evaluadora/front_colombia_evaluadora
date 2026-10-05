@@ -7,6 +7,7 @@ import type {
   StudyPlanQueryResponse,
 } from "@/features/establishment/academic-period/api/types/study-plan"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseStudyPlansQueryParams {
   filters: StudyPlanQueryRequest["filters"]
@@ -82,10 +83,7 @@ async function fetchStudyPlans(
     `/eval-col/grados/${params.gradeId}/plan-asignaturas/query`,
     body,
   )
-  const rows = (raw.rows ?? []).map(toStudyPlanItem)
-  const totalCount = raw.rows?.[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return { rows, pageCount, totalCount }
+  return toPaginated(raw.rows, { pageSize: params.pageSize, map: toStudyPlanItem })
 }
 
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {

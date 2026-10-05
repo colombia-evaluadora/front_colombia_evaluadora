@@ -18,6 +18,7 @@ import type {
   TableOperationsQueryRequest,
   TableOperationsQueryResponse,
 } from "@/features/administration/audits/api/types/audit-table"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseTableOperationsQueryParams {
   tableSlug: string
@@ -96,7 +97,7 @@ async function fetchTableOperations(
   const operations = params.filters.operations
   const rawRows = unwrapRows(response)
   // V376 (sso): el servidor ya pagina de verdad -- esto es la página real.
-  const totalCount = rawRows[0]?.totalCount ?? 0
+  const { totalCount, pageCount } = toPaginated(rawRows, { pageSize: params.pageSize, totalKey: "totalCount" })
   const rows = sortWindow(
     rawRows
       .map(toTableOperation)
@@ -107,7 +108,7 @@ async function fetchTableOperations(
 
   return {
     rows,
-    pageCount: Math.max(1, Math.ceil(totalCount / params.pageSize)),
+    pageCount,
     totalCount,
   }
 }

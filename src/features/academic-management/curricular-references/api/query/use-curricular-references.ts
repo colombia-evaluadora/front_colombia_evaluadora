@@ -11,6 +11,7 @@ import type {
   CurricularReferencesQueryResponse,
 } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseCurricularReferencesQueryParams {
   filters: CurricularReferencesQueryRequest["filters"]
@@ -136,9 +137,7 @@ export async function fetchCurricularReferences(
   })
 
   const rawRows = unwrapRows<CurricularReferenceRow>(raw as CurricularReferenceRow[] | { rows: CurricularReferenceRow[] })
-  const totalCount = rawRows[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return { rows: rawRows.map(toCurricularReference), pageCount, totalCount }
+  return toPaginated(rawRows, { pageSize: params.pageSize, map: toCurricularReference })
 }
 
 export const curricularReferencesQueryKey = (params: UseCurricularReferencesQueryParams) => [

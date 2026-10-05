@@ -11,6 +11,7 @@ import type {
   AuditsQueryResponse,
   SessionStatus,
 } from "@/features/administration/audits/api/types/audit"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseAuditsQueryParams {
   filters: AuditsQueryRequest["filters"]
@@ -76,7 +77,7 @@ async function fetchAudits(params: UseAuditsQueryParams): Promise<AuditsQueryRes
   // V376 (sso): el servidor ya pagina de verdad -- esto es la página real,
   // no una ventana de 100 para recortar acá. `totalCount` (`count() OVER()`)
   // ya es el total global, ajeno al LIMIT/OFFSET de esta página.
-  const totalCount = rawRows[0]?.totalCount ?? 0
+  const { totalCount, pageCount } = toPaginated(rawRows, { pageSize: params.pageSize, totalKey: "totalCount" })
   const rows = sortWindow(
     rawRows.map(toAuditSession).filter((row) => !statuses?.length || statuses.includes(row.status)),
     params.sorting,
@@ -84,7 +85,7 @@ async function fetchAudits(params: UseAuditsQueryParams): Promise<AuditsQueryRes
 
   return {
     rows,
-    pageCount: Math.max(1, Math.ceil(totalCount / params.pageSize)),
+    pageCount,
     totalCount,
   }
 }

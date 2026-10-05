@@ -35,6 +35,7 @@ import {
 } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SeguimientoFiltersValues, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 import type { AsistenciaSeguimientoSearch } from "@/features/academic-management/asistencia/api/schema"
+import { toPageCount } from "@/lib/pagination"
 
 function SeguimientoSinSede() {
   return (
@@ -168,7 +169,7 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
   const asistieron = cargando ? undefined : (rows[0]?.asistieron ?? 0)
   const ausentes = cargando ? undefined : (rows[0]?.ausentes ?? 0)
   const tarde = cargando ? undefined : (rows[0]?.tarde ?? 0)
-  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+  const pageCount = toPageCount(totalCount, pageSize)
 
   const { table } = useDataTable({
     columns: columnsSeguimiento,
