@@ -38,6 +38,20 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       projects: [
+        // Tests unitarios (`pnpm test`): lógica pura y handlers MSW vía
+        // `msw/node`. Ninguno necesita DOM, así que corren en `node` (más
+        // rápido y sin instalar jsdom). Si un test futuro necesita DOM, ponele
+        // `// @vitest-environment jsdom` arriba del archivo (e instalá jsdom)
+        // en lugar de cambiar el environment de todo el proyecto.
+        {
+          extends: true,
+          test: {
+            name: "unit",
+            environment: "node",
+            include: ["src/**/*.test.{ts,tsx}"],
+            exclude: ["**/node_modules/**", "**/*.stories.*"],
+          },
+        },
         {
           extends: true,
           plugins: [
