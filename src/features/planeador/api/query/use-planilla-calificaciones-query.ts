@@ -29,9 +29,6 @@ interface PlanillaCeldaRow {
   notaHomologada: number | null
   calificable: "S" | "N" | null
   observacion: string | null
-  /** Opcionales acá (aunque `PlanillaCelda` los deje obligatorios): toleran
-   *  una respuesta vieja sin estas columnas — `toCelda` les pone default. En
-   *  `esFormativa` se tolera además el bool_sn sin convertir. */
   esFormativa?: boolean | "S" | "N" | null
   fechaAsistencia?: string | null
   tieneAsistencia?: boolean | null
@@ -64,9 +61,6 @@ function toCelda(row: PlanillaCeldaRow): PlanillaCelda {
     ...resto,
     esFormativa: esFormativa === true || esFormativa === "S",
     fechaAsistencia: fechaAsistencia ? fechaAsistencia.slice(0, 10) : null,
-    // Sin la columna (respuesta vieja), no hay forma de saber si falta
-    // asistencia — se asume `true` para no pintar gris de más algo que
-    // antes se dejaba calificar sin este chequeo.
     tieneAsistencia: tieneAsistencia !== false,
     evidencias: (evidencias ?? []).map((e) => ({
       pk: e.pk,
@@ -94,6 +88,8 @@ export interface UsePlanillaCalificacionesParams {
   grupoId: number
   asignaturaId: number
   gradoId?: number
+  /** Sin él, el backend usa el periodo vigente. */
+  periodoId?: number
   size?: number
   offset?: number
 }
@@ -109,13 +105,11 @@ async function fetchPlanillaCalificaciones(
   const query = new URLSearchParams({
     grupo: String(params.grupoId),
     asignatura: String(params.asignaturaId),
-    // El endpoint pagina de verdad — la grilla de la Planilla todavía no
-    // tiene paginador propio, así que se pide una página grande de una sola
-    // vez (mismo criterio que `use-actividades-query.ts`).
     size: String(params.size ?? 200),
     offset: String(params.offset ?? 0),
   })
   if (params.gradoId != null) query.set("grado", String(params.gradoId))
+  if (params.periodoId != null) query.set("periodo", String(params.periodoId))
   const rawRows = await evalCol.getRows<PlanillaFilaRow>(
     `/planeador/planilla/calificaciones?${query}`,
   )
@@ -125,13 +119,6 @@ async function fetchPlanillaCalificaciones(
   }
 }
 
-/**
- * Cuerpo de la grilla de la Planilla: una fila por estudiante con sus
- * celdas ya resueltas (estado, calificación, definitiva) — reemplaza pedir
- * `calificacionesQueryOptions` por cada actividad filtrada con `useQueries`
- * y calcular el porcentaje en el cliente: acá el backend ya lo trae
- * calculado.
- */
 export function usePlanillaCalificacionesQuery(params: UsePlanillaCalificacionesParams | null) {
   return useQuery({
     queryKey: params
