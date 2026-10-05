@@ -361,8 +361,10 @@ export function createUnidadActividadesColumns(
             {
               id: "puntaje",
               accessorKey: "notaMaxima",
-              meta: { label: "Puntaje" },
-              header: ({ column }) => <DataTableColumnHeader column={column} title="Puntaje" />,
+              // "(Σ)" es el par de "(%)" de Ponderado: la reunión del 22-sep pidió
+              // el símbolo de sumatoria en la cabecera (min. 36:57).
+              meta: { label: "(Σ) Puntaje" },
+              header: ({ column }) => <DataTableColumnHeader column={column} title="(Σ)" />,
               cell: ({ row }) => <CeldaPuntaje actividad={row.original} unidadId={unidadId} />,
             },
           ]

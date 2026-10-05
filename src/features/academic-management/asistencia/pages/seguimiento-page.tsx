@@ -17,7 +17,7 @@ import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { asistenciaSeguimientoRoute } from "@/router"
 import { useAsistenciaSeguimientoQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-seguimiento-query"
-import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
+import { useAsistenciaCalendarioMesesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
 import {
   TIPOS_JUSTIFICADOS,
@@ -71,6 +71,28 @@ function SeguimientoSinFiltroMensaje() {
   )
 }
 
+/** Tope de meses del rango que se piden al calendario para armar los combos. */
+const MAX_MESES_CATALOGO = 12
+
+/** Meses entre `desde` y `hasta` (yyyy-MM-dd); si falta alguno, solo el del otro o el de `respaldo`. */
+function mesesDelRango(desde: string, hasta: string, respaldo: string | undefined) {
+  const inicio = desde || hasta || respaldo || ""
+  const fin = hasta || inicio
+  let [anio, mes] = inicio.split("-").map(Number)
+  if (!anio || !mes) {
+    const hoy = new Date()
+    return [{ anio: hoy.getFullYear(), mes: hoy.getMonth() + 1 }]
+  }
+  const [anioFin, mesFin] = fin.split("-").map(Number)
+  const meses = [{ anio, mes }]
+  while ((anio < anioFin || (anio === anioFin && mes < mesFin)) && meses.length < MAX_MESES_CATALOGO) {
+    mes = mes === 12 ? 1 : mes + 1
+    if (mes === 1) anio += 1
+    meses.push({ anio, mes })
+  }
+  return meses
+}
+
 /** Filtros con los que arranca la pantalla (vacíos si no vienen en la URL). */
 function initialFilters(initial: AsistenciaSeguimientoSearch): SeguimientoFiltersValues {
   return {
@@ -89,27 +111,20 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
   const [search, setSearch] = React.useState("")
   const [filters, setFilters] = React.useState<SeguimientoFiltersValues>(() => initialFilters(initial))
 
-  // Los combos salen de las sesiones del mes: el de la fecha recibida, o el actual.
-  const mesCatalogo = React.useMemo(() => {
-    const [anio, mes] = (initial.fecha ?? "").split("-").map(Number)
-    if (anio && mes) return { anio, mes }
-    const hoy = new Date()
-    return { anio: hoy.getFullYear(), mes: hoy.getMonth() + 1 }
-  }, [initial.fecha])
-  const { isDocente, esDocentePuro } = useAsistenciaAccess()
-  const { data: sesionesDelMes } = useAsistenciaCalendarioQuery({
-    SEDE: sede,
-    ANIO: mesCatalogo.anio,
-    MES: mesCatalogo.mes,
-    MIAS: esDocentePuro,
-  })
+  // Los combos salen de las sesiones de los meses del rango aplicado (o del mes
+  // de la fecha recibida, o el actual). Sin MIAS: el calendario ya acota por el
+  // alcance del usuario en la sede y jornada de cada grupo (V542/V136), cosa que
+  // los roles del token no saben.
+  const meses = mesesDelRango(filters.fechaDesde, filters.fechaHasta, initial.fecha)
+  const { isDocente } = useAsistenciaAccess()
+  const sesionesDelRango = useAsistenciaCalendarioMesesQuery({ SEDE: sede }, meses)
   const columnsSeguimiento = React.useMemo(() => buildColumnsSeguimiento(isDocente), [isDocente])
   const {
     grupos: grupoCatalog,
     asignaturas: asignaturaCatalog,
     asignaturasPorGrupo,
     jornadas: jornadaOptions,
-  } = React.useMemo(() => catalogosDeSesiones(sesionesDelMes ?? []), [sesionesDelMes])
+  } = React.useMemo(() => catalogosDeSesiones(sesionesDelRango ?? []), [sesionesDelRango])
   const { data: tipoAsistenciaCatalog = [] } = useTipoAsistenciaCatalogQuery()
   // El filtro no ofrece los "trajo justificación"; el catálogo completo sigue
   // intacto para editar un registro (dialog-editar-seguimiento).
