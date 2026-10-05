@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 /**
  * Catálogo `TIPO_EVIDENCIA_OTRO` de `TLISTA_VALOR` — resuelve el
@@ -36,6 +37,7 @@ export async function fetchTipoEvidenciaOtroOptions(): Promise<TipoEvidenciaOtro
 }
 
 export async function resolveTipoEvidenciaOtroId(tipo: string): Promise<number | undefined> {
-  const options = await fetchTipoEvidenciaOtroOptions()
-  return options.find((o) => o.tipo === tipo)?.id
+  return resolveCatalogId(undefined, "TIPO_EVIDENCIA_OTRO", tipo, {
+    normalize: (row) => toTipoEvidenciaOtro(row.nombre),
+  })
 }

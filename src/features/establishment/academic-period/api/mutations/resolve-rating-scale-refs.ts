@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { findCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 export interface RatingScaleRefs {
   tipoId: number | null
@@ -24,18 +25,14 @@ export async function resolveRatingScaleRefs(
     fetchSelectCategory("GRAFICA_SIMBOLO"),
   ])
   return scales.map((scale) => {
-    const tipoMatch = tipos.find(
-      (row) => row.valor === scale.tipo || row.nombre === scale.tipo
-    )
-    const caritaMatch = caritas.find((row) => row.valor === scale.iconografia)
-    const simboloMatch = simbolos.find((row) => row.valor === scale.iconografia)
-    const iconoMatch = caritaMatch ?? simboloMatch
+    const caritaId = findCatalogId(caritas, scale.iconografia, { match: "valor" })
+    const simboloId = findCatalogId(simbolos, scale.iconografia, { match: "valor" })
     return {
-      tipoId: tipoMatch ? tipoMatch.pk_lista_valor : null,
-      iconoId: iconoMatch ? iconoMatch.pk_lista_valor : null,
-      iconoCategoria: caritaMatch
+      tipoId: findCatalogId(tipos, scale.tipo, { match: "valorOrNombre" }) ?? null,
+      iconoId: caritaId ?? simboloId ?? null,
+      iconoCategoria: caritaId != null
         ? "GRAFICA_CARITA"
-        : simboloMatch
+        : simboloId != null
           ? "GRAFICA_SIMBOLO"
           : null,
     }

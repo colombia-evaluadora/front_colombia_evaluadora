@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { MetodoCalculo } from "@/features/planeador/api/types/unidad-tematica"
 
 /** Catálogo `CALCULO_DEFINITIVA` de `TLISTA_VALOR` — resuelve
@@ -27,6 +28,7 @@ export async function fetchCalculoDefinitivaOptions(): Promise<CalculoDefinitiva
 }
 
 export async function resolveCalculoDefinitivaId(metodo: MetodoCalculo): Promise<number | undefined> {
-  const options = await fetchCalculoDefinitivaOptions()
-  return options.find((o) => o.metodo === metodo)?.id
+  return resolveCatalogId(undefined, "CALCULO_DEFINITIVA", metodo, {
+    normalize: (row) => toMetodoCalculo(row.nombre),
+  })
 }

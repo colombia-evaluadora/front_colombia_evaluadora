@@ -6,6 +6,7 @@ import type {
   EmployeeStatus,
 } from "@/features/establishment/employees/api/types/employee"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseAssignmentTeachersQueryParams {
   academicPeriodId?: number
@@ -78,10 +79,7 @@ async function fetchAssignmentTeachers(
     `/eval-col/asignaciones/docentes/${params.academicPeriodId}`,
     body,
   )
-  const rows = (raw.rows ?? []).map(toEmployeeListItem)
-  const totalCount = raw.rows?.[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
-  return { rows, pageCount, totalCount }
+  return toPaginated(raw.rows, { pageSize: params.pageSize, map: toEmployeeListItem })
 }
 
 export function useAssignmentTeachersQuery(params: UseAssignmentTeachersQueryParams) {
