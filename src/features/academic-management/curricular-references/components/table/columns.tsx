@@ -69,6 +69,7 @@ function ActionsCell({
               render={
                 <Link
                   to={paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(curricularReference.id)}
+                  search={(prev) => prev}
                 />
               }
               nativeButton={false}
