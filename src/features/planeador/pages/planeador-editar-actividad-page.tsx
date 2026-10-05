@@ -33,6 +33,7 @@ import {
 } from "@/features/planeador/api/mutations/update-instrumento-actividad"
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
+import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -126,16 +127,19 @@ function EditarActividadPageContent({
   const [isDirty, setIsDirty] = useState(false)
   const { notify } = useNotify()
 
-  // Sin permiso de "editar" en Planeador, esta pantalla no debería ni poder
-  // verse (mismo criterio que `PlaneadorCrearActividadPage`): redirige al
-  // listado apenas se sabe que no hay permiso.
+  // Con "ver" pero sin "editar" en Planeador (el Coordinador, que tiene el
+  // menú en "Solo lectura") la actividad se muestra entera en solo lectura y
+  // sin "Guardar". Sin ninguno de los dos, la pantalla no debería ni poder
+  // verse: redirige al listado apenas se sabe que no hay permiso.
   const navigate = useNavigate()
-  const { puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeEditar, puedeVer, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const soloLectura = !puedeEditar
+  const puedeAbrir = puedeEditar || puedeVer
   useEffect(() => {
-    if (!isLoadingPermiso && !puedeEditar) {
+    if (!isLoadingPermiso && !puedeAbrir) {
       navigate({ to: paths.app.planeadorActividades.getHref(), replace: true })
     }
-  }, [isLoadingPermiso, puedeEditar, navigate])
+  }, [isLoadingPermiso, puedeAbrir, navigate])
 
   // Para resolver si la unidad NUEVA (si el docente la cambió en el
   // select) calcula por "Ponderado" — ver el comentario de `handleSubmit`.
@@ -397,7 +401,7 @@ function EditarActividadPageContent({
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        {(isPendingCompleto || isLoadingPermiso || !puedeEditar) && (
+        {(isPendingCompleto || isLoadingPermiso || !puedeAbrir) && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando…
           </div>
@@ -409,14 +413,28 @@ function EditarActividadPageContent({
           </p>
         )}
 
-        {!isPendingCompleto && puedeEditar && actividadParaForm && (
-          <EditarActividadForm
-            key={actividadParaForm.id}
-            actividad={actividadParaForm}
-            formId={FORM_ID}
-            onDirtyChange={setIsDirty}
-            onSubmit={handleSubmit}
-          />
+        {!isPendingCompleto && !isLoadingPermiso && puedeAbrir && actividadParaForm && (
+          <div className="flex flex-col gap-6">
+            {soloLectura && (
+              <p className="text-muted-foreground text-sm">
+                Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla.
+              </p>
+            )}
+            {/* Lo ven el docente (estado y observación) y el Coordinador
+                (además el botón "Aprobar" si es de la sede de la actividad). */}
+            <ValidacionCoordinadorCard
+              actividadId={actividadParaForm.id}
+              requiereValidacion={actividad?.requiereValidacion ?? false}
+            />
+            <EditarActividadForm
+              key={actividadParaForm.id}
+              actividad={actividadParaForm}
+              formId={FORM_ID}
+              readOnly={soloLectura}
+              onDirtyChange={setIsDirty}
+              onSubmit={handleSubmit}
+            />
+          </div>
         )}
       </TableScreenBody>
 
@@ -425,7 +443,7 @@ function EditarActividadPageContent({
           (preserva el layout del `TableScreen`), pero su contenido solo
           pinta el aviso + el Guardar cuando `isDirty`. */}
       <TableScreenFooter>
-        {isDirty ? (
+        {isDirty && !soloLectura ? (
           <>
             <p className="text-sm">Se detectaron cambios. Guardar para conservar la información.</p>
             <Button
