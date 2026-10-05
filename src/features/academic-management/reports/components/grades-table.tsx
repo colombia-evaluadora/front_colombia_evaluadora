@@ -26,25 +26,80 @@ function formatNota(valor: number | null): string {
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
 }
 
+function ValorCualitativo({
+  simbolo,
+  valoracion,
+  nombre,
+}: {
+  simbolo: string | null
+  valoracion: string | null
+  nombre: string
+}) {
+  // El símbolo de una escala cualitativa suele ser una IMAGEN (las caritas
+  // de `TESCALA`), no un carácter: `RatingSymbolView` la resuelve y cae al
+  // texto sola cuando el valor no es una imagen o no carga.
+  if (simbolo) {
+    return <RatingSymbolView value={simbolo} label={valoracion ?? nombre} className="mx-auto" />
+  }
+  return <span>{valoracion ?? "—"}</span>
+}
+
+/** Habilitación/Nivelación (Regla 68): R, la nota vigente que promedia y
+ *  aprueba, encima; C, la original antes de recuperar, debajo. Si el docente
+ *  recalificó después de consolidar, lo que se mueve es la C: al guardar, el
+ *  backend recombina la R con la base nueva. */
+function CeldaRecuperada({ asignatura }: { asignatura: AsignaturaInforme }) {
+  const propone = asignatura.estado === "cambio_propuesto"
+  const valor = (nota: number | null, valoracion: string | null, simbolo: string | null) =>
+    asignatura.esNumerico ? (
+      formatNota(nota)
+    ) : (
+      <ValorCualitativo simbolo={simbolo} valoracion={valoracion} nombre={asignatura.nombre} />
+    )
+
+  return (
+    <Tooltip>
+      <TooltipTrigger className="inline-flex flex-col items-center gap-0.5 leading-tight outline-none">
+        <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1 font-medium">
+          <span className="text-[10px] text-muted-foreground">R</span>
+          {valor(asignatura.nota, asignatura.valoracion, asignatura.simbolo)}
+        </span>
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="text-[10px]">C</span>
+          {valor(asignatura.notaOriginal, asignatura.valoracionOriginal, asignatura.simboloOriginal)}
+          {propone && asignatura.esNumerico && (
+            <span className="italic">
+              → {asignatura.notaPropuesta != null ? formatNota(asignatura.notaPropuesta) : "sin nota"}
+            </span>
+          )}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {propone
+          ? "Nota recuperada (R) y original (C). El docente cambió la nota después de consolidar: al guardar, la recuperación se vuelve a aplicar sobre la nueva original."
+          : "Nota recuperada (R) y nota original antes de la recuperación (C). El promedio usa la R."}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undefined }) {
   if (!asignatura || asignatura.estado === "sin_nota") {
     return <span className="text-muted-foreground">—</span>
   }
 
+  if (asignatura.conRecuperacion && asignatura.estado !== "requerido") {
+    return <CeldaRecuperada asignatura={asignatura} />
+  }
+
   if (!asignatura.esNumerico) {
-    // El símbolo de una escala cualitativa suele ser una IMAGEN (las caritas
-    // de `TESCALA`), no un carácter: `RatingSymbolView` la resuelve y cae al
-    // texto sola cuando el valor no es una imagen o no carga.
-    if (asignatura.simbolo) {
-      return (
-        <RatingSymbolView
-          value={asignatura.simbolo}
-          label={asignatura.valoracion ?? asignatura.nombre}
-          className="mx-auto"
-        />
-      )
-    }
-    return <span>{asignatura.valoracion ?? "—"}</span>
+    return (
+      <ValorCualitativo
+        simbolo={asignatura.simbolo}
+        valoracion={asignatura.valoracion}
+        nombre={asignatura.nombre}
+      />
+    )
   }
 
   if (asignatura.estado === "requerido") {
