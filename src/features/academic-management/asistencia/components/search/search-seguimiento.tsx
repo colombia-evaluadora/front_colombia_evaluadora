@@ -94,9 +94,20 @@ export function SearchSeguimiento({
     return [TODOS_ITEM, ...asignaturas.map((a) => ({ value: String(a.value), label: a.label }))]
   }, [asignaturaCatalog, asignaturasPorGrupo, draft.grupo])
   const tipoAsistenciaItems = useMemo(
-    () => [TODOS_ITEM, ...tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label }))],
+    () => [
+      TODOS_ITEM,
+      ...tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label })),
+    ],
     [tipoAsistenciaOptions],
   )
+
+  // Las opciones ya vienen acotadas al alcance del usuario (un docente solo
+  // recibe sus grupos y asignaturas): un combo con una sola opción o ninguna no
+  // acota nada, así que no se muestra.
+  const verJornada = jornadaOptions.length > 1
+  const verGrado = gradosDeJornada(grupoCatalog, "").length > 1
+  const verGrupo = grupoCatalog.length > 1
+  const verAsignatura = asignaturaCatalog.length > 1
 
   function handleApply() {
     applyFilters(draft)
@@ -202,92 +213,111 @@ export function SearchSeguimiento({
         </FieldSet>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="seguimiento-jornada">Jornada</FieldLabel>
-            <ComboboxField
-              items={Object.fromEntries(jornadaItems.map((item) => [item.value, item.label]))}
-              value={draft.jornada}
-              // Cambiarla reencuadra Grado/Grupo/Asignatura: lo elegido abajo
-              // puede no existir en la jornada nueva, así que se limpia.
-              onValueChange={(value) =>
-                setDraft((d) => ({ ...d, jornada: value ?? "", grado: "", grupo: "", asignatura: "" }))
-              }
-            >
-              <ComboboxFieldTrigger id="seguimiento-jornada" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {jornadaItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
+          {verJornada && (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="seguimiento-jornada">Jornada</FieldLabel>
+              <ComboboxField
+                items={Object.fromEntries(jornadaItems.map((item) => [item.value, item.label]))}
+                value={draft.jornada}
+                // Cambiarla reencuadra Grado/Grupo/Asignatura: lo elegido abajo
+                // puede no existir en la jornada nueva, así que se limpia.
+                onValueChange={(value) =>
+                  setDraft((d) => ({
+                    ...d,
+                    jornada: value ?? "",
+                    grado: "",
+                    grupo: "",
+                    asignatura: "",
+                  }))
+                }
+              >
+                <ComboboxFieldTrigger id="seguimiento-jornada" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todos" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  {jornadaItems.map((item) => (
+                    <ComboboxFieldItem key={item.value} value={item.value}>
+                      {item.label}
+                    </ComboboxFieldItem>
+                  ))}
+                </ComboboxFieldContent>
+              </ComboboxField>
+            </Field>
+          )}
 
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="seguimiento-grado">Grado</FieldLabel>
-            <ComboboxField
-              items={Object.fromEntries(gradoItems.map((item) => [item.value, item.label]))}
-              value={draft.grado}
-              onValueChange={(value) =>
-                setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "" }))
-              }
-            >
-              <ComboboxFieldTrigger id="seguimiento-grado" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {gradoItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
+          {verGrado && (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="seguimiento-grado">Grado</FieldLabel>
+              <ComboboxField
+                items={Object.fromEntries(gradoItems.map((item) => [item.value, item.label]))}
+                value={draft.grado}
+                onValueChange={(value) =>
+                  setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "" }))
+                }
+              >
+                <ComboboxFieldTrigger id="seguimiento-grado" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todos" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  {gradoItems.map((item) => (
+                    <ComboboxFieldItem key={item.value} value={item.value}>
+                      {item.label}
+                    </ComboboxFieldItem>
+                  ))}
+                </ComboboxFieldContent>
+              </ComboboxField>
+            </Field>
+          )}
 
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="seguimiento-grupo">Grupo</FieldLabel>
-            <ComboboxField
-              disabled={!draft.grado}
-              items={Object.fromEntries(grupoItems.map((item) => [item.value, item.label]))}
-              value={draft.grupo}
-              onValueChange={(value) => setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "" }))}
-            >
-              <ComboboxFieldTrigger id="seguimiento-grupo" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={draft.grado ? "Todos" : "Elegí Grado primero"} />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {grupoItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
+          {verGrupo && (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="seguimiento-grupo">Grupo</FieldLabel>
+              <ComboboxField
+                // Con un solo grado no hay combo de grado que elegir primero.
+                disabled={verGrado && !draft.grado}
+                items={Object.fromEntries(grupoItems.map((item) => [item.value, item.label]))}
+                value={draft.grupo}
+                onValueChange={(value) =>
+                  setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "" }))
+                }
+              >
+                <ComboboxFieldTrigger id="seguimiento-grupo" size="sm" className="w-full">
+                  <ComboboxFieldValue
+                    placeholder={!verGrado || draft.grado ? "Todos" : "Elegí Grado primero"}
+                  />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  {grupoItems.map((item) => (
+                    <ComboboxFieldItem key={item.value} value={item.value}>
+                      {item.label}
+                    </ComboboxFieldItem>
+                  ))}
+                </ComboboxFieldContent>
+              </ComboboxField>
+            </Field>
+          )}
 
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="seguimiento-asignatura">Asignatura</FieldLabel>
-            <ComboboxField
-              items={Object.fromEntries(asignaturaItems.map((item) => [item.value, item.label]))}
-              value={draft.asignatura}
-              onValueChange={(value) => setDraft((d) => ({ ...d, asignatura: value ?? "" }))}
-            >
-              <ComboboxFieldTrigger id="seguimiento-asignatura" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {asignaturaItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
+          {verAsignatura && (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="seguimiento-asignatura">Asignatura</FieldLabel>
+              <ComboboxField
+                items={Object.fromEntries(asignaturaItems.map((item) => [item.value, item.label]))}
+                value={draft.asignatura}
+                onValueChange={(value) => setDraft((d) => ({ ...d, asignatura: value ?? "" }))}
+              >
+                <ComboboxFieldTrigger id="seguimiento-asignatura" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todos" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  {asignaturaItems.map((item) => (
+                    <ComboboxFieldItem key={item.value} value={item.value}>
+                      {item.label}
+                    </ComboboxFieldItem>
+                  ))}
+                </ComboboxFieldContent>
+              </ComboboxField>
+            </Field>
+          )}
         </div>
 
         <Field orientation="vertical" variant="outlined" className="gap-2">

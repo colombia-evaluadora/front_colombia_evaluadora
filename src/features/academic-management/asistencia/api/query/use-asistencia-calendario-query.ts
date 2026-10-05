@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQueries, useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
@@ -48,5 +48,27 @@ export function useAsistenciaCalendarioQuery(params: AsistenciaCalendarioParams,
     queryKey: ["asistencia", "calendario", params],
     queryFn: () => fetchAsistenciaCalendario(params),
     enabled,
+  })
+}
+
+// Función estable: así `useQueries` no recalcula el resultado en cada render.
+function juntarSesiones(results: { data?: SesionCalendario[] }[]) {
+  return results.flatMap((r) => r.data ?? [])
+}
+
+/** Sesiones de varios meses juntas; cada mes comparte caché con `useAsistenciaCalendarioQuery`. */
+export function useAsistenciaCalendarioMesesQuery(
+  base: Omit<AsistenciaCalendarioParams, "ANIO" | "MES">,
+  meses: { anio: number; mes: number }[],
+) {
+  return useQueries({
+    queries: meses.map(({ anio, mes }) => {
+      const params = { ...base, ANIO: anio, MES: mes }
+      return {
+        queryKey: ["asistencia", "calendario", params],
+        queryFn: () => fetchAsistenciaCalendario(params),
+      }
+    }),
+    combine: juntarSesiones,
   })
 }
