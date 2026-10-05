@@ -33,6 +33,9 @@ interface PlanillaCeldaRow {
   fechaAsistencia?: string | null
   tieneAsistencia?: boolean | null
   estadoResultado?: EstadoResultado | null
+  solicitudPendiente?: boolean | null
+  notaPropuestaHomologada?: number | null
+  calificacionPropuesta?: unknown
   evidencias?: CeldaEvidenciaRow[] | null
 }
 
@@ -51,6 +54,9 @@ interface PlanillaFilaRow {
   definitiva_proyectada_homologada: number | null
   definitiva_registrada: number | null
   tendencia: number | null
+  nota_maxima?: number | null
+  es_numerico?: boolean | null
+  definitiva_propuesta_homologada?: number | null
   celdas: PlanillaCeldaRow[]
   total_count: number
 }
@@ -80,6 +86,8 @@ function toFila(row: PlanillaFilaRow): PlanillaFila {
     definitivaProyectadaHomologada: row.definitiva_proyectada_homologada,
     definitivaRegistrada: row.definitiva_registrada,
     tendencia: row.tendencia,
+    notaMaxima: row.es_numerico ? (row.nota_maxima ?? null) : null,
+    definitivaPropuestaHomologada: row.definitiva_propuesta_homologada ?? null,
     celdas: row.celdas.map(toCelda),
   }
 }

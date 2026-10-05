@@ -14,7 +14,10 @@ import { cn } from "@/lib/utils"
 
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
 import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
-import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
+import {
+  CeldaNotaPopover,
+  type CambioPendiente,
+} from "@/features/planeador/components/planilla/celda-nota-popover"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { todayDateOnly } from "@/features/planeador/lib/format-date"
@@ -35,6 +38,10 @@ interface PlanillaGridProps {
    *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
    *  lo personalizó). */
   gradoId?: number
+  /** Periodo cerrado: cambios sin enviar por `pkTactividadEstudiante`. */
+  cambios?: Map<number, CambioPendiente>
+  /** Con esto las celdas no guardan: acumulan el cambio en la página. */
+  onCambio?: (cambio: CambioPendiente) => void
 }
 
 interface GrupoUnidad {
@@ -102,6 +109,8 @@ export function PlanillaGrid({
   filas,
   onAbrirBulk,
   gradoId,
+  cambios,
+  onCambio,
 }: PlanillaGridProps) {
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
@@ -229,6 +238,15 @@ export function PlanillaGrid({
                         {definitiva.toFixed(2)}
                       </span>
                     )}
+                    {fila.definitivaPropuestaHomologada != null && (
+                      <span className="ml-1.5">
+                        <NotaPropuesta
+                          nota={fila.definitivaPropuestaHomologada}
+                          titulo="Con los cambios pendientes de aprobación"
+                          sinNota=""
+                        />
+                      </span>
+                    )}
                   </td>
                 )}
                 {columnas.map((columna) => {
@@ -316,6 +334,7 @@ export function PlanillaGrid({
                   }
                   const claveCelda =`${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
                   const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
+                  const cambio = celda ? cambios?.get(celda.pkTactividadEstudiante) : undefined
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
                       <div className="flex items-center gap-1.5">
@@ -333,6 +352,21 @@ export function PlanillaGrid({
                         ) : (
                           <span className="text-muted-foreground">Agregar</span>
                         )}
+                        {cambio ? (
+                          <NotaPropuesta
+                            nota={cambio.notaPropuesta}
+                            titulo="Cambio sin enviar"
+                            sinNota="Editado"
+                          />
+                        ) : (
+                          celda?.solicitudPendiente && (
+                            <NotaPropuesta
+                              nota={celda.notaPropuestaHomologada ?? null}
+                              titulo="Pendiente de aprobación"
+                              sinNota="Pendiente"
+                            />
+                          )
+                        )}
                         {celda && (
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
@@ -341,6 +375,11 @@ export function PlanillaGrid({
                             estudianteNombre={fila.nombreEstudiante}
                             onGuardado={() =>
                               setRefrescando((prev) => new Set(prev).add(claveCelda))
+                            }
+                            onCambio={onCambio}
+                            cambioPendiente={cambio}
+                            calificacionPropuesta={
+                              celda.solicitudPendiente ? celda.calificacionPropuesta : undefined
                             }
                           />
                         )}
@@ -354,6 +393,15 @@ export function PlanillaGrid({
         </tbody>
       </table>
     </div>
+  )
+}
+
+/** "→ 3.50" en naranja; sin nota conocida, solo el rótulo. */
+function NotaPropuesta({ nota, titulo, sinNota }: { nota: number | null; titulo: string; sinNota: string }) {
+  return (
+    <span className="text-orange text-xs font-semibold" title={titulo}>
+      {nota != null ? `→ ${nota.toFixed(2)}` : sinNota}
+    </span>
   )
 }
 

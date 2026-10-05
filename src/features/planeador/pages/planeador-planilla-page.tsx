@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ import {
 import {
   DotsThreeIcon,
   InboxIcon,
+  WarningCircleIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
   SpinnerIcon,
@@ -54,6 +56,12 @@ import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
+import {
+  DialogEnviarSolicitud,
+  DialogSolicitudEnviada,
+} from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
+import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
@@ -89,6 +97,48 @@ export function PlaneadorPlanillaPage() {
   const [estadoGuardarBulk, setEstadoGuardarBulk] = useState<EstadoGuardar | null>(null)
   const guardarBulkRef = useRef<(() => void) | null>(null)
 
+  // Periodo cerrado (estado distinto de "1" Calificable): las notas se
+  // acumulan y se envían juntas; el backend abre la solicitud (Regla 55).
+  const periodoCerrado = filtro != null && filtro.periodoEvaluacion.estado !== "1"
+  const [cambios, setCambios] = useState<Map<number, CambioPendiente>>(new Map())
+  const [confirmando, setConfirmando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [enviada, setEnviada] = useState(false)
+  const { notify } = useNotify()
+  const calificar = useCalificarCeldaMutation()
+
+  function cambiarFiltro(next: FiltroPlanillaValue | null) {
+    setCambios(new Map())
+    setFiltro(next)
+  }
+
+  function agregarCambio(cambio: CambioPendiente) {
+    setCambios((prev) => new Map(prev).set(cambio.input.pkTactividadEstudiante, cambio))
+  }
+
+  async function enviarSolicitud() {
+    setEnviando(true)
+    const pendientes = new Map(cambios)
+    let solicitudes = 0
+    let error: unknown = null
+    for (const [pk, cambio] of cambios) {
+      try {
+        const result = await calificar.mutateAsync(cambio.input)
+        solicitudes += result?.solicitudes_pendientes?.length ?? 0
+        pendientes.delete(pk)
+      } catch (e) {
+        error ??= e
+      }
+    }
+    setCambios(pendientes)
+    setEnviando(false)
+    setConfirmando(false)
+    if (error) notify(getErrorMessage(error), { variant: "error" })
+    // Una primera nota (sin nota previa) se aplica directo, sin solicitud.
+    if (solicitudes > 0) setEnviada(true)
+    else if (pendientes.size < cambios.size) notify("Notas guardadas.")
+  }
+
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   // El catálogo `AGRUPACION_PLANILLA` etiqueta la opción como "Actividades" a
   // secas, pero acá SÍ se conoce el grado (una vez elegido el filtro), así
@@ -112,8 +162,12 @@ export function PlaneadorPlanillaPage() {
     : null
 
   const { data: todasLasColumnas = [], isPending: isPendingColumnas } = usePlanillaColumnasQuery(params)
-  const { data: calificacionesResult, isPending: isPendingCalificaciones } =
-    usePlanillaCalificacionesQuery(params)
+  const {
+    data: calificacionesResult,
+    isPending: isPendingCalificaciones,
+    error: errorCalificaciones,
+    refetch: refetchCalificaciones,
+  } = usePlanillaCalificacionesQuery(params)
   const filas = calificacionesResult?.rows ?? []
   const cargandoPlanilla = filtro !== null && (isPendingColumnas || isPendingCalificaciones)
 
@@ -174,6 +228,12 @@ export function PlaneadorPlanillaPage() {
                   </Button>
                 )
               ) : (
+              <div className="flex gap-2">
+                {puedeEditar && cambios.size > 0 && (
+                  <Button color="primary" size="sm" variant="fill" onClick={() => setConfirmando(true)}>
+                    Guardar
+                  </Button>
+                )}
               <div className="flex gap-0">
                 {puedeCrear && (
                   <Button
@@ -212,11 +272,22 @@ export function PlaneadorPlanillaPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              </div>
               )
             }
           >
             Planilla de calificación
           </TableScreenTitle>
+
+          {periodoCerrado && (
+            <div
+              role="status"
+              className="border-orange-stroke bg-orange-22 text-orange mx-(--screen-spacing) mt-4 flex min-h-8 items-center gap-3 rounded-md border px-4 py-1 text-sm font-semibold"
+            >
+              <WarningCircleIcon className="size-5 shrink-0" />
+              Periodo cerrado
+            </div>
+          )}
 
           <TableScreenToolbar>
             <div className="grid flex-1 gap-4 sm:grid-cols-3">
@@ -254,7 +325,7 @@ export function PlaneadorPlanillaPage() {
 
               <Field variant="outlined">
                 <FieldLabel>Filtro</FieldLabel>
-                <FiltroPlanillaCascada value={filtro} onChange={setFiltro} />
+                <FiltroPlanillaCascada value={filtro} onChange={cambiarFiltro} />
               </Field>
             </div>
           </TableScreenToolbar>
@@ -274,13 +345,25 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !cargandoPlanilla && (
+          {/* Sin esto un error se veía como "sin estudiantes asignados". */}
+          {filtro && !columnaEnBulk && !cargandoPlanilla && errorCalificaciones && (
+            <div className="flex flex-col items-center gap-2 py-24 text-center">
+              <p className="text-red text-sm">{getErrorMessage(errorCalificaciones)}</p>
+              <Button variant="outline" color="neutral" size="sm" onClick={() => refetchCalificaciones()}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          {filtro && !columnaEnBulk && !cargandoPlanilla && !errorCalificaciones && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
               gradoId={filtro.gradoId}
+              cambios={periodoCerrado ? cambios : undefined}
+              onCambio={periodoCerrado ? agregarCambio : undefined}
             />
           )}
 
@@ -297,6 +380,14 @@ export function PlaneadorPlanillaPage() {
           )}
         </TableScreenBody>
       </TableScreen>
+
+      <DialogEnviarSolicitud
+        open={confirmando}
+        enviando={enviando}
+        onEnviar={enviarSolicitud}
+        onCancelar={() => setConfirmando(false)}
+      />
+      <DialogSolicitudEnviada open={enviada} onCerrar={() => setEnviada(false)} />
     </NoticeProvider>
   )
 }

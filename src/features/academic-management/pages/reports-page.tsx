@@ -521,7 +521,8 @@ function ReportsPageContent() {
         destino.asignaturaId,
         destino.periodoId,
       ),
-      search,
+      // `to` es un href armado: el search no se tipa contra la ruta de la planilla.
+      search: { ...search, filtro: destino.etiqueta } as typeof search,
     })
   }
 
