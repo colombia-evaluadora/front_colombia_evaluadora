@@ -29,11 +29,6 @@ import {
 } from "@/features/academic-management/reports/api/mutations/export-informe"
 import type { ExportFormat, ExportResult } from "@/features/academic-management/reports/api/types/export"
 
-/**
- * El armazón que comparten las dos descargas. Lo único que cambia entre el
- * boletín y el descargar es el disparador, los textos y a qué reporte le pega;
- * el diálogo de "PDF o Excel" es el mismo de siempre.
- */
 interface DialogDescargaProps {
   trigger: ReactElement
   tooltip: string
@@ -59,9 +54,6 @@ function DialogDescarga({
   return (
     <Dialog open={abierto} onOpenChange={onAbrirChange}>
       <Tooltip>
-        {/* El trigger va envuelto en `span` por el mismo motivo de siempre: un
-            <button disabled> nativo no dispara los eventos de hover que el
-            Tooltip necesita para abrirse. */}
         <TooltipTrigger render={<DialogTrigger render={trigger} />}>
           <span className="sr-only">{tooltip}</span>
         </TooltipTrigger>
@@ -123,19 +115,10 @@ interface DialogGenerarBoletinProps {
   matriculas: number[]
   /** Falso mientras no haya exactamente un período y al menos un estudiante. */
   listo: boolean
-  /** El boletín en PDF solo sabe imprimir dimensiones cualitativas (ver
-   *  `boletin-preescolar.md`): sobre un grupo numérico el backend igual
-   *  respondería 200 con un PDF vacío, así que se corta antes en la UI. */
+  /** Grupo cualitativo: pide el boletín de preescolar; si no, el de notas. */
   esPreescolar: boolean
 }
 
-/**
- * EL BOLETÍN. No es la tabla exportada: es el PDF armado aparte —un boletín
- * por estudiante, uno detrás de otro, con foto, evidencias y fondo
- * institucional— que arma `/reportes/boletin-preescolar` (ver
- * `boletin-preescolar.md`). Por eso no comparte el diálogo de PDF/Excel de
- * `DialogDescarga`: solo hay un formato, así que el botón dispara directo.
- */
 export function DialogGenerarBoletin({
   grupoId,
   periodos,
@@ -153,19 +136,16 @@ export function DialogGenerarBoletin({
     },
   })
 
-  const puede = listo && esPreescolar && grupoId != null
+  const puede = listo && grupoId != null
   const varios = matriculas.length > 1
 
   function handleClick() {
     if (!puede || grupoId == null) return
-    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaIds: matriculas })
+    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaIds: matriculas, esPreescolar })
   }
 
   return (
     <Tooltip>
-      {/* El trigger va en un `span`, no en el propio Button: un
-          <button disabled> nativo no dispara los eventos de hover que el
-          Tooltip necesita para abrirse. */}
       <TooltipTrigger render={<span className="inline-flex" />}>
         <Button
           type="button"
@@ -187,11 +167,9 @@ export function DialogGenerarBoletin({
       <TooltipContent>
         {!listo
           ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
-          : !esPreescolar
-            ? "El boletín en PDF solo está disponible para preescolar."
-            : varios
-              ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
-              : "Generar el boletín del estudiante seleccionado."}
+          : varios
+            ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
+            : "Generar el boletín del estudiante seleccionado."}
       </TooltipContent>
     </Tooltip>
   )
@@ -206,11 +184,6 @@ interface DialogDescargarTablaProps {
   filtersLabel: string
 }
 
-/**
- * EL DESCARGAR. La tabla tal como está en pantalla, sin filtrar: lo
- * consolidado, lo proyectado, lo requerido y lo que no tiene nota, cada uno
- * dicho con todas las letras en la columna Estado.
- */
 export function DialogDescargarTabla({
   grupoId,
   periodos,
