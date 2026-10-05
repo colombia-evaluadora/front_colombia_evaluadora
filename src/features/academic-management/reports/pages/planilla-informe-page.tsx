@@ -408,7 +408,7 @@ function PlanillaInformeContent() {
             <p className="py-8 text-center text-sm text-muted-foreground">Cargando planilla…</p>
           )}
           {planilla.isError && (
-            <p className="py-8 text-center text-sm text-red">No se pudo cargar la planilla.</p>
+            <p className="py-8 text-center text-sm text-red">{getErrorMessage(planilla.error)}</p>
           )}
           {!planilla.isPending && !planilla.isError && (
             <PlanillaTable

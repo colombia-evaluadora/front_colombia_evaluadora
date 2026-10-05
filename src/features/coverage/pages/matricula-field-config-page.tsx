@@ -240,7 +240,7 @@ function MatriculaFieldConfigPageContent() {
 
           {isError && (
             <div className="p-10 text-center text-sm text-destructive">
-              No se pudo cargar la configuración.
+              {getErrorMessage(error)}
             </div>
           )}
 

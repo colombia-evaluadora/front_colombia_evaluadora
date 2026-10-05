@@ -39,6 +39,7 @@ export function CalificacionesAprobacionView({
     data: calificaciones = [],
     isPending,
     isError,
+    error,
     refetch,
   } = useCalificacionesQuery(actividad.id, actividad.fechaInicio);
   const { data: instrumento, isPending: isPendingInstrumento } =
@@ -137,7 +138,7 @@ export function CalificacionesAprobacionView({
     return (
       <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
         <p className="text-red text-sm">
-          Ocurrió un error al cargar los estudiantes.
+          {getErrorMessage(error)}
         </p>
         <Button
           variant="outline"

@@ -27,6 +27,7 @@ import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-ro
 
 import { planeadorUnidadesRoute } from "@/router"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { getErrorMessage } from "@/lib/api-client"
 
 /**
  * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
@@ -47,7 +48,7 @@ export function PlaneadorUnidadesPage() {
   // vigente hoy — paginar por día activo acá ocultaba unidades enteras sin
   // ningún aviso (colección Postman `planeador-delta-cambios`, punto (g);
   // el parámetro se había copiado del listado de actividades).
-  const { data: unidadesResult, isPending, isError, refetch } = useUnidadesQuery()
+  const { data: unidadesResult, isPending, isError, error, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
   // La pestaña "Unidad temática" puede ser varias (una por referente
@@ -186,7 +187,7 @@ export function PlaneadorUnidadesPage() {
 
                   {isError && (
                     <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                      <p className="text-red text-sm">Ocurrió un error al cargar el listado.</p>
+                      <p className="text-red text-sm">{getErrorMessage(error)}</p>
                       <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                         Reintentar
                       </Button>
