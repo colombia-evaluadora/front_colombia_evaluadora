@@ -60,6 +60,8 @@ export interface UsePlanillaColumnasParams {
   grupoId: number
   asignaturaId: number
   gradoId?: number
+  /** Sin él, el backend usa el periodo vigente. */
+  periodoId?: number
 }
 
 async function fetchPlanillaColumnas(
@@ -70,6 +72,7 @@ async function fetchPlanillaColumnas(
     asignatura: String(params.asignaturaId),
   })
   if (params.gradoId != null) query.set("grado", String(params.gradoId))
+  if (params.periodoId != null) query.set("periodo", String(params.periodoId))
   const rows = await evalCol.getRows<PlanillaColumnaRow>(`/planeador/planilla/columnas?${query}`)
   return rows.map(toPlanillaColumna)
 }

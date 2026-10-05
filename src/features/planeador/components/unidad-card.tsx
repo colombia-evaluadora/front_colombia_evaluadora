@@ -12,10 +12,17 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { demostrativoRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 interface UnidadCardProps {
   unidad: UnidadTematica
+  /** Rótulo de la pestaña ("Unidad temática"/"Proyecto pedagógico"/…) — lo
+   *  resuelve la página una sola vez para todo el listado (todas las cards
+   *  caen bajo la misma pestaña activa) en vez de una consulta por card. */
+  rotuloUnidad?: string
   selected?: boolean
   onSelect?: () => void
   /** Navega a la pantalla de edición de la unidad. Se dispara desde el
@@ -39,6 +46,7 @@ interface UnidadCardProps {
  */
 export function UnidadCard({
   unidad,
+  rotuloUnidad = UNIDAD_TAB_FALLBACK,
   selected = false,
   onSelect,
   onEdit,
@@ -46,7 +54,7 @@ export function UnidadCard({
 }: UnidadCardProps) {
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeEditar } = usePlaneadorSoloLectura()
 
   return (
     <article
@@ -87,7 +95,7 @@ export function UnidadCard({
                 </span>
               }
             />
-            <TooltipContent>El referente curricular de esta unidad ya no está activo.</TooltipContent>
+            <TooltipContent>{`El referente curricular de ${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()} ya no está activo.`}</TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -100,7 +108,7 @@ export function UnidadCard({
             vez de "N rótulos" porque el rótulo no es un dato controlado y no
             se puede pluralizar de forma confiable (ver el bug de
             "Actividad2s"); como categoría + cuenta, no hace falta. */}
-        {unidad.rotuloEjecucion ?? "Actividad"}: {unidad.totalActividades ?? unidad.actividades.length}
+        {unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK}: {unidad.totalActividades ?? unidad.actividades.length}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {formatDate(unidad.fechaInicio)} - {formatDate(unidad.fechaFin)}
@@ -142,6 +150,7 @@ export function UnidadCard({
         )}
         <DialogDeleteUnidad
           unidad={unidad}
+          rotuloUnidad={rotuloUnidad}
           onDeleted={onDeleted}
           triggerProps={{ className: "size-6" }}
         />

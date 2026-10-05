@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
@@ -539,6 +539,7 @@ export function EditarActividadForm({
   const rotulo = rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
 
   return (
+    <SoloLecturaActividadContext.Provider value={readOnly}>
     <form
       id={formId}
       className="flex flex-col gap-6"
@@ -649,6 +650,7 @@ export function EditarActividadForm({
       <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
+    </SoloLecturaActividadContext.Provider>
   )
 }
 
@@ -699,6 +701,23 @@ function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
 }
 
 const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
+
+/**
+ * Solo lectura del form (`EditarActividadForm.readOnly`). Los campos de datos
+ * siguen visibles y deshabilitados (por el `disabled` de cada sección) para
+ * poder leer la actividad; los botones cuyo único fin es modificar (crear
+ * unidad, agregar/quitar ítems, criterios, niveles, adaptaciones, recursos…)
+ * directamente no se renderizan: van envueltos en `<SoloEdicion>`.
+ */
+const SoloLecturaActividadContext = createContext(false)
+
+function useSoloLecturaActividad(): boolean {
+  return useContext(SoloLecturaActividadContext)
+}
+
+function SoloEdicion({ children }: { children: ReactNode }) {
+  return useSoloLecturaActividad() ? null : <>{children}</>
+}
 
 /**
  * Grado + Asignatura elegidos (los DOS ids, no los nombres): el resto del
@@ -1313,6 +1332,7 @@ function UnidadAsociadaSection({
     asignatura: string
   }) => Promise<UnidadTematica>
 }) {
+  const soloLectura = useSoloLecturaActividad()
   // El rótulo "Unidad temática asociada" está hardcodeado, pero el
   // instrumento real depende del nivel educativo del Grado elegido — mismo
   // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
@@ -1386,7 +1406,12 @@ function UnidadAsociadaSection({
                   <div className="flex items-end gap-0">
                     <Field
                       variant="outlined"
-                      className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
+                      // Pegado al "+" de crear unidad; en solo lectura ese botón
+                      // no se renderiza y el select vuelve a sus esquinas.
+                      className={cn(
+                        "min-w-0 flex-1",
+                        !soloLectura && "[&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0",
+                      )}
                     >
                       <FieldLabel htmlFor={field.name} className="truncate" title={instrumentoLabel}>
                         {instrumentoLabel}
@@ -1460,6 +1485,7 @@ function UnidadAsociadaSection({
                         </SelectContent>
                       </Select>
                     </Field>
+                    <SoloEdicion>
                     <CrearUnidadPopover
                       className="rounded-l-none border-l-0"
                       instrumentoLabel={instrumentoLabel}
@@ -1484,6 +1510,7 @@ function UnidadAsociadaSection({
                         field.handleChange({ id: nueva.id, nombre: nueva.nombre })
                       }}
                     />
+                    </SoloEdicion>
                   </div>
                 )}
               </form.Field>
@@ -1549,6 +1576,7 @@ function UnidadSection({
                           : [...actual, evidenciaId],
                       )
                     }}
+                    disabled={readOnly}
                     criteriosSeleccionados={criteriosField.state.value}
                     onToggleCriterio={(criterioId) => {
                       if (readOnly) return
@@ -1581,7 +1609,9 @@ function UnidadFichaYEvidencias({
   onToggle,
   criteriosSeleccionados,
   onToggleCriterio,
+  disabled = false,
 }: {
+  disabled?: boolean
   unidadId: number
   nombreFallback: string
   seleccionadas: number[]
@@ -1628,6 +1658,7 @@ function UnidadFichaYEvidencias({
           enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
+          disabled={disabled}
         />
       )}
       {criterios.length > 0 && (
@@ -1635,6 +1666,7 @@ function UnidadFichaYEvidencias({
           criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
+          disabled={disabled}
         />
       )}
     </div>
@@ -2297,6 +2329,7 @@ function RecursosSection({
   // genera acá: el `Recurso` que viene del modal ya trae un id del
   // recurso original en otra actividad, y si lo reusáramos dos
   // recursos podrían colisionar en el `<ul>` (la key es el id).
+  const soloLectura = useSoloLecturaActividad()
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
     if (list.length >= RECURSO_MAX_ITEMS) return
@@ -2316,6 +2349,7 @@ function RecursosSection({
               otros repositorios de la app). `outline` + `primary` para
               que sea un botón secundario de la cabecera (el primario es
               el toggle de colapsar, que es la acción más usada). */}
+          <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -2342,6 +2376,7 @@ function RecursosSection({
                 : "Elegí el grupo para ver los archivos de otras actividades"}
             </TooltipContent>
           </Tooltip>
+          </SoloEdicion>
           {/* Toggle colapsar/expandir. El ícono cambia entre los dos
               estados: `+` outline (expandir) cuando está colapsado, `-`
               fill (colapsar) cuando está expandido. Mismo idioma visual
@@ -2360,7 +2395,8 @@ function RecursosSection({
                   aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
                   aria-expanded={!collapsed}
                   onClick={() => setCollapsed((v) => !v)}
-                  disabled={disabled}
+                  // Solo muestra/oculta la lista: en solo lectura sigue activo.
+                  disabled={soloLectura ? false : disabled}
                 />
               }
             >
@@ -2389,7 +2425,8 @@ function RecursosSection({
               tipeado se perdía en silencio. `handleAddDraft` ya no hace
               nada si el borrador está vacío, así que no agrega filas
               fantasma solo por tabular de un campo a otro. */}
-          {limiteAlcanzado ? (
+          {/* En solo lectura no hay alta de recursos: solo la lista. */}
+          {soloLectura ? null : limiteAlcanzado ? (
             <p className="text-muted-foreground text-sm">
               Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
               alguno de la lista para agregar otro.
@@ -2902,6 +2939,7 @@ function RecursoItem({
           </TooltipTrigger>
           <TooltipContent>Ver recurso</TooltipContent>
         </Tooltip>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -2920,6 +2958,7 @@ function RecursoItem({
           </TooltipTrigger>
           <TooltipContent>Quitar de la lista</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
     </li>
   )
@@ -3723,6 +3762,7 @@ function ListaCotejoSection({
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición Lista de Cotejo</h3>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -3747,6 +3787,7 @@ function ListaCotejoSection({
           </TooltipTrigger>
           <TooltipContent>Agregar ítem</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Mismo flag que gobierna la ponderación de la rúbrica: un ítem
@@ -3826,6 +3867,7 @@ function ListaCotejoSection({
                       criterio de aceptación #3). Mismo patrón que "Agregar
                       nivel" dentro de cada criterio de rúbrica, que ya vive
                       al final de su propio bloque. */}
+                  <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
                       variant="fill"
@@ -3844,6 +3886,7 @@ function ListaCotejoSection({
                       Agregar ítem
                     </Button>
                   </div>
+                  </SoloEdicion>
                 </>
               )
             }}
@@ -3910,6 +3953,7 @@ function ListaCotejoItemCard({
     <div className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Ítem {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -3928,6 +3972,7 @@ function ListaCotejoItemCard({
           </TooltipTrigger>
           <TooltipContent>{`Quitar ítem ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Descripción + ponderación en la misma fila: `flex-1` en la
@@ -4274,6 +4319,7 @@ function EscalaValoracionSection({
                       <div className="mt-4">
                         <div className="mb-3 flex items-center justify-between">
                           <h4 className="text-sm font-semibold">Definiciones cualitativas</h4>
+                          <SoloEdicion>
                           <Tooltip>
                           <TooltipTrigger
                             render={
@@ -4320,6 +4366,7 @@ function EscalaValoracionSection({
                           </TooltipTrigger>
                           <TooltipContent>Agregar definición cualitativa</TooltipContent>
                           </Tooltip>
+                          </SoloEdicion>
                         </div>
 
                         {escala.niveles.length === 0 ? (
@@ -4416,6 +4463,7 @@ function EscalaValoracionSection({
                                     )}
                                   </Field>
                                 )}
+                                <SoloEdicion>
                                 <Tooltip>
                                   <TooltipTrigger
                                     render={
@@ -4434,6 +4482,7 @@ function EscalaValoracionSection({
                                   </TooltipTrigger>
                                   <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
                                 </Tooltip>
+                                </SoloEdicion>
                               </li>
                               )
                             })}
@@ -4728,6 +4777,7 @@ function RubricasSection({
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición de Rúbricas *</h3>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -4758,6 +4808,7 @@ function RubricasSection({
           </TooltipTrigger>
           <TooltipContent>Agregar criterio</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Leemos `esEvaluativa` del store del form para decidir si los
@@ -4827,6 +4878,7 @@ function RubricasSection({
                       (QA Bloque 5, criterio de aceptación #3). Mismo patrón
                       que "Agregar nivel" dentro de cada criterio, que ya
                       vive al final de su propio bloque. */}
+                  <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
                       variant="fill"
@@ -4848,6 +4900,7 @@ function RubricasSection({
                       Agregar criterio
                     </Button>
                   </div>
+                  </SoloEdicion>
                 </>
               )
             }}
@@ -4942,6 +4995,7 @@ function CriterioItem({
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -4960,6 +5014,7 @@ function CriterioItem({
           </TooltipTrigger>
           <TooltipContent>{`Quitar criterio ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       {/* Cada control usa `Field variant="outlined"` con `FieldLabel`
@@ -5085,6 +5140,7 @@ function CriterioItem({
           )}
           {/* Tachito a la derecha del textarea — quita el bloque entero
               (texto Y puntaje), no solo el texto. */}
+          <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -5106,6 +5162,7 @@ function CriterioItem({
             </TooltipTrigger>
             <TooltipContent>Quitar excelente</TooltipContent>
           </Tooltip>
+          </SoloEdicion>
         </div>
       )}
 
@@ -5209,6 +5266,7 @@ function CriterioItem({
                 {ponderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
               </Field>
             )}
+            <SoloEdicion>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -5235,6 +5293,7 @@ function CriterioItem({
               </TooltipTrigger>
               <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
             </Tooltip>
+            </SoloEdicion>
           </li>
           )
         })}
@@ -5253,6 +5312,7 @@ function CriterioItem({
           ese asomo se come el `mb` de la lista de niveles de arriba y el
           label termina pisando la última fila (visible en la captura).
           24px es lo mínimo para que el label quede libre. */}
+      <SoloEdicion>
       <Field
         variant="outlined"
         className="mt-6 [&_[data-slot=input]]:rounded-r-none [&_[data-slot=input]]:border-r-0"
@@ -5297,6 +5357,7 @@ function CriterioItem({
         </div>
         {sinNiveles && <FieldError errors={[{ message: "Agrega al menos un nivel de desempeño." }]} />}
       </Field>
+      </SoloEdicion>
 
       {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
           como el máximo entre los puntajes de sus niveles (de facto, el
@@ -5390,6 +5451,7 @@ function AdaptacionesSection({
                     ? "Si aplica, registre las adaptaciones"
                     : "Adaptaciones registradas"}
                 </p>
+                <SoloEdicion>
                 <Tooltip>
                   <TooltipTrigger
                     render={
@@ -5408,6 +5470,7 @@ function AdaptacionesSection({
                   </TooltipTrigger>
                   <TooltipContent>Agregar adaptación</TooltipContent>
                 </Tooltip>
+                </SoloEdicion>
               </div>
 
               {adaptaciones.length > 0 && (
@@ -5675,6 +5738,7 @@ function AdaptacionItem({
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Adaptación {index + 1}</h4>
+        <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -5693,6 +5757,7 @@ function AdaptacionItem({
           </TooltipTrigger>
           <TooltipContent>{`Quitar adaptación ${index + 1}`}</TooltipContent>
         </Tooltip>
+        </SoloEdicion>
       </div>
 
       <Field variant="outlined" className="mt-3">
@@ -5826,6 +5891,7 @@ function AdaptacionItem({
                       {archivo.fkTarchivo !== undefined && !archivo.blobUrl && (
                         <VerPlantillaAdaptacion archivoId={archivo.fkTarchivo} />
                       )}
+                      <SoloEdicion>
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -5850,6 +5916,7 @@ function AdaptacionItem({
                         </TooltipTrigger>
                         <TooltipContent>{`Quitar ${archivo.nombre}`}</TooltipContent>
                       </Tooltip>
+                      </SoloEdicion>
                     </div>
                   </li>
                 ))}

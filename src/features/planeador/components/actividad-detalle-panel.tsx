@@ -13,7 +13,8 @@ import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { getErrorMessage } from "@/lib/api-client"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -75,10 +76,11 @@ export function ActividadDetallePanel({
   onShowGrades,
   onShowApproval,
 }: ActividadDetallePanelProps) {
-  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
-  const { puedeEditar, puedeVer } = useMenuPermission("PLANEADOR")
-  // Sin "editar" pero con "ver" (Coordinador): el mismo link abre la
-  // actividad completa en solo lectura (ver `PlaneadorEditarActividadPage`).
+  const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
+  const { puedeEditar, puedeVer, soloLectura } = usePlaneadorSoloLectura()
+  // En solo lectura (Coordinador): el mismo link abre la actividad completa
+  // sin poder editarla (ver `PlaneadorEditarActividadPage`), y no se
+  // muestran las acciones que modifican (calificar, eliminar).
   const accionEditar = puedeEditar ? "Editar" : puedeVer ? "Ver" : null
 
   return (
@@ -147,6 +149,7 @@ export function ActividadDetallePanel({
           )}
           {ACCIONES.filter(
             (a) =>
+              !soloLectura &&
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
               // observación + asistencia de a un estudiante por vez.
               a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad),
@@ -204,7 +207,7 @@ export function ActividadDetallePanel({
 
         {isError && (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="text-red text-sm">Ocurrió un error al cargar la actividad.</p>
+            <p className="text-red text-sm">{getErrorMessage(error)}</p>
             <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
               Reintentar
             </Button>

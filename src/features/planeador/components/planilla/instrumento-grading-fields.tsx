@@ -460,7 +460,9 @@ function NivelSelectField({
     <Field variant="outlined">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
-        value={etiquetaActual}
+        // `null` y no `undefined`: con undefined el Select queda no controlado
+        // y no toma la nota que llega después de abrir.
+        value={etiquetaActual ?? null}
         onValueChange={(nextLabel) => {
           const nivel = niveles.find((n) => n.etiqueta === nextLabel)
           if (nivel) onSelect(nivel)

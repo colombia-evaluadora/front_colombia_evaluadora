@@ -60,7 +60,7 @@ export function ValidacionCoordinadorCard({
   actividadId: number
   requiereValidacion: boolean
 }) {
-  const { data, isPending, isError } = useValidacionCoordinadorQuery(actividadId, requiereValidacion)
+  const { data, isPending, isError, error } = useValidacionCoordinadorQuery(actividadId, requiereValidacion)
   const [open, setOpen] = useState(false)
 
   if (!requiereValidacion) return null
@@ -88,7 +88,7 @@ export function ValidacionCoordinadorCard({
       </div>
 
       {isPending && <p className="text-muted-foreground text-sm">Cargando el estado de la validación…</p>}
-      {isError && <p className="text-red text-sm">No se pudo cargar el estado de la validación.</p>}
+      {isError && <p className="text-red text-sm">{getErrorMessage(error)}</p>}
 
       {data && data.estado === "PENDIENTE" && (
         <p className="text-muted-foreground text-sm">

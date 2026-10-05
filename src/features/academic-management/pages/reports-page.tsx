@@ -67,6 +67,7 @@ import {
   type DestinoPlanilla,
 } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
+import { getErrorMessage } from "@/lib/api-client"
 
 const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 
@@ -223,7 +224,7 @@ function GrupoTabContent({
       )}
       {informe.isError && (
         <p className="py-8 text-center text-sm text-red">
-          No se pudo cargar el informe de este grupo.
+          {getErrorMessage(informe.error)}
         </p>
       )}
       {!informe.isPending &&
@@ -520,7 +521,8 @@ function ReportsPageContent() {
         destino.asignaturaId,
         destino.periodoId,
       ),
-      search,
+      // `to` es un href armado: el search no se tipa contra la ruta de la planilla.
+      search: { ...search, filtro: destino.etiqueta } as typeof search,
     })
   }
 

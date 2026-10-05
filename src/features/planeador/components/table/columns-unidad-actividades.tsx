@@ -33,6 +33,12 @@ import { useUpdatePonderacionActividadUnidad } from "@/features/planeador/api/mu
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
 import type { MetodoCalculo, UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { articuloDefinidoRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 /** Celda "(%)" editable en línea — clic muestra el input, Enter/blur
  *  guarda, Escape descarta. Solo tiene sentido con cálculo "Ponderado": el
@@ -216,20 +222,32 @@ function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; uni
 function BotonDesvincular({
   actividad,
   unidadId,
+  rotuloActividad,
+  rotuloUnidad,
 }: {
   actividad: UnidadActividad
   unidadId: number
+  /** Rótulos reales de la actividad y de la unidad (ver
+   *  `createUnidadActividadesColumns`) — nunca "actividad"/"unidad" fijos. */
+  rotuloActividad: string
+  rotuloUnidad: string
 }) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+  const actividadLower = rotuloEnMinuscula(rotuloActividad)
+  const desvincularLabel = `Desvincular ${actividadLower}`
+  const genero = terminacionRotulo(rotuloActividad)
   const unlink = useUnlinkActividadUnidad({
     unidadId,
     mutationConfig: {
       onSuccess: () => {
-        notify("Actividad desvinculada.")
+        notify(`${rotuloActividad} desvinculad${genero}.`)
         setOpen(false)
       },
-      onError: () => notify("No se pudo desvincular la actividad.", { variant: "error" }),
+      onError: () =>
+        notify(`No se pudo desvincular ${articuloDefinidoRotulo(rotuloActividad)} ${actividadLower}.`, {
+          variant: "error",
+        }),
     },
   })
 
@@ -244,7 +262,7 @@ function BotonDesvincular({
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
-                  aria-label="Desvincular actividad"
+                  aria-label={desvincularLabel}
                 />
               }
             />
@@ -252,14 +270,14 @@ function BotonDesvincular({
         >
           <LinkBreakIcon />
         </TooltipTrigger>
-        <TooltipContent>Desvincular actividad</TooltipContent>
+        <TooltipContent>{desvincularLabel}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Desvincular actividad</AlertDialogTitle>
+          <AlertDialogTitle>{desvincularLabel}</AlertDialogTitle>
           <AlertDialogDescription>
-            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin unidad (huérfana). Podés volver a
-            vincularla más adelante.
+            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin {rotuloUnidad.toLowerCase()}{" "}
+            (huérfan{genero}). Podés volver a vincularl{genero} más adelante.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -327,7 +345,10 @@ export function createUnidadActividadesColumns(
   puedeEliminar: boolean,
   /** Rótulo real de la unidad para "Actividad" (Regla 13) — nunca el
    *  literal fijo. */
-  rotuloActividadLabel: string = "Actividad",
+  rotuloActividadLabel: string = ROTULO_ACTIVIDAD_FALLBACK,
+  /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para el
+   *  copy de "Desvincular". */
+  rotuloUnidad: string = UNIDAD_TAB_FALLBACK,
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
     ? []
@@ -482,7 +503,14 @@ export function createUnidadActividadesColumns(
             </TooltipTrigger>
             <TooltipContent>Calificar {row.original.nombre}</TooltipContent>
           </Tooltip>
-          {puedeEliminar && <BotonDesvincular actividad={row.original} unidadId={unidadId} />}
+          {puedeEliminar && (
+            <BotonDesvincular
+              actividad={row.original}
+              unidadId={unidadId}
+              rotuloActividad={rotuloActividadLabel}
+              rotuloUnidad={rotuloUnidad}
+            />
+          )}
         </div>
       ),
       enableSorting: false,

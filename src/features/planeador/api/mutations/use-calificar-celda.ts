@@ -36,7 +36,7 @@ export type CalificarCeldaInput = {
   | { tipo: "OTRO_PORCENTAJE"; porcentaje: number }
 )
 
-function buildCalificacion(input: CalificarCeldaInput): unknown {
+export function buildCalificacion(input: CalificarCeldaInput): unknown {
   switch (input.tipo) {
     case "RUBRICA":
       return { niveles: input.niveles }
@@ -65,6 +65,9 @@ function buildCalificacion(input: CalificarCeldaInput): unknown {
 
 interface CalificarCeldaResult {
   calificacion: number | null
+  /** Regla 55: corrección en periodo no calificable → solicitud de
+   *  aprobación (la nota no cambia). Vacío = se aplicó. */
+  solicitudes_pendientes?: number[] | null
 }
 
 function calificarCelda(input: CalificarCeldaInput): Promise<CalificarCeldaResult> {

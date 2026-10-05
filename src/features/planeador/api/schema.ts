@@ -13,6 +13,13 @@ export const planeadorUnidadCrearSearchSchema = z.object({
 })
 export type PlaneadorUnidadCrearSearch = z.infer<typeof planeadorUnidadCrearSearchSchema>
 
+/** Edición de unidad: `instrumento` solo alimenta la miga de pan (el rótulo
+ *  de la pestaña desde la que se entró) — la página resuelve el suyo
+ *  desde la unidad misma. */
+export const planeadorUnidadEditarSearchSchema = z.object({
+  instrumento: z.string().optional().catch(undefined),
+})
+
 /**
  * Search schema del listado. La barra superior es la misma de los demás
  * listados: un solo input con la consulta —texto libre + términos

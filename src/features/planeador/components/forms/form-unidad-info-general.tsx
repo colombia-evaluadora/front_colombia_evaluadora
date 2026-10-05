@@ -34,6 +34,13 @@ import {
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import {
+  articuloIndefinidoRotulo,
+  deArticuloRotulo,
+  pluralizarRotulo,
+} from "@/features/planeador/lib/rotulo-gramatica"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { metodoCalculoInfo } from "@/features/planeador/lib/metodo-calculo-info"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -164,10 +171,14 @@ export function UnidadInfoGeneralFields({
   draft,
   onChange,
   tab,
+  rotuloUnidad = UNIDAD_TAB_FALLBACK,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
   tab?: UnidadTab
+  /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) que ya
+   *  resolvió la página de alta/edición. */
+  rotuloUnidad?: string
 }) {
   // Con `tab` (alta desde "Agregar {instrumento}") el enfoque NO puede
   // depender de que el docente elija un grado puntual: TODOS los grados de
@@ -194,6 +205,10 @@ export function UnidadInfoGeneralFields({
   const rotuloActividadLabel = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
   const rotuloActividadLower = rotuloActividadLabel.toLowerCase()
   const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
+  const rotuloActividadIndefinido = articuloIndefinidoRotulo(rotuloActividadLabel)
+  const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLower)
+  const todasLas = rotuloActividadGenero === "o" ? "todos los" : "todas las"
+  const metodoInfo = metodoCalculoInfo(rotuloActividadLabel)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
@@ -412,7 +427,7 @@ export function UnidadInfoGeneralFields({
       />
 
       <ContenidosCaja
-        title="Estructura de la Unidad/Proyecto"
+        title={`Estructura ${deArticuloRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()}`}
         description="Agrega las secciones (fases, recursos, metodología…) que la componen, con un título opcional para cada una."
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
@@ -464,7 +479,7 @@ export function UnidadInfoGeneralFields({
             disabled={disabled}
           >
             {METODO_CALCULO_OPTIONS.map((option) => {
-              const info = METODO_CALCULO_INFO[option]
+              const info = metodoInfo[option]
               const checked = draft.metodoCalculo === option
               return (
                 <label
@@ -489,24 +504,25 @@ export function UnidadInfoGeneralFields({
           {draft.metodoCalculo === "Ponderado" && (
             <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
               <InfoIcon className="mt-0.5 size-4 shrink-0" />
-              Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
-              cálculo por ponderación.
+              Al vincular {rotuloActividadIndefinido} {rotuloActividadLower}, deberás asignar el porcentaje
+              que tendrá, ya que se usa cálculo por ponderación.
             </div>
           )}
 
           {draft.metodoCalculo === "Promedio simple" && (
             <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
               <InfoIcon className="mt-0.5 size-4 shrink-0" />
-              Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
-              calcula como el promedio simple de todas las actividades vinculadas.
+              Al vincular {rotuloActividadIndefinido} {rotuloActividadLower} no necesitas asignarle un
+              porcentaje: el resultado se calcula como el promedio simple de {todasLas}{" "}
+              {rotuloActividadPluralLower} vinculad{rotuloActividadGenero}s.
             </div>
           )}
 
           {draft.metodoCalculo === "Suma de puntos" && (
             <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
               <InfoIcon className="mt-0.5 size-4 shrink-0" />
-              Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
-              cálculo por suma de puntos.
+              Al vincular {rotuloActividadIndefinido} {rotuloActividadLower}, deberás asignar el puntaje
+              que tendrá, ya que se usa cálculo por suma de puntos.
             </div>
           )}
         </FieldSet>
