@@ -158,9 +158,9 @@ export const rolesHandlers = [
         puede_ver: true,
       }))
 
-    // El Coordinador tiene el Planeador en "Solo lectura" (así está
-    // configurado en el backend real): ve las actividades y valida las que lo
-    // requieren, pero no las edita.
+    // El Coordinador recibe el Planeador con todos los permisos, igual que en
+    // testv2 (`permisos-menu` le da editar). Aun así lo ve en solo lectura:
+    // lo decide el rol, ver `usePlaneadorSoloLectura`.
     if (user?.roles.includes("CEVAL-COORDINADOR")) {
       const planeador = navigationMenu.find((menu) => menuCodigo(menu) === "PLANEADOR" && menu.path)
       if (planeador) {
@@ -172,9 +172,9 @@ export const rolesHandlers = [
             codigo: "PLANEADOR",
             nombre: planeador.name,
             path: planeador.path!,
-            puede_crear: false,
-            puede_editar: false,
-            puede_eliminar: false,
+            puede_crear: true,
+            puede_editar: true,
+            puede_eliminar: true,
             puede_ver: true,
           },
         ])

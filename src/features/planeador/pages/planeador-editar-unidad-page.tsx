@@ -53,7 +53,7 @@ import {
   terminacionRotulo,
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { planeadorUnidadEditarRoute } from "@/router"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 /** Actividades vinculadas sin peso capturado para el método de cálculo
  *  destino — "Ponderado" mira `ponderacion`, "Suma de puntos" mira
@@ -96,6 +96,7 @@ export function PlaneadorEditarUnidadPage() {
       <EditarUnidadPageContent
         isPending={isPending}
         isError={isError}
+        error={error}
         unidad={unidad}
         // `?instrumento=`: vuelve a la pestaña de esta unidad (y su miga).
         onClose={(instrumento) => navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })}
@@ -107,11 +108,13 @@ export function PlaneadorEditarUnidadPage() {
 function EditarUnidadPageContent({
   isPending,
   isError,
+  error,
   unidad,
   onClose,
 }: {
   isPending: boolean
   isError: boolean
+  error: unknown
   unidad: ReturnType<typeof useUnidadDetalleQuery>["data"]
   onClose: (instrumento: string) => void
 }) {
@@ -140,7 +143,7 @@ function EditarUnidadPageContent({
   // "editar" en Planeador, redirige al listado apenas se sabe que no hay
   // permiso.
   const navigate = useNavigate()
-  const { puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeEditar) {
       navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })
@@ -247,7 +250,7 @@ function EditarUnidadPageContent({
 
         {isError && (
           <p className="text-red px-6 py-12 text-center text-sm">
-            Ocurrió un error al cargar {articuloDefinido(instrumento)} {instrumentoLower}.
+            {getErrorMessage(error)}
           </p>
         )}
 

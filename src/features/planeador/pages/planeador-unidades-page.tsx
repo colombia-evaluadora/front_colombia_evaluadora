@@ -33,7 +33,8 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 
 import { planeadorUnidadesRoute } from "@/router"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { getErrorMessage } from "@/lib/api-client"
 
 /**
  * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
@@ -44,7 +45,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 export function PlaneadorUnidadesPage() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+  const { puedeCrear } = usePlaneadorSoloLectura()
 
   const buscar = search.buscar ?? ""
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useUnidadesFilters()
@@ -54,7 +55,7 @@ export function PlaneadorUnidadesPage() {
   // vigente hoy — paginar por día activo acá ocultaba unidades enteras sin
   // ningún aviso (colección Postman `planeador-delta-cambios`, punto (g);
   // el parámetro se había copiado del listado de actividades).
-  const { data: unidadesResult, isPending, isError, refetch } = useUnidadesQuery()
+  const { data: unidadesResult, isPending, isError, error, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
   // La pestaña "Unidad temática" puede ser varias (una por referente
@@ -201,7 +202,7 @@ export function PlaneadorUnidadesPage() {
 
                   {isError && (
                     <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                      <p className="text-red text-sm">Ocurrió un error al cargar el listado.</p>
+                      <p className="text-red text-sm">{getErrorMessage(error)}</p>
                       <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                         Reintentar
                       </Button>

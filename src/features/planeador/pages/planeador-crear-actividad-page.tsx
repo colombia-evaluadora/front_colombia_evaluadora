@@ -30,7 +30,7 @@ import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 const FORM_ID = "crear-actividad-form"
 
@@ -63,7 +63,7 @@ function PlaneadorCrearActividadPageContent() {
   // guard de PERMISO a nivel de página (el router solo gatea por sesión,
   // ver CLAUDE.md) — los puntos de entrada (botones "Nueva actividad") ya
   // estaban ocultos, esto cubre a quien llega por URL directa.
-  const { puedeCrear, puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
       navigate({ to: paths.app.planeadorActividades.getHref(), replace: true })

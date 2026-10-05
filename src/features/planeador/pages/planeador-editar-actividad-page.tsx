@@ -36,7 +36,7 @@ import { EditarActividadForm } from "@/features/planeador/components/forms/form-
 import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 const FORM_ID = "editar-actividad-form"
 
@@ -106,6 +106,7 @@ export function PlaneadorEditarActividadPage() {
       <EditarActividadPageContent
         isPending={isPending}
         isError={isError}
+        error={error}
         actividad={actividad}
         onClose={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
       />
@@ -116,24 +117,25 @@ export function PlaneadorEditarActividadPage() {
 function EditarActividadPageContent({
   isPending,
   isError,
+  error,
   actividad,
   onClose,
 }: {
   isPending: boolean
   isError: boolean
+  error: unknown
   actividad: ReturnType<typeof useActividadDetalleQuery>["data"]
   onClose: () => void
 }) {
   const [isDirty, setIsDirty] = useState(false)
   const { notify } = useNotify()
 
-  // Con "ver" pero sin "editar" en Planeador (el Coordinador, que tiene el
-  // menú en "Solo lectura") la actividad se muestra entera en solo lectura y
-  // sin "Guardar". Sin ninguno de los dos, la pantalla no debería ni poder
+  // Con "ver" pero sin "editar" en Planeador, o siendo Coordinador sin rol
+  // docente (ver `usePlaneadorSoloLectura`), la actividad se muestra entera
+  // en solo lectura y sin "Guardar". Sin ninguno de los dos, la pantalla no debería ni poder
   // verse: redirige al listado apenas se sabe que no hay permiso.
   const navigate = useNavigate()
-  const { puedeEditar, puedeVer, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
-  const soloLectura = !puedeEditar
+  const { puedeEditar, puedeVer, soloLectura, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   const puedeAbrir = puedeEditar || puedeVer
   useEffect(() => {
     if (!isLoadingPermiso && !puedeAbrir) {
@@ -409,7 +411,7 @@ function EditarActividadPageContent({
 
         {isError && (
           <p className="text-red px-6 py-12 text-center text-sm">
-            Ocurrió un error al cargar la actividad.
+            {getErrorMessage(error)}
           </p>
         )}
 

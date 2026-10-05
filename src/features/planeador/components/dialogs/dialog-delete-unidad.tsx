@@ -23,7 +23,7 @@ import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unida
 import { useCederUnidad } from "@/features/planeador/api/mutations/ceder-unidad"
 import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   articuloDefinido,
   useRotuloUnidad,
@@ -137,7 +137,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
     pageSize: 8,
   })
 
-  const { puedeEliminar } = useMenuPermission("PLANEADOR")
+  const { puedeEliminar } = usePlaneadorSoloLectura()
   if (!puedeEliminar) return null
 
   return (

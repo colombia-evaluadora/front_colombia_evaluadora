@@ -51,13 +51,14 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   formatDate,
   parseLocalDate,
   toDateOnly,
   todayDateOnly,
 } from "@/features/planeador/lib/format-date"
+import { getErrorMessage } from "@/lib/api-client"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -80,7 +81,7 @@ function PlaneadorPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+  const { puedeCrear } = usePlaneadorSoloLectura()
 
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`.
@@ -182,6 +183,7 @@ function PlaneadorPageContent() {
     data: miasResult,
     isPending,
     isError,
+    error,
     refetch,
   } = useActividadesMiasQuery({
     search: buscar || undefined,
@@ -253,8 +255,8 @@ function PlaneadorPageContent() {
         return
       }
       exportarJson.mutate({ ids: todas.map((actividad) => actividad.id) })
-    } catch {
-      notify("No se pudo obtener la lista de actividades para exportar.", { variant: "error" })
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setExportandoTodo(false)
     }
@@ -513,7 +515,7 @@ function PlaneadorPageContent() {
 
                 {isError && (
                   <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                    <p className="text-red text-sm">Ocurrió un error al cargar el listado.</p>
+                    <p className="text-red text-sm">{getErrorMessage(error)}</p>
                     <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                       Reintentar
                     </Button>
@@ -611,18 +613,23 @@ function PlaneadorPageContent() {
                   // Actividad con ESE día como fecha de inicio Y cierre —
                   // el docente puede cambiarlas después, es solo un punto
                   // de partida (mismo criterio que `unidadId` en
-                  // `planeadorActividadCrearSearchSchema`).
-                  onDayClick={(date) => {
-                    const fecha = toDateOnly(date)
-                    navigate({
-                      to: paths.app.planeadorActividadCrear.getHref(),
-                      search: {
-                        fechaInicio: fecha,
-                        fechaCierre: fecha,
-                        rotulo: tabActiva?.rotulo,
-                      },
-                    })
-                  }}
+                  // `planeadorActividadCrearSearchSchema`). Sin permiso de
+                  // crear (p. ej. el Coordinador) el día no es clickeable.
+                  onDayClick={
+                    puedeCrear
+                      ? (date) => {
+                          const fecha = toDateOnly(date)
+                          navigate({
+                            to: paths.app.planeadorActividadCrear.getHref(),
+                            search: {
+                              fechaInicio: fecha,
+                              fechaCierre: fecha,
+                              rotulo: tabActiva?.rotulo,
+                            },
+                          })
+                        }
+                      : undefined
+                  }
                   // Click en una actividad ya listada en la celda: abre ESA
                   // actividad (mismo panel que `onSelect` de la fila en la
                   // lista, más arriba) en vez de crear una nueva en esa
