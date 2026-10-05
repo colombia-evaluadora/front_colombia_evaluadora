@@ -63,6 +63,7 @@ import { useGradoGruposQuery } from "@/features/planeador/api/query/use-grado-gr
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
+import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
@@ -652,6 +653,18 @@ function camposObligatoriosFaltantes(
   if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
     faltantes.push("Instrumento de evaluación")
   }
+  // Regla 47: "Estudiantes específicos" sin nadie (de la actividad) lo
+  // rechaza el backend (`fn_actividad_validar_adaptaciones`, V496.1) — se
+  // frena acá para no crear la actividad y fallar recién en el `PUT
+  // .../adaptaciones`.
+  values.adaptaciones.forEach((adaptacion, i) => {
+    if (
+      adaptacion.aplicaA === "Estudiantes específicos" &&
+      !adaptacion.estudiantesIds.some((id) => esEstudianteDeLaActividad(values, id))
+    ) {
+      faltantes.push(`Estudiantes de la adaptación ${i + 1}`)
+    }
+  })
   return faltantes
 }
 
@@ -5307,6 +5320,14 @@ function AdaptacionesSection({
   // de cada adaptación combina el `useState` local "tocado" de ESE item con
   // un intento de guardar a nivel del form entero.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  // Regla 47: la adaptación solo puede elegir entre los estudiantes DE LA
+  // ACTIVIDAD ("Estudiantes de la {rótulo}"), no entre todo el grupo — el
+  // backend rechaza el resto (ver `esEstudianteDeLaActividad`).
+  const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
+  const matriculasIds = useSelector(form.store, (state) => state.values.matriculasIds)
+  const estudiantesActividad = matriculas.filter((m) =>
+    esEstudianteDeLaActividad({ asignarTodoElGrupo, matriculasIds }, m.id),
+  )
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -5372,7 +5393,7 @@ function AdaptacionesSection({
                       key={aIndex}
                       index={aIndex}
                       adaptacion={adapt}
-                      matriculas={matriculas}
+                      matriculas={estudiantesActividad}
                       disabled={disabled}
                       actividadId={actividadId}
                       grupoId={grupoId ?? 0}
@@ -5397,18 +5418,6 @@ function AdaptacionesSection({
       </form.Field>
     </Card>
   )
-}
-
-/**
- * `nombres`/`apellidos` en el mock viven en MAYÚSCULAS (así arma los
- * documentos oficiales `mocks/db/calificaciones.ts`), pero el checklist
- * de estudiantes se lee como cualquier lista de nombres propios — Título
- * Caso, no gritado. Es un ajuste solo de presentación acá; no toca el
- * dato guardado ni a otros consumidores (la tabla de calificaciones sigue
- * mostrando el nombre tal cual viene).
- */
-function toTitleCase(value: string): string {
-  return value.toLowerCase().replace(/\p{L}+/gu, (word) => word[0]!.toUpperCase() + word.slice(1))
 }
 
 /**
@@ -5627,10 +5636,16 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
+  // Solo cuentan los que siguen siendo estudiantes de la actividad: si el
+  // docente sacó a alguien en "Estudiantes de la {rótulo}" después de
+  // marcarlo acá, deja de verse marcado (y al guardar se poda, ver
+  // `adaptacionesConEstudiantesDeLaActividad`).
+  const estudiantesSeleccionados = adaptacion.estudiantesIds.filter((id) => matriculas.some((m) => m.id === id))
+  const todosSeleccionados = matriculas.length > 0 && estudiantesSeleccionados.length === matriculas.length
   const estudiantesInvalido =
     (tocoEstudiantes || submissionAttempts > 0) &&
     adaptacion.aplicaA === "Estudiantes específicos" &&
-    adaptacion.estudiantesIds.length === 0
+    estudiantesSeleccionados.length === 0
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -5965,64 +5980,49 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Checklist de estudiantes — solo cuando la adaptación aplica a
-          "Estudiantes específicos". Mismo idioma que el resto del form:
-          `Field variant="outlined"` con el label flotando en el borde
-          superior, acá conteniendo una lista vertical de checkboxes en
-          vez de un input. Mismo padrón que "Estudiantes de la {rótulo}"
-          (Bloque 1, `useActividadMatriculasGrupoQuery`/`matriculas`), NO
-          `useCalificacionesQuery`: ese query viene vacío en el alta (la
-          actividad todavía no existe) y, aun en edición, devuelve
-          `pk_tactividad_estudiante` como id en vez del `pk_tmatricula` que
-          exige `estudiantesIds` (`fn_actividad_validar_adaptacion_
-          estudiantes`, V496.1) — ver el comentario de `grupoIdActual` en
-          `EditarActividadForm`. Vacío si el grupo todavía no tiene
-          matrículas cargadas.
+      {/* Estudiantes de la adaptación — solo con "Estudiantes específicos".
+          Mismo control que "Estudiantes de la {rótulo}" del Bloque 1
+          (`EstudiantesMultiSelect`: trigger con resumen + menú de checkboxes
+          con "Seleccionar todos"), en vez de la lista de checkboxes suelta
+          de antes, que con un grupo de 40 estudiantes estiraba la tarjeta.
 
-          Validación "obligatorio" (estudiantesInvalido más arriba): el
-          `onBlur` va en el contenedor de checkboxes, no en cada uno — React
-          hace burbujear `blur` (desde v17), así que alcanza con que el foco
-          salga de CUALQUIER checkbox del checklist para marcarlo "tocado",
-          sin depender de cuál en particular perdió el foco. */}
+          Opciones: solo los estudiantes DE LA ACTIVIDAD (`matriculas` ya
+          viene filtrado en `AdaptacionesSection`, Regla 47 —
+          `fn_actividad_validar_adaptacion_estudiantes`, V496.1, rechaza
+          cualquier otro). Ids `pk_tmatricula`, los mismos que guarda y
+          devuelve el backend (ver `adaptacionFromRaw`).
+
+          A diferencia del Bloque 1, "todos" acá NO es un estado aparte: la
+          adaptación siempre guarda la lista explícita (el backend exige un
+          array no vacío con "Estudiantes específicos"), así que
+          `allSelected` se deriva de la selección y "Seleccionar todos"
+          escribe todos los ids.
+
+          "Tocado" al cerrar el menú (no hay `blur` útil en un trigger que
+          abre un popup). */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
         <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
-          <FieldLabel>Seleccionar estudiantes (múltiple)</FieldLabel>
-          {matriculas.length === 0 ? (
-            <p className="text-muted-foreground px-1 py-2 text-sm">
-              Este grupo todavía no tiene estudiantes cargados.
-            </p>
-          ) : (
-            <div
-              className="flex flex-col gap-1 py-1"
-              aria-invalid={estudiantesInvalido}
-              onBlur={() => setTocoEstudiantes(true)}
-            >
-              {matriculas.map((matricula) => {
-                const checked = adaptacion.estudiantesIds.includes(matricula.id)
-                return (
-                  <label
-                    key={matricula.id}
-                    className="flex items-center gap-2 rounded-sm px-1 py-1 text-sm hover:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(next) => {
-                        setTocoEstudiantes(true)
-                        onChange({
-                          ...adaptacion,
-                          estudiantesIds: next
-                            ? [...adaptacion.estudiantesIds, matricula.id]
-                            : adaptacion.estudiantesIds.filter((id) => id !== matricula.id),
-                        })
-                      }}
-                      disabled={disabled}
-                    />
-                    {toTitleCase(matricula.nombre)}
-                  </label>
-                )
-              })}
-            </div>
-          )}
+          <FieldLabel htmlFor={`adaptacion-${index}-estudiantes`}>Estudiantes de la adaptación</FieldLabel>
+          <EstudiantesMultiSelect
+            id={`adaptacion-${index}-estudiantes`}
+            estudiantes={matriculas}
+            value={estudiantesSeleccionados}
+            allSelected={todosSeleccionados}
+            allSelectedLabel="Todos los estudiantes de la actividad"
+            onChange={({ matriculaIds, allSelected }) => {
+              setTocoEstudiantes(true)
+              onChange({
+                ...adaptacion,
+                estudiantesIds: allSelected ? matriculas.map((m) => m.id) : matriculaIds,
+              })
+            }}
+            onOpenChange={(open) => {
+              if (!open) setTocoEstudiantes(true)
+            }}
+            invalid={estudiantesInvalido}
+            disabled={disabled}
+            placeholder="La actividad todavía no tiene estudiantes"
+          />
           {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
       )}

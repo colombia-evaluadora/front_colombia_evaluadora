@@ -29,6 +29,7 @@ import { EditarActividadForm } from "@/features/planeador/components/forms/form-
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const FORM_ID = "crear-actividad-form"
@@ -164,7 +165,11 @@ function PlaneadorCrearActividadPageContent() {
     }
     if (values.adaptaciones.length > 0) {
       try {
-        await updateAdaptaciones.mutateAsync({ actividadId: id, adaptaciones: values.adaptaciones })
+        await updateAdaptaciones.mutateAsync({
+          actividadId: id,
+          // Sin estudiantes que ya no están en la actividad (Regla 47).
+          adaptaciones: adaptacionesConEstudiantesDeLaActividad(values),
+        })
       } catch (error) {
         fallos.push(`las adaptaciones curriculares (${getErrorMessage(error)})`)
       }
