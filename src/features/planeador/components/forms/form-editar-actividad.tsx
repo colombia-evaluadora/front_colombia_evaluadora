@@ -148,6 +148,12 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import {
+  avisoCamposObligatorios,
+  camposObligatoriosFaltantes,
+  faltaTipoEvidencia,
+  faltanEstudiantes,
+} from "@/features/planeador/lib/campos-obligatorios-faltantes"
 import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
 
 /**
@@ -436,8 +442,10 @@ export function EditarActividadForm({
     actividad.camposDisponibles,
     actividad.unidad.id,
   )
-  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa })
-  camposEfectivosRef.current = { camposEfectivos, esFormativa }
+  // `grupoTieneEstudiantes` se completa más abajo, cuando ya está el padrón
+  // del grupo (`matriculas`): lo lee la regla de "Estudiantes" de
+  // `camposObligatoriosFaltantes`.
+  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa, grupoTieneEstudiantes: false })
   const unidadesRef = useRef(unidades)
   unidadesRef.current = unidades
 
@@ -486,6 +494,7 @@ export function EditarActividadForm({
   // desde el alta.
   const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
   const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
+  camposEfectivosRef.current = { camposEfectivos, esFormativa, grupoTieneEstudiantes: matriculas.length > 0 }
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
   // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
   // `DialogAgregarActividad`, `unidadId` de la URL en
@@ -529,17 +538,16 @@ export function EditarActividadForm({
         // sintético no se "poolea", pero `e` igual puede no sobrevivir el
         // ciclo de vida del handler en algún entorno — el nodo del form sí.
         const formEl = e.currentTarget
-        const faltantes = camposObligatoriosFaltantes(form.state.values, camposEfectivosRef.current)
-        const faltantesInstr = faltantesDelInstrumento(form.state.values)
-        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): si
-        // faltan campos generales Y la definición del instrumento, van los
-        // dos en el mismo mensaje en vez de que uno pise al otro.
-        const avisos: string[] = []
-        if (faltantes.length > 0) avisos.push(`Complete los campos obligatorios: ${faltantes.join(", ")}.`)
-        if (faltantesInstr.length > 0) {
-          avisos.push(`Complete la definición del instrumento de evaluación: ${faltantesInstr.join(" ")}`)
-        }
-        if (avisos.length > 0) notify(avisos.join(" "), { variant: "error" })
+        const values = form.state.values
+        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): los
+        // campos generales y lo que le falta al instrumento van en el MISMO
+        // mensaje (ver `avisoCamposObligatorios`) en vez de que uno pise al
+        // otro.
+        const aviso = avisoCamposObligatorios(camposObligatoriosFaltantes(values, camposEfectivosRef.current), {
+          nombre: values.instrumento,
+          faltantes: faltantesDelInstrumento(values),
+        })
+        if (aviso) notify(aviso, { variant: "error" })
         // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
         // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
         // de campos con `validators` de TanStack como los de
@@ -629,43 +637,6 @@ export function EditarActividadForm({
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
   )
-}
-
-/** Campos obligatorios vacíos, con el nombre que se ve en pantalla. */
-function camposObligatoriosFaltantes(
-  values: Actividad,
-  {
-    camposEfectivos,
-    esFormativa,
-  }: { camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]; esFormativa: boolean },
-): string[] {
-  // Función plana (sin hooks): usa el rótulo que ya trae `values` de la
-  // actividad original, no el live de `useRotuloActividadQuery` que sí
-  // leen los `<FieldLabel>` — mismo criterio, nunca "actividad" fija.
-  const rotuloLower = rotuloEnMinuscula(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
-  const faltantes: string[] = []
-  if (values.grupoId == null) faltantes.push("Grado / Grupo")
-  if (values.asignaturaId == null) faltantes.push("Asignatura")
-  if (!values.nombre?.trim()) faltantes.push(`Nombre de la ${rotuloLower}`)
-  if (!values.tipo) faltantes.push(`Tipo de ${rotuloLower}`)
-  if (!values.fechaInicio) faltantes.push("Fecha inicio")
-  if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")
-  if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
-    faltantes.push("Instrumento de evaluación")
-  }
-  // Regla 47: "Estudiantes específicos" sin nadie (de la actividad) lo
-  // rechaza el backend (`fn_actividad_validar_adaptaciones`, V496.1) — se
-  // frena acá para no crear la actividad y fallar recién en el `PUT
-  // .../adaptaciones`.
-  values.adaptaciones.forEach((adaptacion, i) => {
-    if (
-      adaptacion.aplicaA === "Estudiantes específicos" &&
-      !adaptacion.estudiantesIds.some((id) => esEstudianteDeLaActividad(values, id))
-    ) {
-      faltantes.push(`Estudiantes de la adaptación ${i + 1}`)
-    }
-  })
-  return faltantes
 }
 
 /**
@@ -1772,6 +1743,13 @@ function AsignaturaGradoSection({
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
   )
+  // Misma regla que el aviso de "Complete los campos obligatorios"
+  // (`faltanEstudiantes`): "Ningún estudiante" con un grupo que sí tiene a
+  // quién asignar.
+  const estudiantesInvalido = useErrorObligatorio(
+    form,
+    useSelector(form.store, (state) => faltanEstudiantes(state.values, matriculas.length > 0)),
+  )
 
   // El detalle real de la actividad (`toActividadDetalle`) NO trae
   // `fk_tgrado` —solo `fk_tgrupo`—, así que al abrir el form de EDITAR
@@ -2061,10 +2039,11 @@ function AsignaturaGradoSection({
             de `Actividad.matriculasIds`). */}
         <form.Field name="matriculasIds">
           {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower}</FieldLabel>
+            <Field variant="outlined" data-invalid={estudiantesInvalido}>
+              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower} *</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
+                invalid={estudiantesInvalido}
                 estudiantes={matriculas}
                 value={field.state.value}
                 allSelected={asignarTodoElGrupo}
@@ -2083,6 +2062,7 @@ function AsignaturaGradoSection({
                 isPending={hasGradoAsignatura && isPendingMatriculas}
                 placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}
               />
+              {estudiantesInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
         </form.Field>
@@ -6039,6 +6019,13 @@ function AdaptacionItem({
  * sumativa.
  */
 function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Solo se monta con referente no Formativo (`!esFormativa` en el padre),
+  // por eso `false`; `faltaTipoEvidencia` igual exige que haya
+  // adaptaciones (la sección se oculta sin ellas, y oculta no valida).
+  const tipoEvidenciaInvalido = useErrorObligatorio(
+    form,
+    useSelector(form.store, (state) => faltaTipoEvidencia(state.values, false)),
+  )
   return (
     <form.Subscribe selector={(state) => state.values.adaptaciones.length > 0}>
       {(hasAdaptaciones) =>
@@ -6074,14 +6061,14 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                   tocar. */}
               <form.Field name="tipoEvidencia">
                 {(tipoField) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={tipoField.name}>Tipo de evidencia</FieldLabel>
+                  <Field variant="outlined" data-invalid={tipoEvidenciaInvalido}>
+                    <FieldLabel htmlFor={tipoField.name}>Tipo de evidencia{field.state.value ? " *" : ""}</FieldLabel>
                     <Select
                       value={tipoField.state.value}
                       onValueChange={(v) => v && tipoField.handleChange(v)}
                       disabled={!field.state.value || disabled}
                     >
-                      <SelectTrigger id={tipoField.name}>
+                      <SelectTrigger id={tipoField.name} aria-invalid={tipoEvidenciaInvalido}>
                         <SelectValue />
                       </SelectTrigger>
                       {/* Valores = `nombre` real de la categoría `TLISTA_VALOR`
@@ -6097,6 +6084,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                         <SelectItem value="Observación">Observación</SelectItem>
                       </SelectContent>
                     </Select>
+                    {tipoEvidenciaInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
                   </Field>
                 )}
               </form.Field>
