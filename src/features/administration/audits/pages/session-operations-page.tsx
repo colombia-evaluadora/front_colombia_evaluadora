@@ -11,11 +11,12 @@ import { useAuditSessionQuery } from "@/features/administration/audits/api/query
 import { useAuditSessionStatusesQuery } from "@/features/administration/audits/api/query/use-audit-session-statuses-query"
 import { SESSION_STATUS_BADGE } from "@/features/administration/audits/api/ui-mappings"
 import { SessionOperationsDataTable } from "@/features/administration/audits/components/table/session-operations-table"
+import { getErrorMessage } from "@/lib/api-client"
 
 export function SessionOperationsPage() {
   const { sessionId } = useParams({ strict: false }) as { sessionId: string }
 
-  const { data: session, isPending, isError } = useAuditSessionQuery({ sessionId })
+  const { data: session, isPending, isError, error } = useAuditSessionQuery({ sessionId })
 
   // El label del estado lo entrega el backend (`{ key, label }`). Si la
   // query todavía no llegó, caemos al `key` como fallback.
@@ -37,7 +38,9 @@ export function SessionOperationsPage() {
     <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
       <Spinner /> Cargando sesión…
     </div>
-  ) : isError || !session ? (
+  ) : isError ? (
+    getErrorMessage(error)
+  ) : !session ? (
     "Sesión no encontrada"
   ) : (
     <div className="flex flex-wrap items-center gap-2">

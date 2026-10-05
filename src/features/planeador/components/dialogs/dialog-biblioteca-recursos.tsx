@@ -28,6 +28,7 @@ import {
   type MaterialReutilizable,
 } from "@/features/planeador/api/query/use-materiales-reutilizables-query"
 import { toPageCount } from "@/lib/pagination"
+import { getErrorMessage } from "@/lib/api-client"
 
 const COLUMNS = 3
 const ROWS = 6
@@ -104,7 +105,7 @@ export function DialogBibliotecaRecursos({
   //
   // `open` como `enabled`: el modal vive montado junto al formulario, así
   // que sin ese gate consultaría al abrir cualquier actividad.
-  const { data, isPending, isError } = useMaterialesReutilizablesQuery(
+  const { data, isPending, isError, error } = useMaterialesReutilizablesQuery(
     { actividadId, grupoId, search, pagina: pageIndex + 1, size: PAGE_SIZE },
     open,
   )
@@ -189,7 +190,7 @@ export function DialogBibliotecaRecursos({
             {isPending
               ? "Buscando…"
               : isError
-                ? "No se pudo cargar la biblioteca."
+                ? getErrorMessage(error)
                 : search.trim()
                   ? "Sin archivos que coincidan con la búsqueda."
                   : "No hay archivos guardados en tus otras actividades todavía."}

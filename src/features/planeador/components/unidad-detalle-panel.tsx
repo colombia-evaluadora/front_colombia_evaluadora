@@ -42,6 +42,7 @@ import type { UnidadActividad, UnidadTematica } from "@/features/planeador/api/t
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { getErrorMessage } from "@/lib/api-client"
 
 type PanelTab = "general" | "rubricas" | "actividades"
 
@@ -413,7 +414,7 @@ export function Rubricas({
   // `GET /planeador/unidades/:id/criterios` (real) — no se lee `unidad.criterios`
   // del detalle: ese campo queda siempre vacío contra el backend real (viven
   // en este endpoint aparte, mismo criterio que `Actividades` más abajo).
-  const { data: criterios = [], isPending, isError, refetch } = useUnidadCriteriosQuery(unidad.id)
+  const { data: criterios = [], isPending, isError, error, refetch } = useUnidadCriteriosQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const { puedeCrear } = useMenuPermission("PLANEADOR")
@@ -448,6 +449,7 @@ export function Rubricas({
         isError={isError}
         onRetry={refetch}
         emptyMessage="Esta unidad no tiene criterios definidos."
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
       {puedeCrear && (
         <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
@@ -461,7 +463,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
   // del detalle: ese campo queda siempre vacío contra el backend real
   // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
-  const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
+  const { data: actividadesVinculadas = [], isPending, isError, error, refetch } = useUnidadActividadesQuery(unidad.id)
   // Suma de TODAS las ponderaciones ya vinculadas — el tope de cada fila al
   // editar en línea sale de acá (ver `createUnidadActividadesColumns`), no
   // de un `100` fijo por fila.
@@ -586,6 +588,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         isError={isError}
         onRetry={refetch}
         emptyMessage={`Esta unidad todavía no tiene ningun${rotuloActividadGenero === "o" ? "" : "a"} ${rotuloActividadLabel.toLowerCase()} vinculad${rotuloActividadGenero}.`}
+        errorMessage={error ? getErrorMessage(error) : undefined}
       />
     </div>
   )
@@ -682,7 +685,7 @@ function UnidadTabs({
  * distintas, y no aportan nada como URL enlazable.
  */
 export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelProps) {
-  const { data: unidad, isPending, isError, refetch } = useUnidadDetalleQuery(Number(unidadId))
+  const { data: unidad, isPending, isError, error, refetch } = useUnidadDetalleQuery(Number(unidadId))
   const [tab, setTab] = React.useState<PanelTab>("general")
   const { puedeEditar } = useMenuPermission("PLANEADOR")
 
@@ -728,7 +731,7 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
 
         {isError && (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="text-red text-sm">Ocurrió un error al cargar la unidad.</p>
+            <p className="text-red text-sm">{getErrorMessage(error)}</p>
             <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
               Reintentar
             </Button>

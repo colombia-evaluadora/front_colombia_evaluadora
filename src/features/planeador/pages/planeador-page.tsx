@@ -58,6 +58,7 @@ import {
   toDateOnly,
   todayDateOnly,
 } from "@/features/planeador/lib/format-date"
+import { getErrorMessage } from "@/lib/api-client"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -182,6 +183,7 @@ function PlaneadorPageContent() {
     data: miasResult,
     isPending,
     isError,
+    error,
     refetch,
   } = useActividadesMiasQuery({
     search: buscar || undefined,
@@ -253,8 +255,8 @@ function PlaneadorPageContent() {
         return
       }
       exportarJson.mutate({ ids: todas.map((actividad) => actividad.id) })
-    } catch {
-      notify("No se pudo obtener la lista de actividades para exportar.", { variant: "error" })
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setExportandoTodo(false)
     }
@@ -513,7 +515,7 @@ function PlaneadorPageContent() {
 
                 {isError && (
                   <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                    <p className="text-red text-sm">Ocurrió un error al cargar el listado.</p>
+                    <p className="text-red text-sm">{getErrorMessage(error)}</p>
                     <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                       Reintentar
                     </Button>

@@ -14,6 +14,7 @@ import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/d
 import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { getErrorMessage } from "@/lib/api-client"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -75,7 +76,7 @@ export function ActividadDetallePanel({
   onShowGrades,
   onShowApproval,
 }: ActividadDetallePanelProps) {
-  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
+  const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
   const { puedeEditar, puedeVer } = useMenuPermission("PLANEADOR")
   // Sin "editar" pero con "ver" (Coordinador): el mismo link abre la
   // actividad completa en solo lectura (ver `PlaneadorEditarActividadPage`).
@@ -204,7 +205,7 @@ export function ActividadDetallePanel({
 
         {isError && (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="text-red text-sm">Ocurrió un error al cargar la actividad.</p>
+            <p className="text-red text-sm">{getErrorMessage(error)}</p>
             <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
               Reintentar
             </Button>

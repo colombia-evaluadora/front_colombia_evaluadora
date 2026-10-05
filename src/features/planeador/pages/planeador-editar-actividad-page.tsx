@@ -106,6 +106,7 @@ export function PlaneadorEditarActividadPage() {
       <EditarActividadPageContent
         isPending={isPending}
         isError={isError}
+        error={error}
         actividad={actividad}
         onClose={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
       />
@@ -116,11 +117,13 @@ export function PlaneadorEditarActividadPage() {
 function EditarActividadPageContent({
   isPending,
   isError,
+  error,
   actividad,
   onClose,
 }: {
   isPending: boolean
   isError: boolean
+  error: unknown
   actividad: ReturnType<typeof useActividadDetalleQuery>["data"]
   onClose: () => void
 }) {
@@ -409,7 +412,7 @@ function EditarActividadPageContent({
 
         {isError && (
           <p className="text-red px-6 py-12 text-center text-sm">
-            Ocurrió un error al cargar la actividad.
+            {getErrorMessage(error)}
           </p>
         )}
 

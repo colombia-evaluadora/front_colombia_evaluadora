@@ -16,6 +16,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { gestionAcademicaReferentesCurricularesDetalleRoute } from "@/router"
 import { useCurricularReferenceQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference"
@@ -135,7 +136,7 @@ function CurricularReferenceDetailPageContent() {
   const { curricularReferenceId } = gestionAcademicaReferentesCurricularesDetalleRoute.useParams()
   const id = Number(curricularReferenceId)
 
-  const { data: reference, isPending, isError } = useCurricularReferenceQuery(id)
+  const { data: reference, isPending, isError, error } = useCurricularReferenceQuery(id)
   const [editorOpen, setEditorOpen] = useState(false)
 
   const { data: educationLevels = [] } = useEducationLevelsQuery()
@@ -170,7 +171,7 @@ function CurricularReferenceDetailPageContent() {
           <Skeleton className="h-32 w-full" />
         ) : isError || !reference ? (
           <div className="rounded-lg border border-border p-6 text-center text-sm text-muted-foreground">
-            No fue posible cargar este referente curricular.
+            {isError ? getErrorMessage(error) : "No fue posible cargar este referente curricular."}
           </div>
         ) : (
           <div className="flex flex-col gap-4 text-sm">
