@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkCreateRatingScalesRequest } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { resolveRatingScaleRefs } from "@/features/establishment/academic-period/api/mutations/resolve-rating-scale-refs"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Body PLANO con las llaves de `fn_escala_guardar_bulk`
 // (`POST /eval-col/escalas`, id_query 53). Devuelve la cantidad de
@@ -47,7 +48,7 @@ export function useCreateRatingScalesBulk({
     mutationFn: createRatingScalesBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["rating-scales"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

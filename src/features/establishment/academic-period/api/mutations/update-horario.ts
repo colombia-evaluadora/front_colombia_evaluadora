@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ScheduleEntry } from "@/features/establishment/academic-period/api/types/grade-config"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateHorarioInput {
   gradeId: number
@@ -36,7 +37,7 @@ export function useUpdateHorario({ mutationConfig }: UseUpdateHorarioOptions = {
     mutationFn: updateHorario,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["horario"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.horario.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 import type { ActividadTipo } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // Catálogo global `TIPO_ACTIVIDAD` de `TLISTA_VALOR`
 // (`GET /eval-col/select/TIPO_ACTIVIDAD`) — resuelve `FK_TLV_TIPO_ACTIVIDAD`
@@ -13,11 +15,9 @@ async function fetchTipoActividadCatalog(): Promise<ActividadTipo[]> {
   return rows.map((row) => row.nombre as ActividadTipo)
 }
 
-export const tipoActividadCatalogQueryKey = () => ["tipo-actividad-catalog"]
-
 export function useTipoActividadCatalogQuery() {
   return useQuery({
-    queryKey: tipoActividadCatalogQueryKey(),
+    queryKey: planeadorKeys.catalogos.tipoActividad(),
     queryFn: fetchTipoActividadCatalog,
     staleTime: Infinity,
   })
@@ -28,6 +28,5 @@ export function useTipoActividadCatalogQuery() {
  *  (`FK_TLV_TIPO_ACTIVIDAD`) en el momento de armar el body, no en el
  *  render del form (que solo usa el nombre para el `<Select>`). */
 export async function resolveTipoActividadId(tipo: ActividadTipo): Promise<number | undefined> {
-  const rows = await fetchSelectCategory("TIPO_ACTIVIDAD")
-  return rows.find((row) => row.nombre === tipo)?.pk_lista_valor
+  return resolveCatalogId(undefined, "TIPO_ACTIVIDAD", tipo)
 }

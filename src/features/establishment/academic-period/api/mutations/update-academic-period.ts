@@ -6,6 +6,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type { AcademicPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/academic-period"
 import { toCreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateAcademicPeriodInput {
   id: number
@@ -43,8 +44,8 @@ export function useUpdateAcademicPeriod({ mutationConfig }: UseUpdateAcademicPer
     mutationFn: updateAcademicPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["academic-periods"] })
-      queryClient.invalidateQueries({ queryKey: ["academic-period"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriod.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

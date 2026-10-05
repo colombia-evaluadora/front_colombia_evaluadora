@@ -7,6 +7,8 @@ import type {
   AreaSubjectsQueryRequest,
   AreaSubjectsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/area-subject"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { toPaginated } from "@/lib/pagination"
 
 interface UseAreaSubjectQueryParams {
   filters: AreaSubjectsQueryRequest["filters"]
@@ -89,8 +91,7 @@ async function fetchAreaSubject(
     SORT_DIR: primary ? (primary.desc ? "desc" : "asc") : null,
   })
   const areaRows = raw.rows ?? []
-  const totalCount = areaRows[0]?.total_count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+  const { pageCount, totalCount } = toPaginated(areaRows, { pageSize })
 
   const rows: AreaSubject[] = await Promise.all(
     areaRows.map(async (row) => ({
@@ -122,14 +123,9 @@ async function fetchAreaSubject(
   return { rows: filtered, pageCount, totalCount }
 }
 
-export const areaSubjectQueryKey = (params: UseAreaSubjectQueryParams) => {
-  const { enabled: _enabled, ...key } = params
-  return ["area-subjects", key]
-}
-
 export function useAreaSubjectQuery(params: UseAreaSubjectQueryParams) {
   return useQuery({
-    queryKey: areaSubjectQueryKey(params),
+    queryKey: academicPeriodKeys.areaSubjects.list(params),
     queryFn: () => fetchAreaSubject(params),
     placeholderData: (previous) => previous,
     enabled: params.enabled ?? true,

@@ -9,6 +9,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "./extract-write-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateEvaluationPeriodInput {
   // PK real (path); `fn_periodo_eval_actualizar` no recibe `fk_periodo`.
@@ -60,7 +61,7 @@ export function useUpdateEvaluationPeriod({
     mutationFn: updateEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["evaluation-periods"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

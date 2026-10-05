@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { actividadesQueryKey } from "@/features/planeador/api/query/use-actividades-query"
-import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import type {
   ActividadExportada,
   ImportarActividadesDestino,
   InformeImportacion,
 } from "@/features/planeador/api/types/actividad-intercambio"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarListadosActividades } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 const IMPORTAR_URL = "/eval-col/planeador/actividades/importar"
 
@@ -89,10 +89,13 @@ export function useImportarActividadesJson({
       // (`soloValidar: true`) nunca toca la base, así que no hay nada que
       // refrescar todavía.
       if (!variables.soloValidar && data.aplicadas > 0) {
-        queryClient.invalidateQueries({ queryKey: actividadesQueryKey() })
+        // Antes invalidaba solo el listado legado (`["planeador","actividades"]`),
+        // que no prefijaba el rail/calendario/stats: tras importar, la
+        // pantalla principal seguía sin mostrar las actividades nuevas.
+        invalidarListadosActividades(queryClient)
         // El importar puede haber creado unidades nuevas (`unidadesCreadas`)
         // para alojar las actividades importadas.
-        queryClient.invalidateQueries({ queryKey: unidadesQueryKey() })
+        queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       }
       onSuccess?.(data, variables, ...rest)
     },

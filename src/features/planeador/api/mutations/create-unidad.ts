@@ -4,10 +4,10 @@ import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
 import { contenidosABody, type UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `POST /planeador/unidades` (confirmado real, colección Postman
@@ -84,7 +84,7 @@ export function useCreateUnidad({ mutationConfig }: UseCreateUnidadOptions = {})
   return useMutation({
     mutationFn: createUnidad,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       onSuccess?.(...args)
     },
     ...restConfig,

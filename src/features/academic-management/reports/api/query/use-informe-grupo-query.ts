@@ -24,6 +24,10 @@ interface AsignaturaRow {
   valoracion: string | null
   simbolo: string | null
   aprobada: boolean | null
+  con_recuperacion?: boolean | null
+  nota_original?: number | null
+  valoracion_original?: string | null
+  simbolo_original?: string | null
   ya_asegurado: boolean | null
   alcanzable: boolean | null
 }
@@ -66,6 +70,10 @@ function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
     valoracion: row.valoracion,
     simbolo: row.simbolo,
     aprobada: row.aprobada,
+    conRecuperacion: row.con_recuperacion ?? false,
+    notaOriginal: row.nota_original ?? null,
+    valoracionOriginal: row.valoracion_original ?? null,
+    simboloOriginal: row.simbolo_original ?? null,
     yaAsegurado: row.ya_asegurado ?? false,
     alcanzable: row.alcanzable ?? true,
   }

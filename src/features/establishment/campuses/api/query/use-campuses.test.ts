@@ -21,7 +21,8 @@ it("returns paginated campus rows through the mock POST query handler", async ()
       pageSize: 10,
       filters: {
         search: campusesDb[0].name.slice(0, 8),
-        zones: campusesDb[0].zone ? [campusesDb[0].zone.code] : [],
+        // El handler filtra zonas por id (no por código), igual que search-campuses.tsx.
+        zones: campusesDb[0].zone ? [String(campusesDb[0].zone.id)] : [],
       },
       sorting: [],
     }),
@@ -33,5 +34,6 @@ it("returns paginated campus rows through the mock POST query handler", async ()
 
   expect(payload.totalCount).toBeGreaterThan(0)
   expect(payload.rows.length).toBeGreaterThan(0)
-  expect(campusesRowsDb).toHaveLength(300)
+  // El mock ya no siembra un número fijo de sedes: filas y detalles van a la par.
+  expect(campusesRowsDb).toHaveLength(campusesDb.length)
 })

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// `resolveRecursoPreview` resuelve URLs relativas contra `window.location.origin`.
 import { describe, expect, it } from "vitest"
 
 import { resolveRecursoPreview } from "@/features/planeador/lib/recurso-preview"

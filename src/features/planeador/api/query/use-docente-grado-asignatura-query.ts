@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/docentes/grado-asignatura` (`fn_docente_grado_asignatura_listar`,
@@ -45,12 +46,9 @@ async function fetchDocenteGradoAsignatura(periodoId?: number): Promise<DocenteG
   return rows.map(toDocenteGradoAsignatura)
 }
 
-export const docenteGradoAsignaturaQueryKey = (periodoId?: number) =>
-  ["planeador", "docente-grado-asignatura", periodoId ?? null] as const
-
 export function useDocenteGradoAsignaturaQuery(periodoId?: number) {
   return useQuery({
-    queryKey: docenteGradoAsignaturaQueryKey(periodoId),
+    queryKey: planeadorKeys.docenteGradoAsignatura(periodoId),
     queryFn: () => fetchDocenteGradoAsignatura(periodoId),
     staleTime: 1000 * 60,
   })

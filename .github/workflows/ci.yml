@@ -93,6 +93,27 @@ jobs:
       - name: Oxlint
         run: pnpm lint
 
+  # ───────── Tests unitarios ─────────
+  #
+  # Proyecto `unit` de Vitest (entorno node, `src/**/*.test.ts(x)`). No
+  # incluye los tests de Storybook (browser mode), que van aparte.
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Vitest (unit)
+        run: pnpm test
+
   # ───────── Formato: NO es un gate todavía ─────────
   #
   # `pnpm format:check` hoy falla en 966 de los 1022 ficheros del repo: el

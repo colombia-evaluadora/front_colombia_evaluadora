@@ -27,6 +27,7 @@ import {
   useMaterialesReutilizablesQuery,
   type MaterialReutilizable,
 } from "@/features/planeador/api/query/use-materiales-reutilizables-query"
+import { toPageCount } from "@/lib/pagination"
 
 const COLUMNS = 3
 const ROWS = 6
@@ -125,7 +126,7 @@ export function DialogBibliotecaRecursos({
   // mentir sobre cuántas páginas hay. En el peor caso una página muestra
   // menos tarjetas porque alguna ya estaba agregada.
   const totalCount = data?.totalCount ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const pageCount = toPageCount(totalCount, PAGE_SIZE)
   const page = Math.min(pageIndex, pageCount - 1)
 
   function handleSearch(next: string) {

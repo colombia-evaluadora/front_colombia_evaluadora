@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
@@ -20,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteStudyPlanItemsBulk } from "@/features/establishment/academic-period/api/mutations/delete-study-plan-items-bulk"
-import { deleteSubject } from "@/features/establishment/academic-period/api/mutations/delete-subject"
+import { useDeleteSubjects } from "@/features/establishment/academic-period/api/mutations/delete-subject"
 import {
   formatBulkDeleteError,
   summarizeBulkDelete,
@@ -47,8 +46,9 @@ export function DeleteSelectedStudyPlanItemsDialog({
   const [pending, setPending] = useState<PendingAction>(null)
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteStudyPlanItemsBulk()
+  // Invalida áreas/asignaturas una sola vez si se borró al menos una.
+  const deleteSubjects = useDeleteSubjects()
   const { notify } = useNotify()
-  const queryClient = useQueryClient()
 
   function close() {
     setOpen(false)
@@ -98,22 +98,12 @@ export function DeleteSelectedStudyPlanItemsDialog({
 
     const summary = summarizeBulkDelete(result)
     const removedIds = result.rows.filter((row) => row.eliminado).map((row) => row.id)
-    const hardDeleteResults = await Promise.allSettled(
-      removedIds.map((codigo) => {
-        const asignaturaId = asignaturaIdsById.get(codigo)
-        return asignaturaId != null ? deleteSubject(asignaturaId) : Promise.reject()
-      }),
+    const hardDeleteResults = await deleteSubjects.mutateAsync(
+      removedIds.map((codigo) => asignaturaIdsById.get(codigo)),
     )
     const hardDeletedCount = hardDeleteResults.filter((r) => r.status === "fulfilled").length
 
     setSubmitting(false)
-
-    if (hardDeletedCount > 0) {
-      queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["subject-details"] })
-      queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
-    }
 
     const stillInUseCount = removedIds.length - hardDeletedCount
 

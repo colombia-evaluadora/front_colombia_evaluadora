@@ -8,6 +8,7 @@ import {
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 async function createGradeGroup(input: CreateGradeGroupRequest): Promise<{ id: number }> {
   const fkModeloPedagogico = await resolveMetodologiaId(input.metodologia)
@@ -31,9 +32,9 @@ export function useCreateGradeGroup({ mutationConfig }: UseCreateGradeGroupOptio
     mutationFn: createGradeGroup,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
-      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.gradeGroups.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -19,7 +19,7 @@ import { CeldaObservacionTrigger } from "@/features/planeador/components/planill
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
@@ -109,7 +109,7 @@ export function PlanillaGrid({
   // mutación resuelve antes de que termine el refetch de la Planilla, así
   // que sin esto la nota vieja se ve un instante después de "Guardar".
   const [refrescando, setRefrescando] = useState<Set<string>>(new Set())
-  const fetchingPlanilla = useIsFetching({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+  const fetchingPlanilla = useIsFetching({ queryKey: planeadorKeys.planilla.calificaciones.all })
 
   useEffect(() => {
     if (fetchingPlanilla === 0 && refrescando.size > 0) setRefrescando(new Set())

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface DeleteGradeGroupsBulkInput {
   ids: number[]
@@ -23,7 +24,7 @@ export function useDeleteGradeGroupsBulk({ mutationConfig }: UseDeleteGradeGroup
     mutationFn: deleteGradeGroupsBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.gradeGroups.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

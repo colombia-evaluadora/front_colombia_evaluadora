@@ -9,6 +9,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "./extract-write-result"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface CreateEvaluationPeriodInput extends EvaluationPeriodFormValues {
   academicPeriodId?: number
@@ -55,7 +56,7 @@ export function useCreateEvaluationPeriod({
     mutationFn: createEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["evaluation-periods"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

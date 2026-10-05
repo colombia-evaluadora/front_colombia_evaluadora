@@ -4,9 +4,9 @@ import { api } from "@/lib/api-client"
 import { postMultipart } from "@/lib/files"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { resolveTipoRecursoId } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
 import type { Recurso } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface UpdateMaterialesInput {
   actividadId: number
@@ -145,7 +145,7 @@ export function useUpdateMaterialesActividad({
   return useMutation({
     mutationFn: updateMaterialesActividad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

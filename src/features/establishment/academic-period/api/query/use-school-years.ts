@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { SchoolYearOption } from "../types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface SchoolYearsRawResponse {
   rows: SchoolYearOption[]
@@ -14,11 +15,9 @@ async function fetchSchoolYears(): Promise<SchoolYearOption[]> {
   return raw.rows ?? []
 }
 
-export const schoolYearsQueryKey = () => ["academic-periods", "school-years"]
-
 export function useSchoolYearsQuery() {
   return useQuery({
-    queryKey: schoolYearsQueryKey(),
+    queryKey: academicPeriodKeys.academicPeriods.schoolYears(),
     queryFn: fetchSchoolYears,
     staleTime: Infinity,
   })

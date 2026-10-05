@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { InstrumentoPermitido } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // Catálogo global `INSTRUMENTO_EVALUACION` de `TLISTA_VALOR`
 // (`GET /eval-col/select/INSTRUMENTO_EVALUACION`) — resuelve
@@ -28,11 +30,9 @@ async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
   return rows.map((row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre)
 }
 
-export const instrumentoEvaluacionCatalogQueryKey = () => ["instrumento-evaluacion-catalog"]
-
 export function useInstrumentoEvaluacionCatalogQuery() {
   return useQuery({
-    queryKey: instrumentoEvaluacionCatalogQueryKey(),
+    queryKey: planeadorKeys.catalogos.instrumentoEvaluacion(),
     queryFn: fetchInstrumentoEvaluacionCatalog,
     staleTime: Infinity,
   })
@@ -100,17 +100,6 @@ export function normalizeInstrumentosPermitidos(
   )
 }
 
-/** No es un hook: se llama directo desde las mutaciones de crear/editar
- *  actividad y definir instrumento, que necesitan el `id` real al armar el
- *  body — mismo criterio que `resolveCalculoDefinitivaId`. */
-async function fetchInstrumentoEvaluacionOptions(): Promise<InstrumentoEvaluacionOption[]> {
-  const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
-  return rows.map((row) => ({
-    id: row.pk_lista_valor,
-    nombre: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
-  }))
-}
-
 /**
  * Resuelve `FK_TLV_INSTRUMENTO_EVALUACION` (al crear/editar la actividad) y
  * `metodoValoracion` del instrumento "Otro" (`PUT .../instrumento`, colección
@@ -118,6 +107,7 @@ async function fetchInstrumentoEvaluacionOptions(): Promise<InstrumentoEvaluacio
  * RUBRICA|LISTA_COTEJO|ESCALA_VALORACION, el front nunca pide "Otro" acá).
  */
 export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<number | undefined> {
-  const options = await fetchInstrumentoEvaluacionOptions()
-  return options.find((o) => o.nombre === nombre)?.id
+  return resolveCatalogId(undefined, "INSTRUMENTO_EVALUACION", nombre, {
+    normalize: (row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
+  })
 }

@@ -8,6 +8,7 @@ import {
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Body PLANO con las llaves de `fn_grado_crear` (`POST /eval-col/grados`,
 // id_query 57). `nombre` viaja tal cual (el backend lo valida contra el
@@ -34,7 +35,7 @@ export function useCreateGrade({ mutationConfig }: UseCreateGradeOptions = {}) {
     mutationFn: createGrade,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["grades"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

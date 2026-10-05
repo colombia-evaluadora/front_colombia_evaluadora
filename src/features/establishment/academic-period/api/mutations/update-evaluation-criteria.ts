@@ -6,6 +6,7 @@ import type {
   EvaluationCriteria,
   MutationResult,
 } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateEvaluationCriteriaInput {
   academicPeriodId: number
@@ -62,12 +63,12 @@ export function useUpdateEvaluationCriteria({
     mutationFn: updateEvaluationCriteria,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["evaluation-criteria"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationCriteria.all })
       // Cambiar el formato de calificación cambia cómo `fn_escala_listar`
       // reconvierte nota_minima/maxima/equivalente (relativas al formato del
       // periodo) — sin invalidar esto, la pestaña de escalas seguía
       // mostrando los valores viejos hasta un refresh manual.
-      queryClient.invalidateQueries({ queryKey: ["rating-scales"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

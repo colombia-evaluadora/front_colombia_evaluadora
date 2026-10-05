@@ -1,4 +1,5 @@
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 /**
  * Catálogo `APLICA_A` de `TLISTA_VALOR` — resuelve el `aplicaA` que pide
@@ -37,6 +38,5 @@ export async function fetchAplicaAOptions(): Promise<AplicaAOption[]> {
 }
 
 export async function resolveAplicaAId(valor: string): Promise<number | undefined> {
-  const options = await fetchAplicaAOptions()
-  return options.find((o) => o.valor === valor)?.id
+  return resolveCatalogId(undefined, "APLICA_A", valor, { normalize: (row) => toAplicaA(row.nombre) })
 }

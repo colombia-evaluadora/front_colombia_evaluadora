@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Fila de `GET /planeador/actividades/estudiantes/:id/soportes` (V461). */
 interface SoporteRow {
@@ -15,9 +16,6 @@ export interface SoporteEstudiante {
   /** A lo sumo una por observación. */
   esFavorito: boolean
 }
-
-export const soportesEstudianteQueryKey = (pkTactividadEstudiante: number) =>
-  ["planeador", "actividad-estudiante", pkTactividadEstudiante, "soportes"] as const
 
 async function fetchSoportesEstudiante(pkTactividadEstudiante: number): Promise<SoporteEstudiante[]> {
   const rows = await evalCol.getRows<SoporteRow>(
@@ -36,8 +34,8 @@ export function useSoportesEstudianteQuery(pkTactividadEstudiante: number | unde
   return useQuery({
     queryKey:
       pkTactividadEstudiante != null
-        ? soportesEstudianteQueryKey(pkTactividadEstudiante)
-        : (["planeador", "actividad-estudiante", "none", "soportes"] as const),
+        ? planeadorKeys.actividadEstudiante.soportes(pkTactividadEstudiante)
+        : planeadorKeys.actividadEstudiante.soportes("none"),
     queryFn: () => fetchSoportesEstudiante(pkTactividadEstudiante!),
     enabled: pkTactividadEstudiante != null,
     staleTime: 1000 * 10,

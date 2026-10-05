@@ -18,14 +18,17 @@ pnpm format                 # oxfmt . — aplicalo solo sobre archivos que edite
 pnpm preview                # sirve el build
 pnpm storybook              # Storybook en :6006
 pnpm build-storybook
+pnpm test                   # tests unitarios (Vitest, proyecto `unit`, entorno node)
+pnpm test:watch             # ídem en modo watch
 pnpm test-storybook         # tests de interacción/a11y contra Storybook ya levantado en :6006
 pnpm test-storybook:ci      # sirve storybook-static + espera + corre test-runner
 ```
 
-- **No hay script `test` de unidad.** Vitest está configurado con un único proyecto `storybook` (browser mode, Playwright Chromium, `vite.config.ts`). Existen algunos `*.test.ts` sueltos (`components/search/query-syntax.test.ts`, tests de handlers MSW en `establishment/{campuses,employees,institution}`, `administration/roles-menus/api/types/role-menu.test.ts`, `planeador/lib/recurso-preview.test.ts`) pero ningún script de npm los corre.
+- **Tests unitarios**: Vitest tiene dos proyectos en `vite.config.ts`: `unit` (entorno `node`, incluye `src/**/*.test.{ts,tsx}`, excluye stories) y `storybook` (browser mode, Playwright Chromium). `pnpm test` corre solo `unit`, y CI lo corre en el job `test`. Los tests van **junto al archivo que prueban** (`foo.ts` → `foo.test.ts`). Los handlers MSW se prueban con `setupServer` de `msw/node`. Si un test necesita DOM/`window`, poné `// @vitest-environment jsdom` en la primera línea del archivo (jsdom ya está instalado; ver `planeador/lib/recurso-preview.test.ts`) en lugar de cambiar el entorno de todo el proyecto.
+- Test unitario puntual: `pnpm test src/ruta/al/archivo.test.ts` o `pnpm test -t "<nombre>"`.
 - Test puntual de Storybook: `pnpm test-storybook -t "<nombre>"`.
 - `pnpm format:check` falla en ~todo el repo (nunca pasó por oxfmt): **no es gate** y no asumas que el código existente está formateado.
-- Antes de dar algo por terminado: `pnpm exec tsc -b --noEmit` y `pnpm lint`.
+- Antes de dar algo por terminado: `pnpm test`, `pnpm exec tsc -b --noEmit` y `pnpm lint`.
 
 ---
 
@@ -193,13 +196,14 @@ Toda llamada va a `env.API_URL` (`/api`, mismo origen). En dev lo proxea Vite; e
 ### Otros helpers
 - `report-client.ts` — `downloadReport(key: ReportKey, { format: "pdf"|"excel", filters, sorting, columns, filtersLabel })`: instancia axios aparte (blob, sin unwrap, sin toast global). Lee `Content-Disposition` y `X-Report-Rows`, dispara la descarga y **devuelve `{ status, message }` sin tirar** (422 = demasiadas filas). `columns` = columnas visibles en orden; `filters` = los mismos que usa la tabla (por eso los normalizadores de filtros se exportan). Para un reporte nuevo, agregá la clave a la unión `ReportKey`.
 - `files.ts` — `postMultipart`/`patchMultipart(path, data, files)`: aplana el payload a claves con punto y omite null/undefined; **no setees `Content-Type`**. Destino `query` lleva prefijo (`/files/eval-col/...`), destino `endpoint` no (`/files/register/...`). `fetchArchivoViewUrl(id)` → URL corta ya rooteada en `/api/...` (no concatenar con baseURL). En componentes usá `useArchivoViewUrl(fk_tarchivo)` / `<ArchivoImage>` (`features/files`), pasando el **id**, nunca una URL.
+- `pagination.ts` — `toPaginated(rows, { pageSize, map, totalKey? })` arma `{ rows, pageCount, totalCount }` desde listados con `total_count` repetido por fila (tolera lista vacía, total string/ausente, `pageSize` 0); `toPageCount(total, pageSize)` para componentes. No dupliques `Math.ceil(total / pageSize)`. (Distinto de `unwrapPaginated`, que lee el `page_count` del backend.)
 - `query-request-mapping.ts` — `toSingleSort(sorting)`: el backend real bindea `:BODY.SORTING.ID/.DESC` como objeto y `null` rompe el validador de placeholders. Solo para el backend real (el mock espera el array).
 - `catalogs.ts` (slugs `CATALOGS.X`) · `catalog-options.ts`: `toSelectOptions` (value = **id**, para forms) vs `toSearchOptions` (value = **código**, para filtros/URL). **Todo `<Select items>` de `ui/select.tsx` necesita `toSelectItemsMap(options)`** o el trigger no muestra la etiqueta.
 - Fechas — **dos módulos con funciones homónimas y semántica distinta**: `date-value.ts` (`yyyy-MM-dd`, `formatDateValue` → `""` al limpiar) vs `date-time-value.ts` (`yyyy-MM-dd'T'HH:mm`, y su `formatDateValue` → **`null`** al limpiar, para modelos `string | null`). Importá del correcto.
 - `success-messages.ts` — `SUCCESS_MESSAGES[entidad].{created,updated,deleted,deletedMany(n),deactivated}`. Los toasts de éxito salen de acá, **no** del `message` del backend. Los de error sí usan el mensaje del backend.
 - `text-input.ts` — sanitizadores de `onChange`: `toDigitsOnly(v, max)` (VARCHAR numéricos; **nunca `type="number"`**), `toNitInput`, `toDigitsOrRangeInput`, `toLettersOnly`, `toSafeTextInput`.
 - `image-file.ts` — límites (2 MB, jpeg/png/svg, 4000 px), `imageFileSchema`, `optionalImageFile` (`nullish` = mantener la imagen existente), validadores sync/async.
-- `forms/index.ts` — `useAppForm`, `withForm`, `useFieldContext`, `useFormContext` (`createFormHook` con `fieldComponents`/`formComponents` vacíos a propósito).
+- `forms/` — `useAppForm`, `withForm`, `useFieldContext`, `useFormContext` y los **campos registrados** (`fields.tsx`: `TextField`, `TextareaField`, `NumberField`, `SelectField`, `DateField`, `CheckboxField`), `isFieldInvalid`, `FormDisabledProvider`/`useFormDisabled` y `messages.ts` (mensajes de validación compartidos). Ver §7 "Formularios".
 - `utils.ts` — `cn()`.
 
 ### Variables de entorno (`src/config/env.ts`)
@@ -230,7 +234,7 @@ Todo plano en la raíz del feature (sin sub-carpetas) aunque tiene 4 subdominios
 - `institution/` (EE: DANE, NIT, datos complementarios, escudo, rector), `campuses/` (sedes), `employees/` (funcionarios + permisos rol×sede×jornada), `academic-period/` (periodos y todo lo que cuelga: periodos de evaluación, criterios, escalas de valoración, grados, grupos, plan de estudio, áreas/asignaturas, especialidades, horario, asignaciones académicas — como tabs lazy en `evaluation-periods-section.tsx`, cada tab con su `NoticeProvider`).
 - `institution`/`campuses`/`employees`: **legacy** — ramas mock/real con `apiPath`, forms con `useState` + `safeParse` manual, mutaciones partidas en `create.ts` (fn) + `use-create.ts` (hook), payloads camelCase anidados: en modo real el fn de la mutación pasa los valores por un adaptador local (`toRealBackendPayload` en `institution/api/mutations/create.ts` y `employees/api/mutations/update.ts`, `toRealCreatePayload`/`toRealUpdatePayload` en `campuses/api/mutations/create.ts`) que aplana catálogos a `.id` y saca `id`/campos read-only; con mocks se manda el objeto de dominio tal cual (`toOutgoingPayload`).
 - `academic-period`: **más nuevo** — solo backend real (`/eval-col/...` hardcodeado, sin mocks), forms con `useForm` de TanStack + zod `validators`, un archivo por operación (`create-grade.ts` exporta `useCreateGrade`), bodies **UPPER_SNAKE planos** (`FK_SEDE`, `PAGE_INDEX`, `SORTING_ID`, `RESERVA: "S"|"N"`).
-- Dos sistemas de catálogos: `employees/api/query/use-catalogs.ts` (`useCatalogQuery(CATALOGS.X)`) y `academic-period/api/query/fetch-select-category.ts` (`fetchSelectCategory("JORNADA")` → `GET /eval-col/select/:CATEGORIA`). Otros features importan ambos.
+- Dos sistemas de catálogos: `employees/api/query/use-catalogs.ts` (`useCatalogQuery(CATALOGS.X)`) y `academic-period/api/query/fetch-select-category.ts` (`fetchSelectCategory("JORNADA")` → `GET /eval-col/select/:CATEGORIA`). Otros features importan ambos. Para resolver texto → `pk_lista_valor` al armar un body usá `resolveCatalogId(queryClient?, CATEGORIA, nombre, { match | normalize })` / `findCatalogId(rows, ...)` (`academic-period/api/query/resolve-catalog-id.ts`); los `resolveXxxId` existentes son one-liners sobre él.
 - Resultados de escritura `{ rows: [{ fn_x: id }] }` → `extractWriteResultId`; bulk delete → `summarizeBulkDelete`/`formatBulkDeleteError`.
 - Archivos gigantes (editá con cuidado, en porciones): `employees/components/dialogs/dialog-manage.tsx` (67 KB), `dialog-create-rating-scale.tsx`, `dialog-create-study-plan.tsx`, `add-establishment-page.tsx`.
 
@@ -245,11 +249,11 @@ Todo plano en la raíz del feature (sin sub-carpetas) aunque tiene 4 subdominios
 - `components/forms/form-editar-actividad.tsx` (~5.200 líneas) sirve para crear y editar. `defaultValues` se leen una vez al montar: la página espera los datos y usa `key={id}`. Controles de Base UI ignoran `<fieldset disabled>` → cada sección recibe `disabled` explícito.
 - **Guardado multi-paso con orden obligatorio**: actividad (POST/PUT) → vínculo unidad → evidencias (una por request) → materiales (PUT, reemplazo total) → instrumento (PUT; necesita que el PUT de actividad ya haya fijado `FK_TLV_INSTRUMENTO_EVALUACION`, si no 400/22023) → adaptaciones (reemplazo total) → criterios → estudiantes. Los PUT de reemplazo total **borran archivos que no se reenvíen por `archivoId`**.
 - Contrato: bodies UPPER_SNAKE, flags `"S"|"N"`, **campos JSONB se mandan como string JSON** (`DEFINICION`, `MATERIALES`, `ADAPTACIONES`, `CALIFICACION`), no hay DELETE (bajas por PATCH). Nombres de catálogo → `pk_lista_valor` con `resolveXxxId(nombre)` al armar el body.
-- Query keys bajo `["planeador", ...]` (`"actividades-mias"`, `"actividad", id`, `"unidad", id, <sub>`, `"planilla", ...`).
+- Query keys: **solo desde `planeadorKeys`** (`api/query-keys.ts`), bajo `["planeador", ...]`: `actividades.{all,lista,mias,calendario,stats,programacion}`, `actividad.{detalle,calificaciones,instrumento,…}(id)`, `unidades.{all,lista}`, `unidad.{detalle,criterios,actividades,…}(id)`, `planilla.{calificaciones.{all,lista},columnas}`. Asistencia también la usa (`sedesOpciones`).
 - "Instrumento" tiene **dos significados**: `?instrumento=` / `/unidades/tabs` = etiqueta del referente ("Unidad temática" / "Proyecto pedagógico"); `Actividad.instrumento` = instrumento de evaluación. Además, nombre visible ("Rúbrica") ≠ código de planilla (`RUBRICA`).
 - Detectar unidad formativa con `useUnidadReferenteQuery(...).esFormativo`, no con `enfoquePedagogico` (viene hardcodeado).
 - El mock devuelve objetos camelCase de dominio (no filas snake_case) → ~10 hooks ramifican por `env.ENABLE_API_MOCKING`.
-- Invalidación de actividades: create/update/delete usan `invalidarListadosActividades` (`api/query/invalidar-listados-actividades.ts`), que refresca `actividades-mias`/`-calendario`/`-stats`, el listado legado y el detalle. **Bug conocido**: `importar-actividades-json.ts` todavía invalida solo `["planeador","actividades"]` (+ unidades), que no prefija `actividades-mias`/`-calendario`/`-stats`.
+- Invalidación de actividades: create/update/delete/importar usan `invalidarListadosActividades` (`api/query/invalidar-listados-actividades.ts`), que invalida `planeadorKeys.actividades.all` (prefijo real del rail, calendario, stats, listado legado y programación) y, si se le pasa, el detalle. Las calificaciones de cualquier actividad (id en el medio de la key) se filtran con `esCalificacionesDeActividad`.
 
 ### `administration`
 - `roles-menus/`: asignación de menús a roles (transferencia de dos paneles, "Solo lectura", reordenamiento por drag nativo HTML5), CRUD de menús y planes. El árbol es estrictamente de 2 niveles y el backend rechaza hijos sin su padre → todo guardado pasa por `partitionKnownMenus` + `withRequiredParents` (`api/types/role-menu.ts`, con tests). Todo vía `evalCol`.
@@ -294,6 +298,25 @@ export function useThingsQuery(params: ThingsParams) {
 - Keys: `["<kebab-plural>", params]` para listas; detalle con `enabled: Boolean(id)`. Si el detalle tiene key distinta a la lista, **invalidá ambas** al mutar. Catálogos: `staleTime: Infinity`.
 - `queryOptions()` casi no se usa; no es obligatorio.
 
+### Query keys (`api/query-keys.ts`)
+`planeador` y `establishment/academic-period` tienen una factory que es la **única fuente** de sus keys: lecturas, `invalidateQueries`, `setQueryData`, `getQueryData`, `useIsFetching`, predicados. No escribas arrays literales de key en esos features (ni desde otros features que lean/invaliden sus keys: importá la factory). Para un feature nuevo, o al tocar uno que todavía tiene keys sueltas, seguí el mismo patrón:
+```ts
+// features/<f>/api/query-keys.ts
+const all = ["things"] as const
+const detalle = (id: number | "none") => [...all, id] as const
+export const thingKeys = {
+  all,                                                          // prefijo de TODO el feature
+  lista: <P>(params: P) => [...all, "lista", params] as const,
+  detalle,                                                      // prefijo de lo que cuelga del id
+  hijos: (id: number | "none") => [...detalle(id), "hijos"] as const,
+} as const
+```
+- **Cada nivel se arma extendiendo el anterior** (`[...padre, ...]`): así la key que se invalida es, por construcción, prefijo de las de lectura. Nunca hagas keys "hermanas" con guion (`"actividades-mias"` junto a `"actividades"`): no se prefijan entre sí (ese era el bug de planeador).
+- Invalidá por el nivel más alto que corresponda (`thingKeys.all`, `thingKeys.detalle(id)`), no reconstruyendo params.
+- `"none"` = key de una query deshabilitada (sin id todavía).
+- Si una key ya la usan otros features por su valor, conservá el valor (por eso `academicPeriodKeys` no tiene raíz común: cada entidad tiene su `.all`, p. ej. `academicPeriodKeys.grades.all = ["grades"]`).
+- Las invalidaciones van en el hook de mutación (ver abajo), nunca en el componente. Si un diálogo hace la llamada sin hook, creá el hook en `api/mutations/`.
+
 ### Mutation hook
 ```ts
 export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationConfig<typeof createThing> } = {}) {
@@ -303,7 +326,7 @@ export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationCo
     mutationFn: createThing,
     ...rest,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["things"] }) // prefijo; verificá que realmente prefije las keys de lectura
+      queryClient.invalidateQueries({ queryKey: thingKeys.all }) // desde la factory: prefijo real de las lecturas
       onSuccess?.(...args)
     },
   })
@@ -331,8 +354,26 @@ export function useCreateThing({ mutationConfig }: { mutationConfig?: MutationCo
 - Export: diálogo con PDF/Excel → `downloadReport(key, { format, filters: toThingsFilters(...), columns })`.
 
 ### Formularios
-- Preferido: TanStack Form (`useAppForm` de `@/lib/forms`, o `useForm` directo como en `academic-period`) con zod en `validators: { onChange/onSubmit: schema }` y `<form.Field>` envolviendo `Field`/`FieldLabel`/`FieldError` + inputs de `ui/`. Estado inválido: `isTouched || submissionAttempts > 0`. Botón de submit externo con `form={FORM_ID}`. Create y edit comparten componente.
-- Referencias: `establishment/academic-period/components/forms/form-academic-period.tsx`, `dialogs/dialog-create-grade-group.tsx`, `coverage/components/forms/form-filter-reservations.tsx`.
+- **Preferido**: `useAppForm` de `@/lib/forms` + schema zod en `validators: { onChange/onSubmit: schema }` + **campos registrados** dentro de `<form.AppField>`. No reimplementes `Field`/`FieldLabel`/`FieldError`/`aria-invalid` a mano:
+  ```tsx
+  const form = useAppForm({ defaultValues, validators: { onSubmit: schema }, onSubmit: ({ value }) => save(value) })
+  <form.AppField name="nombre">{(f) => <f.TextField label="Nombre" required maxLength={130} />}</form.AppField>
+  <form.AppField name="peso">{(f) => <f.NumberField label="Peso (%)" valueAs="number" suffix="%" />}</form.AppField>
+  <form.AppField name="estadoId">{(f) => <f.SelectField label="Estado" options={opts} emptyValue={0} clearable />}</form.AppField>
+  <form.AppField name="inicio" validators={{ onChange: fn }}>{(f) => <f.DateField label="Inicio" minDate={min} />}</form.AppField>
+  <FormDisabledProvider disabled={soloLectura}>…sección…</FormDisabledProvider>
+  ```
+  - Props comunes: `label`, `required` (agrega `*`), `description` (se oculta mientras hay error; string → `FieldDescription`, nodo → tal cual), `variant` (default `outlined`), `disabled`, `id` (default el nombre del campo). `placeholder` default "Agregar" en inputs.
+  - `NumberField`: siempre `type="text"` + `toDigitsOnly`. `valueAs="string"` (default, VARCHAR numérico) o `"number"` (vacío → `NaN`, lo rechaza `z.number()`); `maxDigits`, `max`, `suffix`.
+  - `SelectField`: recibe `SelectOption[]` (`value`/`label`), resuelve `toSelectItemsMap` y el centinela `__none__` adentro y devuelve el `value` original (number o string). `emptyValue` (default `""`), `clearable`, `placeholder` (default "Seleccione"), `renderValue` (p. ej. un `Badge`).
+  - `DateField`: `mode="date"` usa `date-value` (vacío → `""`); `nullable` usa el `formatDateValue` de `date-time-value` (vacío → `null`); `mode="datetime"` usa `date-time-value`. Pasa `minDate`/`maxDate`/`disabledRanges`/`enabledDaysOfWeek`.
+  - `TextareaField` muestra `CharacterCounter` si hay `maxLength`. `TextField` acepta `transform` (sanitizadores de `text-input.ts`).
+  - Estado inválido: `isFieldInvalid(field, submissionAttempts)` (`isTouched || submissionAttempts > 0`, y con errores). Usalo también en campos propios (combobox, radio) montados con `useFieldContext`.
+  - `FormDisabledProvider` deshabilita los campos registrados de toda la sección (Base UI ignora `<fieldset disabled>`); los providers anidados se suman.
+  - Mensajes: `@/lib/forms/messages` — `required("El código")`, `required("La fecha", { femenino: true })`, `maxLength(130, "El nombre")`, `minLength`, `range`, `invalidEmail`, `invalidUrl`, `invalidDate`, `fileTooLarge`, `invalidFileType`, `REQUIRED`, `INCOMPLETE_FORM`. No escribas otra vez "El nombre es obligatorio" a mano.
+  - No vuelvas a `parse`/`safeParse` el schema en `onSubmit`: solo corre si el validador pasó.
+- Botón de submit externo con `form={FORM_ID}`. Create y edit comparten componente.
+- Referencia: `establishment/academic-period/components/dialogs/dialog-create-evaluation-period.tsx` (piloto: texto, número con sufijo, fechas con validadores por campo, select con badge). Los demás forms de `academic-period` todavía usan `useForm` + `<form.Field>` a mano: migralos cuando los toques.
 - **No copies** los forms `useState` + `safeParse` manual de campuses/employees/institution/curricular-references (salvo que edites ahí mismo).
 - Diálogo con form: `NoticeBanner` local para errores mientras está abierto; éxito con `notify()` de página y cerrar; `ConfirmDiscardDialog` al cerrar sucio; no cerrar mientras hay save pendiente.
 - Inputs numéricos que son VARCHAR: `toDigitsOnly`, no `type="number"`.
@@ -377,7 +418,7 @@ feature/* ──squash──▶ dev ──merge commit──▶ test ──merge
 
 | Workflow | Disparo | Hace |
 |---|---|---|
-| `ci.yml` | PR / push a **`dev`** únicamente | `tsc -b --noEmit`, `pnpm lint`, `pnpm build` |
+| `ci.yml` | PR / push a **`dev`** únicamente | `tsc -b --noEmit`, `pnpm lint`, `pnpm test`, `pnpm build` |
 | `deploy-dev.yml` | CI exitoso por push a `dev` (o manual) | deploy env `dev` del SHA verificado |
 | `deploy-test.yml` | push a `test` (o manual) | deploy env `test` — **no hay CI**: lo que se pushee directo a `test` sale sin verificar |
 | `release.yml` | tag `v*` (`vX.Y.Z[-pre]`) o manual | deploy env `production` (requiere aprobación de reviewer) |
@@ -414,7 +455,7 @@ feature/* ──squash──▶ dev ──merge commit──▶ test ──merge
 ## 11. Trampas rápidas (checklist)
 
 - ¿Endpoint nuevo? Decidí cliente (`evalCol` vs `api` vs `files` vs `downloadReport`), si necesita `apiPath` + handler MSW, y si toca las listas de endpoints de `api-client.ts`.
-- ¿Invalidación? Verificá que la key invalidada sea **prefijo real** de las keys de lectura (hay bugs de esto en planeador).
+- ¿Invalidación? Usá la factory `api/query-keys.ts` (planeador, academic-period) y verificá que la key invalidada sea **prefijo real** de las de lectura. En features sin factory las keys siguen siendo literales sueltos: ojo.
 - ¿Tabla? `"use no memo"`.
 - ¿`<Select items>`? `toSelectItemsMap`.
 - ¿Pantalla con `NoticeProvider`? Los errores de axios ya no salen solos: mostralos vos.

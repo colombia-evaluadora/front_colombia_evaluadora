@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface LinkActividadInput {
   unidadId: number
@@ -49,7 +50,7 @@ interface UseLinkActividadUnidadOptions {
 
 /**
  * Vincula una actividad ya existente a una unidad, con su peso dentro de
- * ella. Invalida TODO lo que cuelga de `["planeador", "unidad", unidadId]`
+ * ella. Invalida TODO lo que cuelga de `planeadorKeys.unidad.detalle(unidadId)`
  * (prefix match de React Query) — detalle, actividades vinculadas y
  * disponibles — para que la tabla de "Actividades" y el "% disponible" del
  * diálogo reflejen el nuevo vínculo apenas se confirma.
@@ -61,7 +62,7 @@ export function useLinkActividadUnidad({ mutationConfig }: UseLinkActividadUnida
   return useMutation({
     mutationFn: linkActividadUnidad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: ["planeador", "unidad", variables.unidadId] })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

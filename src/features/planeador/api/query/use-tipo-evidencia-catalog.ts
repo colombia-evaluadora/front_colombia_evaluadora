@@ -1,4 +1,4 @@
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 
 /**
  * Catálogo global `TIPO_EVIDENCIA` de `TLISTA_VALOR`
@@ -20,7 +20,5 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
  * depende del instrumento de evaluación elegido.
  */
 export async function resolveTipoEvidenciaId(tipo: string): Promise<number | undefined> {
-  if (!tipo) return undefined
-  const rows = await fetchSelectCategory("TIPO_EVIDENCIA")
-  return rows.find((row) => row.nombre === tipo)?.pk_lista_valor
+  return resolveCatalogId(undefined, "TIPO_EVIDENCIA", tipo)
 }
