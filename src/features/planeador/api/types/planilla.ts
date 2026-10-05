@@ -81,6 +81,12 @@ export interface PlanillaCelda {
   tieneAsistencia: boolean
   /** Regla 62: No presentó / No asistió bloquean la nota, como en el Planeador. */
   estadoResultado?: EstadoResultado | null
+  /** Regla 55: corrección pendiente de aprobación (la nota vigente no cambia). */
+  solicitudPendiente?: boolean | null
+  /** Nota propuesta en esa solicitud, en la escala de la asignatura. */
+  notaPropuestaHomologada?: number | null
+  /** Body de calificar de esa corrección (null si vino de un bloque). */
+  calificacionPropuesta?: unknown
   evidencias: CeldaEvidencia[]
 }
 
@@ -94,6 +100,10 @@ export interface PlanillaFila {
   definitivaProyectadaHomologada: number | null
   definitivaRegistrada: number | null
   tendencia: number | null
+  /** Nota máxima de la escala numérica (null si no es numérica). */
+  notaMaxima: number | null
+  /** Definitiva con las correcciones pendientes de aprobación (null si no hay). */
+  definitivaPropuestaHomologada: number | null
   celdas: PlanillaCelda[]
 }
 
