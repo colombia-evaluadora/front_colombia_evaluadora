@@ -287,7 +287,7 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                   {pideValor && (
                     <>
                       <TableHead className="w-[10%] text-right">
-                        {esPonderado ? "(%)" : "Puntaje"}
+                        {esPonderado ? "(%)" : "(Σ)"}
                       </TableHead>
                       {/* Header vacío a propósito: esta columna solo muestra
                           "Disponible para asignar" o el botón "Vincular" —
