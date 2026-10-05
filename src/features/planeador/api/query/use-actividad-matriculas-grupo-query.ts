@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/estudiantes?GRUPO=` (`fn_planeador_estudiantes_candidatos_
@@ -46,9 +47,6 @@ async function fetchMatriculasGrupo(grupoId: number): Promise<MatriculaGrupo[]> 
   return rows.map(toMatriculaGrupo)
 }
 
-export const matriculasGrupoQueryKey = (grupoId: number) =>
-  ["planeador", "matriculas-grupo", grupoId] as const
-
 /**
  * `grupoId` en `undefined` deshabilita la consulta — mismo criterio que
  * `useReferenteCurricularQuery`: el campo "Estudiantes" está deshabilitado
@@ -57,7 +55,7 @@ export const matriculasGrupoQueryKey = (grupoId: number) =>
  */
 export function useActividadMatriculasGrupoQuery(grupoId: number | undefined) {
   return useQuery({
-    queryKey: grupoId != null ? matriculasGrupoQueryKey(grupoId) : (["planeador", "matriculas-grupo", "none"] as const),
+    queryKey: grupoId != null ? planeadorKeys.matriculasGrupo(grupoId) : planeadorKeys.matriculasGrupo("none"),
     queryFn: () => fetchMatriculasGrupo(grupoId!),
     enabled: grupoId != null,
     staleTime: 1000 * 60,

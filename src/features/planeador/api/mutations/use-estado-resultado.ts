@@ -2,9 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
-
-import { calificacionesQueryKey } from "@/features/planeador/api/query/use-calificaciones-query"
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Regla 62: marca No presentó o lo quita (vuelve a Pendiente):
@@ -34,8 +32,8 @@ export function useEstadoResultadoMutation(
     ...options.mutationConfig,
     onSuccess: (...args) => {
       const [, input] = args
-      queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(input.actividadId) })
-      queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(input.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       options.mutationConfig?.onSuccess?.(...args)
     },
   })

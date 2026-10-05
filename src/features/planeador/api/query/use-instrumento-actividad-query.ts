@@ -10,6 +10,7 @@ import type {
   InstrumentoOtroDefinicion,
   InstrumentoTipo,
 } from "@/features/planeador/api/types/planilla"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** `GET /planeador/actividades/:id/instrumento` (confirmado real, ver
  *  colección Postman `planeador-planilla-flujo-completo`, paso 3.1). Un 200
@@ -64,9 +65,6 @@ function toInstrumentoActividad(row: InstrumentoActividadRow | undefined): Instr
   } as InstrumentoActividad
 }
 
-export const instrumentoActividadQueryKey = (actividadId: number) =>
-  ["planeador", "actividad", actividadId, "instrumento"] as const
-
 async function fetchInstrumentoActividad(actividadId: number): Promise<InstrumentoActividad> {
   const rows = await evalCol.getRows<InstrumentoActividadRow>(
     `/planeador/actividades/${actividadId}/instrumento`,
@@ -85,8 +83,8 @@ export function useInstrumentoActividadQuery(actividadId: number | undefined) {
   return useQuery({
     queryKey:
       actividadId != null
-        ? instrumentoActividadQueryKey(actividadId)
-        : (["planeador", "actividad", "none", "instrumento"] as const),
+        ? planeadorKeys.actividad.instrumento(actividadId)
+        : planeadorKeys.actividad.instrumento("none"),
     queryFn: () => fetchInstrumentoActividad(actividadId!),
     enabled: actividadId != null,
     staleTime: 1000 * 60,

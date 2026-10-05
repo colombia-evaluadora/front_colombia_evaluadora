@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadDetalleQueryKey, unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface CederUnidadInput {
   unidadId: number
@@ -38,8 +38,8 @@ export function useCederUnidad({ mutationConfig }: UseCederUnidadOptions = {}) {
   return useMutation({
     mutationFn: cederUnidad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: unidadDetalleQueryKey(variables.unidadId) })
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

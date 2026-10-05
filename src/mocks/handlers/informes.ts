@@ -96,6 +96,11 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
         // Una sola asignatura con propuesta distinta, para que la demo muestre
         // el caso "cambio propuesto" (negro + gris) sin llenar la tabla de él.
         const propone = consolidado && asignatura.orden === 2
+        // Y el primer estudiante tiene una Habilitación aplicada en la de
+        // orden 1: R (la nota) sobre C (la original, forzada a reprobada).
+        const recupera = consolidado && asignatura.orden === 1 && indice === 0
+        const original = recupera ? Math.min(nota, 2.5) : nota
+        const notaVigente = recupera ? Math.round(((original + 4.5) / 2) * 10) / 10 : nota
         return {
           asignatura: asignatura.id,
           nombre: asignatura.nombre,
@@ -104,11 +109,15 @@ function filasDeGrupoPeriodo(grupoId: number, periodoId: number, search: string 
           orden: asignatura.orden,
           estado: propone ? "cambio_propuesto" : consolidado ? "guardada" : "proyectada",
           es_numerico: true,
-          nota,
+          nota: notaVigente,
           nota_propuesta: propone ? Math.min(5, Math.round((nota + 0.4) * 10) / 10) : null,
           valoracion: null,
           simbolo: null,
-          aprobada: nota >= 3,
+          aprobada: notaVigente >= 3,
+          con_recuperacion: recupera,
+          nota_original: recupera ? original : null,
+          valoracion_original: null,
+          simbolo_original: null,
           ya_asegurado: false,
           alcanzable: true,
         }
@@ -186,6 +195,10 @@ function filasFinalDeGrupo(grupoId: number, search: string | null) {
               valoracion: null,
               simbolo: null,
               aprobada: nota >= 3,
+              con_recuperacion: false,
+              nota_original: null,
+              valoracion_original: null,
+              simbolo_original: null,
               ya_asegurado: false,
               alcanzable: true,
             }

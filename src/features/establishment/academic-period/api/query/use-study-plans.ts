@@ -6,6 +6,7 @@ import type {
   StudyPlanQueryRequest,
   StudyPlanQueryResponse,
 } from "@/features/establishment/academic-period/api/types/study-plan"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseStudyPlansQueryParams {
   filters: StudyPlanQueryRequest["filters"]
@@ -87,14 +88,9 @@ async function fetchStudyPlans(
   return { rows, pageCount, totalCount }
 }
 
-export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => {
-  const { enabled: _enabled, ...key } = params
-  return ["study-plans", key]
-}
-
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {
   return useQuery({
-    queryKey: studyPlansQueryKey(params),
+    queryKey: academicPeriodKeys.studyPlans.list(params),
     queryFn: () => fetchStudyPlans(params),
     enabled: params.enabled ?? true,
     placeholderData: (previous) => previous,

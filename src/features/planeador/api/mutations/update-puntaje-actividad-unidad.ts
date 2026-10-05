@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface UpdatePuntajeInput {
   actividadId: number
@@ -44,7 +45,7 @@ export function useUpdatePuntajeActividadUnidad({
   return useMutation({
     mutationFn: updatePuntajeActividadUnidad,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["planeador", "unidad", unidadId] })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
       onSuccess?.(...args)
     },
     ...restConfig,

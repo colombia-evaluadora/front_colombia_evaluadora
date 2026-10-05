@@ -3,12 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import {
-  unidadDetalleQueryKey,
-  unidadesQueryKey,
-} from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Todo menos `criterios`/`actividades`: esas listas se editan aparte, desde
  *  las pestañas Rúbricas/Actividades del panel. */
@@ -125,8 +122,8 @@ export function useUpdateUnidad({ mutationConfig }: UseUpdateUnidadOptions = {})
   return useMutation({
     mutationFn: updateUnidad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: unidadDetalleQueryKey(variables.unidadId) })
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

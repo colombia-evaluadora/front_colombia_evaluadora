@@ -23,15 +23,22 @@ export interface MatriculaFieldConfigChange {
  * respuesta trae la configuración completa ya actualizada; solo se usa la
  * de la última llamada.
  */
-async function updateMatriculaFieldConfig(
-  changes: MatriculaFieldConfigChange[],
-): Promise<MatriculaFieldConfig> {
+interface UpdateMatriculaFieldConfigInput {
+  /** El colegio cuya configuración se edita; `null` = el único que administra. */
+  establecimientoId: number | null
+  changes: MatriculaFieldConfigChange[]
+}
+
+async function updateMatriculaFieldConfig({
+  establecimientoId,
+  changes,
+}: UpdateMatriculaFieldConfigInput): Promise<MatriculaFieldConfig> {
   let lastRow: MatriculaFieldConfigRow | undefined
 
   for (const { fkCampo, patch } of changes) {
     const { config } = await evalCol.putRow<{ config: MatriculaFieldConfigRow }>(
       `/matricula/configuracion/campo/${fkCampo}`,
-      patch,
+      { ...patch, FK_ESTABLECIMIENTO: establecimientoId },
     )
     lastRow = config
   }
@@ -55,7 +62,8 @@ export function useUpdateMatriculaFieldConfig({
   return useMutation({
     mutationFn: updateMatriculaFieldConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: matriculaFieldConfigQueryKey() })
+      // Prefijo sin el colegio: invalida la configuración de todos.
+      queryClient.invalidateQueries({ queryKey: matriculaFieldConfigQueryKey().slice(0, 2) })
       onSuccess?.(...args)
     },
     ...restConfig,

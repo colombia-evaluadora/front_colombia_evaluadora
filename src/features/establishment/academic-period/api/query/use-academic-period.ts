@@ -5,6 +5,7 @@ import type {
   AcademicPeriodDetail,
   AcademicPeriodStatus,
 } from "@/features/establishment/academic-period/api/types/academic-period"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface AcademicPeriodDetailRow {
   id: number
@@ -85,11 +86,9 @@ async function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
   return toAcademicPeriodDetail(row)
 }
 
-export const academicPeriodQueryKey = (id: number) => ["academic-period", id]
-
 export function useAcademicPeriodQuery(id: number | undefined) {
   return useQuery({
-    queryKey: academicPeriodQueryKey(id ?? 0),
+    queryKey: academicPeriodKeys.academicPeriod.detail(id ?? 0),
     queryFn: () => fetchAcademicPeriod(id as number),
     enabled: id != null,
   })

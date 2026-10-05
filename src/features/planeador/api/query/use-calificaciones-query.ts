@@ -8,19 +8,12 @@ import type {
   EstadoAsistencia,
   EstadoResultado,
 } from "@/features/planeador/api/types/calificacion"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 function calificacionesUrl(id: number, fecha?: string): string {
   const base = `/planeador/actividades/${id}/calificaciones`
   return fecha ? `${base}?fecha=${fecha}` : base
 }
-
-/** La fecha va DESPUÉS del sufijo `"calificaciones"`, no dentro: así una
- *  invalidación por `calificacionesQueryKey(id)` sigue alcanzando a todas las
- *  fechas (react-query matchea por prefijo). */
-export const calificacionesQueryKey = (id: number, fecha?: string) =>
-  fecha
-    ? (["planeador", "actividad", id, "calificaciones", fecha] as const)
-    : (["planeador", "actividad", id, "calificaciones"] as const)
 
 /**
  * Fila real de `GET /planeador/actividades/:id/calificaciones` (confirmada
@@ -55,6 +48,9 @@ interface CalificacionRow {
   nota_homologada: number | null
   calificable: "S" | "N"
   nota_observacion: string | null
+  evidencia_enlace?: string | null
+  /** `VALOR` del catálogo MOMENTO_REGISTRO (INICIO/PROCESO/CIERRE). */
+  momento?: string | null
   /** `1` Asistió, `2` No asistió, `5` Llegó tarde (3/6 solo en históricos). */
   tipo_asistencia_valor: string | null
   /** Hay excusa (archivo) ese día. */
@@ -102,6 +98,8 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     calificacion: row.calificacion,
     notaHomologada: row.nota_homologada,
     observacion: row.nota_observacion,
+    evidenciaEnlace: row.evidencia_enlace ?? null,
+    momento: row.momento ?? null,
     fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
     noPresento: row.estado_resultado === "NO_PRESENTO",
     estadoResultado: row.estado_resultado ?? undefined,
@@ -130,7 +128,7 @@ async function fetchCalificaciones(id: number, fecha?: string): Promise<Califica
  */
 export function calificacionesQueryOptions(id: number, fecha?: string) {
   return queryOptions({
-    queryKey: calificacionesQueryKey(id, fecha),
+    queryKey: planeadorKeys.actividad.calificaciones(id, fecha),
     queryFn: () => fetchCalificaciones(id, fecha),
     staleTime: 1000 * 60,
   })
@@ -144,8 +142,8 @@ export function useCalificacionesQuery(id: number | undefined, fecha?: string) {
   return useQuery({
     queryKey:
       id !== undefined
-        ? calificacionesQueryKey(id, fecha)
-        : ["planeador", "actividad", "none", "calificaciones"],
+        ? planeadorKeys.actividad.calificaciones(id, fecha)
+        : planeadorKeys.actividad.calificaciones("none"),
     queryFn: () => fetchCalificaciones(id!, fecha),
     enabled: id !== undefined,
     staleTime: 1000 * 60,

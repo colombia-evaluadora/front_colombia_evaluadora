@@ -112,6 +112,13 @@ export interface AsignaturaInforme {
   valoracion: string | null
   simbolo: string | null
   aprobada: boolean | null
+  /** Habilitación/Nivelación (recuperación sobre la nota del período, Regla
+   *  68): `nota` es la resultante (R) y estas tres la original (C). Fuera de
+   *  ese caso, `conRecuperacion` es `false` y las tres llegan en `null`. */
+  conRecuperacion: boolean
+  notaOriginal: number | null
+  valoracionOriginal: string | null
+  simboloOriginal: string | null
   /** Modo requerido: ya le alcanza sin sacar nada más. */
   yaAsegurado: boolean
   /** Modo requerido: `false` = ya perdió pase lo que pase. El valor llega

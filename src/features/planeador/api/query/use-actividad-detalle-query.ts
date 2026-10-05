@@ -17,6 +17,7 @@ import {
   type Recurso,
   type RecursoTipo,
 } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -560,8 +561,6 @@ function actividadDetalleUrl(id: number): string {
   return `/planeador/actividades/${id}`
 }
 
-export const actividadDetalleQueryKey = (id: number) => ["planeador", "actividad", id] as const
-
 /**
  * Detalle de una actividad. El sobre `{rows: [...]}` es igual en mock y
  * real; lo que cambia es la forma de la fila — el mock ya entrega
@@ -615,7 +614,7 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
 
 export function useActividadDetalleQuery(id: number | undefined) {
   return useQuery({
-    queryKey: id !== undefined ? actividadDetalleQueryKey(id) : ["planeador", "actividad", "none"],
+    queryKey: id !== undefined ? planeadorKeys.actividad.detalle(id) : planeadorKeys.actividad.detalle("none"),
     queryFn: () => fetchActividadDetalle(id!),
     enabled: id !== undefined,
     staleTime: 1000 * 60,

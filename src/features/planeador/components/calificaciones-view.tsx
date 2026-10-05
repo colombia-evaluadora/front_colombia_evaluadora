@@ -32,7 +32,7 @@ import {
   useAsistenciaActividadMutation,
 } from "@/features/planeador/api/mutations/use-asistencia-actividad"
 import { useEstadoResultadoMutation } from "@/features/planeador/api/mutations/use-estado-resultado"
-import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
+import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
 import { bloqueoCalificar, itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
@@ -40,6 +40,7 @@ import { formatDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -63,7 +64,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
     try {
       await marcarAsistencia.mutateAsync({ pkTactividadEstudiante, tipo })
       // Se espera la recarga para que el select ya muestre el valor nuevo.
-      await queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
+      await queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(actividad.id) })
       notify("Asistencia registrada.")
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
@@ -129,7 +130,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
               formativa={formativa}
               estudiante={estudiante}
               onGuardado={() =>
-                queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
+                queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(actividad.id) })
               }
               onGuardarAsistencia={guardarAsistencia}
               guardandoAsistencia={guardandoId === estudiante.id}
@@ -241,6 +242,8 @@ function CalificacionRow({
               estudianteNombre={nombreCompleto}
               observacionActual={estudiante.observacion ?? null}
               evidenciasActuales={[]}
+              enlaceActual={estudiante.evidenciaEnlace}
+              momentoActual={estudiante.momento}
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
               bloqueo={bloqueo}

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 
 import type { InstrumentoTipo, PlanillaColumna } from "@/features/planeador/api/types/planilla"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** `GET /planeador/planilla/columnas` (confirmado real, ver colección
  *  Postman `planeador-planilla-flujo-completo`, paso 2.1). */
@@ -61,9 +62,6 @@ export interface UsePlanillaColumnasParams {
   gradoId?: number
 }
 
-export const planillaColumnasQueryKey = (params: UsePlanillaColumnasParams) =>
-  ["planeador", "planilla", "columnas", params] as const
-
 async function fetchPlanillaColumnas(
   params: UsePlanillaColumnasParams,
 ): Promise<PlanillaColumna[]> {
@@ -85,8 +83,8 @@ async function fetchPlanillaColumnas(
 export function usePlanillaColumnasQuery(params: UsePlanillaColumnasParams | null) {
   return useQuery({
     queryKey: params
-      ? planillaColumnasQueryKey(params)
-      : (["planeador", "planilla", "columnas", "none"] as const),
+      ? planeadorKeys.planilla.columnas(params)
+      : planeadorKeys.planilla.columnas("none"),
     queryFn: () => fetchPlanillaColumnas(params!),
     enabled: params !== null,
     staleTime: 1000 * 15,

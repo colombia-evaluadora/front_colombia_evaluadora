@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { paresToQueryParam, type ActividadTabPair } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -237,12 +238,9 @@ export async function fetchTodasLasActividadesMias(): Promise<Actividad[]> {
   return completa.rows
 }
 
-export const actividadesMiasQueryKey = (params: UseActividadesMiasParams) =>
-  ["planeador", "actividades-mias", params] as const
-
 export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
   return useQuery({
-    queryKey: actividadesMiasQueryKey(params),
+    queryKey: planeadorKeys.actividades.mias(params),
     queryFn: () => fetchActividadesMias(params),
     placeholderData: (previous) => previous,
     staleTime: 1000 * 30,

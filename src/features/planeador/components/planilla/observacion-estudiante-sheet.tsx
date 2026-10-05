@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,8 +34,10 @@ import {
   BrushIcon,
   CheckIcon,
   FileTextIcon,
+  FileUploadOutlinedIcon,
   ImageIcon,
   InfoIcon,
+  InsertLinkOutlinedIcon,
   SpinnerIcon,
   WarningCircleIcon,
   XIcon,
@@ -39,16 +47,20 @@ import { cn } from "@/lib/utils"
 
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
+import {
+  DialogEnlaceEvidencia,
+  DialogSubirEvidencia,
+  ENLACE_VALIDO,
+  EnlaceImagen,
+} from "@/features/planeador/components/planilla/dialogs-agregar-evidencia"
 import { EvidenciaFavoritoButton } from "@/features/planeador/components/planilla/evidencia-favorito-button"
 import {
   OBSERVACION_EVIDENCIAS_MAX,
-  OBSERVACION_EVIDENCIA_ACCEPT,
   OBSERVACION_EVIDENCIA_MAX_MB,
   OBSERVACION_EVIDENCIA_TIPOS_LABEL,
   OBSERVACION_MAX_CARACTERES as MAX_CARACTERES,
   esEvidenciaImagen,
   extensionEvidencia,
-  validarEvidencia,
 } from "@/features/planeador/lib/observacion"
 import { useMomentoRegistroCatalog } from "@/features/planeador/api/query/use-momento-registro-catalog"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
@@ -84,8 +96,13 @@ export interface EstudianteObservable {
   id: number
   nombreCompleto: string
   observacion: string | null
+  /** Regla 61: enlace guardado; `undefined` si la vista no lo trae. */
+  enlace?: string | null
+  /** Momento guardado (VALOR: INICIO/PROCESO/CIERRE); `undefined` si la vista no lo trae. */
+  momento?: string | null
   fecha: string | null
 }
+
 
 interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
@@ -93,7 +110,8 @@ interface ObservacionEstudianteSheetProps {
   evidencias?: CeldaEvidencia[]
   guardando?: boolean
   onOpenChange: (open: boolean) => void
-  onGuardar: (estudiante: EstudianteObservable, texto: string) => void
+  /** `enlace` solo viaja si cambió: omitido no lo toca, vacío lo quita. */
+  onGuardar: (estudiante: EstudianteObservable, texto: string, enlace?: string, momento?: string) => void
   onAgregarEvidencia?: (archivo: File) => void
   agregandoEvidencia?: boolean
   onQuitarEvidencia?: (evidencia: CeldaEvidencia) => void
@@ -151,37 +169,56 @@ export function ObservacionEstudianteSheet({
   const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<CeldaEvidencia | null>(null)
   const [confirmarSalida, setConfirmarSalida] = useState(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
-  const inputArchivoRef = useRef<HTMLInputElement>(null)
+  const [dialogo, setDialogo] = useState<"archivo" | "enlace" | null>(null)
   const textoGuardadoRef = useRef("")
+  const [enlace, setEnlace] = useState("")
+  const enlaceGuardadoRef = useRef("")
+  const momentoGuardadoRef = useRef("")
 
   useEffect(() => {
     if (estudiante) {
       textoGuardadoRef.current = estudiante.observacion ?? ""
       setTexto(textoGuardadoRef.current)
+      enlaceGuardadoRef.current = estudiante.enlace ?? ""
+      setEnlace(enlaceGuardadoRef.current)
       setMomento("")
+      momentoGuardadoRef.current = ""
       setErrorLocal(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estudiante?.id])
 
+  // Precarga el momento guardado; espera al catálogo para resolver su id.
+  useEffect(() => {
+    const guardado = estudiante?.momento?.trim().toUpperCase()
+    if (!guardado) return
+    const match = momentos.find((m) => m.nombre.trim().toUpperCase() === guardado)
+    if (!match) return
+    momentoGuardadoRef.current = String(match.id)
+    setMomento((actual) => actual || String(match.id))
+  }, [estudiante?.id, estudiante?.momento, momentos])
+
   const sinAsistencia = estudiante?.fecha == null
-  const puedeGuardar = (Boolean(texto.trim()) || evidencias.length > 0) && !sinAsistencia && !guardando
+  const enlaceLimpio = enlace.trim()
+  const enlaceInvalido = enlaceLimpio !== "" && !ENLACE_VALIDO.test(enlaceLimpio)
+  // Regla 61: archivos o enlace, no los dos.
+  const tieneEnlace = enlaceLimpio !== ""
+  const tieneArchivos = evidencias.length > 0
+  const puedeGuardar =
+    (Boolean(texto.trim()) || tieneArchivos || tieneEnlace) && !enlaceInvalido && !sinAsistencia && !guardando
   const limiteEvidenciasAlcanzado = evidencias.length >= OBSERVACION_EVIDENCIAS_MAX
 
   function handleOpenChange(open: boolean) {
-    if (!open && (texto !== textoGuardadoRef.current || momento !== "")) {
+    if (!open && (texto !== textoGuardadoRef.current || enlace !== enlaceGuardadoRef.current || momento !== momentoGuardadoRef.current)) {
       setConfirmarSalida(true)
       return
     }
     onOpenChange(open)
   }
 
-  function handleSeleccionArchivo(archivo: File | undefined) {
-    if (!archivo) return
-    // El error se muestra dentro de la sección Evidencias, no arriba.
-    const error = validarEvidencia(archivo, evidencias.length)
-    setErrorLocal(error)
-    if (error) return
+  function subirArchivo(archivo: File) {
+    setErrorLocal(null)
+    setDialogo(null)
     onAgregarEvidencia?.(archivo)
   }
 
@@ -359,56 +396,99 @@ export function ObservacionEstudianteSheet({
                   )}
                 </div>
               ))}
-              <Tooltip>
-                {/* El trigger va en un `span`, no en el propio Button: un
-                    <button disabled> nativo no dispara los eventos de hover
-                    que necesita el Tooltip para abrirse. */}
-                <TooltipTrigger render={<span className="inline-flex" />}>
+              {tieneEnlace && !enlaceInvalido && (
+                <div className="group relative">
+                  <EnlaceImagen key={enlaceLimpio} url={enlaceLimpio} className="size-20 object-cover" />
                   <Button
                     type="button"
-                    variant="outline"
-                    color="neutral"
-                    size="icon"
-                    className="size-20 flex-col gap-1 text-xs"
-                    disabled={
-                      !onAgregarEvidencia || sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado
-                    }
-                    onClick={() => inputArchivoRef.current?.click()}
+                    variant="fill"
+                    color="destructive"
+                    size="icon-xs"
+                    className="absolute -top-1.5 -right-1.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label="Quitar el enlace"
+                    onClick={() => setEnlace("")}
                   >
-                    {agregandoEvidencia ? (
-                      <SpinnerIcon className="size-5 animate-spin" />
-                    ) : (
-                      <ImageIcon className="size-5" />
-                    )}
-                    Agregar
+                    <XIcon />
                   </Button>
+                </div>
+              )}
+              <Tooltip>
+                {/* El trigger va en un `span`: un <button disabled> nativo no dispara el hover del Tooltip. */}
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          color="neutral"
+                          size="icon"
+                          className="size-20 flex-col gap-1 text-xs"
+                          disabled={sinAsistencia || agregandoEvidencia || limiteEvidenciasAlcanzado}
+                        />
+                      }
+                    >
+                      {agregandoEvidencia ? (
+                        <SpinnerIcon className="size-5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="size-5" />
+                      )}
+                      Agregar
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="min-w-48">
+                      {/* Regla 61: archivos o enlace, no los dos. */}
+                      <DropdownMenuItem
+                        disabled={!onAgregarEvidencia || tieneEnlace || limiteEvidenciasAlcanzado}
+                        onClick={() => setDialogo("archivo")}
+                      >
+                        <FileUploadOutlinedIcon />
+                        Subir imagen o archivo
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled={tieneArchivos} onClick={() => setDialogo("enlace")}>
+                        <InsertLinkOutlinedIcon />
+                        {tieneEnlace ? "Cambiar enlace" : "Imagen por enlace"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TooltipTrigger>
                 <TooltipContent>
                   {sinAsistencia
                     ? actividadSinComenzar
                       ? "La actividad todavía no comienza: no se puede adjuntar evidencia todavía."
                       : "Sin asistencia registrada todavía no se puede adjuntar evidencia."
-                    : limiteEvidenciasAlcanzado
-                      ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
-                      : `Subir un archivo ${OBSERVACION_EVIDENCIA_TIPOS_LABEL} (máx. ${OBSERVACION_EVIDENCIA_MAX_MB} MB).`}
+                    : tieneArchivos
+                      ? "Archivos adjuntos: quítalos para usar un enlace."
+                      : tieneEnlace
+                        ? "Hay un enlace: quítalo para adjuntar archivos."
+                        : limiteEvidenciasAlcanzado
+                          ? `Máximo ${OBSERVACION_EVIDENCIAS_MAX} evidencias por estudiante.`
+                          : "Subir un archivo o pegar el enlace de una imagen."}
                 </TooltipContent>
               </Tooltip>
-              <input
-                ref={inputArchivoRef}
-                type="file"
-                accept={OBSERVACION_EVIDENCIA_ACCEPT}
-                className="hidden"
-                onChange={(e) => {
-                  const archivo = e.target.files?.[0]
-                  e.target.value = ""
-                  handleSeleccionArchivo(archivo)
-                }}
-              />
             </div>
             <p className="text-xs text-muted-foreground">
               {OBSERVACION_EVIDENCIA_TIPOS_LABEL} · máx. {OBSERVACION_EVIDENCIA_MAX_MB} MB por archivo · hasta{" "}
-              {OBSERVACION_EVIDENCIAS_MAX} archivos
+              {OBSERVACION_EVIDENCIAS_MAX} archivos, o un enlace a una imagen
             </p>
+            {tieneEnlace && enlace !== enlaceGuardadoRef.current && (
+              <p className="text-xs text-muted-foreground">El enlace se guarda al pulsar Guardar.</p>
+            )}
+            <DialogSubirEvidencia
+              open={dialogo === "archivo"}
+              onOpenChange={(open) => !open && setDialogo(null)}
+              cantidadActual={evidencias.length}
+              subiendo={agregandoEvidencia}
+              onSubir={subirArchivo}
+            />
+            <DialogEnlaceEvidencia
+              open={dialogo === "enlace"}
+              onOpenChange={(open) => !open && setDialogo(null)}
+              inicial={enlaceLimpio}
+              onConfirmar={(url) => {
+                setEnlace(url)
+                setDialogo(null)
+              }}
+            />
             {mensajeErrorEvidencia && (
               <p role="alert" className="flex items-start gap-1.5 text-xs text-red">
                 <WarningCircleIcon className="mt-0.5 size-3.5 shrink-0" />
@@ -432,7 +512,11 @@ export function ObservacionEstudianteSheet({
             onClick={() => {
               if (!estudiante) return
               textoGuardadoRef.current = texto
-              onGuardar(estudiante, texto)
+              const enlaceCambio = enlaceLimpio !== enlaceGuardadoRef.current
+              enlaceGuardadoRef.current = enlaceLimpio
+              setEnlace(enlaceLimpio)
+              const momentoNombre = momentos.find((m) => String(m.id) === momento)?.nombre
+              onGuardar(estudiante, texto, enlaceCambio ? enlaceLimpio : undefined, momentoNombre)
             }}
           >
             {guardando ? (

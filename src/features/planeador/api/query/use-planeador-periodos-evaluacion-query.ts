@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/periodos-evaluacion` (confirmado real) — reemplaza a
@@ -65,12 +66,9 @@ async function fetchPeriodosEvaluacionVigentes(): Promise<EvaluationPeriod[]> {
   return rows.filter((row) => row.vigente_hoy).map(toEvaluationPeriod)
 }
 
-export const planeadorPeriodosEvaluacionQueryKey = () =>
-  ["planeador", "periodos-evaluacion"] as const
-
 export function usePlaneadorPeriodosEvaluacionQuery() {
   return useQuery({
-    queryKey: planeadorPeriodosEvaluacionQueryKey(),
+    queryKey: planeadorKeys.periodosEvaluacion(),
     queryFn: fetchPeriodosEvaluacionVigentes,
     staleTime: 1000 * 60,
   })

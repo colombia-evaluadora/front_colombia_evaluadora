@@ -92,6 +92,7 @@ import {
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
 import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -314,7 +315,7 @@ const employeePersonSchema = z
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
     // Formato de cada campo — nombres sin caracteres especiales, documento
-    // de 3 a 10 dígitos, teléfono de hasta 10, correo válido y mayoría de
+    // de 3 a 15 dígitos, teléfono de hasta 10, correo válido y mayoría de
     // edad. Vive en un módulo compartido con rector/secretaria: las dos
     // pantallas dan de alta a la misma clase de persona, y cuando cada una
     // tenía su copia se desincronizaron (institución verificaba el correo y
@@ -617,7 +618,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     permissionsSnapshotRef.current = JSON.stringify(employee.permissions)
     additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
   }
-
 
   // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
   // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
@@ -1122,7 +1122,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
       void queryClient.invalidateQueries({ queryKey: ["employees"] })
-      void queryClient.invalidateQueries({ queryKey: ["assignment-teachers"] })
+      void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
@@ -1579,7 +1579,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                     <TableCell className="font-medium">{permission.order}</TableCell>
                     <TableCell>{permission.role.name}</TableCell>
                     <TableCell>{permission.campus.name}</TableCell>
-                    <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
+                    <TableCell>{permission.workSchedule.name}</TableCell>
                     <TableCell>
                       <Badge {...PERMISSION_STATUS_BADGE[permission.status]}>
                         {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}

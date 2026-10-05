@@ -20,7 +20,7 @@ export function AcademicPeriodsPage() {
             <Button
               color="primary"
               size="sm"
-              render={<Link to={paths.app.periodosAcademicosAgregar.getHref()} />}
+              render={<Link to={paths.app.periodosAcademicosAgregar.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >
               <ControlPointIcon data-icon="inline-start" />

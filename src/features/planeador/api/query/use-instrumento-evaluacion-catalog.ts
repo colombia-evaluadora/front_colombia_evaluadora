@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { InstrumentoPermitido } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // Catálogo global `INSTRUMENTO_EVALUACION` de `TLISTA_VALOR`
 // (`GET /eval-col/select/INSTRUMENTO_EVALUACION`) — resuelve
@@ -28,11 +29,9 @@ async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
   return rows.map((row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre)
 }
 
-export const instrumentoEvaluacionCatalogQueryKey = () => ["instrumento-evaluacion-catalog"]
-
 export function useInstrumentoEvaluacionCatalogQuery() {
   return useQuery({
-    queryKey: instrumentoEvaluacionCatalogQueryKey(),
+    queryKey: planeadorKeys.catalogos.instrumentoEvaluacion(),
     queryFn: fetchInstrumentoEvaluacionCatalog,
     staleTime: Infinity,
   })

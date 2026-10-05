@@ -652,6 +652,8 @@ export const periodosAcademicosRoute = createRoute({
 export const periodosAcademicosAgregarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosAgregar.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: academicPeriodsSearchSchema,
   staticData: {
     breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Agregar" }],
   },
@@ -661,6 +663,8 @@ export const periodosAcademicosAgregarRoute = createRoute({
 export const periodosAcademicosEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosEditar.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: academicPeriodsSearchSchema,
   // El `periodId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Editar" }],
@@ -722,6 +726,8 @@ const REFERENTES_CURRICULARES_CRUMB = {
 export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.gestionAcademicaReferentesCurricularesDetalle.path,
+  // Los filtros y la página de la tabla viajan ida y vuelta.
+  validateSearch: curricularReferencesSearchSchema,
   staticData: {
     breadcrumb: [GESTION_ACADEMICA_CRUMB, REFERENTES_CURRICULARES_CRUMB, { label: "Detalle" }],
   },

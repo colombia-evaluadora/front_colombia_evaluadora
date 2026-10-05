@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/:id/actividades-disponibles` (real, colección
@@ -59,15 +60,12 @@ async function fetchActividadesDisponibles(unidadId: number, search: string): Pr
   return rows.map(toActividadDisponible)
 }
 
-export const unidadActividadesDisponiblesQueryKey = (unidadId: number, search: string) =>
-  ["planeador", "unidad", unidadId, "actividades-disponibles", search] as const
-
 export function useUnidadActividadesDisponiblesQuery(unidadId: number | undefined, search: string) {
   return useQuery({
     queryKey:
       unidadId != null
-        ? unidadActividadesDisponiblesQueryKey(unidadId, search)
-        : (["planeador", "unidad", "none", "actividades-disponibles", search] as const),
+        ? planeadorKeys.unidad.actividadesDisponibles(unidadId, search)
+        : planeadorKeys.unidad.actividadesDisponibles("none", search),
     queryFn: () => fetchActividadesDisponibles(unidadId!, search),
     enabled: unidadId != null,
     placeholderData: (previous) => previous,

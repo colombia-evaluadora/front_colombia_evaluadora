@@ -4,11 +4,11 @@ import { api } from "@/lib/api-client"
 import { postMultipart } from "@/lib/files"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
-import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { resolveTipoAdaptacionId } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { resolveFormatoAdaptacionId } from "@/features/planeador/api/query/use-formato-adaptacion-catalog"
 import { resolveAplicaAId } from "@/features/planeador/api/query/use-aplica-a-catalog"
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface UpdateAdaptacionesInput {
   actividadId: number
@@ -162,7 +162,7 @@ export function useUpdateAdaptacionesActividad({
   return useMutation({
     mutationFn: updateAdaptacionesActividad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: actividadDetalleQueryKey(variables.actividadId) })
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

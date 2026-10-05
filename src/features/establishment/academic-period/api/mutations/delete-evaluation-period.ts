@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface DeleteEvaluationPeriodInput {
   // PK real; el PK es único, así que no hace falta desambiguar por periodo.
@@ -30,7 +31,7 @@ export function useDeleteEvaluationPeriod({
     mutationFn: deleteEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["evaluation-periods"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

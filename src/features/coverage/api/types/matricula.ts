@@ -4,10 +4,26 @@ import type { EducationLevel } from "@/features/coverage/api/types/reservation"
 export type MatriculaStatus = string
 
 export interface MatriculaCampusCatalog {
+  /** Solo nombres: lo que piden los filtros del listado, que filtran por
+   *  nombre en el backend. Para elegir una sede usar `sedes`. */
   campuses: string[]
+  sedes: MatriculaSedeOption[]
+}
+
+/** Una sede elegible: el valor del select es `id`, nunca el nombre, porque
+ *  dos colegios del mismo usuario pueden tener una "Sede principal". */
+export interface MatriculaSedeOption {
+  /** `pk_sede` como texto, que es lo que guarda el formulario. */
+  id: string
+  nombre: string
+  /** El nombre, más el colegio si el usuario tiene sedes en varios. */
+  label: string
+  establecimientoId: number
 }
 
 export interface MatriculaDependentCatalogsRequest {
+  /** La sede por id; si no viene, se busca por `campus` (nombre). */
+  campusId?: string
   campus?: string
   shift?: string
   grade?: number
@@ -93,6 +109,9 @@ export interface MatriculaMutationResult {
 }
 
 export interface MatriculaDetails extends CreateMatriculaInput {
+  /** La sede exacta de la matrícula: de ella sale el colegio cuya
+   *  configuración de campos aplica (el nombre puede repetirse). */
+  sedeId?: number | null
   status: MatriculaStatus
   pkTpadre: number | null
   pkUsuarioEstudiante: number | null
@@ -132,7 +151,11 @@ export interface MatriculaContact {
 }
 
 export interface MatriculaAcademicInfo {
+  /** El nombre de la sede, para mostrarlo. */
   campus: string
+  /** La sede elegida (`pk_sede`): es la que se usa para resolver jornadas,
+   *  grupos y guardar. Opcional solo porque datos viejos traen el nombre. */
+  campusId?: string
   shift: string
   grade: string
   group: string
