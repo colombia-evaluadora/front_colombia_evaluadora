@@ -32,6 +32,11 @@ interface SearchPlaneadorProps {
    *  caller ya resuelve si todas las filas filtradas comparten uno, o cae
    *  al genérico "Actividad". */
   rotuloLabel: string
+  /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para la
+   *  etiqueta del buscador y la opción "Unidad" de "Ver por". Sin él (pestaña
+   *  de Actividades, que mezcla unidades de varios referentes) queda el
+   *  genérico. */
+  rotuloUnidad?: string
 }
 
 /**
@@ -48,6 +53,7 @@ export function SearchPlaneador({
   clearAllFilters,
   instrumentoOptions = [],
   rotuloLabel,
+  rotuloUnidad,
 }: SearchPlaneadorProps) {
   const [open, setOpen] = useState(false)
 
@@ -55,8 +61,15 @@ export function SearchPlaneador({
   // real (Regla 13) — nunca "Actividad" fijo en el token `ver:(...)` de la
   // sintaxis ni en el popover de filtros.
   const viewOptions = useMemo(
-    () => VIEW_OPTIONS.map((o) => (o.value === "actividad" ? { ...o, label: rotuloLabel } : o)),
-    [rotuloLabel],
+    () =>
+      VIEW_OPTIONS.map((o) =>
+        o.value === "actividad"
+          ? { ...o, label: rotuloLabel }
+          : o.value === "unidad" && rotuloUnidad
+            ? { ...o, label: rotuloUnidad }
+            : o,
+      ),
+    [rotuloLabel, rotuloUnidad],
   )
 
   // Ver `@/components/search/query-syntax`: el texto sin clave va a `buscar`
@@ -105,7 +118,7 @@ export function SearchPlaneador({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        label="Buscar por nombre, unidad, estado o instrumento…"
+        label={`Buscar por nombre, ${(rotuloUnidad ?? "unidad").toLowerCase()}, estado o instrumento…`}
         placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}
@@ -122,6 +135,7 @@ export function SearchPlaneador({
           onSubmit={handleApplyAdvanced}
           instrumentoOptions={instrumentoOptions}
           rotuloLabel={rotuloLabel}
+          rotuloUnidad={rotuloUnidad}
         />
       </SearchQueryBar>
     </div>

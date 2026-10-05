@@ -22,6 +22,8 @@ export interface DestinoPlanilla {
   grupoId: number
   asignaturaId: number
   periodoId: number
+  /** "601 / Matemáticas / Segundo periodo": el filtro que muestra la planilla. */
+  etiqueta?: string
 }
 
 interface BannerProps {
@@ -161,7 +163,12 @@ export function PendingChangesBanners({
                   p.actividades === 0
                     ? "sin actividades creadas"
                     : `${p.actividades} actividades sin calificar`,
-                destino: { grupoId: p.grupoId, asignaturaId: p.asignaturaId, periodoId: p.periodoId },
+                destino: {
+                  grupoId: p.grupoId,
+                  asignaturaId: p.asignaturaId,
+                  periodoId: p.periodoId,
+                  etiqueta: `${p.grupoNombre} / ${p.asignaturaNombre} / ${p.periodoNombre}`,
+                },
               }))}
               onIr={onIrAPlanilla}
             />
@@ -197,7 +204,12 @@ export function PendingChangesBanners({
                 asignatura: c.asignaturaNombre,
                 grupo: c.grupoNombre,
                 detalle: `${c.estudiantesAfectados} estudiante${c.estudiantesAfectados === 1 ? "" : "s"}`,
-                destino: { grupoId: c.grupoId, asignaturaId: c.asignaturaId, periodoId: c.periodoId },
+                destino: {
+                  grupoId: c.grupoId,
+                  asignaturaId: c.asignaturaId,
+                  periodoId: c.periodoId,
+                  etiqueta: `${c.grupoNombre} / ${c.asignaturaNombre} / ${c.periodoNombre}`,
+                },
               }))}
               onIr={onIrAPlanilla}
             />

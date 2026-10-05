@@ -14,10 +14,11 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { useRotuloActividadQuery } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import {
   UNIDAD_DRAFT_VACIO,
   UnidadInfoGeneralFields,
@@ -60,7 +61,7 @@ function PlaneadorCrearUnidadPageContent() {
   // Mismo guard de permiso que `planeador-crear-actividad-page.tsx`: sin
   // "crear" en Planeador, redirige al listado apenas se sabe que no hay
   // permiso.
-  const { puedeCrear, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
       navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })
@@ -86,6 +87,14 @@ function PlaneadorCrearUnidadPageContent() {
   // elegido en el form.
   const instrumentoPorGrado = useUnidadInstrumentoLabel(draft.gradoId)
   const instrumento = tabDesdeAgregar?.instrumento ?? instrumentoPorGrado
+  // Rótulo de la actividad (Regla 13) para la pestaña "Actividad" de
+  // `UnidadFormTabs`: en el alta no hay `unidad.rotuloEjecucion`, se
+  // resuelve por el Grado/Asignatura del borrador (mismo criterio que
+  // `UnidadInfoGeneralFields`, misma query cacheada).
+  const { data: rotuloActividad } = useRotuloActividadQuery(
+    draft.gradoId ?? tabDesdeAgregar?.grados[0]?.id,
+    draft.asignaturaId,
+  )
   // El título de la pantalla y su descripción venían fijos en
   // "unidad"/"unidad temática", igual que el resto de textos de acá antes de
   // este cambio. "Crear X" (no "Nuevo/a X") evita tener que concordar
@@ -107,7 +116,8 @@ function PlaneadorCrearUnidadPageContent() {
         // `navigate` deja esta pantalla — un `notify()` acá se perdería con
         // el `NoticeProvider` de esta pantalla al desmontarse.
         queueNotice(mensajeUnidadGuardada("creado", instrumento))
-        navigate({ to: paths.app.planeadorUnidades.getHref() })
+        // `?instrumento=`: vuelve a la misma pestaña (y su miga de pan).
+        navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
       },
       // Antes esto ignoraba el `error` de la mutación y siempre mostraba
       // este mismo texto quemado, así que un 409 por nombre duplicado o un
@@ -130,7 +140,7 @@ function PlaneadorCrearUnidadPageContent() {
               color="neutral"
               size="sm"
               variant="fill"
-              render={<Link to={paths.app.planeadorUnidades.getHref()} />}
+              render={<Link to={paths.app.planeadorUnidades.getHref()} search={{ instrumento }} />}
             >
               Cerrar
             </Button>
@@ -155,11 +165,14 @@ function PlaneadorCrearUnidadPageContent() {
           >
             <UnidadFormTabs
               esFormativo={draft.enfoquePedagogico === "Formativo"}
+              rotuloActividad={rotuloActividad?.rotulo}
+              rotuloUnidad={instrumento}
               infoGeneralContent={
                 <UnidadInfoGeneralFields
                   draft={draft}
                   onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
                   tab={tabDesdeAgregar}
+                  rotuloUnidad={instrumento}
                 />
               }
             />

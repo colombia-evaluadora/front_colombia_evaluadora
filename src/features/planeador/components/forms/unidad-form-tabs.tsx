@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { Rubricas, Actividades } from "@/features/planeador/components/unidad-detalle-panel"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 type UnidadFormTab = "general" | "rubricas" | "actividades"
 
@@ -38,10 +39,18 @@ export function UnidadFormTabs({
   infoGeneralContent,
   unidad,
   esFormativo = false,
+  rotuloActividad,
+  rotuloUnidad,
 }: {
   infoGeneralContent: React.ReactNode
   unidad?: UnidadTematica
   esFormativo?: boolean
+  /** Rótulo de la actividad ya resuelto por Grado/Asignatura del borrador —
+   *  en el alta no hay `unidad.rotuloEjecucion` todavía. */
+  rotuloActividad?: string
+  /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) que ya
+   *  resolvió la página. */
+  rotuloUnidad?: string
 }) {
   const [tab, setTab] = useState<UnidadFormTab>("general")
   const puedeEditarListas = unidad != null
@@ -85,7 +94,7 @@ export function UnidadFormTabs({
                 singular: el texto no es un dato controlado, concatenar "s"
                 a mano rompe con cualquiera que no termine en consonante
                 simple (ver "Actividads"). */}
-            {unidad?.rotuloEjecucion ?? "Actividad"}
+            {unidad?.rotuloEjecucion ?? rotuloActividad ?? ROTULO_ACTIVIDAD_FALLBACK}
           </span>
         </TabsTrigger>
       </TabsList>
@@ -95,12 +104,12 @@ export function UnidadFormTabs({
       </TabsContent>
       {unidad && !esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
-          <Rubricas unidad={unidad} />
+          <Rubricas unidad={unidad} rotuloUnidad={rotuloUnidad} />
         </TabsContent>
       )}
       {unidad && (
         <TabsContent value="actividades" className={PANEL}>
-          <Actividades unidad={unidad} />
+          <Actividades unidad={unidad} rotuloUnidad={rotuloUnidad} />
         </TabsContent>
       )}
     </Tabs>

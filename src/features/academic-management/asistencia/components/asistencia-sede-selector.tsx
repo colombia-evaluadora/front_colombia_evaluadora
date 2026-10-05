@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
@@ -23,7 +24,7 @@ const SCROLL_STEP = 160
 
 
 export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelectorProps) {
-  const { data: sedes, isPending, isError } = useSedesOpcionesQuery()
+  const { data: sedes, isPending, isError, error } = useSedesOpcionesQuery()
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const buttonRefs = React.useRef(new Map<number, HTMLButtonElement>())
   const [canScrollLeft, setCanScrollLeft] = React.useState(false)
@@ -72,7 +73,7 @@ export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelec
   // catálogo y "no tenés ninguna sede" se veían igual que si el selector no
   // existiera. Cada caso dice lo suyo.
   if (isError) {
-    return <p className="text-xs text-red">No se pudo cargar el listado de sedes.</p>
+    return <p className="text-xs text-red">{getErrorMessage(error)}</p>
   }
   if (!sedes || sedes.length === 0) {
     return <p className="text-xs text-muted-foreground">Sin sedes asignadas</p>

@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ import {
 import {
   DotsThreeIcon,
   InboxIcon,
+  WarningCircleIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
   SpinnerIcon,
@@ -54,14 +56,16 @@ import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
+import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
+import {
+  DialogEnviarSolicitud,
+  DialogSolicitudEnviada,
+} from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
+import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
-/** Fallback mientras carga (o si el mock no tiene) el catálogo real
- *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
- *  unidad temática de cada actividad (`PlanillaColumna.unidad`);
- *  "Actividades" las deja sueltas. */
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
   { key: "unidad", label: "Unidad" },
@@ -84,7 +88,7 @@ type VerPorOption = AgrupacionPlanillaKey
  * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
-  const { puedeCrear, puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeCrear, puedeEditar } = usePlaneadorSoloLectura()
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
@@ -92,6 +96,48 @@ export function PlaneadorPlanillaPage() {
   // Estado del "Guardar" que reporta la vista de calificar masivo (null = sin cambios).
   const [estadoGuardarBulk, setEstadoGuardarBulk] = useState<EstadoGuardar | null>(null)
   const guardarBulkRef = useRef<(() => void) | null>(null)
+
+  // Periodo cerrado (estado distinto de "1" Calificable): las notas se
+  // acumulan y se envían juntas; el backend abre la solicitud (Regla 55).
+  const periodoCerrado = filtro != null && filtro.periodoEvaluacion.estado !== "1"
+  const [cambios, setCambios] = useState<Map<number, CambioPendiente>>(new Map())
+  const [confirmando, setConfirmando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [enviada, setEnviada] = useState(false)
+  const { notify } = useNotify()
+  const calificar = useCalificarCeldaMutation()
+
+  function cambiarFiltro(next: FiltroPlanillaValue | null) {
+    setCambios(new Map())
+    setFiltro(next)
+  }
+
+  function agregarCambio(cambio: CambioPendiente) {
+    setCambios((prev) => new Map(prev).set(cambio.input.pkTactividadEstudiante, cambio))
+  }
+
+  async function enviarSolicitud() {
+    setEnviando(true)
+    const pendientes = new Map(cambios)
+    let solicitudes = 0
+    let error: unknown = null
+    for (const [pk, cambio] of cambios) {
+      try {
+        const result = await calificar.mutateAsync(cambio.input)
+        solicitudes += result?.solicitudes_pendientes?.length ?? 0
+        pendientes.delete(pk)
+      } catch (e) {
+        error ??= e
+      }
+    }
+    setCambios(pendientes)
+    setEnviando(false)
+    setConfirmando(false)
+    if (error) notify(getErrorMessage(error), { variant: "error" })
+    // Una primera nota (sin nota previa) se aplica directo, sin solicitud.
+    if (solicitudes > 0) setEnviada(true)
+    else if (pendientes.size < cambios.size) notify("Notas guardadas.")
+  }
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   // El catálogo `AGRUPACION_PLANILLA` etiqueta la opción como "Actividades" a
@@ -107,32 +153,29 @@ export function PlaneadorPlanillaPage() {
   // columnas/calificaciones reales — antes de eso no tiene sentido pegarle
   // al backend adivinando.
   const params = filtro
-    ? { grupoId: filtro.grupoId, asignaturaId: filtro.asignaturaId, gradoId: filtro.gradoId }
+    ? {
+        grupoId: filtro.grupoId,
+        asignaturaId: filtro.asignaturaId,
+        gradoId: filtro.gradoId,
+        periodoId: filtro.periodoEvaluacion.id,
+      }
     : null
 
   const { data: todasLasColumnas = [], isPending: isPendingColumnas } = usePlanillaColumnasQuery(params)
-  const { data: calificacionesResult, isPending: isPendingCalificaciones } =
-    usePlanillaCalificacionesQuery(params)
+  const {
+    data: calificacionesResult,
+    isPending: isPendingCalificaciones,
+    error: errorCalificaciones,
+    refetch: refetchCalificaciones,
+  } = usePlanillaCalificacionesQuery(params)
   const filas = calificacionesResult?.rows ?? []
-  // Ambos endpoints pueden tardar (el de calificaciones resuelve notas de
-  // TODAS las actividades filtradas) -- sin esto, mientras cargan, `filas`
-  // vale [] igual que "sin estudiantes" y la grilla muestra por un momento
-  // el mensaje vacío en vez de un loading.
   const cargandoPlanilla = filtro !== null && (isPendingColumnas || isPendingCalificaciones)
 
   const columnas = useMemo(() => {
     if (!filtro) return []
     const term = buscar.trim().toLowerCase()
     return todasLasColumnas.filter((columna) => {
-      // Solapamiento de rangos `yyyy-MM-dd` contra el periodo elegido —
-      // comparación lexicográfica válida porque todas son ISO del mismo
-      // largo. El endpoint no filtra por periodo, así que se hace acá.
-      if (columna.fechaCierre < filtro.periodoEvaluacion.startDate) return false
-      if (columna.fechaInicio > filtro.periodoEvaluacion.endDate) return false
       if (!term) return true
-      // "Ver por: Unidad" busca por el nombre de la unidad (agrupa por
-      // eso); "Actividades" busca por el título de la actividad — mismo
-      // criterio que el placeholder del buscador.
       const campo = verPor === "unidad" ? (columna.unidad ?? "") : columna.titulo
       return campo.toLowerCase().includes(term)
     })
@@ -148,7 +191,14 @@ export function PlaneadorPlanillaPage() {
     [filas, columnaIds],
   )
 
-  const estudiantesEnBulk = filas.map((fila) => ({
+  // Solo los asignados a la actividad: un no asignado no se califica.
+  const estudiantesEnBulk = filas
+    .filter((fila) => {
+      if (!columnaEnBulk) return true
+      const celda = fila.celdas.find((c) => c.pkTactividad === columnaEnBulk.pkTactividad)
+      return celda != null && celda.estado !== "NO_ASIGNADA"
+    })
+    .map((fila) => ({
     id: fila.pkTestudiante,
     matriculaId: fila.pkTmatricula,
     nombres: fila.nombreEstudiante,
@@ -178,6 +228,12 @@ export function PlaneadorPlanillaPage() {
                   </Button>
                 )
               ) : (
+              <div className="flex gap-2">
+                {puedeEditar && cambios.size > 0 && (
+                  <Button color="primary" size="sm" variant="fill" onClick={() => setConfirmando(true)}>
+                    Guardar
+                  </Button>
+                )}
               <div className="flex gap-0">
                 {puedeCrear && (
                   <Button
@@ -216,11 +272,22 @@ export function PlaneadorPlanillaPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              </div>
               )
             }
           >
             Planilla de calificación
           </TableScreenTitle>
+
+          {periodoCerrado && (
+            <div
+              role="status"
+              className="border-orange-stroke bg-orange-22 text-orange mx-(--screen-spacing) mt-4 flex min-h-8 items-center gap-3 rounded-md border px-4 py-1 text-sm font-semibold"
+            >
+              <WarningCircleIcon className="size-5 shrink-0" />
+              Periodo cerrado
+            </div>
+          )}
 
           <TableScreenToolbar>
             <div className="grid flex-1 gap-4 sm:grid-cols-3">
@@ -258,7 +325,7 @@ export function PlaneadorPlanillaPage() {
 
               <Field variant="outlined">
                 <FieldLabel>Filtro</FieldLabel>
-                <FiltroPlanillaCascada value={filtro} onChange={setFiltro} />
+                <FiltroPlanillaCascada value={filtro} onChange={cambiarFiltro} />
               </Field>
             </div>
           </TableScreenToolbar>
@@ -278,13 +345,25 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !cargandoPlanilla && (
+          {/* Sin esto un error se veía como "sin estudiantes asignados". */}
+          {filtro && !columnaEnBulk && !cargandoPlanilla && errorCalificaciones && (
+            <div className="flex flex-col items-center gap-2 py-24 text-center">
+              <p className="text-red text-sm">{getErrorMessage(errorCalificaciones)}</p>
+              <Button variant="outline" color="neutral" size="sm" onClick={() => refetchCalificaciones()}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          {filtro && !columnaEnBulk && !cargandoPlanilla && !errorCalificaciones && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
               gradoId={filtro.gradoId}
+              cambios={periodoCerrado ? cambios : undefined}
+              onCambio={periodoCerrado ? agregarCambio : undefined}
             />
           )}
 
@@ -301,6 +380,14 @@ export function PlaneadorPlanillaPage() {
           )}
         </TableScreenBody>
       </TableScreen>
+
+      <DialogEnviarSolicitud
+        open={confirmando}
+        enviando={enviando}
+        onEnviar={enviarSolicitud}
+        onCancelar={() => setConfirmando(false)}
+      />
+      <DialogSolicitudEnviada open={enviada} onCerrar={() => setEnviada(false)} />
     </NoticeProvider>
   )
 }

@@ -387,7 +387,7 @@ const AXIOS_GENERICO = /^(request failed with status code \d+|network error|time
 const POR_STATUS: Record<number, string> = {
   400: "El servidor rechazó los datos enviados. Revisa los campos del formulario.",
   401: "Tu sesión no es válida. Vuelve a iniciar sesión.",
-  403: "No tienes permisos para realizar esta acción.",
+  403: "El usuario no tiene permisos.",
   404: "No se encontró el recurso solicitado.",
   409: "Ya existe un registro con esos datos.",
   413: "El archivo es demasiado grande.",

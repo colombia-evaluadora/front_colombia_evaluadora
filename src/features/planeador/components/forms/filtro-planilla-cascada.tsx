@@ -59,23 +59,13 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
   const [asignaturaIdDraft, setAsignaturaIdDraft] = useState<number | null>(
     value?.asignaturaId ?? null,
   )
-  // Borrador de la última columna (rango de fechas), separado de `value`
-  // por el mismo motivo que las tres anteriores: sin esto, el resaltado de
-  // "seleccionado" quedaba pegado al periodo del filtro YA aplicado, así
-  // que cambiar de asignatura (sin tocar todavía el periodo) lo mostraba
-  // como elegido para la asignatura NUEVA aunque nunca se hubiera
-  // confirmado — el usuario no veía necesidad de volver a clickearlo, y
-  // como `onChange` solo dispara con ese click, el filtro real nunca se
-  // actualizaba y la búsqueda se quedaba con los resultados de antes.
   const [periodoIdDraft, setPeriodoIdDraft] = useState<number | null>(
     value?.periodoEvaluacion.id ?? null,
   )
 
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
-  // El backend ya filtra por vigencia (`vigente_hoy`) — no hace falta
-  // repetir la comparación de fechas acá.
-  const { data: periodosVigentes = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const { data: periodos = [] } = usePlaneadorPeriodosEvaluacionQuery()
 
   // La columna Grado sale de `docentes/grado-asignatura` (grado↔asignatura
   // que dicta el docente), no de `docentes/grupos`: son dos universos
@@ -106,8 +96,6 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
-      // Vuelve al último filtro aplicado — un cierre a mitad de camino no
-      // debe dejar el borrador a la vista la próxima vez que se abre.
       setGradoIdDraft(value?.gradoId ?? null)
       setGrupoIdDraft(value?.grupoId ?? null)
       setAsignaturaIdDraft(value?.asignaturaId ?? null)
@@ -143,9 +131,6 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
       gradoId: grado.id,
       gradoNombre: grado.nombre,
       grupoId: grupo.grupoId,
-      // `grupo_codigo` viene `null` en los datos reales (confirmado contra
-      // el backend) — `grupo_nombre` es el que sí trae valor ("01", "302",
-      // …), así que se prioriza acá en vez de mostrar un código vacío.
       grupoCodigo: grupoLabel(grupo),
       asignaturaId: asignatura.asignaturaId,
       asignaturaNombre: asignatura.asignaturaNombre,
@@ -212,13 +197,13 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
 
         {gradoIdDraft != null && grupoIdDraft != null && asignaturaIdDraft != null && (
           <FiltroColumna
-            items={periodosVigentes.map((periodo) => ({
+            items={periodos.map((periodo) => ({
               key: periodo.id,
-              label: `${formatDate(periodo.startDate)} | ${formatDate(periodo.endDate)}`,
+              label: `${periodo.nombre}: ${formatDate(periodo.startDate)} | ${formatDate(periodo.endDate)}`,
             }))}
             selectedKey={periodoIdDraft}
             onSelect={(key) => {
-              const periodo = periodosVigentes.find((p) => p.id === key)
+              const periodo = periodos.find((p) => p.id === key)
               if (periodo) elegirPeriodo(periodo)
             }}
             showCaret={false}
@@ -234,14 +219,10 @@ export interface FiltroColumnaProps<T extends string | number> {
   items: { key: T; label: string }[]
   selectedKey: T | null
   onSelect: (key: T) => void
-  /** La última columna (rango de fechas) no encadena nada más — sin flecha. */
   showCaret?: boolean
   className?: string
 }
 
-/** Exportada para que otras cascadas Grado→Grupo→Asignatura→algo (ej.
- *  `ActividadRecuperarCascada`) reusen la misma columna en vez de duplicar
- *  este `<ul>`. */
 export function FiltroColumna<T extends string | number>({
   items,
   selectedKey,
@@ -251,10 +232,6 @@ export function FiltroColumna<T extends string | number>({
 }: FiltroColumnaProps<T>) {
   return (
     <ul className={cn("min-w-40 border-r py-1", className)}>
-      {/* Sin esto, un docente sin nada asignado en este nivel de la cascada
-          (ej. sin grados) abría una columna completamente en blanco —
-          mismo criterio que el `__none__`/"No tienes X asignados" de los
-          `<Select>` de grado/asignatura en `form-unidad-info-general.tsx`. */}
       {items.length === 0 && (
         <li className="text-muted-foreground px-3 py-2 text-sm whitespace-nowrap">Sin opciones</li>
       )}

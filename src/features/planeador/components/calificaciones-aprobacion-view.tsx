@@ -25,7 +25,7 @@ import {
   resolverInstrumentoEfectivo,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields";
 import type { Actividad } from "@/features/planeador/api/types/actividad";
-import type { NotaCriterio } from "@/features/planeador/api/types/calificacion";
+import { bloqueoCalificar, type NotaCriterio } from "@/features/planeador/api/types/calificacion";
 import { planeadorKeys } from "@/features/planeador/api/query-keys";
 
 interface CalificacionesAprobacionViewProps {
@@ -39,6 +39,7 @@ export function CalificacionesAprobacionView({
     data: calificaciones = [],
     isPending,
     isError,
+    error,
     refetch,
   } = useCalificacionesQuery(actividad.id, actividad.fechaInicio);
   const { data: instrumento, isPending: isPendingInstrumento } =
@@ -48,15 +49,23 @@ export function CalificacionesAprobacionView({
   const queryClient = useQueryClient();
   const { notify } = useNotify();
 
-  const [seleccionados, setSeleccionados] = useState<Set<number>>(() => {
-    if (calificaciones.length === 0) return new Set();
-    return new Set(calificaciones.map((c) => c.id));
-  });
+  // No presentó, No asistió o sin asistencia no entran al lote (como en la planilla).
+  const bloqueos = new Map<number, string>();
+  for (const c of calificaciones) {
+    const motivo = bloqueoCalificar(c);
+    if (motivo) bloqueos.set(c.id, motivo);
+  }
+  const habilitados = () =>
+    calificaciones.filter((c) => !bloqueos.has(c.id)).map((c) => c.id);
+
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(
+    () => new Set(habilitados()),
+  );
   // Se re-sincroniza cuando llegan las calificaciones y todavía no se tocó
   // nada (caso "todos" → marcar todos por default).
   const [inicializado, setInicializado] = useState(false);
   if (!inicializado && calificaciones.length > 0) {
-    setSeleccionados(new Set(calificaciones.map((c) => c.id)));
+    setSeleccionados(new Set(habilitados()));
     setInicializado(true);
   }
 
@@ -88,13 +97,15 @@ export function CalificacionesAprobacionView({
   const efectivoBulk = resolverInstrumentoEfectivo(instrumento);
   const escalaSinBulk = instrumentoSinBulk(efectivoBulk);
 
+  const efectivos = [...seleccionados].filter((id) => !bloqueos.has(id));
+
   async function guardarCalificacionBulk() {
     if (!instrumento) return;
     const inputs = buildBulkInputs(
       instrumento,
       nota,
       actividad.id,
-      [...seleccionados],
+      efectivos,
       actividad.fechaInicio,
     );
     if (inputs.length === 0) return;
@@ -127,7 +138,7 @@ export function CalificacionesAprobacionView({
     return (
       <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
         <p className="text-red text-sm">
-          Ocurrió un error al cargar los estudiantes.
+          {getErrorMessage(error)}
         </p>
         <Button
           variant="outline"
@@ -200,19 +211,31 @@ export function CalificacionesAprobacionView({
         {filtrados.map((estudiante) => {
           const nombreCompleto =
             `${estudiante.nombres} ${estudiante.apellidos}`.trim();
+          const motivo = bloqueos.get(estudiante.id);
           return (
             <li
               key={estudiante.id}
+              title={motivo}
               className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
             >
               <Checkbox
-                checked={seleccionados.has(estudiante.id)}
+                checked={!motivo && seleccionados.has(estudiante.id)}
+                disabled={Boolean(motivo)}
                 onCheckedChange={() => toggle(estudiante.id)}
                 aria-label={`Aprobar a ${nombreCompleto}`}
               />
-              <span className="min-w-0 flex-1 font-medium uppercase">
+              <span
+                className={
+                  motivo
+                    ? "text-muted-foreground min-w-0 flex-1 font-medium uppercase"
+                    : "min-w-0 flex-1 font-medium uppercase"
+                }
+              >
                 {nombreCompleto}
               </span>
+              {motivo && (
+                <span className="text-muted-foreground text-xs">{motivo}</span>
+              )}
             </li>
           );
         })}
@@ -230,7 +253,7 @@ export function CalificacionesAprobacionView({
               color="primary"
               size="sm"
               disabled={
-                seleccionados.size === 0 ||
+                efectivos.length === 0 ||
                 !completitud.completo ||
                 guardando ||
                 escalaSinBulk
