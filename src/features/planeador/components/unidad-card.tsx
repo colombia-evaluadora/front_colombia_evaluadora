@@ -12,7 +12,7 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 interface UnidadCardProps {
   unidad: UnidadTematica
@@ -46,7 +46,7 @@ export function UnidadCard({
 }: UnidadCardProps) {
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeEditar } = usePlaneadorSoloLectura()
 
   return (
     <article
