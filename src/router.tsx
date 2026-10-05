@@ -38,6 +38,7 @@ import {
   planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
   planeadorUnidadCrearSearchSchema,
+  planeadorUnidadEditarSearchSchema,
   planeadorUnidadesSearchSchema,
 } from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
@@ -757,11 +758,18 @@ export const planeadorActividadCrearRoute = createRoute({
   component: PlaneadorCrearActividadPage,
 })
 
+// La miga del medio es el rótulo de la pestaña de Unidades ("Unidad
+// temática"/"Proyecto pedagógico"/…, ver `planeador-tabs.tsx`), que viaja
+// en `?instrumento=` — sin él (entrada directa por URL) cae al genérico.
+const unidadesCrumb = (search: Record<string, unknown>) => ({
+  label: typeof search.instrumento === "string" && search.instrumento ? search.instrumento : "Unidad temática",
+})
+
 export const planeadorUnidadesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidades.path,
   validateSearch: planeadorUnidadesSearchSchema,
-  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }] },
+  staticData: { breadcrumb: (_params, search) => [PLANEADOR_CRUMB, unidadesCrumb(search)] },
   component: PlaneadorUnidadesPage,
 })
 
@@ -769,15 +777,18 @@ export const planeadorUnidadCrearRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidadCrear.path,
   validateSearch: planeadorUnidadCrearSearchSchema,
-  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Agregar" }] },
+  staticData: {
+    breadcrumb: (_params, search) => [PLANEADOR_CRUMB, unidadesCrumb(search), { label: "Agregar" }],
+  },
   component: PlaneadorCrearUnidadPage,
 })
 
 export const planeadorUnidadEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidadEditar.path,
+  validateSearch: planeadorUnidadEditarSearchSchema,
   staticData: {
-    breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Editar" }],
+    breadcrumb: (_params, search) => [PLANEADOR_CRUMB, unidadesCrumb(search), { label: "Editar" }],
   },
   component: PlaneadorEditarUnidadPage,
 })

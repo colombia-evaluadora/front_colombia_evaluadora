@@ -24,6 +24,13 @@ import { UnidadCard } from "@/features/planeador/components/unidad-card"
 import { UnidadDetallePanel } from "@/features/planeador/components/unidad-detalle-panel"
 import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import {
+  articuloIndefinidoRotulo,
+  deArticuloRotulo,
+  pluralizarRotulo,
+  terminacionRotulo,
+} from "@/features/planeador/lib/rotulo-gramatica"
 
 import { planeadorUnidadesRoute } from "@/router"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -66,7 +73,14 @@ export function PlaneadorUnidadesPage() {
   // temática" en Primaria, "Proyecto pedagógico" en Preescolar, ver
   // `planeador-tabs.tsx`), así que el botón usa el mismo nombre que la
   // pestaña activa en vez de "unidad" fijo.
-  const tabLabel = (tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? "Unidad temática").toLowerCase()
+  //
+  // `rotuloUnidad` conserva la mayúscula original (cards, panel y buscador
+  // lo reciben así); `tabLabel` es la versión en minúscula para embeberla a
+  // mitad de frase.
+  const rotuloUnidad = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? UNIDAD_TAB_FALLBACK
+  const tabLabel = rotuloUnidad.toLowerCase()
+  const tabLabelPlural = pluralizarRotulo(tabLabel)
+  const exportarLabel = `Exportar ${tabLabelPlural} filtrad${terminacionRotulo(rotuloUnidad)}s`
   // Mismo instrumento que decide el rótulo del botón, para que
   // `planeador-crear-unidad-page.tsx` sepa desde el primer render (sin
   // esperar a que el docente elija un Grado) qué instrumento está creando y
@@ -118,6 +132,7 @@ export function PlaneadorUnidadesPage() {
               applyFilters={applyFilters}
               clearAllFilters={clearAllFilters}
               rotuloLabel={rotuloLabel}
+              rotuloUnidad={rotuloUnidad}
             />
             {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
               con su "…" van pegados como un control partido y el exportar va
@@ -153,13 +168,13 @@ export function PlaneadorUnidadesPage() {
                       color="muted"
                       size="icon-sm"
                       disabled
-                      aria-label="Exportar unidades filtradas"
+                      aria-label={exportarLabel}
                     />
                   }
                 >
                   <FileDownloadOutlinedIcon />
                 </TooltipTrigger>
-                <TooltipContent>Exportar unidades filtradas</TooltipContent>
+                <TooltipContent>{exportarLabel}</TooltipContent>
               </Tooltip>
             </TableScreenActions>
           </TableScreenToolbar>
@@ -175,7 +190,7 @@ export function PlaneadorUnidadesPage() {
               el contenido se saca del flujo desde `md` para que la altura de
               la fila la fije la columna derecha y la lista scrollee por dentro
               en vez de estirar la página. */}
-            <section aria-label="Listado de unidades temáticas" className="relative min-h-0">
+            <section aria-label={`Listado de ${tabLabelPlural}`} className="relative min-h-0">
               <div className="flex flex-col gap-3 md:absolute md:inset-0">
                 <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
                   {isPending && (
@@ -205,11 +220,16 @@ export function PlaneadorUnidadesPage() {
                         <li key={unidad.id}>
                           <UnidadCard
                             unidad={unidad}
+                            rotuloUnidad={rotuloUnidad}
                             selected={String(unidad.id) === unidadId}
                             onSelect={() => setUnidadId(String(unidad.id))}
                             onEdit={() =>
                               navigate({
                                 to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
+                                // Viaja para la miga de pan de la edición
+                                // (`planeadorUnidadEditarRoute`), que no
+                                // tiene de dónde más sacar el rótulo.
+                                search: { instrumento: rotuloUnidad },
                               })
                             }
                             // Si la unidad borrada era la abierta en el panel,
@@ -238,12 +258,13 @@ export function PlaneadorUnidadesPage() {
               libre arrastraría el alto de la fila —y con él el del rail, que
               se mide contra esa misma fila. */}
             <section
-              aria-label="Detalle de la unidad temática"
+              aria-label={`Detalle ${deArticuloRotulo(rotuloUnidad)} ${tabLabel}`}
               className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"
             >
               {unidadId ? (
                 <UnidadDetallePanel
                   unidadId={unidadId}
+                  rotuloUnidad={rotuloUnidad}
                   onDeleted={() =>
                     navigate({
                       to: planeadorUnidadesRoute.id,
@@ -254,7 +275,7 @@ export function PlaneadorUnidadesPage() {
                 />
               ) : (
                 <div className="text-muted-foreground flex h-full items-center justify-center rounded-md border p-6 text-sm">
-                  Seleccioná una unidad para ver su detalle.
+                  Seleccioná {articuloIndefinidoRotulo(rotuloUnidad)} {tabLabel} para ver su detalle.
                 </div>
               )}
             </section>

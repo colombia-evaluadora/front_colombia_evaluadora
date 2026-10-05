@@ -26,12 +26,19 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import {
   articuloDefinido,
-  useUnidadInstrumentoLabel,
+  useRotuloUnidad,
 } from "@/features/planeador/lib/unidad-instrumento-label"
-import { rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { pluralizarRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 interface DialogDeleteUnidadProps {
-  unidad: Pick<UnidadTematica, "id" | "nombre" | "gradoId">
+  unidad: Pick<UnidadTematica, "id" | "nombre" | "gradoId" | "rotuloEjecucion">
+  /** Rótulo de la unidad ya resuelto por el caller (las cards del listado
+   *  lo reciben de la página). Sin él, se resuelve acá con `useRotuloUnidad`. */
+  rotuloUnidad?: string
   /** Además del toast, el panel reacciona (reselecciona otra unidad en el
    *  rail) cuando el delete (o la cesión) termina OK — la unidad abierta ya
    *  no le pertenece a este docente. */
@@ -58,20 +65,25 @@ interface DialogDeleteUnidadProps {
  * elegido sea apto (ya usa la unidad o dicta su grado+asignatura) — acá no
  * se replica esa regla, solo se muestra su error si el elegido no califica.
  */
-export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDeleteUnidadProps) {
+export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerProps }: DialogDeleteUnidadProps) {
   const [open, setOpen] = useState(false)
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
   const [cederSearch, setCederSearch] = useState("")
   const { notify } = useNotify()
 
   // Rótulo real de la pestaña de ESTA unidad ("Unidad temática"/"Proyecto
-  // pedagógico"/…), resuelto por grado igual que el resto de las pantallas
-  // de Unidades — nunca "unidad temática" fijo. Ojo: `unidad.instrumento` es
-  // un campo homónimo pero DISTINTO (Instrumento de evaluación: Rúbrica/
-  // Lista de cotejo/Escala), no sirve acá.
-  const instrumentoLabel = useUnidadInstrumentoLabel(unidad.gradoId)
+  // pedagógico"/…), por su referente real (`useRotuloUnidad`) salvo que el
+  // caller ya lo haya resuelto — nunca "unidad temática" fijo. Ojo:
+  // `unidad.instrumento` es un campo homónimo pero DISTINTO (Instrumento de
+  // evaluación: Rúbrica/Lista de cotejo/Escala), no sirve acá.
+  const instrumentoLabel = useRotuloUnidad(unidad, rotuloUnidad)
   const instrumentoLower = rotuloEnMinuscula(instrumentoLabel)
   const articulo = articuloDefinido(instrumentoLabel)
+  // Rótulo de la actividad (Regla 13) para "sus criterios y actividades
+  // vinculadas" — en plural concordado (`pluralizarRotulo`).
+  const rotuloActividad = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
+  const actividadesLower = pluralizarRotulo(rotuloEnMinuscula(rotuloActividad))
+  const vinculadas = `vinculad${terminacionRotulo(rotuloActividad)}s`
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -155,7 +167,9 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
         {conflictMessage ? (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>No se puede eliminar {instrumentoLower}</AlertDialogTitle>
+              <AlertDialogTitle>
+                No se puede eliminar {articulo} {instrumentoLower}
+              </AlertDialogTitle>
               <AlertDialogDescription render={<div className="flex flex-col gap-3 text-left" />}>
                 <div className="border-red-stroke bg-red-22 text-red rounded-md border p-3 text-sm">
                   {conflictMessage}
@@ -217,8 +231,8 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
               <AlertDialogTitle>Eliminar {instrumentoLower}</AlertDialogTitle>
               <AlertDialogDescription>
                 Se eliminará permanentemente {articulo === "el" ? "el" : "la"} {instrumentoLower} &ldquo;
-                {unidad.nombre}&rdquo;, junto con sus criterios y actividades vinculadas. Esta acción no
-                se puede deshacer.
+                {unidad.nombre}&rdquo;, junto con sus criterios y {actividadesLower} {vinculadas}. Esta
+                acción no se puede deshacer.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

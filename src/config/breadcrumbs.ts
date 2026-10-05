@@ -5,7 +5,12 @@ export interface Crumb {
   to?: string
 }
 
-export type BreadcrumbSpec = Crumb[] | ((params: Record<string, string>) => Crumb[])
+/** La función recibe también el search de la ruta: hay migas cuyo texto
+ *  depende de un search param y no de un segmento del path (p. ej. el
+ *  rótulo de la pestaña de Unidades del Planeador, `?instrumento=`). */
+export type BreadcrumbSpec =
+  | Crumb[]
+  | ((params: Record<string, string>, search: Record<string, unknown>) => Crumb[])
 
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
@@ -15,6 +20,7 @@ declare module "@tanstack/react-router" {
 
 interface BreadcrumbMatch {
   params: unknown
+  search?: unknown
   staticData: { breadcrumb?: BreadcrumbSpec }
 }
 
@@ -24,7 +30,9 @@ export function resolveBreadcrumbTrail(matches: readonly BreadcrumbMatch[]): Cru
 
   if (!spec) return []
 
-  return typeof spec === "function" ? spec((match.params ?? {}) as Record<string, string>) : spec
+  return typeof spec === "function"
+    ? spec((match.params ?? {}) as Record<string, string>, (match.search ?? {}) as Record<string, unknown>)
+    : spec
 }
 
 export function humanizeSlug(slug: string): string {
