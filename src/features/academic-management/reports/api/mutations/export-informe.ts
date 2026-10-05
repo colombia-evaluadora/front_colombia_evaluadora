@@ -4,18 +4,6 @@ import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/academic-management/reports/api/types/export"
 
-/**
- * Dos descargas distintas, y la diferencia es toda la gracia.
- *
- * El BOLETÍN (`/reportes/boletin-preescolar`) no es la tabla en otro formato:
- * es un PDF armado aparte, un boletín por estudiante con foto, evidencias y
- * fondo institucional — ver `boletin-preescolar.md`. Es de un único período y
- * acepta varios estudiantes: salen en un solo documento, uno detrás de otro.
- *
- * El DESCARGAR (`/reportes/informes-tabla`) no filtra nada: es la tabla como
- * se está viendo, con la búsqueda aplicada, y cada número viene dicho con
- * todas las letras en la columna Estado.
- */
 
 interface ExportBoletinInput {
   grupoId: number
@@ -23,11 +11,14 @@ interface ExportBoletinInput {
   periodoId: number
   /** Uno o varios: van todos en el mismo PDF. */
   matriculaIds: number[]
+  /** Elige la plantilla: preescolar (cualitativo) o notas. */
+  esPreescolar: boolean
 }
 
 async function exportBoletin(input: ExportBoletinInput): Promise<ExportResult> {
-  const result = await downloadReport("boletin-preescolar", {
+  const result = await downloadReport("boletin", {
     format: "pdf",
+    params: { nivel: input.esPreescolar ? "preescolar" : "primaria" },
     filters: {
       FK_TGRUPO: input.grupoId,
       FK_TPERIODO_EVALUACION: input.periodoId,
