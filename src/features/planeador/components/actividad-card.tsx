@@ -19,7 +19,7 @@ import { useExportarActividadesJson } from "@/features/planeador/api/mutations/e
 import { downloadJson } from "@/features/planeador/lib/download-json"
 
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 type AccionId = "editar" | "marcar" | "aprobar"
 
@@ -114,7 +114,7 @@ export function ActividadCard({
   const StatusIcon = statusIconFor(actividad.status)
   const accent = statusAccentFor(actividad.status)
   const { notify } = useNotify()
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeEditar, soloLectura } = usePlaneadorSoloLectura()
 
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
@@ -146,6 +146,8 @@ export function ActividadCard({
     (accion) => accion.id !== "aprobar" || (actividad.esEvaluativa && !esActividadFormativa(actividad)),
   )
     .filter((accion) => accion.id !== "editar" || puedeEditar)
+    // En solo lectura (Coordinador) tampoco se califica: sin Marcar/Aprobar.
+    .filter((accion) => !soloLectura || accion.id === "editar")
     .map((accion) => {
       const label = labelFor(accion.id)
       if (accion.id === "editar" && onEdit) return { ...accion, label, onClick: onEdit }

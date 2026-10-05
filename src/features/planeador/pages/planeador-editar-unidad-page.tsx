@@ -42,7 +42,7 @@ import {
   mensajeUnidadGuardada,
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 /** Actividades vinculadas sin peso capturado para el método de cálculo
  *  destino — "Ponderado" mira `ponderacion`, "Suma de puntos" mira
@@ -119,7 +119,7 @@ function EditarUnidadPageContent({
   // "editar" en Planeador, redirige al listado apenas se sabe que no hay
   // permiso.
   const navigate = useNavigate()
-  const { puedeEditar, isLoading: isLoadingPermiso } = useMenuPermission("PLANEADOR")
+  const { puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeEditar) {
       navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })

@@ -51,7 +51,7 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   formatDate,
   parseLocalDate,
@@ -80,7 +80,7 @@ function PlaneadorPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
-  const { puedeCrear } = useMenuPermission("PLANEADOR")
+  const { puedeCrear } = usePlaneadorSoloLectura()
 
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`.
@@ -611,18 +611,23 @@ function PlaneadorPageContent() {
                   // Actividad con ESE día como fecha de inicio Y cierre —
                   // el docente puede cambiarlas después, es solo un punto
                   // de partida (mismo criterio que `unidadId` en
-                  // `planeadorActividadCrearSearchSchema`).
-                  onDayClick={(date) => {
-                    const fecha = toDateOnly(date)
-                    navigate({
-                      to: paths.app.planeadorActividadCrear.getHref(),
-                      search: {
-                        fechaInicio: fecha,
-                        fechaCierre: fecha,
-                        rotulo: tabActiva?.rotulo,
-                      },
-                    })
-                  }}
+                  // `planeadorActividadCrearSearchSchema`). Sin permiso de
+                  // crear (p. ej. el Coordinador) el día no es clickeable.
+                  onDayClick={
+                    puedeCrear
+                      ? (date) => {
+                          const fecha = toDateOnly(date)
+                          navigate({
+                            to: paths.app.planeadorActividadCrear.getHref(),
+                            search: {
+                              fechaInicio: fecha,
+                              fechaCierre: fecha,
+                              rotulo: tabActiva?.rotulo,
+                            },
+                          })
+                        }
+                      : undefined
+                  }
                   // Click en una actividad ya listada en la celda: abre ESA
                   // actividad (mismo panel que `onSelect` de la fila en la
                   // lista, más arriba) en vez de crear una nueva en esa

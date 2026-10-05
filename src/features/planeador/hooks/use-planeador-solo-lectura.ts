@@ -7,7 +7,13 @@ const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
 const ROLES_QUE_PLANEAN = ["CEVAL-DOCENTE", "CEVAL-SUPER_ADMINISTRADOR"]
 
 /**
- * ¿El usuario ve las actividades del Planeador en solo lectura?
+ * Permisos EFECTIVOS del usuario sobre el Planeador. Todo el feature los lee
+ * de acá y no de `useMenuPermission("PLANEADOR")` directo: en solo lectura
+ * crear/editar/eliminar quedan en `false` aunque el menú los conceda, y las
+ * acciones que modifican (lápiz, papelera, agregar, calificar…) directamente
+ * no se renderizan.
+ *
+ * ¿Cuándo es solo lectura?
  *
  * Dos caminos, porque el primero solo no alcanzó en testv2:
  * 1. Sin `puedeEditar` sobre el menú PLANEADOR (rol con "Solo lectura").
@@ -23,8 +29,13 @@ export function usePlaneadorSoloLectura() {
   const roles = user?.roles ?? []
   const soloCoordina =
     roles.includes(COORDINADOR_ROLE) && !ROLES_QUE_PLANEAN.some((rol) => roles.includes(rol))
+  const soloLectura = !permiso.puedeEditar || soloCoordina
   return {
-    ...permiso,
-    soloLectura: !permiso.puedeEditar || soloCoordina,
+    puedeVer: permiso.puedeVer || (soloCoordina && permiso.puedeEditar),
+    puedeCrear: permiso.puedeCrear && !soloCoordina,
+    puedeEditar: permiso.puedeEditar && !soloCoordina,
+    puedeEliminar: permiso.puedeEliminar && !soloCoordina,
+    isLoading: permiso.isLoading,
+    soloLectura,
   }
 }

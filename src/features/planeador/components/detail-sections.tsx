@@ -23,7 +23,7 @@ import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   EnunciadosEvidenciasChecklist,
   UnidadFicha,
@@ -477,7 +477,7 @@ function UnidadFichaYEvidenciasDetalle({
 }) {
   const navigate = useNavigate()
   const { notify } = useNotify()
-  const { puedeEditar } = useMenuPermission("PLANEADOR")
+  const { puedeEditar } = usePlaneadorSoloLectura()
   const { data: unidad } = useUnidadDetalleQuery(actividad.unidad.id)
   // Mismo criterio que `UnidadFichaYEvidencias` en `form-editar-actividad.tsx`:
   // el árbol de enunciados (ya acotado a los que la UNIDAD relacionó) +

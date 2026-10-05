@@ -76,11 +76,11 @@ export function ActividadDetallePanel({
   onShowApproval,
 }: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
-  const { puedeEditar: puedeEditarMenu, puedeVer, soloLectura } = usePlaneadorSoloLectura()
+  const { puedeEditar, puedeVer, soloLectura } = usePlaneadorSoloLectura()
   // En solo lectura (Coordinador): el mismo link abre la actividad completa
-  // sin poder editarla (ver `PlaneadorEditarActividadPage`).
-  const puedeEditar = puedeEditarMenu && !soloLectura
-  const accionEditar = puedeEditar ? "Editar" : puedeVer || puedeEditarMenu ? "Ver" : null
+  // sin poder editarla (ver `PlaneadorEditarActividadPage`), y no se
+  // muestran las acciones que modifican (calificar, eliminar).
+  const accionEditar = puedeEditar ? "Editar" : puedeVer ? "Ver" : null
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -148,6 +148,7 @@ export function ActividadDetallePanel({
           )}
           {ACCIONES.filter(
             (a) =>
+              !soloLectura &&
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
               // observación + asistencia de a un estudiante por vez.
               a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad),
