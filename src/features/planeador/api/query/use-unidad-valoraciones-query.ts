@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/unidades/:id/valoraciones` (confirmado real, colección
@@ -75,15 +76,12 @@ async function fetchUnidadValoraciones(unidadId: number): Promise<UnidadValoraci
   return rows.map(toUnidadValoracion)
 }
 
-export const unidadValoracionesQueryKey = (unidadId: number) =>
-  ["planeador", "unidad", unidadId, "valoraciones"] as const
-
 export function useUnidadValoracionesQuery(unidadId: number | undefined) {
   return useQuery({
     queryKey:
       unidadId != null
-        ? unidadValoracionesQueryKey(unidadId)
-        : (["planeador", "unidad", "none", "valoraciones"] as const),
+        ? planeadorKeys.unidad.valoraciones(unidadId)
+        : planeadorKeys.unidad.valoraciones("none"),
     queryFn: () => fetchUnidadValoraciones(unidadId!),
     enabled: unidadId != null,
     staleTime: 1000 * 60,

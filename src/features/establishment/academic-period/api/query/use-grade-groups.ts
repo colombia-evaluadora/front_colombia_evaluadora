@@ -6,6 +6,7 @@ import type {
   GradeGroupsQueryRequest,
   GradeGroupsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/grade-group"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseGradeGroupsQueryParams {
   filters: GradeGroupsQueryRequest["filters"]
@@ -76,14 +77,9 @@ async function fetchGradeGroups(
   return { rows, pageCount, totalCount }
 }
 
-export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => {
-  const { enabled: _enabled, ...key } = params
-  return ["grade-groups", key]
-}
-
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
   return useQuery({
-    queryKey: gradeGroupsQueryKey(params),
+    queryKey: academicPeriodKeys.gradeGroups.list(params),
     queryFn: () => fetchGradeGroups(params),
     placeholderData: (previous) => previous,
     enabled: params.enabled ?? true,

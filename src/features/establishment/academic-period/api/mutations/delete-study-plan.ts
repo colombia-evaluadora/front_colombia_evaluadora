@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/study-plan"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `PUT /eval-col/plan-asignaturas/:ID/eliminar` (`fn_plan_eliminar`,
 // id_query 74 — PUT desde V68).
@@ -20,10 +21,10 @@ export function useDeleteStudyPlanItem({ mutationConfig }: UseDeleteStudyPlanIte
     mutationFn: deleteStudyPlanItem,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["study-plans"] })
-      queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
-      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlans.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

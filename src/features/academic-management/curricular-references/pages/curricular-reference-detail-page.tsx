@@ -152,7 +152,7 @@ function CurricularReferenceDetailPageContent() {
               color="neutral"
               size="sm"
               className="-ml-3 h-auto font-normal text-sm"
-              render={<Link to={paths.app.gestionAcademicaReferentesCurriculares.getHref()} />}
+              render={<Link to={paths.app.gestionAcademicaReferentesCurriculares.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >
               <ArrowLeftIcon data-icon="inline-start" />

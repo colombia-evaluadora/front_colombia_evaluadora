@@ -35,7 +35,7 @@ export function resolveMatriculaMunicipioDepartments(
 }
 
 export function createEmptyAcademic(): MatriculaAcademicInfo {
-  return { campus: "", shift: "", grade: "", group: "", status: "", specialty: "" }
+  return { campus: "", campusId: "", shift: "", grade: "", group: "", status: "", specialty: "" }
 }
 
 export function createEmptyResidence(): MatriculaResidence {

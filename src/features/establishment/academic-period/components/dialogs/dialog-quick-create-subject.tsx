@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -26,7 +25,7 @@ import { useEspecialidadesQuery } from "@/features/establishment/academic-period
 import { usePeriodAreasQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
-import { createSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
+import { useCreateSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
 
 interface QuickCreateSubjectDialogProps {
@@ -48,7 +47,6 @@ export function QuickCreateSubjectDialog({
   isPreescolar,
   subjectLabel = "Asignatura",
 }: QuickCreateSubjectDialogProps) {
-  const queryClient = useQueryClient()
   const subjectWord = subjectLabel.toLowerCase()
   const subjectWordCap = subjectLabel
 
@@ -72,6 +70,7 @@ export function QuickCreateSubjectDialog({
   const fallbackGeneralAreaId = generalAreas[0]?.id
 
   const createAreaSubject = useCreateAreaSubject()
+  const createSubject = useCreateSubject()
   const { data: subjectDetails = [] } = useSubjectDetailsQuery(academicPeriodId)
   const { data: especialidades = [] } = useEspecialidadesQuery(academicPeriodId)
   const { data: periodAreas = [] } = usePeriodAreasQuery(academicPeriodId)
@@ -167,7 +166,10 @@ export function QuickCreateSubjectDialog({
         areaId = areaResult.codigo
       }
 
-      const subjectId = await createSubject({
+      // El hook invalida áreas/asignaturas y espera el refetch de las
+      // disponibles del plan antes de resolver, así `onSaved` ya puede
+      // autoseleccionar la nueva.
+      const subjectId = await createSubject.mutateAsync({
         areaId,
         areaGeneralId: subjectGeneralId,
         nombreInterno: nombreTrim,
@@ -175,11 +177,9 @@ export function QuickCreateSubjectDialog({
         ordenReportes,
         color,
         enfasisId: isPreescolar ? undefined : especialidadNombreToId(especialidad),
+        academicPeriodId,
       })
 
-      queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["subjects"] })
-      queryClient.invalidateQueries({ queryKey: ["period-areas", academicPeriodId] })
       onSaved({ id: subjectId, nombreInterno: nombreTrim })
       close()
     } catch (error) {

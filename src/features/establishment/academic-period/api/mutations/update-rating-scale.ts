@@ -7,6 +7,7 @@ import type {
   UpdateRatingScaleRequest,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { resolveRatingScaleRefs } from "@/features/establishment/academic-period/api/mutations/resolve-rating-scale-refs"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateRatingScaleInput {
   codigo: number
@@ -65,7 +66,7 @@ export function useUpdateRatingScale({ mutationConfig }: UseUpdateRatingScaleOpt
     mutationFn: updateRatingScale,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["rating-scales"] })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/materiales-reutilizables` —
@@ -108,9 +109,6 @@ async function fetchMaterialesReutilizables({
   }
 }
 
-export const materialesReutilizablesQueryKey = (params: Params) =>
-  ["planeador", "materiales-reutilizables", params] as const
-
 /**
  * `enabled` cubre los dos casos en que la llamada no tiene sentido: el
  * diálogo cerrado (vive montado junto al formulario, así que sin esto
@@ -120,7 +118,7 @@ export const materialesReutilizablesQueryKey = (params: Params) =>
  */
 export function useMaterialesReutilizablesQuery(params: Params, enabled: boolean) {
   return useQuery({
-    queryKey: materialesReutilizablesQueryKey(params),
+    queryKey: planeadorKeys.materialesReutilizables(params),
     queryFn: () => fetchMaterialesReutilizables(params),
     enabled: enabled && (params.actividadId > 0 || params.grupoId > 0),
     staleTime: 1000 * 60,

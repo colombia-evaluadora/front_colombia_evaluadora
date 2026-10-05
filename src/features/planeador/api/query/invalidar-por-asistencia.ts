@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 
-import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
+import { esCalificacionesDeActividad, planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * Las lecturas del Planeador que dependen de la asistencia: la asistencia
@@ -14,11 +14,10 @@ import { planillaCalificacionesQueryKeyPrefix } from "@/features/planeador/api/q
  * se monten pidan datos frescos.
  */
 export function invalidarPlaneadorPorAsistencia(queryClient: QueryClient): void {
-  queryClient.invalidateQueries({ queryKey: planillaCalificacionesQueryKeyPrefix() })
-  // `["planeador", "actividad", <id>, "calificaciones", <fecha?>]` — el id va
-  // en el medio, así que no hay prefijo común: se filtra por posición.
+  queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+  // Calificaciones de CUALQUIER actividad: el id va en el medio de la key,
+  // así que no hay prefijo común — se filtra por posición.
   queryClient.invalidateQueries({
-    predicate: ({ queryKey }) =>
-      queryKey[0] === "planeador" && queryKey[1] === "actividad" && queryKey[3] === "calificaciones",
+    predicate: ({ queryKey }) => esCalificacionesDeActividad(queryKey),
   })
 }

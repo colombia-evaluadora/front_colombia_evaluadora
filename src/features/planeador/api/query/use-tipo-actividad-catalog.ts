@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import type { ActividadTipo } from "@/features/planeador/api/types/actividad"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // Catálogo global `TIPO_ACTIVIDAD` de `TLISTA_VALOR`
 // (`GET /eval-col/select/TIPO_ACTIVIDAD`) — resuelve `FK_TLV_TIPO_ACTIVIDAD`
@@ -13,11 +14,9 @@ async function fetchTipoActividadCatalog(): Promise<ActividadTipo[]> {
   return rows.map((row) => row.nombre as ActividadTipo)
 }
 
-export const tipoActividadCatalogQueryKey = () => ["tipo-actividad-catalog"]
-
 export function useTipoActividadCatalogQuery() {
   return useQuery({
-    queryKey: tipoActividadCatalogQueryKey(),
+    queryKey: planeadorKeys.catalogos.tipoActividad(),
     queryFn: fetchTipoActividadCatalog,
     staleTime: Infinity,
   })

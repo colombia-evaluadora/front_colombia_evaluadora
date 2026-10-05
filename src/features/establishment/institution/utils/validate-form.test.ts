@@ -17,7 +17,9 @@ function createPerson(overrides: Partial<Person> = {}): Person {
     gender: { id: 1, code: "M", name: "Masculino" },
     email: "person@example.com",
     phone: "3000000000",
-    password: "12345678",
+    // Persona ya persistida (`id`) que no cambia la contraseña: si trae una,
+    // el validador exige confirmación y las `passwordRules` de auth.
+    password: "",
     ...overrides,
   }
 }
@@ -46,8 +48,9 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
     id: 1,
     basicInfo: {
       name: "I.E. Prueba",
-      dane: "12345678",
-      nit: "900123456",
+      // DANE de 12 dígitos y NIT con dígito de verificación (reglas actuales).
+      dane: "123456789012",
+      nit: "900123456-7",
       ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
     },
     address: {
@@ -127,8 +130,9 @@ describe("validateEstablishmentForm", () => {
     const values = createValues({
       basicInfo: {
         name: "",
-        dane: "12345678",
-        nit: "900123456",
+        // DANE de 12 dígitos y NIT con dígito de verificación (reglas actuales).
+        dane: "123456789012",
+        nit: "900123456-7",
         ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
       },
     })

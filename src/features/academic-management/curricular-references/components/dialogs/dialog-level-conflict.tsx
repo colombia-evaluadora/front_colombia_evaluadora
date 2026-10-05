@@ -38,7 +38,7 @@ export function LevelConflictDialog({
     if (conflict?.referenceId == null) return
     onCancel()
     onLeave?.()
-    navigate({ to: paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(conflict.referenceId) })
+    navigate({ to: paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(conflict.referenceId), search: (prev) => prev })
   }
 
   return (

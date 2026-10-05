@@ -46,19 +46,39 @@ export function toMatriculaFieldConfig(row: MatriculaFieldConfigRow): MatriculaF
   }
 }
 
-async function fetchMatriculaFieldConfig(): Promise<MatriculaFieldConfig> {
+/**
+ * Sin establecimiento, el backend responde la del único que el usuario
+ * administra (y 22023 si administra varios); con él, la de ese colegio.
+ */
+async function fetchMatriculaFieldConfig(establecimientoId: number | null): Promise<MatriculaFieldConfig> {
+  const query = establecimientoId != null ? `?FK_ESTABLECIMIENTO=${establecimientoId}` : ""
   const [row] = await evalCol.getRows<{ config: MatriculaFieldConfigRow }>(
-    "/matricula/configuracion",
+    `/matricula/configuracion${query}`,
   )
   if (!row) throw new Error("La configuración de matrícula no trajo datos.")
   return toMatriculaFieldConfig(row.config)
 }
 
-export const matriculaFieldConfigQueryKey = () => ["matricula", "field-config"]
+export const matriculaFieldConfigQueryKey = (establecimientoId: number | null = null) => [
+  "matricula",
+  "field-config",
+  establecimientoId,
+]
 
-export function useMatriculaFieldConfigQuery() {
+interface UseMatriculaFieldConfigOptions {
+  /** El colegio cuya configuración se pide; `null` = el único que administra. */
+  establecimientoId?: number | null
+  /** Falso mientras no se sepa de qué colegio pedirla (rector de varios). */
+  enabled?: boolean
+}
+
+export function useMatriculaFieldConfigQuery({
+  establecimientoId = null,
+  enabled = true,
+}: UseMatriculaFieldConfigOptions = {}) {
   return useQuery({
-    queryKey: matriculaFieldConfigQueryKey(),
-    queryFn: fetchMatriculaFieldConfig,
+    queryKey: matriculaFieldConfigQueryKey(establecimientoId),
+    queryFn: () => fetchMatriculaFieldConfig(establecimientoId),
+    enabled,
   })
 }

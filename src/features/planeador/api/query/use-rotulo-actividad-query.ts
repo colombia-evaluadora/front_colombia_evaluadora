@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Rótulo por defecto: el que usa el backend cuando ningún referente
  *  aplica al grado (`docs/rotulo-actividad.md`), y también lo que pinta
@@ -32,12 +33,6 @@ function toRotuloActividad(row: RotuloActividadRow | undefined): RotuloActividad
     rotulo: row?.rotulo_ejecucion ?? ROTULO_ACTIVIDAD_FALLBACK,
   }
 }
-
-export const rotuloActividadQueryKey = (
-  gradoId: number,
-  asignaturaId: number | undefined,
-  anio: number | undefined,
-) => ["planeador", "rotulo-actividad", gradoId, asignaturaId ?? null, anio ?? null] as const
 
 async function fetchRotuloActividad(
   gradoId: number,
@@ -75,8 +70,8 @@ export function useRotuloActividadQuery(
   return useQuery({
     queryKey:
       gradoId != null
-        ? rotuloActividadQueryKey(gradoId, asignaturaId, anio)
-        : (["planeador", "rotulo-actividad", "none"] as const),
+        ? planeadorKeys.rotuloActividad(gradoId, asignaturaId, anio)
+        : planeadorKeys.rotuloActividad("none"),
     queryFn: () => fetchRotuloActividad(gradoId!, asignaturaId, anio),
     enabled: gradoId != null,
     staleTime: 1000 * 60,

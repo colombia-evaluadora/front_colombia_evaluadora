@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import type { SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Las dos únicas formas de agrupar columnas que entiende la Planilla —
  *  "Actividades" las deja sueltas, "Unidad" las agrupa bajo la unidad
@@ -52,11 +53,9 @@ async function fetchAgrupacionPlanillaOptions(): Promise<AgrupacionPlanillaOptio
   return options
 }
 
-export const agrupacionPlanillaOptionsQueryKey = () => ["agrupacion-planilla-options"]
-
 export function useAgrupacionPlanillaOptionsQuery() {
   return useQuery({
-    queryKey: agrupacionPlanillaOptionsQueryKey(),
+    queryKey: planeadorKeys.catalogos.agrupacionPlanilla(),
     queryFn: fetchAgrupacionPlanillaOptions,
     staleTime: Infinity,
   })

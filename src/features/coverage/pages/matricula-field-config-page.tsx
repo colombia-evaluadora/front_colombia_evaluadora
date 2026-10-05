@@ -9,7 +9,8 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import {
   useUpdateMatriculaFieldConfig,
   type MatriculaFieldConfigChange,
@@ -110,7 +112,17 @@ export function MatriculaFieldConfigPage() {
 }
 
 function MatriculaFieldConfigPageContent() {
-  const { data, isPending, isError, error } = useMatriculaFieldConfigQuery()
+  // Un rector o secretaria de varios colegios elige cuál configurar; con uno
+  // solo no hay nada que elegir y se pide sin colegio, como siempre.
+  const { data: colegios = [], isPending: colegiosPending } = useEstablishmentsOptionsQuery()
+  const [colegioElegido, setColegioElegido] = useState<number | null>(null)
+  const varios = colegios.length > 1
+  const establecimientoId = varios ? (colegioElegido ?? colegios[0].id) : null
+
+  const { data, isPending, isError, error } = useMatriculaFieldConfigQuery({
+    establecimientoId,
+    enabled: !colegiosPending,
+  })
   const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
   const { notify } = useNotify()
   const navigate = useNavigate()
@@ -120,6 +132,12 @@ function MatriculaFieldConfigPageContent() {
       setSecciones(data.secciones)
     }
   }, [data, secciones])
+
+  function elegirColegio(id: number) {
+    setColegioElegido(id)
+    // La edición en curso era del colegio anterior: se vuelve a cargar.
+    setSecciones(null)
+  }
 
   useEffect(() => {
     if (isError) notify(getErrorMessage(error), { variant: "error", autoCloseMs: 0 })
@@ -183,6 +201,36 @@ function MatriculaFieldConfigPageContent() {
             actualización de datos del estudiante.
           </p>
 
+          {varios && establecimientoId != null && (
+            <Field orientation="vertical" variant="outlined" className="max-w-md gap-2">
+              <FieldLabel htmlFor="colegio-configuracion">Establecimiento</FieldLabel>
+              <Select
+                items={Object.fromEntries(colegios.map((c) => [String(c.id), c.name]))}
+                value={String(establecimientoId)}
+                onValueChange={(value) => {
+                  if (value) elegirColegio(Number(value))
+                }}
+                disabled={changes.length > 0 || updateConfig.isPending}
+              >
+                <SelectTrigger id="colegio-configuracion" variant="outlined" size="sm" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {colegios.map((colegio) => (
+                    <SelectItem key={colegio.id} value={String(colegio.id)}>
+                      {colegio.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                {changes.length > 0
+                  ? "Guarda los cambios antes de pasar a otro establecimiento."
+                  : "Cada establecimiento tiene su propia configuración."}
+              </FieldDescription>
+            </Field>
+          )}
+
           {isPending && (
             <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
               <SpinnerIcon className="animate-spin" />
@@ -222,7 +270,7 @@ function MatriculaFieldConfigPageContent() {
             color="primary"
             size="sm"
             disabled={updateConfig.isPending || changes.length === 0}
-            onClick={() => updateConfig.mutate(changes)}
+            onClick={() => updateConfig.mutate({ establecimientoId, changes })}
           >
             {updateConfig.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

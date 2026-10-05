@@ -5,6 +5,7 @@ import type {
   EvaluationPeriodStatusOption,
 } from "../types/evaluation-period"
 import { fetchSelectCategory } from "./fetch-select-category"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // Catálogo genérico de TLISTA_VALOR
 // (`GET /eval-col/select/ESTADOPERIODOEVALUACION`).
@@ -19,11 +20,9 @@ async function fetchEvaluationPeriodStatuses(): Promise<
   }))
 }
 
-export const evaluationPeriodStatusesQueryKey = () => ["evaluation-period-statuses"]
-
 export function useEvaluationPeriodStatusesQuery() {
   return useQuery({
-    queryKey: evaluationPeriodStatusesQueryKey(),
+    queryKey: academicPeriodKeys.evaluationPeriodStatuses(),
     queryFn: fetchEvaluationPeriodStatuses,
     staleTime: Infinity,
   })

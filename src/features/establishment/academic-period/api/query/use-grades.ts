@@ -6,6 +6,7 @@ import type {
   GradesQueryRequest,
   GradesQueryResponse,
 } from "@/features/establishment/academic-period/api/types/grade"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UseGradesQueryParams {
   filters: GradesQueryRequest["filters"]
@@ -78,11 +79,9 @@ async function fetchGrades(
   return { rows, pageCount, totalCount }
 }
 
-export const gradesQueryKey = (params: UseGradesQueryParams) => ["grades", params]
-
 export function useGradesQuery(params: UseGradesQueryParams) {
   return useQuery({
-    queryKey: gradesQueryKey(params),
+    queryKey: academicPeriodKeys.grades.list(params),
     queryFn: () => fetchGrades(params),
     placeholderData: (previous) => previous,
   })

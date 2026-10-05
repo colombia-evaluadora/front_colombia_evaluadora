@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface SubjectDetailRow {
   id: number
@@ -58,14 +59,9 @@ async function fetchSubjectDetails(academicPeriodId?: number): Promise<SubjectDe
   }))
 }
 
-export const subjectDetailsQueryKey = (academicPeriodId?: number) => [
-  "subject-details",
-  academicPeriodId,
-]
-
 export function useSubjectDetailsQuery(academicPeriodId?: number) {
   return useQuery({
-    queryKey: subjectDetailsQueryKey(academicPeriodId),
+    queryKey: academicPeriodKeys.subjectDetails.byPeriod(academicPeriodId),
     queryFn: () => fetchSubjectDetails(academicPeriodId),
   })
 }

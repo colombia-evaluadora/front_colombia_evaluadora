@@ -6,6 +6,7 @@ import {
   paresToQueryParam,
   type ActividadTabPair,
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
  * `GET /planeador/actividades/stats` (V250, ver colección Postman
@@ -52,12 +53,9 @@ async function fetchActividadesStats(
   }
 }
 
-export const actividadesStatsQueryKey = (params: UseActividadesStatsParams) =>
-  ["planeador", "actividades-stats", params] as const
-
 export function useActividadesStatsQuery(params: UseActividadesStatsParams = {}) {
   return useQuery({
-    queryKey: actividadesStatsQueryKey(params),
+    queryKey: planeadorKeys.actividades.stats(params),
     queryFn: () => fetchActividadesStats(params),
     staleTime: 1000 * 30,
   })

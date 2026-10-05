@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 
 import type { SedeOption, SedesOptionsResponse } from "../types/sede-option"
+import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 // `GET /eval-col/establecimientos/sedes/opciones`. Alimenta el select de Sede
 // del form de periodo académico. El backend filtra por alcance/establecimiento
@@ -19,11 +20,9 @@ export async function fetchSedeOptions(): Promise<SedeOption[]> {
   return raw.rows ?? []
 }
 
-export const sedeOptionsQueryKey = ["sedes", "options"] as const
-
 export function useSedeOptionsQuery() {
   return useQuery({
-    queryKey: sedeOptionsQueryKey,
+    queryKey: academicPeriodKeys.sedeOptions(),
     queryFn: fetchSedeOptions,
     staleTime: 0,
   })
