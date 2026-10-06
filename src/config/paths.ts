@@ -242,5 +242,9 @@ export const paths = {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",
     },
+    comunicacionesChat: {
+      path: "comunicaciones/chat",
+      getHref: () => "/app/comunicaciones/chat",
+    },
   },
 } as const
