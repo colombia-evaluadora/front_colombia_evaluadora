@@ -126,6 +126,40 @@ import {
   MdVisibilityOff,
   MdWarningAmber,
   MdCheckCircleOutline,
+  MdAlternateEmail,
+  MdApps,
+  MdArrowDropDown,
+  MdCode,
+  MdContentCopy,
+  MdFormatListBulleted,
+  MdFormatQuote,
+  MdLink,
+  MdMicNone,
+  MdMoreVert,
+  MdOutlineArchive,
+  MdOutlineAssignment,
+  MdOutlineCampaign,
+  MdOutlineChat,
+  MdOutlineDataObject,
+  MdOutlineEdit,
+  MdOutlineEmojiEmotions,
+  MdOutlineFactCheck,
+  MdOutlineHowToVote,
+  MdOutlineLayers,
+  MdOutlineMarkChatRead,
+  MdOutlineMarkChatUnread,
+  MdOutlineNotificationsOff,
+  MdOutlineTerminal,
+  MdOutlineUnarchive,
+  MdOutlineVideocam,
+  MdOutlineViewHeadline,
+  MdStrikethroughS,
+  MdTag,
+  MdTextFields,
+  MdOutlinePushPin,
+  MdPushPin,
+  MdOutlineInsertDriveFile,
+  MdOutlinePhotoLibrary,
 } from "react-icons/md"
 
 /**
@@ -284,3 +318,39 @@ export const WarningIcon = makeIcon(MdWarningAmber)
 export const XCircleIcon = makeIcon(MdCancel)
 export const XIcon = makeIcon(MdClose)
 export const XSquareIcon = makeIcon(MdCancelPresentation)
+
+// Chat de comunicaciones
+export const AtIcon = makeIcon(MdAlternateEmail)
+export const StackIcon = makeIcon(MdOutlineLayers)
+export const HashIcon = makeIcon(MdTag)
+export const ChatTextIcon = makeIcon(MdOutlineChat)
+export const BallotIcon = makeIcon(MdOutlineHowToVote)
+export const ClipboardIcon = makeIcon(MdOutlineAssignment)
+export const ListChecksIcon = makeIcon(MdOutlineFactCheck)
+export const MegaphoneIcon = makeIcon(MdOutlineCampaign)
+export const TextAaIcon = makeIcon(MdTextFields)
+export const SmileyIcon = makeIcon(MdOutlineEmojiEmotions)
+export const VideoCameraIcon = makeIcon(MdOutlineVideocam)
+export const MicrophoneIcon = makeIcon(MdMicNone)
+export const BellSlashIcon = makeIcon(MdOutlineNotificationsOff)
+export const ChatUnreadIcon = makeIcon(MdOutlineMarkChatUnread)
+export const ChatReadIcon = makeIcon(MdOutlineMarkChatRead)
+export const TerminalIcon = makeIcon(MdOutlineTerminal)
+export const DotsThreeVerticalIcon = makeIcon(MdMoreVert)
+export const CaretDownFillIcon = makeIcon(MdArrowDropDown)
+export const CopyIcon = makeIcon(MdContentCopy)
+export const ArchiveIcon = makeIcon(MdOutlineArchive)
+export const UnarchiveIcon = makeIcon(MdOutlineUnarchive)
+export const PencilSimpleIcon = makeIcon(MdOutlineEdit)
+export const ListIcon = makeIcon(MdOutlineViewHeadline)
+export const SquaresFourIcon = makeIcon(MdApps)
+export const TextStrikethroughIcon = makeIcon(MdStrikethroughS)
+export const LinkIcon = makeIcon(MdLink)
+export const ListBulletsIcon = makeIcon(MdFormatListBulleted)
+export const QuotesIcon = makeIcon(MdFormatQuote)
+export const CodeIcon = makeIcon(MdCode)
+export const CodeBlockIcon = makeIcon(MdOutlineDataObject)
+export const PushPinIcon = makeIcon(MdOutlinePushPin)
+export const PushPinFillIcon = makeIcon(MdPushPin)
+export const FileIcon = makeIcon(MdOutlineInsertDriveFile)
+export const ImagesIcon = makeIcon(MdOutlinePhotoLibrary)
