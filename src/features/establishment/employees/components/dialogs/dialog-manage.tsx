@@ -1046,16 +1046,13 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     notify(`Permiso de ${role.name} en ${campus.name} agregado.`)
   }
 
-  function removePermission(order: number) {
-    const removed = permissions.find((permission) => permission.order === order)
+  // Se quita por referencia, no por orden: el orden solo es único por
+  // (rol, sede) (UK_TSEDE_USUARIO_2), así que filtrar por él se llevaba
+  // todos los permisos con el mismo número y "Guardar" los daba de baja.
+  function removePermission(removed: Permission) {
+    setPermissions((current) => current.filter((permission) => permission !== removed))
 
-    setPermissions((current) => current.filter((permission) => permission.order !== order))
-
-    notify(
-      removed
-        ? `Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`
-        : "Permiso eliminado.",
-    )
+    notify(`Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`)
   }
 
   /**
@@ -1575,7 +1572,10 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               </TableHeader>
               <TableBody>
                 {sortedPermissions.map((permission) => (
-                  <TableRow key={`${permission.order}-${permission.campus.id}`} className="group/row">
+                  <TableRow
+                    key={`${permission.role.id}-${permission.campus.id}-${permission.order}`}
+                    className="group/row"
+                  >
                     <TableCell className="font-medium">{permission.order}</TableCell>
                     <TableCell>{permission.role.name}</TableCell>
                     <TableCell>{permission.campus.name}</TableCell>
@@ -1596,7 +1596,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                               {permission.campus.name}. Esta acción no se puede deshacer.
                             </>
                           }
-                          onConfirm={() => removePermission(permission.order)}
+                          onConfirm={() => removePermission(permission)}
                         />
                       </div>
                     </TableCell>
