@@ -1,9 +1,8 @@
-import { useState, type ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
 import type { IconType } from "react-icons"
 
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MagnifyingGlassIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import { PlusIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
@@ -12,6 +11,7 @@ import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-
 import { useInstitucionQuery } from "@/features/comunicaciones/chat/api/query/use-institucion-query"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
+import { BuscadorConversaciones } from "@/features/comunicaciones/chat/components/buscador-conversaciones"
 import {
   StackIcon,
   HashIcon,
@@ -49,16 +49,11 @@ export function ChatSidebar({
   const { data: institucion } = useInstitucionQuery()
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const [buscando, setBuscando] = useState(false)
-  const [filtro, setFiltro] = useState("")
+  const encabezado = useRef<HTMLDivElement>(null)
 
-  const texto = filtro.trim().toLowerCase()
-  const visibles = texto
-    ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(texto))
-    : conversaciones
-  const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
-  const canales = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
-  const archivadas = visibles.filter((c) => c.archivada)
+  const directos = conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
+  const canales = conversaciones.filter((c) => c.tipo === "CANAL" && !c.archivada)
+  const archivadas = conversaciones.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
     <ItemConversacion
@@ -70,44 +65,21 @@ export function ChatSidebar({
     />
   )
 
-  const cerrarBusqueda = () => {
-    setBuscando(false)
-    setFiltro("")
-  }
-
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
-      <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        {buscando ? (
-          <>
-            <Input
-              autoFocus
-              value={filtro}
-              onChange={(e) => setFiltro(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && cerrarBusqueda()}
-              placeholder="Buscar conversación"
-              aria-label="Buscar conversación"
-              className="h-9"
-            />
-            <IconoBoton etiqueta="Cerrar búsqueda" onClick={cerrarBusqueda}>
-              <XIcon className="size-5" />
-            </IconoBoton>
-          </>
-        ) : (
-          <>
-            <span className="flex min-w-0 flex-1 items-center gap-1 font-semibold">
-              <span className="truncate">{institucion?.nombre ?? "Institución"}</span>
-              <CaretDownFillIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-            </span>
-            <IconoBoton etiqueta="Buscar conversación" onClick={() => setBuscando(true)}>
-              <MagnifyingGlassIcon className="size-5" />
-            </IconoBoton>
-          </>
-        )}
+      <div ref={encabezado} className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <span className="flex min-w-0 flex-1 items-center gap-1 font-semibold">
+          <span className="truncate">{institucion?.nombre ?? "Institución"}</span>
+          <CaretDownFillIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+        </span>
+        <BuscadorConversaciones
+          conversaciones={conversaciones}
+          anchor={encabezado}
+          onSeleccionar={onSeleccionar}
+        />
       </div>
 
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
-        {!texto && (
           <ul className="border-b px-2 pb-2">
             <AccesoPendiente icono={AtIcon}>Menciones y reacciones</AccesoPendiente>
             <AccesoVista
@@ -135,7 +107,6 @@ export function ChatSidebar({
             </AccesoVista>
             <AccesoPendiente icono={HashIcon}>Todos los canales</AccesoPendiente>
           </ul>
-        )}
 
         {isPending ? (
           <div className="space-y-2 p-4" aria-busy>
@@ -152,10 +123,10 @@ export function ChatSidebar({
           </div>
         ) : (
           <>
-            <Seccion titulo="Mensajes directos" agregar={texto ? null : "Agregar compañeros"}>
+            <Seccion titulo="Mensajes directos" agregar={"Agregar compañeros"}>
               {directos.map(item)}
             </Seccion>
-            <Seccion titulo="Canales" agregar={texto ? null : <AgregarCanal onCreado={onSeleccionar} />}>
+            <Seccion titulo="Canales" agregar={<AgregarCanal onCreado={onSeleccionar} />}>
               {canales.map(item)}
             </Seccion>
             {archivadas.length > 0 && (
@@ -163,37 +134,10 @@ export function ChatSidebar({
                 {archivadas.map(item)}
               </Seccion>
             )}
-            {texto && visibles.length === 0 && (
-              <p className="px-4 py-6 text-sm text-muted-foreground">
-                Ninguna conversación coincide con «{filtro.trim()}».
-              </p>
-            )}
           </>
         )}
       </nav>
     </aside>
-  )
-}
-
-function IconoBoton({
-  etiqueta,
-  onClick,
-  children,
-}: {
-  etiqueta: string
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={etiqueta}
-      title={etiqueta}
-      onClick={onClick}
-      className="grid size-9 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-    >
-      {children}
-    </button>
   )
 }
 

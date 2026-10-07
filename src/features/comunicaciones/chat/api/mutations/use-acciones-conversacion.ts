@@ -86,10 +86,19 @@ export function useSalirConversacion() {
 export function useCrearCanal() {
   const invalidar = useInvalidarConversaciones()
   return useMutation({
-    mutationFn: ({ nombre, categoria }: { nombre: string; categoria: CategoriaCanal }) =>
+    mutationFn: ({
+      nombre,
+      categoria,
+      miembros = [],
+    }: {
+      nombre: string
+      categoria: CategoriaCanal
+      miembros?: number[]
+    }) =>
       evalCol.postRow<Conversacion>("/comunicaciones/conversaciones", {
         NOMBRE: nombre,
         CATEGORIA: categoria,
+        MIEMBROS: miembros,
       }),
     onSuccess: invalidar,
   })
