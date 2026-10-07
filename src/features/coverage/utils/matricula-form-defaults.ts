@@ -248,15 +248,20 @@ export function validateMatricula(
     if (!getValue(values).trim()) missing.push(id)
   }
 
+  // Oculto (preescolar/primaria, ver `applyGradeFieldRules`) no se valida:
+  // un correo mal escrito antes de cambiar el grado bloquearía el guardado
+  // con un error en un campo que ya no se ve.
   const studentEmail = values.studentContact.email.trim()
-  if (
-    accountsFound?.student === false &&
-    !studentEmail &&
-    !isPreescolarPrimariaGrado(values.academic.grade)
-  ) {
-    missing.push("student-contact-email")
-  } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
-    missing.push("student-contact-email")
+  if (isFieldVisible(fieldSettings, "student-contact-email")) {
+    if (
+      accountsFound?.student === false &&
+      !studentEmail &&
+      !isPreescolarPrimariaGrado(values.academic.grade)
+    ) {
+      missing.push("student-contact-email")
+    } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
+      missing.push("student-contact-email")
+    }
   }
   const guardianEmail = values.guardianContact.email.trim()
   if (accountsFound?.guardian === false && !guardianEmail) {
