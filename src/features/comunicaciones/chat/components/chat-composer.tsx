@@ -22,7 +22,6 @@ import {
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { cn } from "@/lib/utils"
 import {
-  TerminalIcon,
   SmileyIcon,
   TextAaIcon,
   AtIcon,
@@ -95,7 +94,7 @@ export function ChatComposer({
     }
   }
 
-  // Inserta en el cursor (menciones y comandos).
+  // Inserta en el cursor (menciones).
   const insertar = (valor: string) => {
     const area = areaRef.current
     const inicio = area?.selectionStart ?? texto.length
@@ -250,10 +249,6 @@ export function ChatComposer({
           </Herramienta>
           <Herramienta etiqueta="Grabar audio" pendiente className="max-sm:hidden">
             <MicrophoneIcon className="size-5" />
-          </Herramienta>
-          <Separador className="max-sm:hidden" />
-          <Herramienta etiqueta="Usar un comando" onClick={() => insertar("/")}>
-            <TerminalIcon className="size-5" />
           </Herramienta>
 
           <button

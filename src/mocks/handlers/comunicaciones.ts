@@ -8,6 +8,9 @@ import {
   conversaciones,
   mensajes,
   nuevoMensaje,
+  personas,
+  avisoUnion,
+  contenidoDocumentos,
 } from "@/mocks/db/comunicaciones"
 
 // Mock del chat de comunicaciones; el backend aún no existe.
@@ -40,9 +43,18 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: conversaciones })
   }),
 
+  http.get(URL("personas"), async () => {
+    await delay(200)
+    return HttpResponse.json({ rows: personas })
+  }),
+
   http.post(URL("conversaciones"), async ({ request }) => {
     await delay(200)
-    const body = (await request.json()) as { NOMBRE?: string; CATEGORIA?: CategoriaCanal }
+    const body = (await request.json()) as {
+      NOMBRE?: string
+      CATEGORIA?: CategoriaCanal
+      MIEMBROS?: number[]
+    }
     const nombre = body.NOMBRE?.trim()
     if (!nombre) {
       return HttpResponse.json({ message: "Escribe un nombre para el canal." }, { status: 400 })
@@ -62,8 +74,14 @@ export const comunicacionesHandlers = [
       miembrosDestacados: ["Andrés Gómez"],
       silenciadoHasta: null,
       archivada: false,
+      creadoPor: "Andrés Gómez",
+      esCreador: true,
     }
     conversaciones.push(canal)
+    const nuevos = personas.filter((p) => body.MIEMBROS?.includes(p.id))
+    for (const p of nuevos) avisoUnion(canal.id, p, nombre)
+    canal.totalMiembros += nuevos.length
+    canal.miembrosDestacados.push(...nuevos.slice(0, 2).map((p) => p.nombre))
     return HttpResponse.json({ rows: [canal] })
   }),
 
@@ -183,6 +201,43 @@ export const comunicacionesHandlers = [
 ]
 
 export const comunicacionesArchivosHandlers = [
+  http.get(URL("archivos/:id/contenido"), async ({ params }) => {
+    await delay(200)
+    const html = contenidoDocumentos.get(Number(params.id))
+    if (html === undefined) {
+      return HttpResponse.json({ message: "Este archivo no se puede editar." }, { status: 404 })
+    }
+    return HttpResponse.json({ rows: [{ contenidoHtml: html }] })
+  }),
+
+  http.put(URL("archivos/:id/contenido"), async ({ params, request }) => {
+    await delay(300)
+    const a = archivos.find((x) => x.id === Number(params.id))
+    if (!a?.editable) return HttpResponse.json({ message: "Este archivo no se puede editar." }, { status: 404 })
+    const body = (await request.json()) as { CONTENIDO_HTML?: string }
+    contenidoDocumentos.set(a.id, body.CONTENIDO_HTML ?? "")
+    a.fecha = new Date().toISOString()
+    return HttpResponse.json({ rows: [a] })
+  }),
+
+  http.patch(URL("archivos/:id/eliminar"), async ({ params }) => {
+    await delay(250)
+    const idx = archivos.findIndex((x) => x.id === Number(params.id))
+    if (idx === -1) return HttpResponse.json({ message: "El archivo ya no existe." }, { status: 404 })
+    const [a] = archivos.splice(idx, 1)
+    if (!a.esPropio) {
+      archivos.splice(idx, 0, a)
+      return HttpResponse.json({ message: "Solo puedes eliminar archivos que compartiste tú." }, { status: 403 })
+    }
+    // El mensaje donde se compartió conserva el aviso.
+    for (const m of mensajes) {
+      if (m.conversacionId === a.conversacionId && m.adjunto?.nombre === a.nombre) {
+        m.adjunto.eliminadoEn = new Date().toISOString()
+      }
+    }
+    return HttpResponse.json({ rows: [a] })
+  }),
+
   http.get(URL("archivos"), async () => {
     await delay(250)
     return HttpResponse.json({ rows: archivos })

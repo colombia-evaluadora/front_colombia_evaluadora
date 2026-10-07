@@ -20,6 +20,9 @@ export interface Conversacion {
   miembrosDestacados: string[]
   silenciadoHasta: string | null
   archivada: boolean
+  // Solo canales creados desde "Agregar canales": activan el mensaje de bienvenida.
+  creadoPor?: string | null
+  esCreador?: boolean
 }
 
 export interface AutorMensaje {
@@ -45,6 +48,8 @@ export interface Mensaje {
   adjunto: AdjuntoMensaje | null
   editado: boolean
   fijado: boolean
+  // Aviso del sistema ("X se ha unido a…"): se muestra centrado, sin burbuja.
+  sistema?: boolean
 }
 
 export interface ChatInstitucion {
@@ -65,6 +70,8 @@ export interface ArchivoCompartido {
   conversacionNombre: string
   // El usuario pertenece al canal (filtro "Solo mis canales").
   enMiCanal: boolean
+  // Documento de texto que se puede abrir en el editor.
+  editable?: boolean
 }
 
 export interface Candidato {
@@ -104,4 +111,115 @@ export interface Borrador {
   estado: EstadoBorrador
   // Última edición, hora programada o envío, según el estado.
   fecha: string
+}
+
+export type TipoPregunta = "MULTIPLE" | "UNICA" | "REDACCION" | "SI_NO"
+
+export interface OpcionEncuesta {
+  id: number
+  texto: string
+  votos: number
+}
+
+export interface PreguntaEncuesta {
+  id: number
+  tipo: TipoPregunta
+  texto: string
+  // Vacío en preguntas de redacción.
+  opciones: OpcionEncuesta[]
+  // Personas que respondieron esta pregunta: base de los porcentajes.
+  totalRespuestas: number
+  // Solo redacción: respuestas abiertas destacadas.
+  respuestas: string[]
+}
+
+// PUBLICOS: los participantes ven los resultados; ADMIN: solo quien la creó.
+export type VisibilidadResultados = "PUBLICOS" | "ADMIN"
+
+export interface Encuesta {
+  conversacionId: number
+  nombre: string
+  descripcion: string
+  fechaInicio: string | null
+  fechaCierre: string | null
+  resultados: VisibilidadResultados
+  preguntas: PreguntaEncuesta[]
+  totalHabilitados: number
+  participantes: number
+  creadoPor: string
+  esCreador: boolean
+}
+
+// Persona del colegio que se puede añadir a un canal.
+export interface Persona {
+  id: number
+  nombre: string
+  correo: string
+}
+
+// Evaluación en línea. SI_NO se muestra como Verdadero / Falso.
+export interface OpcionEvaluacion {
+  id: number
+  texto: string
+  correcta: boolean
+}
+
+export interface PreguntaEvaluacion {
+  id: number
+  tipo: TipoPregunta
+  texto: string
+  puntos: number
+  opciones: OpcionEvaluacion[]
+}
+
+// INMEDIATO: el estudiante ve su nota al enviar; AL_CIERRE: cuando termina el plazo.
+export type MostrarResultados = "INMEDIATO" | "AL_CIERRE"
+
+export interface Evaluacion {
+  conversacionId: number
+  nombre: string
+  descripcion: string
+  fechaInicio: string | null
+  fechaCierre: string | null
+  // null = sin límite.
+  tiempoLimiteMin: number | null
+  puntajeTotal: number
+  // null = ilimitados.
+  intentos: number | null
+  mostrarResultados: MostrarResultados
+  preguntas: PreguntaEvaluacion[]
+  creadoPor: string
+  esCreador: boolean
+}
+
+export interface RespuestaEntrega {
+  preguntaId: number
+  opcionIds: number[]
+  texto: string | null
+  // Puntos que puso el docente; null = aún sin calificar (redacción).
+  puntos: number | null
+}
+
+export type EstadoEntrega = "PENDIENTE" | "CALIFICADA"
+
+export interface EntregaEvaluacion {
+  id: number
+  estudiante: string
+  estado: EstadoEntrega
+  respuestas: RespuestaEntrega[]
+}
+
+export type Audiencia = "ESTUDIANTES" | "DOCENTES" | "PADRES" | "DIRECTIVOS" | "ADMINISTRATIVOS"
+
+// Comunicado oficial: canal de solo lectura con un único contenido.
+export interface Comunicado {
+  conversacionId: number
+  titulo: string
+  descripcion: string
+  audiencia: Audiencia[]
+  publicarEn: string
+  // HTML del editor; se sanea antes de mostrarlo.
+  contenidoHtml: string
+  publicadoPor: string
+  esCreador: boolean
 }

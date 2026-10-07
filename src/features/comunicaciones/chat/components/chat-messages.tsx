@@ -119,6 +119,14 @@ export function ChatMessages({
 }
 
 function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
+  if (m.sistema) {
+    return (
+      <p className="text-center text-xs text-muted-foreground">
+        <span className="font-medium text-foreground/80">{m.autor.nombre}</span> {m.texto}
+      </p>
+    )
+  }
+
   const meta = (
     <>
       <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>

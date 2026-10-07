@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   CaretDownIcon,
   CheckIcon,
-  FileDownloadOutlinedIcon,
   MagnifyingGlassIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -22,6 +21,8 @@ import { useArchivosQuery } from "@/features/comunicaciones/chat/api/query/use-a
 import { fechaLarga } from "@/features/comunicaciones/chat/lib/chat-format"
 import { SquaresFourIcon, ListIcon } from "@/components/ui/icons"
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
+import { ArchivoAcciones } from "@/features/comunicaciones/chat/components/archivo-acciones"
+import { DocumentoEditor } from "@/features/comunicaciones/chat/components/documento-editor"
 
 // Mismo estilo de item que el menú de conversaciones (en oración, no mayúsculas).
 const ITEM = "gap-3 py-2 text-sm font-normal tracking-normal normal-case"
@@ -68,6 +69,18 @@ function desdePeriodo(periodo: Periodo) {
 }
 
 export function ArchivosView({ onVolver }: { onVolver: () => void }) {
+  const [editando, setEditando] = useState<ArchivoCompartido | null>(null)
+  if (editando) return <DocumentoEditor archivo={editando} onVolver={() => setEditando(null)} />
+  return <ListaArchivos onVolver={onVolver} onEditar={setEditando} />
+}
+
+function ListaArchivos({
+  onVolver,
+  onEditar,
+}: {
+  onVolver: () => void
+  onEditar: (a: ArchivoCompartido) => void
+}) {
   const { data = [], isPending, isError, refetch } = useArchivosQuery()
   const [busqueda, setBusqueda] = useState("")
   const [alcance, setAlcance] = useState<Alcance>("TODO")
@@ -112,7 +125,7 @@ export function ArchivosView({ onVolver }: { onVolver: () => void }) {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setBusqueda("")}
-            placeholder="Buscar por nombre de archivo o canal"
+            placeholder="Buscar por nombre de archivo o palabra clave"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           {busqueda && (
@@ -237,7 +250,7 @@ export function ArchivosView({ onVolver }: { onVolver: () => void }) {
           >
             {resultados.map((a) => (
               <li key={a.id}>
-                <TarjetaArchivo archivo={a} cuadricula={cuadricula} />
+                <TarjetaArchivo archivo={a} cuadricula={cuadricula} onEditar={() => onEditar(a)} />
               </li>
             ))}
           </ul>
@@ -314,9 +327,11 @@ function ItemOpcion({
 function TarjetaArchivo({
   archivo: a,
   cuadricula,
+  onEditar,
 }: {
   archivo: ArchivoCompartido
   cuadricula: boolean
+  onEditar: () => void
 }) {
   const { Icono, color, tipo } = ICONO_ARCHIVO[a.formato]
   const detalle = `Compartido por ${a.esPropio ? "ti" : a.compartidoPor} el ${fechaLarga(a.fecha)}`
@@ -345,18 +360,15 @@ function TarjetaArchivo({
           {detalle}
         </p>
       </div>
-      <button
-        type="button"
-        disabled
-        aria-label={`Descargar ${a.nombre}`}
-        title="La descarga estará disponible cuando se conecte el servicio de archivos"
+      {/* Visible al pasar el cursor o al llegar con el teclado. */}
+      <ArchivoAcciones
+        archivo={a}
+        onEditar={onEditar}
         className={cn(
-          "grid size-8 shrink-0 place-items-center rounded-full disabled:opacity-60",
-          cuadricula && "absolute top-4 right-4 bg-card",
+          "absolute top-2 right-2 opacity-0 transition-opacity group-focus-within/archivo:opacity-100 group-hover/archivo:opacity-100 has-data-popup-open:opacity-100 motion-reduce:transition-none",
+          !cuadricula && "top-1/2 -translate-y-1/2",
         )}
-      >
-        <FileDownloadOutlinedIcon className="size-5" />
-      </button>
+      />
     </article>
   )
 }

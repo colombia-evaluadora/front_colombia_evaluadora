@@ -242,8 +242,12 @@ function leerCerrada(id: number) {
   }
 }
 
-// Mensaje de inicio que todo canal de elección trae al crearse.
-export function EleccionBienvenida({ eleccion: e }: { eleccion: Eleccion }) {
+// Mensaje de inicio que traen los canales de elección y encuesta al crearse.
+export function CanalBienvenida({
+  canal: e,
+}: {
+  canal: Pick<Eleccion, "conversacionId" | "nombre" | "creadoPor" | "esCreador">
+}) {
   const [cerrada, setCerrada] = useState(() => leerCerrada(e.conversacionId))
   if (cerrada) return null
 

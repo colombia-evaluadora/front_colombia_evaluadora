@@ -1,4 +1,5 @@
 import type {
+  Persona,
   AutorMensaje,
   ChatInstitucion,
   Conversacion,
@@ -224,6 +225,7 @@ export const archivos: ArchivoCompartido[] = [
     conversacionId: 3,
     conversacionNombre: "02-docentes-general",
     enMiCanal: true,
+    editable: true,
   },
   {
     id: 2,
@@ -283,3 +285,38 @@ export const borradores: Borrador[] = [
   borrador(3, "Recuerden que mañana hay reunión de área a las 7:00 a. m.", "PROGRAMADO", enDias(1, 18)),
   borrador(2, "Ya están publicadas las notas del primer periodo.", "ENVIADO", haceDias(6, 10, 5)),
 ]
+
+export const personas: Persona[] = [
+  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co" },
+  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co" },
+  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co" },
+  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co" },
+  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co" },
+  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co" },
+  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co" },
+]
+
+// "X se ha unido a <canal>."
+export function avisoUnion(conversacionId: number, persona: Persona, canal: string) {
+  const m = mensaje(
+    conversacionId,
+    { id: persona.id, nombre: persona.nombre, enLinea: false },
+    `se ha unido a ${canal}.`,
+    new Date().toISOString(),
+  )
+  m.sistema = true
+  mensajes.push(m)
+}
+
+const LOREM =
+  "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin lacinia nisi nec ex iaculis, quis laoreet tortor congue. Morbi sagittis eros vel enim convallis consequat. Morbi blandit sed enim eget venenatis. Suspendisse potenti.</p><p></p><p>Aliquam et accumsan justo. In ultrices eros lacinia, pellentesque erat non, egestas neque. Praesent odio tellus, iaculis ac sapien eget, semper consectetur turpis. Nam tincidunt iaculis magna et dictum.</p>"
+
+// Contenido HTML de los documentos editables, por id de archivo.
+export const contenidoDocumentos = new Map<number, string>(
+  archivos
+    .filter((a) => a.editable)
+    .map((a) => [
+      a.id,
+      `<p style="text-align: center"><strong>${a.nombre.replace(/\.\w+$/, "").replace(/_/g, " ").toUpperCase()}</strong></p><p></p>${LOREM}`,
+    ]),
+)

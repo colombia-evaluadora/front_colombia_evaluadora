@@ -8,7 +8,17 @@ export const chatKeys = {
   conversacion,
   mensajes: (id: number | "none") => [...conversacion(id), "mensajes"] as const,
   archivos: [...all, "archivos"] as const,
+  documento: (archivoId: number | "none") => [...all, "archivos", archivoId, "documento"] as const,
+  personas: [...all, "personas"] as const,
+  comunicado: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "comunicado"] as const,
+  evaluacion: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "evaluacion"] as const,
+  entregas: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "evaluacion", "entregas"] as const,
   borradores: [...all, "borradores"] as const,
   eleccion: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "eleccion"] as const,
+  encuesta: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "encuesta"] as const,
 } as const

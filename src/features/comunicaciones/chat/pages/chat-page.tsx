@@ -14,11 +14,23 @@ import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-heade
 import { ChatMessages } from "@/features/comunicaciones/chat/components/chat-messages"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import {
-  EleccionBienvenida,
+  CanalBienvenida,
   EleccionEstado,
   EleccionResultados,
 } from "@/features/comunicaciones/chat/components/eleccion-panel"
 import { useEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-eleccion-query"
+import { useEncuestaQuery } from "@/features/comunicaciones/chat/api/query/use-encuesta-query"
+import { useEvaluacionQuery } from "@/features/comunicaciones/chat/api/query/use-evaluacion-query"
+import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
+import { ComunicadoPanel } from "@/features/comunicaciones/chat/components/comunicado-panel"
+import {
+  EvaluacionEntregas,
+  EvaluacionEstado,
+} from "@/features/comunicaciones/chat/components/evaluacion-panel"
+import {
+  EncuestaEstado,
+  EncuestaResultados,
+} from "@/features/comunicaciones/chat/components/encuesta-panel"
 import { ArchivosView } from "@/features/comunicaciones/chat/components/archivos-view"
 import { BorradoresView } from "@/features/comunicaciones/chat/components/borradores-view"
 import { useEliminarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
@@ -49,6 +61,14 @@ function ChatContent() {
   const esEleccion = activa?.categoria === "VOTACION"
   const eleccionQuery = useEleccionQuery(esEleccion ? activa.id : undefined)
   const eleccion = eleccionQuery.data
+  const esEncuesta = activa?.categoria === "ENCUESTA"
+  const encuestaQuery = useEncuestaQuery(esEncuesta ? activa.id : undefined)
+  const encuesta = encuestaQuery.data
+  const esEvaluacion = activa?.categoria === "EXAMEN"
+  const evaluacionQuery = useEvaluacionQuery(esEvaluacion ? activa.id : undefined)
+  const evaluacion = evaluacionQuery.data
+  const esComunicado = activa?.categoria === "ANUNCIO"
+  const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
   // Sin comentarios habilitados el canal de la elección es solo lectura.
   const sinComentarios = esEleccion && eleccion && !eleccion.permitirComentarios
 
@@ -115,6 +135,17 @@ function ChatContent() {
                 onVolver={() => seleccionar(undefined)}
               />
               {eleccion && <EleccionEstado eleccion={eleccion} />}
+              {encuesta && <EncuestaEstado encuesta={encuesta} />}
+              {evaluacion && <EvaluacionEstado evaluacion={evaluacion} />}
+              {esComunicado ? (
+                <ComunicadoPanel
+                  comunicado={comunicadoQuery.data}
+                  isPending={comunicadoQuery.isPending}
+                  isError={comunicadoQuery.isError}
+                  onRetry={() => void comunicadoQuery.refetch()}
+                />
+              ) : (
+              <>
               <ChatMessages
                 mensajes={mensajesQuery.data ?? []}
                 isPending={mensajesQuery.isPending}
@@ -123,15 +154,37 @@ function ChatContent() {
                 busqueda={busqueda}
                 nombreConversacion={activa.nombre}
                 antes={
-                  esEleccion && (
+                  activa.categoria === "GENERAL" && activa.creadoPor ? (
+                    <CanalBienvenida
+                      key={activa.id}
+                      canal={{
+                        conversacionId: activa.id,
+                        nombre: activa.nombre,
+                        creadoPor: activa.creadoPor,
+                        esCreador: !!activa.esCreador,
+                      }}
+                    />
+                  ) : esEvaluacion ? (
                     <>
-                      {eleccion && <EleccionBienvenida key={eleccion.conversacionId} eleccion={eleccion} />}
-                      <EleccionResultados
-                      eleccion={eleccion}
-                      isPending={eleccionQuery.isPending}
-                      actualizadoEn={eleccionQuery.dataUpdatedAt}
-                      />
+                      {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} canal={evaluacion} />}
+                      <EvaluacionEntregas evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
                     </>
+                  ) : esEncuesta ? (
+                    <>
+                      {encuesta && <CanalBienvenida key={encuesta.conversacionId} canal={encuesta} />}
+                      <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                    </>
+                  ) : (
+                    esEleccion && (
+                      <>
+                        {eleccion && <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} />}
+                        <EleccionResultados
+                          eleccion={eleccion}
+                          isPending={eleccionQuery.isPending}
+                          actualizadoEn={eleccionQuery.dataUpdatedAt}
+                        />
+                      </>
+                    )
                   )
                 }
               />
@@ -160,6 +213,8 @@ function ChatContent() {
                   })
                 }
               />
+              )}
+              </>
               )}
             </>
           ) : (
