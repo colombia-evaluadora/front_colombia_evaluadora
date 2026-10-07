@@ -21,19 +21,36 @@ const ITEM =
   "gap-3 border-b py-2.5 text-sm font-normal tracking-normal normal-case last:border-b-0 [&_svg]:size-5!"
 
 // "Agregar canales": cada tipo de canal abre su propio asistente.
-export function AgregarCanal({ onCreado }: { onCreado: (id: number) => void }) {
+// `icono`: "+" junto al título de Canales; `fila`: el acceso al final de la lista.
+export function AgregarCanal({
+  onCreado,
+  variante = "fila",
+}: {
+  onCreado: (id: number) => void
+  variante?: "fila" | "icono"
+}) {
   const [abierto, setAbierto] = useState<CategoriaCanal | null>(null)
   const cerrar = () => setAbierto(null)
 
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-9 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground">
-          <span className="grid size-5 place-items-center rounded bg-muted/60">
-            <PlusIcon className="size-3.5" aria-hidden />
-          </span>
-          Agregar canales
-        </DropdownMenuTrigger>
+        {variante === "icono" ? (
+          <DropdownMenuTrigger
+            aria-label="Agregar canal"
+            title="Agregar canal"
+            className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground"
+          >
+            <PlusIcon className="size-5" />
+          </DropdownMenuTrigger>
+        ) : (
+          <DropdownMenuTrigger className="flex h-9 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground">
+            <span className="grid size-5 place-items-center rounded bg-muted/60">
+              <PlusIcon className="size-3.5" aria-hidden />
+            </span>
+            Agregar canales
+          </DropdownMenuTrigger>
+        )}
         <DropdownMenuContent side="right" align="start" className="w-64">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="px-3 pt-2 pb-1.5 text-sm font-semibold tracking-normal text-foreground normal-case">
