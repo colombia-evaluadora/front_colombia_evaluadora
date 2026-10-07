@@ -126,7 +126,11 @@ export function ChatSidebar({
             <Seccion titulo="Mensajes directos" agregar={"Agregar compañeros"}>
               {directos.map(item)}
             </Seccion>
-            <Seccion titulo="Canales" agregar={<AgregarCanal onCreado={onSeleccionar} />}>
+            <Seccion
+              titulo="Canales"
+              accion={<AgregarCanal variante="icono" onCreado={onSeleccionar} />}
+              agregar={<AgregarCanal onCreado={onSeleccionar} />}
+            >
               {canales.map(item)}
             </Seccion>
             {archivadas.length > 0 && (
@@ -192,25 +196,27 @@ function AccesoPendiente({ icono: Icono, children }: { icono: IconType; children
 function Seccion({
   titulo,
   agregar,
+  accion,
   inicialAbierta = true,
   children,
 }: {
   titulo: string
   // Texto = acceso aún sin back; nodo = control propio.
-  agregar: ReactNode
-| null
+  agregar: ReactNode | null
+  // Control junto al título ("+" de Canales): a mano aunque la lista sea larga.
+  accion?: ReactNode
   inicialAbierta?: boolean
   children: ReactNode
 }) {
   const [abierta, setAbierta] = useState(inicialAbierta)
   return (
     <section className="border-b px-2 py-2 last:border-b-0">
-      <h3>
+      <h3 className="flex items-center gap-1">
         <button
           type="button"
           aria-expanded={abierta}
           onClick={() => setAbierta((v) => !v)}
-          className="flex h-9 w-full items-center gap-2 rounded-lg px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         >
           <CaretDownFillIcon
             aria-hidden
@@ -218,6 +224,7 @@ function Seccion({
           />
           {titulo}
         </button>
+        {accion}
       </h3>
       {abierta && (
         <ul className="space-y-0.5">
