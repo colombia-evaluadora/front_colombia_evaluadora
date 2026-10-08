@@ -22,7 +22,7 @@ import { useMunicipalitiesQuery } from "@/features/establishment/institution/api
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
 import { MatriculaToolbar } from "@/features/coverage/components/matricula-toolbar"
 import type { DepartmentOption } from "@/features/coverage/components/forms/form-create-matricula"
-import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
+import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import { resolveMatriculaMunicipioDepartments } from "@/features/coverage/utils/matricula-form-defaults"
 
 export function MatriculaDetailPage() {
@@ -49,7 +49,10 @@ function MatriculaDetailPageContent() {
     isError: isFieldConfigError,
     error: fieldConfigError,
   } = useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
-  const fieldSettings = fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined
+  const fieldSettings = applyGradeFieldRules(
+    fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined,
+    data?.details?.academic.grade,
+  )
 
   useEffect(() => {
     if (isError) notify(getErrorMessage(error), { variant: "error" })

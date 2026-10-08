@@ -268,6 +268,7 @@ export function CreateGradeGroupDialog({
                   </ComboboxFieldTrigger>
                   <ComboboxFieldContent>
                     <ComboboxGroup>
+                      <ComboboxFieldItem value={null}>Seleccionar</ComboboxFieldItem>
                       {teachers.map((teacher) => (
                         <ComboboxFieldItem key={teacher.id} value={teacher.id}>
                           {teacher.name}
