@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { EnvelopeIcon } from "@/components/ui/icons"
+import { toEmailInput } from "@/lib/text-input"
 
 import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "@/features/auth/api/schema"
 
@@ -53,7 +54,7 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
                     placeholder="usuario@institucion.edu.co"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(toEmailInput(e.target.value))}
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>

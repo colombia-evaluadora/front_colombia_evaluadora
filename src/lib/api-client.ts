@@ -132,6 +132,9 @@ const PROBE_ENDPOINTS = [
   "/sso-admin/resetTokenStatus",
   "/coverage/reservations/catalogs",
   "/eval-col/planeador/actividad/calificaciones",
+  // Estado de cuenta de los funcionarios (tabla de funcionarios): si falla,
+  // solo se deshabilita el botón de reenviar activación.
+  "/auth/register/cval/funcionario/estado-cuenta",
 ]
 
 // Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
@@ -246,7 +249,13 @@ api.interceptors.response.use(
     // Sin guard, un 401 en /login mismo (todavía no existe esa página)
     // reintentaría redirigir a /login en loop infinito.
     const onLoginPage = window.location.pathname === paths.auth.login.path
-    let isExpiredSession = isUnauthorized && !onLoginPage && !isPublicEndpoint
+    // Un probe es una consulta opcional (p. ej. el estado de cuenta de la
+    // tabla de funcionarios): si falla, la pantalla degrada sola. Nunca debe
+    // cerrar la sesión ni revalidarla — un 401 de un probe que falla siempre
+    // mandaba a /login, el login veía la sesión viva y volvía a la pantalla,
+    // que repetía el probe: la página se recargaba sola en bucle.
+    const isProbe = PROBE_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
+    let isExpiredSession = isUnauthorized && !onLoginPage && !isPublicEndpoint && !isProbe
 
     // El backend dice explícitamente que el token no sirve (vencido, mal
     // firmado, revocado). Hay que soltarlo SIEMPRE, incluso en la pantalla de
@@ -271,7 +280,7 @@ api.interceptors.response.use(
     // vencida (evita pedir el refresh una vez por cada request que venía
     // en vuelo).
     const isForbidden = error.response?.status === 403
-    if (isForbidden && !onLoginPage && !isPublicEndpoint && !isHandlingExpiredSession) {
+    if (isForbidden && !onLoginPage && !isPublicEndpoint && !isProbe && !isHandlingExpiredSession) {
       try {
         const { token }: AuthResponse = await api.post("/auth/refresh")
         setAuthToken(token)
@@ -287,8 +296,6 @@ api.interceptors.response.use(
     if (isExpiredSession && isHandlingExpiredSession) {
       return Promise.reject(error)
     }
-
-    const isProbe = PROBE_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
 
     if (!isProbe && !suppressGlobalErrorToast && !isExpiredSession) {
       toast.error(getErrorMessage(error))

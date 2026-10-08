@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
+import { toEmailInput } from "@/lib/text-input"
 
 import {
   Field,
@@ -68,7 +69,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     placeholder="usuario@institucion.edu.co"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(toEmailInput(e.target.value))}
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>

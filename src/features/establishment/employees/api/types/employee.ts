@@ -52,6 +52,12 @@ export interface EmployeeListItem {
    * `roles`: se preserva el orden de aparición, sin duplicados.
    */
   statuses: PermissionStatus[]
+  /**
+   * Correo de la cuenta (`correo_electronico` del listado, sso PR #623). Lo
+   * usan los botones de restablecer contraseña / reenviar activación. Opcional:
+   * otros listados que reusan este tipo (docentes de asignación) no lo traen.
+   */
+  email?: string
 }
 
 export interface EmployeesQueryFilters {

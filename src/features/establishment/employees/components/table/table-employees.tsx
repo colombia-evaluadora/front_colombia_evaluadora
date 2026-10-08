@@ -35,6 +35,8 @@ import { ClearSelectionDialog } from "@/features/establishment/employees/compone
 import { ExportEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export"
 import { ExportSelectedEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export-selected"
 import { SearchEmployees } from "@/features/establishment/employees/components/search/search-employees"
+import { useAccountStatusQuery } from "@/features/establishment/employees/api/query/use-account-status"
+import { EmployeeAccountContext } from "@/features/establishment/employees/components/table/account-context"
 import { useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -48,7 +50,7 @@ interface EmployeesDataTableProps {
 
 export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesDataTableProps) {
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("FUNCIONARIOS")
+  const { puedeEliminar, puedeEditar } = useMenuPermission("FUNCIONARIOS")
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -86,6 +88,32 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   })
 
   const rows = data?.rows ?? []
+
+  // Correos y estado de cuenta SSO de la página visible, para los botones de
+  // restablecer contraseña / reenviar activación. Si algo de esto falla la
+  // tabla sigue igual: solo esos botones quedan deshabilitados.
+  // El correo viene en el listado (`correo_electronico`); se normaliza a
+  // minúsculas para cruzarlo con la respuesta de estado-cuenta.
+  const emailById = new Map(
+    rows.map((row) => [row.id, row.email ? row.email.trim().toLowerCase() : undefined]),
+  )
+  const correos = puedeEditar
+    ? [...new Set([...emailById.values()].filter((email): email is string => Boolean(email)))].sort()
+    : []
+  const accountStatus = useAccountStatusQuery(correos)
+  const statusByEmail = new Map(
+    (accountStatus.data ?? []).map((row) => [row.correo.trim().toLowerCase(), row.estado]),
+  )
+  const getAccountInfo = (id: number) => {
+    const email = emailById.get(id)
+    return {
+      email,
+      isEmailLoading: false,
+      status: email ? statusByEmail.get(email) : undefined,
+      isStatusLoading: accountStatus.isPending,
+      isStatusError: accountStatus.isError,
+    }
+  }
   const selectedItems = useMemo(
     () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
@@ -171,14 +199,16 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
       </TableScreenHeader>
 
       <TableScreenBody>
-        <DataTable
-          table={table}
-          isPending={isPending}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="Sin resultados."
-          errorMessage={error ? getErrorMessage(error) : undefined}
-        />
+        <EmployeeAccountContext.Provider value={getAccountInfo}>
+          <DataTable
+            table={table}
+            isPending={isPending}
+            isError={isError}
+            onRetry={refetch}
+            emptyMessage="Sin resultados."
+            errorMessage={error ? getErrorMessage(error) : undefined}
+          />
+        </EmployeeAccountContext.Provider>
 
         {data && (
           <Pagination

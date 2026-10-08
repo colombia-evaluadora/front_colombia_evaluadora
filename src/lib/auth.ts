@@ -4,6 +4,7 @@ import * as z from "zod"
 import { api, setAuthToken } from "@/lib/api-client"
 import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import type { MutationConfig } from "@/lib/react-query"
+import { toEmailInput } from "@/lib/text-input"
 import type { AuthResponse } from "@/types/api"
 
 const USER_QUERY_KEY = ["auth-user"]
@@ -24,7 +25,9 @@ async function getUser(): Promise<AuthUser | null> {
 const logout = (): Promise<void> => api.post("/auth/logout")
 
 export const loginInputSchema = z.object({
-  email: z.email("Email inválido"),
+  // Limpia caracteres invisibles (word joiner, zero-width, BOM, NBSP) antes
+  // de validar: `.trim()` no los quita y llegan al pegar el correo.
+  email: z.string().transform(toEmailInput).pipe(z.email("Email inválido")),
   password: z.string().min(1, "Requerido"),
 })
 export type LoginInput = z.infer<typeof loginInputSchema>

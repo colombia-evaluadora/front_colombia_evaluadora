@@ -527,16 +527,10 @@ export function EditarActividadForm({
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   useRecuperacionAutoFill(form)
 
-  // Cómo se llama "la actividad" en ESTE grado ("Actividad"/"Experiencia"/
-  // "Proyecto"…, `docs/rotulo-actividad.md`). Antes de elegir Grado cae a
-  // `tab?.rotulo` (la pestaña desde la que se abrió "Nueva {rótulo}", ya
-  // sabido sin esperar ninguna consulta) y solo si tampoco hay `tab` (alta
-  // genérica sin pestaña, o edición) cae al fallback fijo. Nunca
-  // hardcodear "actividad" en los textos de este form.
+  // Rótulo del selector de unidad según el grado (mismo que `UnidadAsociadaSection`).
   const gradoIdActual = useSelector(form.store, (state) => state.values.gradoId)
-  const asignaturaIdActual = useSelector(form.store, (state) => state.values.asignaturaId)
-  const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdActual, asignaturaIdActual)
-  const rotulo = rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const rotuloUnidad = resolveInstrumentoLabel(gradoIdActual, unidadTabs, UNIDAD_TAB_FALLBACK)
 
   return (
     <SoloLecturaActividadContext.Provider value={readOnly}>
@@ -607,7 +601,8 @@ export function EditarActividadForm({
         </div>
       </Card>
       <Card className="gap-4 p-4">
-        <h3 className="text-base font-semibold">Identificación de la {rotuloEnMinuscula(rotulo)}</h3>
+        {/* Rótulo del selector de unidad del Bloque 1 ("Unidad temática" / "Proyecto pedagógico"). */}
+        <h3 className="text-base font-semibold">Identificación y Estructura de Datos de la {rotuloUnidad}</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <IdentificacionSection
             form={form}
@@ -616,8 +611,8 @@ export function EditarActividadForm({
             tab={tab}
           />
         </div>
+        <UnidadSection form={form} unidades={unidades} readOnly={readOnly} />
       </Card>
-      <UnidadSection form={form} unidades={unidades} readOnly={readOnly} />
       <Card className="gap-6 p-4">
         <h3 className="text-base font-semibold">Recursos y Materiales</h3>
         <MaterialesSection form={form} disabled={disabled} />
@@ -1227,7 +1222,7 @@ function IdentificacionSection({
                 id={field.name}
                 name={field.name}
                 placeholder="Agregar"
-                maxLength={50}
+                maxLength={150}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -1271,6 +1266,26 @@ function IdentificacionSection({
                 </SelectContent>
               </Select>
               {tipoInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="descripcion">
+          {(field) => (
+            <Field variant="outlined" className="sm:col-span-2">
+              <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+              <Textarea className={TEXTAREA_OUTLINED}
+                id={field.name}
+                name={field.name}
+                placeholder="Agregar"
+                maxLength={500}
+                value={field.state.value ?? ""}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                rows={3}
+                disabled={disabled}
+              />
+              <CharacterCounter value={field.state.value ?? ""} max={500} />
             </Field>
           )}
         </form.Field>

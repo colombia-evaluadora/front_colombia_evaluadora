@@ -54,6 +54,7 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
   const tipoActividadId = await resolveTipoActividadId(actividad.tipo)
   const body: Record<string, unknown> = {
     TITULO: actividad.nombre,
+    DESCRIPCION: actividad.descripcion ?? "",
     FK_TASIGNATURA: actividad.asignaturaId,
     FK_TGRUPO: actividad.grupoId,
     FK_TLV_TIPO_ACTIVIDAD: tipoActividadId,

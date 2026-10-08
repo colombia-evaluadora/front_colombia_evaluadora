@@ -62,6 +62,11 @@ import { useCreate } from "@/features/establishment/employees/api/mutations/use-
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
 import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
 import { useUpdate } from "@/features/establishment/employees/api/mutations/use-update"
+import {
+  correoCambio,
+  useReactivarPorCambioDeCorreo,
+  type CambioCorreoInput,
+} from "@/features/establishment/employees/api/mutations/use-reactivar-por-cambio-de-correo"
 import { registerFuncionario } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import {
   toCrearItem,
@@ -92,6 +97,7 @@ import {
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
 import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { toEmailInput } from "@/lib/text-input"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface ManageEmployeeDialogProps {
@@ -426,14 +432,25 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
 }
 
 export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
+  // `useNotify` ACÁ (fuera del `NoticeProvider` propio del diálogo) resuelve
+  // al provider de la página. Los avisos que se emiten justo antes de cerrar
+  // el diálogo tienen que ir ahí: si van al provider del diálogo quedan en un
+  // `NoticeOutlet` que desaparece con el cierre y el usuario no ve nada (así
+  // se perdía "Funcionario actualizado" y el aviso del correo de activación).
+  const { notify: notifyPage } = useNotify()
   return (
     <NoticeProvider>
-      <ManageEmployeeDialogContent {...props} />
+      <ManageEmployeeDialogContent {...props} notifyPage={notifyPage} />
     </NoticeProvider>
   )
 }
 
-function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
+function ManageEmployeeDialogContent({
+  open,
+  onOpenChange,
+  employeeId,
+  notifyPage,
+}: ManageEmployeeDialogProps & { notifyPage: ReturnType<typeof useNotify>["notify"] }) {
   const { notify, dismiss } = useNotify()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -730,10 +747,16 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     },
   })
 
+  const reactivarMutation = useReactivarPorCambioDeCorreo()
+  // Se arma en `handleMainSave` (modo edición, correo realmente cambiado) y
+  // lo consume el `onSuccess` de `updateMutation`.
+  const emailChangeRef = useRef<CambioCorreoInput | null>(null)
+
   const updateMutation = useUpdate({
     mutationConfig: {
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         if (result.status === "error") {
+          emailChangeRef.current = null
           notify(result.message, { variant: "error" })
           return
         }
@@ -742,6 +765,29 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         // actual: el aviso de cierre de sesión REEMPLAZA al mensaje y
         // cierre normales (no los dos) — el diálogo sigue montado para
         // mostrar el modal bloqueante.
+        // Correo cambiado: la cuenta SSO vuelve a "pendiente de activación" y
+        // se envía el correo de activación al correo nuevo. Va DESPUÉS del
+        // guardado porque el backend valida que el cambio ya esté aplicado.
+        const cambioCorreo = emailChangeRef.current
+        emailChangeRef.current = null
+        let activacionMsg: string | null = null
+        if (cambioCorreo) {
+          try {
+            await reactivarMutation.mutateAsync(cambioCorreo)
+            activacionMsg = `Se envió el correo de activación a ${cambioCorreo.correoNuevo}.`
+          } catch (error) {
+            selfEmailJustChangedRef.current = false
+            notifyPage(
+              `${SUCCESS_MESSAGES.employee.updated} No fue posible enviar el correo de activación: ${
+                getErrorMessage(error) || "error desconocido"
+              }`,
+              { variant: "error" },
+            )
+            onOpenChange(false)
+            return
+          }
+        }
+
         if (selfEmailJustChangedRef.current) {
           selfEmailJustChangedRef.current = false
           setSelfEmailChangedDialogOpen(true)
@@ -751,7 +797,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         // En modo creación este guardado final también pasa por PUT (una vez
         // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
         // acá: el funcionario se está creando por primera vez.
-        notify(isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created)
+        const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
+        notifyPage(activacionMsg ? `${base} ${activacionMsg}` : base)
         onOpenChange(false)
       },
       onError: (error) => {
@@ -811,7 +858,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     // 1) Garantizar que la persona exista (POST /person en mock;
     //    POST /register/cval/funcionario en real — ver más abajo, ese además
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
-    let persistedPerson = draft
+    // El correo se limpia de caracteres invisibles también acá: si el valor
+    // vino sucio de la base y no se tocó el input, igual se guarda limpio.
+    let persistedPerson: Person = { ...draft, email: toEmailInput(draft.email ?? "") }
 
     const nextErrors = computePersonErrors(persistedPerson, confirmPassword, photo)
 
@@ -958,9 +1007,13 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       isEditMode &&
         currentUser?.email &&
         originalEmailRef.current &&
-        originalEmailRef.current.toLowerCase() === currentUser.email.toLowerCase() &&
-        persistedPerson.email.toLowerCase() !== originalEmailRef.current.toLowerCase(),
+        toEmailInput(originalEmailRef.current).toLowerCase() === toEmailInput(currentUser.email).toLowerCase() &&
+        toEmailInput(persistedPerson.email).toLowerCase() !== toEmailInput(originalEmailRef.current).toLowerCase(),
     )
+    emailChangeRef.current =
+      isEditMode && correoCambio(originalEmailRef.current, persistedPerson.email)
+        ? { correoAnterior: toEmailInput(originalEmailRef.current ?? ""), correoNuevo: toEmailInput(persistedPerson.email) }
+        : null
     await updateMutation.mutateAsync({
       employeeId: activeEmployeeId,
       values: payload,
@@ -1046,16 +1099,13 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     notify(`Permiso de ${role.name} en ${campus.name} agregado.`)
   }
 
-  function removePermission(order: number) {
-    const removed = permissions.find((permission) => permission.order === order)
+  // Se quita por referencia, no por orden: el orden solo es único por
+  // (rol, sede) (UK_TSEDE_USUARIO_2), así que filtrar por él se llevaba
+  // todos los permisos con el mismo número y "Guardar" los daba de baja.
+  function removePermission(removed: Permission) {
+    setPermissions((current) => current.filter((permission) => permission !== removed))
 
-    setPermissions((current) => current.filter((permission) => permission.order !== order))
-
-    notify(
-      removed
-        ? `Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`
-        : "Permiso eliminado.",
-    )
+    notify(`Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`)
   }
 
   /**
@@ -1575,7 +1625,10 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               </TableHeader>
               <TableBody>
                 {sortedPermissions.map((permission) => (
-                  <TableRow key={`${permission.order}-${permission.campus.id}`} className="group/row">
+                  <TableRow
+                    key={`${permission.role.id}-${permission.campus.id}-${permission.order}`}
+                    className="group/row"
+                  >
                     <TableCell className="font-medium">{permission.order}</TableCell>
                     <TableCell>{permission.role.name}</TableCell>
                     <TableCell>{permission.campus.name}</TableCell>
@@ -1596,7 +1649,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                               {permission.campus.name}. Esta acción no se puede deshacer.
                             </>
                           }
-                          onConfirm={() => removePermission(permission.order)}
+                          onConfirm={() => removePermission(permission)}
                         />
                       </div>
                     </TableCell>
@@ -1692,7 +1745,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             <DialogTitle>Correo electrónico actualizado</DialogTitle>
             <DialogDescription>
               El correo electrónico se actualizó correctamente. Por seguridad, se cerrará su sesión.
-              Deberá iniciar sesión nuevamente con su nuevo correo electrónico.
+              Le llegará un correo de activación a su nuevo correo electrónico: active la cuenta
+              desde ese enlace y defina su contraseña para volver a iniciar sesión.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="px-6 pb-6 sm:justify-end">

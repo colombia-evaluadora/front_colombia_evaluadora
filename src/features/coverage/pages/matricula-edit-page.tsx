@@ -59,7 +59,7 @@ import {
   resolveMatriculaMunicipioDepartments,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
-import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
+import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
 
@@ -93,7 +93,7 @@ function MatriculaEditPageContent() {
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
     useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
-  const fieldSettings = useMemo(
+  const configuredFieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],
   )
@@ -106,6 +106,11 @@ function MatriculaEditPageContent() {
   }, [isFieldConfigError, fieldConfigError, notify])
 
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
+  const grade = values?.academic.grade
+  const fieldSettings = useMemo(
+    () => applyGradeFieldRules(configuredFieldSettings, grade),
+    [configuredFieldSettings, grade],
+  )
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const initialGradeRef = useRef<string | null>(null)

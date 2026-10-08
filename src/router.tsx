@@ -54,6 +54,7 @@ import {
   asistenciaSearchSchema,
   asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
+import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -878,6 +879,24 @@ export const asistenciaManualRoute = createRoute({
   component: AsistenciaManualPage,
 })
 
+const ChatPage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/chat/pages/chat-page"),
+  "ChatPage",
+)
+
+export const chatRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesChat.path,
+  validateSearch: chatSearchSchema,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Chat" },
+    ],
+  },
+  component: ChatPage,
+})
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   authLayoutRoute.addChildren([
@@ -931,6 +950,7 @@ const routeTree = rootRoute.addChildren([
     asistenciaRoute,
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,
+    chatRoute,
   ]),
 ])
 

@@ -129,6 +129,7 @@ export function createEmployeeRow(employee: Employee & { id: number }): Employee
     campuses: campusNames,
     workSchedules,
     statuses,
+    email: employee.person.email,
   }
 }
 

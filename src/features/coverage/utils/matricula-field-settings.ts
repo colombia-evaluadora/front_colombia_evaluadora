@@ -1,4 +1,5 @@
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
+import { isPreescolarPrimariaGrado } from "@/features/coverage/utils/matricula-grado-rules"
 import type { MatriculaFieldConfig } from "@/features/coverage/api/types/matricula"
 
 export interface MatriculaFieldSetting {
@@ -53,6 +54,31 @@ export function buildMatriculaFieldSettings(config: MatriculaFieldConfig): Matri
   })
 
   return settings
+}
+
+const STUDENT_EMAIL_ID = "student-contact-email"
+
+/**
+ * El correo del estudiante lo decide el GRADO, no la configuración del
+ * establecimiento: de 6° en adelante es la cuenta de acceso del estudiante
+ * (sin él no se puede crear, ver `registerMatriculaPersona`), y en
+ * preescolar/primaria no se usa (se crea un usuario administrado, sin
+ * cuenta). Ocultarlo por configuración dejaba a bachillerato sin poder
+ * matricular a un estudiante nuevo; mostrarlo en primaria pedía un dato
+ * que nadie usa. Sin grado elegido manda la configuración.
+ */
+export function applyGradeFieldRules(
+  settings: MatriculaFieldSettingsMap | undefined,
+  grade: string | undefined,
+): MatriculaFieldSettingsMap | undefined {
+  if (!grade || Number.isNaN(Number(grade))) return settings
+  const configurado = settings?.[STUDENT_EMAIL_ID]
+  return {
+    ...settings,
+    [STUDENT_EMAIL_ID]: isPreescolarPrimariaGrado(grade)
+      ? { requerido: false, visible: false }
+      : { requerido: configurado?.requerido ?? false, visible: true },
+  }
 }
 
 /** Sin config cargada (o campo sin entrada, ej. archivos de soporte) el
