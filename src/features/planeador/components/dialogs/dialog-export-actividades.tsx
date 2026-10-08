@@ -32,7 +32,7 @@ import {
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogExportActividadesProps {
-  /** Filas ya filtradas en el cliente (lo que se está viendo en el rail) — solo para el conteo del texto. */
+  /** Filas que se ven en el rail — solo para resolver el rótulo del texto. El export no se limita a ellas. */
   rows: Actividad[]
   /** Los mismos criterios que produjeron `rows`, en la forma que espera el reporte real. */
   filters: PlaneadorActividadesReportFilters
@@ -108,8 +108,8 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar los {rows.length} registros de {rotuloLower} que
-            coinciden con los filtros activos.
+            Elige un formato para exportar todos los registros de {rotuloLower} que coinciden
+            con la búsqueda y los filtros activos, de cualquier día.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
