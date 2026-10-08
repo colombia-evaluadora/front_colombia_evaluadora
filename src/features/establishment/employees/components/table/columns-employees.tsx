@@ -1,3 +1,5 @@
+"use no memo"
+
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
@@ -9,6 +11,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "@/features/establishment/employees/api/ui-mappings"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
+import {
+  ResendActivationDialog,
+  SendPasswordResetDialog,
+} from "@/features/establishment/employees/components/dialogs/dialog-account-email"
 import { DeleteEmployeeDialog } from "@/features/establishment/employees/components/dialogs/dialog-delete"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -84,6 +90,12 @@ function ActionsCell({ employee, onEdit }: { employee: EmployeeListItem; onEdit:
           </TooltipTrigger>
           <TooltipContent>Editar funcionario</TooltipContent>
         </Tooltip>
+      ) : null}
+      {puedeEditar ? (
+        <>
+          <SendPasswordResetDialog employee={employee} />
+          <ResendActivationDialog employee={employee} />
+        </>
       ) : null}
       <DeleteEmployeeDialog employee={employee} />
     </div>
@@ -247,7 +259,8 @@ export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<Emp
     cell: ({ row }) => <ActionsCell employee={row.original} onEdit={onEdit} />,
     enableSorting: false,
     enableHiding: false,
-    size: 96,
+    // 48 por botón: editar, restablecer contraseña, reenviar activación, eliminar.
+    size: 192,
   },
 ]
 }

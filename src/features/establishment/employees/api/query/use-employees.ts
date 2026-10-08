@@ -57,6 +57,7 @@ interface RealEmployeeListRow {
   roles: { id: number; nombre: string }[]
   sedes: { id: number; nombre: string }[]
   estados_permisos: string[]
+  correo_electronico: string | null
 }
 
 function toEmployeeListItem(row: RealEmployeeListRow): EmployeeListItem {
@@ -69,6 +70,7 @@ function toEmployeeListItem(row: RealEmployeeListRow): EmployeeListItem {
     workSchedules:
       row.jornada_id === null ? [] : [{ id: row.jornada_id, code: "", name: row.jornada_nombre ?? "" }],
     statuses: (row.estados_permisos ?? []).map((estado) => (estado === "ACTIVO" ? "ACTIVE" : "SUSPENDED")),
+    email: row.correo_electronico?.trim() || undefined,
   }
 }
 
