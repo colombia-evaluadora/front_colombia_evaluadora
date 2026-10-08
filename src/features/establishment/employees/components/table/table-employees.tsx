@@ -36,7 +36,6 @@ import { ExportEmployeesDialog } from "@/features/establishment/employees/compon
 import { ExportSelectedEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export-selected"
 import { SearchEmployees } from "@/features/establishment/employees/components/search/search-employees"
 import { useAccountStatusQuery } from "@/features/establishment/employees/api/query/use-account-status"
-import { useEmployeeEmails } from "@/features/establishment/employees/hooks/use-employee-emails"
 import { EmployeeAccountContext } from "@/features/establishment/employees/components/table/account-context"
 import { useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -93,11 +92,15 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   // Correos y estado de cuenta SSO de la página visible, para los botones de
   // restablecer contraseña / reenviar activación. Si algo de esto falla la
   // tabla sigue igual: solo esos botones quedan deshabilitados.
-  const { emailById, isLoading: isEmailLoading } = useEmployeeEmails(
-    puedeEditar ? rows.map((row) => row.id) : [],
+  // El correo viene en el listado (`correo_electronico`); se normaliza a
+  // minúsculas para cruzarlo con la respuesta de estado-cuenta.
+  const emailById = new Map(
+    rows.map((row) => [row.id, row.email ? row.email.trim().toLowerCase() : undefined]),
   )
-  const correos = [...new Set([...emailById.values()].filter((email): email is string => Boolean(email)))].sort()
-  const accountStatus = useAccountStatusQuery(isEmailLoading ? [] : correos)
+  const correos = puedeEditar
+    ? [...new Set([...emailById.values()].filter((email): email is string => Boolean(email)))].sort()
+    : []
+  const accountStatus = useAccountStatusQuery(correos)
   const statusByEmail = new Map(
     (accountStatus.data ?? []).map((row) => [row.correo.trim().toLowerCase(), row.estado]),
   )
@@ -105,9 +108,9 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     const email = emailById.get(id)
     return {
       email,
-      isEmailLoading: isEmailLoading && !email,
+      isEmailLoading: false,
       status: email ? statusByEmail.get(email) : undefined,
-      isStatusLoading: isEmailLoading || accountStatus.isPending,
+      isStatusLoading: accountStatus.isPending,
       isStatusError: accountStatus.isError,
     }
   }
