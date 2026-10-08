@@ -62,6 +62,11 @@ import { useCreate } from "@/features/establishment/employees/api/mutations/use-
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
 import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
 import { useUpdate } from "@/features/establishment/employees/api/mutations/use-update"
+import {
+  correoCambio,
+  useReactivarPorCambioDeCorreo,
+  type CambioCorreoInput,
+} from "@/features/establishment/employees/api/mutations/use-reactivar-por-cambio-de-correo"
 import { registerFuncionario } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import {
   toCrearItem,
@@ -730,10 +735,16 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     },
   })
 
+  const reactivarMutation = useReactivarPorCambioDeCorreo()
+  // Se arma en `handleMainSave` (modo edición, correo realmente cambiado) y
+  // lo consume el `onSuccess` de `updateMutation`.
+  const emailChangeRef = useRef<CambioCorreoInput | null>(null)
+
   const updateMutation = useUpdate({
     mutationConfig: {
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         if (result.status === "error") {
+          emailChangeRef.current = null
           notify(result.message, { variant: "error" })
           return
         }
@@ -742,6 +753,29 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         // actual: el aviso de cierre de sesión REEMPLAZA al mensaje y
         // cierre normales (no los dos) — el diálogo sigue montado para
         // mostrar el modal bloqueante.
+        // Correo cambiado: la cuenta SSO vuelve a "pendiente de activación" y
+        // se envía el correo de activación al correo nuevo. Va DESPUÉS del
+        // guardado porque el backend valida que el cambio ya esté aplicado.
+        const cambioCorreo = emailChangeRef.current
+        emailChangeRef.current = null
+        let activacionMsg: string | null = null
+        if (cambioCorreo) {
+          try {
+            await reactivarMutation.mutateAsync(cambioCorreo)
+            activacionMsg = `Se envió el correo de activación a ${cambioCorreo.correoNuevo}.`
+          } catch (error) {
+            selfEmailJustChangedRef.current = false
+            notify(
+              `${SUCCESS_MESSAGES.employee.updated} No fue posible enviar el correo de activación: ${
+                getErrorMessage(error) || "error desconocido"
+              }`,
+              { variant: "error" },
+            )
+            onOpenChange(false)
+            return
+          }
+        }
+
         if (selfEmailJustChangedRef.current) {
           selfEmailJustChangedRef.current = false
           setSelfEmailChangedDialogOpen(true)
@@ -751,7 +785,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         // En modo creación este guardado final también pasa por PUT (una vez
         // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
         // acá: el funcionario se está creando por primera vez.
-        notify(isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created)
+        const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
+        notify(activacionMsg ? `${base} ${activacionMsg}` : base)
         onOpenChange(false)
       },
       onError: (error) => {
@@ -961,6 +996,10 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         originalEmailRef.current.toLowerCase() === currentUser.email.toLowerCase() &&
         persistedPerson.email.toLowerCase() !== originalEmailRef.current.toLowerCase(),
     )
+    emailChangeRef.current =
+      isEditMode && correoCambio(originalEmailRef.current, persistedPerson.email)
+        ? { correoAnterior: (originalEmailRef.current ?? "").trim(), correoNuevo: persistedPerson.email.trim() }
+        : null
     await updateMutation.mutateAsync({
       employeeId: activeEmployeeId,
       values: payload,
@@ -1692,7 +1731,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             <DialogTitle>Correo electrónico actualizado</DialogTitle>
             <DialogDescription>
               El correo electrónico se actualizó correctamente. Por seguridad, se cerrará su sesión.
-              Deberá iniciar sesión nuevamente con su nuevo correo electrónico.
+              Le llegará un correo de activación a su nuevo correo electrónico: active la cuenta
+              desde ese enlace y defina su contraseña para volver a iniciar sesión.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="px-6 pb-6 sm:justify-end">
