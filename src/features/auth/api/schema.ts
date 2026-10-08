@@ -1,6 +1,7 @@
 import * as z from "zod"
 
 import { loginInputSchema } from "@/lib/auth"
+import { toEmailInput } from "@/lib/text-input"
 
 // El schema de la API solo exige que la contraseña venga; el del formulario
 // además avisa del largo mínimo antes de gastar un intento contra el
@@ -26,7 +27,9 @@ export const loginSearchSchema = z.object({
 export type LoginSearch = z.infer<typeof loginSearchSchema>
 
 export const forgotPasswordFormSchema = z.object({
-  email: z.email("Email inválido"),
+  // Limpia caracteres invisibles (word joiner, zero-width, BOM, NBSP) antes
+  // de validar: `.trim()` no los quita y llegan al pegar el correo.
+  email: z.string().transform(toEmailInput).pipe(z.email("Email inválido")),
 })
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>
 

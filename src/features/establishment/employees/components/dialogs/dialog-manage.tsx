@@ -97,6 +97,7 @@ import {
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
 import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { toEmailInput } from "@/lib/text-input"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface ManageEmployeeDialogProps {
@@ -431,14 +432,25 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
 }
 
 export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
+  // `useNotify` ACÁ (fuera del `NoticeProvider` propio del diálogo) resuelve
+  // al provider de la página. Los avisos que se emiten justo antes de cerrar
+  // el diálogo tienen que ir ahí: si van al provider del diálogo quedan en un
+  // `NoticeOutlet` que desaparece con el cierre y el usuario no ve nada (así
+  // se perdía "Funcionario actualizado" y el aviso del correo de activación).
+  const { notify: notifyPage } = useNotify()
   return (
     <NoticeProvider>
-      <ManageEmployeeDialogContent {...props} />
+      <ManageEmployeeDialogContent {...props} notifyPage={notifyPage} />
     </NoticeProvider>
   )
 }
 
-function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
+function ManageEmployeeDialogContent({
+  open,
+  onOpenChange,
+  employeeId,
+  notifyPage,
+}: ManageEmployeeDialogProps & { notifyPage: ReturnType<typeof useNotify>["notify"] }) {
   const { notify, dismiss } = useNotify()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -765,7 +777,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             activacionMsg = `Se envió el correo de activación a ${cambioCorreo.correoNuevo}.`
           } catch (error) {
             selfEmailJustChangedRef.current = false
-            notify(
+            notifyPage(
               `${SUCCESS_MESSAGES.employee.updated} No fue posible enviar el correo de activación: ${
                 getErrorMessage(error) || "error desconocido"
               }`,
@@ -786,7 +798,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
         // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
         // acá: el funcionario se está creando por primera vez.
         const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
-        notify(activacionMsg ? `${base} ${activacionMsg}` : base)
+        notifyPage(activacionMsg ? `${base} ${activacionMsg}` : base)
         onOpenChange(false)
       },
       onError: (error) => {
@@ -846,7 +858,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     // 1) Garantizar que la persona exista (POST /person en mock;
     //    POST /register/cval/funcionario en real — ver más abajo, ese además
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
-    let persistedPerson = draft
+    // El correo se limpia de caracteres invisibles también acá: si el valor
+    // vino sucio de la base y no se tocó el input, igual se guarda limpio.
+    let persistedPerson: Person = { ...draft, email: toEmailInput(draft.email ?? "") }
 
     const nextErrors = computePersonErrors(persistedPerson, confirmPassword, photo)
 
@@ -993,12 +1007,12 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       isEditMode &&
         currentUser?.email &&
         originalEmailRef.current &&
-        originalEmailRef.current.toLowerCase() === currentUser.email.toLowerCase() &&
-        persistedPerson.email.toLowerCase() !== originalEmailRef.current.toLowerCase(),
+        toEmailInput(originalEmailRef.current).toLowerCase() === toEmailInput(currentUser.email).toLowerCase() &&
+        toEmailInput(persistedPerson.email).toLowerCase() !== toEmailInput(originalEmailRef.current).toLowerCase(),
     )
     emailChangeRef.current =
       isEditMode && correoCambio(originalEmailRef.current, persistedPerson.email)
-        ? { correoAnterior: (originalEmailRef.current ?? "").trim(), correoNuevo: persistedPerson.email.trim() }
+        ? { correoAnterior: toEmailInput(originalEmailRef.current ?? ""), correoNuevo: toEmailInput(persistedPerson.email) }
         : null
     await updateMutation.mutateAsync({
       employeeId: activeEmployeeId,
