@@ -132,6 +132,9 @@ const PROBE_ENDPOINTS = [
   "/sso-admin/resetTokenStatus",
   "/coverage/reservations/catalogs",
   "/eval-col/planeador/actividad/calificaciones",
+  // Estado de cuenta de los funcionarios (tabla de funcionarios): si falla,
+  // solo se deshabilita el botón de reenviar activación.
+  "/auth/register/cval/funcionario/estado-cuenta",
 ]
 
 // Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
