@@ -472,6 +472,7 @@ function toActividadDetalle(
   return {
     id: row.pk_tactividad,
     nombre: row.titulo,
+    descripcion: row.descripcion ?? "",
     tipo: row.tipo_actividad ?? "Otro",
     esRecuperacion: row.es_recuperacion === "S",
     recuperacionDestino: row.recuperacion?.destino ?? row.recuperacion?.destinoValor ?? "",

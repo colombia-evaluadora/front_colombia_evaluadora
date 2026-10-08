@@ -51,6 +51,7 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   const body: Record<string, unknown> = {
     TITULO: data.nombre,
+    DESCRIPCION: data.descripcion ?? "",
     ES_EVALUATIVA: data.esEvaluativa ? "S" : "N",
     FECHA_INICIO: data.fechaInicio,
     FECHA_CIERRE: data.fechaCierre,

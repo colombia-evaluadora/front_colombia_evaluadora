@@ -260,6 +260,8 @@ export interface Adaptacion {
 export interface Actividad {
   id: number
   nombre: string
+  /** Descripción libre (máx. 500), viaja como `DESCRIPCION`. */
+  descripcion?: string
   tipo: ActividadTipo
   /**
    * Si la actividad es una recuperación (repetición de una evaluación
