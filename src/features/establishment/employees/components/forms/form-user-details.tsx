@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
-import { toDigitsOnly, toLettersOnly } from "@/lib/text-input"
+import { toDigitsOnly, toEmailInput, toLettersOnly } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -461,7 +461,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
-                        onChange={(event) => emitChange({ email: event.target.value })}
+                        onChange={(event) => emitChange({ email: toEmailInput(event.target.value) })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
                 </Field>

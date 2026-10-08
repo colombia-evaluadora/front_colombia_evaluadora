@@ -1,7 +1,7 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { FormSectionHeading } from "@/components/form-section-heading";
-import { toDigitsOnly } from "@/lib/text-input"
+import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface ContactDataFormSectionProps {
@@ -34,7 +34,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], er
                         maxLength={130}
                         value={value.email}
                         aria-invalid={isInvalid("contact.email")}
-                        onChange={(event) => onChange({ ...value, email: event.target.value })}
+                        onChange={(event) => onChange({ ...value, email: toEmailInput(event.target.value) })}
                     />
                     <FieldError>{errorFor("contact.email")}</FieldError>
                 </Field>

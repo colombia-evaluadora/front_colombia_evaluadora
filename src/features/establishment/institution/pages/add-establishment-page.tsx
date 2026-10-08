@@ -17,6 +17,7 @@ import { paths } from "@/config/paths"
 import { env } from "@/config/env"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
+import { toEmailInput } from "@/lib/text-input"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
@@ -392,11 +393,11 @@ export function AddEstablishmentPage() {
           if (correoCambio(correoAnterior, person.email)) {
             try {
               await reactivarPorCambioDeCorreo({
-                correoAnterior: (correoAnterior ?? "").trim(),
-                correoNuevo: person.email.trim(),
+                correoAnterior: toEmailInput(correoAnterior ?? ""),
+                correoNuevo: toEmailInput(person.email),
               })
               activationNoticesRef.current.push(
-                `Se envió el correo de activación a ${person.email.trim()}.`,
+                `Se envió el correo de activación a ${toEmailInput(person.email)}.`,
               )
             } catch (error) {
               activationNoticesRef.current.push(

@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
+import { toEmailInput } from "@/lib/text-input"
 import type { MutationConfig } from "@/lib/react-query"
 
 export interface CambioCorreoInput {
@@ -32,9 +33,9 @@ export function useReactivarPorCambioDeCorreo({
   return useMutation({ mutationFn: reactivarPorCambioDeCorreo, ...mutationConfig })
 }
 
-/** true si el correo cambió de verdad (sin distinguir mayúsculas ni espacios). */
+/** true si el correo cambió de verdad (sin distinguir mayúsculas, espacios ni caracteres invisibles). */
 export function correoCambio(anterior: string | null | undefined, nuevo: string | null | undefined) {
-  const a = (anterior ?? "").trim().toLowerCase()
-  const n = (nuevo ?? "").trim().toLowerCase()
+  const a = toEmailInput(anterior ?? "").toLowerCase()
+  const n = toEmailInput(nuevo ?? "").toLowerCase()
   return a !== "" && n !== "" && a !== n
 }

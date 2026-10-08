@@ -1,4 +1,23 @@
 /**
+ * Caracteres invisibles que `.trim()` NO quita y que llegan pegados junto a un
+ * correo (copiado de Word/Outlook/WhatsApp/PDF): zero-width space/non-joiner/
+ * joiner (U+200B–U+200D), word joiner (U+2060), BOM (U+FEFF) y espacio duro
+ * (U+00A0). Un correo así se guardó como "⁠jorge.sanchez@..." y rompió
+ * la reactivación por cambio de correo (el SSO no encontraba la cuenta).
+ */
+const INVISIBLE_EMAIL_CHARS = /[​-‍⁠﻿ ]/g
+
+/**
+ * Limpia un correo: quita los caracteres invisibles de arriba y los espacios
+ * de los extremos. Usalo en el `onChange` de los inputs de correo y también al
+ * armar payloads/comparar correos, para que valores sucios que ya vienen de la
+ * base se normalicen igual.
+ */
+export function toEmailInput(value: string): string {
+  return (value ?? "").replace(INVISIBLE_EMAIL_CHARS, "").trim()
+}
+
+/**
  * Filtra `value` dejando solo dígitos, y lo recorta a `maxLength` si se
  * pasa. Pensado para `onChange` de inputs que en la base son VARCHAR
  * numéricos puros (identificación, NIT, DANE, …) — nunca alfanuméricos,
