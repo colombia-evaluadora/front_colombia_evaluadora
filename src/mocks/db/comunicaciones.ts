@@ -1,16 +1,16 @@
 import type {
   Persona,
   AutorMensaje,
-  ChatInstitucion,
   Conversacion,
   Mensaje,
   ArchivoCompartido,
   Borrador,
+  Miembro,
+  TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
+import { ETIQUETAS_VOTACION_RAPIDA } from "@/features/comunicaciones/chat/lib/votacion-rapida"
 
 // Datos del chat. Fechas relativas a hoy para que "Hoy"/"Ayer" siempre se vean.
-
-export const CHAT_INSTITUCION: ChatInstitucion = { id: 1, nombre: "IE Simón Bolívar" }
 
 export const USUARIO_ACTUAL: AutorMensaje = { id: 1, nombre: "Andrés Gómez", enLinea: true }
 
@@ -204,6 +204,28 @@ export const mensajes: Mensaje[] = [
   ),
 ]
 
+// Votación rápida nueva del usuario actual, publicada como mensaje.
+export function nuevaVotacionRapida(
+  conversacionId: number,
+  pregunta: string,
+  tipo: TipoVotacionRapida,
+  minutos: number,
+  votos: [number, number] = [0, 0],
+  creadaEn = new Date(),
+) {
+  const m = mensaje(conversacionId, USUARIO_ACTUAL, "", creadaEn.toISOString())
+  m.votacion = {
+    pregunta,
+    tipo,
+    minutos,
+    cierraEn: new Date(creadaEn.getTime() + minutos * 60_000).toISOString(),
+    opciones: ETIQUETAS_VOTACION_RAPIDA[tipo].map((etiqueta, i) => ({ id: i + 1, etiqueta, votos: votos[i] })),
+    miVoto: null,
+  }
+  mensajes.push(m)
+  return m
+}
+
 export function nuevoMensaje(
   conversacionId: number,
   texto: string,
@@ -320,3 +342,42 @@ export const contenidoDocumentos = new Map<number, string>(
       `<p style="text-align: center"><strong>${a.nombre.replace(/\.\w+$/, "").replace(/_/g, " ").toUpperCase()}</strong></p><p></p>${LOREM}`,
     ]),
 )
+
+const EXTRA_MIEMBROS = [
+  "Lina Marcela Jaramillo Jaramillo",
+  "Edwin Fernney Sierra Ramírez",
+  "Fran Torres Gonzalez Gomez",
+  "Camila Andrea Ospina",
+  "Julián David Cardona",
+  "Sara Valentina Mejía",
+  "Mateo Esteban Arango",
+  "Valeria Gómez Henao",
+  "Santiago Restrepo Mora",
+  "Laura Daniela Zapata",
+  "Tomás Felipe Ochoa",
+]
+
+// Miembros por conversación, creados la primera vez que se piden.
+const miembrosPorConversacion = new Map<number, Miembro[]>()
+
+export function miembrosDe(conversacionId: number): Miembro[] {
+  let lista = miembrosPorConversacion.get(conversacionId)
+  if (!lista) {
+    lista = [
+      // Algunas personas del colegio quedan fuera para poder añadirlas.
+      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", enLinea: i % 3 !== 2, bloqueado: false })),
+      ...EXTRA_MIEMBROS.map((nombre, i) => ({
+        id: 100 + i,
+        nombre,
+        rol: i % 4 === 3 ? "Coordinador" : "Docente",
+        enLinea: i % 2 === 0,
+        bloqueado: i === 0,
+      })),
+    ]
+    miembrosPorConversacion.set(conversacionId, lista)
+  }
+  return lista
+}
+
+// Una votación rápida ya cerrada para ver los resultados finales.
+nuevaVotacionRapida(3, "¿Suspender clases mañana?", "SI_NO", 5, [18, 9], new Date(Date.now() - 60 * 60_000))

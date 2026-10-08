@@ -15,6 +15,7 @@ import { MensajeAcciones } from "@/features/comunicaciones/chat/components/mensa
 import { cn } from "@/lib/utils"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import {
   agruparPorDia,
@@ -27,7 +28,8 @@ interface ChatMessagesProps {
   isPending: boolean
   isError: boolean
   onRetry: () => void
-  busqueda: string
+  // Mensaje elegido en el buscador: se lleva a la vista y se resalta un momento.
+  destacado?: { id: number; vez: number }
   nombreConversacion: string
   // Contenido fijo al inicio del historial (p. ej. resultados de una elección).
   antes?: ReactNode
@@ -38,20 +40,28 @@ export function ChatMessages({
   isPending,
   isError,
   onRetry,
-  busqueda,
+  destacado,
   nombreConversacion,
   antes,
 }: ChatMessagesProps) {
   const finRef = useRef<HTMLDivElement>(null)
-  const texto = busqueda.trim().toLowerCase()
-  const visibles = texto
-    ? mensajes.filter((m) => m.texto.toLowerCase().includes(texto))
-    : mensajes
+  const contenedorRef = useRef<HTMLDivElement>(null)
+  const visibles = mensajes
 
-  // Al llegar mensajes nuevos se baja al último, salvo mientras se busca.
+  // Al llegar mensajes nuevos se baja al último.
   useEffect(() => {
-    if (!texto) finRef.current?.scrollIntoView({ block: "end" })
-  }, [mensajes.length, texto])
+    finRef.current?.scrollIntoView({ block: "end" })
+  }, [mensajes.length])
+
+  useEffect(() => {
+    if (!destacado) return
+    const el = contenedorRef.current?.querySelector<HTMLElement>(`[data-mensaje-id="${destacado.id}"]`)
+    if (!el) return
+    el.scrollIntoView({ block: "center", behavior: "smooth" })
+    el.dataset.destacado = "true"
+    const t = setTimeout(() => delete el.dataset.destacado, 1600)
+    return () => clearTimeout(t)
+  }, [destacado])
 
   if (isPending) {
     return (
@@ -78,9 +88,7 @@ export function ChatMessages({
 
   const vacio = (
     <p className="p-6 text-center text-sm text-muted-foreground">
-        {texto
-          ? `Ningún mensaje coincide con «${busqueda.trim()}».`
-          : `Aún no hay mensajes en ${nombreConversacion}. Escribe el primero.`}
+        {`Aún no hay mensajes en ${nombreConversacion}. Escribe el primero.`}
     </p>
   )
 
@@ -90,12 +98,12 @@ export function ChatMessages({
 
   return (
     <div
+      ref={contenedorRef}
       role="log"
       aria-label={`Mensajes de ${nombreConversacion}`}
       className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5"
     >
       {antes}
-      {visibles.length === 0 && vacio}
       {agruparPorDia(visibles).map((grupo) => (
         <section key={grupo.clave} aria-label={grupo.etiqueta}>
           <div className="relative my-4 flex justify-center">
@@ -106,7 +114,11 @@ export function ChatMessages({
           </div>
           <ul className="space-y-4">
             {grupo.mensajes.map((m) => (
-              <li key={m.id}>
+              <li
+                key={m.id}
+                data-mensaje-id={m.id}
+                className="-mx-2 rounded-xl px-2 transition-colors duration-700 data-destacado:bg-primary/15 motion-reduce:transition-none"
+              >
                 <MensajeItem mensaje={m} />
               </li>
             ))}
@@ -124,6 +136,14 @@ function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
       <p className="text-center text-xs text-muted-foreground">
         <span className="font-medium text-foreground/80">{m.autor.nombre}</span> {m.texto}
       </p>
+    )
+  }
+
+  if (m.votacion) {
+    return (
+      <div className={cn("flex", m.esPropio && "justify-end")}>
+        <VotacionRapidaCard mensaje={m} votacion={m.votacion} />
+      </div>
     )
   }
 

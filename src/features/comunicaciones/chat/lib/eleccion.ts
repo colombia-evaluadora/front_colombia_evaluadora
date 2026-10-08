@@ -3,9 +3,10 @@ import type { Candidato, Eleccion } from "@/features/comunicaciones/chat/api/typ
 export type EstadoEleccion = "PROGRAMADA" | "ACTIVA" | "FINALIZADA"
 
 export function estadoEleccion(
-  e: Pick<Eleccion, "fechaInicio" | "fechaCierre">,
+  e: Pick<Eleccion, "fechaInicio" | "fechaCierre"> & { cerradaManualmente?: boolean },
   ahora = Date.now(),
 ): EstadoEleccion {
+  if (e.cerradaManualmente) return "FINALIZADA"
   if (e.fechaInicio && Date.parse(e.fechaInicio) > ahora) return "PROGRAMADA"
   if (e.fechaCierre && Date.parse(e.fechaCierre) <= ahora) return "FINALIZADA"
   return "ACTIVA"

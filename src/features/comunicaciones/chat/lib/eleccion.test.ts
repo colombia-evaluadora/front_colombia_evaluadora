@@ -21,6 +21,8 @@ const base: Eleccion = {
     { id: 2, nombre: "B", numero: "2", lema: "", fotoUrl: null, votos: 30 },
   ],
   votosEnBlanco: 10,
+  cerradaManualmente: false,
+  yaVoto: false,
   totalHabilitados: 60,
   vieronCanal: 50,
   creadoPor: "Ana",
@@ -37,6 +39,9 @@ describe("estadoEleccion", () => {
       "FINALIZADA",
     )
     expect(estadoEleccion({ fechaInicio: null, fechaCierre: null }, ahora)).toBe("ACTIVA")
+    expect(
+      estadoEleccion({ fechaInicio: null, fechaCierre: null, cerradaManualmente: true }, ahora),
+    ).toBe("FINALIZADA")
   })
 })
 

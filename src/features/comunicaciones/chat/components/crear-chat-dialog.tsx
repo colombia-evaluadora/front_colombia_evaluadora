@@ -68,7 +68,7 @@ export function CrearChatDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="truncate">
-            {paso === 1 ? "Crear un Chat" : `Añadir personas a ${limpio}`}
+            {paso === 1 ? "Crear un Foro" : `Añadir personas a ${limpio}`}
           </DialogTitle>
         </DialogHeader>
 

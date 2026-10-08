@@ -50,11 +50,8 @@ export interface Mensaje {
   fijado: boolean
   // Aviso del sistema ("X se ha unido a…"): se muestra centrado, sin burbuja.
   sistema?: boolean
-}
-
-export interface ChatInstitucion {
-  id: number
-  nombre: string
+  // Mensaje que es una votación rápida: se pinta como tarjeta.
+  votacion?: VotacionRapida
 }
 
 export type FormatoArchivo = AdjuntoMensaje["formato"]
@@ -95,6 +92,10 @@ export interface Eleccion {
   permitirComentarios: boolean
   candidatos: Candidato[]
   votosEnBlanco: number
+  // El creador la cerró antes de tiempo desde el menú del canal.
+  cerradaManualmente: boolean
+  // El usuario actual ya votó (el voto es único).
+  yaVoto: boolean
   totalHabilitados: number
   vieronCanal: number
   creadoPor: string
@@ -148,6 +149,8 @@ export interface Encuesta {
   participantes: number
   creadoPor: string
   esCreador: boolean
+  // El usuario actual ya la respondió (se responde una sola vez).
+  yaRespondi: boolean
 }
 
 // Persona del colegio que se puede añadir a un canal.
@@ -190,6 +193,12 @@ export interface Evaluacion {
   preguntas: PreguntaEvaluacion[]
   creadoPor: string
   esCreador: boolean
+  // Del usuario actual (estudiante): cuántas veces la envió y su última nota.
+  intentosUsados: number
+  // null = aún no se puede ver (se publica al cierre) o no ha enviado.
+  miNota: number | null
+  // Hay preguntas de redacción que el docente aún no califica.
+  miNotaPendiente: boolean
 }
 
 export interface RespuestaEntrega {
@@ -222,4 +231,58 @@ export interface Comunicado {
   contenidoHtml: string
   publicadoPor: string
   esCreador: boolean
+}
+
+// Miembro de un canal. Bloqueado = sigue en el canal pero no puede escribir.
+export interface Miembro {
+  id: number
+  nombre: string
+  rol: string
+  enLinea: boolean
+  bloqueado: boolean
+}
+
+// Votación rápida: una pregunta de dos opciones que se cierra sola al vencer el tiempo.
+export type TipoVotacionRapida = "SI_NO" | "VERDADERO_FALSO"
+
+export interface OpcionVotacionRapida {
+  id: number
+  etiqueta: string
+  votos: number
+}
+
+export interface VotacionRapida {
+  pregunta: string
+  tipo: TipoVotacionRapida
+  minutos: number
+  cierraEn: string
+  opciones: OpcionVotacionRapida[]
+  // Opción que eligió el usuario actual; null si aún no vota.
+  miVoto: number | null
+}
+
+// Aviso de la campana: hoy, invitaciones a votar en una elección.
+export interface NotificacionChat {
+  id: number
+  conversacionId: number
+  categoria: CategoriaCanal
+  titulo: string
+  texto: string
+  fecha: string
+  pendientes: number
+}
+
+// Personas habilitadas para votar en una elección, filtradas por grado o tipo de funcionario.
+export type GrupoVotantes = "GRADO" | "FUNCIONARIO"
+
+export interface OpcionesVotantes {
+  grados: string[]
+  funcionarios: string[]
+}
+
+export interface Votante {
+  id: number
+  nombre: string
+  documento: string
+  numero: number
 }

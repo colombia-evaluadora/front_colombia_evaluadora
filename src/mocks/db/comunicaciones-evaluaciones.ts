@@ -1,18 +1,25 @@
 import type { EntregaEvaluacion, Evaluacion } from "@/features/comunicaciones/chat/api/types"
 
+// Fechas relativas a hoy para que la evaluación siempre esté abierta en la demo.
+const DIA = 24 * 60 * 60_000
+const haceDias = (n: number) => new Date(Date.now() - n * DIA).toISOString()
+
 export const evaluaciones: Evaluacion[] = [
   {
     conversacionId: 7,
     nombre: "Examen Matemáticas",
     descripcion: "Fracciones y porcentajes, grado séptimo.",
-    fechaInicio: "2026-03-18T12:00:00.000Z",
-    fechaCierre: "2026-03-20T22:00:00.000Z",
+    fechaInicio: haceDias(1),
+    fechaCierre: haceDias(-7),
     tiempoLimiteMin: 45,
     puntajeTotal: 100,
     intentos: null,
     mostrarResultados: "AL_CIERRE",
     creadoPor: "Andrés Gómez",
     esCreador: true,
+    intentosUsados: 0,
+    miNota: null,
+    miNotaPendiente: false,
     preguntas: [
       {
         id: 1,

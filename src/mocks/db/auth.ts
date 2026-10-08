@@ -75,6 +75,16 @@ export const authUsers: (User & {
     roles: ["USER", "CEVAL-COORDINADOR"],
     document: "1044556677",
   },
+  {
+    // Vista de estudiante del chat: vota en las elecciones a las que lo invitan.
+    id: "8",
+    email: "estudiante@example.com",
+    password: "password",
+    name: "Estudiante Demo",
+    role: "USER",
+    roles: ["USER", "CEVAL-ESTUDIANTE"],
+    document: "1055667788",
+  },
 ]
 
 /** El usuario con el que se ingresa es el correo. */

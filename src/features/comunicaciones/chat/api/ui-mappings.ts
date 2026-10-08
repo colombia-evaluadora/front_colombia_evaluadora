@@ -28,7 +28,7 @@ export const ICONO_ARCHIVO: Record<FormatoArchivo, { Icono: Icon; color: string;
 
 // Orden y nombres del menú "Agregar canales".
 export const TIPOS_CANAL: Array<{ categoria: CategoriaCanal; etiqueta: string }> = [
-  { categoria: "GENERAL", etiqueta: "Chat" },
+  { categoria: "GENERAL", etiqueta: "Foro" },
   { categoria: "VOTACION", etiqueta: "Elección" },
   { categoria: "ENCUESTA", etiqueta: "Encuesta" },
   { categoria: "EXAMEN", etiqueta: "Evaluación en línea" },

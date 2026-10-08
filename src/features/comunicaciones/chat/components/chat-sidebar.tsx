@@ -1,24 +1,23 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import type { IconType } from "react-icons"
 
 import { Skeleton } from "@/components/ui/skeleton"
-import { PlusIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
-import { useInstitucionQuery } from "@/features/comunicaciones/chat/api/query/use-institucion-query"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { AgregarCompanero } from "@/features/comunicaciones/chat/components/agregar-companero"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
-import { BuscadorConversaciones } from "@/features/comunicaciones/chat/components/buscador-conversaciones"
 import {
   StackIcon,
-  HashIcon,
   CaretDownFillIcon,
+  MagnifyingGlassIcon,
+  XIcon,
   PencilSimpleIcon,
   PaperPlaneTiltIcon,
-  AtIcon,
   BellSlashIcon,
 } from "@/components/ui/icons"
 
@@ -30,7 +29,6 @@ interface ChatSidebarProps {
   activaId: number | undefined
   vista: VistaChat | undefined
   onVista: (vista: VistaChat) => void
-| undefined
   onSeleccionar: (id: number | undefined) => void
   className?: string
 }
@@ -46,14 +44,17 @@ export function ChatSidebar({
   onSeleccionar,
   className,
 }: ChatSidebarProps) {
-  const { data: institucion } = useInstitucionQuery()
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const encabezado = useRef<HTMLDivElement>(null)
+  const { puedeGestionar } = useChatAccess()
+  const [texto, setTexto] = useState("")
+  const t = texto.trim().toLowerCase()
+  // El buscador filtra la lista en el lugar.
+  const visibles = t ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t)) : conversaciones
 
-  const directos = conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
-  const canales = conversaciones.filter((c) => c.tipo === "CANAL" && !c.archivada)
-  const archivadas = conversaciones.filter((c) => c.archivada)
+  const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
+  const canales = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
+  const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
     <ItemConversacion
@@ -67,21 +68,33 @@ export function ChatSidebar({
 
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
-      <div ref={encabezado} className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <span className="flex min-w-0 flex-1 items-center gap-1 font-semibold">
-          <span className="truncate">{institucion?.nombre ?? "Institución"}</span>
-          <CaretDownFillIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        </span>
-        <BuscadorConversaciones
-          conversaciones={conversaciones}
-          anchor={encabezado}
-          onSeleccionar={onSeleccionar}
-        />
+      <div className="flex h-16 shrink-0 items-center border-b px-3">
+        <label className="flex h-10 w-full items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+          <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+          <span className="sr-only">Buscar conversaciones</span>
+          <input
+            type="search"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && setTexto("")}
+            placeholder="Buscar canales y personas"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          />
+          {texto && (
+            <button
+              type="button"
+              aria-label="Limpiar búsqueda"
+              onClick={() => setTexto("")}
+              className="grid size-6 place-items-center rounded text-muted-foreground hover:text-foreground"
+            >
+              <XIcon className="size-4" />
+            </button>
+          )}
+        </label>
       </div>
 
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
           <ul className="border-b px-2 pb-2">
-            <AccesoPendiente icono={AtIcon}>Menciones y reacciones</AccesoPendiente>
             <AccesoVista
               icono={PaperPlaneTiltIcon}
               activo={vista === "borradores"}
@@ -105,7 +118,6 @@ export function ChatSidebar({
             >
               Archivos
             </AccesoVista>
-            <AccesoPendiente icono={HashIcon}>Todos los canales</AccesoPendiente>
           </ul>
 
         {isPending ? (
@@ -121,20 +133,26 @@ export function ChatSidebar({
               Reintentar
             </button>
           </div>
+        ) : t && visibles.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">
+            Ningún canal o persona coincide con “{texto.trim()}”.
+          </p>
         ) : (
           <>
-            <Seccion titulo="Mensajes directos" agregar={"Agregar compañeros"}>
+            <Seccion
+              titulo="Mensajes directos"
+              accion={puedeGestionar && <AgregarCompanero onCreado={onSeleccionar} />}
+            >
               {directos.map(item)}
             </Seccion>
             <Seccion
               titulo="Canales"
-              accion={<AgregarCanal variante="icono" onCreado={onSeleccionar} />}
-              agregar={<AgregarCanal onCreado={onSeleccionar} />}
+              accion={puedeGestionar && <AgregarCanal onCreado={onSeleccionar} />}
             >
               {canales.map(item)}
             </Seccion>
             {archivadas.length > 0 && (
-              <Seccion titulo={`Archivados (${archivadas.length})`} agregar={null} inicialAbierta={false}>
+              <Seccion titulo={`Archivados (${archivadas.length})`} inicialAbierta={false}>
                 {archivadas.map(item)}
               </Seccion>
             )}
@@ -177,32 +195,13 @@ function AccesoVista({
   )
 }
 
-// Accesos que dependen del backend: se muestran pero aún no navegan.
-function AccesoPendiente({ icono: Icono, children }: { icono: IconType; children: ReactNode }) {
-  return (
-    <li>
-      <span
-        aria-disabled
-        title="Disponible cuando se conecte el servicio de comunicaciones"
-        className="flex h-9 items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground"
-      >
-        <Icono className="size-5 shrink-0 opacity-70" aria-hidden />
-        {children}
-      </span>
-    </li>
-  )
-}
-
 function Seccion({
   titulo,
-  agregar,
   accion,
   inicialAbierta = true,
   children,
 }: {
   titulo: string
-  // Texto = acceso aún sin back; nodo = control propio.
-  agregar: ReactNode | null
   // Control junto al título ("+" de Canales): a mano aunque la lista sea larga.
   accion?: ReactNode
   inicialAbierta?: boolean
@@ -229,22 +228,6 @@ function Seccion({
       {abierta && (
         <ul className="space-y-0.5">
           {children}
-          {typeof agregar !== "string" ? (
-            agregar && <li>{agregar}</li>
-          ) : (
-            <li>
-              <span
-                aria-disabled
-                title="Disponible cuando se conecte el servicio de comunicaciones"
-                className="flex h-9 items-center gap-3 px-2 text-sm text-muted-foreground"
-              >
-                <span className="grid size-5 place-items-center rounded bg-muted/60">
-                  <PlusIcon className="size-3.5" aria-hidden />
-                </span>
-                {agregar}
-              </span>
-            </li>
-          )}
         </ul>
       )}
     </section>
@@ -321,7 +304,8 @@ function ItemConversacion({
         onSalida={onSalida}
         className={cn(
           "absolute inset-y-0 right-0 rounded-r-lg pr-1 pl-2 opacity-0 transition-opacity group-focus-within/fila:opacity-100 group-hover/fila:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100",
-          activa ? "bg-primary" : "bg-muted",
+          // Mismo tono que la fila (muted/50) pero opaco, para tapar los indicadores.
+          activa ? "bg-primary" : "bg-chat-panel bg-linear-to-r from-muted/50 to-muted/50",
         )}
       />
     </li>

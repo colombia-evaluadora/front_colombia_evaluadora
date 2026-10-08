@@ -2,12 +2,25 @@ import { http, HttpResponse, delay } from "msw"
 
 import type {
   Conversacion,
+  Encuesta,
   TipoPregunta,
   VisibilidadResultados,
 } from "@/features/comunicaciones/chat/api/types"
 import { OPCIONES_SI_NO } from "@/features/comunicaciones/chat/lib/encuesta"
 import { conversaciones } from "@/mocks/db/comunicaciones"
-import { encuestas } from "@/mocks/db/comunicaciones-encuestas"
+import { encuestas, respondieron } from "@/mocks/db/comunicaciones-encuestas"
+import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
+import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
+
+// En la demo la crea el administrador; el resto son las personas asignadas que la responden.
+function vistaDe(e: Encuesta, request: Request): Encuesta {
+  const user = usuarioDe(request)
+  return {
+    ...e,
+    esCreador: e.esCreador && user?.role === "ADMIN",
+    yaRespondi: !!user && (respondieron.get(e.conversacionId)?.has(user.email) ?? false),
+  }
+}
 
 const URL = (path: string) => `/api/eval-col/comunicaciones/${path}`
 
@@ -23,11 +36,39 @@ interface CrearEncuestaBody {
 let siguienteId = 100
 
 export const comunicacionesEncuestasHandlers = [
-  http.get(URL("conversaciones/:id/encuesta"), async ({ params }) => {
+  http.get(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
     await delay(200)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
     if (!e) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
-    return HttpResponse.json({ rows: [e] })
+    return HttpResponse.json({ rows: [vistaDe(e, request)] })
+  }),
+
+  http.post(URL("conversaciones/:id/encuesta/respuestas"), async ({ params, request }) => {
+    await delay(300)
+    const e = encuestas.find((x) => x.conversacionId === Number(params.id))
+    const user = usuarioDe(request)
+    if (!e || !user) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    if (estadoEleccion(e) !== "ACTIVA") {
+      return HttpResponse.json({ message: "La encuesta no está abierta." }, { status: 409 })
+    }
+    const lista = respondieron.get(e.conversacionId) ?? new Set<string>()
+    if (lista.has(user.email)) return HttpResponse.json({ message: "Ya respondiste esta encuesta." }, { status: 409 })
+    const body = (await request.json()) as {
+      RESPUESTAS: Array<{ FK_PREGUNTA: number; OPCIONES: number[]; TEXTO: string | null }>
+    }
+    for (const r of body.RESPUESTAS) {
+      const p = e.preguntas.find((x) => x.id === r.FK_PREGUNTA)
+      if (!p) continue
+      const contesto = p.tipo === "REDACCION" ? !!r.TEXTO?.trim() : r.OPCIONES.length > 0
+      if (!contesto) continue
+      p.totalRespuestas += 1
+      for (const o of p.opciones) if (r.OPCIONES.includes(o.id)) o.votos += 1
+      if (r.TEXTO?.trim()) p.respuestas.unshift(r.TEXTO.trim())
+    }
+    e.participantes += 1
+    lista.add(user.email)
+    respondieron.set(e.conversacionId, lista)
+    return HttpResponse.json({ rows: [vistaDe(e, request)] })
   }),
 
   http.post(URL("encuestas"), async ({ request }) => {
@@ -67,6 +108,7 @@ export const comunicacionesEncuestasHandlers = [
       participantes: 0,
       creadoPor: "Andrés Gómez",
       esCreador: true,
+      yaRespondi: false,
       preguntas: preguntas.map((p) => ({
         id: siguienteId++,
         tipo: p.TIPO,

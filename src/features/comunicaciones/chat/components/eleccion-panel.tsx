@@ -9,6 +9,7 @@ import {
   CalendarBlankIcon,
   CheckCircleFillIcon,
   MedalIcon,
+  WarningIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -73,7 +74,9 @@ export function EleccionEstado({ eleccion: e }: { eleccion: Eleccion }) {
       )}
       <span className="ml-auto">
         {estado === "FINALIZADA" ? (
-          <span className="rounded-full bg-muted/50 px-3 py-1">Votación cerrada</span>
+          <span className="rounded-full bg-muted/50 px-3 py-1">
+            {e.cerradaManualmente ? "Votación cerrada por el administrador." : "Votación cerrada"}
+          </span>
         ) : objetivo ? (
           <span className="rounded-full bg-orange-22 px-3 py-1 text-foreground">
             {estado === "PROGRAMADA" ? "Abre en: " : "Cierra en: "}
@@ -156,6 +159,15 @@ export function EleccionResultados({
       ) : (
         <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
           Los resultados se publican cuando cierre la votación.
+        </p>
+      )}
+      {e.cerradaManualmente && (
+        <p
+          role="status"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-orange-stroke bg-orange-22 px-4 py-3 text-sm text-orange"
+        >
+          <WarningIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+          La votación fue cerrada manualmente por el administrador y no se permitirán más votos.
         </p>
       )}
     </section>

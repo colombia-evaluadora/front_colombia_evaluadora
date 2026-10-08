@@ -14,6 +14,7 @@ const base: Encuesta = {
   participantes: 100,
   creadoPor: "Ana",
   esCreador: true,
+  yaRespondi: false,
   preguntas: [
     {
       id: 1,

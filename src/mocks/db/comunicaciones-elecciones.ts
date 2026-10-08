@@ -20,6 +20,8 @@ export const elecciones: Eleccion[] = [
       { id: 3, nombre: "Sebastián Rodríguez Pérez", numero: "98", lema: "Juntos logramos avanzar", fotoUrl: null, votos: 83 },
     ],
     votosEnBlanco: 21,
+    cerradaManualmente: false,
+    yaVoto: false,
     totalHabilitados: 300,
     vieronCanal: 260,
     creadoPor: "Andrés Gómez",
@@ -29,7 +31,7 @@ export const elecciones: Eleccion[] = [
 
 // Simula votos nuevos mientras la elección sigue abierta.
 export function simularVotos(e: Eleccion) {
-  if (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now()) return
+  if (e.cerradaManualmente || (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now())) return
   const emitidos = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
   if (emitidos >= e.totalHabilitados) return
   const i = Math.floor(Math.random() * (e.candidatos.length + 1))
@@ -37,3 +39,12 @@ export function simularVotos(e: Eleccion) {
   else e.candidatos[i].votos += 1
   e.vieronCanal = Math.min(e.totalHabilitados, Math.max(e.vieronCanal, emitidos + 30))
 }
+
+// Quién votó en cada elección (por correo): el voto es único por persona.
+export const votantes = new Map<number, Set<string>>()
+
+export const yaVoto = (conversacionId: number, correo: string | undefined) =>
+  !!correo && (votantes.get(conversacionId)?.has(correo) ?? false)
+
+export const eleccionCerrada = (e: Eleccion) =>
+  e.cerradaManualmente || (!!e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now())

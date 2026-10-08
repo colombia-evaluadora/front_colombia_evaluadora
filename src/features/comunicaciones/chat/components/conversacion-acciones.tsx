@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from "react"
+import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 
 import {
   AlertDialog,
@@ -56,6 +59,7 @@ import {
   SignOutIcon,
   BellSlashIcon,
   LightningIcon,
+  XSquareIcon,
 } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
@@ -67,7 +71,7 @@ const SILENCIOS: Array<{ valor: SilencioDuracion; etiqueta: string; aviso: strin
   { valor: "SIEMPRE", etiqueta: "Siempre", aviso: "Notificaciones silenciadas." },
 ]
 
-type Dialogo = "renombrar" | "eliminar" | "salir" | null
+type Dialogo = "renombrar" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -98,8 +102,11 @@ export function ConversacionAcciones({
   const renombrar = useRenombrarConversacion()
   const eliminar = useEliminarConversacion()
   const salir = useSalirConversacion()
+  const cerrarEleccion = useCerrarEleccion()
 
+  const { puedeGestionar } = useChatAccess()
   const esCanal = c.tipo === "CANAL"
+  const gestionaCanal = esCanal && puedeGestionar
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
@@ -115,7 +122,7 @@ export function ConversacionAcciones({
 
   return (
     <div className={cn("flex items-center", className)}>
-      {variante === "fila" && esCanal && (
+      {variante === "fila" && gestionaCanal && (
         <>
           <button
             type="button"
@@ -150,17 +157,20 @@ export function ConversacionAcciones({
           <DotsThreeVerticalIcon className={variante === "fila" ? "size-4.5" : "size-5"} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align={variante === "fila" ? "start" : "end"} className="w-60">
-          {esCanal && (
+          {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
-              onClick={() =>
-                notify("La votación rápida estará disponible cuando se conecte el servicio.", {
-                  variant: "info",
-                })
-              }
+              onClick={() => setDialogo("votacion")}
             >
               <LightningIcon />
               Votación rápida
+            </DropdownMenuItem>
+          )}
+          {/* Solo quien creó la elección puede cerrarla, y solo mientras sigue abierta. */}
+          {c.categoria === "VOTACION" && c.esCreador && c.actividadAbierta && (
+            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("cerrarEleccion")}>
+              <XSquareIcon />
+              Cerrar proceso electoral
             </DropdownMenuItem>
           )}
           <DropdownMenuSub>
@@ -210,7 +220,7 @@ export function ConversacionAcciones({
               Marcar como no leído
             </DropdownMenuItem>
           )}
-          {esCanal && (
+          {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
               onClick={() =>
@@ -255,6 +265,38 @@ export function ConversacionAcciones({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {gestionaCanal && (
+        <VotacionRapidaDialog
+          conversacionId={c.id}
+          open={dialogo === "votacion"}
+          onClose={cerrar}
+        />
+      )}
+
+      <Confirmacion
+        open={dialogo === "cerrarEleccion"}
+        onClose={cerrar}
+        titulo="Cerrar proceso electoral"
+        accion="Cerrar votación"
+        colorAccion="primary"
+        pendiente={cerrarEleccion.isPending}
+        onConfirmar={() =>
+          cerrarEleccion.mutate(c.id, {
+            onSuccess: () => {
+              notify("Cerraste la votación. Ya no se reciben más votos.")
+              cerrar()
+            },
+            onError,
+          })
+        }
+      >
+        <strong className="block font-semibold text-foreground">
+          ¿Deseas finalizar manualmente este proceso electoral?
+        </strong>
+        Al cerrar la votación, los participantes ya no podrán votar y los resultados quedarán
+        disponibles según la configuración definida.
+      </Confirmacion>
 
       <Dialog open={dialogo === "renombrar"} onOpenChange={(open) => !open && cerrar()}>
         <DialogContent>
@@ -361,6 +403,7 @@ function Confirmacion({
   onClose,
   titulo,
   accion,
+  colorAccion = "destructive",
   pendiente,
   onConfirmar,
   children,
@@ -369,6 +412,7 @@ function Confirmacion({
   onClose: () => void
   titulo: string
   accion: string
+  colorAccion?: "destructive" | "primary"
   pendiente: boolean
   onConfirmar: () => void
   children: ReactNode
@@ -385,7 +429,7 @@ function Confirmacion({
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
-            color="destructive"
+            color={colorAccion}
             disabled={pendiente}
             aria-busy={pendiente}
             onClick={onConfirmar}

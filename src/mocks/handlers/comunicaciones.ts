@@ -1,8 +1,14 @@
 import { http, HttpResponse, delay } from "msw"
 
-import type { AdjuntoMensaje, CategoriaCanal, SilencioDuracion } from "@/features/comunicaciones/chat/api/types"
+import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
+
+import type {
+  AdjuntoMensaje,
+  CategoriaCanal,
+  SilencioDuracion,
+  TipoVotacionRapida,
+} from "@/features/comunicaciones/chat/api/types"
 import {
-  CHAT_INSTITUCION,
   archivos,
   borradores,
   conversaciones,
@@ -10,6 +16,8 @@ import {
   nuevoMensaje,
   personas,
   avisoUnion,
+  miembrosDe,
+  nuevaVotacionRapida,
   contenidoDocumentos,
 } from "@/mocks/db/comunicaciones"
 
@@ -33,13 +41,15 @@ function hastaSilencio(duracion: SilencioDuracion) {
 }
 
 export const comunicacionesHandlers = [
-  http.get(URL("institucion"), async () => {
-    await delay(150)
-    return HttpResponse.json({ rows: [CHAT_INSTITUCION] })
-  }),
-
-  http.get(URL("conversaciones"), async () => {
+  http.get(URL("conversaciones"), async ({ request }) => {
     await delay(250)
+    // El estudiante solo ve el bot y los canales de elección, encuesta y evaluación a los que lo invitan.
+    if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
+      const rows = conversaciones
+        .filter((c) => c.esBot || c.categoria === "VOTACION" || c.categoria === "EXAMEN" || c.categoria === "ENCUESTA")
+        .map((c) => ({ ...c, esCreador: false }))
+      return HttpResponse.json({ rows })
+    }
     return HttpResponse.json({ rows: conversaciones })
   }),
 
@@ -83,6 +93,84 @@ export const comunicacionesHandlers = [
     canal.totalMiembros += nuevos.length
     canal.miembrosDestacados.push(...nuevos.slice(0, 2).map((p) => p.nombre))
     return HttpResponse.json({ rows: [canal] })
+  }),
+
+  http.post(URL("conversaciones/:id/votaciones-rapidas"), async ({ params, request }) => {
+    await delay(200)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const body = (await request.json()) as { PREGUNTA?: string; TIPO: TipoVotacionRapida; MINUTOS: number }
+    const pregunta = body.PREGUNTA?.trim()
+    if (!pregunta) return HttpResponse.json({ message: "Escribe la pregunta." }, { status: 400 })
+    return HttpResponse.json({ rows: [nuevaVotacionRapida(conv.id, pregunta, body.TIPO, body.MINUTOS)] })
+  }),
+
+  http.get(URL("conversaciones/:id/miembros"), async ({ params }) => {
+    await delay(200)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    return HttpResponse.json({ rows: miembrosDe(conv.id) })
+  }),
+
+  http.post(URL("conversaciones/:id/miembros"), async ({ params, request }) => {
+    await delay(200)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const body = (await request.json()) as { MIEMBROS?: number[] }
+    const lista = miembrosDe(conv.id)
+    const nuevos = personas.filter((p) => body.MIEMBROS?.includes(p.id) && !lista.some((m) => m.id === p.id))
+    for (const p of nuevos) {
+      lista.push({ id: p.id, nombre: p.nombre, rol: "Docente", enLinea: false, bloqueado: false })
+      avisoUnion(conv.id, p, conv.nombre)
+    }
+    conv.totalMiembros += nuevos.length
+    return HttpResponse.json({ rows: lista })
+  }),
+
+  http.patch(URL("conversaciones/:id/miembros/:miembro/bloquear"), async ({ params, request }) => {
+    await delay(150)
+    const conv = buscar(params.id)
+    const m = conv && miembrosDe(conv.id).find((x) => x.id === Number(params.miembro))
+    if (!m) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    const body = (await request.json()) as { BLOQUEADO: boolean }
+    m.bloqueado = body.BLOQUEADO
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  http.patch(URL("conversaciones/:id/miembros/:miembro/eliminar"), async ({ params }) => {
+    await delay(150)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const lista = miembrosDe(conv.id)
+    const i = lista.findIndex((x) => x.id === Number(params.miembro))
+    if (i < 0) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    const [m] = lista.splice(i, 1)
+    conv.totalMiembros = Math.max(1, conv.totalMiembros - 1)
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  http.post(URL("directos"), async ({ request }) => {
+    await delay(200)
+    const body = (await request.json()) as { FK_PERSONA?: number }
+    const p = personas.find((x) => x.id === body.FK_PERSONA)
+    if (!p) return HttpResponse.json({ message: "La persona no existe." }, { status: 404 })
+    const existente = conversaciones.find((c) => c.tipo === "DIRECTO" && c.nombre === p.nombre)
+    if (existente) return HttpResponse.json({ rows: [existente] })
+    const directo = {
+      id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
+      nombre: p.nombre,
+      tipo: "DIRECTO" as const,
+      categoria: "GENERAL" as const,
+      noLeidos: 0,
+      actividadAbierta: false,
+      esBot: false,
+      totalMiembros: 2,
+      miembrosDestacados: [p.nombre],
+      silenciadoHasta: null,
+      archivada: false,
+    }
+    conversaciones.push(directo)
+    return HttpResponse.json({ rows: [directo] })
   }),
 
   http.get(URL("conversaciones/:id/mensajes"), async ({ params }) => {
@@ -269,6 +357,42 @@ export const comunicacionesArchivosHandlers = [
 
 // Acciones sobre un mensaje propio. Rutas estáticas antes de la de edición.
 export const comunicacionesMensajesHandlers = [
+  http.post(URL("mensajes/:id/votacion/votar"), async ({ params, request }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id))
+    const v = m?.votacion
+    if (!v) return mensajeNoEncontrado()
+    if (new Date(v.cierraEn) <= new Date()) {
+      return HttpResponse.json({ message: "La votación ya se cerró." }, { status: 409 })
+    }
+    if (v.miVoto != null) return HttpResponse.json({ message: "Ya votaste." }, { status: 409 })
+    const body = (await request.json()) as { FK_OPCION: number }
+    const opcion = v.opciones.find((o) => o.id === body.FK_OPCION)
+    if (!opcion) return HttpResponse.json({ message: "Elige una opción." }, { status: 400 })
+    opcion.votos += 1
+    v.miVoto = opcion.id
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  http.patch(URL("mensajes/:id/votacion"), async ({ params, request }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id))
+    const v = m?.votacion
+    if (!v) return mensajeNoEncontrado()
+    if (new Date(v.cierraEn) <= new Date()) {
+      return HttpResponse.json({ message: "La votación ya se cerró." }, { status: 409 })
+    }
+    const body = (await request.json()) as { PREGUNTA?: string; TIPO: TipoVotacionRapida; MINUTOS: number }
+    const pregunta = body.PREGUNTA?.trim()
+    if (!pregunta) return HttpResponse.json({ message: "Escribe la pregunta." }, { status: 400 })
+    // Cambiar la pregunta o las opciones reinicia los votos y el tiempo.
+    const nueva = nuevaVotacionRapida(m.conversacionId, pregunta, body.TIPO, body.MINUTOS)
+    mensajes.pop()
+    m.votacion = nueva.votacion
+    m.editado = true
+    return HttpResponse.json({ rows: [m] })
+  }),
+
   http.patch(URL("mensajes/:id/fijar"), async ({ params, request }) => {
     await delay(120)
     const m = mensajes.find((x) => x.id === Number(params.id))

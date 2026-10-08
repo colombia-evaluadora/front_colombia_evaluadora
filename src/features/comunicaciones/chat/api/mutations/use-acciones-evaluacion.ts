@@ -5,6 +5,7 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type {
   Conversacion,
   EntregaEvaluacion,
+  Evaluacion,
   MostrarResultados,
   TipoPregunta,
 } from "@/features/comunicaciones/chat/api/types"
@@ -67,5 +68,26 @@ export function useCalificarEntrega(conversacionId: number) {
         })),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.entregas(conversacionId) }),
+  })
+}
+
+export interface RespuestaNueva {
+  preguntaId: number
+  opcionIds: number[]
+  texto: string | null
+}
+
+// Entrega del estudiante; devuelve la evaluación con su avance (intentos y nota).
+export function useEnviarEvaluacion(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (respuestas: RespuestaNueva[]) =>
+      evalCol.postRow<Evaluacion>(`/comunicaciones/conversaciones/${conversacionId}/evaluacion/entregas`, {
+        RESPUESTAS: respuestas.map((r) => ({ FK_PREGUNTA: r.preguntaId, OPCIONES: r.opcionIds, TEXTO: r.texto })),
+      }),
+    onSuccess: (evaluacion) => {
+      queryClient.setQueryData(chatKeys.evaluacion(conversacionId), evaluacion)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.entregas(conversacionId) })
+    },
   })
 }
