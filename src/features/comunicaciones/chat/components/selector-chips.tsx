@@ -34,6 +34,9 @@ export function SelectorChips<T>({
   invalido,
   autoFocus,
   conFlecha,
+  onConsulta,
+  soloConConsulta,
+  deshabilitado,
 }: {
   items: T[]
   value: T[]
@@ -46,7 +49,14 @@ export function SelectorChips<T>({
   cargando?: boolean
   placeholder?: string
   ariaLabel: string
-  vacio?: string
+  // null: sin coincidencias no se abre la lista.
+  vacio?: string | null
+  // Texto escrito en el buscador, para filtrar otra lista con la misma consulta.
+  onConsulta?: (consulta: string) => void
+  // Sin texto escrito no se sugiere nada.
+  soloConConsulta?: boolean
+  // Se muestran pero no se pueden elegir (p. ej. quien ya está en el canal).
+  deshabilitado?: (item: T) => boolean
   invalido?: boolean
   autoFocus?: boolean
   conFlecha?: boolean
@@ -62,10 +72,12 @@ export function SelectorChips<T>({
       value={value}
       onValueChange={(v: T[]) => onChange(v)}
       itemToStringLabel={getLabel}
+      onInputValueChange={(v: string) => onConsulta?.(v)}
       isItemEqualToValue={(a: T, b: T) => getId(a) === getId(b)}
       filter={(item: T, q: string) => {
         const t = q.trim().toLowerCase()
-        return !t || (filtrar ? filtrar(item, t) : getLabel(item).toLowerCase().includes(t))
+        if (!t) return !soloConConsulta
+        return (filtrar ? filtrar(item, t) : getLabel(item).toLowerCase().includes(t))
       }}
     >
       <ComboboxChips
@@ -117,7 +129,11 @@ export function SelectorChips<T>({
       </ComboboxChips>
       <ComboboxPrimitive.Portal>
         <ComboboxPrimitive.Positioner anchor={anchor} sideOffset={6} align="start" className="isolate z-50">
-          <ComboboxPrimitive.Popup className="w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md duration-100 data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0">
+          <ComboboxPrimitive.Popup className={cn(
+              "w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md duration-100 data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0",
+              vacio === null && !cargando && "has-data-empty:hidden",
+            )}
+          >
             <ComboboxPrimitive.Empty className="px-3 py-2.5 text-sm text-muted-foreground empty:hidden">
               {cargando ? "Cargando…" : vacio}
             </ComboboxPrimitive.Empty>
@@ -126,7 +142,8 @@ export function SelectorChips<T>({
                 <ComboboxPrimitive.Item
                   key={getId(item)}
                   value={item}
-                  className="flex cursor-default items-center gap-3 rounded-md px-2 py-1.5 text-sm outline-none select-none data-highlighted:bg-primary/10 data-selected:bg-muted/50"
+                  disabled={deshabilitado?.(item)}
+                  className="flex cursor-default items-center gap-3 rounded-md px-2 py-1.5 text-sm outline-none select-none data-highlighted:bg-primary/10 data-selected:bg-muted/50 data-disabled:cursor-not-allowed"
                 >
                   <span className="min-w-0 flex-1">{renderItem ? renderItem(item) : getLabel(item)}</span>
                   <ComboboxPrimitive.ItemIndicator className="text-primary">

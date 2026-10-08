@@ -3,7 +3,6 @@ const conversacion = (id: number | "none") => [...all, "conversacion", id] as co
 
 export const chatKeys = {
   all,
-  institucion: [...all, "institucion"] as const,
   conversaciones: [...all, "conversaciones"] as const,
   conversacion,
   mensajes: (id: number | "none") => [...conversacion(id), "mensajes"] as const,
@@ -16,6 +15,11 @@ export const chatKeys = {
     [...conversacion(conversacionId), "evaluacion"] as const,
   entregas: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "evaluacion", "entregas"] as const,
+  miembros: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "miembros"] as const,
+  notificaciones: [...all, "notificaciones"] as const,
+  votantesOpciones: [...all, "votantes", "opciones"] as const,
+  votantes: (grupo: string, valor: string) => [...all, "votantes", grupo, valor] as const,
   borradores: [...all, "borradores"] as const,
   eleccion: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "eleccion"] as const,

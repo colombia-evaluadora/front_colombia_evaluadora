@@ -31,11 +31,18 @@ import {
   EncuestaEstado,
   EncuestaResultados,
 } from "@/features/comunicaciones/chat/components/encuesta-panel"
+import { EvaluacionEstudiante } from "@/features/comunicaciones/chat/components/evaluacion-estudiante"
+import { EncuestaParticipante } from "@/features/comunicaciones/chat/components/encuesta-participante"
+import { EleccionEstudiante } from "@/features/comunicaciones/chat/components/eleccion-estudiante"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { ArchivosView } from "@/features/comunicaciones/chat/components/archivos-view"
 import { BorradoresView } from "@/features/comunicaciones/chat/components/borradores-view"
 import { useEliminarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
-import type { Borrador } from "@/features/comunicaciones/chat/api/types"
+import type { Borrador, CategoriaCanal } from "@/features/comunicaciones/chat/api/types"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
+
+const CANALES_DE_ACTIVIDAD: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN", "ANUNCIO"]
 
 export function ChatPage() {
   return (
@@ -50,6 +57,8 @@ function ChatContent() {
   const navigate = chatRoute.useNavigate()
   const { notify } = useNotify()
   const [busqueda, setBusqueda] = useState("")
+  // `vez` permite volver a saltar al mismo mensaje.
+  const [destacado, setDestacado] = useState<{ id: number; vez: number }>()
   // Borrador abierto desde "Borradores y enviados"; al enviarlo se elimina.
   const [borrador, setBorrador] = useState<Borrador | null>(null)
 
@@ -61,6 +70,9 @@ function ChatContent() {
   const esEleccion = activa?.categoria === "VOTACION"
   const eleccionQuery = useEleccionQuery(esEleccion ? activa.id : undefined)
   const eleccion = eleccionQuery.data
+  const { esEstudiante } = useChatAccess()
+  // El estudiante vota mientras la elección sigue abierta; al cerrar ve los resultados.
+  const votaEstudiante = esEstudiante && (!eleccion || estadoEleccion(eleccion) !== "FINALIZADA")
   const esEncuesta = activa?.categoria === "ENCUESTA"
   const encuestaQuery = useEncuestaQuery(esEncuesta ? activa.id : undefined)
   const encuesta = encuestaQuery.data
@@ -71,6 +83,8 @@ function ChatContent() {
   const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
   // Sin comentarios habilitados el canal de la elección es solo lectura.
   const sinComentarios = esEleccion && eleccion && !eleccion.permitirComentarios
+  // En los canales de actividad (elección, encuesta, evaluación, comunicado) el estudiante solo participa; no escribe.
+  const soloLectura = esEstudiante && !!activa && CANALES_DE_ACTIVIDAD.includes(activa.categoria)
 
   const enviar = useEnviarMensaje()
   const marcarLeido = useMarcarLeido()
@@ -78,6 +92,7 @@ function ChatContent() {
 
   const seleccionar = (id: number | undefined) => {
     setBusqueda("")
+    setDestacado(undefined)
     setBorrador(null)
     navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined }) })
   }
@@ -130,8 +145,10 @@ function ChatContent() {
             <>
               <ChatHeader
                 conversacion={activa}
+                mensajes={mensajesQuery.data ?? []}
                 busqueda={busqueda}
                 onBusqueda={setBusqueda}
+                onIrAMensaje={(id) => setDestacado((d) => ({ id, vez: (d?.vez ?? 0) + 1 }))}
                 onVolver={() => seleccionar(undefined)}
               />
               {eleccion && <EleccionEstado eleccion={eleccion} />}
@@ -151,7 +168,7 @@ function ChatContent() {
                 isPending={mensajesQuery.isPending}
                 isError={mensajesQuery.isError}
                 onRetry={() => void mensajesQuery.refetch()}
-                busqueda={busqueda}
+                destacado={destacado}
                 nombreConversacion={activa.nombre}
                 antes={
                   activa.categoria === "GENERAL" && activa.creadoPor ? (
@@ -167,28 +184,45 @@ function ChatContent() {
                   ) : esEvaluacion ? (
                     <>
                       {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} canal={evaluacion} />}
-                      <EvaluacionEntregas evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
+                      {esEstudiante ? (
+                        <EvaluacionEstudiante evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
+                      ) : (
+                        <EvaluacionEntregas evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
+                      )}
                     </>
                   ) : esEncuesta ? (
                     <>
                       {encuesta && <CanalBienvenida key={encuesta.conversacionId} canal={encuesta} />}
-                      <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                      {/* Quien la creó ve los resultados; las personas asignadas la responden. */}
+                      {encuesta && !encuesta.esCreador ? (
+                        <EncuestaParticipante encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                      ) : (
+                        <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                      )}
                     </>
                   ) : (
                     esEleccion && (
                       <>
                         {eleccion && <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} />}
-                        <EleccionResultados
-                          eleccion={eleccion}
-                          isPending={eleccionQuery.isPending}
-                          actualizadoEn={eleccionQuery.dataUpdatedAt}
-                        />
+                        {votaEstudiante ? (
+                          <EleccionEstudiante eleccion={eleccion} isPending={eleccionQuery.isPending} />
+                        ) : (
+                          <EleccionResultados
+                            eleccion={eleccion}
+                            isPending={eleccionQuery.isPending}
+                            actualizadoEn={eleccionQuery.dataUpdatedAt}
+                          />
+                        )}
                       </>
                     )
                   )
                 }
               />
-              {sinComentarios ? (
+              {soloLectura ? (
+                <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
+                  En este canal no se pueden enviar mensajes.
+                </p>
+              ) : sinComentarios ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   Los comentarios están desactivados en esta elección.
                 </p>

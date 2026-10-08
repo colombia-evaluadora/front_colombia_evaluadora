@@ -15,6 +15,9 @@ const evaluacion: Evaluacion = {
   mostrarResultados: "AL_CIERRE",
   creadoPor: "Ana",
   esCreador: true,
+  intentosUsados: 0,
+  miNota: null,
+  miNotaPendiente: false,
   preguntas: [
     {
       id: 1,

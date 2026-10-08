@@ -25,6 +25,7 @@ import {
   nuevaPregunta,
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
+import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 // 0 = sin límite / ilimitados; -1 = sin elegir.
 const SIN_ELEGIR = -1
@@ -57,10 +58,7 @@ const datosSchema = z
     intentos: z.number().min(0, "Elige los intentos permitidos."),
     mostrarResultados: z.enum(["INMEDIATO", "AL_CIERRE"]),
   })
-  .refine((v) => !v.fechaInicio || !v.fechaCierre || v.fechaCierre > v.fechaInicio, {
-    path: ["fechaCierre"],
-    message: "La fecha final debe ser posterior a la de inicio.",
-  })
+  .superRefine((v, ctx) => validarRangoFechas(v, ctx))
 
 type Datos = z.infer<typeof datosSchema>
 
@@ -89,6 +87,7 @@ export function CrearEvaluacionDialog({
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [tope, setTope] = useState(false)
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crear = useCrearEvaluacion()
@@ -105,6 +104,24 @@ export function CrearEvaluacionDialog({
   const total = datos.state.values.puntajeTotal
   const asignados = preguntas.reduce((s, p) => s + (Number(p.puntos) || 0), 0)
   const cuadra = asignados === total
+
+  // Nunca se deja pasar del puntaje total: el valor de la pregunta editada se recorta a lo que queda.
+  const cambiarPreguntas = (fn: (ps: PreguntaLocal[]) => PreguntaLocal[]) => {
+    const nuevas = fn(preguntas)
+    const suma = nuevas.reduce((s, p) => s + (Number(p.puntos) || 0), 0)
+    const editada = nuevas.findIndex(
+      (p) => p.puntos !== preguntas.find((x) => x.clave === p.clave)?.puntos,
+    )
+    if (suma <= total || editada < 0) {
+      setPreguntas(nuevas)
+      setTope(false)
+      return
+    }
+    const otros = suma - (Number(nuevas[editada].puntos) || 0)
+    const tope = Math.max(0, total - otros)
+    setPreguntas(nuevas.map((p, i) => (i === editada ? { ...p, puntos: String(tope) } : p)))
+    setTope(true)
+  }
 
   const reiniciar = () => {
     datos.reset()
@@ -185,11 +202,24 @@ export function CrearEvaluacionDialog({
               </datos.AppField>
               <div className="grid gap-4 sm:grid-cols-2">
                 <datos.AppField name="fechaInicio">
-                  {(f) => <f.DateField label="Fecha inicio" mode="datetime" minDate={new Date()} />}
+                  {(f) => <f.DateField label="Fecha inicio" required mode="datetime" minDate={new Date()} />}
                 </datos.AppField>
-                <datos.AppField name="fechaCierre">
-                  {(f) => <f.DateField label="Fecha final" mode="datetime" minDate={new Date()} />}
-                </datos.AppField>
+                {/* El día mínimo del cierre sigue a la fecha de inicio. */}
+                <datos.Subscribe selector={(st) => st.values.fechaInicio}>
+                  {(inicio) => (
+                    <datos.AppField
+                      name="fechaCierre"
+                      // Se valida al momento, también cuando cambia el inicio.
+                      validators={{
+                        onChangeListenTo: ["fechaInicio"],
+                        onChange: ({ value, fieldApi }) =>
+                          errorCierre(fieldApi.form.getFieldValue("fechaInicio"), value),
+                      }}
+                    >
+                      {(f) => <f.DateField label="Fecha final" required mode="datetime" minDate={diaMinimo(inicio)} />}
+                    </datos.AppField>
+                  )}
+                </datos.Subscribe>
                 <datos.AppField name="tiempoLimiteMin">
                   {(f) => (
                     <f.SelectField
@@ -254,7 +284,7 @@ export function CrearEvaluacionDialog({
             <ListaPreguntas
               modo="EVALUACION"
               preguntas={preguntas}
-              onCambio={setPreguntas}
+              onCambio={cambiarPreguntas}
               intentado={intentado}
               pie={
                 <p
@@ -264,7 +294,12 @@ export function CrearEvaluacionDialog({
                     cuadra ? "bg-green-22 text-green" : intentado ? "bg-red-22 text-red" : "bg-muted/40",
                   )}
                 >
-                  <span>Puntos asignados</span>
+                  <span>
+                    Puntos asignados
+                    {tope && (
+                      <span className="block text-xs">No puedes pasar del puntaje total; ajustamos el valor a lo que quedaba.</span>
+                    )}
+                  </span>
                   <span className="font-semibold">
                     {asignados} de {total}
                   </span>

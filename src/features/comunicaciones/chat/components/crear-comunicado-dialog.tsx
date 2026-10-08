@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { format } from "date-fns"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +21,8 @@ import { useCrearComunicado } from "@/features/comunicaciones/chat/api/mutations
 import { EditorTexto } from "@/features/comunicaciones/chat/components/editor-texto"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { htmlSeguro, htmlVacio } from "@/features/comunicaciones/chat/lib/html-seguro"
+import { ahoraLocal } from "@/features/comunicaciones/chat/lib/fechas-canal"
+
 
 const datosSchema = z.object({
   titulo: z.string().trim().min(1, required("El título")).max(120, maxLength(120, "El título")),
@@ -35,8 +36,6 @@ const datosSchema = z.object({
 
 type Datos = z.infer<typeof datosSchema>
 
-// Por defecto se publica al crearlo.
-const ahoraLocal = () => format(new Date(), "yyyy-MM-dd'T'HH:mm")
 
 export function CrearComunicadoDialog({
   open,

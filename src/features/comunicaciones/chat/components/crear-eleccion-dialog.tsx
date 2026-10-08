@@ -28,8 +28,16 @@ import {
   type CandidatoNuevo,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
+import { validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
+import { DateRangeField } from "@/features/establishment/academic-period/components/date-range-field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 const MIN_CANDIDATOS = 2
+
+// El rango se elige por días: abre al empezar el primero y cierra al terminar el último.
+const aInicio = (dia: string) => `${dia}T00:00`
+const aCierre = (dia: string) => `${dia}T23:59`
 
 const datosSchema = z
   .object({
@@ -41,10 +49,7 @@ const datosSchema = z
     verResultadosEnVivo: z.boolean(),
     permitirComentarios: z.boolean(),
   })
-  .refine((v) => !v.fechaInicio || !v.fechaCierre || v.fechaCierre > v.fechaInicio, {
-    path: ["fechaCierre"],
-    message: "La fecha final debe ser posterior a la de inicio.",
-  })
+  .superRefine((v, ctx) => validarRangoFechas(v, ctx))
 
 type Datos = z.infer<typeof datosSchema>
 
@@ -75,7 +80,9 @@ export function CrearEleccionDialog({
   onCreada: (conversacionId: number) => void
 }) {
   const { notify } = useNotify()
-  const [paso, setPaso] = useState<1 | 2>(1)
+  const [paso, setPaso] = useState<1 | 2 | 3>(1)
+  const [votantes, setVotantes] = useState<Set<number>>(new Set())
+  const [votantesIntentado, setVotantesIntentado] = useState(false)
   const [candidatos, setCandidatos] = useState<CandidatoLocal[]>([])
   const [descartar, setDescartar] = useState(false)
   const crear = useCrearEleccion()
@@ -90,6 +97,8 @@ export function CrearEleccionDialog({
   const reiniciar = () => {
     datos.reset()
     setCandidatos([])
+    setVotantes(new Set())
+    setVotantesIntentado(false)
     setPaso(1)
     crear.reset()
     onClose()
@@ -97,7 +106,7 @@ export function CrearEleccionDialog({
 
   const intentarCerrar = () => {
     if (crear.isPending) return
-    if (datos.state.isDirty || candidatos.length > 0) setDescartar(true)
+    if (datos.state.isDirty || candidatos.length > 0 || votantes.size > 0) setDescartar(true)
     else reiniciar()
   }
 
@@ -112,6 +121,7 @@ export function CrearEleccionDialog({
         jornadaId: v.jornadaId,
         verResultadosEnVivo: v.verResultadosEnVivo,
         permitirComentarios: v.permitirComentarios,
+        votantes: [...votantes],
         candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
       },
       {
@@ -155,21 +165,35 @@ export function CrearEleccionDialog({
               <datos.AppField name="descripcion">
                 {(f) => <f.TextareaField label="Descripción" maxLength={500} />}
               </datos.AppField>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <datos.AppField name="fechaInicio">
-                  {(f) => <f.DateField label="Fecha inicio" mode="datetime" minDate={new Date()} />}
-                </datos.AppField>
-                <datos.AppField name="fechaCierre">
-                  {(f) => (
-                    <f.DateField
-                      label="Fecha final"
-                      mode="datetime"
-                      minDate={new Date()}
-                      description="Al llegar esta fecha se cierra la votación."
-                    />
-                  )}
-                </datos.AppField>
-              </div>
+              <datos.Subscribe selector={(st) => [st.values.fechaInicio, st.values.fechaCierre] as const}>
+                {([inicio, cierre]) => (
+                  <datos.Field name="fechaInicio">
+                    {(f) => {
+                      const error = f.state.meta.errors[0] ?? datos.getFieldMeta("fechaCierre")?.errors[0]
+                      const mensaje = typeof error === "string" ? error : error?.message
+                      return (
+                        <Field variant="outlined" data-invalid={!!mensaje || undefined}>
+                          <FieldLabel>
+                            Fecha<span aria-hidden className="text-red">*</span>
+                          </FieldLabel>
+                          <DateRangeField
+                            value={{ startDate: inicio?.slice(0, 10) ?? "", endDate: cierre?.slice(0, 10) ?? "" }}
+                            onChange={({ startDate, endDate }) => {
+                              f.handleChange(aInicio(startDate))
+                              datos.setFieldValue("fechaCierre", aCierre(endDate))
+                            }}
+                          />
+                          {mensaje ? (
+                            <FieldError>{mensaje}</FieldError>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">La votación cierra al terminar el último día.</p>
+                          )}
+                        </Field>
+                      )
+                    }}
+                  </datos.Field>
+                )}
+              </datos.Subscribe>
               <datos.AppField name="jornadaId">
                 {(f) => (
                   <f.SelectField
@@ -193,6 +217,12 @@ export function CrearEleccionDialog({
                 </div>
               </fieldset>
             </form>
+          ) : paso === 2 ? (
+            <SelectorVotantes
+              seleccion={votantes}
+              onCambio={setVotantes}
+              invalido={votantesIntentado && votantes.size === 0}
+            />
           ) : (
             <PasoCandidatos candidatos={candidatos} onCambio={setCandidatos} />
           )}
@@ -209,9 +239,32 @@ export function CrearEleccionDialog({
                 Siguiente
                 <ArrowRightIcon data-icon="inline-end" />
               </Button>
+            ) : paso === 2 ? (
+              <>
+                <Button type="button" variant="outline" onClick={() => setPaso(1)}>
+                  <ArrowLeftIcon data-icon="inline-start" />
+                  Atrás
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setVotantesIntentado(true)
+                      if (votantes.size > 0) setPaso(3)
+                    }}
+                  >
+                    Siguiente
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </Button>
+                  <Button type="button" color="neutral" onClick={intentarCerrar}>
+                    <XIcon data-icon="inline-start" />
+                    Cancelar
+                  </Button>
+                </div>
+              </>
             ) : (
               <>
-                <Button type="button" onClick={() => setPaso(1)} disabled={crear.isPending}>
+                <Button type="button" variant="outline" onClick={() => setPaso(2)} disabled={crear.isPending}>
                   <ArrowLeftIcon data-icon="inline-start" />
                   Atrás
                 </Button>

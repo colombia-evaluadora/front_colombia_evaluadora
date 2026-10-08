@@ -1,17 +1,25 @@
 import type { Encuesta } from "@/features/comunicaciones/chat/api/types"
 
+// Fechas relativas a hoy para que la encuesta siempre esté abierta en la demo.
+const DIA = 24 * 60 * 60_000
+const haceDias = (n: number) => new Date(Date.now() - n * DIA).toISOString()
+
+// Quién respondió cada encuesta (por correo).
+export const respondieron = new Map<number, Set<string>>()
+
 export const encuestas: Encuesta[] = [
   {
     conversacionId: 6,
     nombre: "Encuesta Satisfacción",
     descripcion: "Encuesta de satisfacción institucional.",
-    fechaInicio: "2026-03-01T13:00:00.000Z",
-    fechaCierre: "2026-03-20T22:00:00.000Z",
+    fechaInicio: haceDias(5),
+    fechaCierre: haceDias(-10),
     resultados: "PUBLICOS",
     totalHabilitados: 141,
     participantes: 120,
     creadoPor: "Andrés Gómez",
     esCreador: true,
+    yaRespondi: false,
     preguntas: [
       {
         id: 1,

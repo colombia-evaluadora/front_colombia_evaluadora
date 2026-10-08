@@ -25,6 +25,7 @@ import {
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
+import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 const datosSchema = z
   .object({
@@ -33,10 +34,7 @@ const datosSchema = z
     fechaInicio: z.string().nullable(),
     fechaCierre: z.string().nullable(),
   })
-  .refine((v) => !v.fechaInicio || !v.fechaCierre || v.fechaCierre > v.fechaInicio, {
-    path: ["fechaCierre"],
-    message: "La fecha final debe ser posterior a la de inicio.",
-  })
+  .superRefine((v, ctx) => validarRangoFechas(v, ctx))
 
 type Datos = z.infer<typeof datosSchema>
 
@@ -146,18 +144,31 @@ export function CrearEncuestaDialog({
               </datos.AppField>
               <div className="grid gap-4 sm:grid-cols-2">
                 <datos.AppField name="fechaInicio">
-                  {(f) => <f.DateField label="Fecha inicio" mode="datetime" minDate={new Date()} />}
+                  {(f) => <f.DateField label="Fecha inicio" required mode="datetime" minDate={new Date()} />}
                 </datos.AppField>
-                <datos.AppField name="fechaCierre">
-                  {(f) => (
-                    <f.DateField
-                      label="Fecha final"
-                      mode="datetime"
-                      minDate={new Date()}
-                      description="Al llegar esta fecha se cierran las respuestas."
-                    />
+                {/* El día mínimo del cierre sigue a la fecha de inicio. */}
+                <datos.Subscribe selector={(st) => st.values.fechaInicio}>
+                  {(inicio) => (
+                    <datos.AppField
+                      name="fechaCierre"
+                      // Se valida al momento, también cuando cambia el inicio.
+                      validators={{
+                        onChangeListenTo: ["fechaInicio"],
+                        onChange: ({ value, fieldApi }) =>
+                          errorCierre(fieldApi.form.getFieldValue("fechaInicio"), value),
+                      }}
+                    >
+                      {(f) => (
+                        <f.DateField
+                          label="Fecha final" required
+                          mode="datetime"
+                          minDate={diaMinimo(inicio)}
+                          description="Al llegar esta fecha se cierran las respuestas."
+                        />
+                      )}
+                    </datos.AppField>
                   )}
-                </datos.AppField>
+                </datos.Subscribe>
               </div>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Resultados</legend>

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
-import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion, Eleccion } from "@/features/comunicaciones/chat/api/types"
 
 export interface CandidatoNuevo {
   nombre: string
@@ -19,6 +19,8 @@ export interface CrearEleccionInput {
   jornadaId: number
   verResultadosEnVivo: boolean
   permitirComentarios: boolean
+  // Ids de las personas habilitadas para votar.
+  votantes: number[]
   candidatos: CandidatoNuevo[]
 }
 
@@ -33,6 +35,7 @@ async function crearEleccion(v: CrearEleccionInput) {
     FK_JORNADA: v.jornadaId,
     VER_RESULTADOS: v.verResultadosEnVivo ? "S" : "N",
     COMENTARIOS: v.permitirComentarios ? "S" : "N",
+    VOTANTES: v.votantes,
     CANDIDATOS: v.candidatos.map((c) => ({
       NOMBRE: c.nombre,
       NUMERO: c.numero,
@@ -47,5 +50,34 @@ export function useCrearEleccion() {
   return useMutation({
     mutationFn: crearEleccion,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+  })
+}
+
+// Cierre manual: nadie más puede votar y se publican los resultados.
+export function useCerrarEleccion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (conversacionId: number) =>
+      evalCol.patchRow<Conversacion>(`/comunicaciones/conversaciones/${conversacionId}/eleccion/cerrar`),
+    onSuccess: (_, conversacionId) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.eleccion(conversacionId) }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+      ]),
+  })
+}
+
+// Voto del estudiante; `candidatoId` null = voto en blanco.
+export function useVotarEleccion(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (candidatoId: number | null) =>
+      evalCol.postRow<Eleccion>(`/comunicaciones/conversaciones/${conversacionId}/eleccion/votar`, {
+        FK_CANDIDATO: candidatoId,
+      }),
+    onSuccess: (eleccion) => {
+      queryClient.setQueryData(chatKeys.eleccion(conversacionId), eleccion)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.notificaciones })
+    },
   })
 }
