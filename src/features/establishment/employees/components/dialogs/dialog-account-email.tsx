@@ -119,10 +119,24 @@ function noEmailReason(isLoading: boolean) {
   return isLoading ? "Cargando el correo del funcionario…" : "El funcionario no tiene correo registrado"
 }
 
+/**
+ * Restablecer solo tiene sentido si la cuenta SSO existe y no está inactiva.
+ * Mientras el estado carga o si la consulta falla el botón queda habilitado:
+ * el backend responde de forma controlada, así que degrada bien.
+ */
+function resetDisabledReason(info: EmployeeAccountInfo): string | undefined {
+  if (!info.email) return noEmailReason(info.isEmailLoading)
+  if (info.isStatusError || info.isStatusLoading) return undefined
+  if (info.status === "NOT_FOUND") return "El funcionario aún no tiene cuenta; envíale la invitación"
+  if (info.status === "INACTIVE") return "La cuenta está inactiva"
+  return undefined
+}
+
 export function SendPasswordResetDialog({ employee }: { employee: EmployeeListItem }) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
-  const { email, isEmailLoading } = useEmployeeAccount(employee.id)
+  const info = useEmployeeAccount(employee.id)
+  const { email } = info
 
   const mutation = useSendPasswordReset({
     mutationConfig: {
@@ -141,7 +155,7 @@ export function SendPasswordResetDialog({ employee }: { employee: EmployeeListIt
     <ConfirmEmailAction
       icon={<KeyIcon />}
       label="Enviar correo para restablecer contraseña"
-      disabledReason={email ? undefined : noEmailReason(isEmailLoading)}
+      disabledReason={resetDisabledReason(info)}
       title="Restablecer contraseña"
       description={
         <>
@@ -165,26 +179,33 @@ function resendDisabledReason(info: EmployeeAccountInfo): string | undefined {
   if (info.isStatusLoading || !info.status) return "Consultando el estado de la cuenta…"
   switch (info.status) {
     case "PENDING_ACTIVATION":
+    // Sin cuenta SSO: el backend la crea pendiente y envía la invitación.
+    case "NOT_FOUND":
       return undefined
     case "ACTIVE":
       return "La cuenta ya está activa; usa restablecer contraseña"
     case "INACTIVE":
       return "La cuenta está inactiva"
-    case "NOT_FOUND":
-      return "El funcionario no tiene una cuenta de usuario"
   }
 }
+
+const INVITE_LABEL = "Enviar invitación para crear la cuenta"
 
 export function ResendActivationDialog({ employee }: { employee: EmployeeListItem }) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
   const info = useEmployeeAccount(employee.id)
+  const isInvite = info.status === "NOT_FOUND"
 
   const mutation = useResendActivation({
     mutationConfig: {
       onSuccess: (_data, correo) => {
         setOpen(false)
-        notify(`Se envió el correo de activación a ${correo}.`)
+        notify(
+          isInvite
+            ? `Se envió la invitación a ${correo}.`
+            : `Se envió el correo de activación a ${correo}.`,
+        )
       },
       onError: (error) => {
         setOpen(false)
@@ -196,14 +217,21 @@ export function ResendActivationDialog({ employee }: { employee: EmployeeListIte
   return (
     <ConfirmEmailAction
       icon={<PaperPlaneTiltIcon />}
-      label="Reenviar correo de activación"
+      label={isInvite ? INVITE_LABEL : "Reenviar correo de activación"}
       disabledReason={resendDisabledReason(info)}
-      title="Reenviar activación"
+      title={isInvite ? INVITE_LABEL : "Reenviar activación"}
       description={
-        <>
-          Se reenviará a <strong>{info.email}</strong> el correo para que {employee.name} active su
-          cuenta.
-        </>
+        isInvite ? (
+          <>
+            Se creará la cuenta de {employee.name} y se enviará a <strong>{info.email}</strong> la
+            invitación para activarla.
+          </>
+        ) : (
+          <>
+            Se reenviará a <strong>{info.email}</strong> el correo para que {employee.name} active
+            su cuenta.
+          </>
+        )
       }
       isPending={mutation.isPending}
       onConfirm={() => {

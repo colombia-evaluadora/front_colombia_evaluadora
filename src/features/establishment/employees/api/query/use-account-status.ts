@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client"
  * Estado de la cuenta SSO de un funcionario. Lo calcula el auth-center a
  * partir del usuario (no de TFUNCIONARIO): `PENDING_ACTIVATION` = la cuenta
  * existe pero nunca se activó, que es el único caso en el que tiene sentido
- * reenviar el correo de activación.
+ * reenviar el correo de activación; `NOT_FOUND` permite invitar (el backend crea la cuenta pendiente).
  */
 export type AccountStatus = "ACTIVE" | "PENDING_ACTIVATION" | "INACTIVE" | "NOT_FOUND"
 
