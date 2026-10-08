@@ -25,6 +25,10 @@ import {
   registerFuncionario,
 } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
+import {
+  correoCambio,
+  reactivarPorCambioDeCorreo,
+} from "@/features/establishment/employees/api/mutations/use-reactivar-por-cambio-de-correo"
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
@@ -238,6 +242,11 @@ export function AddEstablishmentPage() {
     },
   })
 
+  // Avisos de "correo de activación enviado" de rector/secretaria (ver
+  // persistPersonIfAny); se muestran junto al mensaje de éxito del EE.
+  const activationNoticesRef = useRef<string[]>([])
+  const activationFailedRef = useRef(false)
+
   const updateMutation = useUpdate({
     mutationConfig: {
       onSuccess: (result) => {
@@ -245,7 +254,14 @@ export function AddEstablishmentPage() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(SUCCESS_MESSAGES.establishment.updated)
+        const avisos = activationNoticesRef.current
+        activationNoticesRef.current = []
+        const fallo = activationFailedRef.current
+        activationFailedRef.current = false
+        notify(
+          [SUCCESS_MESSAGES.establishment.updated, ...avisos].join(" "),
+          fallo ? { variant: "error" } : undefined,
+        )
         navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
       },
       onError: (error) => {
@@ -369,6 +385,28 @@ export function AddEstablishmentPage() {
             },
             foto,
           )
+          // Correo del rector/secretaria cambiado: la cuenta queda pendiente
+          // de activación y se envía la activación al correo nuevo. Un fallo
+          // acá no deshace el guardado (ya quedó hecho): se avisa al final.
+          const correoAnterior = existingEmployee?.person?.email
+          if (correoCambio(correoAnterior, person.email)) {
+            try {
+              await reactivarPorCambioDeCorreo({
+                correoAnterior: (correoAnterior ?? "").trim(),
+                correoNuevo: person.email.trim(),
+              })
+              activationNoticesRef.current.push(
+                `Se envió el correo de activación a ${person.email.trim()}.`,
+              )
+            } catch (error) {
+              activationNoticesRef.current.push(
+                `No fue posible enviar el correo de activación del ${label}: ${
+                  getErrorMessage(error) || "error desconocido"
+                }`,
+              )
+              activationFailedRef.current = true
+            }
+          }
           return { person, pkFuncionarioRegistrado: null }
         }
 
@@ -414,6 +452,8 @@ export function AddEstablishmentPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    activationNoticesRef.current = []
+    activationFailedRef.current = false
     setHasSubmitted(true)
 
     const validation = validateEstablishmentForm(formValues, confirmPasswords, { logo: shield, photos })
