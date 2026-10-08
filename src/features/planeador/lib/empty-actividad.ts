@@ -23,6 +23,7 @@ export function crearActividadVacia(): Actividad {
   return {
     id,
     nombre: "",
+    descripcion: "",
     // Arranca sin elegir ("Seleccione") — `IdentificacionSection` ya
     // resuelve `""` al sentinel `__none__` de su `<Select>`, mismo criterio
     // que Asignatura/Unidad temática asociada.

@@ -105,6 +105,7 @@
 
   /* ---------- SIDEBAR -------------------- */
   --sidebar: #f4f7fb;
+  --chat-panel: #fafcff;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -195,6 +196,7 @@
 
   /* ---------- SIDEBAR -------------------- */
   --sidebar: #0e1319;
+  --chat-panel: #0f151b;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -282,6 +284,7 @@
 
   /* ---------- SIDEBAR -------------------- */
   --sidebar: #fcf8f8;
+  --chat-panel: #fefcfc;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -370,6 +373,7 @@
 
   /* ---------- SIDEBAR -------------------- */
   --sidebar: #190e0e;
+  --chat-panel: #1b1011;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -457,6 +461,7 @@
 
   /* ---------- SIDEBAR -------------------- */
   --color-sidebar: var(--sidebar);
+  --color-chat-panel: var(--chat-panel);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);

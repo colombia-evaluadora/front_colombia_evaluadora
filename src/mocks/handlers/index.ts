@@ -39,6 +39,15 @@ import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { informesHandlers } from "@/mocks/handlers/informes"
+import {
+  comunicacionesArchivosHandlers,
+  comunicacionesHandlers,
+  comunicacionesMensajesHandlers,
+} from "@/mocks/handlers/comunicaciones"
+import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicaciones-elecciones"
+import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
+import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
+import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
 
 export const handlers = [
   ...authHandlers,
@@ -83,4 +92,11 @@ export const handlers = [
   ...curricularStatementsHandlers,
   ...asistenciaHandlers,
   ...informesHandlers,
+  ...comunicacionesArchivosHandlers,
+  ...comunicacionesEleccionesHandlers,
+  ...comunicacionesEncuestasHandlers,
+  ...comunicacionesEvaluacionesHandlers,
+  ...comunicacionesComunicadosHandlers,
+  ...comunicacionesMensajesHandlers,
+  ...comunicacionesHandlers,
 ]

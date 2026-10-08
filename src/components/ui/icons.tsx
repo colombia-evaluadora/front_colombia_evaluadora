@@ -126,6 +126,57 @@ import {
   MdVisibilityOff,
   MdWarningAmber,
   MdCheckCircleOutline,
+  MdAlternateEmail,
+  MdApps,
+  MdArrowDropDown,
+  MdCode,
+  MdContentCopy,
+  MdFormatListBulleted,
+  MdFormatQuote,
+  MdLink,
+  MdMicNone,
+  MdMoreVert,
+  MdOutlineArchive,
+  MdOutlineAssignment,
+  MdOutlineCampaign,
+  MdOutlineChat,
+  MdOutlineDataObject,
+  MdOutlineEdit,
+  MdOutlineEmojiEmotions,
+  MdOutlineFactCheck,
+  MdOutlineHowToVote,
+  MdOutlineLayers,
+  MdOutlineMarkChatRead,
+  MdOutlineMarkChatUnread,
+  MdOutlineNotificationsOff,
+  MdOutlineTerminal,
+  MdOutlineUnarchive,
+  MdOutlineVideocam,
+  MdOutlineViewHeadline,
+  MdStrikethroughS,
+  MdTag,
+  MdOutlinePushPin,
+  MdPushPin,
+  MdOutlineInsertDriveFile,
+  MdOutlinePhotoLibrary,
+  MdOutlineCheckBox,
+  MdOutlineRadioButtonChecked,
+  MdNotes,
+  MdOutlineRule,
+  MdArrowDropUp,
+  MdUndo,
+  MdRedo,
+  MdFormatColorText,
+  MdFormatAlignLeft,
+  MdFormatAlignCenter,
+  MdFormatAlignRight,
+  MdFormatAlignJustify,
+  MdFormatLineSpacing,
+  MdFormatIndentDecrease,
+  MdFormatIndentIncrease,
+  MdFormatClear,
+  MdPrint,
+  MdOutlineSave,
 } from "react-icons/md"
 
 /**
@@ -284,3 +335,73 @@ export const WarningIcon = makeIcon(MdWarningAmber)
 export const XCircleIcon = makeIcon(MdCancel)
 export const XIcon = makeIcon(MdClose)
 export const XSquareIcon = makeIcon(MdCancelPresentation)
+
+// Chat de comunicaciones
+export const AtIcon = makeIcon(MdAlternateEmail)
+export const StackIcon = makeIcon(MdOutlineLayers)
+export const HashIcon = makeIcon(MdTag)
+export const ChatTextIcon = makeIcon(MdOutlineChat)
+export const BallotIcon = makeIcon(MdOutlineHowToVote)
+export const ClipboardIcon = makeIcon(MdOutlineAssignment)
+export const ListChecksIcon = makeIcon(MdOutlineFactCheck)
+export const MegaphoneIcon = makeIcon(MdOutlineCampaign)
+// "Aa" subrayado del botón de formato. Material no trae este ícono, así que se
+// dibuja con texto SVG en la fuente de la app.
+export const TextAaIcon = makeIcon(({ size = "1em", ...props }) => (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      aria-hidden
+      {...props}
+    >
+      <text x="12" y="16" textAnchor="middle" fontSize="15" fontWeight="500" fontFamily="inherit">
+        Aa
+      </text>
+      <rect x="3" y="19" width="18" height="1.6" rx="0.8" />
+    </svg>
+))
+export const SmileyIcon = makeIcon(MdOutlineEmojiEmotions)
+export const VideoCameraIcon = makeIcon(MdOutlineVideocam)
+export const MicrophoneIcon = makeIcon(MdMicNone)
+export const BellSlashIcon = makeIcon(MdOutlineNotificationsOff)
+export const ChatUnreadIcon = makeIcon(MdOutlineMarkChatUnread)
+export const ChatReadIcon = makeIcon(MdOutlineMarkChatRead)
+export const TerminalIcon = makeIcon(MdOutlineTerminal)
+export const DotsThreeVerticalIcon = makeIcon(MdMoreVert)
+export const CaretDownFillIcon = makeIcon(MdArrowDropDown)
+export const CopyIcon = makeIcon(MdContentCopy)
+export const ArchiveIcon = makeIcon(MdOutlineArchive)
+export const UnarchiveIcon = makeIcon(MdOutlineUnarchive)
+export const PencilSimpleIcon = makeIcon(MdOutlineEdit)
+export const ListIcon = makeIcon(MdOutlineViewHeadline)
+export const SquaresFourIcon = makeIcon(MdApps)
+export const TextStrikethroughIcon = makeIcon(MdStrikethroughS)
+export const LinkIcon = makeIcon(MdLink)
+export const ListBulletsIcon = makeIcon(MdFormatListBulleted)
+export const QuotesIcon = makeIcon(MdFormatQuote)
+export const CodeIcon = makeIcon(MdCode)
+export const CodeBlockIcon = makeIcon(MdOutlineDataObject)
+export const PushPinIcon = makeIcon(MdOutlinePushPin)
+export const PushPinFillIcon = makeIcon(MdPushPin)
+export const FileIcon = makeIcon(MdOutlineInsertDriveFile)
+export const ImagesIcon = makeIcon(MdOutlinePhotoLibrary)
+export const CheckSquareIcon = makeIcon(MdOutlineCheckBox)
+export const RadioButtonIcon = makeIcon(MdOutlineRadioButtonChecked)
+export const TextAlignLeftIcon = makeIcon(MdNotes)
+export const YesNoIcon = makeIcon(MdOutlineRule)
+export const CaretUpFillIcon = makeIcon(MdArrowDropUp)
+export const ArrowUUpLeftIcon = makeIcon(MdUndo)
+export const ArrowUUpRightIcon = makeIcon(MdRedo)
+export const TextColorIcon = makeIcon(MdFormatColorText)
+export const TextAlignLeftFillIcon = makeIcon(MdFormatAlignLeft)
+export const TextAlignCenterIcon = makeIcon(MdFormatAlignCenter)
+export const TextAlignRightIcon = makeIcon(MdFormatAlignRight)
+export const TextAlignJustifyIcon = makeIcon(MdFormatAlignJustify)
+export const LineSpacingIcon = makeIcon(MdFormatLineSpacing)
+export const TextOutdentIcon = makeIcon(MdFormatIndentDecrease)
+export const TextIndentIcon = makeIcon(MdFormatIndentIncrease)
+export const TextClearIcon = makeIcon(MdFormatClear)
+export const PrinterIcon = makeIcon(MdPrint)
+export const FloppyDiskIcon = makeIcon(MdOutlineSave)

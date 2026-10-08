@@ -6,9 +6,7 @@ import { AssistantSheet } from "@/features/assistant/components/assistant-sheet"
 import { getInitialSidebarOpen } from "@/features/navigation/lib/sidebar-cookie"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BellIcon } from "@/components/ui/icons"
+import { NotificacionesChat } from "@/features/comunicaciones/chat/components/notificaciones-chat"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -38,22 +36,7 @@ export function ProtectedLayout() {
             <ColorThemeToggle />
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    color="muted"
-                    aria-label="Notificaciones"
-                    className="bg-background"
-                  />
-                }
-              >
-                <BellIcon />
-              </TooltipTrigger>
-              <TooltipContent>Notificaciones</TooltipContent>
-            </Tooltip>
+            <NotificacionesChat />
             <NavUser />
           </div>
         </header>
