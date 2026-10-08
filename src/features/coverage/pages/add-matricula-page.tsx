@@ -20,7 +20,7 @@ import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-
 import { useEstablecimientoDeSede } from "@/features/coverage/api/query/use-establecimiento-de-sede"
 import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
-import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
+import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type {
   CreateMatriculaInput,
@@ -108,8 +108,12 @@ function AddMatriculaPageContent() {
       enabled: colegio.resuelto,
     })
   const fieldSettings = useMemo(
-    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
-    [fieldConfig],
+    () =>
+      applyGradeFieldRules(
+        fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined,
+        values.academic.grade,
+      ),
+    [fieldConfig, values.academic.grade],
   )
 
   useEffect(() => {
