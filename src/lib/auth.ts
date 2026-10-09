@@ -78,6 +78,11 @@ export function useLogin({
       // "Mantener sesión iniciada" ya quedó decidido del lado del servidor.
       setAuthToken(data.token)
       queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
+      // Menú y permisos por pantalla (`staleTime: Infinity`) son del usuario
+      // ANTERIOR si quedó algo en caché (logout y sesión vencida ya hacen
+      // `clear()`, esto cubre cualquier otro camino). El guard de `/app` decide
+      // con este menú: tiene que salir del token nuevo, no de la caché.
+      queryClient.removeQueries({ queryKey: ["navigation"] })
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },
   })

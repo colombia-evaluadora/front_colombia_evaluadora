@@ -60,6 +60,12 @@ import {
   getFirstNavUrl,
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
+import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
+import {
+  canAccessPath,
+  getMenuUrls,
+  isAlwaysAllowedPath,
+} from "@/features/navigation/lib/route-access"
 
 const LoginPage = lazyRouteComponent(() => import("@/features/auth/pages/login-page"), "LoginPage")
 const ForgotPasswordPage = lazyRouteComponent(
@@ -86,6 +92,10 @@ const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-lay
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
+)
+const SinAccesoPage = lazyRouteComponent(
+  () => import("@/features/navigation/pages/sin-acceso-page"),
+  "SinAccesoPage",
 )
 const AuditSessionPage = lazyRouteComponent(
   () => import("@/features/administration/audits/pages/audit-session-page"),
@@ -315,11 +325,50 @@ const appLayoutRoute = createRoute({
   head: () => ({
     meta: [{ name: "robots", content: "noindex, nofollow" }],
   }),
-  beforeLoad: async ({ context, location }) => {
+  // Dos guards, en este orden, y los dos corren en CADA navegación dentro de
+  // `/app` (TanStack Router re-ejecuta el `beforeLoad` de todos los matches,
+  // no solo el de la hoja):
+  //
+  // 1. Sesión: sin sesión, al login con `redirectTo`.
+  // 2. Menú: la ruta tiene que ser de algún ítem del menú del usuario
+  //    (`GET /eval-col/my-menus`, el mismo que pinta el sidebar). Si no, a
+  //    `/app/sin-acceso`. Vive acá y no en cada ruta para fallar CERRADO:
+  //    una ruta nueva que nadie mapeó queda bloqueada, no abierta (ver
+  //    `NAV_PATH_ALIASES` en `route-access.ts`).
+  //
+  // Sin bypass de superadmin, a propósito: igual que `fn_list_my_menus` en el
+  // backend, "el recorte por rol ES la autorización" — el superadmin entra a
+  // lo que su menú le da (que hoy incluye todo lo de Administración).
+  beforeLoad: async ({ context, location, matches }) => {
     if (!(await hasSession(context.queryClient))) {
       throw redirect({
         to: paths.auth.login.path,
         search: { redirectTo: location.href },
+      })
+    }
+
+    // Una URL que no existe es un 404, no un "sin acceso": que la pinte el
+    // `NotFoundPage` del router en lugar de decirle al usuario que no tiene
+    // permiso sobre algo que no hay.
+    if (matches.some((match) => match.globalNotFound)) return
+    // `/app` (resuelve el primer ítem por su cuenta) y `/app/sin-acceso`
+    // (el destino de este mismo guard: si dependiera del menú, rebotaría en
+    // bucle).
+    if (isAlwaysAllowedPath(location.pathname)) return
+
+    // Si el menú no carga, el error sube y lo pinta el `ErrorPage` con
+    // "Reintentar": nunca se concede acceso a ciegas ni se cierra la sesión
+    // por eso. `staleTime: Infinity` → después de la primera carga esto sale
+    // de la caché; logout y el 401 de sesión vencida la vacían
+    // (`queryClient.clear()`) y la pantalla de roles y menús la invalida al
+    // guardar.
+    const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
+    if (!canAccessPath(location.pathname, getMenuUrls(items))) {
+      // `redirect` reemplaza la entrada del historial: "Atrás" vuelve a la
+      // pantalla anterior, no a la bloqueada.
+      throw redirect({
+        to: paths.app.sinAcceso.getHref(),
+        search: { desde: location.pathname },
       })
     }
   },
@@ -357,22 +406,28 @@ const GESTION_ACADEMICA_CRUMB = {
 // `/app` no tiene página propia: manda a la primera pantalla del menú del
 // usuario (el primer item del sidebar), no a una ruta fija — hay roles sin
 // Cobertura asignada, que caían en una pantalla que no les corresponde.
-// Si el menú viene vacío o falla la llamada, Cobertura queda como último
-// recurso: el layout protegido ya se encarga de la sesión.
+//
+// Ya no hay ruta fija de último recurso: con el guard de `appLayoutRoute`,
+// mandar a una pantalla que no está en el menú terminaría igual en "sin
+// acceso". Menú vacío → directo a "sin acceso"; si la llamada falla, el error
+// sube al `ErrorPage` (con "Reintentar"), igual que en el resto de `/app`.
 const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/",
   beforeLoad: async ({ context }) => {
-    let firstUrl: string | null = null
-    try {
-      const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
-      firstUrl = getFirstNavUrl(items)
-    } catch {
-      firstUrl = null
-    }
-
-    throw redirect({ to: firstUrl ?? paths.app.coberturaReservaCupo.getHref() })
+    const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
+    throw redirect({ to: getFirstNavUrl(items) ?? paths.app.sinAcceso.getHref() })
   },
+})
+
+// Pantalla a la que manda el guard de `appLayoutRoute`. Cuelga del layout
+// protegido para que el sidebar y el encabezado sigan visibles.
+export const sinAccesoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.sinAcceso.path,
+  validateSearch: sinAccesoSearchSchema,
+  staticData: { breadcrumb: [{ label: "Sin acceso" }] },
+  component: SinAccesoPage,
 })
 
 export const coberturaReservaCupoRoute = createRoute({
@@ -909,6 +964,7 @@ const routeTree = rootRoute.addChildren([
   ]),
   appLayoutRoute.addChildren([
     appIndexRoute,
+    sinAccesoRoute,
     coberturaReservaCupoRoute,
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
