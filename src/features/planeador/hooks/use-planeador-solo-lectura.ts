@@ -63,14 +63,16 @@ export function PlaneadorSoloLecturaScope({
 export function usePlaneadorSoloLectura() {
   const permiso = useMenuPermission("PLANEADOR")
   const { user } = useAuth()
-  const { funcionario } = usePlaneadorDocenteScope()
+  const { funcionario, esSuperAdmin, enVistaConSelector } = usePlaneadorDocenteScope()
   const forzada = React.useContext(SoloLecturaForzadaContext)
   const roles = user?.roles ?? []
   const soloCoordina =
     (roles.includes(COORDINADOR_ROLE) || roles.includes(RECTOR_ROLE)) &&
     !ROLES_QUE_PLANEAN.some((rol) => roles.includes(rol))
   const viendoOtroDocente = funcionario != null || forzada
-  const bloqueado = soloCoordina || viendoOtroDocente
+  // El Super Admin no tiene planeador propio: en Actividades/Unidades siempre
+  // mira el de otros (un docente o "Todos los docentes de la sede").
+  const bloqueado = soloCoordina || viendoOtroDocente || (esSuperAdmin && enVistaConSelector)
   const soloLectura = !permiso.puedeEditar || bloqueado
   return {
     puedeVer: permiso.puedeVer || (soloCoordina && permiso.puedeEditar) || viendoOtroDocente,

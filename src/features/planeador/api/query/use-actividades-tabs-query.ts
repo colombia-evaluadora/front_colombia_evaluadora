@@ -2,7 +2,11 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  setAlcanceQuery,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceParams,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/tabs` — las pestañas de "Actividades", una por
@@ -91,9 +95,11 @@ function toActividadTab(row: ActividadTabRow): ActividadTab {
   }
 }
 
-async function fetchActividadesTabs(funcionario?: number): Promise<ActividadTab[]> {
-  const query = funcionario != null ? `?funcionario=${funcionario}` : ""
-  const rows = await evalCol.getRows<ActividadTabRow>(`/planeador/actividades/tabs${query}`)
+async function fetchActividadesTabs(alcance: PlaneadorAlcanceParams): Promise<ActividadTab[]> {
+  const query = new URLSearchParams()
+  setAlcanceQuery(query, alcance)
+  const qs = query.toString()
+  const rows = await evalCol.getRows<ActividadTabRow>(`/planeador/actividades/tabs${qs ? `?${qs}` : ""}`)
   return rows.map(toActividadTab)
 }
 
@@ -104,10 +110,11 @@ async function fetchActividadesTabs(funcionario?: number): Promise<ActividadTab[
  *  Actividades/Unidades): así las pestañas —y los rótulos que se resuelven
  *  desde ellas en componentes profundos— son las del docente que se mira. */
 export function useActividadesTabsQuery() {
-  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
+  const { funcionario, sedeId, periodoId, consultasHabilitadas } = usePlaneadorDocenteScope()
+  const alcance = { funcionario, sede: sedeId, periodo: periodoId }
   return useQuery({
-    queryKey: planeadorKeys.actividades.tabs(funcionario),
-    queryFn: () => fetchActividadesTabs(funcionario),
+    queryKey: planeadorKeys.actividades.tabs(alcance),
+    queryFn: () => fetchActividadesTabs(alcance),
     enabled: consultasHabilitadas,
     staleTime: 1000 * 60 * 5,
   })

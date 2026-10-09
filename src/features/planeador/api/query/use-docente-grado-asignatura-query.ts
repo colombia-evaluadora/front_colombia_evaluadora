@@ -42,10 +42,12 @@ function toDocenteGradoAsignatura(row: DocenteGradoAsignaturaRow): DocenteGradoA
 async function fetchDocenteGradoAsignatura(
   periodoId?: number,
   funcionario?: number,
+  sede?: number,
 ): Promise<DocenteGradoAsignatura[]> {
   const query = new URLSearchParams()
   if (periodoId != null) query.set("periodo", String(periodoId))
   if (funcionario != null) query.set("funcionario", String(funcionario))
+  if (sede != null) query.set("sede", String(sede))
   const qs = query.toString()
   const rows = await evalCol.getRows<DocenteGradoAsignaturaRow>(
     `/planeador/docentes/grado-asignatura${qs ? `?${qs}` : ""}`,
@@ -55,10 +57,13 @@ async function fetchDocenteGradoAsignatura(
 
 /** Mismo criterio de `funcionario` que `useDocenteGruposQuery`. */
 export function useDocenteGradoAsignaturaQuery(periodoId?: number) {
-  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
+  const { funcionario, sedeId, periodoId: periodoDelFiltro, consultasHabilitadas } =
+    usePlaneadorDocenteScope()
+  // Sin periodo explícito, el del filtro avanzado (sede + año + jornada).
+  const periodo = periodoId ?? periodoDelFiltro
   return useQuery({
-    queryKey: planeadorKeys.docenteGradoAsignatura(periodoId, funcionario),
-    queryFn: () => fetchDocenteGradoAsignatura(periodoId, funcionario),
+    queryKey: planeadorKeys.docenteGradoAsignatura(periodo, funcionario, sedeId),
+    queryFn: () => fetchDocenteGradoAsignatura(periodo, funcionario, sedeId),
     enabled: consultasHabilitadas,
     staleTime: 1000 * 60,
   })

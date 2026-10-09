@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -18,6 +18,10 @@ import {
 } from "@/features/planeador/api/schema"
 import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
+import {
+  PlaneadorAlcanceFields,
+  type PlaneadorAlcanceSeleccion,
+} from "@/features/planeador/components/planeador-docente-selector"
 
 /** Valor de la opción "Todos": el filtro vacío. */
 const ALL_VALUE = ""
@@ -25,7 +29,10 @@ const ALL_VALUE = ""
 interface FilterPlaneadorFormProps {
   id: string
   defaultValues: PlaneadorFiltersFormInput
-  onSubmit: (values: PlaneadorFiltersFormValues) => void
+  onSubmit: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
+  /** Sede/año/jornada/docente vigentes. Sin esto (docente puro) el form no
+   *  muestra esos campos y no los toca al aplicar. */
+  alcanceInicial?: PlaneadorAlcanceSeleccion
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — nombre y valor son
   // el mismo string, ver `use-instrumento-evaluacion-catalog.ts`. Opcional:
   // la pestaña "Unidad temática" comparte este form pero no tiene
@@ -54,11 +61,15 @@ export function FilterPlaneadorForm({
   instrumentoOptions = [],
   rotuloLabel,
   rotuloUnidad,
+  alcanceInicial,
 }: FilterPlaneadorFormProps) {
+  // Borrador de la cascada Sede → Año → Jornada → Docente: fuera del form de
+  // TanStack porque son números con dependencias entre sí, no strings libres.
+  const [alcance, setAlcance] = useState<PlaneadorAlcanceSeleccion>(alcanceInicial ?? {})
   const form = useForm({
     defaultValues,
     validators: { onSubmit: planeadorFiltersFormSchema },
-    onSubmit: ({ value }) => onSubmit(value),
+    onSubmit: ({ value }) => onSubmit(value, alcanceInicial ? alcance : undefined),
   })
 
   const estadoItems = useMemo<Record<string, string>>(
@@ -86,6 +97,8 @@ export function FilterPlaneadorForm({
       }}
       className="flex flex-1 flex-col gap-5 px-4"
     >
+      {alcanceInicial && <PlaneadorAlcanceFields value={alcance} onChange={setAlcance} />}
+
       <div className="grid grid-cols-2 gap-3">
         <form.Field name="vista">
           {(field) => (
