@@ -5,6 +5,8 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
+/** El rector sigue las mismas reglas que el coordinador (solo mira y valida). */
+const RECTOR_ROLE = "CEVAL-RECTOR"
 /** Roles que sí planean actividades: con cualquiera de estos, el permiso del
  *  menú decide como siempre. */
 const ROLES_QUE_PLANEAN = ["CEVAL-DOCENTE", "CEVAL-SUPER_ADMINISTRADOR"]
@@ -49,7 +51,8 @@ export function PlaneadorSoloLecturaScope({
  *    editar (así llegó en testv2, con el formulario entero editable), el
  *    Coordinador solo ve y valida la planeación de sus docentes, no la
  *    edita. Un coordinador que además dicta (CEVAL-DOCENTE) sigue editando
- *    sus propias actividades.
+ *    sus propias actividades. El Rector (CEVAL-RECTOR) sigue exactamente
+ *    las mismas reglas, con alcance de todo el establecimiento.
  * 3. Super Admin/Coordinador mirando el planeador de OTRO docente
  *    (`?docente=` en Actividades/Unidades, ver `usePlaneadorDocenteScope`):
  *    ver es solo ver. `viendoOtroDocente` además le avisa a la UI que oculte
@@ -64,7 +67,8 @@ export function usePlaneadorSoloLectura() {
   const forzada = React.useContext(SoloLecturaForzadaContext)
   const roles = user?.roles ?? []
   const soloCoordina =
-    roles.includes(COORDINADOR_ROLE) && !ROLES_QUE_PLANEAN.some((rol) => roles.includes(rol))
+    (roles.includes(COORDINADOR_ROLE) || roles.includes(RECTOR_ROLE)) &&
+    !ROLES_QUE_PLANEAN.some((rol) => roles.includes(rol))
   const viendoOtroDocente = funcionario != null || forzada
   const bloqueado = soloCoordina || viendoOtroDocente
   const soloLectura = !permiso.puedeEditar || bloqueado

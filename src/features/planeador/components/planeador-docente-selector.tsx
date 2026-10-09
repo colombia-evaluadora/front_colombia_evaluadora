@@ -16,8 +16,9 @@ import {
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 
-/** Valor del ítem "Todos los docentes de mi sede" (Coordinador): sin
- *  `?docente=`, el backend devuelve el alcance completo de sus sedes. */
+/** Valor del ítem "Todos los docentes…" (Rector/Coordinador): sin
+ *  `?docente=`, el backend devuelve el alcance completo del rol (todo el
+ *  establecimiento para el rector, sus sedes para el coordinador). */
 const TODOS = ""
 
 export interface PlaneadorDocenteSeleccion {
@@ -37,7 +38,7 @@ function usePlaneadorDocentesDelScope() {
     establecimientoId: scope.establecimientoId,
     enabled:
       scope.enVistaConSelector &&
-      (scope.esCoordinador || (scope.esSuperAdmin && scope.establecimientoId != null)),
+      (scope.eligeSoloDocente || (scope.esSuperAdmin && scope.establecimientoId != null)),
   })
 }
 
@@ -46,6 +47,8 @@ function usePlaneadorDocentesDelScope() {
  * Unidades). Solo se muestra a quien puede mirar el planeador de otros:
  * - Super Admin: Establecimiento → Docente (el docente queda deshabilitado
  *   hasta elegir el EE). Sin docente no hay planeador que mostrar.
+ * - Rector: solo Docente, con "Todos los docentes del establecimiento"
+ *   como primera opción (el backend acota la lista a su EE).
  * - Coordinador: solo Docente, con "Todos los docentes de mi sede" como
  *   primera opción (el backend acota la lista a sus sedes).
  *
@@ -76,8 +79,13 @@ export function PlaneadorDocenteSelector({
   const establecimientoItems = Object.fromEntries(
     (establecimientos.data ?? []).map((ee) => [String(ee.id), ee.name]),
   )
+  // El rector ve todo su establecimiento; el coordinador, su(s) sede(s). Si
+  // alguien tiene los dos roles manda el alcance más amplio (rector).
+  const todosLabel = scope.esRector
+    ? "Todos los docentes del establecimiento"
+    : "Todos los docentes de mi sede"
   const docenteItems: Record<string, string> = {
-    ...(scope.esCoordinador ? { [TODOS]: "Todos los docentes de mi sede" } : {}),
+    ...(scope.eligeSoloDocente ? { [TODOS]: todosLabel } : {}),
     ...Object.fromEntries((docentes.data ?? []).map((d) => [String(d.id), docenteLabel(d)])),
   }
   const docenteDeshabilitado = scope.esSuperAdmin && scope.establecimientoId == null
@@ -121,7 +129,7 @@ export function PlaneadorDocenteSelector({
           value={
             scope.funcionario != null
               ? String(scope.funcionario)
-              : scope.esCoordinador
+              : scope.eligeSoloDocente
                 ? TODOS
                 : null
           }
@@ -144,8 +152,8 @@ export function PlaneadorDocenteSelector({
             />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            {scope.esCoordinador && (
-              <ComboboxFieldItem value={TODOS}>Todos los docentes de mi sede</ComboboxFieldItem>
+            {scope.eligeSoloDocente && (
+              <ComboboxFieldItem value={TODOS}>{todosLabel}</ComboboxFieldItem>
             )}
             {(docentes.data ?? []).map((docente) => (
               <ComboboxFieldItem key={docente.id} value={String(docente.id)}>

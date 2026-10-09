@@ -4,6 +4,11 @@ import { paths } from "@/config/paths"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useEsCoordinador } from "@/features/academic-management/asistencia/api/use-es-docente"
 
+/** Mismo criterio de detección que `useEsCoordinador` (claim `roles` del
+ *  token). Hay un rector por establecimiento y su alcance es el EE entero
+ *  (todas sus sedes); el backend lo resuelve del token. */
+const RECTOR_ROLE = "CEVAL-RECTOR"
+
 /** Pantallas del Planeador que aceptan `?establecimiento=&docente=`: solo
  *  Actividades y Unidades (la planilla y los formularios de alta/edición
  *  quedan fuera, siempre trabajan sobre el usuario autenticado). */
@@ -25,7 +30,13 @@ export interface PlaneadorDocenteScope {
   /** Coordinador que NO es Super Admin (si tiene los dos roles, manda el
    *  de Super Admin: elige establecimiento + docente). */
   esCoordinador: boolean
-  /** Ve el selector de docente (Super Admin o Coordinador). */
+  /** Rector que NO es Super Admin. Mismas reglas que el Coordinador, pero su
+   *  alcance es todo el establecimiento en vez de su(s) sede(s). */
+  esRector: boolean
+  /** Rector o Coordinador: un solo selector "Docente" (sin EE, lo acota el
+   *  backend) con "Todos los docentes…" como primera opción. */
+  eligeSoloDocente: boolean
+  /** Ve el selector de docente (Super Admin, Rector o Coordinador). */
   puedeElegirDocente: boolean
   /** `PK_TESTABLECIMIENTO` elegido (solo Super Admin). */
   establecimientoId?: number
@@ -63,7 +74,9 @@ export function usePlaneadorDocenteScope(): PlaneadorDocenteScope {
   const enVistaConSelector = RUTAS_CON_SELECTOR.has(pathname.replace(/\/+$/, ""))
   const esSuperAdmin = user?.isSuperAdmin ?? false
   const esCoordinador = !esSuperAdmin && esCoordinadorRol
-  const puedeElegirDocente = esSuperAdmin || esCoordinador
+  const esRector = !esSuperAdmin && (user?.roles.includes(RECTOR_ROLE) ?? false)
+  const eligeSoloDocente = esCoordinador || esRector
+  const puedeElegirDocente = esSuperAdmin || eligeSoloDocente
 
   const activo = enVistaConSelector && puedeElegirDocente
   const establecimientoId = activo && esSuperAdmin ? toPk(search.establecimiento) : undefined
@@ -77,6 +90,8 @@ export function usePlaneadorDocenteScope(): PlaneadorDocenteScope {
     enVistaConSelector,
     esSuperAdmin,
     esCoordinador,
+    esRector,
+    eligeSoloDocente,
     puedeElegirDocente,
     establecimientoId,
     funcionario,
