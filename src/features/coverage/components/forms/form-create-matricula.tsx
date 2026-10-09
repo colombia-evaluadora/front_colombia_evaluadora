@@ -40,7 +40,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
-import { toLettersOnly } from "@/lib/text-input"
 
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import {
@@ -119,8 +118,6 @@ interface TextFieldProps {
   required?: boolean
   invalid?: boolean
   numeric?: boolean
-  /** Solo letras (con tildes/ñ) y espacios — para nombres/apellidos. */
-  letters?: boolean
   maxLength?: number
   disabled?: boolean
 }
@@ -134,7 +131,6 @@ export function MatriculaTextField({
   required,
   invalid,
   numeric,
-  letters,
   maxLength,
   disabled,
 }: TextFieldProps) {
@@ -163,12 +159,7 @@ export function MatriculaTextField({
         disabled={disabled}
         onChange={(event) => {
           const raw = event.target.value
-          const nextValue = numeric
-            ? raw.replace(/\D/g, "")
-            : letters
-              ? toLettersOnly(raw)
-              : raw
-          onChange(nextValue)
+          onChange(numeric ? raw.replace(/\D/g, "") : raw)
         }}
       />
     </Field>
@@ -558,7 +549,7 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
         numeric
-        maxLength={10}
+        maxLength={15}
         disabled={identityDisabled}
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
@@ -568,7 +559,6 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-first-name")}
         value={value.firstName}
-        letters
         maxLength={40}
         disabled={identityDisabled}
         onChange={(firstName) => onChange({ ...value, firstName })}
@@ -580,7 +570,6 @@ export function MatriculaStudentSection({
           required={isFieldRequired(fieldSettings, "student-second-name")}
           invalid={invalidFields.includes("student-second-name")}
           value={value.secondName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
@@ -592,7 +581,6 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-last-name")}
         value={value.lastName}
-        letters
         maxLength={40}
         disabled={identityDisabled}
         onChange={(lastName) => onChange({ ...value, lastName })}
@@ -604,7 +592,6 @@ export function MatriculaStudentSection({
           required={isFieldRequired(fieldSettings, "student-second-last-name")}
           invalid={invalidFields.includes("student-second-last-name")}
           value={value.secondLastName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
@@ -1234,7 +1221,6 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-first-name")}
           invalid={invalidFields.includes("guardian-first-name")}
           value={value.firstName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(firstName) => onChange({ ...value, firstName })}
@@ -1247,7 +1233,6 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-second-name")}
           invalid={invalidFields.includes("guardian-second-name")}
           value={value.secondName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
@@ -1260,7 +1245,6 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-last-name")}
           invalid={invalidFields.includes("guardian-last-name")}
           value={value.lastName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(lastName) => onChange({ ...value, lastName })}
@@ -1273,7 +1257,6 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-second-last-name")}
           invalid={invalidFields.includes("guardian-second-last-name")}
           value={value.secondLastName}
-          letters
           maxLength={40}
           disabled={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
@@ -1298,7 +1281,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-document-number")}
           value={value.documentNumber}
           numeric
-          maxLength={10}
+          maxLength={15}
           disabled={identityDisabled}
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />

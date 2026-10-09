@@ -210,7 +210,7 @@ export interface MatriculaAccountsFound {
  * de soporte (esos se gestionan aparte, desde el botón "Archivos").
  */
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export const DOCUMENT_REGEX = /^\d{3,10}$/
+export const DOCUMENT_REGEX = /^\d{3,15}$/
 
 export function validateMatricula(
   values: CreateMatriculaInput,
@@ -271,7 +271,7 @@ export function validateMatricula(
   }
 
   // El documento del acudiente ya se valida "requerido" arriba (via
-  // `OPTIONAL_MATRICULA_FIELD_GETTERS`), pero el formato (3-10 dígitos)
+  // `OPTIONAL_MATRICULA_FIELD_GETTERS`), pero el formato (3-15 dígitos)
   // aplica siempre que haya un valor, sea o no obligatorio.
   const guardianDocument = values.guardian.documentNumber.trim()
   if (guardianDocument && !DOCUMENT_REGEX.test(guardianDocument)) {
@@ -304,7 +304,7 @@ export function getMatriculaFieldErrorMessage(id: string, values: CreateMatricul
         ? values.student.documentNumber.trim()
         : values.guardian.documentNumber.trim()
     if (document && !DOCUMENT_REGEX.test(document)) {
-      return `El documento debe tener entre 3 y 10 dígitos: ${label}.`
+      return `El documento debe tener entre 3 y 15 dígitos: ${label}.`
     }
   }
   return `Falta el campo obligatorio: ${label}.`

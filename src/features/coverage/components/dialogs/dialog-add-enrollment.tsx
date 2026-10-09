@@ -120,7 +120,7 @@ const EMPTY_GUARDIAN: GuardianFormData = {
 }
 
 // Mismas reglas que la validación de matrícula (`validateMatricula`): formato
-// de documento (3-10 dígitos), formato de correo y fecha de nacimiento no
+// de documento (3-15 dígitos), formato de correo y fecha de nacimiento no
 // futura, además de los campos obligatorios de cada paso.
 function studentStepErrors(student: StudentFormData): Partial<Record<keyof StudentFormData, string>> {
   const errors: Partial<Record<keyof StudentFormData, string>> = {}
@@ -128,7 +128,7 @@ function studentStepErrors(student: StudentFormData): Partial<Record<keyof Stude
   const documentNumber = student.documentNumber.trim()
   if (!documentNumber) errors.documentNumber = "Requerido."
   else if (!DOCUMENT_REGEX.test(documentNumber)) {
-    errors.documentNumber = "El documento debe tener entre 3 y 10 dígitos."
+    errors.documentNumber = "El documento debe tener entre 3 y 15 dígitos."
   }
   if (!student.firstName.trim()) errors.firstName = "Requerido."
   if (!student.lastName.trim()) errors.lastName = "Requerido."
@@ -149,7 +149,7 @@ function guardianStepErrors(guardian: GuardianFormData): Partial<Record<keyof Gu
   const documentNumber = guardian.documentNumber.trim()
   if (!documentNumber) errors.documentNumber = "Requerido."
   else if (!DOCUMENT_REGEX.test(documentNumber)) {
-    errors.documentNumber = "El documento debe tener entre 3 y 10 dígitos."
+    errors.documentNumber = "El documento debe tener entre 3 y 15 dígitos."
   }
   if (!guardian.firstName.trim()) errors.firstName = "Requerido."
   if (!guardian.lastName.trim()) errors.lastName = "Requerido."
