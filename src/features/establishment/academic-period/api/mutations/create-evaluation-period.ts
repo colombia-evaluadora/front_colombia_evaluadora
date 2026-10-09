@@ -27,7 +27,6 @@ export function toCreateEvaluationPeriodRequest(
     ABREVIACION: values.abreviacion,
     FECHA_INICIO: values.startDate,
     FECHA_FIN: values.endDate,
-    FK_ESTADO: values.estadoId,
     PORCENTAJE: values.peso,
   }
 }

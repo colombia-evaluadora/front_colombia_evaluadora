@@ -27,7 +27,10 @@ import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-per
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
-import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import {
+  EVALUATION_PERIOD_STATUS_BADGE,
+  evaluationPeriodStatusByDates,
+} from "@/features/establishment/academic-period/api/ui-mappings"
 import {
   evaluationPeriodFormSchema,
   type EvaluationPeriodFormValues,
@@ -190,16 +193,25 @@ export function CreateEvaluationPeriodDialog({
   }
 
   useEffect(() => {
-    if (isEditing || !open || form.state.values.estadoId) return
-    const noCalificable = statusOptions.find((o) => o.key === "2")
-    if (noCalificable) form.setFieldValue("estadoId", noCalificable.id)
+    if (isEditing || !open) return
+    function syncEstado() {
+      const { startDate, endDate, estadoId } = form.state.values
+      const key = evaluationPeriodStatusByDates(startDate, endDate, formatDateValue(new Date()))
+      const status = statusOptions.find((o) => o.key === key)
+      if (status && status.id !== estadoId) form.setFieldValue("estadoId", status.id)
+    }
+    syncEstado()
+    const subscription = form.store.subscribe(syncEstado)
+    return () => subscription.unsubscribe()
   }, [isEditing, open, statusOptions, form])
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
   function requestClose() {
     if (isSaving) return
-    if (JSON.stringify(form.state.values) !== JSON.stringify(defaultValues)) {
+    const { estadoId: _a, ...current } = form.state.values
+    const { estadoId: _b, ...initial } = defaultValues
+    if (JSON.stringify(current) !== JSON.stringify(initial)) {
       setConfirmDiscardOpen(true)
       return
     }
@@ -415,11 +427,10 @@ export function CreateEvaluationPeriodDialog({
             {(field) => (
               <field.SelectField
                 label="Estado"
-                required
                 options={statusSelectOptions}
                 emptyValue={0}
                 placeholder="Seleccionar"
-                disabled={!isEditing}
+                disabled
                 renderValue={(option) => {
                   const status = statusOptions.find((o) => o.id === option.value)
                   const badge = status ? EVALUATION_PERIOD_STATUS_BADGE[status.key] : undefined
@@ -443,8 +454,7 @@ export function CreateEvaluationPeriodDialog({
                 values.startDate.length > 0 &&
                 values.endDate.length > 0 &&
                 !Number.isNaN(values.peso) &&
-                values.peso <= maxAllowedWeight &&
-                values.estadoId > 0
+                values.peso <= maxAllowedWeight
               const datesWithinAcademicPeriod =
                 (!academicPeriodStart || values.startDate >= academicPeriodStart) &&
                 (!academicPeriodEnd || values.startDate <= academicPeriodEnd) &&
