@@ -85,6 +85,15 @@ export function buildColumnsSeguimiento(canEditar: boolean): ColumnDef<Asistenci
     cell: ({ row }) => `${row.original.grado_valor ?? ""}${row.original.grupo}`,
   },
   {
+    id: "jornada",
+    accessorKey: "jornada",
+    // El listado no ordena por jornada (fn_asistencia_listar_seguimiento).
+    enableSorting: false,
+    meta: { label: "Jornada" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
+    cell: ({ row }) => row.original.jornada ?? "",
+  },
+  {
     id: "fecha",
     accessorKey: "fecha",
     enableHiding: false,
