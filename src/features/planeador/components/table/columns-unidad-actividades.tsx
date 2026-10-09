@@ -349,6 +349,10 @@ export function createUnidadActividadesColumns(
   /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para el
    *  copy de "Desvincular". */
   rotuloUnidad: string = UNIDAD_TAB_FALLBACK,
+  /** Establecimiento/docente que se está mirando (Super Admin/Coordinador):
+   *  "Ver" lo arrastra al listado de Actividades para seguir sobre el mismo
+   *  docente —y en solo lectura— en vez de caer al planeador propio. */
+  docenteSearch: { establecimiento?: number; docente?: number } = {},
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
     ? []
@@ -445,7 +449,7 @@ export function createUnidadActividadesColumns(
                   render={
                     <Link
                       to={planeadorRoute.id}
-                      search={{ actividad: String(row.original.actividadId) }}
+                      search={{ ...docenteSearch, actividad: String(row.original.actividadId) }}
                     />
                   }
                 />
@@ -481,28 +485,31 @@ export function createUnidadActividadesColumns(
           )}
           {/* Chulito: abre el panel del listado principal directo en modo
               "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
-              header de `ActividadDetallePanel`. */}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Calificar ${row.original.nombre}`}
-                  render={
-                    <Link
-                      to={planeadorRoute.id}
-                      search={{ actividad: String(row.original.actividadId), modo: "grades" }}
-                    />
-                  }
-                />
-              }
-            >
-              <CheckIcon />
-            </TooltipTrigger>
-            <TooltipContent>Calificar {row.original.nombre}</TooltipContent>
-          </Tooltip>
+              header de `ActividadDetallePanel`. En solo lectura no se
+              califica (el panel tampoco abre ese modo). */}
+          {puedeEditar && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Calificar ${row.original.nombre}`}
+                    render={
+                      <Link
+                        to={planeadorRoute.id}
+                        search={{ actividad: String(row.original.actividadId), modo: "grades" }}
+                      />
+                    }
+                  />
+                }
+              >
+                <CheckIcon />
+              </TooltipTrigger>
+              <TooltipContent>Calificar {row.original.nombre}</TooltipContent>
+            </Tooltip>
+          )}
           {puedeEliminar && (
             <BotonDesvincular
               actividad={row.original}

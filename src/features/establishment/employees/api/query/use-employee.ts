@@ -123,9 +123,6 @@ function toEmployee(row: RealEmployeeDetailRow): Employee {
       gender: toCatalogItem(row.fk_tlv_genero, row.genero_nombre),
       email: row.correo_electronico ?? "",
       phone: row.telefono ?? "",
-      // El backend nunca devuelve el hash (ver comentario de la función);
-      // se deja vacío, igual que en el resto de formularios de edición.
-      password: "",
       photoArchivoId: row.fk_tarchivo_foto,
     },
     employeeClass: toCatalogItem(row.fk_tlv_clase_funcionario, row.clase_funcionario_nombre),

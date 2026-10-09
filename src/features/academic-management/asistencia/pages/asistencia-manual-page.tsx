@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, InfoIcon, SpinnerIcon, TrashIcon, WarningIcon } from "@/components/ui/icons"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -32,9 +42,6 @@ import type {
 import { agruparPorBloquesContinuos, compararPorHora, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
-/** Espera esto sin más marcas antes de guardar solo — evita una petición por
- *  cada click mientras el docente sigue recorriendo la lista. */
-const AUTOGUARDADO_DEBOUNCE_MS = 900
 const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
@@ -185,7 +192,22 @@ function cambiaRegistro(registro: AsistenciaRegistroManual, actual: RosterEstudi
   return tipoBase(registro.tipoAsistencia) !== tipoActual || registro.fkArchivo instanceof File || quitaSoporte
 }
 
-function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string }) {
+/** Lo que la página necesita de una pestaña para preguntar antes de cambiar de sesión. */
+interface SesionControl {
+  hayCambios: () => boolean
+  /** `true` si quedó guardado; con error la pestaña ya avisó y no se cambia. */
+  guardar: () => Promise<boolean>
+}
+
+function SesionTabContent({
+  sesion,
+  fecha,
+  controlRef,
+}: {
+  sesion: SesionTab
+  fecha: string
+  controlRef: React.RefObject<SesionControl | null>
+}) {
   const { notify } = useNotify()
   const {
     porBloque: rosterOficial,
@@ -379,23 +401,23 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
   const mostrarGuardar = hayAlgoQueGuardar
 
 
+  // Solo completa a quien no tiene marca: no pisa lo que el docente ya tomó.
   function handleMarcarTodoAsistio() {
-    setSeleccion(
-      Object.fromEntries(roster_.map((est) => [est.fk_tmatricula, ASISTIO as TipoAsistencia])),
-    )
-    setBloqueTarde({})
-    setSoporte({})
-    setSoporteEliminado({})
+    setSeleccion((prev) => {
+      const next = { ...prev }
+      for (const est of roster_) next[est.fk_tmatricula] ??= ASISTIO
+      return next
+    })
   }
 
-  const [autoguardando, setAutoguardando] = React.useState(false)
+  const [guardando, setGuardando] = React.useState(false)
 
-  async function guardar(avisarSiNada: boolean): Promise<void> {
+  async function guardar(avisarSiNada: boolean): Promise<boolean> {
     if (!hayAlgoQueGuardar) {
       if (avisarSiNada) {
         notify("Marca la asistencia de al menos un estudiante antes de guardar.", { variant: "error" })
       }
-      return
+      return !avisarSiNada
     }
     const porBloque = registrosPorBloque(
       sesion.bloques,
@@ -406,7 +428,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       rosterPorBloque,
     )
     const seleccionGuardada = seleccionLista
-    setAutoguardando(true)
+    setGuardando(true)
     // Regla 75: `registrar` hace upsert sin pedir aprobación (V138), así que
     // un registro que ya existe se corrige por PATCH, que es el que la pide.
     // Lo que ya quedó propuesto en esta sesión no se vuelve a mandar.
@@ -436,7 +458,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         Promise.all(
           [...nuevos.entries()].map(async ([bloque, registros]) => {
             // Captura tardía en período cerrado: también queda pendiente (Regla 75).
-            const pendientes = await registrar.mutateAsync({
+            const { pendientes } = await registrar.mutateAsync({
               GRUPO: sesion.fkGrupo,
               FECHA: fecha,
               REGISTROS: registros,
@@ -485,10 +507,12 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
         return next
       })
+      return true
     } catch {
       notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
+      return false
     } finally {
-      setAutoguardando(false)
+      setGuardando(false)
     }
   }
 
@@ -496,22 +520,13 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     await guardar(true)
   }
 
-  React.useEffect(() => {
-    if (!hayAlgoQueGuardar) return
-    const temporizador = setTimeout(() => {
-      void guardar(false)
-    }, AUTOGUARDADO_DEBOUNCE_MS)
-    return () => clearTimeout(temporizador)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seleccion, bloqueTarde, soporte, soporteEliminado, hayAlgoQueGuardar])
-
-  const guardarRef = React.useRef(guardar)
-  guardarRef.current = guardar
+  // Sin autoguardado: la página pregunta antes de cambiar de pestaña.
+  controlRef.current = { hayCambios: () => hayAlgoQueGuardar, guardar: () => guardar(false) }
   React.useEffect(() => {
     return () => {
-      void guardarRef.current(false)
+      controlRef.current = null
     }
-  }, [])
+  }, [controlRef])
 
   return (
     <div className="flex flex-col gap-3">
@@ -575,7 +590,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
           <span className="text-xs text-muted-foreground">
             {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
           </span>
-          {autoguardando ? (
+          {guardando ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <SpinnerIcon className="size-3 animate-spin" /> Guardando…
             </span>
@@ -674,6 +689,32 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
 
   const [activeTab, setActiveTab] = React.useState<string | undefined>(undefined)
   const currentTab = activeTab ?? sesionesDelDia[0]?.id
+  // Solo hay una pestaña montada a la vez (el panel oculto se desmonta y pierde lo marcado).
+  const controlRef = React.useRef<SesionControl | null>(null)
+  const [tabPendiente, setTabPendiente] = React.useState<string | null>(null)
+  const [guardandoCambio, setGuardandoCambio] = React.useState(false)
+
+  function handleTabChange(next: string) {
+    if (next === currentTab) return
+    if (controlRef.current?.hayCambios()) {
+      setTabPendiente(next)
+      return
+    }
+    setActiveTab(next)
+  }
+
+  function irATabPendiente() {
+    if (tabPendiente) setActiveTab(tabPendiente)
+    setTabPendiente(null)
+  }
+
+  async function handleGuardarYCambiar() {
+    setGuardandoCambio(true)
+    const ok = (await controlRef.current?.guardar()) ?? true
+    setGuardandoCambio(false)
+    if (ok) irATabPendiente()
+    else setTabPendiente(null)
+  }
 
   return (
     <NoticeProvider>
@@ -726,7 +767,7 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
         )}
 
         {isDocente && !isPending && !esFechaFutura(fecha) && sesionesDelDia.length > 0 && (
-          <Tabs value={currentTab} onValueChange={setActiveTab}>
+          <Tabs value={currentTab} onValueChange={(value) => handleTabChange(String(value))}>
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (
                 <TabsTrigger key={sesion.id} value={sesion.id}>
@@ -736,11 +777,47 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
             </TabsList>
             {sesionesDelDia.map((sesion) => (
               <TabsContent key={sesion.id} value={sesion.id} className={PANEL_CLASS}>
-                <SesionTabContent sesion={sesion} fecha={fecha} />
+                <SesionTabContent sesion={sesion} fecha={fecha} controlRef={controlRef} />
               </TabsContent>
             ))}
           </Tabs>
         )}
+
+        <AlertDialog
+          open={tabPendiente !== null}
+          onOpenChange={(open) => {
+            if (!open && !guardandoCambio) setTabPendiente(null)
+          }}
+        >
+          <AlertDialogContent className="data-[size=default]:sm:max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogMedia className="size-12 rounded-full bg-yellow-22 text-yellow *:[svg:not([class*='size-'])]:size-6">
+                <WarningIcon />
+              </AlertDialogMedia>
+              <AlertDialogTitle>¿Guardar la asistencia antes de salir?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Marcaste asistencia en esta sesión y todavía no la guardas. Si cambias de sesión sin guardar, se pierde.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="sm:items-center">
+              <AlertDialogCancel variant="ghost" color="neutral" disabled={guardandoCambio} className="sm:mr-auto">
+                Seguir editando
+              </AlertDialogCancel>
+              <Button variant="outline" color="destructive" disabled={guardandoCambio} onClick={irATabPendiente}>
+                <TrashIcon data-icon="inline-start" />
+                Descartar
+              </Button>
+              <Button color="primary" disabled={guardandoCambio} aria-busy={guardandoCambio} onClick={handleGuardarYCambiar}>
+                {guardandoCambio ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <CheckIcon data-icon="inline-start" />
+                )}
+                {guardandoCambio ? "Guardando…" : "Guardar"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         </TableScreenBody>
       </TableScreen>
     </NoticeProvider>

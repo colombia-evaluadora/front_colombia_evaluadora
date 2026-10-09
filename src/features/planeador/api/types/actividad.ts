@@ -330,6 +330,15 @@ export interface Actividad {
    *  hardcodear el literal "Actividad" en pantallas que ya tienen la
    *  actividad cargada. `undefined` solo contra el mock viejo. */
   rotuloEjecucion?: string
+  /** Docente dueño (`fk_tfuncionario_docente`/`docente_nombre`/`es_propia`
+   *  del listado). Solo llegan cuando un Super Admin o Coordinador mira el
+   *  planeador de otro docente o el de toda su sede: opcionales para que
+   *  una respuesta sin esas columnas no rompa nada. `esPropia === false`
+   *  marca la fila como ajena (solo lectura); `undefined` = no se sabe y
+   *  decide el backend al guardar. */
+  docenteId?: number
+  docenteNombre?: string
+  esPropia?: boolean
   /**
    * `PK_TMATRICULA` (no `Estudiante.id`/`PK_TESTUDIANTE`) de los
    * estudiantes elegidos a mano en "Estudiantes" — mutuamente excluyente

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/docentes/grado-asignatura` (`fn_docente_grado_asignatura_listar`,
@@ -38,18 +39,27 @@ function toDocenteGradoAsignatura(row: DocenteGradoAsignaturaRow): DocenteGradoA
   }
 }
 
-async function fetchDocenteGradoAsignatura(periodoId?: number): Promise<DocenteGradoAsignatura[]> {
-  const query = periodoId != null ? `?periodo=${periodoId}` : ""
+async function fetchDocenteGradoAsignatura(
+  periodoId?: number,
+  funcionario?: number,
+): Promise<DocenteGradoAsignatura[]> {
+  const query = new URLSearchParams()
+  if (periodoId != null) query.set("periodo", String(periodoId))
+  if (funcionario != null) query.set("funcionario", String(funcionario))
+  const qs = query.toString()
   const rows = await evalCol.getRows<DocenteGradoAsignaturaRow>(
-    `/planeador/docentes/grado-asignatura${query}`,
+    `/planeador/docentes/grado-asignatura${qs ? `?${qs}` : ""}`,
   )
   return rows.map(toDocenteGradoAsignatura)
 }
 
+/** Mismo criterio de `funcionario` que `useDocenteGruposQuery`. */
 export function useDocenteGradoAsignaturaQuery(periodoId?: number) {
+  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
   return useQuery({
-    queryKey: planeadorKeys.docenteGradoAsignatura(periodoId),
-    queryFn: () => fetchDocenteGradoAsignatura(periodoId),
+    queryKey: planeadorKeys.docenteGradoAsignatura(periodoId, funcionario),
+    queryFn: () => fetchDocenteGradoAsignatura(periodoId, funcionario),
+    enabled: consultasHabilitadas,
     staleTime: 1000 * 60,
   })
 }

@@ -6,6 +6,8 @@ import { env } from "@/config/env"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
 
@@ -21,7 +23,7 @@ const PAGE_SIZE = 500
  * en el detalle, como se creía antes). `toUnidadTematica` igual tolera que
  * cualquiera venga ausente, por si el detalle no las repite todas.
  */
-interface UnidadRealRow {
+interface UnidadRealRow extends DocenteDuenoRow {
   pk_tunidad: number
   nombre: string
   asignatura: string
@@ -124,6 +126,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     instrumento: row.instrumento_evaluacion ?? undefined,
     instrumentoId: row.fk_tlv_instrumento_evaluacion ?? undefined,
     rotuloEjecucion: row.rotulo_ejecucion,
+    ...toDocenteDueno(row),
   }
 }
 
@@ -132,6 +135,9 @@ export interface UseUnidadesParams {
    *  unidades con alguna actividad vigente ese día. Sin esto, el listado no
    *  cambia (comportamiento previo). */
   dia?: string
+  /** `PK_TFUNCIONARIO` del docente que se mira (Super Admin/Coordinador).
+   *  Lo completa el hook desde `usePlaneadorDocenteScope`. */
+  funcionario?: number
 }
 
 export interface UnidadesResult {
@@ -161,6 +167,7 @@ function isSentinel(row: unknown): row is UnidadSentinelRow {
 async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
   const query = new URLSearchParams({ size: String(PAGE_SIZE), offset: "0" })
   if (params.dia) query.set("dia", params.dia)
+  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
 
   // `evalCol.getRows` desenvuelve el sobre `{rows: [...]}` del gateway —
   // eso es idéntico en mock y real (el motor real SIEMPRE envuelve así).
@@ -188,9 +195,12 @@ async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult>
 }
 
 export function useUnidadesQuery(params: UseUnidadesParams = {}) {
+  const scope = usePlaneadorDocenteScope()
+  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
   return useQuery({
-    queryKey: planeadorKeys.unidades.lista(params),
-    queryFn: () => fetchUnidades(params),
+    queryKey: planeadorKeys.unidades.lista(conDocente),
+    queryFn: () => fetchUnidades(conDocente),
+    enabled: scope.consultasHabilitadas,
     // Mantiene la lista anterior mientras se revalida — evita el flash a
     // "Sin unidades" al volver a la pestaña.
     placeholderData: (previous) => previous,

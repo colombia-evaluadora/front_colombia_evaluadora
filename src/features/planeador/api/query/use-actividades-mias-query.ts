@@ -5,6 +5,8 @@ import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { paresToQueryParam, type ActividadTabPair } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -23,7 +25,7 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
  * la actividad (panel de detalle) pega aparte a
  * `useActividadDetalleQuery`, que sí trae todo.
  */
-interface ActividadMiaRow {
+interface ActividadMiaRow extends DocenteDuenoRow {
   // `null` únicamente en la fila-centinela de un día vacío (ver `?dia=`
   // abajo): ese día no tiene ninguna actividad vigente, pero la fila igual
   // llega para traer `dia_anterior`/`dia_siguiente` y no dejar al usuario
@@ -144,6 +146,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
       requiereRespuestaTexto: false,
     },
     adaptaciones: [],
+    ...toDocenteDueno(row),
   }
 }
 
@@ -166,6 +169,10 @@ export interface UseActividadesMiasParams {
    *  (una sola pestaña real, o todavía no resolvió): comportamiento actual,
    *  sin cambios. */
   gradoAsignaturaPares?: ActividadTabPair[]
+  /** `PK_TFUNCIONARIO` del docente cuyo planeador se mira (Super Admin/
+   *  Coordinador, `?funcionario=`). Lo completa el hook desde
+   *  `usePlaneadorDocenteScope`; ausente = alcance del token. */
+  funcionario?: number
 }
 
 interface ActividadesMiasResult {
@@ -190,6 +197,7 @@ async function fetchActividadesMias(
   if (params.estados) query.set("estados", params.estados)
   if (params.diasGracia != null) query.set("dias_gracia", String(params.diasGracia))
   if (params.dia) query.set("dia", params.dia)
+  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -231,17 +239,20 @@ const TAMANO_TANTEO = 200
  * {@link TAMANO_TANTEO} y solo si el docente tiene más se repite el pedido
  * con el total exacto — en la práctica, un solo viaje.
  */
-export async function fetchTodasLasActividadesMias(): Promise<Actividad[]> {
-  const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0 })
+export async function fetchTodasLasActividadesMias(funcionario?: number): Promise<Actividad[]> {
+  const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0, funcionario })
   if (primera.totalCount <= primera.rows.length) return primera.rows
-  const completa = await fetchActividadesMias({ size: primera.totalCount, offset: 0 })
+  const completa = await fetchActividadesMias({ size: primera.totalCount, offset: 0, funcionario })
   return completa.rows
 }
 
 export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
+  const scope = usePlaneadorDocenteScope()
+  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
   return useQuery({
-    queryKey: planeadorKeys.actividades.mias(params),
-    queryFn: () => fetchActividadesMias(params),
+    queryKey: planeadorKeys.actividades.mias(conDocente),
+    queryFn: () => fetchActividadesMias(conDocente),
+    enabled: scope.consultasHabilitadas,
     placeholderData: (previous) => previous,
     staleTime: 1000 * 30,
   })

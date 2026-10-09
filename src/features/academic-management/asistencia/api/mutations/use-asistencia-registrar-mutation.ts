@@ -43,15 +43,22 @@ interface RegistrarResponse {
   solicitudes_pendientes?: number[]
 }
 
-/** Devuelve las solicitudes abiertas; vacío = se guardó directo. */
-async function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<number[]> {
+export interface RegistrarResultado {
+  /** Filas escritas; 0 en período cerrado o si "marcar todos" no encontró a nadie sin asistencia. */
+  afectados: number
+  /** Solicitudes abiertas; vacío = se guardó directo. */
+  pendientes: number[]
+}
+
+async function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<RegistrarResultado> {
   const REGISTROS = await resolverRegistros(body.REGISTROS)
   const raw = await api.post<RegistrarResponse | RegistrarResponse[] | number>("/eval-col/asistencias/registrar", {
     ...body,
     REGISTROS,
   })
-  if (typeof raw === "number") return []
-  return (Array.isArray(raw) ? raw[0] : raw)?.solicitudes_pendientes ?? []
+  if (typeof raw === "number") return { afectados: raw, pendientes: [] }
+  const fila = Array.isArray(raw) ? raw[0] : raw
+  return { afectados: Number(fila?.registros_afectados ?? 0), pendientes: fila?.solicitudes_pendientes ?? [] }
 }
 
 export function useAsistenciaRegistrarMutation() {

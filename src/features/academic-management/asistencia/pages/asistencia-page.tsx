@@ -201,13 +201,17 @@ function AsistenciaPageContent() {
           }),
         ),
       )
-      const pendiente = solicitudes.some((s) => s.length > 0)
-      notify(
-        pendiente
-          ? `El período ya no es calificable: ${entry.grupo} · ${nombreSesion(entry)} quedó pendiente de aprobación del coordinador.`
-          : `Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`,
-        pendiente ? { variant: "info" } : undefined,
-      )
+      const sesionLabel = `${entry.grupo} · ${nombreSesion(entry)}`
+      // En período cerrado no se escribe nada (afectados 0): todo queda como solicitud.
+      const escribioDirecto = solicitudes.some((s) => s.afectados > 0)
+      if (escribioDirecto && !solicitudes.some((s) => s.pendientes.length > 0)) {
+        notify(`Estudiantes sin asistencia de ${sesionLabel} marcados como Asistió.`)
+      } else {
+        notify(
+          `El período ya no es calificable: los estudiantes sin asistencia de ${sesionLabel} quedaron como Asistió, pendientes de aprobación del coordinador.`,
+          { variant: "info" },
+        )
+      }
       setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })

@@ -27,7 +27,7 @@ import {
   fetchTodasLasActividadesMias,
   useActividadesMiasQuery,
 } from "@/features/planeador/api/query/use-actividades-mias-query"
-import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { parToString, useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
@@ -44,14 +44,29 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
-import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import {
+  ROTULO_ACTIVIDAD_FALLBACK,
+  rotuloEnMinuscula,
+} from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import {
+  PlaneadorSoloLecturaScope,
+  usePlaneadorSoloLectura,
+} from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  PlaneadorDocenteSelector,
+  PlaneadorLecturaBanner,
+  PlaneadorSeleccionVacia,
+  type PlaneadorDocenteSeleccion,
+} from "@/features/planeador/components/planeador-docente-selector"
+import { esAjena } from "@/features/planeador/lib/docente-dueno"
+import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
   formatDate,
   parseLocalDate,
@@ -81,7 +96,32 @@ function PlaneadorPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
-  const { puedeCrear } = usePlaneadorSoloLectura()
+  const { puedeCrear, viendoOtroDocente } = usePlaneadorSoloLectura()
+  // Selector de establecimiento/docente (Super Admin/Coordinador). Los hooks
+  // de consulta ya leen el docente elegido de la URL por su cuenta (ver
+  // `usePlaneadorDocenteScope`); acá solo se decide qué mostrar.
+  const scope = usePlaneadorDocenteScope()
+  // Nombre del docente en cada card/evento solo cuando la vista mezcla
+  // varios (Coordinador con "Todos los docentes de mi sede").
+  const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
+
+  // Cambiar de docente invalida todo lo que se eligió sobre el anterior: la
+  // pestaña de rótulo (cada docente tiene las suyas) y la actividad abierta
+  // con su modo. Búsqueda, estado y día se conservan.
+  function handleDocenteChange(next: PlaneadorDocenteSeleccion) {
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({
+        ...prev,
+        establecimiento: next.establecimiento,
+        docente: next.docente,
+        rotulo: undefined,
+        actividad: undefined,
+        modo: undefined,
+      }),
+      replace: true,
+    })
+  }
 
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`.
@@ -154,21 +194,22 @@ function PlaneadorPageContent() {
   // rótulo no necesariamente cubre todo el catálogo del docente (puede dictar
   // grados que no entran en ningún `TDOCENTE_ASIGNATURA` resuelto acá), así
   // que saltear el filtro con una sola pestaña dejaba el alta sin acotar.
-  const { data: actividadTabs = [] } = useActividadesTabsQuery()
+  const { data: actividadTabs = [], error: errorTabs } = useActividadesTabsQuery()
   const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
 
   // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
   // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
   // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
-  const { data: statsCounts } = useActividadesStatsQuery({
+  const { data: statsCounts, error: errorStats } = useActividadesStatsQuery({
     gradoAsignaturaPares: tabActiva?.pares,
   })
 
-  const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
-    fechaDesde: mesDesde,
-    fechaHasta: mesHasta,
-    gradoAsignaturaPares: tabActiva?.pares,
-  })
+  const { data: calendarioActividades = [], error: errorCalendario } =
+    useActividadesCalendarioQuery({
+      fechaDesde: mesDesde,
+      fechaHasta: mesHasta,
+      gradoAsignaturaPares: tabActiva?.pares,
+    })
   // Botón "Nueva {rótulo}" — género correcto vía `articuloDefinido` (mismo
   // helper que ya resuelve "un"/"una" en `dialog-agregar-actividad.tsx`):
   // un rótulo configurado a futuro puede ser masculino ("Proyecto") o
@@ -194,6 +235,18 @@ function PlaneadorPageContent() {
     gradoAsignaturaPares: tabActiva?.pares,
   })
   const filtered = miasResult?.rows ?? []
+  // El rail pinta su propio error; pestañas, resumen y calendario no, así
+  // que un rechazo (p. ej. 42501 por un docente fuera del alcance) va al
+  // aviso de la página.
+  useNotificarErrores([errorTabs, errorStats, errorCalendario])
+  // ¿La actividad abierta en el panel es de otro docente? Se busca en lo
+  // que ya está cargado (rail y calendario): el detalle no trae el dueño.
+  const actividadAbiertaAjena = actividadId
+    ? esAjena(
+        filtered.find((a) => String(a.id) === actividadId) ??
+          calendarioActividades.find((a) => String(a.id) === actividadId),
+      )
+    : false
   const diaAnterior = miasResult?.diaAnterior ?? null
   const diaSiguiente = miasResult?.diaSiguiente ?? null
 
@@ -203,17 +256,17 @@ function PlaneadorPageContent() {
   const rotulosUnicos = new Set(filtered.map((a) => a.rotuloEjecucion).filter(Boolean))
   const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
 
-  // Mismos criterios que ya filtran `/actividades/mias` arriba, en la forma
-  // que espera el reporte real `planeador-actividades` (ver
-  // `export-actividades.ts`) — así el PDF/Excel exportado coincide con lo
-  // que el rail está mostrando.
+  // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
+  // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
+  // export lleva todas las actividades del usuario que cumplen la búsqueda,
+  // el estado y la pestaña, no solo las del día que muestra el rail.
   const exportFilters = React.useMemo(
     () => ({
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
-      DIA: dia,
+      GRADO_ASIGNATURA_PARES: tabActiva?.pares.length ? tabActiva.pares.map(parToString) : undefined,
     }),
-    [buscar, estado, dia],
+    [buscar, estado, tabActiva],
   )
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
@@ -249,9 +302,14 @@ function PlaneadorPageContent() {
   async function handleExportarJson() {
     setExportandoTodo(true)
     try {
-      const todas = await fetchTodasLasActividadesMias()
+      const todas = await fetchTodasLasActividadesMias(scope.funcionario)
       if (todas.length === 0) {
-        notify("No tienes actividades para exportar.", { variant: "error" })
+        notify(
+          viendoOtroDocente
+            ? "El docente no tiene actividades para exportar."
+            : "No tienes actividades para exportar.",
+          { variant: "error" },
+        )
         return
       }
       exportarJson.mutate({ ids: todas.map((actividad) => actividad.id) })
@@ -289,7 +347,7 @@ function PlaneadorPageContent() {
       list.push({
         id: a.id,
         code: a.gradoGrupo ?? String(a.id).slice(-3),
-        label: a.titulo,
+        label: mostrarDocente && a.docenteNombre ? `${a.titulo} · ${a.docenteNombre}` : a.titulo,
         status: a.status,
       })
       map.set(day, list)
@@ -311,7 +369,7 @@ function PlaneadorPageContent() {
       }
     }
     return map
-  }, [calendarioActividades, mesDesde, mesHasta])
+  }, [calendarioActividades, mesDesde, mesHasta, mostrarDocente])
 
   return (
     <TableScreen>
@@ -320,6 +378,10 @@ function PlaneadorPageContent() {
         <PlaneadorTabs />
 
         <TableScreenToolbar>
+          {/* Fila propia (`w-full`) arriba del buscador; no se renderiza
+              para un docente. */}
+          <PlaneadorDocenteSelector onChange={handleDocenteChange} />
+
           <SearchPlaneador
             activeFilterCount={activeFilterCount}
             filters={filters}
@@ -337,98 +399,120 @@ function PlaneadorPageContent() {
               derecha, y se les quita el borde donde se tocan—; el `div` con
               `gap-0` neutraliza el espacio que `<TableScreenActions>` agrega
               entre hijos. */}
-          <TableScreenActions>
-            <div className="flex gap-0">
-              {puedeCrear && (
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  aria-label={`Nuev${nuevoGenero} ${rotuloEnMinuscula(nuevoRotuloLabel)}`}
-                  className="rounded-r-none border-r-0"
-                  render={
-                    <Link
-                      to={paths.app.planeadorActividadCrear.getHref()}
-                      search={tabActiva ? { rotulo: tabActiva.rotulo } : undefined}
-                    />
-                  }
-                >
-                  <PlusCircleIcon data-icon="inline-start" />
-                  Nuev{nuevoGenero} {rotuloEnMinuscula(nuevoRotuloLabel)}
-                </Button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      color="primary"
-                      size="sm"
-                      variant="fill"
-                      aria-label="Más opciones"
-                      className={puedeCrear ? "rounded-l-none" : undefined}
-                    />
-                  }
-                >
-                  <DotsThreeIcon />
-                </DropdownMenuTrigger>
-                {/* "Recargar" apunta a `refetch` del query. "Exportar todo"
+          {/* Super Admin sin docente elegido: no hay planeador sobre el cual
+              actuar (ni recargar, ni exportar). */}
+          {!scope.requiereSeleccion && (
+            <TableScreenActions>
+              <div className="flex gap-0">
+                {puedeCrear && (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    aria-label={`Nuev${nuevoGenero} ${rotuloEnMinuscula(nuevoRotuloLabel)}`}
+                    className="rounded-r-none border-r-0"
+                    render={
+                      <Link
+                        to={paths.app.planeadorActividadCrear.getHref()}
+                        search={tabActiva ? { rotulo: tabActiva.rotulo } : undefined}
+                      />
+                    }
+                  >
+                    <PlusCircleIcon data-icon="inline-start" />
+                    Nuev{nuevoGenero} {rotuloEnMinuscula(nuevoRotuloLabel)}
+                  </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        color="primary"
+                        size="sm"
+                        variant="fill"
+                        aria-label="Más opciones"
+                        className={puedeCrear ? "rounded-l-none" : undefined}
+                      />
+                    }
+                  >
+                    <DotsThreeIcon />
+                  </DropdownMenuTrigger>
+                  {/* "Recargar" apunta a `refetch` del query. "Exportar todo"
                     e "Importar" son el intercambio JSON de actividades —
                     ver el comentario junto a `exportarJson` más arriba—,
                     no el export PDF/Excel del botón de al lado. */}
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem render={<Link to={paths.app.planeadorPlanilla.getHref()} />}>
-                    Planilla de calificación
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => refetch()}>Recargar</DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={exportandoTodo || exportarJson.isPending}
-                    onClick={handleExportarJson}
-                  >
-                    Exportar todo
-                  </DropdownMenuItem>
-                  {puedeCrear && (
-                    <DropdownMenuItem onClick={() => setImportarOpen(true)}>
-                      Importar
+                  <DropdownMenuContent align="end">
+                    {/* La planilla no acepta `?docente=` (fuera del alcance del
+                      selector): abrirla desde el planeador de otro docente
+                      mostraría la del usuario, así que no se ofrece. */}
+                    {!viendoOtroDocente && (
+                      <DropdownMenuItem
+                        render={<Link to={paths.app.planeadorPlanilla.getHref()} />}
+                      >
+                        Planilla de calificación
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => refetch()}>Recargar</DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={exportandoTodo || exportarJson.isPending}
+                      onClick={handleExportarJson}
+                    >
+                      Exportar todo
                     </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            {/* El export general reusa el mismo diálogo que el listado de
+                    {puedeCrear && (
+                      <DropdownMenuItem onClick={() => setImportarOpen(true)}>
+                        Importar
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              {/* El export general reusa el mismo diálogo que el listado de
                 Cobertura (`DialogExportActividades`): los mismos criterios
                 que ya filtran el rail viajan como `filters` (SEARCH/ESTADOS/
                 DIA) al reporte real, y el backend reporta cuántas filas
                 salieron. El trigger que el diálogo trae adentro reemplaza al
                 `<Button>` de export que estaba disabled. */}
-            <DialogExportActividades rows={filtered} filters={exportFilters} />
-            {/* Controlado desde acá y no con su propio `DialogTrigger`: el
+              {/* El reporte `planeador-actividades` filtra del lado del servidor
+                por el usuario del token y todavía no recibe el docente:
+                exportar mirando a otro docente bajaría las actividades
+                equivocadas, así que se oculta hasta que lo soporte. */}
+              {scope.funcionario == null && (
+                <DialogExportActividades rows={filtered} filters={exportFilters} />
+              )}
+              {/* Controlado desde acá y no con su propio `DialogTrigger`: el
                 que lo abre es un `DropdownMenuItem`, y un diálogo anidado
                 dentro del menú se desmonta apenas el menú cierra. */}
-            <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
-          </TableScreenActions>
+              <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
+            </TableScreenActions>
+          )}
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
+        {scope.requiereSeleccion ? (
+          <PlaneadorSeleccionVacia />
+        ) : (
+          <>
+            <PlaneadorLecturaBanner className="mb-4" />
+            {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
             contar el listado de abajo — así el conteo no cambia al filtrar
             ese listado (si contara sobre `filtered`, "Pendientes: 3" caería
             a "Pendientes: 1" apenas el usuario tipea en el buscador y
             perdería el sentido de "cuántas tengo en total"). El link de
             cada card setea `?estado=…` en la URL para que el filter bar
             del listado muestre ese estado por defecto. */}
-        <div className="mb-6">
-          <PlaneadorSummaryCards
-            counts={statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }}
-          />
-        </div>
+            <div className="mb-6">
+              <PlaneadorSummaryCards
+                counts={statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }}
+              />
+            </div>
 
-        {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
+            {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
             `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
             que una tabla ancha empuja la columna en vez de scrollear dentro de
             su propio contenedor y desborda la pantalla. */}
-        <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
-          {/* Rail izquierda. La lista crece con la cantidad de actividades y hacía scrollear
+            <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
+              {/* Rail izquierda. La lista crece con la cantidad de actividades y hacía scrollear
               la página entera, dejando al calendario —mucho más corto— con un
               vacío enorme al lado. Un `flex-1` no alcanza para acotarla: el
               `<main>` del layout crece con el documento, así que ningún
@@ -441,129 +525,141 @@ function PlaneadorPageContent() {
               queda estirado a esa altura, que es contra lo que el `flex-1` de
               la lista puede medir. Bajo `md` (una sola columna) vuelve al
               flujo normal y la lista se muestra completa. */}
-          <section aria-label="Listado de actividades" className="relative min-h-0">
-            <div className="flex flex-col gap-3 md:absolute md:inset-0">
-              {/* Header del rail: chip "Hoy" a la izquierda, el día al centro y
+              <section aria-label="Listado de actividades" className="relative min-h-0">
+                <div className="flex flex-col gap-3 md:absolute md:inset-0">
+                  {/* Header del rail: chip "Hoy" a la izquierda, el día al centro y
                 las dos flechas a la derecha. El `Button` del DS ya trae el
                 tamaño más chico en h-7/size-7 (xs/icon-xs); acá no encaja —el
                 rail mide 180/210 px de ancho y cada px cuenta—, así que sólo
                 se achica con className (h-6/size-6) en vez de reconstruir el
                 estilo a mano. */}
-              <div className="flex items-center justify-between gap-0.5">
-                <Button
-                  variant="soft"
-                  color="muted"
-                  size="xs"
-                  disabled={dia === todayDateOnly()}
-                  className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
-                  onClick={() => setDia(todayDateOnly())}
-                >
-                  Hoy
-                </Button>
-                <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
-                  {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
-                    weekday: "long",
-                    day: "2-digit",
-                  })}
-                </span>
-                <div className="flex gap-0">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          color="neutral"
-                          size="icon-xs"
-                          aria-label="Día anterior"
-                          className="size-6 rounded-none border-r-0"
-                          disabled={!diaAnterior}
-                          onClick={() => diaAnterior && setDia(diaAnterior)}
-                        />
-                      }
+                  <div className="flex items-center justify-between gap-0.5">
+                    <Button
+                      variant="soft"
+                      color="muted"
+                      size="xs"
+                      disabled={dia === todayDateOnly()}
+                      className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
+                      onClick={() => setDia(todayDateOnly())}
                     >
-                      <CaretLeftIcon />
-                    </TooltipTrigger>
-                    <TooltipContent>Día anterior</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          color="neutral"
-                          size="icon-xs"
-                          aria-label="Día siguiente"
-                          className="size-6 rounded-none"
-                          disabled={!diaSiguiente}
-                          onClick={() => diaSiguiente && setDia(diaSiguiente)}
-                        />
-                      }
-                    >
-                      <CaretRightIcon />
-                    </TooltipTrigger>
-                    <TooltipContent>Día siguiente</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
-                {isPending && (
-                  <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-                    <Spinner /> Cargando…
-                  </div>
-                )}
-
-                {isError && (
-                  <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                    <p className="text-red text-sm">{getErrorMessage(error)}</p>
-                    <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
-                      Reintentar
+                      Hoy
                     </Button>
-                  </div>
-                )}
-
-                {!isPending && !isError && filtered.length === 0 && (
-                  <div className="text-muted-foreground px-6 py-8 text-center text-sm">
-                    {buscar
-                      ? `Sin registros que coincidan con "${buscar}".`
-                      : `Sin registros vigentes el ${formatDate(dia)}.`}
-                  </div>
-                )}
-
-                {!isPending && !isError && filtered.length > 0 && (
-                  <ul className="flex flex-col gap-2">
-                    {filtered.map((actividad) => (
-                      <li key={actividad.id}>
-                        <ActividadCard
-                          actividad={actividad}
-                          selected={String(actividad.id) === actividadId}
-                          onSelect={() => setActividadId(String(actividad.id))}
-                          onShowGrades={() => setMode(String(actividad.id), "grades")}
-                          onShowApproval={() => setMode(String(actividad.id), "approval")}
-                          onEdit={() =>
-                            navigate({
-                              to: paths.app.planeadorActividadEditar.getHref(String(actividad.id)),
-                            })
+                    <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
+                      {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
+                        weekday: "long",
+                        day: "2-digit",
+                      })}
+                    </span>
+                    <div className="flex gap-0">
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              color="neutral"
+                              size="icon-xs"
+                              aria-label="Día anterior"
+                              className="size-6 rounded-none border-r-0"
+                              disabled={!diaAnterior}
+                              onClick={() => diaAnterior && setDia(diaAnterior)}
+                            />
                           }
-                          // Si la actividad que se borró era la abierta en
-                          // el panel, cerramos el panel: sin actividadId
-                          // la página vuelve a mostrar el calendario en la
-                          // columna derecha (mismo path que `onClose`).
-                          onDeleted={() => {
-                            if (actividadId === String(actividad.id)) {
-                              setActividadId(undefined)
-                            }
-                          }}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </section>
+                        >
+                          <CaretLeftIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>Día anterior</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              color="neutral"
+                              size="icon-xs"
+                              aria-label="Día siguiente"
+                              className="size-6 rounded-none"
+                              disabled={!diaSiguiente}
+                              onClick={() => diaSiguiente && setDia(diaSiguiente)}
+                            />
+                          }
+                        >
+                          <CaretRightIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>Día siguiente</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
 
-          {/* Columna derecha: calendario por defecto, detalle de la actividad
+                  <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
+                    {isPending && (
+                      <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
+                        <Spinner /> Cargando…
+                      </div>
+                    )}
+
+                    {isError && (
+                      <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
+                        <p className="text-red text-sm">{getErrorMessage(error)}</p>
+                        <Button
+                          variant="outline"
+                          color="neutral"
+                          size="sm"
+                          onClick={() => refetch()}
+                        >
+                          Reintentar
+                        </Button>
+                      </div>
+                    )}
+
+                    {!isPending && !isError && filtered.length === 0 && (
+                      <div className="text-muted-foreground px-6 py-8 text-center text-sm">
+                        {buscar
+                          ? `Sin registros que coincidan con "${buscar}".`
+                          : `Sin registros vigentes el ${formatDate(dia)}.`}
+                      </div>
+                    )}
+
+                    {!isPending && !isError && filtered.length > 0 && (
+                      <ul className="flex flex-col gap-2">
+                        {filtered.map((actividad) => (
+                          <li key={actividad.id}>
+                            {/* Actividad de otro docente (Coordinador viendo toda
+                            su sede): la card queda en solo lectura. */}
+                            <PlaneadorSoloLecturaScope activo={esAjena(actividad)}>
+                              <ActividadCard
+                                actividad={actividad}
+                                mostrarDocente={mostrarDocente}
+                                selected={String(actividad.id) === actividadId}
+                                onSelect={() => setActividadId(String(actividad.id))}
+                                onShowGrades={() => setMode(String(actividad.id), "grades")}
+                                onShowApproval={() => setMode(String(actividad.id), "approval")}
+                                onEdit={() =>
+                                  navigate({
+                                    to: paths.app.planeadorActividadEditar.getHref(
+                                      String(actividad.id),
+                                    ),
+                                  })
+                                }
+                                // Si la actividad que se borró era la abierta en
+                                // el panel, cerramos el panel: sin actividadId
+                                // la página vuelve a mostrar el calendario en la
+                                // columna derecha (mismo path que `onClose`).
+                                onDeleted={() => {
+                                  if (actividadId === String(actividad.id)) {
+                                    setActividadId(undefined)
+                                  }
+                                }}
+                              />
+                            </PlaneadorSoloLecturaScope>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Columna derecha: calendario por defecto, detalle de la actividad
               cuando hay una seleccionada. Siempre acotada a la ventana (antes
               solo pasaba con el detalle abierto): un mes de 6 semanas puede
               ser más alto que el viewport, y sin este tope la página entera
@@ -589,62 +685,66 @@ function PlaneadorPageContent() {
               resuelve (necesita un alto DEFINIDO, no una cota), `flex-1` sí
               funciona igual de bien contra un contenedor acotado por
               `max-height`. */}
-          <section
-            aria-label={actividadId ? "Detalle de la actividad" : "Calendario del planeador"}
-            className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
-          >
-            {actividadId ? (
-              <ActividadDetallePanel
-                actividadId={Number(actividadId)}
-                mode={panelMode}
-                onClose={() => setActividadId(undefined)}
-                onShowGrades={() => setMode(actividadId, "grades")}
-                onShowApproval={() => setMode(actividadId, "approval")}
-              />
-            ) : (
-              <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
-                <PlaneadorMonthGrid
-                  month={displayMonth}
-                  events={events}
-                  onMonthChange={(next) =>
-                    setDisplayMonth(new Date(next.getFullYear(), next.getMonth(), 1))
-                  }
-                  // Click en un día del calendario: abre el alta de
-                  // Actividad con ESE día como fecha de inicio Y cierre —
-                  // el docente puede cambiarlas después, es solo un punto
-                  // de partida (mismo criterio que `unidadId` en
-                  // `planeadorActividadCrearSearchSchema`). Sin permiso de
-                  // crear (p. ej. el Coordinador) el día no es clickeable.
-                  onDayClick={
-                    puedeCrear
-                      ? (date) => {
-                          const fecha = toDateOnly(date)
-                          navigate({
-                            to: paths.app.planeadorActividadCrear.getHref(),
-                            search: {
-                              fechaInicio: fecha,
-                              fechaCierre: fecha,
-                              rotulo: tabActiva?.rotulo,
-                            },
-                          })
-                        }
-                      : undefined
-                  }
-                  // Click en una actividad ya listada en la celda: abre ESA
-                  // actividad (mismo panel que `onSelect` de la fila en la
-                  // lista, más arriba) en vez de crear una nueva en esa
-                  // fecha.
-                  onEventClick={(id) => setActividadId(String(id))}
-                />
-                {/* viewOption no se usa en la UI todavía; se deja armado para
+              <section
+                aria-label={actividadId ? "Detalle de la actividad" : "Calendario del planeador"}
+                className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
+              >
+                {actividadId ? (
+                  <PlaneadorSoloLecturaScope activo={actividadAbiertaAjena}>
+                    <ActividadDetallePanel
+                      actividadId={Number(actividadId)}
+                      mode={panelMode}
+                      onClose={() => setActividadId(undefined)}
+                      onShowGrades={() => setMode(actividadId, "grades")}
+                      onShowApproval={() => setMode(actividadId, "approval")}
+                    />
+                  </PlaneadorSoloLecturaScope>
+                ) : (
+                  <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+                    <PlaneadorMonthGrid
+                      month={displayMonth}
+                      events={events}
+                      onMonthChange={(next) =>
+                        setDisplayMonth(new Date(next.getFullYear(), next.getMonth(), 1))
+                      }
+                      // Click en un día del calendario: abre el alta de
+                      // Actividad con ESE día como fecha de inicio Y cierre —
+                      // el docente puede cambiarlas después, es solo un punto
+                      // de partida (mismo criterio que `unidadId` en
+                      // `planeadorActividadCrearSearchSchema`). Sin permiso de
+                      // crear (p. ej. el Coordinador) el día no es clickeable.
+                      onDayClick={
+                        puedeCrear
+                          ? (date) => {
+                              const fecha = toDateOnly(date)
+                              navigate({
+                                to: paths.app.planeadorActividadCrear.getHref(),
+                                search: {
+                                  fechaInicio: fecha,
+                                  fechaCierre: fecha,
+                                  rotulo: tabActiva?.rotulo,
+                                },
+                              })
+                            }
+                          : undefined
+                      }
+                      // Click en una actividad ya listada en la celda: abre ESA
+                      // actividad (mismo panel que `onSelect` de la fila en la
+                      // lista, más arriba) en vez de crear una nueva en esa
+                      // fecha.
+                      onEventClick={(id) => setActividadId(String(id))}
+                    />
+                    {/* viewOption no se usa en la UI todavía; se deja armado para
                     cuando llegue la implementación de "Ver por Unidad" / etc. */}
-                <p className="text-muted-foreground sr-only">
-                  Vista actual: {VIEW_OPTIONS.find((o) => o.value === view)?.label}
-                </p>
-              </div>
-            )}
-          </section>
-        </div>
+                    <p className="text-muted-foreground sr-only">
+                      Vista actual: {VIEW_OPTIONS.find((o) => o.value === view)?.label}
+                    </p>
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
+        )}
       </TableScreenBody>
     </TableScreen>
   )
