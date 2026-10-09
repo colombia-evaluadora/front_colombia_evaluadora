@@ -21,6 +21,7 @@ import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-
 import type { NavMaxLines, NavSubItem } from "@/features/navigation/api/types/nav-item"
 import type { Icon } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
+import { isUnder, resolveNavPathname } from "@/features/navigation/lib/route-access"
 
 /**
  * `maxLines` viene de la API (ver `NavMaxLines`): cuántas líneas se ven de la
@@ -42,44 +43,6 @@ const LINE_CLAMP: Record<NavMaxLines, string> = {
 
 function lineClamp(maxLines: NavMaxLines = 1) {
   return LINE_CLAMP[maxLines]
-}
-
-/**
- * ¿La ruta actual pertenece a este item del menú? No alcanza con la igualdad:
- * las subpáginas (detalle, agregar, editar) tienen que seguir marcando activo
- * al item del que salieron. El `/` del final evita que `/app/cobertura` matchee
- * a `/app/cobertura-x`.
- */
-function isUnder(pathname: string, url: string) {
-  return pathname === url || pathname.startsWith(`${url}/`)
-}
-
-/**
- * Rutas que no cuelgan de la URL del item al que pertenecen: agregar y editar
- * establecimiento viven **al lado** de la lista (`/agregar`, `/editar/$id` vs
- * `/general`), no debajo, así que `isUnder` no las alcanza. Se resuelven a la
- * URL del item que tienen que marcar.
- */
-const NAV_PATH_ALIASES: Array<[from: string, to: string]> = [
-  ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
-  ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
-  // El registro de actividad tiene dos vistas hermanas (`/sesiones` y
-  // `/tablas`) pero un solo item de menú, que apunta a la de sesiones: todo
-  // lo que cuelgue del prefijo lo marca activo, esté en la vista que esté.
-  ["/app/registro-de-actividad", "/app/registro-de-actividad/sesiones"],
-  // El Planeador tiene varias vistas hermanas (actividades, unidades,
-  // planilla, vista previa de recurso) bajo el mismo prefijo `planeador`,
-  // pero un solo item de menú, que apunta a actividades (ver el comentario
-  // de `planeadorActividades` en `config/paths.ts`) — sin esto, el item se
-  // apagaba al entrar a Unidades o Planilla (reportado en vivo).
-  ["/app/planeador/unidades", "/app/planeador/actividades"],
-  ["/app/planeador/planilla", "/app/planeador/actividades"],
-  ["/app/planeador/recursos", "/app/planeador/actividades"],
-]
-
-function resolveNavPathname(pathname: string) {
-  const alias = NAV_PATH_ALIASES.find(([from]) => isUnder(pathname, from))
-  return alias ? alias[1] : pathname
 }
 
 export function NavMain() {

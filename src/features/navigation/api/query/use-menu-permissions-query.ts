@@ -9,8 +9,8 @@ async function fetchMenuPermissions(): Promise<MenuPermission[]> {
 
 /**
  * Permisos CRUD del usuario por menú, una sola vez por sesión: igual que
- * `useNavItemsQuery`, el cache se invalida solo con `queryClient.clear()` en
- * logout (`src/lib/auth.ts`).
+ * `useNavItemsQuery`, el cache se vacía con `queryClient.clear()` en logout y
+ * se descarta al iniciar sesión (`src/lib/auth.ts`).
  */
 export function useMenuPermissionsQuery() {
   return useQuery({
