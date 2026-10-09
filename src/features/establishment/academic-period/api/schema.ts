@@ -226,8 +226,7 @@ export const evaluationPeriodFormSchema = z
       })
       .min(0, "El peso porcentual no puede ser negativo.")
       .max(100, "El peso porcentual no puede superar el 100%."),
-    // Id del estado (PK_LISTA_VALOR); el código/etiqueta se resuelven por catálogo.
-    estadoId: z.number().int().positive(required("El estado")),
+    estadoId: z.number().int(),
   })
   .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
     message: "La fecha de inicio es posterior o igual a la fecha de finalización",

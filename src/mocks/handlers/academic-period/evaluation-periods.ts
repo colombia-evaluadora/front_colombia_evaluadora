@@ -3,6 +3,8 @@
 import { http, HttpResponse, delay } from "msw"
 import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-period-statuses"
 import { evaluationPeriodsDb } from "@/mocks/db/academic-period/evaluation-periods"
+import { evaluationPeriodStatusByDates } from "@/features/establishment/academic-period/api/ui-mappings"
+import { formatDateValue } from "@/lib/date-value"
 
 import type {
   EvaluationPeriod,
@@ -16,8 +18,6 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-// Body plano UPPER_SNAKE que manda el front real para crear/editar
-// (`fn_periodo_eval_crear` / `fn_periodo_eval_actualizar`).
 interface EvaluationPeriodWriteBody {
   FK_PERIODO?: number
   CODIGO: string
@@ -25,12 +25,9 @@ interface EvaluationPeriodWriteBody {
   ABREVIACION: string
   FECHA_INICIO: string
   FECHA_FIN: string
-  FK_ESTADO: number
   PORCENTAJE: number
 }
 
-// Fila cruda (snake_case) que devuelve `/periodo-evaluacion/query` y
-// `/periodo-evaluacion/detalle/:id`, confirmada por ThunderClient.
 function toRawRow(
   row: EvaluationPeriod & { academicPeriodId?: number },
   totalCount?: number
@@ -61,9 +58,6 @@ function applyFiltro(rows: EvaluationPeriod[], filtro: string | null | undefined
   )
 }
 
-// Mismo patrón que `academic-periods.ts`: `SORT_BY` todavía no existe en el
-// signature real de `fn_periodo_eval_listar`, pero se va a agregar — el mock
-// ya lo aplica para no tener que tocarlo de nuevo cuando esté.
 function applySort(
   rows: EvaluationPeriod[],
   sortBy: string | null,
@@ -109,8 +103,6 @@ export const evaluationPeriodsHandlers = [
     const totalCount = filtered.length
     const start = body.PAGEINDEX * body.PAGESIZE
 
-    // Mismo shape crudo que el endpoint real (snake_case + `total_count` por
-    // fila, sin envelope); el front lo mapea/envuelve.
     const rows = filtered
       .slice(start, start + body.PAGESIZE)
       .map((row) => toRawRow(row, totalCount))
@@ -166,11 +158,12 @@ export const evaluationPeriodsHandlers = [
     await delay(400)
 
     const body = (await request.json()) as EvaluationPeriodWriteBody
-    const statusOption = evaluationPeriodStatusesDb.find(
-      (s) => s.id === body.FK_ESTADO
+    const estado = evaluationPeriodStatusByDates(
+      body.FECHA_INICIO,
+      body.FECHA_FIN,
+      formatDateValue(new Date())
     )
-
-    // El PK lo asigna el backend (identity); el mock lo autoincrementa.
+    const statusOption = evaluationPeriodStatusesDb.find((s) => s.key === estado)
     const id =
       evaluationPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
     const record: EvaluationPeriodRecord = {
@@ -181,18 +174,16 @@ export const evaluationPeriodsHandlers = [
       startDate: body.FECHA_INICIO,
       endDate: body.FECHA_FIN,
       peso: body.PORCENTAJE,
-      estado: statusOption?.key ?? "2",
-      estadoId: body.FK_ESTADO,
+      estado,
+      estadoId: statusOption?.id,
       estadoName: statusOption?.label,
       academicPeriodId: body.FK_PERIODO ?? 0,
     }
     evaluationPeriodsDb.push(record)
 
-    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({ rows: [{ fn_periodo_eval_crear: id }] })
   }),
 
-  // Borrado en lote por PK (atómico, una sola request).
   http.post("/api/eval-col/periodo-evaluacion/bulk-delete", async ({ request }) => {
     await delay(300)
     const { IDS } = (await request.json()) as { IDS: number[] }
@@ -213,7 +204,6 @@ export const evaluationPeriodsHandlers = [
   http.put("/api/eval-col/periodo-evaluacion/editar/:id", async ({ request, params }) => {
     await delay(400)
     const body = (await request.json()) as Omit<EvaluationPeriodWriteBody, "FK_PERIODO">
-    // Match por PK (único); ya no hace falta desambiguar por academicPeriodId.
     const index = evaluationPeriodsDb.findIndex(
       (p) => String(p.id) === String(params.id)
     )
@@ -223,9 +213,6 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    const statusOption = evaluationPeriodStatusesDb.find(
-      (s) => s.id === body.FK_ESTADO
-    )
     evaluationPeriodsDb[index] = {
       ...evaluationPeriodsDb[index],
       codigo: body.CODIGO,
@@ -234,17 +221,12 @@ export const evaluationPeriodsHandlers = [
       startDate: body.FECHA_INICIO,
       endDate: body.FECHA_FIN,
       peso: body.PORCENTAJE,
-      estado: statusOption?.key ?? evaluationPeriodsDb[index].estado,
-      estadoId: body.FK_ESTADO,
-      estadoName: statusOption?.label ?? evaluationPeriodsDb[index].estadoName,
     }
-    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
       rows: [{ fn_periodo_eval_actualizar: evaluationPeriodsDb[index].id }],
     })
   }),
 
-  // Soft delete expuesto como PUT (no DELETE) — `fn_periodo_eval_soft_delete`.
   http.put("/api/eval-col/periodo-evaluacion/:id", async ({ params }) => {
     await delay(300)
     const index = evaluationPeriodsDb.findIndex(
@@ -257,7 +239,6 @@ export const evaluationPeriodsHandlers = [
       )
     }
     const [deleted] = evaluationPeriodsDb.splice(index, 1)
-    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
       rows: [{ fn_periodo_eval_soft_delete: deleted.id }],
     })
