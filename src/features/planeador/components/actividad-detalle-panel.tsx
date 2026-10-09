@@ -77,11 +77,16 @@ export function ActividadDetallePanel({
   onShowApproval,
 }: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
-  const { puedeEditar, puedeVer, soloLectura } = usePlaneadorSoloLectura()
+  const { puedeEditar, puedeVer, soloLectura, viendoOtroDocente } = usePlaneadorSoloLectura()
   // En solo lectura (Coordinador): el mismo link abre la actividad completa
   // sin poder editarla (ver `PlaneadorEditarActividadPage`), y no se
   // muestran las acciones que modifican (calificar, eliminar).
-  const accionEditar = puedeEditar ? "Editar" : puedeVer ? "Ver" : null
+  //
+  // Mirando el planeador de OTRO docente no hay link ni siquiera de "Ver":
+  // la pantalla de edición no conoce el `?docente=` y para un Super Admin
+  // (que sí puede editar lo propio) abriría el formulario editable. Este
+  // panel ya muestra el detalle completo.
+  const accionEditar = puedeEditar ? "Editar" : puedeVer && !viendoOtroDocente ? "Ver" : null
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -149,10 +154,13 @@ export function ActividadDetallePanel({
           )}
           {ACCIONES.filter(
             (a) =>
+              // Paréntesis explícitos: sin ellos el `||` dejaba pasar
+              // Marcar/Aprobar en solo lectura apenas cargaba una actividad
+              // no formativa.
               !soloLectura &&
               // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
               // observación + asistencia de a un estudiante por vez.
-              a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad),
+              (a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad)),
           ).map(({ id, label, Icon }) => {
             const handler =
               id === "marcar"
@@ -215,9 +223,11 @@ export function ActividadDetallePanel({
         )}
 
         {actividad && (
-          mode === "grades" ? (
+          // `?modo=grades|approval` puede llegar escrito a mano en la URL:
+          // en solo lectura se ignora y se muestra el detalle.
+          mode === "grades" && !soloLectura ? (
             <CalificacionesView actividad={actividad} />
-          ) : mode === "approval" ? (
+          ) : mode === "approval" && !soloLectura ? (
             <CalificacionesAprobacionView actividad={actividad} />
           ) : (
             <div className="flex flex-col gap-3">

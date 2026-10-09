@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/tabs` — las pestañas de "Actividades", una por
@@ -90,17 +91,24 @@ function toActividadTab(row: ActividadTabRow): ActividadTab {
   }
 }
 
-async function fetchActividadesTabs(): Promise<ActividadTab[]> {
-  const rows = await evalCol.getRows<ActividadTabRow>("/planeador/actividades/tabs")
+async function fetchActividadesTabs(funcionario?: number): Promise<ActividadTab[]> {
+  const query = funcionario != null ? `?funcionario=${funcionario}` : ""
+  const rows = await evalCol.getRows<ActividadTabRow>(`/planeador/actividades/tabs${query}`)
   return rows.map(toActividadTab)
 }
 
 /** `staleTime` largo: mismo criterio que `useUnidadesTabsQuery` — lo que
- *  dicta/administra un docente no cambia dentro de una sesión. */
+ *  dicta/administra un docente no cambia dentro de una sesión.
+ *
+ *  El docente sale de `usePlaneadorDocenteScope` (`?docente=` en
+ *  Actividades/Unidades): así las pestañas —y los rótulos que se resuelven
+ *  desde ellas en componentes profundos— son las del docente que se mira. */
 export function useActividadesTabsQuery() {
+  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
   return useQuery({
-    queryKey: planeadorKeys.actividades.tabs(),
-    queryFn: fetchActividadesTabs,
+    queryKey: planeadorKeys.actividades.tabs(funcionario),
+    queryFn: () => fetchActividadesTabs(funcionario),
+    enabled: consultasHabilitadas,
     staleTime: 1000 * 60 * 5,
   })
 }

@@ -63,6 +63,9 @@ interface ActividadCardProps {
   /** Navega a la pantalla de edición de la actividad. Se dispara desde el
    * lápiz (Editar) de la card. */
   onEdit?: () => void
+  /** Muestra el docente dueño (`actividad.docenteNombre`) — solo cuando la
+   *  vista mezcla varios docentes (Coordinador viendo toda su sede). */
+  mostrarDocente?: boolean
   /** Hook opcional: se ejecuta cuando termina OK el `DialogDeleteActividad`
    * (típicamente, limpiar la selección / cerrar el panel). */
   onDeleted?: () => void
@@ -110,6 +113,7 @@ export function ActividadCard({
   onShowApproval,
   onEdit,
   onDeleted,
+  mostrarDocente = false,
 }: ActividadCardProps) {
   const StatusIcon = statusIconFor(actividad.status)
   const accent = statusAccentFor(actividad.status)
@@ -202,6 +206,11 @@ export function ActividadCard({
         </span>
       )}
 
+      {mostrarDocente && actividad.docenteNombre && (
+        <p className="text-[0.625rem] leading-snug font-medium break-words">
+          {actividad.docenteNombre}
+        </p>
+      )}
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {/* `gradoGrupo` ya viene resuelto por el backend (ver el comentario
             de `Actividad.gradoGrupo`) — concatenar `grado`+`grupo` a mano

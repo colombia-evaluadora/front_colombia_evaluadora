@@ -7,11 +7,13 @@ import {
   type ActividadTabPair,
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/stats` (V250, ver colección Postman
  * `planeador-pantalla-principal`) — contadores del docente autenticado
- * (resuelto del token, no hay parámetro de funcionario) para las 4 cards de
+ * (resuelto del token; `?funcionario=` opcional cuando un Super Admin o
+ * Coordinador mira el planeador de otro docente) para las 4 cards de
  * resumen. Se usan los alias que ya trae la fila para el front
  * (`pending`/`in_progress`/`completed`/`cancelled`) en vez de la
  * nomenclatura de dominio (`pendientes_por_evaluar`/…) que la misma fila
@@ -31,12 +33,15 @@ export interface UseActividadesStatsParams {
    *  — sin esto las 4 tarjetas sumaban todos los rótulos del docente y no
    *  cambiaban al moverse entre pestañas. */
   gradoAsignaturaPares?: ActividadTabPair[]
+  /** Ver `UseActividadesMiasParams.funcionario`. */
+  funcionario?: number
 }
 
 async function fetchActividadesStats(
   params: UseActividadesStatsParams,
 ): Promise<ActividadesStatsCounts> {
   const query = new URLSearchParams()
+  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -54,9 +59,12 @@ async function fetchActividadesStats(
 }
 
 export function useActividadesStatsQuery(params: UseActividadesStatsParams = {}) {
+  const scope = usePlaneadorDocenteScope()
+  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
   return useQuery({
-    queryKey: planeadorKeys.actividades.stats(params),
-    queryFn: () => fetchActividadesStats(params),
+    queryKey: planeadorKeys.actividades.stats(conDocente),
+    queryFn: () => fetchActividadesStats(conDocente),
+    enabled: scope.consultasHabilitadas,
     staleTime: 1000 * 30,
   })
 }

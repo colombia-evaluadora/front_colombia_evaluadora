@@ -33,7 +33,19 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 
 import { planeadorUnidadesRoute } from "@/router"
-import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import {
+  PlaneadorSoloLecturaScope,
+  usePlaneadorSoloLectura,
+} from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
+import {
+  PlaneadorDocenteSelector,
+  PlaneadorLecturaBanner,
+  PlaneadorSeleccionVacia,
+  type PlaneadorDocenteSeleccion,
+} from "@/features/planeador/components/planeador-docente-selector"
+import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
 
 /**
@@ -41,11 +53,43 @@ import { getErrorMessage } from "@/lib/api-client"
  * Actividades —rail de cards a la izquierda, detalle a la derecha— pero sobre
  * el modelo de unidades y sin calendario: la unidad no es un evento de un día,
  * así que la columna derecha muestra siempre el detalle.
+ *
+ * El `NoticeProvider` envuelve un `...Content` interno: tiene que ser
+ * ANCESTRO de quien llama `useNotify` (los errores del selector de docente y
+ * de las consultas van al aviso de la página).
  */
 export function PlaneadorUnidadesPage() {
+  return (
+    <NoticeProvider>
+      <PlaneadorUnidadesPageContent />
+    </NoticeProvider>
+  )
+}
+
+function PlaneadorUnidadesPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
   const { puedeCrear } = usePlaneadorSoloLectura()
+  // Selector de establecimiento/docente (Super Admin/Coordinador), ver
+  // `planeador-page.tsx`: los hooks de consulta leen el docente de la URL.
+  const scope = usePlaneadorDocenteScope()
+  const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
+
+  // Cambiar de docente invalida la pestaña de instrumento (cada docente
+  // tiene las suyas) y la unidad abierta; la búsqueda se conserva.
+  function handleDocenteChange(next: PlaneadorDocenteSeleccion) {
+    navigate({
+      to: planeadorUnidadesRoute.id,
+      search: (prev) => ({
+        ...prev,
+        establecimiento: next.establecimiento,
+        docente: next.docente,
+        instrumento: undefined,
+        unidad: undefined,
+      }),
+      replace: true,
+    })
+  }
 
   const buscar = search.buscar ?? ""
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useUnidadesFilters()
@@ -63,7 +107,10 @@ export function PlaneadorUnidadesPage() {
   // `planeador-tabs.tsx`): con más de una, el listado se acota a los
   // grados de la pestaña activa (`?instrumento=`). Con una sola (el caso
   // más común, un docente de un solo nivel) no hay nada que acotar.
-  const { data: unidadTabs = [] } = useUnidadesTabsQuery()
+  const { data: unidadTabs = [], error: errorTabs } = useUnidadesTabsQuery()
+  // El rail pinta su propio error; las pestañas no (p. ej. 42501 por un
+  // docente fuera del alcance), así que van al aviso de la página.
+  useNotificarErrores([errorTabs])
   const tabActiva =
     unidadTabs.length > 1
       ? (unidadTabs.find((t) => t.instrumento === search.instrumento) ?? unidadTabs[0])
@@ -110,6 +157,9 @@ export function PlaneadorUnidadesPage() {
   // derecha nunca quede vacía.
   const unidadIdNum = filtered.find((u) => String(u.id) === search.unidad)?.id ?? filtered[0]?.id
   const unidadId = unidadIdNum !== undefined ? String(unidadIdNum) : undefined
+  // Unidad de otro docente (Coordinador viendo toda su sede): el panel
+  // queda en solo lectura.
+  const unidadAbiertaAjena = esAjena(filtered.find((u) => String(u.id) === unidadId))
 
   const setUnidadId = (next: string) =>
     navigate({
@@ -119,170 +169,192 @@ export function PlaneadorUnidadesPage() {
     })
 
   return (
-    <NoticeProvider>
-      <TableScreen>
-        <TableScreenHeader>
-          <TableScreenTitle>Planeador</TableScreenTitle>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>Planeador</TableScreenTitle>
 
-          <PlaneadorTabs />
+        <PlaneadorTabs />
 
-          <TableScreenToolbar>
-            <SearchPlaneador
-              activeFilterCount={activeFilterCount}
-              filters={filters}
-              applyFilters={applyFilters}
-              clearAllFilters={clearAllFilters}
-              rotuloLabel={rotuloLabel}
-              rotuloUnidad={rotuloUnidad}
-            />
-            {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
+        <TableScreenToolbar>
+          <PlaneadorDocenteSelector onChange={handleDocenteChange} />
+
+          <SearchPlaneador
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+            rotuloLabel={rotuloLabel}
+            rotuloUnidad={rotuloUnidad}
+          />
+          {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
               con su "…" van pegados como un control partido y el exportar va
               al lado, así todas las acciones del listado quedan juntas. */}
-            <TableScreenActions>
-              {/* El rótulo sale del referente curricular (400 caracteres
+          <TableScreenActions>
+            {/* El rótulo sale del referente curricular (400 caracteres
                 posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
                 recorte, uno largo estiraba la barra entera fuera de pantalla. */}
-              {puedeCrear && (
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  className="min-w-0 max-w-[18rem] shrink"
-                  aria-label={`Agregar ${tabLabel}`}
-                  title={`Agregar ${tabLabel}`}
-                  render={
-                    <Link
-                      to={paths.app.planeadorUnidadCrear.getHref()}
-                      search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
-                    />
-                  }
-                >
-                  <PlusCircleIcon data-icon="inline-start" />
-                  <span className="truncate">Agregar {tabLabel}</span>
-                </Button>
-              )}
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      color="muted"
-                      size="icon-sm"
-                      disabled
-                      aria-label={exportarLabel}
-                    />
-                  }
-                >
-                  <FileDownloadOutlinedIcon />
-                </TooltipTrigger>
-                <TooltipContent>{exportarLabel}</TooltipContent>
-              </Tooltip>
-            </TableScreenActions>
-          </TableScreenToolbar>
-        </TableScreenHeader>
+            {/* Super Admin sin docente elegido: el estado vacío no ofrece
+                  crear (mismo criterio que la pestaña de Actividades). */}
+            {puedeCrear && !scope.requiereSeleccion && (
+              <Button
+                color="primary"
+                size="sm"
+                variant="fill"
+                className="min-w-0 max-w-[18rem] shrink"
+                aria-label={`Agregar ${tabLabel}`}
+                title={`Agregar ${tabLabel}`}
+                render={
+                  <Link
+                    to={paths.app.planeadorUnidadCrear.getHref()}
+                    search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
+                  />
+                }
+              >
+                <PlusCircleIcon data-icon="inline-start" />
+                <span className="truncate">Agregar {tabLabel}</span>
+              </Button>
+            )}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    color="muted"
+                    size="icon-sm"
+                    disabled
+                    aria-label={exportarLabel}
+                  />
+                }
+              >
+                <FileDownloadOutlinedIcon />
+              </TooltipTrigger>
+              <TooltipContent>{exportarLabel}</TooltipContent>
+            </Tooltip>
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
 
-        <TableScreenBody>
-          {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
+      <TableScreenBody>
+        {/* Super Admin sin docente elegido: no hay planeador propio que
+              mostrar, y ninguna consulta se dispara hasta elegir. */}
+        {scope.requiereSeleccion ? (
+          <PlaneadorSeleccionVacia />
+        ) : (
+          <>
+            <PlaneadorLecturaBanner className="mb-4" />
+            {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
             `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
             que una tabla ancha empuja la columna en vez de scrollear dentro de
             su propio contenedor y desborda la pantalla. */}
-          <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
-            {/* Rail izquierda. Mismo mecanismo que en la pestaña de Actividades:
+            <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
+              {/* Rail izquierda. Mismo mecanismo que en la pestaña de Actividades:
               el contenido se saca del flujo desde `md` para que la altura de
               la fila la fije la columna derecha y la lista scrollee por dentro
               en vez de estirar la página. */}
-            <section aria-label={`Listado de ${tabLabelPlural}`} className="relative min-h-0">
-              <div className="flex flex-col gap-3 md:absolute md:inset-0">
-                <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
-                  {isPending && (
-                    <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-                      <Spinner /> Cargando…
-                    </div>
-                  )}
+              <section aria-label={`Listado de ${tabLabelPlural}`} className="relative min-h-0">
+                <div className="flex flex-col gap-3 md:absolute md:inset-0">
+                  <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
+                    {isPending && (
+                      <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
+                        <Spinner /> Cargando…
+                      </div>
+                    )}
 
-                  {isError && (
-                    <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                      <p className="text-red text-sm">{getErrorMessage(error)}</p>
-                      <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
-                        Reintentar
-                      </Button>
-                    </div>
-                  )}
+                    {isError && (
+                      <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
+                        <p className="text-red text-sm">{getErrorMessage(error)}</p>
+                        <Button
+                          variant="outline"
+                          color="neutral"
+                          size="sm"
+                          onClick={() => refetch()}
+                        >
+                          Reintentar
+                        </Button>
+                      </div>
+                    )}
 
-                  {!isPending && !isError && filtered.length === 0 && (
-                    <div className="text-muted-foreground px-6 py-8 text-center text-sm">
-                      {buscar ? `Sin registros que coincidan con "${buscar}".` : "Sin registros."}
-                    </div>
-                  )}
+                    {!isPending && !isError && filtered.length === 0 && (
+                      <div className="text-muted-foreground px-6 py-8 text-center text-sm">
+                        {buscar ? `Sin registros que coincidan con "${buscar}".` : "Sin registros."}
+                      </div>
+                    )}
 
-                  {!isPending && !isError && filtered.length > 0 && (
-                    <ul className="flex flex-col gap-2">
-                      {filtered.map((unidad) => (
-                        <li key={unidad.id}>
-                          <UnidadCard
-                            unidad={unidad}
-                            rotuloUnidad={rotuloUnidad}
-                            selected={String(unidad.id) === unidadId}
-                            onSelect={() => setUnidadId(String(unidad.id))}
-                            onEdit={() =>
-                              navigate({
-                                to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
-                                // Viaja para la miga de pan de la edición
-                                // (`planeadorUnidadEditarRoute`), que no
-                                // tiene de dónde más sacar el rótulo.
-                                search: { instrumento: rotuloUnidad },
-                              })
-                            }
-                            // Si la unidad borrada era la abierta en el panel,
-                            // limpiamos `?unidad=` — mismo criterio que
-                            // `onDeleted` del panel (cae a la primera de la
-                            // lista filtrada).
-                            onDeleted={() => {
-                              if (unidadId === String(unidad.id)) {
-                                navigate({
-                                  to: planeadorUnidadesRoute.id,
-                                  search: (prev) => ({ ...prev, unidad: undefined }),
-                                  replace: true,
-                                })
-                              }
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                    {!isPending && !isError && filtered.length > 0 && (
+                      <ul className="flex flex-col gap-2">
+                        {filtered.map((unidad) => (
+                          <li key={unidad.id}>
+                            <PlaneadorSoloLecturaScope activo={esAjena(unidad)}>
+                              <UnidadCard
+                                unidad={unidad}
+                                mostrarDocente={mostrarDocente}
+                                rotuloUnidad={rotuloUnidad}
+                                selected={String(unidad.id) === unidadId}
+                                onSelect={() => setUnidadId(String(unidad.id))}
+                                onEdit={() =>
+                                  navigate({
+                                    to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
+                                    // Viaja para la miga de pan de la edición
+                                    // (`planeadorUnidadEditarRoute`), que no
+                                    // tiene de dónde más sacar el rótulo.
+                                    search: { instrumento: rotuloUnidad },
+                                  })
+                                }
+                                // Si la unidad borrada era la abierta en el panel,
+                                // limpiamos `?unidad=` — mismo criterio que
+                                // `onDeleted` del panel (cae a la primera de la
+                                // lista filtrada).
+                                onDeleted={() => {
+                                  if (unidadId === String(unidad.id)) {
+                                    navigate({
+                                      to: planeadorUnidadesRoute.id,
+                                      search: (prev) => ({ ...prev, unidad: undefined }),
+                                      replace: true,
+                                    })
+                                  }
+                                }}
+                              />
+                            </PlaneadorSoloLecturaScope>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Detalle. Se acota a la ventana y scrollea por dentro: si creciera
+              {/* Detalle. Se acota a la ventana y scrollea por dentro: si creciera
               libre arrastraría el alto de la fila —y con él el del rail, que
               se mide contra esa misma fila. */}
-            <section
-              aria-label={`Detalle ${deArticuloRotulo(rotuloUnidad)} ${tabLabel}`}
-              className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"
-            >
-              {unidadId ? (
-                <UnidadDetallePanel
-                  unidadId={unidadId}
-                  rotuloUnidad={rotuloUnidad}
-                  onDeleted={() =>
-                    navigate({
-                      to: planeadorUnidadesRoute.id,
-                      search: (prev) => ({ ...prev, unidad: undefined }),
-                      replace: true,
-                    })
-                  }
-                />
-              ) : (
-                <div className="text-muted-foreground flex h-full items-center justify-center rounded-md border p-6 text-sm">
-                  Seleccioná {articuloIndefinidoRotulo(rotuloUnidad)} {tabLabel} para ver su detalle.
-                </div>
-              )}
-            </section>
-          </div>
-        </TableScreenBody>
-      </TableScreen>
-    </NoticeProvider>
+              <section
+                aria-label={`Detalle ${deArticuloRotulo(rotuloUnidad)} ${tabLabel}`}
+                className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"
+              >
+                {unidadId ? (
+                  <PlaneadorSoloLecturaScope activo={unidadAbiertaAjena}>
+                    <UnidadDetallePanel
+                      unidadId={unidadId}
+                      rotuloUnidad={rotuloUnidad}
+                      onDeleted={() =>
+                        navigate({
+                          to: planeadorUnidadesRoute.id,
+                          search: (prev) => ({ ...prev, unidad: undefined }),
+                          replace: true,
+                        })
+                      }
+                    />
+                  </PlaneadorSoloLecturaScope>
+                ) : (
+                  <div className="text-muted-foreground flex h-full items-center justify-center rounded-md border p-6 text-sm">
+                    Seleccioná {articuloIndefinidoRotulo(rotuloUnidad)} {tabLabel} para ver su
+                    detalle.
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/unidades/tabs` (confirmado real, colección Postman
@@ -89,8 +90,9 @@ function toUnidadTab(row: UnidadTabRow): UnidadTab {
   }
 }
 
-async function fetchUnidadesTabs(): Promise<UnidadTab[]> {
-  const rows = await evalCol.getRows<UnidadTabRow>("/planeador/unidades/tabs")
+async function fetchUnidadesTabs(funcionario?: number): Promise<UnidadTab[]> {
+  const query = funcionario != null ? `?funcionario=${funcionario}` : ""
+  const rows = await evalCol.getRows<UnidadTabRow>(`/planeador/unidades/tabs${query}`)
   return rows.map(toUnidadTab)
 }
 
@@ -100,9 +102,13 @@ async function fetchUnidadesTabs(): Promise<UnidadTab[]> {
  * `TLISTA_VALOR` del módulo.
  */
 export function useUnidadesTabsQuery() {
+  // Docente que se mira (Super Admin/Coordinador), mismo criterio que
+  // `useActividadesTabsQuery`.
+  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
   return useQuery({
-    queryKey: planeadorKeys.unidades.tabs(),
-    queryFn: fetchUnidadesTabs,
+    queryKey: planeadorKeys.unidades.tabs(funcionario),
+    queryFn: () => fetchUnidadesTabs(funcionario),
+    enabled: consultasHabilitadas,
     staleTime: 1000 * 60 * 5,
   })
 }

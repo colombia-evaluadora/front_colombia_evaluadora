@@ -21,6 +21,20 @@ export const planeadorUnidadEditarSearchSchema = z.object({
 })
 
 /**
+ * Selector de establecimiento/docente de Actividades y Unidades (Super Admin
+ * elige los dos; Coordinador solo el docente, ver
+ * `usePlaneadorDocenteScope`). Números y no strings: el router parsea
+ * `?docente=12` como número, y un `z.string()` lo descartaría. Un valor
+ * basura cae a `undefined` (no selecciona nada).
+ */
+const planeadorDocenteSearchShape = {
+  /** `PK_TESTABLECIMIENTO` (solo Super Admin). */
+  establecimiento: z.coerce.number().int().positive().optional().catch(undefined),
+  /** `PK_TFUNCIONARIO` del docente cuyo planeador se mira (solo lectura). */
+  docente: z.coerce.number().int().positive().optional().catch(undefined),
+}
+
+/**
  * Search schema del listado. La barra superior es la misma de los demás
  * listados: un solo input con la consulta —texto libre + términos
  * `instrumento:(Rúbrica)`— y el panel de filtros avanzados detrás del embudo.
@@ -53,6 +67,7 @@ export const planeadorSearchSchema = z.object({
    *  actividades" a sus pares grado+asignatura. Ver `planeador-tabs.tsx`,
    *  mismo criterio que `instrumento` en `planeadorUnidadesSearchSchema`. */
   rotulo: z.string().optional().catch(undefined),
+  ...planeadorDocenteSearchShape,
 })
 export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
 
@@ -86,6 +101,7 @@ export const planeadorUnidadesSearchSchema = z.object({
    *  fila) — el `instrumento` de esa fila, usado para filtrar el listado
    *  a sus grados/asignaturas. Ver `planeador-tabs.tsx`. */
   instrumento: z.string().optional().catch(undefined),
+  ...planeadorDocenteSearchShape,
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 

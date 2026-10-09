@@ -65,8 +65,13 @@ export const planeadorKeys = {
       unidadId?: number | null,
     ) => [...actividadesAll, "configuracion", "programacion", grupoId, asignaturaId, unidadId] as const,
     /** Pestañas del rótulo de ejecución: catálogo, fuera de `actividades.all`
-     *  a propósito (guardar una actividad no lo cambia). */
-    tabs: () => [...all, "actividades-tabs"] as const,
+     *  a propósito (guardar una actividad no lo cambia). Con `funcionario`
+     *  (Super Admin/Coordinador mirando a otro docente) cuelga del mismo
+     *  prefijo, así `tabs()` sigue invalidando todas las variantes. */
+    tabs: (funcionario?: number) =>
+      funcionario != null
+        ? ([...all, "actividades-tabs", { funcionario }] as const)
+        : ([...all, "actividades-tabs"] as const),
   },
 
   actividad: {
@@ -102,7 +107,11 @@ export const planeadorKeys = {
   unidades: {
     all: unidadesAll,
     lista: <P>(params: P) => [...unidadesAll, params] as const,
-    tabs: () => [...all, "unidades-tabs"] as const,
+    /** Mismo criterio que `actividades.tabs`. */
+    tabs: (funcionario?: number) =>
+      funcionario != null
+        ? ([...all, "unidades-tabs", { funcionario }] as const)
+        : ([...all, "unidades-tabs"] as const),
   },
 
   unidad: {
@@ -131,9 +140,14 @@ export const planeadorKeys = {
   },
 
   matriculasGrupo: (grupoId: number | "none") => [...all, "matriculas-grupo", grupoId] as const,
-  docenteGradoAsignatura: (periodoId?: number) =>
-    [...all, "docente-grado-asignatura", periodoId ?? null] as const,
-  docenteGrupos: (periodoId?: number) => [...all, "docente-grupos", periodoId ?? null] as const,
+  docenteGradoAsignatura: (periodoId?: number, funcionario?: number) =>
+    [...all, "docente-grado-asignatura", periodoId ?? null, funcionario ?? null] as const,
+  docenteGrupos: (periodoId?: number, funcionario?: number) =>
+    [...all, "docente-grupos", periodoId ?? null, funcionario ?? null] as const,
+  /** Docentes del selector del Planeador (`GET /planeador/docentes`).
+   *  `null` = sin establecimiento (Coordinador: el backend acota a sus
+   *  sedes). */
+  docentes: (establecimientoId?: number) => [...all, "docentes", establecimientoId ?? null] as const,
   gradoGrupos: (gradoId: number | undefined) => [...all, "grado-grupos", gradoId ?? "none"] as const,
   periodosEvaluacion: () => [...all, "periodos-evaluacion"] as const,
   referenteCurricular: (gradoId: number | "none", asignaturaId?: number) =>
