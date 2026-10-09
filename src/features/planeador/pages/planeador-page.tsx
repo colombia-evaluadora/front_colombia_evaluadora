@@ -259,14 +259,16 @@ function PlaneadorPageContent() {
   // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
   // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
   // export lleva todas las actividades del usuario que cumplen la búsqueda,
-  // el estado y la pestaña, no solo las del día que muestra el rail.
+  // el estado y la pestaña, no solo las del día que muestra el rail. Con el
+  // docente elegido por super admin o coordinador, las de ese docente.
   const exportFilters = React.useMemo(
     () => ({
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
       GRADO_ASIGNATURA_PARES: tabActiva?.pares.length ? tabActiva.pares.map(parToString) : undefined,
+      FUNCIONARIO: scope.funcionario ?? undefined,
     }),
-    [buscar, estado, tabActiva],
+    [buscar, estado, tabActiva, scope.funcionario],
   )
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de

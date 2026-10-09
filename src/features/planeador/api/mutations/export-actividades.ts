@@ -18,6 +18,8 @@ export interface PlaneadorActividadesReportFilters {
   ESTADOS?: string[]
   /** Pares "grado:asignatura" de la pestaña de Rótulo de Ejecución activa. */
   GRADO_ASIGNATURA_PARES?: string[]
+  /** `PK_TFUNCIONARIO` del docente elegido (super admin / coordinador), el `?funcionario=` de `/mias`. */
+  FUNCIONARIO?: number
 }
 
 interface ExportActividadesInput {
