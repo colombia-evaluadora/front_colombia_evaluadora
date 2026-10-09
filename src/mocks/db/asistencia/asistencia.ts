@@ -289,7 +289,7 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
           grupo: grupo.grupo,
           grado: grupo.gradoNombre,
           grado_valor: grupo.grado,
-          jornada: grupo.jornada,
+          jornada: grupo.jornadaNombre,
           asignatura: asignatura.asignatura,
           fecha: fechaIso,
           bloque,
@@ -344,7 +344,7 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         grupo: GRUPO_PREESCOLAR.grupo,
         grado: GRUPO_PREESCOLAR.gradoNombre,
         grado_valor: GRUPO_PREESCOLAR.grado,
-        jornada: GRUPO_PREESCOLAR.jornada,
+        jornada: GRUPO_PREESCOLAR.jornadaNombre,
         asignatura: "",
         fecha: `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
         bloque: null,
@@ -469,11 +469,7 @@ export function generarSeguimiento(
   if (filters.FECHA_HASTA) rows = rows.filter((r) => r.fecha <= filters.FECHA_HASTA!)
   // JORNADA y GRADO llegan como NOMBRE, no como código: fn_asistencia_listar_seguimiento
   // los compara contra TLISTA_VALOR.NOMBRE / TGRADO.NOMBRE.
-  if (filters.JORNADA) {
-    rows = rows.filter(
-      (r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.jornadaNombre === filters.JORNADA,
-    )
-  }
+  if (filters.JORNADA) rows = rows.filter((r) => r.jornada === filters.JORNADA)
   if (filters.GRADO) {
     rows = rows.filter(
       (r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.gradoNombre === filters.GRADO,

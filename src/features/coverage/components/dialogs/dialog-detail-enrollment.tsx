@@ -180,7 +180,7 @@ function DetailField({
 }
 
 // Mismas reglas que la validación de matrícula (`validateMatricula`) y que el
-// alta de inscripción (`dialog-add-enrollment`): formato de documento (3-10
+// alta de inscripción (`dialog-add-enrollment`): formato de documento (3-15
 // dígitos), formato de correo, fecha de nacimiento no futura y campos
 // obligatorios de estudiante/acudiente.
 function enrollmentErrors(enrollment: Enrollment): Partial<Record<string, string>> {
@@ -190,7 +190,7 @@ function enrollmentErrors(enrollment: Enrollment): Partial<Record<string, string
   const documentNumber = enrollment.documentNumber.trim()
   if (!documentNumber) errors.documentNumber = "Requerido."
   else if (!DOCUMENT_REGEX.test(documentNumber)) {
-    errors.documentNumber = "El documento debe tener entre 3 y 10 dígitos."
+    errors.documentNumber = "El documento debe tener entre 3 y 15 dígitos."
   }
   if (!enrollment.firstName.trim()) errors.firstName = "Requerido."
   if (!enrollment.lastName.trim()) errors.lastName = "Requerido."
@@ -206,7 +206,7 @@ function enrollmentErrors(enrollment: Enrollment): Partial<Record<string, string
   const guardianDocumentNumber = enrollment.guardianDocumentNumber.trim()
   if (!guardianDocumentNumber) errors.guardianDocumentNumber = "Requerido."
   else if (!DOCUMENT_REGEX.test(guardianDocumentNumber)) {
-    errors.guardianDocumentNumber = "El documento debe tener entre 3 y 10 dígitos."
+    errors.guardianDocumentNumber = "El documento debe tener entre 3 y 15 dígitos."
   }
   if (!enrollment.guardianFirstName.trim()) errors.guardianFirstName = "Requerido."
   if (!enrollment.guardianLastName.trim()) errors.guardianLastName = "Requerido."

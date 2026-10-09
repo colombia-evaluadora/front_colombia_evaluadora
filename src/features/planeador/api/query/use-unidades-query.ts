@@ -7,7 +7,12 @@ import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  conAlcance,
+  setAlcanceQuery,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceParams,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
 
@@ -130,7 +135,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
   }
 }
 
-export interface UseUnidadesParams {
+export interface UseUnidadesParams extends PlaneadorAlcanceParams {
   /** `yyyy-MM-dd` — paginado por día activo (colección Postman 2.1): solo
    *  unidades con alguna actividad vigente ese día. Sin esto, el listado no
    *  cambia (comportamiento previo). */
@@ -167,7 +172,7 @@ function isSentinel(row: unknown): row is UnidadSentinelRow {
 async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
   const query = new URLSearchParams({ size: String(PAGE_SIZE), offset: "0" })
   if (params.dia) query.set("dia", params.dia)
-  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
+  setAlcanceQuery(query, params)
 
   // `evalCol.getRows` desenvuelve el sobre `{rows: [...]}` del gateway —
   // eso es idéntico en mock y real (el motor real SIEMPRE envuelve así).
@@ -196,7 +201,7 @@ async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult>
 
 export function useUnidadesQuery(params: UseUnidadesParams = {}) {
   const scope = usePlaneadorDocenteScope()
-  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
+  const conDocente = conAlcance(params, scope)
   return useQuery({
     queryKey: planeadorKeys.unidades.lista(conDocente),
     queryFn: () => fetchUnidades(conDocente),

@@ -60,11 +60,10 @@ import {
 } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import {
-  PlaneadorDocenteSelector,
   PlaneadorLecturaBanner,
   PlaneadorSeleccionVacia,
-  type PlaneadorDocenteSeleccion,
 } from "@/features/planeador/components/planeador-docente-selector"
+import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
@@ -97,35 +96,20 @@ function PlaneadorPageContent() {
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
   const { puedeCrear, viendoOtroDocente } = usePlaneadorSoloLectura()
-  // Selector de establecimiento/docente (Super Admin/Coordinador). Los hooks
-  // de consulta ya leen el docente elegido de la URL por su cuenta (ver
-  // `usePlaneadorDocenteScope`); acá solo se decide qué mostrar.
+  // Sede/Año/Jornada/Docente del filtro avanzado (Super Admin, Rector,
+  // Coordinador). Los hooks de consulta ya leen el alcance de la URL por su
+  // cuenta (ver `usePlaneadorDocenteScope`); acá solo se decide qué mostrar.
   const scope = usePlaneadorDocenteScope()
   // Nombre del docente en cada card/evento solo cuando la vista mezcla
   // varios (Coordinador con "Todos los docentes de mi sede").
   const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
 
-  // Cambiar de docente invalida todo lo que se eligió sobre el anterior: la
-  // pestaña de rótulo (cada docente tiene las suyas) y la actividad abierta
-  // con su modo. Búsqueda, estado y día se conservan.
-  function handleDocenteChange(next: PlaneadorDocenteSeleccion) {
-    navigate({
-      to: planeadorRoute.id,
-      search: (prev) => ({
-        ...prev,
-        establecimiento: next.establecimiento,
-        docente: next.docente,
-        rotulo: undefined,
-        actividad: undefined,
-        modo: undefined,
-      }),
-      replace: true,
-    })
-  }
-
   // Búsqueda y filtros avanzados, todos en la URL. Ver
-  // `use-planeador-filters`.
-  const { filters, applyFilters, clearAllFilters, activeFilterCount } = usePlaneadorFilters()
+  // `use-planeador-filters`. Cambiar sede/año/jornada/docente borra la
+  // pestaña de rótulo y la actividad abierta (eran del alcance anterior).
+  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+    usePlaneadorFilters()
+  usePlaneadorAlcanceInicial(applyAlcance)
   const buscar = filters.buscar
   const estado = filters.estado
   const view = filters.vista || "actividad"
@@ -302,7 +286,11 @@ function PlaneadorPageContent() {
   async function handleExportarJson() {
     setExportandoTodo(true)
     try {
-      const todas = await fetchTodasLasActividadesMias(scope.funcionario)
+      const todas = await fetchTodasLasActividadesMias({
+        funcionario: scope.funcionario,
+        sede: scope.sedeId,
+        periodo: scope.periodoId,
+      })
       if (todas.length === 0) {
         notify(
           viendoOtroDocente
@@ -380,12 +368,12 @@ function PlaneadorPageContent() {
         <TableScreenToolbar>
           {/* Fila propia (`w-full`) arriba del buscador; no se renderiza
               para un docente. */}
-          <PlaneadorDocenteSelector onChange={handleDocenteChange} />
 
           <SearchPlaneador
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
+            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
             instrumentoOptions={instrumentoOptions}
             rotuloLabel={rotuloLabel}

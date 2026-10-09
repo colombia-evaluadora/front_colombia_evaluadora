@@ -33,59 +33,29 @@ import type { InstrumentoActividad } from "@/features/planeador/api/types/planil
 interface CeldaNotaPopoverProps {
   actividadId: number
   pkTactividadEstudiante: number
-  /** `yyyy-MM-dd` — la fecha con asistencia válida de ESTE estudiante
-   *  (`PlanillaCelda.fechaAsistencia`), no `PlanillaColumna.fechaInicio`:
-   *  el gate de calificar exige asistencia para la fecha exacta que se
-   *  manda, y casi nunca coincide con el día en que arrancó la actividad. */
   fecha: string
   estudianteNombre: string
-  /** Se dispara justo al guardar, antes de que la Planilla termine de
-   *  refrescar — permite mostrar un loading en la celda mientras tanto. */
   onGuardado?: () => void
-  /** Periodo cerrado: no guarda, entrega el cambio a la página para
-   *  enviarlo después como solicitud. */
-  onCambio?: (cambio: CambioPendiente) => void
-  /** Cambio ya hecho y sin enviar: el popover arranca con él. */
+  onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
   cambioPendiente?: CambioPendiente
-  /** Body de calificar de una corrección pendiente de aprobación: el
-   *  popover arranca con él y no con la nota oficial. */
   calificacionPropuesta?: unknown
 }
 
 export interface CambioPendiente {
   input: CalificarCeldaInput
   notas: NotaCriterio[]
-  /** Nota nueva ya homologada (vista previa del backend). */
   notaPropuesta: number | null
 }
 
-/** Arma el body de `calificar` según el instrumento REAL de la actividad —
- *  `null` cuando todavía no hay suficiente para mandar un request válido
- *  (instrumento sin definir, o el docente no eligió nada todavía). Exportada
- *  porque `DialogCalificarActividad` (vista "Calificaciones: <actividad>")
- *  la reusa tal cual, sin duplicar la conversión `NotaCriterio[]` ->
- *  `CalificarCeldaInput`. */
 export function buildCalificarCeldaInput(
   instrumento: InstrumentoActividad,
   value: NotaCriterio[],
   pkTactividadEstudiante: number,
   fecha: string,
 ): CalificarCeldaInput | null {
-  // "Otro (personalizado)" con método configurado se resuelve al MISMO tipo
-  // efectivo que su instrumento equivalente directo — el backend
-  // (`fn_actividad_nota_calificar`, V241) delega en el MISMO
-  // fn_actividad_nota_calificar_rubrica/_cotejo/_escala con el MISMO
-  // payload. Antes esto se ignoraba y "Otro" siempre mandaba
-  // `{valorNumerico}` sin importar el método, perdiendo la estructura real.
   const efectivo = resolverInstrumentoEfectivo(instrumento)
 
   if (efectivo.tipo === "RUBRICA") {
-    // Solo criterios que SIGUEN activos: `value` puede traer una nota
-    // precargada (`toNotas`) de un criterio ya borrado/desactivado después
-    // de que el estudiante fue calificado la primera vez. Mandarla junto
-    // con la elegida ahora hace que el backend rechace el guardado con
-    // "La rúbrica tiene N criterio(s) activo(s) pero se calificaron M" —
-    // mismo filtro que `instrumentoCompletitud`.
     const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     const niveles = value
       .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
@@ -94,7 +64,6 @@ export function buildCalificarCeldaInput(
     return { pkTactividadEstudiante, fecha, tipo: "RUBRICA", niveles }
   }
   if (efectivo.tipo === "LISTA_COTEJO") {
-    // Mismo criterio que RUBRICA: solo ítems que siguen en la lista actual.
     const itemsActivos = new Set(efectivo.definicion.map((i) => i.pk))
     const marcados = value.filter((n) => itemsActivos.has(n.criterioId))
     if (marcados.length === 0) return null
@@ -106,10 +75,6 @@ export function buildCalificarCeldaInput(
     }
   }
   if (efectivo.tipo === "ESCALA_VALORACION") {
-    // 2+ criterios generales (V472): un valor POR criterio, `criterioId` =
-    // posición (0-based) — mismo criterio que `instrumentoCompletitud` y
-    // `EscalaValoracionFields` para derivar cuántos criterios tiene la
-    // escala (partir `criteriosGenerales` por coma, sin filtrar vacíos).
     const criterios = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
     if (criterios.length > 1) {
       const esCualitativa = efectivo.definicion.niveles.length > 0
@@ -133,12 +98,6 @@ export function buildCalificarCeldaInput(
     return { pkTactividadEstudiante, fecha, tipo: "VALOR_NUMERICO", valorNumerico: valor }
   }
   if (efectivo.tipo === "VALOR_NUMERICO") {
-    // "Otro" SIN método configurado: texto libre real, el backend
-    // (`fn_actividad_nota_calificar_otro`) espera `{porcentaje}` — una
-    // clave DISTINTA de `valorNumerico` (esa es de la escala). Antes esto
-    // mandaba `valorNumerico` siempre, que solo por coincidencia funcionaba
-    // cuando "Otro" delegaba en una escala numérica (misma clave); para
-    // "Otro" genuinamente sin método, el backend nunca recibía el % real.
     const valor = value[0]?.valor
     if (valor == null) return null
     return { pkTactividadEstudiante, fecha, tipo: "OTRO_PORCENTAJE", porcentaje: valor }
@@ -146,7 +105,14 @@ export function buildCalificarCeldaInput(
   return null
 }
 
-/** Inverso de `buildCalificacion`: el body de calificar → `NotaCriterio[]`. */
+function mismasNotas(a: NotaCriterio[], b: NotaCriterio[]) {
+  if (a.length !== b.length) return false
+  return a.every((x) => {
+    const y = b.find((n) => n.criterioId === x.criterioId)
+    return y != null && y.valor === x.valor && y.nivelId === x.nivelId
+  })
+}
+
 export function notasDeCalificacion(calificacion: unknown): NotaCriterio[] | null {
   if (!calificacion || typeof calificacion !== "object") return null
   const c = calificacion as Record<string, unknown>
@@ -172,14 +138,6 @@ export function notasDeCalificacion(calificacion: unknown): NotaCriterio[] | nul
   return null
 }
 
-/**
- * Popover de calificación anclado a UNA celda (estudiante × actividad).
- * Autocontenido: precarga la nota ya guardada del estudiante
- * (`GET .../nota`), arma el form según el instrumento real de la actividad
- * (`InstrumentoGradingFields`) y al guardar pega directo contra
- * `PUT .../calificar` — no depende de estado del padre, así que
- * `PlanillaGrid` no necesita mantener overrides locales.
- */
 export function CeldaNotaPopover({
   actividadId,
   pkTactividadEstudiante,
@@ -218,6 +176,8 @@ export function CeldaNotaPopover({
     },
   })
 
+  const notasOriginales = notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? []
+
   const previsualizar = usePrevisualizarNotaMutation()
   const completitud = instrumentoCompletitud(instrumento, draft)
 
@@ -226,10 +186,15 @@ export function CeldaNotaPopover({
     const input = buildCalificarCeldaInput(instrumento, draft, pkTactividadEstudiante, fecha)
     if (!input) return
     if (onCambio) {
-      // Periodo cerrado: no guarda, pero pide la nota exacta que dejaría.
+      // Mismos criterios que la nota original: no hay cambio que enviar.
+      if (mismasNotas(draft, notasOriginales)) {
+        onCambio(pkTactividadEstudiante, null)
+        setOpen(false)
+        return
+      }
       previsualizar.mutate(input, {
         onSuccess: (result) => {
-          onCambio({ input, notas: draft, notaPropuesta: result?.nota_homologada ?? null })
+          onCambio(pkTactividadEstudiante, { input, notas: draft, notaPropuesta: result?.nota_homologada ?? null })
           setOpen(false)
         },
         onError: (error) => notify(getErrorMessage(error), { variant: "error" }),

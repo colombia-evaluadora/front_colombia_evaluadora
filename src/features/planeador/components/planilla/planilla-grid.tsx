@@ -8,12 +8,12 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   ClipboardCheckIcon,
+  LockIcon,
   ProhibitIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
-import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
 import {
   CeldaNotaPopover,
   type CambioPendiente,
@@ -26,27 +26,16 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
-  /** "Actividad": una columna por actividad, sin agrupar. "Unidad": las
-   *  mismas columnas, agrupadas bajo un `<th colSpan>` con la unidad
-   *  temática de cada actividad (`PlanillaColumna.fkTunidad`/`unidad`).
-   *  Catálogo real `AGRUPACION_PLANILLA`: "Actividades"/"Unidad". */
   verPor: "actividad" | "unidad"
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
-  /** Abre el registro narrativo (Observación/Momento/Evidencia) de una actividad formativa. */
-  /** Grado del filtro aplicado — solo para el rótulo dinámico del mensaje
-   *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
-   *  lo personalizó). */
   gradoId?: number
   /** Periodo cerrado: cambios sin enviar por `pkTactividadEstudiante`. */
   cambios?: Map<number, CambioPendiente>
-  /** Con esto las celdas no guardan: acumulan el cambio en la página. */
-  onCambio?: (cambio: CambioPendiente) => void
+  onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
 }
 
 interface GrupoUnidad {
-  /** `null` = actividad huérfana (sin unidad) — agrupan todas juntas bajo
-   *  "Sin unidad" en vez de una columna por cada una. */
   fkTunidad: number | null
   nombre: string
   columnas: PlanillaColumna[]
@@ -75,9 +64,6 @@ export function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaC
   return fila.celdas.find((c) => c.pkTactividad === columna.pkTactividad)
 }
 
-/** Lo decide el backend (`fn_actividad_es_formativa`): la actividad cuelga
- *  de una unidad con referente NO evaluativo. No se deduce del instrumento —
- *  una actividad evaluativa sin instrumento definido también lo trae nulo. */
 export function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
   return esColumnaFormativa(columna) || celda?.esFormativa === true
 }
@@ -91,18 +77,6 @@ export function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda
   return celda.tieneAsistencia ? columna.fechaInicio : null
 }
 
-/**
- * Grilla de la Planilla: una fila por estudiante, una columna por actividad
- * (más "Definit. Proy." al frente), opcionalmente agrupadas por unidad
- * temática. Lee directo lo que ya trae `/planilla/calificaciones` (estado,
- * calificación, definitiva) — no recalcula porcentajes en el cliente, el
- * backend real ya los resuelve.
- *
- * El botón del header de cada columna dispara la calificación en bloque de
- * esa actividad (`onAbrirBulk`); el de cada celda abre el popover de
- * calificación puntual (`CeldaNotaPopover`), que guarda directo contra el
- * backend.
- */
 export function PlanillaGrid({
   columnas,
   verPor,
@@ -114,9 +88,6 @@ export function PlanillaGrid({
 }: PlanillaGridProps) {
   const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
-  // Celdas recién guardadas cuya nota todavía no refleja el cambio: la
-  // mutación resuelve antes de que termine el refetch de la Planilla, así
-  // que sin esto la nota vieja se ve un instante después de "Guardar".
   const [refrescando, setRefrescando] = useState<Set<string>>(new Set())
   const fetchingPlanilla = useIsFetching({ queryKey: planeadorKeys.planilla.calificaciones.all })
 
@@ -141,17 +112,10 @@ export function PlanillaGrid({
   }
 
   const grupos = verPor === "unidad" ? agruparPorUnidad(columnas) : null
-  // El backend manda `definitiva_proyectada` en null hasta que el estudiante
-  // tiene algo calificado — con la columna entera en null (grupo recién
-  // creado, o ningún estudiante calificado todavía) no aporta nada mostrarla.
   const mostrarDefinitiva = filas.some((fila) => fila.definitivaProyectada !== null)
 
   return (
     <div className="border-input overflow-auto rounded-md border">
-      {/* `table-fixed`: sin esto el `w-40`/`truncate` de las columnas de
-          actividad no hacen nada — en `auto` (el default) la columna crece
-          al contenido más ancho (ej. una observación larga), ignorando el
-          ancho declarado. */}
       <table className="w-full table-fixed text-sm">
         <thead className="bg-muted/10 border-b">
           {grupos ? (
@@ -178,9 +142,6 @@ export function PlanillaGrid({
                     title={grupo.nombre}
                     className="border-b px-4 py-2 text-center font-semibold uppercase"
                   >
-                    {/* Máximo 2 líneas — el nombre de la unidad puede ser
-                        largo y, sin este tope, empujaba el alto de la fila
-                        de cabecera hasta 4+ líneas. */}
                     <span className="line-clamp-2">{grupo.nombre}</span>
                   </th>
                 ))}
@@ -216,6 +177,8 @@ export function PlanillaGrid({
         <tbody className="divide-border divide-y">
           {filas.map((fila) => {
             const definitiva = fila.definitivaProyectadaHomologada
+            const propuesta = fila.definitivaPropuestaHomologada ?? null
+            const nota = propuesta ?? definitiva
 
             return (
               <tr key={fila.pkTestudiante}>
@@ -227,25 +190,12 @@ export function PlanillaGrid({
                 </td>
                 {mostrarDefinitiva && (
                   <td className="px-4 py-1.5 align-middle">
-                    {definitiva !== null && (
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-0.5 font-semibold",
-                          definitiva >= NOTA_MINIMA_APROBATORIA ? "text-green" : "text-red",
-                        )}
-                      >
-                        {definitiva >= NOTA_MINIMA_APROBATORIA ? <CaretUpIcon /> : <CaretDownIcon />}
-                        {definitiva.toFixed(2)}
-                      </span>
-                    )}
-                    {fila.definitivaPropuestaHomologada != null && (
-                      <span className="ml-1.5">
-                        <NotaPropuesta
-                          nota={fila.definitivaPropuestaHomologada}
-                          titulo="Con los cambios pendientes de aprobación"
-                          sinNota=""
-                        />
-                      </span>
+                    {nota !== null && (
+                      <NotaConCambio
+                        nota={nota}
+                        anterior={propuesta !== null ? definitiva : null}
+                        titulo="Con los cambios pendientes de aprobación"
+                      />
                     )}
                   </td>
                 )}
@@ -255,10 +205,11 @@ export function PlanillaGrid({
                     return (
                       <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-1.5 align-middle">
                         <span
-                          className="text-muted-foreground"
+                          className="text-muted-foreground inline-flex"
                           title="Este estudiante no está asignado a esta actividad."
+                          aria-label="No asignado"
                         >
-                          No asignado
+                          <LockIcon />
                         </span>
                       </td>
                     )
@@ -290,8 +241,6 @@ export function PlanillaGrid({
                     )
                   }
 
-                  // Con nota, `NO_CALIFICABLE` sí es un bloqueo real (la causa
-                  // habitual es que falte la asistencia de ese día).
                   if (celda?.estado === "NO_CALIFICABLE") {
                     return (
                       <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
@@ -321,7 +270,6 @@ export function PlanillaGrid({
                       </td>
                     )
                   }
-                  // Sin nota y No presentó / No asistió: no se ofrece agregar.
                   const bloqueo = nota === null ? BLOQUEO_RESULTADO[celda?.estadoResultado ?? ""] : undefined
                   if (bloqueo) {
                     return (
@@ -335,37 +283,30 @@ export function PlanillaGrid({
                   const claveCelda =`${columna.pkTactividad}:${celda?.pkTactividadEstudiante}`
                   const actualizandoNota = fetchingPlanilla > 0 && refrescando.has(claveCelda)
                   const cambio = celda ? cambios?.get(celda.pkTactividadEstudiante) : undefined
+                  const propuesta = cambio
+                    ? cambio.notaPropuesta
+                    : celda?.solicitudPendiente
+                      ? celda.notaPropuestaHomologada
+                      : null
+                  const tituloCambio = cambio ? "Cambio sin enviar" : "Pendiente de aprobación"
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-1.5 align-middle">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-start gap-1.5">
                         {actualizandoNota ? (
                           <Spinner className="size-4" />
+                        ) : propuesta != null ? (
+                          <div className="w-12">
+                            <NotaConCambio nota={propuesta} anterior={nota} titulo={tituloCambio} />
+                          </div>
                         ) : nota !== null ? (
-                          <span
-                            className={cn(
-                              "font-medium",
-                              nota >= NOTA_MINIMA_APROBATORIA ? "text-green" : "text-red",
-                            )}
-                          >
-                            {nota.toFixed(2)}
-                          </span>
+                          <span className="w-12 font-medium">{nota.toFixed(2)}</span>
                         ) : (
                           <span className="text-muted-foreground">Agregar</span>
                         )}
-                        {cambio ? (
-                          <NotaPropuesta
-                            nota={cambio.notaPropuesta}
-                            titulo="Cambio sin enviar"
-                            sinNota="Editado"
-                          />
-                        ) : (
-                          celda?.solicitudPendiente && (
-                            <NotaPropuesta
-                              nota={celda.notaPropuestaHomologada ?? null}
-                              titulo="Pendiente de aprobación"
-                              sinNota="Pendiente"
-                            />
-                          )
+                        {!actualizandoNota && propuesta == null && (cambio || celda?.solicitudPendiente) && (
+                          <span className="text-orange text-xs font-semibold" title={tituloCambio}>
+                            {cambio ? "Editado" : "Pendiente"}
+                          </span>
                         )}
                         {celda && (
                           <CeldaNotaPopover
@@ -396,12 +337,18 @@ export function PlanillaGrid({
   )
 }
 
-/** "→ 3.50" en naranja; sin nota conocida, solo el rótulo. */
-function NotaPropuesta({ nota, titulo, sinNota }: { nota: number | null; titulo: string; sinNota: string }) {
+/** Nota nueva con flecha (sube/baja) y la anterior debajo, atenuada. */
+function NotaConCambio({ nota, anterior, titulo }: { nota: number; anterior: number | null; titulo?: string }) {
+  const cambio = anterior !== null && anterior !== nota
   return (
-    <span className="text-orange text-xs font-semibold" title={titulo}>
-      {nota != null ? `→ ${nota.toFixed(2)}` : sinNota}
-    </span>
+    <div className="flex flex-col leading-tight" title={cambio ? titulo : undefined}>
+      <span className="inline-flex items-center gap-0.5 font-medium">
+        {nota.toFixed(2)}
+        {cambio &&
+          (nota > anterior ? <CaretUpIcon className="text-green" /> : <CaretDownIcon className="text-red" />)}
+      </span>
+      {cambio && <span className="text-muted-foreground text-xs">{anterior.toFixed(2)}</span>}
+    </div>
   )
 }
 
@@ -412,8 +359,6 @@ const BLOQUEO_RESULTADO: Record<string, { texto: string; titulo: string }> = {
   NO_ASISTIO_NO_JUSTIFICADA: { texto: "No asistió (NJ)", titulo: "No asistió, sin excusa." },
 }
 
-/** Ancho fijo por columna de actividad — así ninguna actividad hace más
- *  ancha su columna que las demás. */
 const ANCHO_COLUMNA_ACTIVIDAD = "w-40"
 
 function ColumnaHeader({
@@ -423,16 +368,11 @@ function ColumnaHeader({
   columna: PlanillaColumna
   onAbrirBulk: (columna: PlanillaColumna) => void
 }) {
-  // Formativa: sin acción en bloque (la observación es individual).
   const formativa = esFormativa(columna)
   const accion = `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
-        {/* `line-clamp-2` en vez de `truncate` (una sola línea): el título
-            de la actividad puede ser largo y una sola línea recortaba
-            demasiado texto útil. */}
-        {/* Tooltip con el nombre completo: el título se recorta a 2 líneas. */}
         <Tooltip>
           <TooltipTrigger
             render={<span className="line-clamp-2 min-w-0 flex-1 cursor-default normal-case" />}

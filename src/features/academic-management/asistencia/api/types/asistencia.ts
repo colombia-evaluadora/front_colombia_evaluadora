@@ -209,8 +209,8 @@ export interface AsistenciaQueryRow {
   /** NOMBRE de TGRADO ("Segundo"); `grado_valor` es el CODIGO ("2"), que es lo que se pinta. */
   grado: string
   grado_valor: string
-  // Mismo gap que en `SesionCalendario.jornada` -- ver esa nota.
-  jornada: string
+  /** NOMBRE de la jornada del grupo ("Mañana"); null si el grupo no tiene jornada. */
+  jornada: string | null
   asignatura: string
   fecha: string
   bloque: number | null

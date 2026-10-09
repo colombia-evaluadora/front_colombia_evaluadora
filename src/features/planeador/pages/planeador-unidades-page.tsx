@@ -40,11 +40,10 @@ import {
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
-  PlaneadorDocenteSelector,
   PlaneadorLecturaBanner,
   PlaneadorSeleccionVacia,
-  type PlaneadorDocenteSeleccion,
 } from "@/features/planeador/components/planeador-docente-selector"
+import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -70,29 +69,16 @@ function PlaneadorUnidadesPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
   const { puedeCrear } = usePlaneadorSoloLectura()
-  // Selector de establecimiento/docente (Super Admin/Coordinador), ver
-  // `planeador-page.tsx`: los hooks de consulta leen el docente de la URL.
+  // Sede/Año/Jornada/Docente del filtro avanzado, ver `planeador-page.tsx`:
+  // los hooks de consulta leen el alcance de la URL.
   const scope = usePlaneadorDocenteScope()
   const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
 
-  // Cambiar de docente invalida la pestaña de instrumento (cada docente
-  // tiene las suyas) y la unidad abierta; la búsqueda se conserva.
-  function handleDocenteChange(next: PlaneadorDocenteSeleccion) {
-    navigate({
-      to: planeadorUnidadesRoute.id,
-      search: (prev) => ({
-        ...prev,
-        establecimiento: next.establecimiento,
-        docente: next.docente,
-        instrumento: undefined,
-        unidad: undefined,
-      }),
-      replace: true,
-    })
-  }
-
   const buscar = search.buscar ?? ""
-  const { filters, applyFilters, clearAllFilters, activeFilterCount } = useUnidadesFilters()
+  // Cambiar sede/año/jornada/docente borra la pestaña y la unidad abierta.
+  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+    useUnidadesFilters()
+  usePlaneadorAlcanceInicial(applyAlcance)
 
   // Sin `?dia=`: a diferencia de la pestaña "Actividades", esta lista todas
   // las unidades del docente, no solo las que tienen alguna actividad
@@ -176,12 +162,12 @@ function PlaneadorUnidadesPageContent() {
         <PlaneadorTabs />
 
         <TableScreenToolbar>
-          <PlaneadorDocenteSelector onChange={handleDocenteChange} />
 
           <SearchPlaneador
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
+            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
             rotuloLabel={rotuloLabel}
             rotuloUnidad={rotuloUnidad}

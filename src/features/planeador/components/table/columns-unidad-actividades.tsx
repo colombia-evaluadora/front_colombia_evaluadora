@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { planeadorRoute } from "@/router"
+import type { PlaneadorAlcanceSearch } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 import { useUpdatePonderacionActividadUnidad } from "@/features/planeador/api/mutations/update-ponderacion-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
@@ -349,10 +350,10 @@ export function createUnidadActividadesColumns(
   /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para el
    *  copy de "Desvincular". */
   rotuloUnidad: string = UNIDAD_TAB_FALLBACK,
-  /** Establecimiento/docente que se está mirando (Super Admin/Coordinador):
-   *  "Ver" lo arrastra al listado de Actividades para seguir sobre el mismo
-   *  docente —y en solo lectura— en vez de caer al planeador propio. */
-  docenteSearch: { establecimiento?: number; docente?: number } = {},
+  /** Sede/año/jornada/docente que se está mirando (filtro avanzado): "Ver"
+   *  lo arrastra al listado de Actividades para seguir sobre el mismo
+   *  alcance —y en solo lectura— en vez de caer al planeador propio. */
+  docenteSearch: PlaneadorAlcanceSearch = {},
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
     ? []

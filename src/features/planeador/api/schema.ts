@@ -21,15 +21,20 @@ export const planeadorUnidadEditarSearchSchema = z.object({
 })
 
 /**
- * Selector de establecimiento/docente de Actividades y Unidades (Super Admin
- * elige los dos; Coordinador solo el docente, ver
- * `usePlaneadorDocenteScope`). Números y no strings: el router parsea
- * `?docente=12` como número, y un `z.string()` lo descartaría. Un valor
- * basura cae a `undefined` (no selecciona nada).
+ * Filtro avanzado Sede → Año → Jornada → Docente de Actividades y Unidades
+ * (Super Admin, Rector y Coordinador, ver `usePlaneadorDocenteScope`).
+ * Números y no strings: el router parsea `?docente=12` como número, y un
+ * `z.string()` lo descartaría. Un valor basura cae a `undefined` (no
+ * selecciona nada).
  */
 const planeadorDocenteSearchShape = {
-  /** `PK_TESTABLECIMIENTO` (solo Super Admin). */
-  establecimiento: z.coerce.number().int().positive().optional().catch(undefined),
+  /** `PK_TSEDE` (`GET /planeador/filtros/sedes`). */
+  sede: z.coerce.number().int().positive().optional().catch(undefined),
+  /** Año lectivo (número, p. ej. 2026). */
+  ano: z.coerce.number().int().positive().optional().catch(undefined),
+  /** `FK_TLV_JORNADA` del periodo académico (`0` = periodo sin jornada). Con
+   *  sede y año identifica el periodo académico que viaja como `?periodo=`. */
+  jornada: z.coerce.number().int().nonnegative().optional().catch(undefined),
   /** `PK_TFUNCIONARIO` del docente cuyo planeador se mira (solo lectura). */
   docente: z.coerce.number().int().positive().optional().catch(undefined),
 }

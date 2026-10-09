@@ -10,16 +10,12 @@ import { z } from "zod"
  * rechazaba el backend en la otra. Cuando eso ocurre, el usuario recibe el
  * mensaje técnico de Java en vez de uno que le diga qué corregir.
  *
+ * Los nombres no se validan: hay personas con dígitos o caracteres
+ * especiales en el nombre.
+ *
  * Cada regla se aplica **solo si el campo tiene algo**: la obligatoriedad se
  * decide aparte, porque depende de si la persona es nueva o ya existe.
  */
-
-/**
- * Nombres y apellidos: letras (con tildes y ñ), espacios, apóstrofo y guion.
- * El guion cubre los apellidos compuestos y el apóstrofo los de origen
- * extranjero; lo que queda fuera son dígitos y signos de puntuación.
- */
-export const NOMBRE_PERSONA = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$/
 
 /** Documento: entre 3 y 15 dígitos, sin separadores. */
 export const DOCUMENTO = /^\d{3,15}$/
@@ -36,7 +32,6 @@ export const TELEFONO = /^\d{1,10}$/
 export const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const MENSAJES = {
-  nombre: "No uses números ni caracteres especiales.",
   documento: "El documento debe tener entre 3 y 15 dígitos.",
   telefono: "El teléfono no debe superar los 10 dígitos.",
   correo: "Ingresa un correo electrónico válido.",
@@ -74,10 +69,6 @@ export function validarFormatoPersona(
     }
   }
 
-  revisar("firstName", persona.firstName, NOMBRE_PERSONA, MENSAJES.nombre)
-  revisar("middleName", persona.middleName, NOMBRE_PERSONA, MENSAJES.nombre)
-  revisar("lastName", persona.lastName, NOMBRE_PERSONA, MENSAJES.nombre)
-  revisar("secondLastName", persona.secondLastName, NOMBRE_PERSONA, MENSAJES.nombre)
   revisar("identification", persona.identification, DOCUMENTO, MENSAJES.documento)
   revisar("phone", persona.phone, TELEFONO, MENSAJES.telefono)
   revisar("email", persona.email, CORREO, MENSAJES.correo)
