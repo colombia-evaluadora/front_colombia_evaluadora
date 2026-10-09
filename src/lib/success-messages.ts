@@ -149,23 +149,26 @@ export const SUCCESS_MESSAGES = {
  * Aviso tras dar de alta un funcionario (o rector/secretaria) por
  * `POST /auth/register/cval/funcionario`. El alta ya no pide contraseña: el
  * backend crea la cuenta pendiente de activación y manda el correo "Activa tu
- * cuenta" (7 días). `invitacionEnviada === false` = la cuenta quedó creada
- * pero el correo no salió → aviso `warning` para que reenvíen desde la tabla.
- * `undefined` se trata como enviada (backend que todavía no manda el campo).
+ * cuenta" (7 días). Contrato de la respuesta (sso PR #634):
+ * - `mensajeInvitacion != null`: la cuenta quedó creada pero algo de la
+ *   invitación falló; el backend explica qué → aviso `warning`.
+ * - `invitacionEnviada`: se envió el correo de activación.
+ * - ninguno de los dos: se reusó una cuenta activa existente, no hay
+ *   invitación que anunciar.
  */
-export function employeeInvitationNotice(
-  invitacionEnviada: boolean | undefined,
-  correo: string,
-): { message: string; variant: "success" | "warning" } {
-  if (invitacionEnviada !== false) {
+export function employeeInvitationNotice(result: {
+  invitacionEnviada?: boolean | null
+  mensajeInvitacion?: string | null
+  email?: string | null
+}): { message: string; variant: "success" | "warning" } {
+  if (result.mensajeInvitacion != null) {
+    return { message: `Funcionario creado. ${result.mensajeInvitacion}`, variant: "warning" }
+  }
+  if (result.invitacionEnviada) {
     return {
-      message: `Funcionario creado. Se envió el correo de activación a ${correo}.`,
+      message: `Funcionario creado. Se envió el correo de activación a ${result.email ?? ""}.`,
       variant: "success",
     }
   }
-  return {
-    message:
-      "Funcionario creado, pero no fue posible enviar el correo de activación. Usa «Reenviar activación» en la tabla.",
-    variant: "warning",
-  }
+  return { message: "Funcionario creado.", variant: "success" }
 }

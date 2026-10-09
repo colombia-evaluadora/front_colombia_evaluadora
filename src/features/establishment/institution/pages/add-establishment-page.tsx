@@ -413,16 +413,14 @@ export function AddEstablishmentPage() {
         const registered = await registerFuncionario(person, foto)
         const persistedPerson = { ...person, id: registered.pkFuncionario }
 
-        // Alta sin contraseña: el backend manda el correo de activación
-        // (salvo que la cuenta ya existiera, `accountExists`, que se reusa).
-        if (!person.accountExists) {
-          const invitation = employeeInvitationNotice(
-            registered.invitacionEnviada,
-            toEmailInput(person.email),
-          )
-          activationNoticesRef.current.push(`${label}: ${invitation.message}`)
-          if (invitation.variant === "warning") invitationWarningRef.current = true
-        }
+        // Alta sin contraseña: el backend manda el correo de activación (o
+        // reusa una cuenta activa existente) — ver `employeeInvitationNotice`.
+        const invitation = employeeInvitationNotice({
+          ...registered,
+          email: registered.email || toEmailInput(person.email),
+        })
+        activationNoticesRef.current.push(`${label}: ${invitation.message}`)
+        if (invitation.variant === "warning") invitationWarningRef.current = true
 
         // Ver "matchSnapshot" en el comentario de arriba: `fn_fun_crear`
         // reusó el TUSUARIO tal cual estaba, así que cualquier corrección

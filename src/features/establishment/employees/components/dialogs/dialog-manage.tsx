@@ -885,16 +885,14 @@ function ManageEmployeeDialogContent({
           setPhoto(null)
           setPhotoRemoved(false)
           // Sin contraseña en el alta: el backend manda el correo de
-          // activación. Si la persona ya tenía cuenta (`accountExists`), se
-          // reusó tal cual y no hay invitación que anunciar.
-          if (draft.accountExists) {
-            invitationNoticeRef.current = null
-            notify(SUCCESS_MESSAGES.employee.created)
-          } else {
-            const invitation = employeeInvitationNotice(registered.invitacionEnviada, persistedPerson.email)
-            invitationNoticeRef.current = invitation
-            notify(invitation.message, { variant: invitation.variant })
-          }
+          // activación (o reusa una cuenta activa, y entonces no hay
+          // invitación que anunciar) — ver `employeeInvitationNotice`.
+          const invitation = employeeInvitationNotice({
+            ...registered,
+            email: registered.email || persistedPerson.email,
+          })
+          invitationNoticeRef.current = invitation
+          notify(invitation.message, { variant: invitation.variant })
         } catch (error) {
           // getErrorMessage y no error.message: un AxiosError ES un Error, y su
           // .message es el generico de axios ("Request failed with status code

@@ -32,14 +32,16 @@ export interface RegisterFuncionarioResult {
   pkTusuario: number
   pkFuncionario: number
   email: string
-  /**
+/**
    * El alta ya no lleva `password`: el backend crea la cuenta pendiente de
    * activación y manda al correo el enlace "Activa tu cuenta" (7 días).
-   * `false` = la cuenta se creó pero el correo no salió (el usuario puede
-   * usar "Reenviar activación" en la tabla). Se trata `undefined` como
-   * enviada (backend sin el campo todavía, o cuenta ya existente reusada).
+   * `invitacionEnviada`: se envió ese correo. `mensajeInvitacion`: no nulo
+   * si la cuenta se creó pero la invitación falló (texto para el usuario).
+   * Ambos vacíos = se reusó una cuenta activa existente. Ver
+   * `employeeInvitationNotice` en `lib/success-messages.ts`.
    */
   invitacionEnviada?: boolean
+  mensajeInvitacion?: string | null
 }
 
 function toRegisterFuncionarioRequest(person: Person) {
