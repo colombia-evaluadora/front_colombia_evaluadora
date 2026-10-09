@@ -38,7 +38,69 @@ function nivelParaGrado(grado: string): { id: number; nombre: string } {
   return { id: 4, nombre: "Media" }
 }
 
+/**
+ * Filtro avanzado Sede → Año → Jornada → Docente del Planeador (sso V553 /
+ * V553.1): `GET /planeador/filtros/sedes`, `/planeador/filtros/periodos?sede=`
+ * y `GET /planeador/docentes?sede=&periodo=`. Datos fijos y chicos: alcanza
+ * para recorrer la cascada con el mock (dos sedes, dos años, dos jornadas).
+ */
+const anioActual = new Date().getFullYear()
+const hoyIso = new Date().toISOString().slice(0, 10)
+const FILTRO_SEDES = [
+  { fk_tsede: 101, sede_nombre: "Sede Principal", fk_testablecimiento: 1, establecimiento_nombre: "IE Demo" },
+  { fk_tsede: 102, sede_nombre: "Sede Rural El Carmen", fk_testablecimiento: 1, establecimiento_nombre: "IE Demo" },
+]
+const FILTRO_JORNADAS = [
+  { fk_tlv_jornada: 11, jornada_nombre: "Mañana" },
+  { fk_tlv_jornada: 12, jornada_nombre: "Tarde" },
+]
+const FILTRO_DOCENTES = [
+  { pk_tfuncionario: 501, nombre_completo: "Ana María Gómez", identificacion: "1012345678", sedes: [101] },
+  { pk_tfuncionario: 502, nombre_completo: "Carlos Pérez Ruiz", identificacion: "79876543", sedes: [101, 102] },
+  { pk_tfuncionario: 503, nombre_completo: "Lucía Torres", identificacion: "52111222", sedes: [102] },
+]
+
+function filtroPeriodos(sede: number) {
+  return [anioActual, anioActual - 1].flatMap((anio, i) =>
+    FILTRO_JORNADAS.map((j, k) => {
+      const fechaInicio = `${anio}-01-20`
+      const fechaFin = `${anio}-11-30`
+      return {
+        fk_tperiodo_academico: sede * 100 + i * 10 + k,
+        periodo_nombre: String(anio),
+        anio,
+        fk_tlv_jornada: j.fk_tlv_jornada,
+        jornada_nombre: j.jornada_nombre,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        en_curso: fechaInicio <= hoyIso && hoyIso <= fechaFin,
+        abierto: fechaFin >= hoyIso,
+      }
+    }),
+  )
+}
+
 export const planeadorDocentesHandlers = [
+  http.get("/api/eval-col/planeador/filtros/sedes", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: FILTRO_SEDES })
+  }),
+
+  http.get("/api/eval-col/planeador/filtros/periodos", async ({ request }) => {
+    await delay(150)
+    const sede = Number(new URL(request.url).searchParams.get("sede"))
+    return HttpResponse.json({ rows: FILTRO_SEDES.some((s) => s.fk_tsede === sede) ? filtroPeriodos(sede) : [] })
+  }),
+
+  http.get("/api/eval-col/planeador/docentes", async ({ request }) => {
+    await delay(150)
+    const sede = Number(new URL(request.url).searchParams.get("sede")) || undefined
+    const rows = FILTRO_DOCENTES.filter((d) => sede == null || d.sedes.includes(sede)).map(
+      ({ sedes: _sedes, ...row }) => row,
+    )
+    return HttpResponse.json({ rows })
+  }),
+
   http.get("/api/eval-col/planeador/docentes/grupos", async () => {
     await delay(200)
     const vistos = new Set<string>()

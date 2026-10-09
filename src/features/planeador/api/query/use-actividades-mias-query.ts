@@ -6,7 +6,12 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { paresToQueryParam, type ActividadTabPair } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  conAlcance,
+  setAlcanceQuery,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceParams,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -150,7 +155,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
   }
 }
 
-export interface UseActividadesMiasParams {
+export interface UseActividadesMiasParams extends PlaneadorAlcanceParams {
   search?: string
   asignatura?: number
   grupo?: number
@@ -197,7 +202,7 @@ async function fetchActividadesMias(
   if (params.estados) query.set("estados", params.estados)
   if (params.diasGracia != null) query.set("dias_gracia", String(params.diasGracia))
   if (params.dia) query.set("dia", params.dia)
-  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
+  setAlcanceQuery(query, params)
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -239,16 +244,18 @@ const TAMANO_TANTEO = 200
  * {@link TAMANO_TANTEO} y solo si el docente tiene más se repite el pedido
  * con el total exacto — en la práctica, un solo viaje.
  */
-export async function fetchTodasLasActividadesMias(funcionario?: number): Promise<Actividad[]> {
-  const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0, funcionario })
+export async function fetchTodasLasActividadesMias(
+  alcance: PlaneadorAlcanceParams = {},
+): Promise<Actividad[]> {
+  const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0, ...alcance })
   if (primera.totalCount <= primera.rows.length) return primera.rows
-  const completa = await fetchActividadesMias({ size: primera.totalCount, offset: 0, funcionario })
+  const completa = await fetchActividadesMias({ size: primera.totalCount, offset: 0, ...alcance })
   return completa.rows
 }
 
 export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
   const scope = usePlaneadorDocenteScope()
-  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
+  const conDocente = conAlcance(params, scope)
   return useQuery({
     queryKey: planeadorKeys.actividades.mias(conDocente),
     queryFn: () => fetchActividadesMias(conDocente),

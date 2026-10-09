@@ -517,7 +517,7 @@ export function Actividades({
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
   const { puedeEditar, puedeEliminar } = usePlaneadorSoloLectura()
-  const { establecimientoId, funcionario } = usePlaneadorDocenteScope()
+  const { sedeId, anio, jornadaId, funcionario } = usePlaneadorDocenteScope()
   // El instrumento FIJADO en la unidad (`unidad.instrumento`, sso V488)
   // manda — es un dato explícito del docente, no una inferencia. Solo si la
   // unidad no lo fijó (todas las anteriores a V488, o el docente lo dejó sin
@@ -540,7 +540,7 @@ export function Actividades({
         puedeEliminar,
         unidad.rotuloEjecucion,
         rotuloUnidad,
-        { establecimiento: establecimientoId, docente: funcionario },
+        { sede: sedeId, ano: anio, jornada: jornadaId, docente: funcionario },
       ),
     [
       unidad.id,
@@ -551,7 +551,9 @@ export function Actividades({
       puedeEliminar,
       unidad.rotuloEjecucion,
       rotuloUnidad,
-      establecimientoId,
+      sedeId,
+      anio,
+      jornadaId,
       funcionario,
     ],
   )

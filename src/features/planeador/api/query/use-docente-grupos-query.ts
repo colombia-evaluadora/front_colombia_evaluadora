@@ -46,10 +46,15 @@ function toDocenteGrupo(row: DocenteGrupoRow): DocenteGrupo {
   }
 }
 
-async function fetchDocenteGrupos(periodoId?: number, funcionario?: number): Promise<DocenteGrupo[]> {
+async function fetchDocenteGrupos(
+  periodoId?: number,
+  funcionario?: number,
+  sede?: number,
+): Promise<DocenteGrupo[]> {
   const query = new URLSearchParams()
   if (periodoId != null) query.set("periodo", String(periodoId))
   if (funcionario != null) query.set("funcionario", String(funcionario))
+  if (sede != null) query.set("sede", String(sede))
   const qs = query.toString()
   const rows = await evalCol.getRows<DocenteGrupoRow>(`/planeador/docentes/grupos${qs ? `?${qs}` : ""}`)
   return rows.map(toDocenteGrupo)
@@ -58,10 +63,13 @@ async function fetchDocenteGrupos(periodoId?: number, funcionario?: number): Pro
 /** `funcionario` sale de `usePlaneadorDocenteScope` (`?docente=` de
  *  Actividades/Unidades); fuera de esas vistas es siempre el del token. */
 export function useDocenteGruposQuery(periodoId?: number) {
-  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
+  const { funcionario, sedeId, periodoId: periodoDelFiltro, consultasHabilitadas } =
+    usePlaneadorDocenteScope()
+  // Sin periodo explícito, el del filtro avanzado (sede + año + jornada).
+  const periodo = periodoId ?? periodoDelFiltro
   return useQuery({
-    queryKey: planeadorKeys.docenteGrupos(periodoId, funcionario),
-    queryFn: () => fetchDocenteGrupos(periodoId, funcionario),
+    queryKey: planeadorKeys.docenteGrupos(periodo, funcionario, sedeId),
+    queryFn: () => fetchDocenteGrupos(periodo, funcionario, sedeId),
     enabled: consultasHabilitadas,
     staleTime: 1000 * 60,
   })

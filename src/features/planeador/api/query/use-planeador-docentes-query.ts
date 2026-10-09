@@ -4,11 +4,12 @@ import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
- * `GET /planeador/docentes?establecimiento=<pk>` — docentes cuyo planeador
- * puede mirar el usuario (selector de Actividades/Unidades):
- * - Super Admin: los del establecimiento elegido (obligatorio).
- * - Coordinador: sin `establecimiento`; el backend acota a las sedes del
- *   coordinador (resueltas del token).
+ * `GET /planeador/docentes?sede=<pk>&periodo=<pk>` — docentes cuyo planeador
+ * puede mirar el usuario (campo "Docente" del filtro avanzado de
+ * Actividades/Unidades), los que dictan en esa sede / ese periodo académico:
+ * - Super Admin: con la sede elegida (sin ella el backend devuelve 0 filas).
+ * - Rector/Coordinador: sede y periodo opcionales; el backend acota siempre
+ *   a su alcance (resuelto del token).
  */
 interface PlaneadorDocenteRow {
   pk_tfuncionario: number
@@ -29,22 +30,27 @@ const toPlaneadorDocente = (row: PlaneadorDocenteRow): PlaneadorDocente => ({
   identificacion: row.identificacion ?? "",
 })
 
-async function fetchPlaneadorDocentes(establecimientoId?: number): Promise<PlaneadorDocente[]> {
-  const query = establecimientoId != null ? `?establecimiento=${establecimientoId}` : ""
-  const rows = await evalCol.getRows<PlaneadorDocenteRow>(`/planeador/docentes${query}`)
+async function fetchPlaneadorDocentes(sede?: number, periodo?: number): Promise<PlaneadorDocente[]> {
+  const query = new URLSearchParams()
+  if (sede != null) query.set("sede", String(sede))
+  if (periodo != null) query.set("periodo", String(periodo))
+  const qs = query.toString()
+  const rows = await evalCol.getRows<PlaneadorDocenteRow>(`/planeador/docentes${qs ? `?${qs}` : ""}`)
   return rows.map(toPlaneadorDocente)
 }
 
 export function usePlaneadorDocentesQuery({
-  establecimientoId,
+  sede,
+  periodo,
   enabled = true,
 }: {
-  establecimientoId?: number
+  sede?: number
+  periodo?: number
   enabled?: boolean
 }) {
   return useQuery({
-    queryKey: planeadorKeys.docentes(establecimientoId),
-    queryFn: () => fetchPlaneadorDocentes(establecimientoId),
+    queryKey: planeadorKeys.docentes(sede, periodo),
+    queryFn: () => fetchPlaneadorDocentes(sede, periodo),
     enabled,
     // La planta docente no cambia dentro de una sesión de consulta.
     staleTime: 1000 * 60 * 5,

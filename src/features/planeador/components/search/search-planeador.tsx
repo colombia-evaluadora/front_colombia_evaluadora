@@ -11,6 +11,14 @@ import type {
 import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { FilterPlaneadorForm } from "@/features/planeador/components/forms/form-filter-planeador"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
+import {
+  PlaneadorAlcanceChips,
+  type PlaneadorAlcanceSeleccion,
+} from "@/features/planeador/components/planeador-docente-selector"
+import {
+  alcanceSearchDe,
+  usePlaneadorDocenteScope,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 const FILTER_PLANEADOR_FORM_ID = "filter-planeador-form"
 
@@ -20,7 +28,9 @@ const SEARCH_INPUT_ID = "planeador-search"
 interface SearchPlaneadorProps {
   activeFilterCount: number
   filters: PlaneadorFiltersFormInput
-  applyFilters: (values: PlaneadorFiltersFormValues) => void
+  applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
+  /** Sede/año/jornada/docente (chips). */
+  applyAlcance: (alcance: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`, ver
   // `use-instrumento-evaluacion-catalog.ts`) — nombre y valor son el mismo
@@ -50,12 +60,17 @@ export function SearchPlaneador({
   activeFilterCount,
   filters,
   applyFilters,
+  applyAlcance,
   clearAllFilters,
   instrumentoOptions = [],
   rotuloLabel,
   rotuloUnidad,
 }: SearchPlaneadorProps) {
   const [open, setOpen] = useState(false)
+  // Sede/Año/Jornada/Docente solo para quien puede mirar el planeador de
+  // otros (Super Admin, Rector, Coordinador).
+  const scope = usePlaneadorDocenteScope()
+  const conAlcance = scope.enVistaConSelector && scope.puedeElegirDocente
 
   // Mismo VIEW_OPTIONS pero con la opción "actividad" pisada por el rótulo
   // real (Regla 13) — nunca "Actividad" fijo en el token `ver:(...)` de la
@@ -101,10 +116,10 @@ export function SearchPlaneador({
   // libre —esa ya se ve escrita en el input—.
   const advancedFilterCount = activeFilterCount - (filters.buscar ? 1 : 0)
 
-  function handleApplyAdvanced(values: PlaneadorFiltersFormValues) {
+  function handleApplyAdvanced(values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) {
     // El popover no toca la búsqueda libre; el resto de la consulta se
     // reescribe y el buscador la vuelca al input.
-    applyFilters({ ...values, buscar: freeText })
+    applyFilters({ ...values, buscar: freeText }, alcance)
     setOpen(false)
   }
 
@@ -136,8 +151,10 @@ export function SearchPlaneador({
           instrumentoOptions={instrumentoOptions}
           rotuloLabel={rotuloLabel}
           rotuloUnidad={rotuloUnidad}
+          alcanceInicial={conAlcance ? alcanceSearchDe(scope) : undefined}
         />
       </SearchQueryBar>
+      <PlaneadorAlcanceChips onChange={applyAlcance} />
     </div>
   )
 }

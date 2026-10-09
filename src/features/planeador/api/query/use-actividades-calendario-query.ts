@@ -9,7 +9,12 @@ import {
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  conAlcance,
+  setAlcanceQuery,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceParams,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/calendario` (V251, ver colección Postman
@@ -84,7 +89,7 @@ function toActividadCalendario(row: ActividadCalendarioRow): ActividadCalendario
   }
 }
 
-export interface UseActividadesCalendarioParams {
+export interface UseActividadesCalendarioParams extends PlaneadorAlcanceParams {
   fechaDesde: string
   fechaHasta: string
   asignatura?: number
@@ -108,7 +113,7 @@ async function fetchActividadesCalendario(
   if (params.asignatura != null) query.set("asignatura", String(params.asignatura))
   if (params.grupo != null) query.set("grupo", String(params.grupo))
   if (params.unidad != null) query.set("unidad", String(params.unidad))
-  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
+  setAlcanceQuery(query, params)
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -121,7 +126,7 @@ async function fetchActividadesCalendario(
 
 export function useActividadesCalendarioQuery(params: UseActividadesCalendarioParams) {
   const scope = usePlaneadorDocenteScope()
-  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
+  const conDocente = conAlcance(params, scope)
   return useQuery({
     queryKey: planeadorKeys.actividades.calendario(conDocente),
     queryFn: () => fetchActividadesCalendario(conDocente),

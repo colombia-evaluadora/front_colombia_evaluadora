@@ -22,6 +22,14 @@
 
 const all = ["planeador"] as const
 
+/** Docente + sede + periodo académico del filtro avanzado: lo que acota las
+ *  pestañas (`actividades.tabs` / `unidades.tabs`). */
+export interface PlaneadorAlcanceKey {
+  funcionario?: number
+  sede?: number
+  periodo?: number
+}
+
 // ---- Actividades (listados) ------------------------------------------------
 const actividadesAll = [...all, "actividades"] as const
 
@@ -68,9 +76,9 @@ export const planeadorKeys = {
      *  a propósito (guardar una actividad no lo cambia). Con `funcionario`
      *  (Super Admin/Coordinador mirando a otro docente) cuelga del mismo
      *  prefijo, así `tabs()` sigue invalidando todas las variantes. */
-    tabs: (funcionario?: number) =>
-      funcionario != null
-        ? ([...all, "actividades-tabs", { funcionario }] as const)
+    tabs: (alcance?: PlaneadorAlcanceKey) =>
+      alcance && Object.values(alcance).some((v) => v != null)
+        ? ([...all, "actividades-tabs", alcance] as const)
         : ([...all, "actividades-tabs"] as const),
   },
 
@@ -108,9 +116,9 @@ export const planeadorKeys = {
     all: unidadesAll,
     lista: <P>(params: P) => [...unidadesAll, params] as const,
     /** Mismo criterio que `actividades.tabs`. */
-    tabs: (funcionario?: number) =>
-      funcionario != null
-        ? ([...all, "unidades-tabs", { funcionario }] as const)
+    tabs: (alcance?: PlaneadorAlcanceKey) =>
+      alcance && Object.values(alcance).some((v) => v != null)
+        ? ([...all, "unidades-tabs", alcance] as const)
         : ([...all, "unidades-tabs"] as const),
   },
 
@@ -140,14 +148,20 @@ export const planeadorKeys = {
   },
 
   matriculasGrupo: (grupoId: number | "none") => [...all, "matriculas-grupo", grupoId] as const,
-  docenteGradoAsignatura: (periodoId?: number, funcionario?: number) =>
-    [...all, "docente-grado-asignatura", periodoId ?? null, funcionario ?? null] as const,
-  docenteGrupos: (periodoId?: number, funcionario?: number) =>
-    [...all, "docente-grupos", periodoId ?? null, funcionario ?? null] as const,
-  /** Docentes del selector del Planeador (`GET /planeador/docentes`).
-   *  `null` = sin establecimiento (Coordinador: el backend acota a sus
-   *  sedes). */
-  docentes: (establecimientoId?: number) => [...all, "docentes", establecimientoId ?? null] as const,
+  docenteGradoAsignatura: (periodoId?: number, funcionario?: number, sede?: number) =>
+    [...all, "docente-grado-asignatura", periodoId ?? null, funcionario ?? null, sede ?? null] as const,
+  docenteGrupos: (periodoId?: number, funcionario?: number, sede?: number) =>
+    [...all, "docente-grupos", periodoId ?? null, funcionario ?? null, sede ?? null] as const,
+  /** Docentes del filtro avanzado (`GET /planeador/docentes?sede=&periodo=`).
+   *  `null` = sin acotar (Rector/Coordinador: el backend acota a su alcance). */
+  docentes: (sede?: number, periodo?: number) =>
+    [...all, "docentes", sede ?? null, periodo ?? null] as const,
+  /** Cascada Sede → Año → Jornada del filtro avanzado
+   *  (`GET /planeador/filtros/sedes` y `/planeador/filtros/periodos?sede=`). */
+  filtros: {
+    sedes: () => [...all, "filtros", "sedes"] as const,
+    periodos: (sede: number | "none") => [...all, "filtros", "periodos", sede] as const,
+  },
   gradoGrupos: (gradoId: number | undefined) => [...all, "grado-grupos", gradoId ?? "none"] as const,
   periodosEvaluacion: () => [...all, "periodos-evaluacion"] as const,
   referenteCurricular: (gradoId: number | "none", asignaturaId?: number) =>
