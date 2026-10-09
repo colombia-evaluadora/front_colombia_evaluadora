@@ -112,8 +112,13 @@ export function PlaneadorPlanillaPage() {
     setFiltro(next)
   }
 
-  function agregarCambio(cambio: CambioPendiente) {
-    setCambios((prev) => new Map(prev).set(cambio.input.pkTactividadEstudiante, cambio))
+  function agregarCambio(pk: number, cambio: CambioPendiente | null) {
+    setCambios((prev) => {
+      const next = new Map(prev)
+      if (cambio) next.set(pk, cambio)
+      else next.delete(pk)
+      return next
+    })
   }
 
   async function enviarSolicitud() {
