@@ -246,5 +246,12 @@ export const paths = {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
     },
+    // A donde manda el guard de `/app` cuando la ruta pedida no es de ningún
+    // ítem del menú del usuario (ver `features/navigation/lib/route-access.ts`).
+    // El guard agrega `?desde=<ruta pedida>`: queda en la URL para soporte.
+    sinAcceso: {
+      path: "sin-acceso",
+      getHref: () => "/app/sin-acceso",
+    },
   },
 } as const

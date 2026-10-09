@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { useRouter } from "@tanstack/react-router"
 import type { ErrorComponentProps } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -34,7 +35,8 @@ function shouldAutoReload(): boolean {
   return Date.now() - last > RELOAD_COOLDOWN_MS
 }
 
-export function ErrorPage({ error, reset }: ErrorComponentProps) {
+export function ErrorPage({ error }: ErrorComponentProps) {
+  const router = useRouter()
   const chunkError = isChunkLoadError(error)
   const willAutoReload = chunkError && shouldAutoReload()
 
@@ -66,7 +68,15 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
       <p className="text-muted-foreground">
         Ocurrió un error inesperado. Intenta de nuevo.
       </p>
-      <Button size="sm" onClick={reset} className="mt-2">
+      {/*
+        No alcanza con el `reset` del boundary: si el error salió de un
+        `beforeLoad`/`loader` (p. ej. el menú del guard de `/app` no cargó), el
+        match sigue en estado de error y vuelve a tirar lo mismo.
+        `router.invalidate()` re-ejecuta la navegación —y con ella el
+        `beforeLoad`— y al terminar resetea el boundary (su `resetKey` es el
+        `loadedAt` del router), así que cubre también los errores de render.
+      */}
+      <Button size="sm" onClick={() => void router.invalidate()} className="mt-2">
         Reintentar
       </Button>
     </div>

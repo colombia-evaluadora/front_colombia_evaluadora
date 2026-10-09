@@ -196,7 +196,10 @@ export const navigationMenu: MockMenu[] = [
     menuOrder: 0,
     type: "ITEM",
     idParent: 23,
-    roleIds: [1, 2],
+    // El docente (3) planea: en el backend real V207 le asigna PLANEADOR al
+    // rol DOCENTE. Sin él acá, el guard de `/app` le bloqueaba el Planeador a
+    // los usuarios mock no-admin, que antes entraban por URL.
+    roleIds: [1, 2, 3],
   },
   {
     id: 39,

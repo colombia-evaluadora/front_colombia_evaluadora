@@ -10,14 +10,17 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { buildBreadcrumbJsonLd, resolveBreadcrumbTrail } from "@/config/breadcrumbs"
+import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
+import { canAccessPath, getMenuUrls } from "@/features/navigation/lib/route-access"
 
 /**
  * Migas de pan del layout. El rastro lo declara cada ruta en
  * `staticData.breadcrumb` (ver `@/config/breadcrumbs`).
  *
  * SEO: el marcado ya es semántico (`nav[aria-label] > ol > li`) y además se
- * emite un `BreadcrumbList` de schema.org en JSON-LD. Todos los ancestros son
- * `<a href>` reales — navegables y rastreables; la hoja va como
+ * emite un `BreadcrumbList` de schema.org en JSON-LD. Los ancestros son
+ * `<a href>` reales — navegables y rastreables— salvo los que apuntan a un
+ * módulo fuera del menú del usuario (ver abajo); la hoja va como
  * `aria-current="page"` sin enlace, que es lo que espera Google (enlazar la
  * página actual no aporta y molesta a lectores de pantalla).
  *
@@ -29,6 +32,15 @@ export function AppBreadcrumb() {
     select: (state) => resolveBreadcrumbTrail(state.matches),
   })
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  // Las migas de grupo apuntan a una pantalla fija ("Cobertura" → Reserva de
+  // cupo, "Gestión académica" → Planeador…) que puede no estar en el menú de
+  // este usuario: enlazarla lo mandaría a "sin acceso". Ahí la miga queda
+  // como texto. Mientras el menú no cargó se enlaza igual (el guard de `/app`
+  // ya lo cargó antes de pintar cualquier pantalla protegida, así que en la
+  // práctica no pasa).
+  const { data: navItems } = useNavItemsQuery()
+  const menuUrls = navItems ? getMenuUrls(navItems) : null
+  const canLink = (to: string) => menuUrls === null || canAccessPath(to, menuUrls)
 
   if (trail.length === 0) return null
 
@@ -53,10 +65,11 @@ export function AppBreadcrumb() {
               <BreadcrumbItem className={isLast ? "min-w-0" : "hidden sm:inline-flex"}>
                 {isLast ? (
                   <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-                ) : crumb.to ? (
+                ) : crumb.to && canLink(crumb.to) ? (
                   <BreadcrumbLink render={<Link to={crumb.to} />}>{crumb.label}</BreadcrumbLink>
                 ) : (
-                  // Sin `to` no hay enlace posible: texto, nunca un `<a>` vacío.
+                  // Sin `to` (o sin acceso a su destino) no hay enlace
+                  // posible: texto, nunca un `<a>` vacío.
                   <span>{crumb.label}</span>
                 )}
               </BreadcrumbItem>
