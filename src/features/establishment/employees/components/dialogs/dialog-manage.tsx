@@ -52,7 +52,7 @@ import {
   type TableSort,
 } from "@/components/table-sort-header"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { employeeInvitationNotice, SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
 import { optionalImageFile } from "@/lib/image-file"
 import { cn } from "@/lib/utils"
@@ -90,14 +90,13 @@ import type {
 } from "@/features/establishment/employees/api/types/employee"
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
-import { passwordRules } from "@/features/auth/api/schema"
 import { validarFormatoPersona } from "@/features/establishment/shared/person-field-rules"
 import {
   createAdditionalInfoFromEmployee,
   EmployeeAdditionalInfoForm,
   type EmployeeAdditionalInfoValue,
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
-import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
+import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { toEmailInput } from "@/lib/text-input"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
@@ -249,7 +248,6 @@ function createEmptyPerson(): Person {
     gender: null,
     email: "",
     phone: "",
-    password: "",
   }
 }
 
@@ -272,49 +270,29 @@ function isBlankValue(value: string | null | undefined): boolean {
 
 /**
  * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
- * correo, género y contraseña — no llevan asterisco en el formulario
- * (`UserDetailsForm` lo comparte con otras pantallas donde son opcionales),
- * pero acá son obligatorios de verdad: `/register/cval/funcionario`
+ * correo y género — no llevan asterisco en el formulario (`UserDetailsForm`
+ * lo comparte con otras pantallas donde son opcionales), pero acá son
+ * obligatorios de verdad: `/register/cval/funcionario`
  * (`RegisterUsuarioRequest`, auth-center) y `fn_usu_crear` (SQL) los exigen
- * — correo/contraseña son la cuenta y el login del funcionario, y género
- * (REV: se había sacado, el negocio volvió a pedirlo) nunca dejó de ser
- * `@NotNull`/obligatorio en el backend, esto solo estaba desalineado del
- * lado del front. Fecha de nacimiento, en cambio, sigue sin validarse acá:
- * es columna nullable de verdad. Las rutas coinciden con las que
- * `UserDetailsForm` usa para ubicar el mensaje debajo de cada campo, por
- * eso van prefijadas con `employee`.
+ * — el correo es la cuenta del funcionario y a donde llega la invitación de
+ * activación, y género (REV: se había sacado, el negocio volvió a pedirlo)
+ * nunca dejó de ser `@NotNull`/obligatorio en el backend. Fecha de
+ * nacimiento, en cambio, sigue sin validarse acá: es columna nullable de
+ * verdad. Las rutas coinciden con las que `UserDetailsForm` usa para ubicar
+ * el mensaje debajo de cada campo, por eso van prefijadas con `employee`.
  *
- * `person.accountExists` (autocompletado por documento, ver
- * `use-user-by-document.ts`): ya hay una cuenta real detrás de ese
- * documento — el backend la reconoce y reutiliza sin tocarle la
- * contraseña (`FuncionarioRegistrationService`, V71), así que acá tampoco
- * se exige (el campo queda bloqueado en el form).
+ * Sin contraseña: el alta ya no la pide. El backend crea la cuenta pendiente
+ * de activación y manda el enlace "Activa tu cuenta" (7 días) al correo,
+ * donde la persona define su contraseña.
  */
 const employeePersonSchema = z
   .object({
     person: z.custom<Person>(),
-    confirmPassword: z.string(),
   })
-  .superRefine(({ person, confirmPassword }, ctx) => {
+  .superRefine(({ person }, ctx) => {
     const require = (path: string, value: string | null | undefined, message: string) => {
       if (isBlankValue(value)) {
         ctx.addIssue({ code: "custom", path: [path], message })
-      }
-    }
-
-    // Mismas reglas de fortaleza que el password de restablecer/crear
-    // cuenta en auth (`passwordRules`) y que rector/secretaria en
-    // `institution/utils/validate-form.ts` — ver ese archivo para el
-    // detalle de cada regla.
-    const requirePasswordStrength = (value: string | null | undefined) => {
-      if (isBlankValue(value)) {
-        return
-      }
-
-      for (const rule of passwordRules) {
-        if (!rule.test(value as string)) {
-          ctx.addIssue({ code: "custom", path: ["password"], message: rule.message })
-        }
       }
     }
 
@@ -334,54 +312,17 @@ const employeePersonSchema = z
     validarFormatoPersona(person, ctx)
 
     // Persona SIN `id` todavía: va a `POST /register/cval/funcionario`, que
-    // exige `@NotBlank` en email/password (mismo criterio que rector/
-    // secretaria en `makePersonSchema`, ver ese archivo). Persona CON `id`
-    // va a PUT (tolera estos campos vacíos, nunca resetea la contraseña),
-    // así que acá solo se exigen al crear.
+    // exige `@NotBlank` en email (mismo criterio que rector/secretaria en
+    // `makePersonSchema`, ver ese archivo). Persona CON `id` va a PUT
+    // (tolera estos campos vacíos), así que acá solo se exigen al crear.
     if (!person.id) {
       require("email", person.email, "Ingresa el correo electrónico.")
       require("gender", person.gender?.name, "Selecciona el género.")
-
-      if (!person.accountExists) {
-        require("password", person.password, "Ingresa la contraseña.")
-        require("confirmPassword", confirmPassword, "Repite la contraseña.")
-        requirePasswordStrength(person.password)
-
-        if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
-          ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
-        }
-      }
-      return
-    }
-
-    // `accountExists`: el autocompletado por documento confirmó que sigue
-    // siendo la misma cuenta y puso el valor decorativo con el campo
-    // bloqueado — no es una contraseña real que haya que validar.
-    if (person.accountExists) {
-      return
-    }
-
-    // Persona existente editando password: solo se valida si escribió algo
-    // (en cualquiera de los dos campos) — igual que rector/secretaria.
-    const hasPassword = !isBlankValue(person.password)
-    const hasConfirm = !isBlankValue(confirmPassword)
-
-    if (!hasPassword && !hasConfirm) {
-      return
-    }
-
-    require("password", person.password, "Ingresa la contraseña.")
-    require("confirmPassword", confirmPassword, "Repite la contraseña.")
-    requirePasswordStrength(person.password)
-
-    if (hasPassword && hasConfirm && person.password !== confirmPassword) {
-      ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
     }
   })
 
 function computePersonErrors(
   person: Person | null,
-  confirmPassword: string,
   // La foto es estado aparte (viaja como binario del multipart, no como JSON),
   // pero se valida en el mismo paso: es el último punto antes de armar el
   // envío, y sin esto un archivo fuera de regla llegaba entero al gateway.
@@ -399,7 +340,7 @@ function computePersonErrors(
     return nextErrors
   }
 
-  const parsed = employeePersonSchema.safeParse({ person, confirmPassword })
+  const parsed = employeePersonSchema.safeParse({ person })
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
       nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
@@ -426,7 +367,7 @@ function buildDraftSnapshot(
   additionalInfo: EmployeeAdditionalInfoValue,
   permissions: Permission[],
 ): string {
-  const { password: _password, accountExists: _accountExists, ...personRest } = person
+  const { accountExists: _accountExists, ...personRest } = person
   return JSON.stringify({ person: personRest, additionalInfo, permissions })
 }
 
@@ -501,8 +442,10 @@ function ManageEmployeeDialogContent({
    */
   const [permissionsSaved, setPermissionsSaved] = useState(false)
   const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
-  // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
-  const [confirmPassword, setConfirmPassword] = useState("")
+  // Aviso de invitación del alta (correo de activación enviado o no). Se
+  // muestra en el diálogo apenas se registra y se repite en la página al
+  // cerrar con el Guardar final, que es lo último que ve el usuario.
+  const invitationNoticeRef = useRef<ReturnType<typeof employeeInvitationNotice> | null>(null)
   // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
   // del multipart, tanto en el alta (/register/cval/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
@@ -601,9 +544,9 @@ function ManageEmployeeDialogContent({
   // borde rojo desaparezca apenas el campo queda completo.
   useEffect(() => {
     if (Object.keys(personErrors).length === 0) return
-    setPersonErrors(computePersonErrors(person, confirmPassword, photo))
+    setPersonErrors(computePersonErrors(person, photo))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `personErrors` es guard, no dep.
-  }, [person, confirmPassword, photo])
+  }, [person, photo])
 
   /**
    * Vuelca un `Employee` completo sobre todo el estado del diálogo — lo
@@ -613,7 +556,7 @@ function ManageEmployeeDialogContent({
    * cómo se llegó al `id`.
    */
   function applyLoadedEmployee(employee: Employee) {
-    const loadedPerson = { ...employee.person, accountExists: true, password: PASSWORD_PLACEHOLDER }
+    const loadedPerson = { ...employee.person, accountExists: true }
     const loadedAdditionalInfo = createAdditionalInfoFromEmployee(employee)
 
     originalEmailRef.current = employee.person.email
@@ -628,7 +571,6 @@ function ManageEmployeeDialogContent({
     setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
     setPermissionErrors({})
     setPersonErrors({})
-    setConfirmPassword(PASSWORD_PLACEHOLDER)
     // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
     // solo se manda si el usuario carga una nueva. Acá sí llega el
     // `photoArchivoId`, así que la vista previa local ya no hace falta.
@@ -675,9 +617,9 @@ function ManageEmployeeDialogContent({
     setPermissionDraft(createPermissionDraft())
     setPermissionErrors({})
     setPersonErrors({})
-    setConfirmPassword("")
     setPhoto(null)
     setPhotoRemoved(false)
+    invitationNoticeRef.current = null
     setCreatedEmployeeId(null)
     setPermissionsSaved(false)
     setAdditionalInfoSaved(false)
@@ -805,6 +747,14 @@ function ManageEmployeeDialogContent({
         // En modo creación este guardado final también pasa por PUT (una vez
         // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
         // acá: el funcionario se está creando por primera vez.
+        // Si en este alta se mandó (o falló) la invitación de activación, ese
+        // es el aviso que tiene que quedar a la vista al cerrar.
+        const invitation = isEditMode ? null : invitationNoticeRef.current
+        if (invitation && !activacionMsg) {
+          notifyPage(invitation.message, { variant: invitation.variant })
+          onOpenChange(false)
+          return
+        }
         const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
         notifyPage(activacionMsg ? `${base} ${activacionMsg}` : base)
         onOpenChange(false)
@@ -870,7 +820,7 @@ function ManageEmployeeDialogContent({
     // vino sucio de la base y no se tocó el input, igual se guarda limpio.
     let persistedPerson: Person = { ...draft, email: toEmailInput(draft.email ?? "") }
 
-    const nextErrors = computePersonErrors(persistedPerson, confirmPassword, photo)
+    const nextErrors = computePersonErrors(persistedPerson, photo)
 
     if (Object.keys(nextErrors).length > 0) {
       setPersonErrors(nextErrors)
@@ -934,7 +884,17 @@ function ManageEmployeeDialogContent({
           setUploadedPhoto(photo)
           setPhoto(null)
           setPhotoRemoved(false)
-          notify(SUCCESS_MESSAGES.employee.created)
+          // Sin contraseña en el alta: el backend manda el correo de
+          // activación. Si la persona ya tenía cuenta (`accountExists`), se
+          // reusó tal cual y no hay invitación que anunciar.
+          if (draft.accountExists) {
+            invitationNoticeRef.current = null
+            notify(SUCCESS_MESSAGES.employee.created)
+          } else {
+            const invitation = employeeInvitationNotice(registered.invitacionEnviada, persistedPerson.email)
+            invitationNoticeRef.current = invitation
+            notify(invitation.message, { variant: invitation.variant })
+          }
         } catch (error) {
           // getErrorMessage y no error.message: un AxiosError ES un Error, y su
           // .message es el generico de axios ("Request failed with status code
@@ -1266,8 +1226,6 @@ function ManageEmployeeDialogContent({
               errors={personErrors}
               invalidFields={Object.keys(personErrors)}
               showValidation
-              confirmPassword={confirmPassword}
-              onConfirmPasswordChange={setConfirmPassword}
               photo={photo}
               uploadedPhoto={uploadedPhoto}
               onPhotoChange={(file) => {

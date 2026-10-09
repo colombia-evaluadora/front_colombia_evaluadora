@@ -25,14 +25,11 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
  * `{ id: null }`, no `null`, para que el validador pueda seguir bajando.
  *
  * Otros campos que se sacan del body porque no están declarados en la
- * query: `id` (el PK va por la URL, `PARAM.ID`), `person.password` (nunca
- * viaja — la contraseña definitiva la pone el usuario por correo),
- * `person.id`, `person.photoArchivoId` (de solo lectura — lo llena el GET
+ * query: `id` (el PK va por la URL, `PARAM.ID`), `person.id`, `person.photoArchivoId` (de solo lectura — lo llena el GET
  * para poder pintar la foto ya guardada; la foto NUEVA a subir viaja
  * aparte, ver el parámetro `foto` de `update()`), `person.accountExists`
  * (bandera de solo-front que arma el autocompletado por documento —
- * `use-user-by-document.ts` — para bloquear el campo de contraseña; nunca
- * existió como columna, no tiene nada que hacer en el body), y
+ * `use-user-by-document.ts`; nunca existió como columna, no tiene nada que hacer en el body), y
  * `permissions` (los permisos van aparte, ver `PUT /funcionario/:ID/permisos`
  * en `update-permissions.ts`).
  *
@@ -50,7 +47,6 @@ function toRealBackendPayload(values: Employee) {
   const {
     id: _id,
     person: {
-      password: _password,
       id: _personId,
       photoArchivoId: _photoArchivoId,
       accountExists: _accountExists,

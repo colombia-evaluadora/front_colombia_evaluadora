@@ -144,3 +144,28 @@ export const SUCCESS_MESSAGES = {
     declined: "La actividad se declinó correctamente.",
   },
 } satisfies Record<string, EntityMessages>
+
+/**
+ * Aviso tras dar de alta un funcionario (o rector/secretaria) por
+ * `POST /auth/register/cval/funcionario`. El alta ya no pide contraseña: el
+ * backend crea la cuenta pendiente de activación y manda el correo "Activa tu
+ * cuenta" (7 días). `invitacionEnviada === false` = la cuenta quedó creada
+ * pero el correo no salió → aviso `warning` para que reenvíen desde la tabla.
+ * `undefined` se trata como enviada (backend que todavía no manda el campo).
+ */
+export function employeeInvitationNotice(
+  invitacionEnviada: boolean | undefined,
+  correo: string,
+): { message: string; variant: "success" | "warning" } {
+  if (invitacionEnviada !== false) {
+    return {
+      message: `Funcionario creado. Se envió el correo de activación a ${correo}.`,
+      variant: "success",
+    }
+  }
+  return {
+    message:
+      "Funcionario creado, pero no fue posible enviar el correo de activación. Usa «Reenviar activación» en la tabla.",
+    variant: "warning",
+  }
+}

@@ -32,6 +32,14 @@ export interface RegisterFuncionarioResult {
   pkTusuario: number
   pkFuncionario: number
   email: string
+  /**
+   * El alta ya no lleva `password`: el backend crea la cuenta pendiente de
+   * activación y manda al correo el enlace "Activa tu cuenta" (7 días).
+   * `false` = la cuenta se creó pero el correo no salió (el usuario puede
+   * usar "Reenviar activación" en la tabla). Se trata `undefined` como
+   * enviada (backend sin el campo todavía, o cuenta ya existente reusada).
+   */
+  invitacionEnviada?: boolean
 }
 
 function toRegisterFuncionarioRequest(person: Person) {
@@ -39,10 +47,10 @@ function toRegisterFuncionarioRequest(person: Person) {
     .filter(Boolean)
     .join(" ")
 
+  // Sin `password` a propósito: ver `invitacionEnviada` arriba.
   return {
     email: person.email,
     fullName,
-    password: person.password,
     identificacion: person.identification,
     primerNombre: person.firstName,
     primerApellido: person.lastName,
