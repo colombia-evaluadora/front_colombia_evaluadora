@@ -115,5 +115,10 @@ export function useActividadesTabsQuery() {
  * nunca lo deserializa como objeto/arreglo.
  */
 export function paresToQueryParam(pares: ActividadTabPair[]): string {
-  return pares.map((p) => `${p.gradoId}:${p.asignaturaId ?? ""}`).join(",")
+  return pares.map(parToString).join(",")
+}
+
+/** Un par como lo espera el back: "grado:asignatura" (asignatura vacía = comodín, V526). */
+export function parToString(p: ActividadTabPair): string {
+  return `${p.gradoId}:${p.asignaturaId ?? ""}`
 }

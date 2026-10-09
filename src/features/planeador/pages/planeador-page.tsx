@@ -27,7 +27,7 @@ import {
   fetchTodasLasActividadesMias,
   useActividadesMiasQuery,
 } from "@/features/planeador/api/query/use-actividades-mias-query"
-import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { parToString, useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
@@ -203,17 +203,17 @@ function PlaneadorPageContent() {
   const rotulosUnicos = new Set(filtered.map((a) => a.rotuloEjecucion).filter(Boolean))
   const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
 
-  // Mismos criterios que ya filtran `/actividades/mias` arriba, en la forma
-  // que espera el reporte real `planeador-actividades` (ver
-  // `export-actividades.ts`) — así el PDF/Excel exportado coincide con lo
-  // que el rail está mostrando.
+  // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
+  // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
+  // export lleva todas las actividades del usuario que cumplen la búsqueda,
+  // el estado y la pestaña, no solo las del día que muestra el rail.
   const exportFilters = React.useMemo(
     () => ({
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
-      DIA: dia,
+      GRADO_ASIGNATURA_PARES: tabActiva?.pares.length ? tabActiva.pares.map(parToString) : undefined,
     }),
-    [buscar, estado, dia],
+    [buscar, estado, tabActiva],
   )
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de

@@ -18,9 +18,11 @@ import { Input } from "@/components/ui/input"
 import {
   CheckIcon,
   ControlPointIcon,
+  LockIcon,
   PencilIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import {
   ComboboxField,
@@ -203,6 +205,9 @@ function permissionSortValue(permission: Permission, key: PermissionSortKey): un
  * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
  * ancho en el flujo, para que no se lleve una tajada del reparto.
  */
+/** TROL.CODIGO del director de grupo: ese permiso lo gestiona el grupo, no este diálogo. */
+const DIRECTOR_GRUPO_ROLE_CODE = "DIRECTOR_GRUPO"
+
 const PERMISSION_ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
 const PERMISSION_ACTIONS_SPACER_WIDTH = 96
 
@@ -563,7 +568,10 @@ function ManageEmployeeDialogContent({
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: campuses = [] } = useCampusesOptionsQuery()
-  const roleItems = toSelectOptions(roles)
+  // El director de grupo se asigna y se quita desde el grupo (el back lo
+  // rechaza aquí): no se ofrece en el select, aunque el catálogo lo traiga
+  // porque el filtro por rol del listado sí lo necesita.
+  const roleItems = toSelectOptions(roles.filter((role) => role.code !== DIRECTOR_GRUPO_ROLE_CODE))
   const campusItems = toSelectOptions(campuses)
   const {
     data: sedeJornadas = [],
@@ -1641,16 +1649,34 @@ function ManageEmployeeDialogContent({
                     {PERMISSION_ACTIONS_SPACER_CELL}
                     <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
                       <div className={permissionActionsOverlayClass()}>
-                        <ConfirmRemoveButton
-                          label={`Quitar permiso ${permission.order}`}
-                          description={
-                            <>
-                              Se quitará el permiso de {permission.role.name} en{" "}
-                              {permission.campus.name}. Esta acción no se puede deshacer.
-                            </>
-                          }
-                          onConfirm={() => removePermission(permission)}
-                        />
+                        {permission.role.code === DIRECTOR_GRUPO_ROLE_CODE ? (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span
+                                  className="inline-flex size-8 items-center justify-center text-muted-foreground"
+                                  aria-label="Permiso de director de grupo: se gestiona desde el grupo"
+                                />
+                              }
+                            >
+                              <LockIcon />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              El director de grupo se asigna y se quita desde el grupo.
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <ConfirmRemoveButton
+                            label={`Quitar permiso ${permission.order}`}
+                            description={
+                              <>
+                                Se quitará el permiso de {permission.role.name} en{" "}
+                                {permission.campus.name}. Esta acción no se puede deshacer.
+                              </>
+                            }
+                            onConfirm={() => removePermission(permission)}
+                          />
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

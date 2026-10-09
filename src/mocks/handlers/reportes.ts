@@ -99,6 +99,8 @@ interface PlaneadorReporteFilters {
   FECHA_DESDE?: string
   FECHA_HASTA?: string
   DIA?: string
+  /** Pares "grado:asignatura" de la pestaña: el mock no modela ids de grado/asignatura, no recorta. */
+  GRADO_ASIGNATURA_PARES?: string[]
   IDS?: unknown[]
 }
 
