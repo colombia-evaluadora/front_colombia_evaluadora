@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/docentes/grupos` (`fn_docente_grupos_listar`, V242, ver
@@ -45,16 +46,23 @@ function toDocenteGrupo(row: DocenteGrupoRow): DocenteGrupo {
   }
 }
 
-async function fetchDocenteGrupos(periodoId?: number): Promise<DocenteGrupo[]> {
-  const query = periodoId != null ? `?periodo=${periodoId}` : ""
-  const rows = await evalCol.getRows<DocenteGrupoRow>(`/planeador/docentes/grupos${query}`)
+async function fetchDocenteGrupos(periodoId?: number, funcionario?: number): Promise<DocenteGrupo[]> {
+  const query = new URLSearchParams()
+  if (periodoId != null) query.set("periodo", String(periodoId))
+  if (funcionario != null) query.set("funcionario", String(funcionario))
+  const qs = query.toString()
+  const rows = await evalCol.getRows<DocenteGrupoRow>(`/planeador/docentes/grupos${qs ? `?${qs}` : ""}`)
   return rows.map(toDocenteGrupo)
 }
 
+/** `funcionario` sale de `usePlaneadorDocenteScope` (`?docente=` de
+ *  Actividades/Unidades); fuera de esas vistas es siempre el del token. */
 export function useDocenteGruposQuery(periodoId?: number) {
+  const { funcionario, consultasHabilitadas } = usePlaneadorDocenteScope()
   return useQuery({
-    queryKey: planeadorKeys.docenteGrupos(periodoId),
-    queryFn: () => fetchDocenteGrupos(periodoId),
+    queryKey: planeadorKeys.docenteGrupos(periodoId, funcionario),
+    queryFn: () => fetchDocenteGrupos(periodoId, funcionario),
+    enabled: consultasHabilitadas,
     staleTime: 1000 * 60,
   })
 }

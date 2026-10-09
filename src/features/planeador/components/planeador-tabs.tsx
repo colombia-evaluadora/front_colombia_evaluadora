@@ -6,6 +6,7 @@ import { paths } from "@/config/paths"
 
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * Fallback SOLO mientras `/actividades/tabs` está cargando — una pestaña
@@ -55,6 +56,18 @@ export function PlaneadorTabs() {
   // `strict: false`: este componente se monta en la ruta de Actividades y en
   // la de Unidades, y cada una declara un search param distinto.
   const search = useSearch({ strict: false }) as { instrumento?: string; rotulo?: string }
+  // El establecimiento/docente elegido (Super Admin/Coordinador) viaja entre
+  // pestañas: pasar de Actividades a Unidades sigue mirando al mismo docente.
+  const scope = usePlaneadorDocenteScope()
+  const docenteSearch = { establecimiento: scope.establecimientoId, docente: scope.funcionario }
+  const searchDe = (view: { instrumento?: string; rotulo?: string }) => ({
+    ...docenteSearch,
+    ...(view.instrumento
+      ? { instrumento: view.instrumento }
+      : view.rotulo
+        ? { rotulo: view.rotulo }
+        : {}),
+  })
 
   const { data: unidadTabs, isPending: isPendingUnidades } = useUnidadesTabsQuery()
   const { data: actividadTabs, isPending: isPendingActividades } = useActividadesTabsQuery()
@@ -108,14 +121,7 @@ export function PlaneadorTabs() {
         onValueChange={(value) => {
           const view = views.find((v) => v.key === value)
           if (!view) return
-          navigate({
-            to: view.to,
-            search: view.instrumento
-              ? { instrumento: view.instrumento }
-              : view.rotulo
-                ? { rotulo: view.rotulo }
-                : undefined,
-          })
+          navigate({ to: view.to, search: searchDe(view) })
         }}
         aria-label="Vistas del planeador"
       >
@@ -131,10 +137,7 @@ export function PlaneadorTabs() {
               key={view.key}
               value={view.key}
               render={
-                <Link
-                  to={view.to}
-                  search={view.instrumento ? { instrumento: view.instrumento } : view.rotulo ? { rotulo: view.rotulo } : undefined}
-                />
+                <Link to={view.to} search={searchDe(view)} />
               }
               className="data-active:bg-card dark:data-active:bg-card"
             >

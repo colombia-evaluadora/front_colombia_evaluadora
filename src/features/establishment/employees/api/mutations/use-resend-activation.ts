@@ -6,9 +6,11 @@ import type { MutationConfig } from "@/lib/react-query"
 /**
  * Reenvía el correo de activación de una cuenta pendiente. 204 si salió; 409
  * si la cuenta ya no está pendiente (el mensaje del backend se muestra tal
- * cual vía `getErrorMessage`).
+ * cual vía `getErrorMessage`). Exportada: `add-establishment-page.tsx` la usa
+ * para mandar la invitación de rector/secretaria recién después de guardar el
+ * establecimiento (ver `enviarInvitacion` en `registerFuncionario`).
  */
-async function resendActivation(correo: string): Promise<void> {
+export async function resendActivation(correo: string): Promise<void> {
   await api.post("/auth/register/cval/funcionario/reenviar-activacion", { correo })
 }
 

@@ -31,6 +31,9 @@ interface UnidadCardProps {
   /** Se ejecuta cuando termina OK el `DialogDeleteUnidad` (típicamente,
    *  limpiar la selección si esta era la unidad abierta en el panel). */
   onDeleted?: () => void
+  /** Muestra el docente dueño (`unidad.docenteNombre`) — solo cuando la
+   *  vista mezcla varios docentes (Coordinador viendo toda su sede). */
+  mostrarDocente?: boolean
 }
 
 /**
@@ -51,6 +54,7 @@ export function UnidadCard({
   onSelect,
   onEdit,
   onDeleted,
+  mostrarDocente = false,
 }: UnidadCardProps) {
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
@@ -100,6 +104,11 @@ export function UnidadCard({
         )}
       </div>
 
+      {mostrarDocente && unidad.docenteNombre && (
+        <p className="text-[0.625rem] leading-snug font-medium break-words">
+          {unidad.docenteNombre}
+        </p>
+      )}
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {unidad.asignatura}
       </p>

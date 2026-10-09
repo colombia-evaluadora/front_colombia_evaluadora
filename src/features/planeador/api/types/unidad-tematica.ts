@@ -138,6 +138,11 @@ export interface UnidadTematica {
    *  nunca hardcodear el literal "Actividad" en pantallas que ya tienen la
    *  unidad cargada. `undefined` solo contra el mock viejo. */
   rotuloEjecucion?: string
+  /** Docente dueño de la unidad — mismo criterio que `Actividad.docenteId`/
+   *  `docenteNombre`/`esPropia` (columnas opcionales del listado). */
+  docenteId?: number
+  docenteNombre?: string
+  esPropia?: boolean
   /** Instrumento de evaluación FIJADO en la unidad (sso V488,
    *  `TUNIDAD.FK_TLV_INSTRUMENTO_EVALUACION`) — mismo catálogo
    *  `INSTRUMENTO_EVALUACION` que ya usa `Actividad.instrumento`, pero es un
