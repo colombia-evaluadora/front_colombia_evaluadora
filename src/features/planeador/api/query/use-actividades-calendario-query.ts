@@ -8,6 +8,8 @@ import {
   type ActividadTabPair,
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { toDocenteDueno, type DocenteDuenoRow } from "@/features/planeador/lib/docente-dueno"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/calendario` (V251, ver colección Postman
@@ -25,7 +27,7 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
  * `QUERY.FECHADESDE` (no declarado) y el filtro se ignora en silencio. Acá
  * van en snake_case exacto (`fecha_desde`/`fecha_hasta`).
  */
-interface ActividadCalendarioRow {
+interface ActividadCalendarioRow extends DocenteDuenoRow {
   fecha: string
   fecha_inicio: string
   fecha_cierre: string
@@ -55,6 +57,10 @@ export interface ActividadCalendario {
   /** Ver `ActividadCalendarioRow.grado_grupo` — `undefined` solo si el
    *  backend real todavía no lo manda para esta fila. */
   gradoGrupo?: string
+  /** Docente dueño (ver `Actividad.docenteId`/`docenteNombre`/`esPropia`). */
+  docenteId?: number
+  docenteNombre?: string
+  esPropia?: boolean
 }
 
 // Vienen como datetime ISO completo ("2026-09-01T00:00:00.000Z"),
@@ -74,6 +80,7 @@ function toActividadCalendario(row: ActividadCalendarioRow): ActividadCalendario
     titulo: row.titulo,
     status: estadoDerivadoToStatus(row.estado),
     gradoGrupo: row.grado_grupo ?? undefined,
+    ...toDocenteDueno(row),
   }
 }
 
@@ -87,6 +94,8 @@ export interface UseActividadesCalendarioParams {
    *  — sin esto la grilla mezclaba actividades de todos los rótulos del
    *  docente en el mismo mes. */
   gradoAsignaturaPares?: ActividadTabPair[]
+  /** Ver `UseActividadesMiasParams.funcionario`. */
+  funcionario?: number
 }
 
 async function fetchActividadesCalendario(
@@ -99,6 +108,7 @@ async function fetchActividadesCalendario(
   if (params.asignatura != null) query.set("asignatura", String(params.asignatura))
   if (params.grupo != null) query.set("grupo", String(params.grupo))
   if (params.unidad != null) query.set("unidad", String(params.unidad))
+  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -110,9 +120,12 @@ async function fetchActividadesCalendario(
 }
 
 export function useActividadesCalendarioQuery(params: UseActividadesCalendarioParams) {
+  const scope = usePlaneadorDocenteScope()
+  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
   return useQuery({
-    queryKey: planeadorKeys.actividades.calendario(params),
-    queryFn: () => fetchActividadesCalendario(params),
+    queryKey: planeadorKeys.actividades.calendario(conDocente),
+    queryFn: () => fetchActividadesCalendario(conDocente),
+    enabled: scope.consultasHabilitadas,
     // SIN `placeholderData`, a propósito: la grilla mensual mapea estas
     // actividades por día-DE-MES (`date.getDate()`, ver
     // `planeador-page.tsx`), sin el mes en la clave. Si al cambiar de mes se
