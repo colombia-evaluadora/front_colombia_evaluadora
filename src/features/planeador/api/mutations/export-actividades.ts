@@ -5,19 +5,19 @@ import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/planeador/api/types/actividad"
 
 /**
- * Filtros del reporte `planeador-actividades` (colección Postman
- * `planeador-actividades-export-all`, V404). Son los del listado real
- * (`GET /planeador/actividades`), no los de `/actividades/mias` que usa esta
- * pantalla — el rail solo expone hoy `SEARCH`/`ESTADOS`/`DIA`, así que es lo
- * único que se manda; el resto de las claves del catálogo (`ASIGNATURA`,
- * `GRUPO`, `UNIDAD`, `TIPO_ACTIVIDAD`, `INSTRUMENTO`, `FECHA_DESDE`/
- * `FECHA_HASTA`, `DIAS_GRACIA`, `INCLUIR_INACTIVAS`, `FUNCIONARIO`, `IDS`)
- * queda para cuando la barra de filtros los exponga.
+ * Filtros del reporte `planeador-actividades` (sso V404). El reporte usa el
+ * MISMO listado que el rail (`GET /actividades/mias`), sin paginar: exporta
+ * todas las actividades del usuario que cumplen la búsqueda, el estado y la
+ * pestaña activa, no solo las del día. `DIA` no se manda a propósito: es la
+ * navegación del rail, no un filtro, y con él un día vacío exportaba un
+ * archivo en blanco. El back acepta además `ASIGNATURA`, `GRUPO`, `UNIDAD`,
+ * `DIAS_GRACIA`, `DIA` e `IDS`, para cuando la pantalla los exponga.
  */
 export interface PlaneadorActividadesReportFilters {
   SEARCH?: string
   ESTADOS?: string[]
-  DIA?: string
+  /** Pares "grado:asignatura" de la pestaña de Rótulo de Ejecución activa. */
+  GRADO_ASIGNATURA_PARES?: string[]
 }
 
 interface ExportActividadesInput {

@@ -708,7 +708,11 @@ export function registrarAsistenciaManual(
   if (body.REGISTROS?.length) {
     for (const r of body.REGISTROS) guardar(r.fkMatricula, r.tipoAsistencia, r.observacion, r.fkArchivo)
   } else if (body.MARCAR_TODOS != null) {
-    for (const est of padronBaseGrupo(body.GRUPO)) guardar(est.fkMatricula, body.MARCAR_TODOS)
+    // Como el backend: solo completa a quien no tiene registro en la sesión.
+    for (const est of padronBaseGrupo(body.GRUPO)) {
+      if (registrosManuales.has(claveRegistroManual(est.fkMatricula, body.GRUPO, identidad, body.FECHA, bloque))) continue
+      guardar(est.fkMatricula, body.MARCAR_TODOS)
+    }
   }
   return resultado
 }
