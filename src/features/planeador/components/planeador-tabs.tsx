@@ -6,7 +6,10 @@ import { paths } from "@/config/paths"
 
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  alcanceSearchDe,
+  usePlaneadorDocenteScope,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * Fallback SOLO mientras `/actividades/tabs` está cargando — una pestaña
@@ -56,10 +59,10 @@ export function PlaneadorTabs() {
   // `strict: false`: este componente se monta en la ruta de Actividades y en
   // la de Unidades, y cada una declara un search param distinto.
   const search = useSearch({ strict: false }) as { instrumento?: string; rotulo?: string }
-  // El establecimiento/docente elegido (Super Admin/Coordinador) viaja entre
-  // pestañas: pasar de Actividades a Unidades sigue mirando al mismo docente.
+  // Sede/año/jornada/docente elegidos (filtro avanzado) viajan entre
+  // pestañas: pasar de Actividades a Unidades sigue mirando el mismo alcance.
   const scope = usePlaneadorDocenteScope()
-  const docenteSearch = { establecimiento: scope.establecimientoId, docente: scope.funcionario }
+  const docenteSearch = alcanceSearchDe(scope)
   const searchDe = (view: { instrumento?: string; rotulo?: string }) => ({
     ...docenteSearch,
     ...(view.instrumento

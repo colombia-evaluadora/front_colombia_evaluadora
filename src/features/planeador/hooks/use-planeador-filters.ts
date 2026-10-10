@@ -6,11 +6,17 @@ import type {
   PlaneadorFiltersFormInput,
   PlaneadorFiltersFormValues,
 } from "@/features/planeador/api/schema"
+import type { PlaneadorAlcanceSeleccion } from "@/features/planeador/components/planeador-docente-selector"
 
 export interface PlaneadorFilters {
   filters: PlaneadorFiltersFormInput
-  applyFilters: (values: PlaneadorFiltersFormValues) => void
+  /** Con `alcance` (popover de filtros avanzados) escribe también
+   *  `?sede=&ano=&jornada=&docente=` en la misma navegación. */
+  applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
+  /** Solo sede/año/jornada/docente (chips, valores por defecto). */
+  applyAlcance: (alcance: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
+  /** Incluye sede/año/jornada/docente elegidos. */
   activeFilterCount: number
 }
 
@@ -29,6 +35,31 @@ interface FiltersSearch {
   filtro?: string
   estado?: string
   vista?: string
+  sede?: number
+  ano?: number
+  jornada?: number
+  docente?: number
+}
+
+/** `?sede=&ano=&jornada=&docente=` de un alcance, más el reseteo de lo que
+ *  la pantalla eligió sobre el alcance anterior (`resetAlCambiarAlcance`). */
+function alcanceSearch(
+  prev: Record<string, unknown>,
+  alcance: PlaneadorAlcanceSeleccion,
+  resetAlCambiarAlcance: readonly string[],
+): Record<string, unknown> {
+  const cambio =
+    prev.sede !== alcance.sede ||
+    prev.ano !== alcance.ano ||
+    prev.jornada !== alcance.jornada ||
+    prev.docente !== alcance.docente
+  return {
+    sede: alcance.sede,
+    ano: alcance.ano,
+    jornada: alcance.jornada,
+    docente: alcance.docente,
+    ...(cambio ? Object.fromEntries(resetAlCambiarAlcance.map((k) => [k, undefined])) : {}),
+  }
 }
 
 /**
@@ -43,10 +74,13 @@ function useFiltersFor(
     search: (prev: Record<string, unknown>) => Record<string, unknown>
     replace?: boolean
   }) => void,
+  /** Claves de la URL que dependen del docente/alcance (pestaña de rótulo,
+   *  actividad o unidad abierta…): cambiar el alcance las borra. */
+  resetAlCambiarAlcance: readonly string[],
 ): PlaneadorFilters {
 
   const applyFilters = useCallback(
-    (values: PlaneadorFiltersFormValues) => {
+    (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -54,11 +88,22 @@ function useFiltersFor(
           filtro: values.filtro || undefined,
           estado: values.estado || undefined,
           vista: values.vista || undefined,
+          ...(alcance ? alcanceSearch(prev, alcance, resetAlCambiarAlcance) : {}),
         }),
         replace: true,
       })
     },
-    [navigate],
+    [navigate, resetAlCambiarAlcance],
+  )
+
+  const applyAlcance = useCallback(
+    (alcance: PlaneadorAlcanceSeleccion) => {
+      navigate({
+        search: (prev) => ({ ...prev, ...alcanceSearch(prev, alcance, resetAlCambiarAlcance) }),
+        replace: true,
+      })
+    },
+    [navigate, resetAlCambiarAlcance],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -69,10 +114,11 @@ function useFiltersFor(
         filtro: undefined,
         estado: undefined,
         vista: undefined,
+        ...alcanceSearch(prev, {}, resetAlCambiarAlcance),
       }),
       replace: true,
     })
-  }, [navigate])
+  }, [navigate, resetAlCambiarAlcance])
 
   // `vista` no cuenta como filtro: no recorta el listado, solo cambia cómo se
   // agrupa, y si contara el embudo se vería activo de entrada.
@@ -81,8 +127,11 @@ function useFiltersFor(
     if (search.buscar) n += 1
     if (search.filtro) n += 1
     if (search.estado) n += 1
+    for (const v of [search.sede, search.ano, search.jornada, search.docente]) {
+      if (v != null) n += 1
+    }
     return n
-  }, [search.buscar, search.filtro, search.estado])
+  }, [search.buscar, search.filtro, search.estado, search.sede, search.ano, search.jornada, search.docente])
 
   return {
     filters: {
@@ -92,14 +141,20 @@ function useFiltersFor(
       vista: search.vista ?? "",
     },
     applyFilters,
+    applyAlcance,
     clearAllFilters,
     activeFilterCount,
   }
 }
 
+/** Lo que cada pestaña eligió sobre el docente anterior: cambiar el alcance
+ *  lo invalida (cada docente tiene sus propias pestañas y actividades). */
+const RESET_ACTIVIDADES = ["rotulo", "actividad", "modo"] as const
+const RESET_UNIDADES = ["instrumento", "unidad"] as const
+
 /** Filtros de la pestaña "Actividades". */
 export function usePlaneadorFilters(): PlaneadorFilters {
-  return useFiltersFor(planeadorRoute.useSearch(), planeadorRoute.useNavigate())
+  return useFiltersFor(planeadorRoute.useSearch(), planeadorRoute.useNavigate(), RESET_ACTIVIDADES)
 }
 
 /** Filtros de la pestaña "Unidad temática". */
@@ -107,5 +162,6 @@ export function useUnidadesFilters(): PlaneadorFilters {
   return useFiltersFor(
     planeadorUnidadesRoute.useSearch(),
     planeadorUnidadesRoute.useNavigate(),
+    RESET_UNIDADES,
   )
 }

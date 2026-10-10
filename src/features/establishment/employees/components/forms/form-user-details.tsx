@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
-import { toDigitsOnly, toEmailInput, toLettersOnly } from "@/lib/text-input"
+import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -355,7 +355,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: toLettersOnly(event.target.value).toUpperCase() })}
+                        onChange={(event) => emitChange({ firstName: event.target.value.toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
@@ -367,7 +367,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
-                        onChange={(event) => emitChange({ middleName: toLettersOnly(event.target.value).toUpperCase() })}
+                        onChange={(event) => emitChange({ middleName: event.target.value.toUpperCase() })}
                     />
                 </Field>
 
@@ -379,7 +379,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: toLettersOnly(event.target.value).toUpperCase() })}
+                        onChange={(event) => emitChange({ lastName: event.target.value.toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
@@ -391,7 +391,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
-                        onChange={(event) => emitChange({ secondLastName: toLettersOnly(event.target.value).toUpperCase() })}
+                        onChange={(event) => emitChange({ secondLastName: event.target.value.toUpperCase() })}
                     />
                 </Field>
             </div>

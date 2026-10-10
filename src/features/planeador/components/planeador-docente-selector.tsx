@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react"
+
+import { Badge } from "@/components/ui/badge"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
@@ -6,145 +9,243 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import {
   usePlaneadorDocentesQuery,
   type PlaneadorDocente,
 } from "@/features/planeador/api/query/use-planeador-docentes-query"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  aniosDePeriodos,
+  defaultsDeSede,
+  jornadaKey,
+  jornadaPorDefecto,
+  periodosDelAnio,
+  usePlaneadorFiltroPeriodosQuery,
+  usePlaneadorFiltroSedesQuery,
+  type PlaneadorFiltroPeriodo,
+  type PlaneadorFiltroSede,
+} from "@/features/planeador/api/query/use-planeador-filtros-query"
+import {
+  alcanceSearchDe,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceSearch,
+  type PlaneadorDocenteScope,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 
-/** Valor del ítem "Todos los docentes…" (Rector/Coordinador): sin
- *  `?docente=`, el backend devuelve el alcance completo del rol (todo el
- *  establecimiento para el rector, sus sedes para el coordinador). */
+/** Valor de las opciones "Todas"/"Todos": el filtro vacío. */
 const TODOS = ""
 
-export interface PlaneadorDocenteSeleccion {
-  establecimiento?: number
-  docente?: number
-}
+/** Sede, año, jornada y docente del filtro avanzado (`?sede=&ano=&jornada=
+ *  &docente=`). `jornada` es `jornadaKey` (`0` = periodo sin jornada). */
+export type PlaneadorAlcanceSeleccion = PlaneadorAlcanceSearch
 
 function docenteLabel(docente: PlaneadorDocente): string {
   return docente.identificacion ? `${docente.nombre} — ${docente.identificacion}` : docente.nombre
 }
 
-/** Docentes del alcance actual. Comparte la key con el selector, así el
- *  banner no dispara otro pedido para resolver el nombre. */
-function usePlaneadorDocentesDelScope() {
-  const scope = usePlaneadorDocenteScope()
+/** El super admin alcanza sedes de muchos establecimientos: el nombre del EE
+ *  desambigua dos sedes que se llaman parecido. */
+function sedeLabel(sede: PlaneadorFiltroSede, conEstablecimiento: boolean): string {
+  return conEstablecimiento ? `${sede.nombre} — ${sede.establecimientoNombre}` : sede.nombre
+}
+
+function periodoDe(
+  periodos: PlaneadorFiltroPeriodo[] | undefined,
+  ano: number | undefined,
+  jornada: number | undefined,
+): PlaneadorFiltroPeriodo | undefined {
+  if (ano == null || jornada == null) return undefined
+  return periodos?.find((p) => p.anio === ano && jornadaKey(p.jornadaId) === jornada)
+}
+
+function todosLosDocentesLabel(scope: PlaneadorDocenteScope, sede: number | undefined): string {
+  if (sede != null) return "Todos los docentes de la sede"
+  return scope.esRector ? "Todos los docentes del establecimiento" : "Todos los docentes de mi sede"
+}
+
+/** Docentes que dictan en la sede / el periodo dados. El super admin no
+ *  pide nada sin sede (el backend le devolvería 0 filas). */
+function useDocentesDeSeleccion(scope: PlaneadorDocenteScope, sede?: number, periodo?: number) {
   return usePlaneadorDocentesQuery({
-    establecimientoId: scope.establecimientoId,
+    sede,
+    periodo,
     enabled:
-      scope.enVistaConSelector &&
-      (scope.eligeSoloDocente || (scope.esSuperAdmin && scope.establecimientoId != null)),
+      scope.enVistaConSelector && scope.puedeElegirDocente && (!scope.esSuperAdmin || sede != null),
   })
 }
 
 /**
- * Selector de establecimiento y docente del Planeador (Actividades y
- * Unidades). Solo se muestra a quien puede mirar el planeador de otros:
- * - Super Admin: Establecimiento → Docente (el docente queda deshabilitado
- *   hasta elegir el EE). Sin docente no hay planeador que mostrar.
- * - Rector: solo Docente, con "Todos los docentes del establecimiento"
- *   como primera opción (el backend acota la lista a su EE).
- * - Coordinador: solo Docente, con "Todos los docentes de mi sede" como
- *   primera opción (el backend acota la lista a sus sedes).
+ * Campos Sede → Año → Jornada → Docente del popover de filtros avanzados del
+ * Planeador (Actividades y Unidades), con la misma cascada que Informes:
+ * - Elegir una sede pone por defecto el año con el periodo académico abierto
+ *   (en curso, o el más reciente que siga abierto) y la jornada en curso o
+ *   la única del año.
+ * - Cambiar un campo padre borra los hijos.
+ * - Docente depende de sede + periodo; "Todos los docentes…" siempre para
+ *   Rector/Coordinador, y para el Super Admin una vez elegida la sede.
  *
- * El estado vive en la URL (`?establecimiento=&docente=`); la página decide
- * qué más resetear al cambiarlo (`onChange`), porque cada una tiene sus
- * propias selecciones que dependen del docente (pestaña, actividad/unidad
- * abierta…).
+ * Es controlado: el borrador vive en el form del popover y se escribe en la
+ * URL recién al "Aplicar filtros".
  */
-export function PlaneadorDocenteSelector({
+export function PlaneadorAlcanceFields({
+  value,
   onChange,
 }: {
-  onChange: (next: PlaneadorDocenteSeleccion) => void
+  value: PlaneadorAlcanceSeleccion
+  onChange: (next: PlaneadorAlcanceSeleccion) => void
 }) {
   const scope = usePlaneadorDocenteScope()
+  const sedes = usePlaneadorFiltroSedesQuery(scope.enVistaConSelector && scope.puedeElegirDocente)
+  const periodos = usePlaneadorFiltroPeriodosQuery(value.sede)
+  const periodo = periodoDe(periodos.data, value.ano, value.jornada)
+  const docentes = useDocentesDeSeleccion(scope, value.sede, periodo?.id)
 
-  const establecimientos = useEstablishmentsOptionsQuery(
-    scope.esSuperAdmin && scope.enVistaConSelector,
-  )
-  const docentes = usePlaneadorDocentesDelScope()
+  useNotificarErrores([sedes.error, periodos.error, docentes.error])
 
-  // La pantalla monta un `NoticeProvider`, que suprime el toast global de
-  // axios: los errores de estas listas (incluido el 42501 de un alcance no
-  // permitido) se muestran en el aviso de la página.
-  useNotificarErrores([establecimientos.error, docentes.error])
+  // Al elegir una sede, año y jornada por defecto en cuanto llegan sus
+  // periodos (pueden venir de caché o llegar más tarde).
+  const pendienteDefault = useRef(false)
+  const latest = useRef({ value, onChange })
+  latest.current = { value, onChange }
+  useEffect(() => {
+    if (!pendienteDefault.current || !periodos.data) return
+    pendienteDefault.current = false
+    const { value, onChange } = latest.current
+    onChange({ ...value, ...defaultsDeSede(periodos.data) })
+  }, [periodos.data])
 
   if (!scope.puedeElegirDocente) return null
 
-  const establecimientoItems = Object.fromEntries(
-    (establecimientos.data ?? []).map((ee) => [String(ee.id), ee.name]),
-  )
-  // El rector ve todo su establecimiento; el coordinador, su(s) sede(s). Si
-  // alguien tiene los dos roles manda el alcance más amplio (rector).
-  const todosLabel = scope.esRector
-    ? "Todos los docentes del establecimiento"
-    : "Todos los docentes de mi sede"
+  const conEstablecimiento = scope.esSuperAdmin
+  const sedeItems: Record<string, string> = {
+    ...(scope.esSuperAdmin ? {} : { [TODOS]: "Todas" }),
+    ...Object.fromEntries(
+      (sedes.data ?? []).map((s) => [String(s.id), sedeLabel(s, conEstablecimiento)]),
+    ),
+  }
+  const anios = aniosDePeriodos(periodos.data ?? [])
+  const anioItems: Record<string, string> = {
+    [TODOS]: "Todos",
+    ...Object.fromEntries(anios.map((a) => [String(a), String(a)])),
+  }
+  const delAnio = periodosDelAnio(periodos.data ?? [], value.ano)
+  const jornadaItems: Record<string, string> = {
+    [TODOS]: "Todas",
+    ...Object.fromEntries(delAnio.map((p) => [String(jornadaKey(p.jornadaId)), p.jornadaNombre])),
+  }
+  const ofreceTodos = !scope.esSuperAdmin || value.sede != null
+  const todosLabel = todosLosDocentesLabel(scope, value.sede)
   const docenteItems: Record<string, string> = {
-    ...(scope.eligeSoloDocente ? { [TODOS]: todosLabel } : {}),
+    ...(ofreceTodos ? { [TODOS]: todosLabel } : {}),
     ...Object.fromEntries((docentes.data ?? []).map((d) => [String(d.id), docenteLabel(d)])),
   }
-  const docenteDeshabilitado = scope.esSuperAdmin && scope.establecimientoId == null
+  const docenteDeshabilitado = scope.esSuperAdmin && value.sede == null
 
   return (
-    <div className="flex w-full flex-wrap items-end gap-3">
-      {scope.esSuperAdmin && (
-        <Field orientation="vertical" variant="outlined" className="w-full gap-2 sm:w-72">
-          <FieldLabel htmlFor="planeador-establecimiento">Establecimiento educativo</FieldLabel>
-          <ComboboxField
-            items={establecimientoItems}
-            value={scope.establecimientoId != null ? String(scope.establecimientoId) : null}
-            // Cambiar de EE invalida el docente elegido (cuelga de él).
-            onValueChange={(value) =>
-              onChange({ establecimiento: value ? Number(value) : undefined, docente: undefined })
-            }
-          >
-            <ComboboxFieldTrigger id="planeador-establecimiento" size="sm" className="w-full">
-              <ComboboxFieldValue
-                placeholder={
-                  establecimientos.isPending ? "Cargando…" : "Selecciona un establecimiento"
-                }
-              />
-            </ComboboxFieldTrigger>
-            <ComboboxFieldContent>
-              {(establecimientos.data ?? []).map((ee) => (
-                <ComboboxFieldItem key={ee.id} value={String(ee.id)}>
-                  {ee.name}
-                </ComboboxFieldItem>
-              ))}
-            </ComboboxFieldContent>
-          </ComboboxField>
-        </Field>
-      )}
+    <div className="grid grid-cols-2 gap-3">
+      <Field orientation="vertical" variant="outlined" className="col-span-2 gap-2">
+        <FieldLabel htmlFor="planeador-sede">Sede</FieldLabel>
+        <ComboboxField
+          items={sedeItems}
+          value={value.sede != null ? String(value.sede) : scope.esSuperAdmin ? null : TODOS}
+          onValueChange={(next) => {
+            const sede = next ? Number(next) : undefined
+            pendienteDefault.current = sede != null
+            // Cambiar de sede borra año, jornada y docente (cuelgan de ella).
+            onChange({ sede })
+          }}
+        >
+          <ComboboxFieldTrigger id="planeador-sede" size="sm" className="w-full">
+            <ComboboxFieldValue
+              placeholder={sedes.isPending ? "Cargando…" : "Selecciona una sede"}
+            />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
+            {!scope.esSuperAdmin && <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>}
+            {(sedes.data ?? []).map((sede) => (
+              <ComboboxFieldItem key={sede.id} value={String(sede.id)}>
+                {sedeLabel(sede, conEstablecimiento)}
+              </ComboboxFieldItem>
+            ))}
+          </ComboboxFieldContent>
+        </ComboboxField>
+      </Field>
 
-      <Field orientation="vertical" variant="outlined" className="w-full gap-2 sm:w-72">
+      <Field orientation="vertical" variant="outlined" className="gap-2">
+        <FieldLabel htmlFor="planeador-ano">Año</FieldLabel>
+        <ComboboxField
+          items={anioItems}
+          disabled={value.sede == null}
+          value={value.ano != null ? String(value.ano) : TODOS}
+          onValueChange={(next) => {
+            const ano = next ? Number(next) : undefined
+            const jornadaId =
+              ano != null ? jornadaPorDefecto(periodosDelAnio(periodos.data ?? [], ano)) : undefined
+            // Cambiar de año borra jornada y docente.
+            onChange({
+              sede: value.sede,
+              ano,
+              jornada: jornadaId === undefined ? undefined : jornadaKey(jornadaId),
+            })
+          }}
+        >
+          <ComboboxFieldTrigger id="planeador-ano" size="sm" className="w-full">
+            <ComboboxFieldValue
+              placeholder={value.sede != null && periodos.isPending ? "Cargando…" : "Todos"}
+            />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
+            <ComboboxFieldItem value={TODOS}>Todos</ComboboxFieldItem>
+            {anios.map((anio) => (
+              <ComboboxFieldItem key={anio} value={String(anio)}>
+                {anio}
+              </ComboboxFieldItem>
+            ))}
+          </ComboboxFieldContent>
+        </ComboboxField>
+      </Field>
+
+      <Field orientation="vertical" variant="outlined" className="gap-2">
+        <FieldLabel htmlFor="planeador-jornada">Jornada</FieldLabel>
+        <ComboboxField
+          items={jornadaItems}
+          disabled={value.ano == null}
+          value={value.jornada != null ? String(value.jornada) : TODOS}
+          // Cambiar de jornada borra el docente.
+          onValueChange={(next) =>
+            onChange({ sede: value.sede, ano: value.ano, jornada: next ? Number(next) : undefined })
+          }
+        >
+          <ComboboxFieldTrigger id="planeador-jornada" size="sm" className="w-full">
+            <ComboboxFieldValue placeholder="Todas" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
+            <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>
+            {delAnio.map((p) => (
+              <ComboboxFieldItem key={p.id} value={String(jornadaKey(p.jornadaId))}>
+                {p.jornadaNombre}
+              </ComboboxFieldItem>
+            ))}
+          </ComboboxFieldContent>
+        </ComboboxField>
+      </Field>
+
+      <Field orientation="vertical" variant="outlined" className="col-span-2 gap-2">
         <FieldLabel htmlFor="planeador-docente">Docente</FieldLabel>
         <ComboboxField
           items={docenteItems}
           disabled={docenteDeshabilitado}
-          value={
-            scope.funcionario != null
-              ? String(scope.funcionario)
-              : scope.eligeSoloDocente
-                ? TODOS
-                : null
-          }
-          onValueChange={(value) =>
-            onChange({
-              establecimiento: scope.establecimientoId,
-              docente: value ? Number(value) : undefined,
-            })
-          }
+          value={value.docente != null ? String(value.docente) : ofreceTodos ? TODOS : null}
+          onValueChange={(next) => onChange({ ...value, docente: next ? Number(next) : undefined })}
         >
           <ComboboxFieldTrigger id="planeador-docente" size="sm" className="w-full">
             <ComboboxFieldValue
               placeholder={
                 docenteDeshabilitado
-                  ? "Elige primero el establecimiento"
+                  ? "Elige primero la sede"
                   : docentes.isFetching
                     ? "Cargando…"
                     : "Selecciona un docente"
@@ -152,9 +253,7 @@ export function PlaneadorDocenteSelector({
             />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            {scope.eligeSoloDocente && (
-              <ComboboxFieldItem value={TODOS}>{todosLabel}</ComboboxFieldItem>
-            )}
+            {ofreceTodos && <ComboboxFieldItem value={TODOS}>{todosLabel}</ComboboxFieldItem>}
             {(docentes.data ?? []).map((docente) => (
               <ComboboxFieldItem key={docente.id} value={String(docente.id)}>
                 {docenteLabel(docente)}
@@ -167,10 +266,92 @@ export function PlaneadorDocenteSelector({
   )
 }
 
+function alcanceVacio(scope: PlaneadorDocenteScope): boolean {
+  return [scope.sedeId, scope.anio, scope.jornadaId, scope.funcionario].every((v) => v == null)
+}
+
+/**
+ * Chips de lo elegido en Sede/Año/Jornada/Docente, debajo del buscador:
+ * esos filtros viven en el popover y sin esto no se vería qué alcance se
+ * está mirando. Quitar uno borra también los que cuelgan de él. La sede del
+ * Super Admin no se quita desde el chip (es obligatoria para él).
+ */
+export function PlaneadorAlcanceChips({
+  onChange,
+}: {
+  onChange: (next: PlaneadorAlcanceSeleccion) => void
+}) {
+  const scope = usePlaneadorDocenteScope()
+  const sedes = usePlaneadorFiltroSedesQuery(scope.enVistaConSelector && scope.puedeElegirDocente)
+  const periodos = usePlaneadorFiltroPeriodosQuery(scope.sedeId)
+  const docentes = useDocentesDeSeleccion(scope, scope.sedeId, scope.periodoId)
+
+  if (!scope.enVistaConSelector || !scope.puedeElegirDocente || alcanceVacio(scope)) {
+    return null
+  }
+
+  const actual = alcanceSearchDe(scope)
+  const sede = sedes.data?.find((s) => s.id === scope.sedeId)
+  const jornada = periodoDe(periodos.data, scope.anio, scope.jornadaId)
+  const docente = docentes.data?.find((d) => d.id === scope.funcionario)
+
+  const chips: { key: string; label: string; quitar?: PlaneadorAlcanceSeleccion }[] = []
+  if (scope.sedeId != null) {
+    chips.push({
+      key: "sede",
+      label: `Sede: ${sede ? sedeLabel(sede, scope.esSuperAdmin) : scope.sedeId}`,
+      quitar: scope.esSuperAdmin ? undefined : { docente: actual.docente },
+    })
+  }
+  if (scope.anio != null) {
+    chips.push({
+      key: "ano",
+      label: `Año: ${scope.anio}`,
+      quitar: { sede: actual.sede, docente: actual.docente },
+    })
+  }
+  if (scope.jornadaId != null) {
+    chips.push({
+      key: "jornada",
+      label: `Jornada: ${jornada?.jornadaNombre ?? scope.jornadaId}`,
+      quitar: { sede: actual.sede, ano: actual.ano, docente: actual.docente },
+    })
+  }
+  if (scope.funcionario != null) {
+    chips.push({
+      key: "docente",
+      label: `Docente: ${docente?.nombre ?? scope.funcionario}`,
+      quitar: { ...actual, docente: undefined },
+    })
+  }
+
+  return (
+    <ul aria-label="Sede, año, jornada y docente" className="flex w-full flex-wrap gap-2">
+      {chips.map(({ key, label, quitar }) => (
+        <li key={key}>
+          <Badge variant="soft" color="primary" className="tracking-normal normal-case">
+            {label}
+            {quitar && (
+              <button
+                type="button"
+                aria-label={`Quitar ${label}`}
+                className="hover:text-foreground -mr-1 rounded-xs p-0.5"
+                onClick={() => onChange(quitar)}
+              >
+                <XIcon className="size-3" />
+              </button>
+            )}
+          </Badge>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** Aviso fijo de solo lectura mientras se mira el planeador de otro docente. */
 export function PlaneadorLecturaBanner({ className }: { className?: string }) {
   const scope = usePlaneadorDocenteScope()
-  const { data: docentes } = usePlaneadorDocentesDelScope()
+  const { data: docentes } = useDocentesDeSeleccion(scope, scope.sedeId, scope.periodoId)
   if (scope.funcionario == null) return null
   const nombre =
     docentes?.find((d) => d.id === scope.funcionario)?.nombre ?? "el docente seleccionado"
@@ -187,12 +368,13 @@ export function PlaneadorLecturaBanner({ className }: { className?: string }) {
   )
 }
 
-/** Estado vacío del Super Admin antes de elegir establecimiento y docente:
- *  la página no dispara ninguna consulta del planeador hasta entonces. */
+/** Estado vacío del Super Admin antes de elegir la sede: la página no
+ *  dispara ninguna consulta del planeador hasta entonces. */
 export function PlaneadorSeleccionVacia() {
   return (
     <div className="text-muted-foreground flex min-h-48 items-center justify-center rounded-md border border-dashed p-6 text-center text-sm">
-      Selecciona un establecimiento y un docente para ver su planeador.
+      Elige una sede (y, si quieres, año, jornada y docente) en los filtros avanzados para ver el
+      planeador.
     </div>
   )
 }

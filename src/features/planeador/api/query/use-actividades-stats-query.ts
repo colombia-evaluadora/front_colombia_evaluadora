@@ -7,7 +7,12 @@ import {
   type ActividadTabPair,
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import {
+  conAlcance,
+  setAlcanceQuery,
+  usePlaneadorDocenteScope,
+  type PlaneadorAlcanceParams,
+} from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /**
  * `GET /planeador/actividades/stats` (V250, ver colección Postman
@@ -28,7 +33,7 @@ interface ActividadesStatsRow {
 
 export type ActividadesStatsCounts = Record<ActividadStatus, number>
 
-export interface UseActividadesStatsParams {
+export interface UseActividadesStatsParams extends PlaneadorAlcanceParams {
   /** Pestaña de Rótulo de Ejecución activa (ver `use-actividades-mias-query.ts`)
    *  — sin esto las 4 tarjetas sumaban todos los rótulos del docente y no
    *  cambiaban al moverse entre pestañas. */
@@ -41,7 +46,7 @@ async function fetchActividadesStats(
   params: UseActividadesStatsParams,
 ): Promise<ActividadesStatsCounts> {
   const query = new URLSearchParams()
-  if (params.funcionario != null) query.set("funcionario", String(params.funcionario))
+  setAlcanceQuery(query, params)
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))
   }
@@ -60,7 +65,7 @@ async function fetchActividadesStats(
 
 export function useActividadesStatsQuery(params: UseActividadesStatsParams = {}) {
   const scope = usePlaneadorDocenteScope()
-  const conDocente = { ...params, funcionario: params.funcionario ?? scope.funcionario }
+  const conDocente = conAlcance(params, scope)
   return useQuery({
     queryKey: planeadorKeys.actividades.stats(conDocente),
     queryFn: () => fetchActividadesStats(conDocente),
