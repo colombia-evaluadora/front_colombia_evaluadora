@@ -144,10 +144,16 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <UnidadFichaYEvidenciasDetalle actividad={actividad} className="mt-4" />
         )}
 
-        <DefinitionGrid cols={2} className="mt-4">
+        {/* "¿Requiere validación del coordinador?" va en Identificación, igual
+            que en el form de edición: es una propiedad de toda la actividad
+            (antes salía en Seguimiento, que no aplica a unidades formativas). */}
+        <DefinitionGrid cols={3} className="mt-4">
           <Definition term={`${subjectLabel} / materia`}>{actividad.asignatura}</Definition>
           <Definition term="Grado / Grupo">
             {actividad.grado} {actividad.grupo}
+          </Definition>
+          <Definition term="¿Requiere validación del coordinador?">
+            {actividad.requiereValidacion ? "Sí" : "No"}
           </Definition>
         </DefinitionGrid>
 
@@ -230,9 +236,6 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
               {actividad.generaEvidencias ? "Sí" : "No"}
             </Definition>
             <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
-            <Definition term="¿Requiere validación del coordinador?">
-              {actividad.requiereValidacion ? "Sí" : "No"}
-            </Definition>
           </DefinitionGrid>
           <Definition term="Observaciones del docente" className="mt-4">
             {actividad.observaciones}
