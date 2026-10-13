@@ -162,6 +162,8 @@ export interface UseActividadesMiasParams extends PlaneadorAlcanceParams {
   unidad?: number
   estados?: string
   diasGracia?: number
+  /** `pk_lista_valor` del instrumento de evaluación (filtro "Instrumento"). */
+  instrumento?: number
   size?: number
   offset?: number
   /** `yyyy-MM-dd` — paginado por día activo (colección Postman 4.1/8.3):
@@ -200,6 +202,7 @@ async function fetchActividadesMias(
   if (params.grupo != null) query.set("grupo", String(params.grupo))
   if (params.unidad != null) query.set("unidad", String(params.unidad))
   if (params.estados) query.set("estados", params.estados)
+  if (params.instrumento != null) query.set("instrumento", String(params.instrumento))
   if (params.diasGracia != null) query.set("dias_gracia", String(params.diasGracia))
   if (params.dia) query.set("dia", params.dia)
   setAlcanceQuery(query, params)

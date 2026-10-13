@@ -111,3 +111,25 @@ export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<nu
     normalize: (row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
   })
 }
+
+/**
+ * Opciones del filtro "Instrumento" del Planeador (popover y término
+ * `instrumento:(…)` del buscador). `value` es el `pk_lista_valor`: es lo que
+ * filtran `?instrumento=` de `/actividades/mias|calendario|stats` (sso
+ * V526/V528/V530) y `UnidadTematica.instrumentoId` — el nombre no sirve,
+ * porque el catálogo real dice "Otro (personalizado)" donde el front
+ * muestra "Otro".
+ */
+export function useInstrumentoFiltroOptions() {
+  return useQuery({
+    queryKey: [...planeadorKeys.catalogos.instrumentoEvaluacion(), "filtro"] as const,
+    queryFn: async () => {
+      const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
+      return rows.map((row) => ({
+        value: String(row.pk_lista_valor),
+        label: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
+      }))
+    },
+    staleTime: Infinity,
+  })
+}
