@@ -34,6 +34,11 @@ interface ActividadesStatsRow {
 export type ActividadesStatsCounts = Record<ActividadStatus, number>
 
 export interface UseActividadesStatsParams extends PlaneadorAlcanceParams {
+  /** Texto libre e instrumento (`pk_lista_valor`) del buscador: las 4 tarjetas
+   *  cuentan lo mismo que lista el rail. El estado no se manda: cada tarjeta
+   *  ES un estado (la página apaga las demás cuando hay uno elegido). */
+  search?: string
+  instrumento?: number
   /** Pestaña de Rótulo de Ejecución activa (ver `use-actividades-mias-query.ts`)
    *  — sin esto las 4 tarjetas sumaban todos los rótulos del docente y no
    *  cambiaban al moverse entre pestañas. */
@@ -46,6 +51,8 @@ async function fetchActividadesStats(
   params: UseActividadesStatsParams,
 ): Promise<ActividadesStatsCounts> {
   const query = new URLSearchParams()
+  if (params.search) query.set("search", params.search)
+  if (params.instrumento != null) query.set("instrumento", String(params.instrumento))
   setAlcanceQuery(query, params)
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))

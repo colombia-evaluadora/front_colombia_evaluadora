@@ -10,7 +10,6 @@ import type {
 } from "@/features/planeador/api/schema"
 import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { FilterPlaneadorForm } from "@/features/planeador/components/forms/form-filter-planeador"
-import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 import {
   type PlaneadorAlcanceSeleccion,
 } from "@/features/planeador/components/planeador-docente-selector"
@@ -29,20 +28,11 @@ interface SearchPlaneadorProps {
   filters: PlaneadorFiltersFormInput
   applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
-  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`, ver
-  // `use-instrumento-evaluacion-catalog.ts`) — nombre y valor son el mismo
-  // string, igual que el resto de catálogos "planos" del Planeador. Opcional:
-  // la pestaña "Unidad temática" comparte este buscador pero no tiene
-  // instrumento que filtrar.
-  instrumentoOptions?: string[]
-  /** Rótulo real (Regla 13) para la opción "Actividad" de "Ver por" — el
-   *  caller ya resuelve si todas las filas filtradas comparten uno, o cae
-   *  al genérico "Actividad". */
-  rotuloLabel: string
+  /** Opciones del filtro "Instrumento" (`useInstrumentoFiltroOptions`):
+   *  value = `pk_lista_valor`, label = nombre visible. */
+  instrumentoOptions?: { value: string; label: string }[]
   /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para la
-   *  etiqueta del buscador y la opción "Unidad" de "Ver por". Sin él (pestaña
-   *  de Actividades, que mezcla unidades de varios referentes) queda el
-   *  genérico. */
+   *  etiqueta del buscador. Sin él (pestaña de Actividades) queda el genérico. */
   rotuloUnidad?: string
 }
 
@@ -59,7 +49,6 @@ export function SearchPlaneador({
   applyFilters,
   clearAllFilters,
   instrumentoOptions = [],
-  rotuloLabel,
   rotuloUnidad,
 }: SearchPlaneadorProps) {
   const [open, setOpen] = useState(false)
@@ -68,38 +57,18 @@ export function SearchPlaneador({
   const scope = usePlaneadorDocenteScope()
   const conAlcance = scope.enVistaConSelector && scope.puedeElegirDocente
 
-  // Mismo VIEW_OPTIONS pero con la opción "actividad" pisada por el rótulo
-  // real (Regla 13) — nunca "Actividad" fijo en el token `ver:(...)` de la
-  // sintaxis ni en el popover de filtros.
-  const viewOptions = useMemo(
-    () =>
-      VIEW_OPTIONS.map((o) =>
-        o.value === "actividad"
-          ? { ...o, label: rotuloLabel }
-          : o.value === "unidad" && rotuloUnidad
-            ? { ...o, label: rotuloUnidad }
-            : o,
-      ),
-    [rotuloLabel, rotuloUnidad],
-  )
-
   // Ver `@/components/search/query-syntax`: el texto sin clave va a `buscar`
   // y cada filtro avanzado tiene la suya.
   const syntax = useMemo<QuerySyntax<PlaneadorFiltersFormInput>>(
     () => ({
-      empty: { buscar: "", filtro: "", estado: "", vista: "" },
+      empty: { buscar: "", filtro: "", estado: "" },
       freeText: { key: "actividad", field: "buscar" },
       terms: [
         optionTerm("estado", "estado", [...ESTADO_OPTIONS]),
-        optionTerm(
-          "instrumento",
-          "filtro",
-          instrumentoOptions.map((nombre) => ({ value: nombre, label: nombre })),
-        ),
-        optionTerm("ver", "vista", viewOptions),
+        optionTerm("instrumento", "filtro", instrumentoOptions),
       ],
     }),
-    [instrumentoOptions, viewOptions],
+    [instrumentoOptions],
   )
 
   const { search, setSearch, freeText } = useQuerySearch({
@@ -145,8 +114,6 @@ export function SearchPlaneador({
           defaultValues={filters}
           onSubmit={handleApplyAdvanced}
           instrumentoOptions={instrumentoOptions}
-          rotuloLabel={rotuloLabel}
-          rotuloUnidad={rotuloUnidad}
           alcanceInicial={conAlcance ? alcanceSearchDe(scope) : undefined}
         />
       </SearchQueryBar>

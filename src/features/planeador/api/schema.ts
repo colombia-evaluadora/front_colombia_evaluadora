@@ -49,12 +49,12 @@ const planeadorDocenteSearchShape = {
  */
 export const planeadorSearchSchema = z.object({
   buscar: z.string().optional().catch(undefined),
-  /** Instrumento de evaluación. Todavía no filtra (falta el catálogo). */
+  /** Instrumento de evaluación: `pk_lista_valor` del catálogo
+   *  `INSTRUMENTO_EVALUACION` (lo que filtran `?instrumento=` de mias/
+   *  calendario/stats y `UnidadTematica.instrumentoId`), no el nombre. */
   filtro: z.string().optional().catch(undefined),
   /** Estado de la actividad: `pending` | `in-progress` | … */
   estado: z.string().optional().catch(undefined),
-  /** Agrupación del listado ("Ver por"): `actividad` | `unidad` | … */
-  vista: z.string().optional().catch(undefined),
   // Actividad abierta en el panel de la derecha. Va en la URL —y no en
   // estado local— para que el detalle sea enlazable y sobreviva al refresh,
   // igual que el resto de los filtros del listado.
@@ -85,7 +85,6 @@ export const planeadorFiltersFormSchema = z.object({
   buscar: z.string(),
   filtro: z.string(),
   estado: z.string(),
-  vista: z.string(),
 })
 export type PlaneadorFiltersFormInput = z.input<typeof planeadorFiltersFormSchema>
 export type PlaneadorFiltersFormValues = z.infer<typeof planeadorFiltersFormSchema>
@@ -99,7 +98,6 @@ export const planeadorUnidadesSearchSchema = z.object({
   buscar: z.string().optional().catch(undefined),
   filtro: z.string().optional().catch(undefined),
   estado: z.string().optional().catch(undefined),
-  vista: z.string().optional().catch(undefined),
   unidad: z.string().optional().catch(undefined),
   /** Pestaña de "Unidad temática" activa cuando el docente dicta en más de
    *  un nivel educativo (`GET /planeador/unidades/tabs` trae más de una

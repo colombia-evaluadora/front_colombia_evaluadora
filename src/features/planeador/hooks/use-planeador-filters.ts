@@ -32,7 +32,6 @@ interface FiltersSearch {
   buscar?: string
   filtro?: string
   estado?: string
-  vista?: string
   sede?: number
   ano?: number
   jornada?: number
@@ -85,7 +84,6 @@ function useFiltersFor(
           buscar: values.buscar || undefined,
           filtro: values.filtro || undefined,
           estado: values.estado || undefined,
-          vista: values.vista || undefined,
           ...(alcance ? alcanceSearch(prev, alcance, resetAlCambiarAlcance) : {}),
         }),
         replace: true,
@@ -101,15 +99,12 @@ function useFiltersFor(
         buscar: undefined,
         filtro: undefined,
         estado: undefined,
-        vista: undefined,
         ...alcanceSearch(prev, {}, resetAlCambiarAlcance),
       }),
       replace: true,
     })
   }, [navigate, resetAlCambiarAlcance])
 
-  // `vista` no cuenta como filtro: no recorta el listado, solo cambia cómo se
-  // agrupa, y si contara el embudo se vería activo de entrada.
   const activeFilterCount = useMemo(() => {
     let n = 0
     if (search.buscar) n += 1
@@ -126,7 +121,6 @@ function useFiltersFor(
       buscar: search.buscar ?? "",
       filtro: search.filtro ?? "",
       estado: search.estado ?? "",
-      vista: search.vista ?? "",
     },
     applyFilters,
     clearAllFilters,
