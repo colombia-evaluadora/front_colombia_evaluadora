@@ -41,9 +41,7 @@ import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planead
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
   PlaneadorLecturaBanner,
-  PlaneadorSeleccionVacia,
 } from "@/features/planeador/components/planeador-docente-selector"
-import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -76,9 +74,8 @@ function PlaneadorUnidadesPageContent() {
 
   const buscar = search.buscar ?? ""
   // Cambiar sede/año/jornada/docente borra la pestaña y la unidad abierta.
-  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     useUnidadesFilters()
-  usePlaneadorAlcanceInicial(applyAlcance)
 
   // Sin `?dia=`: a diferencia de la pestaña "Actividades", esta lista todas
   // las unidades del docente, no solo las que tienen alguna actividad
@@ -167,7 +164,6 @@ function PlaneadorUnidadesPageContent() {
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
-            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
             rotuloLabel={rotuloLabel}
             rotuloUnidad={rotuloUnidad}
@@ -179,9 +175,7 @@ function PlaneadorUnidadesPageContent() {
             {/* El rótulo sale del referente curricular (400 caracteres
                 posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
                 recorte, uno largo estiraba la barra entera fuera de pantalla. */}
-            {/* Super Admin sin docente elegido: el estado vacío no ofrece
-                  crear (mismo criterio que la pestaña de Actividades). */}
-            {puedeCrear && !scope.requiereSeleccion && (
+            {puedeCrear && (
               <Button
                 color="primary"
                 size="sm"
@@ -221,11 +215,6 @@ function PlaneadorUnidadesPageContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Super Admin sin docente elegido: no hay planeador propio que
-              mostrar, y ninguna consulta se dispara hasta elegir. */}
-        {scope.requiereSeleccion ? (
-          <PlaneadorSeleccionVacia />
-        ) : (
           <>
             <PlaneadorLecturaBanner className="mb-4" />
             {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
@@ -339,7 +328,6 @@ function PlaneadorUnidadesPageContent() {
               </section>
             </div>
           </>
-        )}
       </TableScreenBody>
     </TableScreen>
   )
