@@ -11,7 +11,7 @@ import { CalificacionesAprobacionView } from "@/features/planeador/components/ca
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
-import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
+import { ValidacionCoordinadorFooter } from "@/features/planeador/components/validacion-coordinador"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { getErrorMessage } from "@/lib/api-client"
@@ -230,10 +230,19 @@ export function ActividadDetallePanel({
           ) : mode === "approval" && !soloLectura ? (
             <CalificacionesAprobacionView actividad={actividad} />
           ) : (
-            <div className="flex flex-col gap-3">
-              <ValidacionCoordinadorCard actividadId={actividad.id} requiereValidacion={actividad.requiereValidacion} />
-              <DetailSections actividad={actividad} />
-            </div>
+            <>
+              <div className="flex flex-col gap-3">
+                <DetailSections actividad={actividad} />
+              </div>
+              {/* Validación del coordinador: barra sticky al pie del panel
+                  (no card en medio). `-mx-3 -mb-3` compensa el `p-3` del
+                  contenedor que scrollea. */}
+              <ValidacionCoordinadorFooter
+                className="-mx-3 -mb-3 mt-3"
+                actividadId={actividad.id}
+                requiereValidacion={actividad.requiereValidacion}
+              />
+            </>
           )
         )}
       </div>
