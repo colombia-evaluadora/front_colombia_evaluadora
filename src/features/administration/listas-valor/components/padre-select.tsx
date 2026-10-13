@@ -1,0 +1,107 @@
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
+import type { Categoria } from "@/features/administration/listas-valor/api/types/lista-valor"
+
+// Los `value` de un select son strings; "sin elegir" necesita su propio valor.
+export const NONE = "none"
+
+interface CategoriaPadreSelectProps {
+  id: string
+  value: string
+  onChange: (categoria: string) => void
+  categorias: Categoria[]
+  /** La propia categoría no puede ser su padre. */
+  exclude?: string
+  disabled?: boolean
+}
+
+/** Categoría de la que cuelgan los valores (país → departamento → municipio). */
+export function CategoriaPadreSelect({
+  id,
+  value,
+  onChange,
+  categorias,
+  exclude,
+  disabled,
+}: CategoriaPadreSelectProps) {
+  const opciones = categorias.filter((c) => c.categoria !== exclude)
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => next && onChange(String(next))}
+      disabled={disabled}
+    >
+      <SelectTrigger id={id} variant="outlined">
+        <SelectValue>{(current) => (current === NONE ? "Ninguna" : current)}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value={NONE}>Ninguna</SelectItem>
+          {opciones.map((c) => (
+            <SelectItem key={c.categoria} value={c.categoria}>
+              {c.categoria}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}
+
+interface ValorPadreSelectProps {
+  id: string
+  /** Categoría padre; sin ella no hay valores que ofrecer. */
+  categoria: string | null
+  value: string
+  onChange: (pk: string) => void
+  disabled?: boolean
+  "aria-label"?: string
+}
+
+/** Valor padre dentro de la categoría padre. `NONE` = sin padre. */
+export function ValorPadreSelect({
+  id,
+  categoria,
+  value,
+  onChange,
+  disabled,
+  "aria-label": ariaLabel,
+}: ValorPadreSelectProps) {
+  const { data: valores = [], isPending } = useValoresQuery(categoria)
+  const sinCategoria = !categoria
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => next && onChange(String(next))}
+      disabled={disabled || sinCategoria}
+    >
+      <SelectTrigger id={id} variant="outlined" aria-label={ariaLabel}>
+        <SelectValue>
+          {(current) => {
+            if (current === NONE) return sinCategoria ? "Elija la lista padre" : "Sin padre"
+            const valor = valores.find((v) => String(v.pkListaValor) === current)
+            return valor ? `${valor.nombre} (${valor.valor})` : isPending ? "Cargando…" : "Seleccione"
+          }}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value={NONE}>Sin padre</SelectItem>
+          {valores.map((v) => (
+            <SelectItem key={v.pkListaValor} value={String(v.pkListaValor)}>
+              {v.nombre} ({v.valor})
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}

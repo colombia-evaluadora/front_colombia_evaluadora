@@ -25,6 +25,16 @@ interface EntityMessages {
 }
 
 export const SUCCESS_MESSAGES = {
+  listaValorCategoria: {
+    created: "La lista se creó correctamente.",
+    updated: "La lista se actualizó correctamente.",
+    deleted: "La lista se eliminó correctamente.",
+  },
+  listaValor: {
+    created: "El valor se creó correctamente.",
+    updated: "El valor se actualizó correctamente.",
+    deleted: "El valor se eliminó correctamente.",
+  },
   establishment: {
     created: "El establecimiento educativo se creó correctamente.",
     updated: "El establecimiento educativo se actualizó correctamente.",
