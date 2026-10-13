@@ -21,7 +21,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
 import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
-import { buildCalificarCeldaInput } from "@/features/planeador/components/planilla/celda-nota-popover"
+import {
+  buildCalificarCeldaInput,
+  mismasNotas,
+  notasDeCalificacion,
+  type CambioPendiente,
+} from "@/features/planeador/components/planilla/celda-nota-popover"
+import { usePrevisualizarNotaMutation } from "@/features/planeador/api/mutations/use-previsualizar-nota"
 import {
   InstrumentoGradingFields,
   instrumentoCompletitud,
@@ -56,6 +62,11 @@ interface DialogCalificarActividadProps {
   /** Motivo por el que no se puede calificar (sin asistencia, No asistido,
    *  No presentó): deshabilita el botón y se muestra en el tooltip. */
   bloqueo?: string | null
+  /** Periodo cerrado: en vez de guardar, deja el cambio pendiente de enviar. */
+  onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
+  cambioPendiente?: CambioPendiente
+  /** Body de una corrección ya enviada y pendiente: precarga el diálogo. */
+  calificacionPropuesta?: unknown
 }
 
 /**
@@ -84,6 +95,9 @@ export function DialogCalificarActividad({
   fecha,
   onGuardado,
   bloqueo,
+  onCambio,
+  cambioPendiente,
+  calificacionPropuesta,
 }: DialogCalificarActividadProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -99,8 +113,15 @@ export function DialogCalificarActividad({
   const { data: notaActual } = useNotaEstudianteQuery(open ? pkTactividadEstudiante : undefined)
 
   useEffect(() => {
-    if (open) setDraft(notaActual?.notas ?? [])
-  }, [open, notaActual])
+    if (open) {
+      setDraft(
+        cambioPendiente?.notas ?? notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? [],
+      )
+    }
+  }, [open, notaActual, cambioPendiente, calificacionPropuesta])
+
+  // Con una corrección pendiente, "sin cambios" es respecto a lo propuesto.
+  const notasOriginales = notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? []
 
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
@@ -115,12 +136,30 @@ export function DialogCalificarActividad({
     },
   })
 
+  const previsualizar = usePrevisualizarNotaMutation()
   const completitud = instrumentoCompletitud(instrumento, draft)
+  const guardando = calificar.isPending || previsualizar.isPending
 
   function guardar() {
     if (!instrumento) return
     const input = buildCalificarCeldaInput(instrumento, draft, pkTactividadEstudiante, fecha)
     if (!input) return
+    if (onCambio) {
+      // Igual a la nota vigente: no hay cambio que enviar.
+      if (mismasNotas(draft, notasOriginales)) {
+        onCambio(pkTactividadEstudiante, null)
+        setOpen(false)
+        return
+      }
+      previsualizar.mutate(input, {
+        onSuccess: (result) => {
+          onCambio(pkTactividadEstudiante, { input, notas: draft, notaPropuesta: result?.nota_homologada ?? null })
+          setOpen(false)
+        },
+        onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+      })
+      return
+    }
     calificar.mutate(input)
   }
 
@@ -219,10 +258,10 @@ export function DialogCalificarActividad({
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || calificar.isPending}
+            disabled={!completitud.completo || guardando}
             onClick={guardar}
           >
-            {calificar.isPending ? (
+            {guardando ? (
               <SpinnerIcon className="animate-spin" data-icon="inline-start" />
             ) : (
               <CheckIcon data-icon="inline-start" />

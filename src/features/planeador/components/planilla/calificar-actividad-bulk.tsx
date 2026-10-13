@@ -22,6 +22,10 @@ import {
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import { bloqueoCalificar, type NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
+import {
+  DialogEnviarSolicitud,
+  DialogSolicitudEnviada,
+} from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
 
 interface FilaEstudiante {
   id: number
@@ -43,6 +47,8 @@ interface CalificarActividadBulkProps {
   onEstadoGuardar: (estado: EstadoGuardar | null) => void
   /** La página llama a esta ref al pulsar "Guardar". */
   guardarRef: RefObject<(() => void) | null>
+  /** Periodo no Calificable: confirma y avisa que se abrió la solicitud. */
+  periodoCerrado?: boolean
 }
 
 export interface EstadoGuardar {
@@ -150,7 +156,10 @@ export function CalificarActividadBulk({
   onVolver,
   onEstadoGuardar,
   guardarRef,
+  periodoCerrado = false,
 }: CalificarActividadBulkProps) {
+  const [confirmando, setConfirmando] = useState(false)
+  const [enviada, setEnviada] = useState(false)
   const [nota, setNota] = useState<NotaCriterio[]>([])
   const [seleccionados, setSeleccionados] = useState<Set<number>>(
     () => new Set(estudiantes.map((e) => e.id)),
@@ -227,19 +236,34 @@ export function CalificarActividadBulk({
     setGuardando(true)
     try {
       await Promise.all(inputs.map((input) => bulkMutation.mutateAsync(input)))
-      notify("Calificación en bloque guardada.")
-      onVolver()
+      // Regla 55: quien ya tenía nota queda en solicitud; la primera se aplica.
+      const matriculas = new Set(
+        estudiantes.filter((e) => efectivos.includes(e.id)).map((e) => e.matriculaId),
+      )
+      const conSolicitud =
+        periodoCerrado &&
+        (calificaciones ?? []).some(
+          (c) => matriculas.has(c.matriculaId) && (c.calificacion != null || c.notaHomologada != null),
+        )
+      if (conSolicitud) {
+        // Vuelve a la grilla al cerrar el aviso.
+        setEnviada(true)
+      } else {
+        notify("Calificación en bloque guardada.")
+        onVolver()
+      }
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setGuardando(false)
+      setConfirmando(false)
     }
   }
 
   const deshabilitado = efectivos.length === 0 || !completitud.completo || escalaSinBulk
 
   // Informa a la página si mostrar "Guardar" (solo con cambios).
-  guardarRef.current = guardar
+  guardarRef.current = periodoCerrado ? () => setConfirmando(true) : guardar
   useEffect(() => {
     onEstadoGuardar(dirty ? { disabled: deshabilitado, guardando } : null)
   }, [dirty, deshabilitado, guardando, onEstadoGuardar])
@@ -334,6 +358,20 @@ export function CalificarActividadBulk({
           )
         })}
       </ul>
+
+      <DialogEnviarSolicitud
+        open={confirmando}
+        enviando={guardando}
+        onEnviar={guardar}
+        onCancelar={() => setConfirmando(false)}
+      />
+      <DialogSolicitudEnviada
+        open={enviada}
+        onCerrar={() => {
+          setEnviada(false)
+          onVolver()
+        }}
+      />
     </div>
   )
 }

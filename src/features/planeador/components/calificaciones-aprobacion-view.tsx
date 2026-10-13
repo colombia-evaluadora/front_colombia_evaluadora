@@ -10,6 +10,7 @@ import {
   CheckIcon,
   MagnifyingGlassIcon,
   SpinnerIcon,
+  WarningCircleIcon,
 } from "@/components/ui/icons";
 import { useNotify } from "@/components/notice/notice-context";
 import { getErrorMessage } from "@/lib/api-client";
@@ -27,6 +28,11 @@ import {
 import type { Actividad } from "@/features/planeador/api/types/actividad";
 import { bloqueoCalificar, type NotaCriterio } from "@/features/planeador/api/types/calificacion";
 import { planeadorKeys } from "@/features/planeador/api/query-keys";
+import {
+  DialogEnviarSolicitud,
+  DialogSolicitudEnviada,
+} from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado";
+import { usePeriodoCerrado } from "@/features/planeador/hooks/use-solicitud-periodo-cerrado";
 
 interface CalificacionesAprobacionViewProps {
   actividad: Actividad;
@@ -99,6 +105,12 @@ export function CalificacionesAprobacionView({
 
   const efectivos = [...seleccionados].filter((id) => !bloqueos.has(id));
 
+  // Periodo cerrado: el backend convierte en solicitud la nota de quien ya
+  // tenía resultado (Regla 55); la primera nota se aplica directo.
+  const periodoCerrado = usePeriodoCerrado(actividad.fechaInicio);
+  const [confirmando, setConfirmando] = useState(false);
+  const [enviada, setEnviada] = useState(false);
+
   async function guardarCalificacionBulk() {
     if (!instrumento) return;
     const inputs = buildBulkInputs(
@@ -117,12 +129,21 @@ export function CalificacionesAprobacionView({
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividad.calificaciones(actividad.id),
       });
-      notify("Calificación en bloque guardada.");
+      const conSolicitud =
+        periodoCerrado &&
+        calificaciones.some(
+          (c) =>
+            efectivos.includes(c.id) &&
+            (c.calificacion != null || c.notaHomologada != null),
+        );
+      if (conSolicitud) setEnviada(true);
+      else notify("Calificación en bloque guardada.");
       setDirty(false);
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" });
     } finally {
       setGuardando(false);
+      setConfirmando(false);
     }
   }
 
@@ -162,6 +183,15 @@ export function CalificacionesAprobacionView({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
+      {periodoCerrado && (
+        <div
+          role="status"
+          className="border-orange-stroke bg-orange-22 text-orange flex min-h-8 items-center gap-3 rounded-md border px-4 py-1 text-sm font-semibold"
+        >
+          <WarningCircleIcon className="size-5 shrink-0" />
+          Periodo cerrado
+        </div>
+      )}
       <h4 className="text-base font-semibold">
         Instrumento:{" "}
         {instrumento?.instrumentoNombre ??
@@ -258,7 +288,11 @@ export function CalificacionesAprobacionView({
                 guardando ||
                 escalaSinBulk
               }
-              onClick={guardarCalificacionBulk}
+              onClick={
+                periodoCerrado
+                  ? () => setConfirmando(true)
+                  : guardarCalificacionBulk
+              }
             >
               {guardando ? (
                 <SpinnerIcon
@@ -273,6 +307,17 @@ export function CalificacionesAprobacionView({
           </div>
         </footer>
       )}
+
+      <DialogEnviarSolicitud
+        open={confirmando}
+        enviando={guardando}
+        onEnviar={guardarCalificacionBulk}
+        onCancelar={() => setConfirmando(false)}
+      />
+      <DialogSolicitudEnviada
+        open={enviada}
+        onCerrar={() => setEnviada(false)}
+      />
     </div>
   );
 }
