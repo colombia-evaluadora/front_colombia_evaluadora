@@ -134,6 +134,11 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term={`Nombre de la ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
           <Definition term={`Tipo de ${rotuloLabelLower}`}>{actividad.tipo}</Definition>
           <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
+          {/* Docente dueño (sso V553: quien dicta el grupo+asignatura o, sin
+              grupo, el autor de la unidad). Sirve sobre todo a Super Admin,
+              Rector y Coordinador mirando planeadores ajenos; se muestra
+              siempre que el backend lo resuelva. */}
+          {actividad.docenteNombre && <Definition term="Docente">{actividad.docenteNombre}</Definition>}
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el

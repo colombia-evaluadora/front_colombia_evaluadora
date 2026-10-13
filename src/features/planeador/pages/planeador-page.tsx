@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import { useInstrumentoFiltroOptions } from "@/features/planeador/api/query/use-
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
+import { prefetchActividadDetalle } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
 import { DialogImportarActividadesJson } from "@/features/planeador/components/dialogs/dialog-importar-actividades-json"
 import { downloadJson } from "@/features/planeador/lib/download-json"
@@ -90,6 +92,7 @@ export function PlaneadorPage() {
 
 function PlaneadorPageContent() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
   const { puedeCrear, viendoOtroDocente } = usePlaneadorSoloLectura()
@@ -630,7 +633,13 @@ function PlaneadorPageContent() {
                     {!isPending && !isError && filtered.length > 0 && (
                       <ul className="flex flex-col gap-2">
                         {filtered.map((actividad) => (
-                          <li key={actividad.id}>
+                          // Precarga el detalle al apuntar/enfocar la card: el
+                          // clic llega con el viaje (o parte) ya hecho.
+                          <li
+                            key={actividad.id}
+                            onPointerEnter={() => prefetchActividadDetalle(queryClient, actividad.id)}
+                            onFocus={() => prefetchActividadDetalle(queryClient, actividad.id)}
+                          >
                             {/* Actividad de otro docente (Coordinador viendo toda
                             su sede): la card queda en solo lectura. */}
                             <PlaneadorSoloLecturaScope activo={esAjena(actividad)}>
@@ -741,6 +750,7 @@ function PlaneadorPageContent() {
                       // lista, más arriba) en vez de crear una nueva en esa
                       // fecha.
                       onEventClick={(id) => setActividadId(String(id))}
+                      onEventHover={(id) => prefetchActividadDetalle(queryClient, id)}
                     />
                   </div>
                 )}
