@@ -1,7 +1,6 @@
 import { useRef, useState } from "react"
 import { format } from "date-fns"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import {
@@ -32,11 +31,11 @@ import {
 
 const ESTADO_UI: Record<
   Exclude<EstadoValidacionCoordinador, "NO_REQUIERE">,
-  { label: string; color: "warning" | "success" | "destructive" }
+  { label: string; dot: string }
 > = {
-  PENDIENTE: { label: "Pendiente de validación", color: "warning" },
-  APROBADA: { label: "Aprobada", color: "success" },
-  DECLINADA: { label: "Declinada", color: "destructive" },
+  PENDIENTE: { label: "Pendiente de validación", dot: "bg-orange" },
+  APROBADA: { label: "Aprobada", dot: "bg-green" },
+  DECLINADA: { label: "Declinada", dot: "bg-red" },
 }
 
 function formatFecha(value: string | null): string | null {
@@ -78,10 +77,13 @@ export function ValidacionCoordinadorEstado({
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-semibold">Validación del coordinador</span>
+        {/* Estado como texto normal + punto de color, no badge: el texto
+            amarillo sobre fondo amarillo claro no tenía contraste. */}
         {estado && (
-          <Badge variant="soft" color={estado.color}>
+          <span className="text-foreground inline-flex items-center gap-1.5 text-sm font-medium">
+            <span aria-hidden className={cn("size-2 shrink-0 rounded-full", estado.dot)} />
             {estado.label}
-          </Badge>
+          </span>
         )}
       </div>
 
