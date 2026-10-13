@@ -54,6 +54,7 @@ import {
   asistenciaSearchSchema,
   asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
+import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
@@ -143,6 +144,11 @@ const EmployeesPage = lazyRouteComponent(
 const RolesMenusPage = lazyRouteComponent(
   () => import("@/features/administration/roles-menus/pages/roles-menus-page"),
   "RolesMenusPage"
+)
+
+const ListasValorPage = lazyRouteComponent(
+  () => import("@/features/administration/listas-valor/pages/listas-valor-page"),
+  "ListasValorPage"
 )
 
 const AddEstablishmentPage = lazyRouteComponent(
@@ -613,6 +619,16 @@ export const rolesMenusRoute = createRoute({
   component: RolesMenusPage,
 })
 
+export const listasValorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.listasValor.path,
+  validateSearch: listasValorSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Listas de valor" }],
+  },
+  component: ListasValorPage,
+})
+
 // Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
 // único `NoticeProvider` para que un aviso disparado en un formulario de
 // alta/edición siga visible al navegar de vuelta al listado (a diferencia de
@@ -981,6 +997,7 @@ const routeTree = rootRoute.addChildren([
       auditoriaSesionOperacionesRoute,
     ]),
     rolesMenusRoute,
+    listasValorRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

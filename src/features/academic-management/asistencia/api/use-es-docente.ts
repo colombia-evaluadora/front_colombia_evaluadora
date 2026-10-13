@@ -29,13 +29,15 @@ export interface AsistenciaAccess {
   puedeAprobar: boolean
 }
 
-/** Regla 75: roles que resuelven solicitudes (`/aprobaciones`); el back acota cada uno a su sede o establecimiento. */
+/**
+ * Regla 75: roles que resuelven solicitudes (`/aprobaciones`); el back acota cada uno a su sede o establecimiento.
+ * El super administrador queda fuera: el back lo deja aprobar, pero no se le muestra el aviso de pendientes.
+ */
 const APROBADOR_ROLES = [
   COORDINADOR_ROLE,
   "CEVAL-RECTOR",
   "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO",
   "CEVAL-AUXILIAR_ADMINISTRATIVO",
-  SUPER_ADMIN_ROLE,
 ]
 
 /** Regla 74: resuelve de una vez el alcance de lectura/escritura de asistencia para el usuario actual, incluyendo el caso de doble rol (docente + director de grupo). */
@@ -51,6 +53,7 @@ export function useAsistenciaAccess(): AsistenciaAccess {
     isDirectorGrupo,
     isCoordinador,
     puedeRegistrar: isDocente,
-    puedeAprobar: APROBADOR_ROLES.some((rol) => roles.includes(rol)),
+    puedeAprobar:
+      !roles.includes(SUPER_ADMIN_ROLE) && APROBADOR_ROLES.some((rol) => roles.includes(rol)),
   }
 }
