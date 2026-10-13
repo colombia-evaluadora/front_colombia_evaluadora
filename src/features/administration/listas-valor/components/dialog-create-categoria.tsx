@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
@@ -73,6 +73,7 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
   const [filas, setFilas] = useState<Fila[]>([filaVacia(0)])
   const [submitted, setSubmitted] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const listaRef = useRef<HTMLUListElement>(null)
 
   const dirty =
     nombre !== "" || categoriaPadre !== NONE || filas.some((f) => f.nombre || f.valor)
@@ -175,7 +176,7 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
         <form
           id="categoria-form"
           onSubmit={handleSubmit}
-          className="-mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1"
+          className="flex min-h-0 flex-col gap-4"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field variant="outlined" data-invalid={nombreError ? "true" : undefined}>
@@ -218,15 +219,20 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
                 size="xs"
                 variant="soft"
                 color="primary"
-                onClick={() =>
+                onClick={() => {
                   setFilas((prev) => [...prev, filaVacia(Math.max(...prev.map((f) => f.key)) + 1)])
-                }
+                  // La fila nueva queda abajo, fuera de vista si ya hay scroll.
+                  requestAnimationFrame(() =>
+                    listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight }),
+                  )
+                }}
               >
                 <PlusIcon data-icon="inline-start" />
                 Agregar fila
               </Button>
             </div>
-            <ul className="flex flex-col gap-2">
+            {/* Alto de 5 filas (2.75rem + gap); con más, scroll interno. El padding deja ver el ring de foco. */}
+            <ul ref={listaRef} className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1">
               {filas.map((fila, index) => {
                 const error = filaError(fila, index)
                 return (

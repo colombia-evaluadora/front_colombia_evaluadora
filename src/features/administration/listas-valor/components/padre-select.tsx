@@ -1,4 +1,12 @@
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxSeparator,
+} from "@/components/ui/combobox"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -33,26 +41,22 @@ export function CategoriaPadreSelect({
   disabled,
 }: CategoriaPadreSelectProps) {
   const opciones = categorias.filter((c) => c.categoria !== exclude)
+  // Combobox y no select: hay decenas de listas y se busca escribiendo.
   return (
-    <Select
-      value={value}
-      onValueChange={(next) => next && onChange(String(next))}
-      disabled={disabled}
-    >
-      <SelectTrigger id={id} variant="outlined">
-        <SelectValue>{(current) => (current === NONE ? "Ninguna" : current)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value={NONE}>Ninguna</SelectItem>
-          {opciones.map((c) => (
-            <SelectItem key={c.categoria} value={c.categoria}>
-              {c.categoria}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <ComboboxField value={value} onValueChange={(next) => next && onChange(String(next))}>
+      <ComboboxFieldTrigger id={id} disabled={disabled}>
+        <ComboboxFieldValue>{(current) => (current === NONE ? "Ninguna" : current)}</ComboboxFieldValue>
+      </ComboboxFieldTrigger>
+      <ComboboxFieldContent>
+        <ComboboxFieldItem value={NONE}>Ninguna</ComboboxFieldItem>
+        <ComboboxSeparator />
+        {opciones.map((c) => (
+          <ComboboxFieldItem key={c.categoria} value={c.categoria}>
+            <span className="font-mono text-[0.8125rem]">{c.categoria}</span>
+          </ComboboxFieldItem>
+        ))}
+      </ComboboxFieldContent>
+    </ComboboxField>
   )
 }
 

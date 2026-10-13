@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 
-import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -25,7 +24,6 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-import { useDeleteCategoria } from "@/features/administration/listas-valor/api/mutations/delete-categoria"
 import { useDeleteValor } from "@/features/administration/listas-valor/api/mutations/delete-valor"
 import { useCategoriasQuery } from "@/features/administration/listas-valor/api/query/use-categorias-query"
 import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
@@ -34,6 +32,7 @@ import type {
   ListaValor,
 } from "@/features/administration/listas-valor/api/types/lista-valor"
 import { createValoresColumns } from "@/features/administration/listas-valor/components/columns-valores"
+import { DialogModificarCategoria } from "@/features/administration/listas-valor/components/dialog-modificar-categoria"
 import { DialogCreateCategoria } from "@/features/administration/listas-valor/components/dialog-create-categoria"
 import { DialogSaveValor } from "@/features/administration/listas-valor/components/dialog-save-valor"
 
@@ -143,23 +142,12 @@ function ListasValorPageContent() {
   }
 
   const deleteValor = useDeleteValor()
-  const deleteCategoria = useDeleteCategoria()
 
   // `ConfirmRemoveButton` espera la promesa: el error se muestra en el aviso de la página.
   async function eliminarValor(valor: ListaValor) {
     try {
       await deleteValor.mutateAsync({ id: valor.pkListaValor })
       notify(SUCCESS_MESSAGES.listaValor.deleted)
-    } catch (e) {
-      notify(getErrorMessage(e), { variant: "error" })
-    }
-  }
-
-  async function eliminarCategoria(nombre: string) {
-    try {
-      await deleteCategoria.mutateAsync({ categoria: nombre })
-      seleccionar(undefined)
-      notify(SUCCESS_MESSAGES.listaValorCategoria.deleted)
     } catch (e) {
       notify(getErrorMessage(e), { variant: "error" })
     }
@@ -339,19 +327,14 @@ function ListasValorPageContent() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {permisos.puedeEliminar && (
-                      <ConfirmRemoveButton
-                        size="icon"
-                        label="Eliminar lista"
-                        title="Eliminar lista"
-                        description={
-                          <>
-                            Se eliminarán los {categoria.totalValores} valores de{" "}
-                            {categoria.categoria}. No se puede si alguno está en uso o tiene
-                            valores que dependen de él.
-                          </>
-                        }
-                        onConfirm={() => eliminarCategoria(categoria.categoria)}
+                    {(permisos.puedeEditar || permisos.puedeEliminar) && (
+                      <DialogModificarCategoria
+                        categoria={categoria}
+                        categorias={categorias}
+                        valores={valores}
+                        puedeEditar={permisos.puedeEditar}
+                        puedeEliminar={permisos.puedeEliminar}
+                        onDeleted={() => seleccionar(undefined)}
                       />
                     )}
                     {permisos.puedeCrear && (
