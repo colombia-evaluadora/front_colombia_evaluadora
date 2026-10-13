@@ -41,6 +41,16 @@ import { DialogCalificarActividad } from "@/features/planeador/components/dialog
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
+import { NotaConCambio } from "@/features/planeador/components/planilla/planilla-grid"
+import {
+  DialogEnviarSolicitud,
+  DialogSolicitudEnviada,
+} from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
+import {
+  usePeriodoCerrado,
+  useSolicitudPeriodoCerrado,
+} from "@/features/planeador/hooks/use-solicitud-periodo-cerrado"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -55,6 +65,13 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const actividadSinComenzar = actividad.fechaInicio > todayDateOnly()
   const [guardandoId, setGuardandoId] = useState<number | null>(null)
   const marcarAsistencia = useAsistenciaActividadMutation()
+  const invalidarCalificaciones = () =>
+    queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(actividad.id) })
+
+  // Periodo de la actividad no Calificable (estado distinto de "1"): igual
+  // que en la Planilla, las notas se acumulan y se envían como solicitud.
+  const periodoCerrado = usePeriodoCerrado(actividad.fechaInicio)
+  const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la
    *  Vista Asistencias. La excusa se adjunta allá; acá solo se refleja. */
@@ -101,44 +118,70 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   }
 
   return (
-    <div className="border-input scrollbar-slim overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[1100px] table-fixed text-sm">
-        <thead className="bg-muted/10 border-b">
-          <tr>
-            <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-            <th className="w-96 px-4 py-3 text-left">
-              <span className="block font-semibold uppercase">Asistencia</span>
-              <span className="text-muted-foreground text-xs font-normal">
-                Fecha: {formatDate(actividad.fechaInicio)}
-              </span>
-            </th>
-            <th
-              className={cn(
-                "px-4 py-3 font-semibold uppercase",
-                formativa ? "text-left" : "text-center",
-              )}
-            >
-              {formativa ? "Observación" : "Valoración"}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-border divide-y">
-          {calificaciones.map((estudiante) => (
-            <CalificacionRow
-              key={estudiante.id}
-              actividad={actividad}
-              formativa={formativa}
-              estudiante={estudiante}
-              onGuardado={() =>
-                queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(actividad.id) })
-              }
-              onGuardarAsistencia={guardarAsistencia}
-              guardandoAsistencia={guardandoId === estudiante.id}
-              actividadSinComenzar={actividadSinComenzar}
-            />
-          ))}
-        </tbody>
-      </table>
+    <div className="flex flex-col gap-3">
+      {periodoCerrado && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            role="status"
+            className="border-orange-stroke bg-orange-22 text-orange flex min-h-8 flex-1 items-center gap-3 rounded-md border px-4 py-1 text-sm font-semibold"
+          >
+            <WarningCircleIcon className="size-5 shrink-0" />
+            Periodo cerrado
+          </div>
+          {solicitud.cambios.size > 0 && (
+            <Button color="primary" size="sm" variant="fill" onClick={solicitud.pedirConfirmacion}>
+              Guardar
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="border-input scrollbar-slim overflow-x-auto rounded-md border">
+        <table className="w-full min-w-[1100px] table-fixed text-sm">
+          <thead className="bg-muted/10 border-b">
+            <tr>
+              <th className="w-96 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
+              <th className="w-96 px-4 py-3 text-left">
+                <span className="block font-semibold uppercase">Asistencia</span>
+                <span className="text-muted-foreground text-xs font-normal">
+                  Fecha: {formatDate(actividad.fechaInicio)}
+                </span>
+              </th>
+              <th
+                className={cn(
+                  "px-4 py-3 font-semibold uppercase",
+                  formativa ? "text-left" : "text-center",
+                )}
+              >
+                {formativa ? "Observación" : "Valoración"}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-border divide-y">
+            {calificaciones.map((estudiante) => (
+              <CalificacionRow
+                key={estudiante.id}
+                actividad={actividad}
+                formativa={formativa}
+                estudiante={estudiante}
+                onGuardado={invalidarCalificaciones}
+                onGuardarAsistencia={guardarAsistencia}
+                guardandoAsistencia={guardandoId === estudiante.id}
+                actividadSinComenzar={actividadSinComenzar}
+                cambio={solicitud.cambios.get(estudiante.id)}
+                onCambio={periodoCerrado ? solicitud.agregarCambio : undefined}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <DialogEnviarSolicitud
+        open={solicitud.confirmando}
+        enviando={solicitud.enviando}
+        onEnviar={solicitud.enviarSolicitud}
+        onCancelar={solicitud.cancelarConfirmacion}
+      />
+      <DialogSolicitudEnviada open={solicitud.enviada} onCerrar={solicitud.cerrarEnviada} />
     </div>
   )
 }
@@ -153,6 +196,9 @@ interface CalificacionRowProps {
   onGuardarAsistencia: (pkTactividadEstudiante: number, tipo: AsistenciaActividadInput["tipo"]) => void
   guardandoAsistencia: boolean
   actividadSinComenzar: boolean
+  /** Nota editada en periodo cerrado, sin enviar todavía. */
+  cambio?: CambioPendiente
+  onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
 }
 
 function CalificacionRow({
@@ -163,6 +209,8 @@ function CalificacionRow({
   onGuardarAsistencia,
   guardandoAsistencia,
   actividadSinComenzar,
+  cambio,
+  onCambio,
 }: CalificacionRowProps) {
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
@@ -178,6 +226,12 @@ function CalificacionRow({
     (estudiante.asistencia.estado === "no-asistio" && estudiante.estadoResultado !== "CALIFICADO")
   const tieneResultado = formativa ? Boolean(estudiante.observacion?.trim()) : !sinNota
   const bloqueo = bloqueoCalificar(estudiante)
+  // La editada sin enviar o la ya enviada que espera aprobación (Regla 55).
+  const notaPropuesta = cambio
+    ? cambio.notaPropuesta
+    : estudiante.solicitudPendiente
+      ? estudiante.notaPropuestaHomologada
+      : null
   // Con resultado la asistencia de la actividad queda congelada.
   const asistenciaEditable = estudiante.asistenciaEditable !== false && !tieneResultado
 
@@ -260,6 +314,12 @@ function CalificacionRow({
             ) : (
               <span className="text-muted-foreground">Agregar observación</span>
             )
+          ) : notaPropuesta != null ? (
+            <NotaConCambio
+              nota={notaPropuesta}
+              anterior={estudiante.notaHomologada ?? null}
+              titulo={cambio ? "Cambio sin enviar" : "Pendiente de aprobación"}
+            />
           ) : estudiante.notaHomologada != null ? (
             <span className="font-semibold">{estudiante.notaHomologada.toFixed(2)}</span>
           ) : porcentaje !== null ? (
@@ -278,6 +338,11 @@ function CalificacionRow({
               fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
               onGuardado={onGuardado}
               bloqueo={bloqueo}
+              onCambio={onCambio}
+              cambioPendiente={cambio}
+              calificacionPropuesta={
+                estudiante.solicitudPendiente ? estudiante.calificacionPropuesta : undefined
+              }
             />
           )}
         </div>
