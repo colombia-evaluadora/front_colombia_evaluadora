@@ -105,7 +105,7 @@ export function buildCalificarCeldaInput(
   return null
 }
 
-function mismasNotas(a: NotaCriterio[], b: NotaCriterio[]) {
+export function mismasNotas(a: NotaCriterio[], b: NotaCriterio[]) {
   if (a.length !== b.length) return false
   return a.every((x) => {
     const y = b.find((n) => n.criterioId === x.criterioId)

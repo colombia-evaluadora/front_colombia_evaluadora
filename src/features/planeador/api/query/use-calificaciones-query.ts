@@ -58,6 +58,11 @@ interface CalificacionRow {
   /** `false` si ya hay nota u observación. */
   asistencia_editable: boolean | null
   estado_resultado: EstadoResultado | null
+  /** Regla 55: corrección pendiente de aprobación (la nota vigente no cambia). */
+  solicitud_pendiente?: boolean | null
+  nota_propuesta_homologada?: number | null
+  /** Body de calificar de esa corrección (null si vino de un bloque). */
+  calificacion_propuesta?: unknown
 }
 
 function toEstadoAsistencia(valor: string | null): EstadoAsistencia {
@@ -104,6 +109,9 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     noPresento: row.estado_resultado === "NO_PRESENTO",
     estadoResultado: row.estado_resultado ?? undefined,
     asistenciaEditable: row.asistencia_editable !== false,
+    solicitudPendiente: row.solicitud_pendiente === true,
+    notaPropuestaHomologada: row.nota_propuesta_homologada ?? null,
+    calificacionPropuesta: row.calificacion_propuesta ?? null,
   }
 }
 
