@@ -24,11 +24,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { CheckIcon, PencilIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { getErrorMessage } from "@/lib/api-client"
-import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useDeleteCategoria } from "@/features/administration/listas-valor/api/mutations/delete-categoria"
@@ -59,8 +58,7 @@ const toFila = (v: ListaValor): Fila => ({
   padre: v.padre ? String(v.padre.pkListaValor) : NONE,
 })
 
-const mismaFila = (a: Fila, b: Fila) =>
-  a.nombre === b.nombre && a.accion === b.accion && a.padre === b.padre
+const mismaFila = (a: Fila, b: Fila) => a.padre === b.padre
 
 interface DialogModificarCategoriaProps {
   categoria: Categoria
@@ -72,8 +70,9 @@ interface DialogModificarCategoriaProps {
 }
 
 /**
- * Modificar una lista: sus valores en bloque (nombre, acción y padre) y su lista
- * padre, o eliminarla completa. El backend no permite renombrar la lista.
+ * Modificar una lista: de qué lista depende (y el valor padre de cada valor), o
+ * eliminarla completa. El nombre queda bloqueado hasta que el backend permita
+ * renombrar. Nombre y acción de cada valor se reenvían tal cual: el PUT reemplaza todo.
  */
 export function DialogModificarCategoria({
   categoria,
@@ -89,7 +88,6 @@ export function DialogModificarCategoria({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [categoriaPadre, setCategoriaPadre] = useState(NONE)
   const [filas, setFilas] = useState<Fila[]>([])
-  const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
 
@@ -123,7 +121,6 @@ export function DialogModificarCategoria({
     if (next) {
       setCategoriaPadre(padreInicial)
       setFilas(iniciales)
-      setSubmitted(false)
     }
     setNotice(null)
     setOpen(next)
@@ -146,11 +143,6 @@ export function DialogModificarCategoria({
   // dejando en el diálogo lo que falta para reintentar.
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setSubmitted(true)
-    if (filas.some((f) => !f.nombre.trim())) {
-      setNotice({ id: Date.now(), message: INCOMPLETE_FORM })
-      return
-    }
     if (cambiadas.length === 0) {
       handleOpenChange(false)
       return
@@ -161,9 +153,9 @@ export function DialogModificarCategoria({
         await save.mutateAsync({
           id: f.pk,
           categoria: categoria.categoria,
-          nombre: f.nombre.trim(),
+          nombre: f.nombre,
           valor: f.valor,
-          accion: f.accion.trim() || null,
+          accion: f.accion || null,
           padre: f.padre === NONE ? null : Number(f.padre),
         })
       }
@@ -185,7 +177,7 @@ export function DialogModificarCategoria({
         Modificar
       </DialogTrigger>
       <DialogContent
-        className="flex max-h-[85vh] flex-col sm:max-w-4xl"
+        className="flex max-h-[85vh] flex-col sm:max-w-2xl"
         inert={confirmDiscardOpen || confirmDeleteOpen}
       >
         <DialogHeader>
@@ -199,82 +191,69 @@ export function DialogModificarCategoria({
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-col gap-4"
         >
-          <Field variant="outlined" className="sm:max-w-sm">
-            <FieldLabel htmlFor="modificar-categoria-padre">Depende de</FieldLabel>
-            <CategoriaPadreSelect
-              id="modificar-categoria-padre"
-              value={categoriaPadre}
-              categorias={categorias}
-              exclude={categoria.categoria}
-              disabled={!puedeEditar}
-              onChange={(next) => {
-                setCategoriaPadre(next)
-                // Todos los valores cuelgan de una sola lista padre (V101): al cambiarla
-                // los padres anteriores ya no sirven.
-                setFilas((prev) => prev.map((f) => ({ ...f, padre: NONE })))
-              }}
-            />
-            <FieldDescription>
-              Al cambiarla se quita el padre de todos los valores; elige uno nuevo en cada fila.
-            </FieldDescription>
-          </Field>
-
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">Valores ({filas.length})</h3>
-            {/* Alto de 5 filas (2.75rem + gap); con más, scroll interno. El padding deja ver el ring de foco. */}
-            <ul className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1">
-              {filas.map((fila, index) => {
-                const invalido = submitted && !fila.nombre.trim()
-                return (
-                  <li
-                    key={fila.pk}
-                    className={
-                      padre
-                        ? "grid items-center gap-2 sm:grid-cols-[1fr_7rem_1fr_1fr]"
-                        : "grid items-center gap-2 sm:grid-cols-[1fr_7rem_1fr]"
-                    }
-                  >
-                    <Input
-                      variant="outlined"
-                      aria-label={`Nombre del valor ${index + 1}`}
-                      placeholder="Nombre"
-                      maxLength={120}
-                      value={fila.nombre}
-                      disabled={!puedeEditar}
-                      aria-invalid={invalido}
-                      onChange={(e) => updateFila(fila.pk, { nombre: e.target.value })}
-                    />
-                    <Input
-                      variant="outlined"
-                      aria-label={`Código del valor ${index + 1}`}
-                      value={fila.valor}
-                      disabled
-                      className="font-mono"
-                    />
-                    <Input
-                      variant="outlined"
-                      aria-label={`Acción del valor ${index + 1}`}
-                      placeholder="Acción"
-                      maxLength={150}
-                      value={fila.accion}
-                      disabled={!puedeEditar}
-                      onChange={(e) => updateFila(fila.pk, { accion: e.target.value })}
-                    />
-                    {padre && (
-                      <ValorPadreSelect
-                        id={`modificar-padre-${fila.pk}`}
-                        aria-label={`Valor padre del valor ${index + 1}`}
-                        categoria={padre}
-                        value={fila.padre}
-                        disabled={!puedeEditar}
-                        onChange={(next) => updateFila(fila.pk, { padre: next })}
-                      />
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* El backend todavía no permite renombrar la lista: se muestra bloqueado. */}
+            <Field variant="outlined">
+              <FieldLabel htmlFor="modificar-categoria-nombre">Nombre de la lista</FieldLabel>
+              <Input
+                id="modificar-categoria-nombre"
+                value={categoria.categoria}
+                disabled
+                className="font-mono"
+              />
+            </Field>
+            <Field variant="outlined">
+              <FieldLabel htmlFor="modificar-categoria-padre">Depende de</FieldLabel>
+              <CategoriaPadreSelect
+                id="modificar-categoria-padre"
+                value={categoriaPadre}
+                categorias={categorias}
+                exclude={categoria.categoria}
+                disabled={!puedeEditar}
+                onChange={(next) => {
+                  setCategoriaPadre(next)
+                  // Todos los valores cuelgan de una sola lista padre (V101): al cambiarla
+                  // los padres anteriores ya no sirven.
+                  setFilas((prev) =>
+                    prev.map((f) => ({
+                      ...f,
+                      padre:
+                        next === padreInicial
+                          ? (iniciales.find((i) => i.pk === f.pk)?.padre ?? NONE)
+                          : NONE,
+                    })),
+                  )
+                }}
+              />
+            </Field>
           </div>
+
+          {/* La dependencia vive en cada valor: al elegir lista padre hay que decir de
+              qué valor cuelga cada uno. */}
+          {padre && (
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">Valor padre de cada valor ({filas.length})</h3>
+              {/* Alto de 5 filas; con más, scroll interno. El padding deja ver el ring de foco. */}
+              <ul className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1">
+                {filas.map((fila) => (
+                  <li key={fila.pk} className="grid items-center gap-2 sm:grid-cols-2">
+                    <span className="truncate text-sm">
+                      {fila.nombre}{" "}
+                      <span className="font-mono text-xs text-muted-foreground">{fila.valor}</span>
+                    </span>
+                    <ValorPadreSelect
+                      id={`modificar-padre-${fila.pk}`}
+                      aria-label={`Valor padre de ${fila.nombre}`}
+                      categoria={padre}
+                      value={fila.padre}
+                      disabled={!puedeEditar}
+                      onChange={(next) => updateFila(fila.pk, { padre: next })}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </form>
 
         <DialogFooter className="sm:justify-between">
