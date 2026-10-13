@@ -230,22 +230,23 @@ export function ActividadDetallePanel({
           ) : mode === "approval" && !soloLectura ? (
             <CalificacionesAprobacionView actividad={actividad} />
           ) : (
-            <>
-              <div className="flex flex-col gap-3">
-                <DetailSections actividad={actividad} />
-              </div>
-              {/* Validación del coordinador: barra sticky al pie del panel
-                  (no card en medio). `-mx-3 -mb-3` compensa el `p-3` del
-                  contenedor que scrollea. */}
-              <ValidacionCoordinadorFooter
-                className="-mx-3 -mb-3 mt-3"
-                actividadId={actividad.id}
-                requiereValidacion={actividad.requiereValidacion}
-              />
-            </>
+            <div className="flex flex-col gap-3">
+              <DetailSections actividad={actividad} />
+            </div>
           )
         )}
       </div>
+
+      {/* Validación del coordinador: pie del panel, FUERA del contenedor que
+          scrollea. Como sticky dentro del scroll quedaba un hueco debajo (el
+          `p-3`) por el que se asomaba el contenido. */}
+      {actividad && !((mode === "grades" || mode === "approval") && !soloLectura) && (
+        <ValidacionCoordinadorFooter
+          className="static rounded-b-md"
+          actividadId={actividad.id}
+          requiereValidacion={actividad.requiereValidacion}
+        />
+      )}
     </div>
   )
 }
