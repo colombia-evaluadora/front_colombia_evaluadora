@@ -1,4 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 
 import {
@@ -46,6 +47,15 @@ export function PeriodoFilter({
           <Label htmlFor={`periodo-${periodo.id}`} className="font-normal text-foreground">
             {periodo.nombre}
           </Label>
+          {periodo.cerrado && (
+            <Badge
+              variant="soft"
+              color="neutral"
+              title="Período cerrado: no se puede consolidar ni editar observaciones"
+            >
+              Periodo cerrado
+            </Badge>
+          )}
         </div>
       ))}
       {/* No va dentro del map: existe siempre, incluso mientras los períodos

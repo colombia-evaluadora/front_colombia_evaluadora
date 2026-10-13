@@ -30,6 +30,7 @@ interface AsignaturaRow {
   simbolo_original?: string | null
   ya_asegurado: boolean | null
   alcanzable: boolean | null
+  error_configuracion?: string | null
 }
 
 interface FilaInformeRow {
@@ -76,6 +77,7 @@ function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
     simboloOriginal: row.simbolo_original ?? null,
     yaAsegurado: row.ya_asegurado ?? false,
     alcanzable: row.alcanzable ?? true,
+    errorConfiguracion: row.error_configuracion?.trim() || null,
   }
 }
 
