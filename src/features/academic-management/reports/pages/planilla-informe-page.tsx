@@ -17,7 +17,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Textarea } from "@/components/ui/textarea"
 import { Input, inputTriggerVariants, inputVariants } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -29,6 +39,7 @@ import {
   DotsThreeIcon,
   MagnifyingGlassIcon,
   ProhibitIcon,
+  SpinnerIcon,
   WarningCircleIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -38,6 +49,7 @@ import { cn } from "@/lib/utils"
 import { paths } from "@/config/paths"
 import { planillaInformeRoute } from "@/router"
 import { useGuardarPlanillaMutation } from "@/features/academic-management/reports/api/mutations/use-guardar-planilla"
+import { useRechazarPlanillaMutation } from "@/features/academic-management/reports/api/mutations/use-rechazar-planilla"
 import { usePlanillaInformeQuery } from "@/features/academic-management/reports/api/query/use-planilla-informe-query"
 import type {
   CeldaPlanilla,
@@ -260,6 +272,8 @@ function PlanillaInformeContent() {
 
   const filas = planilla.data ?? []
   const hayCambios = filas.some(filaConCambios)
+  const hayCorrecciones = filas.some((f) => f.actividades.some((c) => c.solicitudPendiente))
+  const [rechazando, setRechazando] = React.useState(false)
 
   async function handleAprobar() {
     try {
@@ -318,13 +332,11 @@ function PlanillaInformeContent() {
                       <DotsThreeIcon />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {/* Solo rechaza correcciones de nota; un cambio de definitiva sin
+                          corrección se resuelve consolidando. */}
                       <DropdownMenuItem
-                        onClick={() =>
-                          notify(
-                            "Rechazar un cambio todavía no existe en el backend: la única forma de apagar la alerta es aprobarlo.",
-                            { variant: "info" },
-                          )
-                        }
+                        disabled={!hayCorrecciones}
+                        onClick={() => setRechazando(true)}
                       >
                         Rechazar cambios
                       </DropdownMenuItem>
@@ -417,7 +429,89 @@ function PlanillaInformeContent() {
         )}
         {!planilla.isPending && !planilla.isError && <PlanillaTable filas={filas} />}
       </TableScreenBody>
+
+      <DialogRechazarCambios
+        open={rechazando}
+        onOpenChange={setRechazando}
+        grupoId={Number(grupoId)}
+        asignaturaId={Number(asignaturaId)}
+        periodoId={Number(periodoId)}
+      />
     </TableScreen>
+  )
+}
+
+const MOTIVO_MAX = 1000
+
+/** Rechaza las correcciones de nota pendientes de la planilla (Regla 55):
+ *  vuelve la nota vigente y la alerta se apaga. */
+function DialogRechazarCambios({
+  open,
+  onOpenChange,
+  grupoId,
+  asignaturaId,
+  periodoId,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  grupoId: number
+  asignaturaId: number
+  periodoId: number
+}) {
+  const { notify } = useNotify()
+  const [motivo, setMotivo] = React.useState("")
+  const rechazar = useRechazarPlanillaMutation()
+
+  async function confirmar() {
+    try {
+      const { rechazadas, fallidas } = await rechazar.mutateAsync({ grupoId, asignaturaId, periodoId, motivo })
+      if (rechazadas === 0) notify("No había correcciones pendientes en esta planilla.", { variant: "info" })
+      else if (fallidas > 0)
+        notify(`Se rechazaron ${rechazadas} cambios; ${fallidas} no se pudieron rechazar.`, { variant: "warning" })
+      else notify("Cambios rechazados.")
+      setMotivo("")
+      onOpenChange(false)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !rechazar.isPending && onOpenChange(next)}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Rechazar cambios</DialogTitle>
+          <DialogDescription>
+            Las notas corregidas de esta planilla vuelven a su valor vigente. El docente verá el motivo.
+          </DialogDescription>
+        </DialogHeader>
+        <Field variant="outlined">
+          <FieldLabel htmlFor="motivo-rechazo">Motivo</FieldLabel>
+          <Textarea
+            id="motivo-rechazo"
+            value={motivo}
+            maxLength={MOTIVO_MAX}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Por qué rechazas los cambios"
+          />
+        </Field>
+        <DialogFooter>
+          <DialogClose render={<Button size="sm" variant="fill" color="neutral" disabled={rechazar.isPending} />}>
+            Cancelar
+          </DialogClose>
+          <Button
+            size="sm"
+            variant="fill"
+            color="destructive"
+            disabled={motivo.trim() === "" || rechazar.isPending}
+            onClick={confirmar}
+          >
+            {rechazar.isPending && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
+            Rechazar cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
