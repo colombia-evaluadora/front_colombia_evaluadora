@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
@@ -9,7 +8,6 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
-import { XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import {
@@ -28,7 +26,6 @@ import {
   type PlaneadorFiltroSede,
 } from "@/features/planeador/api/query/use-planeador-filtros-query"
 import {
-  alcanceSearchDe,
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceSearch,
   type PlaneadorDocenteScope,
@@ -263,88 +260,6 @@ export function PlaneadorAlcanceFields({
         </ComboboxField>
       </Field>
     </div>
-  )
-}
-
-function alcanceVacio(scope: PlaneadorDocenteScope): boolean {
-  return [scope.sedeId, scope.anio, scope.jornadaId, scope.funcionario].every((v) => v == null)
-}
-
-/**
- * Chips de lo elegido en Sede/Año/Jornada/Docente, debajo del buscador:
- * esos filtros viven en el popover y sin esto no se vería qué alcance se
- * está mirando. Quitar uno borra también los que cuelgan de él. La sede del
- * Super Admin no se quita desde el chip (es obligatoria para él).
- */
-export function PlaneadorAlcanceChips({
-  onChange,
-}: {
-  onChange: (next: PlaneadorAlcanceSeleccion) => void
-}) {
-  const scope = usePlaneadorDocenteScope()
-  const sedes = usePlaneadorFiltroSedesQuery(scope.enVistaConSelector && scope.puedeElegirDocente)
-  const periodos = usePlaneadorFiltroPeriodosQuery(scope.sedeId)
-  const docentes = useDocentesDeSeleccion(scope, scope.sedeId, scope.periodoId)
-
-  if (!scope.enVistaConSelector || !scope.puedeElegirDocente || alcanceVacio(scope)) {
-    return null
-  }
-
-  const actual = alcanceSearchDe(scope)
-  const sede = sedes.data?.find((s) => s.id === scope.sedeId)
-  const jornada = periodoDe(periodos.data, scope.anio, scope.jornadaId)
-  const docente = docentes.data?.find((d) => d.id === scope.funcionario)
-
-  const chips: { key: string; label: string; quitar?: PlaneadorAlcanceSeleccion }[] = []
-  if (scope.sedeId != null) {
-    chips.push({
-      key: "sede",
-      label: `Sede: ${sede ? sedeLabel(sede, scope.esSuperAdmin) : scope.sedeId}`,
-      quitar: scope.esSuperAdmin ? undefined : { docente: actual.docente },
-    })
-  }
-  if (scope.anio != null) {
-    chips.push({
-      key: "ano",
-      label: `Año: ${scope.anio}`,
-      quitar: { sede: actual.sede, docente: actual.docente },
-    })
-  }
-  if (scope.jornadaId != null) {
-    chips.push({
-      key: "jornada",
-      label: `Jornada: ${jornada?.jornadaNombre ?? scope.jornadaId}`,
-      quitar: { sede: actual.sede, ano: actual.ano, docente: actual.docente },
-    })
-  }
-  if (scope.funcionario != null) {
-    chips.push({
-      key: "docente",
-      label: `Docente: ${docente?.nombre ?? scope.funcionario}`,
-      quitar: { ...actual, docente: undefined },
-    })
-  }
-
-  return (
-    <ul aria-label="Sede, año, jornada y docente" className="flex w-full flex-wrap gap-2">
-      {chips.map(({ key, label, quitar }) => (
-        <li key={key}>
-          <Badge variant="soft" color="primary" className="tracking-normal normal-case">
-            {label}
-            {quitar && (
-              <button
-                type="button"
-                aria-label={`Quitar ${label}`}
-                className="hover:text-foreground -mr-1 rounded-xs p-0.5"
-                onClick={() => onChange(quitar)}
-              >
-                <XIcon className="size-3" />
-              </button>
-            )}
-          </Badge>
-        </li>
-      ))}
-    </ul>
   )
 }
 

@@ -12,7 +12,6 @@ import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { FilterPlaneadorForm } from "@/features/planeador/components/forms/form-filter-planeador"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 import {
-  PlaneadorAlcanceChips,
   type PlaneadorAlcanceSeleccion,
 } from "@/features/planeador/components/planeador-docente-selector"
 import {
@@ -60,7 +59,6 @@ export function SearchPlaneador({
   activeFilterCount,
   filters,
   applyFilters,
-  applyAlcance,
   clearAllFilters,
   instrumentoOptions = [],
   rotuloLabel,
@@ -154,7 +152,6 @@ export function SearchPlaneador({
           alcanceInicial={conAlcance ? alcanceSearchDe(scope) : undefined}
         />
       </SearchQueryBar>
-      <PlaneadorAlcanceChips onChange={applyAlcance} />
     </div>
   )
 }
