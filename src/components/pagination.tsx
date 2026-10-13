@@ -69,95 +69,106 @@ export function Pagination({
     // Orden: total de registros (izquierda) → selector de entradas (outline)
     // → controles de página (texto neutral, página activa en fill primario)
     // → columnas visibles.
-    <div className="relative flex flex-wrap items-center justify-center gap-3 px-2 py-4 sm:gap-6">
-      <span className="order-last w-full text-center text-sm text-muted-foreground sm:absolute sm:left-2 sm:order-none sm:w-auto sm:text-left">
-        Mostrando {rangeStart}-{rangeEnd} de {totalCount} registros
-      </span>
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
-        <UIPagination className="mx-0 w-auto justify-center">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href={canPrev ? `#page=${pageIndex}` : undefined}
-                aria-label="Página anterior"
-                text="Previo"
-                className={!canPrev ? "pointer-events-none opacity-50" : ""}
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (canPrev) onPageChange(pageIndex - 1)
-                }}
-              />
-            </PaginationItem>
+    // El total se saca a la izquierda según el ancho del CONTENEDOR y no de la
+    // pantalla: en columnas angostas (p. ej. listas de valor, con índice al
+    // lado) quedaba encima de los controles centrados.
+    <div className="@container/pagination">
+      <div className="relative flex flex-wrap items-center justify-center gap-3 px-2 py-4 sm:gap-6">
+        <span className="order-last w-full text-center text-sm text-muted-foreground @5xl/pagination:absolute @5xl/pagination:left-2 @5xl/pagination:order-none @5xl/pagination:w-auto @5xl/pagination:text-left">
+          Mostrando {rangeStart}-{rangeEnd} de {totalCount} registros
+        </span>
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+          <UIPagination className="mx-0 w-auto justify-center">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href={canPrev ? `#page=${pageIndex}` : undefined}
+                  aria-label="Página anterior"
+                  text="Previo"
+                  className={!canPrev ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (canPrev) onPageChange(pageIndex - 1)
+                  }}
+                />
+              </PaginationItem>
 
-            <PaginationItem className="sm:hidden">
-              <span className="px-2 text-sm text-muted-foreground">
-                {pageIndex + 1}/{pageCount}
-              </span>
-            </PaginationItem>
+              <PaginationItem className="sm:hidden">
+                <span className="px-2 text-sm text-muted-foreground">
+                  {pageIndex + 1}/{pageCount}
+                </span>
+              </PaginationItem>
 
-            {range.map((item, i) =>
-              item === "ellipsis" ? (
-                <PaginationItem key={`e-${i}`} className="hidden sm:list-item">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={item} className="hidden sm:list-item">
-                  <PaginationLink
-                    href={`#page=${item}`}
-                    isActive={item === pageIndex + 1}
-                    // La activa rompe el outline del cva y se pinta en fill
-                    // primario — sigue siendo la página actual, solo que con
-                    // el peso visual que el resto del UI usa para "seleccionado".
-                    className={cn(
-                      item === pageIndex + 1 &&
-                        "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
-                    )}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      onPageChange(item - 1)
-                    }}
-                  >
-                    {item}
-                  </PaginationLink>
-                </PaginationItem>
-              ),
-            )}
+              {range.map((item, i) =>
+                item === "ellipsis" ? (
+                  <PaginationItem key={`e-${i}`} className="hidden sm:list-item">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={item} className="hidden sm:list-item">
+                    <PaginationLink
+                      href={`#page=${item}`}
+                      isActive={item === pageIndex + 1}
+                      // La activa rompe el outline del cva y se pinta en fill
+                      // primario — sigue siendo la página actual, solo que con
+                      // el peso visual que el resto del UI usa para "seleccionado".
+                      className={cn(
+                        item === pageIndex + 1 &&
+                          "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        onPageChange(item - 1)
+                      }}
+                    >
+                      {item}
+                    </PaginationLink>
+                  </PaginationItem>
+                ),
+              )}
 
-            <PaginationItem>
-              <PaginationNext
-                href={canNext ? `#page=${pageIndex + 2}` : undefined}
-                aria-label="Página siguiente"
-                text="Próximo"
-                className={!canNext ? "pointer-events-none opacity-50" : ""}
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (canNext) onPageChange(pageIndex + 1)
-                }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </UIPagination>
-        <Field orientation="horizontal" className="hidden w-fit lg:flex">
-          <Select value={`${pageSize}`} onValueChange={(value) => onPageSizeChange(Number(value))}>
-            <SelectTrigger id="rows-per-page" variant="outlined" className="bg-muted/50 w-17">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {[10, 20, 30, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <FieldLabel htmlFor="rows-per-page" className="text-sm normal-case text-muted-foreground">
-            Entradas
-          </FieldLabel>
-        </Field>
+              <PaginationItem>
+                <PaginationNext
+                  href={canNext ? `#page=${pageIndex + 2}` : undefined}
+                  aria-label="Página siguiente"
+                  text="Próximo"
+                  className={!canNext ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (canNext) onPageChange(pageIndex + 1)
+                  }}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </UIPagination>
+          <Field orientation="horizontal" className="hidden w-fit lg:flex">
+            <Select
+              value={`${pageSize}`}
+              onValueChange={(value) => onPageSizeChange(Number(value))}
+            >
+              <SelectTrigger id="rows-per-page" variant="outlined" className="bg-muted/50 w-17">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {[10, 20, 30, 50].map((size) => (
+                    <SelectItem key={size} value={`${size}`}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <FieldLabel
+              htmlFor="rows-per-page"
+              className="text-sm normal-case text-muted-foreground"
+            >
+              Entradas
+            </FieldLabel>
+          </Field>
 
-        {viewOptions}
+          {viewOptions}
+        </div>
       </div>
     </div>
   )
