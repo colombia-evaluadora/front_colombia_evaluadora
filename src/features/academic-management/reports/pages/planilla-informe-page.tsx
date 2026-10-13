@@ -44,6 +44,7 @@ import type {
   FilaPlanilla,
 } from "@/features/academic-management/reports/api/types"
 import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 function formatNota(valor: number | null): string {
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
@@ -255,6 +256,7 @@ function PlanillaInformeContent() {
     search: busquedaDiferida,
   })
   const guardar = useGuardarPlanillaMutation()
+  const { puedeEditar } = useMenuPermission("INFORMES")
 
   const filas = planilla.data ?? []
   const hayCambios = filas.some(filaConCambios)
@@ -287,46 +289,49 @@ function PlanillaInformeContent() {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <div className="flex gap-0">
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  className="rounded-r-none border-r-0"
-                  disabled={guardar.isPending}
-                  onClick={handleAprobar}
-                >
-                  <CheckCircleFillIcon data-icon="inline-start" />
-                  Aprobar y actualizar consolidado
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        color="primary"
-                        size="sm"
-                        variant="fill"
-                        aria-label="Más opciones"
-                        className="rounded-l-none"
-                      />
-                    }
+              {/* Solo lectura en el menú: puede ver la planilla pero no aprobar. */}
+              {puedeEditar && (
+                <div className="flex gap-0">
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    className="rounded-r-none border-r-0"
+                    disabled={guardar.isPending}
+                    onClick={handleAprobar}
                   >
-                    <DotsThreeIcon />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        notify(
-                          "Rechazar un cambio todavía no existe en el backend: la única forma de apagar la alerta es aprobarlo.",
-                          { variant: "info" },
-                        )
+                    <CheckCircleFillIcon data-icon="inline-start" />
+                    Aprobar y actualizar consolidado
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          color="primary"
+                          size="sm"
+                          variant="fill"
+                          aria-label="Más opciones"
+                          className="rounded-l-none"
+                        />
                       }
                     >
-                      Rechazar cambios
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                      <DotsThreeIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          notify(
+                            "Rechazar un cambio todavía no existe en el backend: la única forma de apagar la alerta es aprobarlo.",
+                            { variant: "info" },
+                          )
+                        }
+                      >
+                        Rechazar cambios
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
               <Button
                 variant="outline"
                 color="neutral"
