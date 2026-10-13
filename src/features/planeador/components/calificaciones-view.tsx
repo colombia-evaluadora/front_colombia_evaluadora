@@ -41,14 +41,16 @@ import { DialogCalificarActividad } from "@/features/planeador/components/dialog
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
 import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
 import { NotaConCambio } from "@/features/planeador/components/planilla/planilla-grid"
 import {
   DialogEnviarSolicitud,
   DialogSolicitudEnviada,
 } from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
-import { useSolicitudPeriodoCerrado } from "@/features/planeador/hooks/use-solicitud-periodo-cerrado"
+import {
+  usePeriodoCerrado,
+  useSolicitudPeriodoCerrado,
+} from "@/features/planeador/hooks/use-solicitud-periodo-cerrado"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -68,11 +70,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 
   // Periodo de la actividad no Calificable (estado distinto de "1"): igual
   // que en la Planilla, las notas se acumulan y se envían como solicitud.
-  const { data: periodos = [] } = usePlaneadorPeriodosEvaluacionQuery()
-  const periodo = periodos.find(
-    (p) => p.startDate <= actividad.fechaInicio && actividad.fechaInicio <= p.endDate,
-  )
-  const periodoCerrado = periodo != null && periodo.estado !== "1"
+  const periodoCerrado = usePeriodoCerrado(actividad.fechaInicio)
   const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la

@@ -344,6 +344,7 @@ export function PlaneadorPlanillaPage() {
               onVolver={() => setColumnaEnBulk(null)}
               onEstadoGuardar={setEstadoGuardarBulk}
               guardarRef={guardarBulkRef}
+              periodoCerrado={periodoCerrado}
             />
           )}
         </TableScreenBody>

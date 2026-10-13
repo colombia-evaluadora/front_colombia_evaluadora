@@ -4,7 +4,15 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
+import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
 import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
+
+/** El periodo de evaluación de esa fecha no es Calificable (estado distinto de "1"). */
+export function usePeriodoCerrado(fecha: string) {
+  const { data: periodos = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const periodo = periodos.find((p) => p.startDate <= fecha && fecha <= p.endDate)
+  return periodo != null && periodo.estado !== "1"
+}
 
 /**
  * Periodo cerrado (Regla 55): las notas se acumulan por
