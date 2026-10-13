@@ -12,7 +12,6 @@ import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { FilterPlaneadorForm } from "@/features/planeador/components/forms/form-filter-planeador"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 import {
-  PlaneadorAlcanceChips,
   type PlaneadorAlcanceSeleccion,
 } from "@/features/planeador/components/planeador-docente-selector"
 import {
@@ -29,8 +28,6 @@ interface SearchPlaneadorProps {
   activeFilterCount: number
   filters: PlaneadorFiltersFormInput
   applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
-  /** Sede/año/jornada/docente (chips). */
-  applyAlcance: (alcance: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`, ver
   // `use-instrumento-evaluacion-catalog.ts`) — nombre y valor son el mismo
@@ -60,7 +57,6 @@ export function SearchPlaneador({
   activeFilterCount,
   filters,
   applyFilters,
-  applyAlcance,
   clearAllFilters,
   instrumentoOptions = [],
   rotuloLabel,
@@ -154,7 +150,6 @@ export function SearchPlaneador({
           alcanceInicial={conAlcance ? alcanceSearchDe(scope) : undefined}
         />
       </SearchQueryBar>
-      <PlaneadorAlcanceChips onChange={applyAlcance} />
     </div>
   )
 }

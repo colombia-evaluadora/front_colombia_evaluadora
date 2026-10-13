@@ -61,9 +61,7 @@ import {
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import {
   PlaneadorLecturaBanner,
-  PlaneadorSeleccionVacia,
 } from "@/features/planeador/components/planeador-docente-selector"
-import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
@@ -107,9 +105,8 @@ function PlaneadorPageContent() {
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`. Cambiar sede/año/jornada/docente borra la
   // pestaña de rótulo y la actividad abierta (eran del alcance anterior).
-  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     usePlaneadorFilters()
-  usePlaneadorAlcanceInicial(applyAlcance)
   const buscar = filters.buscar
   const estado = filters.estado
   const view = filters.vista || "actividad"
@@ -373,7 +370,6 @@ function PlaneadorPageContent() {
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
-            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
             instrumentoOptions={instrumentoOptions}
             rotuloLabel={rotuloLabel}
@@ -387,9 +383,6 @@ function PlaneadorPageContent() {
               derecha, y se les quita el borde donde se tocan—; el `div` con
               `gap-0` neutraliza el espacio que `<TableScreenActions>` agrega
               entre hijos. */}
-          {/* Super Admin sin docente elegido: no hay planeador sobre el cual
-              actuar (ni recargar, ni exportar). */}
-          {!scope.requiereSeleccion && (
             <TableScreenActions>
               <div className="flex gap-0">
                 {puedeCrear && (
@@ -472,14 +465,10 @@ function PlaneadorPageContent() {
                 dentro del menú se desmonta apenas el menú cierra. */}
               <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
             </TableScreenActions>
-          )}
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
-        {scope.requiereSeleccion ? (
-          <PlaneadorSeleccionVacia />
-        ) : (
           <>
             <PlaneadorLecturaBanner className="mb-4" />
             {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
@@ -732,7 +721,6 @@ function PlaneadorPageContent() {
               </section>
             </div>
           </>
-        )}
       </TableScreenBody>
     </TableScreen>
   )

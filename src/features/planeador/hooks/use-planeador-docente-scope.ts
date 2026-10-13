@@ -32,7 +32,7 @@ export interface PlaneadorDocenteScope {
   enVistaConSelector: boolean
   esSuperAdmin: boolean
   /** Coordinador que NO es Super Admin (si tiene los dos roles, manda el
-   *  de Super Admin: tiene que elegir al menos la sede). */
+   *  de Super Admin). */
   esCoordinador: boolean
   /** Rector que NO es Super Admin. Mismas reglas que el Coordinador, pero su
    *  alcance es todo el establecimiento en vez de su(s) sede(s). */
@@ -56,10 +56,7 @@ export interface PlaneadorDocenteScope {
    *  `?funcionario=` a los endpoints del planeador. `undefined` = el
    *  comportamiento de siempre (el backend resuelve el alcance del token). */
   funcionario?: number
-  /** Super Admin sin sede elegida: la pantalla muestra el estado vacío y
-   *  no dispara ninguna consulta (no tiene planeador propio). */
-  requiereSeleccion: boolean
-  /** `false` mientras `requiereSeleccion` o mientras se resuelve el periodo
+  /** `false` mientras se resuelve el periodo
    *  académico de la jornada elegida: las consultas dependientes del
    *  docente se apagan con esto (así no se pide dos veces). */
   consultasHabilitadas: boolean
@@ -100,19 +97,24 @@ export function usePlaneadorDocenteScope(): PlaneadorDocenteScope {
   const jornadaId = anio != null ? toPk(search.jornada, 0) : undefined
 
   // El periodo académico sale de la lista de la sede (la misma query que usa
-  // el filtro avanzado, así que casi siempre ya está en caché).
-  const periodos = usePlaneadorFiltroPeriodosQuery(sedeId, jornadaId != null)
+  // el filtro avanzado, así que casi siempre ya está en caché). Los endpoints
+  // solo filtran por UN periodo: un año sin jornada vale si ese año tiene un
+  // único periodo en la sede (el popover no deja "Todas" las jornadas de un
+  // año con varias; una URL vieja así cae a la sede entera).
+  const periodos = usePlaneadorFiltroPeriodosQuery(sedeId, anio != null)
+  const delAnio = anio != null ? (periodos.data ?? []).filter((p) => p.anio === anio) : []
   const periodoId =
     jornadaId != null
-      ? periodos.data?.find((p) => p.anio === anio && jornadaKey(p.jornadaId) === jornadaId)?.id
-      : undefined
-  const resolviendoPeriodo = jornadaId != null && periodos.isPending
+      ? delAnio.find((p) => jornadaKey(p.jornadaId) === jornadaId)?.id
+      : delAnio.length === 1
+        ? delAnio[0].id
+        : undefined
+  const resolviendoPeriodo = anio != null && periodos.isPending
 
   // Para el Super Admin el docente cuelga de la sede: sin sede no hay docente
   // válido aunque la URL traiga uno.
   const funcionario =
     activo && (!esSuperAdmin || sedeId != null) ? toPk(search.docente) : undefined
-  const requiereSeleccion = enVistaConSelector && esSuperAdmin && sedeId == null
 
   return {
     enVistaConSelector,
@@ -126,8 +128,7 @@ export function usePlaneadorDocenteScope(): PlaneadorDocenteScope {
     jornadaId,
     periodoId,
     funcionario,
-    requiereSeleccion,
-    consultasHabilitadas: !requiereSeleccion && !resolviendoPeriodo,
+    consultasHabilitadas: !resolviendoPeriodo,
   }
 }
 

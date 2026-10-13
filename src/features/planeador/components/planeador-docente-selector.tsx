@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
@@ -9,7 +8,6 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
-import { XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import {
@@ -28,7 +26,6 @@ import {
   type PlaneadorFiltroSede,
 } from "@/features/planeador/api/query/use-planeador-filtros-query"
 import {
-  alcanceSearchDe,
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceSearch,
   type PlaneadorDocenteScope,
@@ -63,6 +60,7 @@ function periodoDe(
 
 function todosLosDocentesLabel(scope: PlaneadorDocenteScope, sede: number | undefined): string {
   if (sede != null) return "Todos los docentes de la sede"
+  if (scope.esSuperAdmin) return "Todos los docentes"
   return scope.esRector ? "Todos los docentes del establecimiento" : "Todos los docentes de mi sede"
 }
 
@@ -80,12 +78,15 @@ function useDocentesDeSeleccion(scope: PlaneadorDocenteScope, sede?: number, per
 /**
  * Campos Sede → Año → Jornada → Docente del popover de filtros avanzados del
  * Planeador (Actividades y Unidades), con la misma cascada que Informes:
- * - Elegir una sede pone por defecto el año con el periodo académico abierto
- *   (en curso, o el más reciente que siga abierto) y la jornada en curso o
- *   la única del año.
+ * - Sede arranca en "Todas" (todo el alcance del rol) y Año/Jornada en
+ *   "Todos"/"Todas": no se impone nada al entrar.
+ * - Recién al elegir una sede se pone por defecto el año con el periodo
+ *   académico abierto (en curso, o el más reciente que siga abierto) y su
+ *   jornada. Elegido un año, la jornada es obligatoria si tiene varias: los
+ *   endpoints filtran por un solo periodo académico.
  * - Cambiar un campo padre borra los hijos.
- * - Docente depende de sede + periodo; "Todos los docentes…" siempre para
- *   Rector/Coordinador, y para el Super Admin una vez elegida la sede.
+ * - Docente depende de sede + periodo; el Super Admin necesita la sede para
+ *   elegir uno (sin ella `/planeador/docentes` no devuelve filas).
  *
  * Es controlado: el borrador vive en el form del popover y se escribe en la
  * URL recién al "Aplicar filtros".
@@ -121,7 +122,7 @@ export function PlaneadorAlcanceFields({
 
   const conEstablecimiento = scope.esSuperAdmin
   const sedeItems: Record<string, string> = {
-    ...(scope.esSuperAdmin ? {} : { [TODOS]: "Todas" }),
+    [TODOS]: "Todas",
     ...Object.fromEntries(
       (sedes.data ?? []).map((s) => [String(s.id), sedeLabel(s, conEstablecimiento)]),
     ),
@@ -132,25 +133,26 @@ export function PlaneadorAlcanceFields({
     ...Object.fromEntries(anios.map((a) => [String(a), String(a)])),
   }
   const delAnio = periodosDelAnio(periodos.data ?? [], value.ano)
+  // "Todas" solo sin año o con un año de una sola jornada (ver arriba).
+  const ofreceTodasJornadas = delAnio.length <= 1
   const jornadaItems: Record<string, string> = {
-    [TODOS]: "Todas",
+    ...(ofreceTodasJornadas ? { [TODOS]: "Todas" } : {}),
     ...Object.fromEntries(delAnio.map((p) => [String(jornadaKey(p.jornadaId)), p.jornadaNombre])),
   }
-  const ofreceTodos = !scope.esSuperAdmin || value.sede != null
   const todosLabel = todosLosDocentesLabel(scope, value.sede)
   const docenteItems: Record<string, string> = {
-    ...(ofreceTodos ? { [TODOS]: todosLabel } : {}),
+    [TODOS]: todosLabel,
     ...Object.fromEntries((docentes.data ?? []).map((d) => [String(d.id), docenteLabel(d)])),
   }
   const docenteDeshabilitado = scope.esSuperAdmin && value.sede == null
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Field orientation="vertical" variant="outlined" className="col-span-2 gap-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <Field orientation="vertical" variant="outlined" className="gap-2">
         <FieldLabel htmlFor="planeador-sede">Sede</FieldLabel>
         <ComboboxField
           items={sedeItems}
-          value={value.sede != null ? String(value.sede) : scope.esSuperAdmin ? null : TODOS}
+          value={value.sede != null ? String(value.sede) : TODOS}
           onValueChange={(next) => {
             const sede = next ? Number(next) : undefined
             pendienteDefault.current = sede != null
@@ -160,11 +162,11 @@ export function PlaneadorAlcanceFields({
         >
           <ComboboxFieldTrigger id="planeador-sede" size="sm" className="w-full">
             <ComboboxFieldValue
-              placeholder={sedes.isPending ? "Cargando…" : "Selecciona una sede"}
+              placeholder={sedes.isPending ? "Cargando…" : "Todas"}
             />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            {!scope.esSuperAdmin && <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>}
+            <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>
             {(sedes.data ?? []).map((sede) => (
               <ComboboxFieldItem key={sede.id} value={String(sede.id)}>
                 {sedeLabel(sede, conEstablecimiento)}
@@ -213,17 +215,17 @@ export function PlaneadorAlcanceFields({
         <ComboboxField
           items={jornadaItems}
           disabled={value.ano == null}
-          value={value.jornada != null ? String(value.jornada) : TODOS}
+          value={value.jornada != null ? String(value.jornada) : ofreceTodasJornadas ? TODOS : null}
           // Cambiar de jornada borra el docente.
           onValueChange={(next) =>
             onChange({ sede: value.sede, ano: value.ano, jornada: next ? Number(next) : undefined })
           }
         >
           <ComboboxFieldTrigger id="planeador-jornada" size="sm" className="w-full">
-            <ComboboxFieldValue placeholder="Todas" />
+            <ComboboxFieldValue placeholder={ofreceTodasJornadas ? "Todas" : "Selecciona una jornada"} />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>
+            {ofreceTodasJornadas && <ComboboxFieldItem value={TODOS}>Todas</ComboboxFieldItem>}
             {delAnio.map((p) => (
               <ComboboxFieldItem key={p.id} value={String(jornadaKey(p.jornadaId))}>
                 {p.jornadaNombre}
@@ -233,12 +235,12 @@ export function PlaneadorAlcanceFields({
         </ComboboxField>
       </Field>
 
-      <Field orientation="vertical" variant="outlined" className="col-span-2 gap-2">
+      <Field orientation="vertical" variant="outlined" className="gap-2 sm:col-span-3">
         <FieldLabel htmlFor="planeador-docente">Docente</FieldLabel>
         <ComboboxField
           items={docenteItems}
           disabled={docenteDeshabilitado}
-          value={value.docente != null ? String(value.docente) : ofreceTodos ? TODOS : null}
+          value={value.docente != null ? String(value.docente) : TODOS}
           onValueChange={(next) => onChange({ ...value, docente: next ? Number(next) : undefined })}
         >
           <ComboboxFieldTrigger id="planeador-docente" size="sm" className="w-full">
@@ -253,7 +255,7 @@ export function PlaneadorAlcanceFields({
             />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            {ofreceTodos && <ComboboxFieldItem value={TODOS}>{todosLabel}</ComboboxFieldItem>}
+            <ComboboxFieldItem value={TODOS}>{todosLabel}</ComboboxFieldItem>
             {(docentes.data ?? []).map((docente) => (
               <ComboboxFieldItem key={docente.id} value={String(docente.id)}>
                 {docenteLabel(docente)}
@@ -263,88 +265,6 @@ export function PlaneadorAlcanceFields({
         </ComboboxField>
       </Field>
     </div>
-  )
-}
-
-function alcanceVacio(scope: PlaneadorDocenteScope): boolean {
-  return [scope.sedeId, scope.anio, scope.jornadaId, scope.funcionario].every((v) => v == null)
-}
-
-/**
- * Chips de lo elegido en Sede/Año/Jornada/Docente, debajo del buscador:
- * esos filtros viven en el popover y sin esto no se vería qué alcance se
- * está mirando. Quitar uno borra también los que cuelgan de él. La sede del
- * Super Admin no se quita desde el chip (es obligatoria para él).
- */
-export function PlaneadorAlcanceChips({
-  onChange,
-}: {
-  onChange: (next: PlaneadorAlcanceSeleccion) => void
-}) {
-  const scope = usePlaneadorDocenteScope()
-  const sedes = usePlaneadorFiltroSedesQuery(scope.enVistaConSelector && scope.puedeElegirDocente)
-  const periodos = usePlaneadorFiltroPeriodosQuery(scope.sedeId)
-  const docentes = useDocentesDeSeleccion(scope, scope.sedeId, scope.periodoId)
-
-  if (!scope.enVistaConSelector || !scope.puedeElegirDocente || alcanceVacio(scope)) {
-    return null
-  }
-
-  const actual = alcanceSearchDe(scope)
-  const sede = sedes.data?.find((s) => s.id === scope.sedeId)
-  const jornada = periodoDe(periodos.data, scope.anio, scope.jornadaId)
-  const docente = docentes.data?.find((d) => d.id === scope.funcionario)
-
-  const chips: { key: string; label: string; quitar?: PlaneadorAlcanceSeleccion }[] = []
-  if (scope.sedeId != null) {
-    chips.push({
-      key: "sede",
-      label: `Sede: ${sede ? sedeLabel(sede, scope.esSuperAdmin) : scope.sedeId}`,
-      quitar: scope.esSuperAdmin ? undefined : { docente: actual.docente },
-    })
-  }
-  if (scope.anio != null) {
-    chips.push({
-      key: "ano",
-      label: `Año: ${scope.anio}`,
-      quitar: { sede: actual.sede, docente: actual.docente },
-    })
-  }
-  if (scope.jornadaId != null) {
-    chips.push({
-      key: "jornada",
-      label: `Jornada: ${jornada?.jornadaNombre ?? scope.jornadaId}`,
-      quitar: { sede: actual.sede, ano: actual.ano, docente: actual.docente },
-    })
-  }
-  if (scope.funcionario != null) {
-    chips.push({
-      key: "docente",
-      label: `Docente: ${docente?.nombre ?? scope.funcionario}`,
-      quitar: { ...actual, docente: undefined },
-    })
-  }
-
-  return (
-    <ul aria-label="Sede, año, jornada y docente" className="flex w-full flex-wrap gap-2">
-      {chips.map(({ key, label, quitar }) => (
-        <li key={key}>
-          <Badge variant="soft" color="primary" className="tracking-normal normal-case">
-            {label}
-            {quitar && (
-              <button
-                type="button"
-                aria-label={`Quitar ${label}`}
-                className="hover:text-foreground -mr-1 rounded-xs p-0.5"
-                onClick={() => onChange(quitar)}
-              >
-                <XIcon className="size-3" />
-              </button>
-            )}
-          </Badge>
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -368,13 +288,3 @@ export function PlaneadorLecturaBanner({ className }: { className?: string }) {
   )
 }
 
-/** Estado vacío del Super Admin antes de elegir la sede: la página no
- *  dispara ninguna consulta del planeador hasta entonces. */
-export function PlaneadorSeleccionVacia() {
-  return (
-    <div className="text-muted-foreground flex min-h-48 items-center justify-center rounded-md border border-dashed p-6 text-center text-sm">
-      Elige una sede (y, si quieres, año, jornada y docente) en los filtros avanzados para ver el
-      planeador.
-    </div>
-  )
-}
