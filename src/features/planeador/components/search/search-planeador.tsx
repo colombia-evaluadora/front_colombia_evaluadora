@@ -28,8 +28,6 @@ interface SearchPlaneadorProps {
   activeFilterCount: number
   filters: PlaneadorFiltersFormInput
   applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
-  /** Sede/año/jornada/docente (chips). */
-  applyAlcance: (alcance: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`, ver
   // `use-instrumento-evaluacion-catalog.ts`) — nombre y valor son el mismo

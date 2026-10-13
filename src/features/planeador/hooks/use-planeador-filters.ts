@@ -13,8 +13,6 @@ export interface PlaneadorFilters {
   /** Con `alcance` (popover de filtros avanzados) escribe también
    *  `?sede=&ano=&jornada=&docente=` en la misma navegación. */
   applyFilters: (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => void
-  /** Solo sede/año/jornada/docente (chips, valores por defecto). */
-  applyAlcance: (alcance: PlaneadorAlcanceSeleccion) => void
   clearAllFilters: () => void
   /** Incluye sede/año/jornada/docente elegidos. */
   activeFilterCount: number
@@ -96,16 +94,6 @@ function useFiltersFor(
     [navigate, resetAlCambiarAlcance],
   )
 
-  const applyAlcance = useCallback(
-    (alcance: PlaneadorAlcanceSeleccion) => {
-      navigate({
-        search: (prev) => ({ ...prev, ...alcanceSearch(prev, alcance, resetAlCambiarAlcance) }),
-        replace: true,
-      })
-    },
-    [navigate, resetAlCambiarAlcance],
-  )
-
   const clearAllFilters = useCallback(() => {
     navigate({
       search: (prev) => ({
@@ -141,7 +129,6 @@ function useFiltersFor(
       vista: search.vista ?? "",
     },
     applyFilters,
-    applyAlcance,
     clearAllFilters,
     activeFilterCount,
   }

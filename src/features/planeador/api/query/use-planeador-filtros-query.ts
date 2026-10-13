@@ -114,12 +114,13 @@ export function periodosDelAnio(
   return anio == null ? [] : periodos.filter((p) => p.anio === anio)
 }
 
-/** Jornada por defecto, como en Informes: la del periodo en curso o, si el
- *  año tiene una sola, esa. */
+/** Jornada por defecto: la del periodo en curso; si no, la del primero que
+ *  siga abierto; si no, la primera. Siempre una (salvo año vacío): los
+ *  endpoints filtran por UN periodo, así que un año elegido sin jornada no
+ *  acotaría nada cuando tiene varias. */
 export function jornadaPorDefecto(delAnio: PlaneadorFiltroPeriodo[]): number | null | undefined {
-  const enCurso = delAnio.find((p) => p.enCurso)
-  if (enCurso) return enCurso.jornadaId
-  return delAnio.length === 1 ? delAnio[0].jornadaId : undefined
+  const elegido = delAnio.find((p) => p.enCurso) ?? delAnio.find((p) => p.abierto) ?? delAnio[0]
+  return elegido?.jornadaId
 }
 
 /** Valor de URL / combobox de una jornada (`null` = periodo sin jornada). */
