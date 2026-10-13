@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
@@ -120,6 +120,12 @@ interface ActividadDetalleRow {
   campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
+  /** Docente dueño (sso V553, `fn_actividad_docente_dicta`): el que dicta el
+   *  grupo+asignatura o, sin grupo, el autor de la unidad — mismo criterio
+   *  que las filas de `/actividades/mias`. Opcionales: un backend sin esas
+   *  columnas no rompe nada, solo no se muestra el docente. */
+  fk_tfuncionario_docente?: number | null
+  docente_nombre?: string | null
 }
 
 interface EvidenciaRelacionadaRow {
@@ -563,6 +569,12 @@ function toActividadDetalle(
     matriculasIds: (row.estudiantes ?? []).map((e) => e.pkTmatricula),
     asignarTodoElGrupo: false,
     camposDisponibles: toCamposDisponibles(row.campos_disponibles),
+    // `es_propia` también llega, pero no se mapea a `esPropia` a propósito:
+    // el detalle lo comparten el panel y la pantalla de edición, y la
+    // decisión de solo lectura ya la toma `usePlaneadorSoloLectura` con el
+    // alcance de la URL.
+    docenteId: row.fk_tfuncionario_docente ?? undefined,
+    docenteNombre: row.docente_nombre?.trim() || undefined,
   }
 }
 
@@ -578,7 +590,41 @@ function actividadDetalleUrl(id: number): string {
  * `toActividadDetalle`. Si no existe, se lanza un error para que el
  * `<ErrorBoundary>` / toast del interceptor se encargue.
  */
-async function fetchActividadDetalle(id: number): Promise<Actividad> {
+/**
+ * Catálogos que necesita el mapeo del detalle. Son `TLISTA_VALOR` fijos: se
+ * cachean en React Query (`staleTime: Infinity`) en vez de pedirse en cada
+ * apertura del panel — antes cada detalle hacía 3 `GET /select/:CATEGORIA`
+ * idénticos, y en test cada request cuesta ~0,4–0,7 s de ida y vuelta por el
+ * Worker aunque el SQL tarde 1–3 ms.
+ */
+function fetchCatalogosDetalle(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.ensureQueryData({
+      queryKey: ["planeador-detalle-catalogo", "tipo-recurso"] as const,
+      queryFn: fetchTipoRecursoOptions,
+      staleTime: Infinity,
+    }),
+    queryClient.ensureQueryData({
+      queryKey: ["planeador-detalle-catalogo", "tipo-adaptacion"] as const,
+      queryFn: fetchTipoAdaptacionOptions,
+      staleTime: Infinity,
+    }),
+    queryClient.ensureQueryData({
+      queryKey: ["planeador-detalle-catalogo", "aplica-a"] as const,
+      queryFn: fetchAplicaAOptions,
+      staleTime: Infinity,
+    }),
+  ])
+}
+
+async function fetchActividadDetalle(id: number, queryClient: QueryClient): Promise<Actividad> {
+  // Todo en paralelo: antes los catálogos y los nombres de archivo se pedían
+  // DESPUÉS de que volviera el detalle (cascada de dos idas y vueltas). Con
+  // mocks los catálogos no hacen falta, así que no se piden.
+  const catalogosPromise = env.ENABLE_API_MOCKING ? undefined : fetchCatalogosDetalle(queryClient)
+  const archivosPromise = env.ENABLE_API_MOCKING ? undefined : fetchMaterialArchivos(id)
+  // Si el detalle falla, que el rechazo de los catálogos no quede sin manejar.
+  catalogosPromise?.catch(() => undefined)
   const rows = await evalCol.getRows<Actividad | ActividadDetalleRow>(actividadDetalleUrl(id))
   const first = rows[0]
   if (!first) {
@@ -595,11 +641,9 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
       esFormativa: Boolean(mock.unidad?.id) && !mock.esEvaluativa,
     }
   }
-  const [tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions, nombresArchivo] = await Promise.all([
-    fetchTipoRecursoOptions(),
-    fetchTipoAdaptacionOptions(),
-    fetchAplicaAOptions(),
-    fetchMaterialArchivos(id),
+  const [[tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions], nombresArchivo] = await Promise.all([
+    catalogosPromise!,
+    archivosPromise!,
   ])
   const actividad = toActividadDetalle(
     first as ActividadDetalleRow,
@@ -621,10 +665,29 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
   }
 }
 
+/** Opciones del detalle, compartidas por el hook y el prefetch. */
+function actividadDetalleQueryOptions(id: number, queryClient: QueryClient) {
+  return {
+    queryKey: planeadorKeys.actividad.detalle(id),
+    queryFn: () => fetchActividadDetalle(id, queryClient),
+    staleTime: 1000 * 60,
+  }
+}
+
+/**
+ * Precarga el detalle al pasar el puntero (o el foco) por una card del rail o
+ * un evento del calendario: para cuando se hace clic, la mitad o todo el
+ * viaje ya está hecho. No hace nada si ya está en caché y fresco.
+ */
+export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
+  void queryClient.prefetchQuery(actividadDetalleQueryOptions(id, queryClient))
+}
+
 export function useActividadDetalleQuery(id: number | undefined) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: id !== undefined ? planeadorKeys.actividad.detalle(id) : planeadorKeys.actividad.detalle("none"),
-    queryFn: () => fetchActividadDetalle(id!),
+    queryFn: () => fetchActividadDetalle(id!, queryClient),
     enabled: id !== undefined,
     staleTime: 1000 * 60,
   })
