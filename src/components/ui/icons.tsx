@@ -12,6 +12,7 @@ import {
   MdArrowDownward,
   MdArrowForward,
   MdArrowUpward,
+  MdSwapVert,
   MdAssignment,
   MdAssignmentAdd,
   MdAssignmentTurnedIn,
@@ -207,6 +208,7 @@ export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
+export const ArrowsDownUpIcon = makeIcon(MdSwapVert)
 export const AudioIcon = makeIcon(MdAudiotrack)
 export const BankIcon = makeIcon(MdOutlineAccountBalance)
 export const BellIcon = makeIcon(MdOutlineNotifications)

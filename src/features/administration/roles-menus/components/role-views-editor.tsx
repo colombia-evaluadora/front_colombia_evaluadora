@@ -27,6 +27,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useUpdateRoleMenus } from "@/features/administration/roles-menus/api/mutations/update-role-menus"
+import { useMenuCatalogQuery } from "@/features/administration/roles-menus/api/query/use-menu-catalog-query"
+import { useRoleEmployeesCountQuery } from "@/features/administration/roles-menus/api/query/use-role-employees-count-query"
+import { withRequiredParents } from "@/features/administration/roles-menus/api/types/role-menu"
 import type { MenuNode, MenuTreeNode } from "@/features/administration/roles-menus/api/types/role-menu"
 import {
   ACTION_LABELS,
@@ -69,6 +72,7 @@ export function RoleViewsEditor({
   onDirtyChange,
 }: RoleViewsEditorProps) {
   const { notify } = useNotify()
+  const { data: catalog = [] } = useMenuCatalogQuery()
   const [draft, setDraft] = useState<RoleViews>(saved)
   const [confirmOpen, setConfirmOpen] = useState(false)
   // Se arranca con los módulos que el rol ya tiene abiertos: es lo que se revisa.
@@ -102,11 +106,19 @@ export function RoleViewsEditor({
     },
   })
 
+  // Acciones que tiene cada vista (Módulos y submódulos). Mientras carga, todas.
+  const admitted = new Map(catalog.map((menu) => [menu.id, menu]))
+  function admits(id: number, action: ViewAction): boolean {
+    const menu = admitted.get(id)
+    if (!menu || action === "acceso") return true
+    return action === "guardar" ? menu.admiteGuardar : menu.admiteEliminar
+  }
+
   function handleToggle(node: MenuNode | MenuTreeNode, action: ViewAction, checked: boolean) {
     setDraft((prev) => {
-      // Guardar y Eliminar de un módulo se aplican a todos sus submódulos.
+      // Guardar y Eliminar de un módulo se aplican a los submódulos que los tienen.
       if (action !== "acceso" && "children" in node) {
-        return node.children.reduce(
+        return node.children.filter((child) => admits(child.id, action)).reduce(
           (acc, child) => toggleAction(acc, tree, child.id, action, checked),
           prev,
         )
@@ -125,7 +137,13 @@ export function RoleViewsEditor({
   }
 
   function save() {
-    updateRoleMenus.mutate({ roleId, menus: toPayload(draft) })
+    // El backend rechaza un submódulo sin su módulo, y lo guardado puede venir
+    // así de la base: el padre que falte viaja con solo Acceso.
+    const views = new Map(draft)
+    for (const id of withRequiredParents([...draft.keys()], tree)) {
+      if (!views.has(id)) views.set(id, { acceso: true, guardar: false, eliminar: false })
+    }
+    updateRoleMenus.mutate({ roleId, menus: toPayload(views) })
   }
 
   const busy = updateRoleMenus.isPending
@@ -210,7 +228,12 @@ export function RoleViewsEditor({
                     <ActionCell
                       key={action}
                       label={`${ACTION_LABELS[action]} en ${group.name}`}
-                      checked={moduleChecked(draft, group, action)}
+                      available={
+                        action === "acceso" ||
+                        group.children.length === 0 ||
+                        group.children.some((child) => admits(child.id, action))
+                      }
+                      checked={moduleChecked(draft, group, action, admits)}
                       changed={changed.has(`${group.id}-${action}`)}
                       disabled={busy}
                       onChange={(checked) => handleToggle(group, action, checked)}
@@ -230,6 +253,7 @@ export function RoleViewsEditor({
                           <ActionCell
                             key={action}
                             label={`${ACTION_LABELS[action]} en ${child.name}`}
+                            available={admits(child.id, action)}
                             checked={getPermission(draft, child.id)[action]}
                             changed={changed.has(`${child.id}-${action}`)}
                             disabled={busy}
@@ -248,6 +272,7 @@ export function RoleViewsEditor({
       <ConfirmRemovalsDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
+        roleId={roleId}
         roleName={roleName}
         removals={removals}
         tree={tree}
@@ -263,11 +288,18 @@ export function RoleViewsEditor({
  * Acceso del módulo es el suyo. Guardar y Eliminar del módulo resumen a sus
  * submódulos: encendidos si alguno los tiene.
  */
-function moduleChecked(draft: RoleViews, group: MenuTreeNode, action: ViewAction): boolean {
+function moduleChecked(
+  draft: RoleViews,
+  group: MenuTreeNode,
+  action: ViewAction,
+  admits: (id: number, action: ViewAction) => boolean,
+): boolean {
   if (action === "acceso" || group.children.length === 0) {
     return getPermission(draft, group.id)[action]
   }
-  return group.children.some((child) => getPermission(draft, child.id)[action])
+  return group.children.some(
+    (child) => admits(child.id, action) && getPermission(draft, child.id)[action],
+  )
 }
 
 function NodeIcon({ node }: { node: MenuNode }) {
@@ -277,13 +309,29 @@ function NodeIcon({ node }: { node: MenuNode }) {
 
 interface ActionCellProps {
   label: string
+  /** La vista tiene la acción (Módulos y submódulos); si no, no hay interruptor. */
+  available: boolean
   checked: boolean
   changed: boolean
   disabled: boolean
   onChange: (checked: boolean) => void
 }
 
-function ActionCell({ label, checked, changed, disabled, onChange }: ActionCellProps) {
+function ActionCell({ label, available, checked, changed, disabled, onChange }: ActionCellProps) {
+  if (!available) {
+    return (
+      <TableCell>
+        <Tooltip>
+          <TooltipTrigger
+            render={<span className="text-muted-foreground" aria-label={`${label}: la vista no la tiene`} />}
+          >
+            —
+          </TooltipTrigger>
+          <TooltipContent>La vista no tiene esta acción. Se habilita en Módulos y submódulos.</TooltipContent>
+        </Tooltip>
+      </TableCell>
+    )
+  }
   return (
     <TableCell>
       <span className="inline-flex items-center gap-2">
@@ -307,6 +355,7 @@ function ActionCell({ label, checked, changed, disabled, onChange }: ActionCellP
 interface ConfirmRemovalsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  roleId: number
   roleName: string
   removals: PermissionChange[]
   tree: MenuTreeNode[]
@@ -318,6 +367,7 @@ interface ConfirmRemovalsDialogProps {
 function ConfirmRemovalsDialog({
   open,
   onOpenChange,
+  roleId,
   roleName,
   removals,
   tree,
@@ -325,6 +375,10 @@ function ConfirmRemovalsDialog({
   onConfirm,
 }: ConfirmRemovalsDialogProps) {
   const single = removals.length === 1 ? removals[0] : null
+  // Se pide al abrir: el total cambia cuando se asignan roles en los establecimientos.
+  const { data: total } = useRoleEmployeesCountQuery(roleId, open)
+  const funcionarios =
+    total == null ? "a los funcionarios" : total === 1 ? "al funcionario" : `a los ${total} funcionarios`
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
@@ -338,13 +392,14 @@ function ConfirmRemovalsDialog({
             {single ? (
               <>
                 Se quitará <strong>{ACTION_LABELS[single.action]}</strong> en{" "}
-                <strong>{viewPath(tree, single.id)}</strong> a los funcionarios con el rol{" "}
-                {roleName}, en todos los establecimientos.
+                <strong>{viewPath(tree, single.id)}</strong>{" "}
+                {total == null ? funcionarios : <strong>{funcionarios}</strong>} con el rol {roleName}, en
+                todos los establecimientos.
               </>
             ) : (
               <>
-                Se quitará a los funcionarios con el rol {roleName}, en todos los
-                establecimientos:
+                Se quitará {total == null ? funcionarios : <strong>{funcionarios}</strong>} con el rol{" "}
+                {roleName}, en todos los establecimientos:
               </>
             )}
           </AlertDialogDescription>
