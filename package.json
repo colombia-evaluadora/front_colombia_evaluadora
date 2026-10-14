@@ -15,6 +15,7 @@
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit",
     "test:watch": "vitest --project unit",
+    "test:e2e": "playwright test",
     "test-storybook": "test-storybook --url http://localhost:6006",
     "test-storybook:ci": "concurrently -k -s first -n SB,TEST -c blue,magenta \"http-server storybook-static -p 6006 --silent\" \"wait-on http://localhost:6006 && test-storybook --url http://localhost:6006 --ci\""
   },
@@ -65,6 +66,7 @@
     "@babel/core": "^7.29.7",
     "@chromatic-com/storybook": "^5.2.1",
     "@faker-js/faker": "^10.5.0",
+    "@playwright/test": "1.61.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.5.3",
     "@storybook/addon-docs": "^10.5.3",

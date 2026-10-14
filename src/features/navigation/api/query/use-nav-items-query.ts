@@ -40,6 +40,11 @@ export const navItemsQueryOptions = queryOptions({
   queryKey: ["navigation", "menu"],
   queryFn: fetchNavItems,
   staleTime: Infinity,
+  // El guard de `/app` hace `ensureQueryData` con esto: con el default
+  // `networkMode: "online"` y el `connectivityStore` en `offline` la query
+  // quedaba pausada y la pantalla en blanco en lugar de llegar al
+  // `ErrorPage` ("No pudimos comunicarnos con el servidor" + "Reintentar").
+  networkMode: "always",
 })
 
 export function useNavItemsQuery() {

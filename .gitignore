@@ -31,3 +31,7 @@ storybook-static
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright E2E
+/test-results/
+/playwright-report/

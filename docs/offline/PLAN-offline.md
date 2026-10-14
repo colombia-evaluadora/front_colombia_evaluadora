@@ -939,6 +939,23 @@ Tareas:
 Aceptación: con DevTools "Offline" y recarga en `/app/planeador/actividades`, **no** se va a login (muestra error de red con reintentar); 403 con red caída no limpia cache; 0 toasts de "Network Error" repetidos.
 Rollback: revert de PR (sin estado persistido).
 
+#### Cierre de la Fase 0 (2026-10)
+Estado: **implementada en `dev`**; falta solo la validación manual en `test` (DevTools Offline / Slow 3G, tarea 9.2 de `add-offline-resilience`).
+
+Qué salió y en qué PR:
+- **#683** (front) — specs OpenSpec del plan (`openspec/changes/add-offline-*`).
+- **#684** — sesión y cliente HTTP: `getUser()` distingue 401/403 de red (`NetworkSessionError`), `hasSession` reintenta 1 s/2 s/4 s, el guard de `/app` pinta "No pudimos comunicarnos con el servidor" + "Reintentar" en vez de mandar a `/login`; 403 con refresh caído por red no limpia cache; timeouts 20 s / 120 s multipart; `isNetworkError`; sin toasts de red; `Idempotency-Key` en mutaciones; `retry` solo de red y `networkMode: "online"`.
+- **#685** — `lib/offline/connectivity.ts` (heartbeat, histéresis, portal cautivo), `useConnectivity`, `OfflineBanner` e íconos.
+- **#686** — invalidaciones X1/X2 del planeador, `Cache-Control: no-store` en `/api` del Worker (BE-10), `/app/pendientes` en `isAlwaysAllowedPath`, `pnpm test:unit` en CI.
+- **sso #683** — `GET /eval-col/health` sin auth (BE-4).
+- **PR de cierre** — E2E Playwright (`pnpm test:e2e`, `e2e/offline-resilience.spec.ts`) y dos ajustes que salieron de correrlos: el `ensureQueryData` de `hasSession` va con `retry: false` (el retry por defecto multiplicaba el backoff y dejaba ~20 s en blanco) y `networkMode: "always"` en la sesión y el menú del guard (con el store en `offline` la query quedaba pausada para siempre en vez de llegar al `ErrorPage`).
+
+Desvíos respecto del plan:
+- **Recarga con el navegador realmente offline**: sin app shell no hay `index.html` que servir (B7), así que la aceptación "recargar con DevTools Offline no va a login" solo se cumple cuando la página carga y la API no responde (portal cautivo, gateway caído, red que cae durante el arranque). El **app shell con Service Worker pasa a la Fase 1** (`add-offline-reads`), como ya estaba en su alcance.
+- Tarea 1 del plan: se eligió reintentar con backoff 3× (sin usuario persistido mínimo, que llega con la sesión persistida de la Fase 1).
+- E2E: MSW responde desde el navegador, así que ni `page.route` ni `context.setOffline` cortan la API mockeada. La caída de la API se simula con `sessionStorage["msw:fault"] = "network" | "server"` (handlers de `src/mocks/browser.ts`); `context.setOffline` se usa para el evento `offline` y el banner. **No** se agregó a CI: necesita levantar Vite + Chromium y depende de timers reales (backoff de 7 s, histéresis de 3 s), ~1,5 min y propenso a flakes; se corre a mano antes de promover.
+- Port a PIGSE (8.2): solo documentado en `lib/offline/README.md`; se hace a pedido.
+
 ### Fase 1 — Lectura offline · 3–4 semanas
 Tareas: `vite-plugin-pwa` (`injectManifest`, prompt de actualización, sin `/api`), manifest e íconos; `db.ts`; persister selectivo por usuario con buster; `meta.offline` en ~40 queries (planeador, planilla, asistencia, referentes, catálogos de academic-period); `session` persistida + `hasSession` offline; sidebar offline; `useOnlineOnly` en todas las vistas SO; "Preparar para usar sin conexión"; limpieza en logout/cambio de usuario; modo equipo compartido; minimización de campos persistidos.
 Aceptación: tras preparar, en modo avión y recargando, se navega planeador/planilla/asistencia/referentes con datos y badge de fecha; vistas SO muestran empty state; logout borra todo (verificado en DevTools → Application); otro usuario no ve datos del anterior.

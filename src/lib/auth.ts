@@ -135,6 +135,14 @@ export async function hasSession(queryClient: QueryClient): Promise<boolean> {
       const user = await queryClient.ensureQueryData({
         queryKey: USER_QUERY_KEY,
         queryFn: getUser,
+        // El backoff lo maneja este loop (1 s, 2 s, 4 s): con el `retry` por
+        // defecto de las queries (2 reintentos de red) cada intento tardaba
+        // ~3 s más y el guard dejaba la pantalla en blanco ~20 s.
+        retry: false,
+        // Con `networkMode: "online"` (default) y el `connectivityStore` en
+        // `offline`, la query quedaría PAUSADA para siempre y el guard nunca
+        // llegaría al `ErrorPage` con "Reintentar".
+        networkMode: "always",
       })
       return !!user
     } catch (error) {
