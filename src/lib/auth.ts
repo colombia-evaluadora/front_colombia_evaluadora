@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, setAuthToken } from "@/lib/api-client"
+import { api, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
 import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
@@ -12,12 +12,25 @@ const USER_QUERY_KEY = ["auth-user"]
 // El backend no expone un "/auth/me": la sesión se restaura pidiendo un
 // access token nuevo (el refresh token viaja en una cookie httpOnly, nunca
 // visible acá) y derivando el usuario de sus claims.
-async function getUser(): Promise<AuthUser | null> {
+//
+// Solo un 401/403 del refresh significa "sin sesión". Un error de red,
+// timeout o 5xx de gateway NO dice nada sobre la sesión: se lanza
+// `NetworkSessionError` para que el guard reintente y, si persiste, muestre
+// el error recuperable en vez de mandar a /login (recargar offline te
+// deslogueaba aunque la cookie siguiera viva).
+export async function getUser(): Promise<AuthUser | null> {
   try {
     const { token }: AuthResponse = await api.post("/auth/refresh")
     setAuthToken(token)
     return toAuthUserFromToken(token)
-  } catch {
+  } catch (error) {
+    // Cualquier 5xx del refresh tampoco confirma ni niega la sesión.
+    const status = (error as { response?: { status?: number } })?.response?.status
+    if (isNetworkError(error) || (status != null && status >= 500)) {
+      throw new NetworkSessionError(error)
+    }
+    // 401/403 = sin sesión. Otro status (500, 4xx inesperado) o un token
+    // ilegible tampoco dejan una sesión utilizable, igual que antes.
     return null
   }
 }
@@ -109,10 +122,26 @@ export function useLogout({
 // Usado en `beforeLoad` de las rutas protegidas (TanStack Router). Es async
 // porque debe poder disparar y esperar el refresh la primera vez (recarga de
 // página) en vez de asumir "sin sesión" solo porque la query todavía no corrió.
+//
+// Ante `NetworkSessionError` reintenta 3 veces con backoff 1 s, 2 s, 4 s
+// (≈7 s en total) antes de propagar el error al `ErrorPage`.
+export const SESSION_RETRY_DELAYS_MS = [1000, 2000, 4000]
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export async function hasSession(queryClient: QueryClient): Promise<boolean> {
-  const user = await queryClient.ensureQueryData({
-    queryKey: USER_QUERY_KEY,
-    queryFn: getUser,
-  })
-  return !!user
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const user = await queryClient.ensureQueryData({
+        queryKey: USER_QUERY_KEY,
+        queryFn: getUser,
+      })
+      return !!user
+    } catch (error) {
+      if (!(error instanceof NetworkSessionError) || attempt >= SESSION_RETRY_DELAYS_MS.length) {
+        throw error
+      }
+      await wait(SESSION_RETRY_DELAYS_MS[attempt])
+    }
+  }
 }

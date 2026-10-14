@@ -3,10 +3,19 @@ import { toast } from "sonner"
 
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
+import { isNetworkError } from "@/lib/network-error"
+import { connectivityStore } from "@/lib/offline/connectivity"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
 
+export { isNetworkError, NetworkSessionError } from "@/lib/network-error"
+
 declare module "axios" {
+  export interface AxiosRequestConfig {
+    // Marca una lectura por POST (`api.query`, `evalCol.postRows`): no lleva
+    // `Idempotency-Key` porque no muta nada.
+    readOnly?: boolean
+  }
   export interface AxiosInstance {
     // El response interceptor de abajo desenvuelve `response.data` en runtime
     // para TODAS las llamadas a `api.*` — pero `get`/`post`/`put`/`patch`/
@@ -75,6 +84,8 @@ const UNAUTHENTICATED_ENDPOINTS = [
   // Verificación pública de boletines (QR): la página usa fetch directo, pero
   // si algo la llamara por axios no debe llevar Bearer.
   "/reportes/public/",
+  // Sonda de conectividad (heartbeat de `lib/offline/connectivity`).
+  "/eval-col/health",
 ]
 
 /**
@@ -140,6 +151,8 @@ const PROBE_ENDPOINTS = [
   // Estado de cuenta de los funcionarios (tabla de funcionarios): si falla,
   // solo se deshabilita el botón de reenviar activación.
   "/auth/register/cval/funcionario/estado-cuenta",
+  // Heartbeat de conectividad: falla justamente cuando no hay red.
+  "/eval-col/health",
 ]
 
 // Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
@@ -232,16 +245,54 @@ export function cleanErrorMessage(message: string): string {
   return firstLine.replace(/^[A-Za-z ]+:\s*ERROR:\s*/i, "").trim() || firstLine
 }
 
+// 20 s: sin timeout, una request colgada (portal cautivo, 2G) dejaba la UI
+// en "Guardando…" para siempre. Se puede pisar por llamada (`{ timeout }`);
+// las multipart de `lib/files.ts` usan 120 s.
+export const API_TIMEOUT_MS = 20_000
+
 export const api = Axios.create({
   baseURL: env.API_URL,
+  timeout: API_TIMEOUT_MS,
 })
 
+const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"])
+
+/**
+ * `Idempotency-Key` (UUID v4) en cada mutación, para que el backend pueda
+ * descartar un reenvío de la misma operación (reintento tras timeout, cola
+ * offline). Si la config ya trae una clave —la misma operación reintentada—
+ * se conserva. Las lecturas por POST (`readOnly`) no la llevan. Va al mismo
+ * origen (`/api` lo proxea el Worker/Vite), así que no hay preflight CORS.
+ */
+export function idempotencyKeyInterceptor(config: InternalAxiosRequestConfig) {
+  const method = (config.method ?? "get").toLowerCase()
+  if (config.headers && MUTATION_METHODS.has(method) && !config.readOnly) {
+    if (!config.headers["Idempotency-Key"]) {
+      config.headers["Idempotency-Key"] = crypto.randomUUID()
+    }
+  }
+  return config
+}
+
 api.interceptors.request.use(authRequestInterceptor)
+api.interceptors.request.use(idempotencyKeyInterceptor)
 api.interceptors.response.use(
   // El response interceptor desenvuelve `response.data` — todas las llamadas
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
-  (response) => response.data,
+  (response) => {
+    connectivityStore.reportSuccess()
+    return response.data
+  },
   async (error) => {
+    // Error de red (sin respuesta, timeout, 502/503/504/52x): no es un error
+    // de negocio ni una sesión vencida. Nunca cierra sesión ni limpia cache y
+    // no tostea —el único reflejo es el banner de conectividad—.
+    if (Axios.isCancel(error)) return Promise.reject(error)
+    if (isNetworkError(error)) {
+      connectivityStore.reportNetworkFailure(error.code ?? error.message)
+      return Promise.reject(error)
+    }
+
     // /auth/refresh se llama para *comprobar* si hay sesión (no hay /auth/me
     // en el backend real) — un 401 ahí es una respuesta normal ("no
     // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
@@ -289,7 +340,11 @@ api.interceptors.response.use(
       try {
         const { token }: AuthResponse = await api.post("/auth/refresh")
         setAuthToken(token)
-      } catch {
+      } catch (refreshError) {
+        // Si el refresh falló por red no sabemos si la sesión sigue viva:
+        // se rechaza la request original conservando sesión y cache. El
+        // interceptor ya reportó `degraded` al procesar el refresh fallido.
+        if (isNetworkError(refreshError)) return Promise.reject(error)
         isExpiredSession = true
       }
     }
@@ -434,4 +489,4 @@ export function getErrorMessage(error: unknown): string {
 // es lo que soporta el gateway. Como el response interceptor ya desenvuelve
 // `response.data`, casteamos el resultado a `T`.
 api.query = <T>(url: string, data?: unknown): Promise<T> =>
-  api.request<T>({ method: "POST", url, data }) as unknown as Promise<T>
+  api.request<T>({ method: "POST", url, data, readOnly: true }) as unknown as Promise<T>
