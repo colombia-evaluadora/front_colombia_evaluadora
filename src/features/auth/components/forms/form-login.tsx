@@ -35,6 +35,8 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       email: "",
       password: "",
       rememberMe: false,
+      // Conservador por defecto (§0.3): un equipo compartido no guarda nada.
+      sharedDevice: true,
     },
     validators: {
       onChange: loginFormSchema,
@@ -148,6 +150,29 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               >
                 ¿Olvidaste tu contraseña?
               </Link>
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="sharedDevice">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start">
+              <Checkbox
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(checked === true)}
+              />
+              <div className="flex flex-col gap-1">
+                <FieldLabel htmlFor={field.name} className="font-normal text-muted-foreground">
+                  Este es un equipo compartido
+                </FieldLabel>
+                {!field.state.value && (
+                  <FieldDescription>
+                    Al desmarcar, este equipo guardará nombres de tus estudiantes y tus registros
+                    sin conexión. Úsalo solo en un equipo personal.
+                  </FieldDescription>
+                )}
+              </div>
             </Field>
           )}
         </form.Field>
