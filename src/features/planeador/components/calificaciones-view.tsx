@@ -291,6 +291,7 @@ function CalificacionRow({
           {formativa ? (
             <CeldaObservacionTrigger
               pkTactividadEstudiante={estudiante.id}
+              actividadId={actividad.id}
               contexto={actividad.nombre}
               fecha={estudiante.fechaAsistencia ?? null}
               estudianteNombre={nombreCompleto}

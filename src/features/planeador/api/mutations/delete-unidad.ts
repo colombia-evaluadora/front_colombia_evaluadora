@@ -35,6 +35,9 @@ export function useDeleteUnidad({ mutationConfig }: UseDeleteUnidadOptions = {})
       // Invalida el listado para que la unidad desaparezca del rail al
       // volver a la pestaña (mismo criterio que `useDeleteActividad`).
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
+      // X1: las pestañas por referente (`unidades.tabs`) viven fuera de
+      // `unidades.all`; sin alcance la key es prefijo de todas sus variantes.
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
       onSuccess?.(...args)
     },
     ...restConfig,
