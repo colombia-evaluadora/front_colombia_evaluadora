@@ -11,6 +11,7 @@ import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/u
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
 import { resolveTipoEvidenciaId } from "@/features/planeador/api/query/use-tipo-evidencia-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { toRecuperacionBody } from "@/features/planeador/api/mutations/recuperacion-body"
 
 /**
  * `POST /planeador/actividades` (confirmado real, colección Postman
@@ -154,19 +155,7 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
   // el toggle sin esos catálogos mandaría un `RECUPERACION` a medio llenar
   // que el backend rechazaría.
   if (actividad.esEvaluativa && actividad.esRecuperacion && actividad.recuperacionDestino) {
-    body.RECUPERACION = {
-      destino: actividad.recuperacionDestino,
-      fkActividadRecuperar: actividad.recuperacionActividadId,
-      tipoAplicacion: actividad.recuperacionTipoAplicacion,
-      // Regla `tipoCalculoOcultoSi` de `campos_disponibles.recuperacion.
-      // reglas`: con REEMPLAZAR el campo se omite del todo (no se manda
-      // `""`) — la guía dice "si no viene se guarda PROMEDIADO", no "si
-      // viene vacío"; un string vacío no es un valor del catálogo y el
-      // backend podría rechazarlo en vez de aplicar el default.
-      tipoCalculo:
-        actividad.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : actividad.recuperacionTipoCalculo,
-      valorPonderacion: actividad.recuperacionValorPonderacion,
-    }
+    body.RECUPERACION = await toRecuperacionBody(actividad)
   }
   // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
   // primer (y único) campo de la fila (mismo contrato que `POST /unidades`,
