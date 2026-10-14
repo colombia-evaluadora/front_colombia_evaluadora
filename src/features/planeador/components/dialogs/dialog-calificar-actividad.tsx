@@ -160,7 +160,7 @@ export function DialogCalificarActividad({
       })
       return
     }
-    calificar.mutate(input)
+    calificar.mutate({ ...input, actividadId })
   }
 
   if (!puedeEditar) return null

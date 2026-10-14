@@ -221,6 +221,7 @@ export function PlanillaGrid({
                           {celda && (
                             <CeldaObservacionTrigger
                               pkTactividadEstudiante={celda.pkTactividadEstudiante}
+                              actividadId={columna.pkTactividad}
                               contexto={columna.titulo}
                               fecha={fechaParaGuardar(columna, celda)}
                               estudianteNombre={fila.nombreEstudiante}
