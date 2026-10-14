@@ -16,6 +16,7 @@ import { esActividadFormativa } from "@/features/planeador/lib/actividad-formati
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -91,7 +92,16 @@ export function ActividadDetallePanel({
   // la pantalla de edición no conoce el `?docente=` y para un Super Admin
   // (que sí puede editar lo propio) abriría el formulario editable. Este
   // panel ya muestra el detalle completo.
-  const accionEditar = puedeEditar ? "Editar" : puedeVer && !viendoOtroDocente ? "Ver" : null
+  // Regla 37: con calificaciones u observaciones (o siendo base de una
+  // recuperación) el mismo link abre la actividad en solo lectura.
+  const bloqueoEdicion = motivoNoEditable(actividad)
+  const editable = puedeEditar && !bloqueoEdicion
+  const accionEditar = editable ? "Editar" : puedeEditar || (puedeVer && !viendoOtroDocente) ? "Ver" : null
+  const tooltipEditar = bloqueoEdicion && puedeEditar
+    ? bloqueoEdicion
+    : actividad
+      ? `${accionEditar} ${actividad.nombre}`
+      : accionEditar
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -152,9 +162,9 @@ export function ActividadDetallePanel({
                   />
                 }
               >
-                {puedeEditar ? <PencilIcon /> : <EyeIcon />}
+                {editable ? <PencilIcon /> : <EyeIcon />}
               </TooltipTrigger>
-              <TooltipContent>{actividad ? `${accionEditar} ${actividad.nombre}` : accionEditar}</TooltipContent>
+              <TooltipContent>{tooltipEditar}</TooltipContent>
             </Tooltip>
           )}
           {ACCIONES.filter(

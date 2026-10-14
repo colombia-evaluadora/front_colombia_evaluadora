@@ -39,6 +39,7 @@ import {
 } from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
+import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
 const FORM_ID = "editar-actividad-form"
@@ -245,6 +246,7 @@ function EditarActividadPageContent({
   const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
 
   async function handleSubmit(values: Actividad) {
+    if (motivoNoEditable(actividad)) return
     if (!actividad) return
     const unidadAnteriorId = actividad.unidad.id
     const unidadNuevaId = values.unidad.id
@@ -390,7 +392,11 @@ function EditarActividadPageContent({
   // ya cargado); ahora vive en el footer sticky junto al "Guardar".
   const mostrarValidacion =
     !isPendingCompleto && !isLoadingPermiso && puedeAbrir && !!actividadParaForm && !!actividad?.requiereValidacion
-  const mostrarGuardar = isDirty && !soloLectura
+  // Regla 37: con calificaciones u observaciones la actividad se ve entera
+  // pero no se guarda (el backend respondería 23503 igual).
+  const bloqueoEdicion = motivoNoEditable(actividad)
+  const formSoloLectura = soloLectura || !!bloqueoEdicion
+  const mostrarGuardar = isDirty && !formSoloLectura
 
   return (
     <TableScreen>
@@ -426,16 +432,22 @@ function EditarActividadPageContent({
 
         {!isPendingCompleto && !isLoadingPermiso && puedeAbrir && actividadParaForm && (
           <div className="flex flex-col gap-6">
-            {soloLectura && (
+            {soloLectura ? (
               <p className="text-muted-foreground text-sm">
                 Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla.
               </p>
+            ) : (
+              bloqueoEdicion && (
+                <p role="status" className="rounded-sm border border-yellow-stroke bg-yellow-22 px-3 py-2 text-sm">
+                  {bloqueoEdicion} Puedes consultarla, pero no modificarla.
+                </p>
+              )
             )}
             <EditarActividadForm
               key={actividadParaForm.id}
               actividad={actividadParaForm}
               formId={FORM_ID}
-              readOnly={soloLectura}
+              readOnly={formSoloLectura}
               onDirtyChange={setIsDirty}
               onSubmit={handleSubmit}
             />

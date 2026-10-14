@@ -1,6 +1,7 @@
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
+import { recuperacionFaltantes } from "@/features/planeador/lib/recuperacion-faltantes"
 
 /**
  * Reglas de "campo obligatorio" del form Crear/Editar actividad
@@ -77,7 +78,8 @@ export function camposObligatoriosFaltantes(
   // de `useRotuloActividadQuery` que sí leen los `<FieldLabel>` — mismo
   // criterio, nunca "actividad" fija.
   const rotuloLower = rotuloEnMinuscula(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
-  const faltantes: string[] = []
+  // "Es una recuperación" va primero en el form: sus campos encabezan la lista.
+  const faltantes: string[] = recuperacionFaltantes(values, rotuloLower)
   if (values.grupoId == null) faltantes.push("Grado / Grupo")
   if (values.asignaturaId == null) faltantes.push("Asignatura")
   if (faltanEstudiantes(values, grupoTieneEstudiantes)) faltantes.push(`Estudiantes de la ${rotuloLower}`)
