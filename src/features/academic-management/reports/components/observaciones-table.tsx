@@ -149,6 +149,21 @@ export function ObservacionesTable({
                           </TooltipContent>
                         </Tooltip>
                       )}
+                      {fila.observacion && fila.observacionEstado === "BORRADOR" && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Badge variant="soft" color="info" className="shrink-0 cursor-default" />
+                            }
+                          >
+                            Borrador (IA) – pendiente de revisión
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Generada por IA. No sale en el boletín hasta que alguien la revise y la
+                            guarde.
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                       {fila.observacionDesactualizada && (
                         <Tooltip>
                           <TooltipTrigger

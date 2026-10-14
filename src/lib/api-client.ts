@@ -72,6 +72,9 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/sso-admin/forgotUsername",
   "/sso-admin/restorePassword",
   "/sso-admin/resetTokenStatus",
+  // Verificación pública de boletines (QR): la página usa fetch directo, pero
+  // si algo la llamara por axios no debe llevar Bearer.
+  "/reportes/public/",
 ]
 
 /**
@@ -104,6 +107,8 @@ let isHandlingExpiredSession = false
 // en un redirect duro a /login.
 const PUBLIC_ENDPOINTS = [
   "/auth/refresh",
+  // Verificación pública de boletines (QR): un 401 no es sesión vencida.
+  "/reportes/public/",
   "/sso-admin/resetTokenStatus",
   "/sso-admin/restorePassword",
   "/sso-admin/forgotPassword",

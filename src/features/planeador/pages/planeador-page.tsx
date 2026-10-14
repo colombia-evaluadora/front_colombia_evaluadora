@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -28,10 +29,11 @@ import {
   useActividadesMiasQuery,
 } from "@/features/planeador/api/query/use-actividades-mias-query"
 import { parToString, useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
-import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { useInstrumentoFiltroOptions } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
+import { prefetchActividadDetalle } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
 import { DialogImportarActividadesJson } from "@/features/planeador/components/dialogs/dialog-importar-actividades-json"
 import { downloadJson } from "@/features/planeador/lib/download-json"
@@ -43,7 +45,6 @@ import {
 import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
-import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
@@ -61,9 +62,7 @@ import {
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import {
   PlaneadorLecturaBanner,
-  PlaneadorSeleccionVacia,
 } from "@/features/planeador/components/planeador-docente-selector"
-import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
@@ -93,6 +92,7 @@ export function PlaneadorPage() {
 
 function PlaneadorPageContent() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
   const { puedeCrear, viendoOtroDocente } = usePlaneadorSoloLectura()
@@ -107,12 +107,13 @@ function PlaneadorPageContent() {
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`. Cambiar sede/año/jornada/docente borra la
   // pestaña de rótulo y la actividad abierta (eran del alcance anterior).
-  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     usePlaneadorFilters()
-  usePlaneadorAlcanceInicial(applyAlcance)
   const buscar = filters.buscar
   const estado = filters.estado
-  const view = filters.vista || "actividad"
+  // `filtro` = `pk_lista_valor` del instrumento (ver `useInstrumentoFiltroOptions`).
+  const instrumento = filters.filtro && Number.isFinite(Number(filters.filtro)) ? Number(filters.filtro) : undefined
+  const estadosQuery = estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined
   // Actividad abierta en el panel derecho. `undefined` => se muestra el
   // calendario.
   const actividadId = search.actividad ?? undefined
@@ -162,7 +163,7 @@ function PlaneadorPageContent() {
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) para el filtro
   // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
-  const { data: instrumentoOptions = [] } = useInstrumentoEvaluacionCatalogQuery()
+  const { data: instrumentoOptions = [] } = useInstrumentoFiltroOptions()
 
   const mesDesde = React.useMemo(
     () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)),
@@ -185,13 +186,28 @@ function PlaneadorPageContent() {
   // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
   // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
   const { data: statsCounts, error: errorStats } = useActividadesStatsQuery({
+    search: buscar || undefined,
+    instrumento,
     gradoAsignaturaPares: tabActiva?.pares,
   })
+
+  // Con un "Estado" elegido las tarjetas de los demás estados van en 0: el
+  // rail y el calendario solo muestran ese estado, y cada tarjeta ES un
+  // estado (no se manda `estados` a `/stats`, se apaga acá).
+  const conteosBase = statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }
+  const conteosVisibles = estado
+    ? (Object.fromEntries(
+        Object.entries(conteosBase).map(([k, v]) => [k, k === estado ? v : 0]),
+      ) as typeof conteosBase)
+    : conteosBase
 
   const { data: calendarioActividades = [], error: errorCalendario } =
     useActividadesCalendarioQuery({
       fechaDesde: mesDesde,
       fechaHasta: mesHasta,
+      search: buscar || undefined,
+      estados: estadosQuery,
+      instrumento,
       gradoAsignaturaPares: tabActiva?.pares,
     })
   // Botón "Nueva {rótulo}" — género correcto vía `articuloDefinido` (mismo
@@ -201,18 +217,19 @@ function PlaneadorPageContent() {
   const nuevoRotuloLabel = tabActiva?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
   const nuevoGenero = articuloDefinido(nuevoRotuloLabel) === "el" ? "o" : "a"
 
-  // `search`/`estados` ya filtran del lado del servidor — `filtro`
-  // (instrumento) queda armado para la próxima iteración, cuando llegue su
-  // catálogo.
+  // `search`/`estados`/`instrumento` filtran del lado del servidor, igual
+  // que en el calendario y las tarjetas de arriba.
   const {
     data: miasResult,
     isPending,
     isError,
     error,
     refetch,
+    isPlaceholderData,
   } = useActividadesMiasQuery({
     search: buscar || undefined,
-    estados: estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined,
+    estados: estadosQuery,
+    instrumento,
     size: 50,
     offset: 0,
     dia,
@@ -234,11 +251,29 @@ function PlaneadorPageContent() {
   const diaAnterior = miasResult?.diaAnterior ?? null
   const diaSiguiente = miasResult?.diaSiguiente ?? null
 
-  // Rótulo real (Regla 13) solo si TODAS las filas filtradas lo comparten —
-  // este listado puede cruzar varios grados a la vez, mismo criterio que
-  // `DialogExportActividades`.
-  const rotulosUnicos = new Set(filtered.map((a) => a.rotuloEjecucion).filter(Boolean))
-  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
+  // El rail pagina por día (`?dia=`): al cambiar un filtro (o el alcance/la
+  // pestaña) el día activo puede quedar vacío aunque haya actividades que
+  // cumplen en otros días, y el rail se veía en blanco hasta que el usuario
+  // movía las flechas. Una vez por combinación de filtros, si la respuesta
+  // (real, no el placeholder de la anterior) llega vacía, se salta al día
+  // ocupado más cercano que ella misma informa.
+  const firmaFiltros = JSON.stringify([
+    buscar,
+    estadosQuery,
+    instrumento,
+    tabActiva?.rotulo,
+    search.sede,
+    search.ano,
+    search.jornada,
+    search.docente,
+  ])
+  const [firmaResuelta, setFirmaResuelta] = React.useState<string | null>(null)
+  React.useEffect(() => {
+    if (!miasResult || isPlaceholderData || firmaResuelta === firmaFiltros) return
+    setFirmaResuelta(firmaFiltros)
+    const destino = miasResult.rows.length === 0 ? (diaSiguiente ?? diaAnterior) : null
+    if (destino && destino !== dia) setDia(destino)
+  })
 
   // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
   // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
@@ -373,10 +408,8 @@ function PlaneadorPageContent() {
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
-            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
             instrumentoOptions={instrumentoOptions}
-            rotuloLabel={rotuloLabel}
           />
 
           {/* Las acciones de la pantalla van junto al buscador, no en el
@@ -387,9 +420,6 @@ function PlaneadorPageContent() {
               derecha, y se les quita el borde donde se tocan—; el `div` con
               `gap-0` neutraliza el espacio que `<TableScreenActions>` agrega
               entre hijos. */}
-          {/* Super Admin sin docente elegido: no hay planeador sobre el cual
-              actuar (ni recargar, ni exportar). */}
-          {!scope.requiereSeleccion && (
             <TableScreenActions>
               <div className="flex gap-0">
                 {puedeCrear && (
@@ -472,26 +502,19 @@ function PlaneadorPageContent() {
                 dentro del menú se desmonta apenas el menú cierra. */}
               <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
             </TableScreenActions>
-          )}
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
-        {scope.requiereSeleccion ? (
-          <PlaneadorSeleccionVacia />
-        ) : (
           <>
             <PlaneadorLecturaBanner className="mb-4" />
-            {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
-            contar el listado de abajo — así el conteo no cambia al filtrar
-            ese listado (si contara sobre `filtered`, "Pendientes: 3" caería
-            a "Pendientes: 1" apenas el usuario tipea en el buscador y
-            perdería el sentido de "cuántas tengo en total"). El link de
-            cada card setea `?estado=…` en la URL para que el filter bar
-            del listado muestre ese estado por defecto. */}
+            {/* Cards de resumen por estado. Salen de `/actividades/stats` con los
+            mismos filtros del buscador que el rail y el calendario (texto,
+            instrumento, alcance y pestaña); con un estado elegido, las demás
+            van en 0 (ver `conteosVisibles`). */}
             <div className="mb-6">
               <PlaneadorSummaryCards
-                counts={statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }}
+                counts={conteosVisibles}
               />
             </div>
 
@@ -610,7 +633,13 @@ function PlaneadorPageContent() {
                     {!isPending && !isError && filtered.length > 0 && (
                       <ul className="flex flex-col gap-2">
                         {filtered.map((actividad) => (
-                          <li key={actividad.id}>
+                          // Precarga el detalle al apuntar/enfocar la card: el
+                          // clic llega con el viaje (o parte) ya hecho.
+                          <li
+                            key={actividad.id}
+                            onPointerEnter={() => prefetchActividadDetalle(queryClient, actividad.id)}
+                            onFocus={() => prefetchActividadDetalle(queryClient, actividad.id)}
+                          >
                             {/* Actividad de otro docente (Coordinador viendo toda
                             su sede): la card queda en solo lectura. */}
                             <PlaneadorSoloLecturaScope activo={esAjena(actividad)}>
@@ -721,18 +750,13 @@ function PlaneadorPageContent() {
                       // lista, más arriba) en vez de crear una nueva en esa
                       // fecha.
                       onEventClick={(id) => setActividadId(String(id))}
+                      onEventHover={(id) => prefetchActividadDetalle(queryClient, id)}
                     />
-                    {/* viewOption no se usa en la UI todavía; se deja armado para
-                    cuando llegue la implementación de "Ver por Unidad" / etc. */}
-                    <p className="text-muted-foreground sr-only">
-                      Vista actual: {VIEW_OPTIONS.find((o) => o.value === view)?.label}
-                    </p>
                   </div>
                 )}
               </section>
             </div>
           </>
-        )}
       </TableScreenBody>
     </TableScreen>
   )

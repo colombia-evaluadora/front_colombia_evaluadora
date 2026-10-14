@@ -11,7 +11,7 @@ import { CalificacionesAprobacionView } from "@/features/planeador/components/ca
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
-import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
+import { ValidacionCoordinadorFooter } from "@/features/planeador/components/validacion-coordinador"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { getErrorMessage } from "@/lib/api-client"
@@ -231,12 +231,22 @@ export function ActividadDetallePanel({
             <CalificacionesAprobacionView actividad={actividad} />
           ) : (
             <div className="flex flex-col gap-3">
-              <ValidacionCoordinadorCard actividadId={actividad.id} requiereValidacion={actividad.requiereValidacion} />
               <DetailSections actividad={actividad} />
             </div>
           )
         )}
       </div>
+
+      {/* Validación del coordinador: pie del panel, FUERA del contenedor que
+          scrollea. Como sticky dentro del scroll quedaba un hueco debajo (el
+          `p-3`) por el que se asomaba el contenido. */}
+      {actividad && !((mode === "grades" || mode === "approval") && !soloLectura) && (
+        <ValidacionCoordinadorFooter
+          className="static rounded-b-md"
+          actividadId={actividad.id}
+          requiereValidacion={actividad.requiereValidacion}
+        />
+      )}
     </div>
   )
 }

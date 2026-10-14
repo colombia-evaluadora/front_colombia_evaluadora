@@ -338,7 +338,7 @@ export function PlanillaGrid({
 }
 
 /** Nota nueva con flecha (sube/baja) y la anterior debajo, atenuada. */
-function NotaConCambio({ nota, anterior, titulo }: { nota: number; anterior: number | null; titulo?: string }) {
+export function NotaConCambio({ nota, anterior, titulo }: { nota: number; anterior: number | null; titulo?: string }) {
   const cambio = anterior !== null && anterior !== nota
   return (
     <div className="flex flex-col leading-tight" title={cambio ? titulo : undefined}>

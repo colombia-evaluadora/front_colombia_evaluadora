@@ -33,7 +33,10 @@ import {
 } from "@/features/planeador/api/mutations/update-instrumento-actividad"
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
-import { ValidacionCoordinadorCard } from "@/features/planeador/components/validacion-coordinador"
+import {
+  ValidacionCoordinadorAprobar,
+  ValidacionCoordinadorEstado,
+} from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
@@ -383,6 +386,12 @@ function EditarActividadPageContent({
     }
   }
 
+  // Misma condición que tenía la card de validación (se mostraba con el form
+  // ya cargado); ahora vive en el footer sticky junto al "Guardar".
+  const mostrarValidacion =
+    !isPendingCompleto && !isLoadingPermiso && puedeAbrir && !!actividadParaForm && !!actividad?.requiereValidacion
+  const mostrarGuardar = isDirty && !soloLectura
+
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -422,12 +431,6 @@ function EditarActividadPageContent({
                 Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla.
               </p>
             )}
-            {/* Lo ven el docente (estado y observación) y el Coordinador
-                (además el botón "Aprobar" si es de la sede de la actividad). */}
-            <ValidacionCoordinadorCard
-              actividadId={actividadParaForm.id}
-              requiereValidacion={actividad?.requiereValidacion ?? false}
-            />
             <EditarActividadForm
               key={actividadParaForm.id}
               actividad={actividadParaForm}
@@ -444,10 +447,23 @@ function EditarActividadPageContent({
           Sigue el patrón de `add-establishment-page`: siempre está montado
           (preserva el layout del `TableScreen`), pero su contenido solo
           pinta el aviso + el Guardar cuando `isDirty`. */}
+      {/* Una sola barra: a la izquierda el estado de la validación del
+          coordinador y el aviso de cambios; a la derecha "Aprobar" (si
+          `puedeValidar`) y "Guardar" (si hay cambios). */}
       <TableScreenFooter>
-        {isDirty && !soloLectura ? (
-          <>
+        <div className="flex min-w-0 flex-col gap-2">
+          {mostrarValidacion && (
+            <ValidacionCoordinadorEstado actividadId={actividadParaForm.id} requiereValidacion />
+          )}
+          {mostrarGuardar && (
             <p className="text-sm">Se detectaron cambios. Guardar para conservar la información.</p>
+          )}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {mostrarValidacion && (
+            <ValidacionCoordinadorAprobar actividadId={actividadParaForm.id} requiereValidacion />
+          )}
+          {mostrarGuardar && (
             <Button
               type="submit"
               form={FORM_ID}
@@ -463,10 +479,8 @@ function EditarActividadPageContent({
               )}
               {updateMutation.isPending || isSavingUnidad ? "Guardando..." : "Guardar"}
             </Button>
-          </>
-        ) : (
-          <span />
-        )}
+          )}
+        </div>
       </TableScreenFooter>
     </TableScreen>
   )

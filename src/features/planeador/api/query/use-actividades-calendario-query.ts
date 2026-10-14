@@ -95,6 +95,12 @@ export interface UseActividadesCalendarioParams extends PlaneadorAlcanceParams {
   asignatura?: number
   grupo?: number
   unidad?: number
+  /** Mismos filtros del buscador que el rail (`/actividades/mias`), para que
+   *  la grilla muestre lo mismo que la lista: texto libre, estado derivado
+   *  (`PENDIENTE_POR_EVALUAR`…, CSV) e instrumento (`pk_lista_valor`). */
+  search?: string
+  estados?: string
+  instrumento?: number
   /** Pestaña de Rótulo de Ejecución activa (ver `use-actividades-mias-query.ts`)
    *  — sin esto la grilla mezclaba actividades de todos los rótulos del
    *  docente en el mismo mes. */
@@ -113,6 +119,9 @@ async function fetchActividadesCalendario(
   if (params.asignatura != null) query.set("asignatura", String(params.asignatura))
   if (params.grupo != null) query.set("grupo", String(params.grupo))
   if (params.unidad != null) query.set("unidad", String(params.unidad))
+  if (params.search) query.set("search", params.search)
+  if (params.estados) query.set("estados", params.estados)
+  if (params.instrumento != null) query.set("instrumento", String(params.instrumento))
   setAlcanceQuery(query, params)
   if (params.gradoAsignaturaPares && params.gradoAsignaturaPares.length > 0) {
     query.set("grado_asignatura_pares", paresToQueryParam(params.gradoAsignaturaPares))

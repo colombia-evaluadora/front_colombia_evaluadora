@@ -4,6 +4,11 @@ export const paths = {
     getHref: () => "/",
   },
 
+  verificarBoletin: {
+    path: "/verificar/b/$codigo",
+    getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
+  },
+
   auth: {
     login: {
       path: "/login",
@@ -110,6 +115,10 @@ export const paths = {
     rolesMenus: {
       path: "administracion/roles-menus",
       getHref: () => "/app/administracion/roles-menus",
+    },
+    listasValor: {
+      path: "administracion/listas-valor",
+      getHref: () => "/app/administracion/listas-valor",
     },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",

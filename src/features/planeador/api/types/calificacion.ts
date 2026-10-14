@@ -95,6 +95,12 @@ export type CalificacionEstudiante = Estudiante & {
   estadoResultado?: EstadoResultado
   /** `false` si ya hay nota u observación: la asistencia queda congelada. */
   asistenciaEditable?: boolean
+  /** Regla 55: corrección pendiente de aprobación (la nota vigente no cambia). */
+  solicitudPendiente?: boolean
+  /** Nota propuesta en esa solicitud, en la escala de la asignatura. */
+  notaPropuestaHomologada?: number | null
+  /** Body de calificar de esa corrección, para precargar el diálogo. */
+  calificacionPropuesta?: unknown
 }
 
 /** Motivo por el que no se puede calificar ni observar, o `null` si se puede. */

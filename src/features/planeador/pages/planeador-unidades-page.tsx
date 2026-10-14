@@ -23,7 +23,7 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
 import { UnidadDetallePanel } from "@/features/planeador/components/unidad-detalle-panel"
 import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-filters"
-import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { useInstrumentoFiltroOptions } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
   articuloIndefinidoRotulo,
@@ -41,9 +41,7 @@ import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planead
 import { useNotificarErrores } from "@/features/planeador/hooks/use-notificar-errores"
 import {
   PlaneadorLecturaBanner,
-  PlaneadorSeleccionVacia,
 } from "@/features/planeador/components/planeador-docente-selector"
-import { usePlaneadorAlcanceInicial } from "@/features/planeador/hooks/use-planeador-alcance-inicial"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -76,15 +74,15 @@ function PlaneadorUnidadesPageContent() {
 
   const buscar = search.buscar ?? ""
   // Cambiar sede/año/jornada/docente borra la pestaña y la unidad abierta.
-  const { filters, applyFilters, applyAlcance, clearAllFilters, activeFilterCount } =
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     useUnidadesFilters()
-  usePlaneadorAlcanceInicial(applyAlcance)
 
   // Sin `?dia=`: a diferencia de la pestaña "Actividades", esta lista todas
   // las unidades del docente, no solo las que tienen alguna actividad
   // vigente hoy — paginar por día activo acá ocultaba unidades enteras sin
   // ningún aviso (colección Postman `planeador-delta-cambios`, punto (g);
   // el parámetro se había copiado del listado de actividades).
+  const { data: instrumentoOptions = [] } = useInstrumentoFiltroOptions()
   const { data: unidadesResult, isPending, isError, error, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
@@ -126,17 +124,21 @@ function PlaneadorUnidadesPageContent() {
       tabActiva && tabActiva.gradoIds.length > 0
         ? unidades.filter((u) => u.gradoId != null && tabActiva.gradoIds.includes(u.gradoId))
         : unidades
+    // "Estado" e "Instrumento" del popover: `/planeador/unidades` no los
+    // recibe, pero el listado ya llega completo (hasta 500) con `status` e
+    // `instrumentoId` (sso V488), así que se filtra acá.
+    const porFiltros = porInstrumento.filter(
+      (u) =>
+        (!filters.estado || u.status === filters.estado) &&
+        (!filters.filtro || String(u.instrumentoId ?? "") === filters.filtro),
+    )
     const term = buscar.trim().toLowerCase()
-    if (!term) return porInstrumento
-    return porInstrumento.filter((u) =>
+    if (!term) return porFiltros
+    return porFiltros.filter((u) =>
       [u.nombre, u.area, u.asignatura, u.grado].join(" ").toLowerCase().includes(term),
     )
-  }, [unidades, buscar, tabActiva])
+  }, [unidades, buscar, tabActiva, filters.estado, filters.filtro])
 
-  // Rótulo real (Regla 13) solo si TODAS las unidades filtradas lo
-  // comparten — mismo criterio que `planeador-page.tsx`.
-  const rotulosUnicos = new Set(filtered.map((u) => u.rotuloEjecucion).filter(Boolean))
-  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
 
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna
@@ -167,9 +169,8 @@ function PlaneadorUnidadesPageContent() {
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
-            applyAlcance={applyAlcance}
             clearAllFilters={clearAllFilters}
-            rotuloLabel={rotuloLabel}
+            instrumentoOptions={instrumentoOptions}
             rotuloUnidad={rotuloUnidad}
           />
           {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
@@ -179,9 +180,7 @@ function PlaneadorUnidadesPageContent() {
             {/* El rótulo sale del referente curricular (400 caracteres
                 posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
                 recorte, uno largo estiraba la barra entera fuera de pantalla. */}
-            {/* Super Admin sin docente elegido: el estado vacío no ofrece
-                  crear (mismo criterio que la pestaña de Actividades). */}
-            {puedeCrear && !scope.requiereSeleccion && (
+            {puedeCrear && (
               <Button
                 color="primary"
                 size="sm"
@@ -221,11 +220,6 @@ function PlaneadorUnidadesPageContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Super Admin sin docente elegido: no hay planeador propio que
-              mostrar, y ninguna consulta se dispara hasta elegir. */}
-        {scope.requiereSeleccion ? (
-          <PlaneadorSeleccionVacia />
-        ) : (
           <>
             <PlaneadorLecturaBanner className="mb-4" />
             {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
@@ -339,7 +333,6 @@ function PlaneadorUnidadesPageContent() {
               </section>
             </div>
           </>
-        )}
       </TableScreenBody>
     </TableScreen>
   )

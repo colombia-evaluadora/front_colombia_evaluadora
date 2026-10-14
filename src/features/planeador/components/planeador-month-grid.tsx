@@ -73,6 +73,8 @@ interface PlaneadorMonthGridProps {
    *  comportamiento del día entero y clickear una actividad ya existente
    *  abría por error el alta de una nueva en esa fecha. */
   onEventClick?: (id: number) => void
+  /** Puntero o foco sobre un evento: el padre lo usa para precargar el detalle. */
+  onEventHover?: (id: number) => void
   locale?: Locale
 }
 
@@ -93,6 +95,7 @@ export function PlaneadorMonthGrid({
   onMonthChange,
   onDayClick,
   onEventClick,
+  onEventHover,
   locale = es,
 }: PlaneadorMonthGridProps) {
   const defaultClassNames = getDefaultClassNames()
@@ -263,6 +266,8 @@ export function PlaneadorMonthGrid({
                           role={onEventClick ? "button" : undefined}
                           tabIndex={onEventClick ? 0 : undefined}
                           title={`${code} · ${label}`}
+                          onPointerEnter={onEventHover ? () => onEventHover(id) : undefined}
+                          onFocus={onEventHover ? () => onEventHover(id) : undefined}
                           aria-label={onEventClick ? `Ver actividad ${code} · ${label}` : undefined}
                           onClick={
                             onEventClick

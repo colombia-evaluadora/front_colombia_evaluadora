@@ -54,6 +54,7 @@ import {
   asistenciaSearchSchema,
   asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
+import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
@@ -145,6 +146,11 @@ const RolesMenusPage = lazyRouteComponent(
   "RolesMenusPage"
 )
 
+const ListasValorPage = lazyRouteComponent(
+  () => import("@/features/administration/listas-valor/pages/listas-valor-page"),
+  "ListasValorPage"
+)
+
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
@@ -230,6 +236,24 @@ const homeRoute = createRoute({
   beforeLoad: () => {
     throw redirect({ to: paths.auth.login.path })
   },
+})
+
+// Pública (QR del boletín): fuera de `_auth` y de `/app`, sin chequeo de
+// sesión ni layout de la app. Sin login solo se ve el estado; el PDF exige
+// los últimos 4 dígitos del documento del estudiante.
+export const verificarBoletinRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.verificarBoletin.path,
+  head: () => ({
+    meta: [
+      { title: `Verificación de boletín · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(
+    () => import("@/features/verificacion/pages/verificar-boletin-page"),
+    "VerificarBoletinPage",
+  ),
 })
 
 const authLayoutRoute = createRoute({
@@ -613,6 +637,16 @@ export const rolesMenusRoute = createRoute({
   component: RolesMenusPage,
 })
 
+export const listasValorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.listasValor.path,
+  validateSearch: listasValorSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Listas de valor" }],
+  },
+  component: ListasValorPage,
+})
+
 // Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
 // único `NoticeProvider` para que un aviso disparado en un formulario de
 // alta/edición siga visible al navegar de vuelta al listado (a diferencia de
@@ -954,6 +988,7 @@ export const chatRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
+  verificarBoletinRoute,
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,
@@ -981,6 +1016,7 @@ const routeTree = rootRoute.addChildren([
       auditoriaSesionOperacionesRoute,
     ]),
     rolesMenusRoute,
+    listasValorRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

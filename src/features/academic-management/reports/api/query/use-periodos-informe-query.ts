@@ -18,6 +18,7 @@ interface PeriodoRow {
   termino: boolean
   en_curso: boolean
   calificable: boolean
+  periodo_cerrado?: boolean | null
   fk_tperiodo_academico: number
   periodo_academico: string | null
   fk_tsede: number
@@ -37,6 +38,7 @@ function toPeriodo(row: PeriodoRow): PeriodoInforme {
     termino: row.termino,
     enCurso: row.en_curso,
     calificable: row.calificable,
+    cerrado: row.periodo_cerrado ?? false,
     sede: row.sede_nombre,
     jornada: row.jornada,
   }

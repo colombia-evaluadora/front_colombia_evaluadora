@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { CaretDownIcon, CaretUpIcon, InfoIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CaretUpIcon, InfoIcon, WarningIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { RatingSymbolView } from "@/features/establishment/academic-period/components/rating-symbol"
@@ -86,6 +86,22 @@ function CeldaRecuperada({ asignatura }: { asignatura: AsignaturaInforme }) {
 function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undefined }) {
   if (!asignatura || asignatura.estado === "sin_nota") {
     return <span className="text-muted-foreground">—</span>
+  }
+
+  // Configuración incompleta (sin criterio, escala…): no hay nota confiable
+  // que mostrar ni consolidar; se explica el motivo.
+  if (asignatura.errorConfiguracion) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          className="inline-flex text-yellow outline-none"
+          aria-label={`Error de configuración: ${asignatura.errorConfiguracion}`}
+        >
+          <WarningIcon className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent>No se consolida: {asignatura.errorConfiguracion}</TooltipContent>
+      </Tooltip>
+    )
   }
 
   if (asignatura.conRecuperacion && asignatura.estado !== "requerido") {

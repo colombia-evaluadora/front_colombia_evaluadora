@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import {
   DropdownMenu,
@@ -56,15 +56,14 @@ import {
   CalificarActividadBulk,
   type EstadoGuardar,
 } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
-import type { CambioPendiente } from "@/features/planeador/components/planilla/celda-nota-popover"
 import {
   DialogEnviarSolicitud,
   DialogSolicitudEnviada,
 } from "@/features/planeador/components/planilla/dialogs-solicitud-periodo-cerrado"
-import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { useSolicitudPeriodoCerrado } from "@/features/planeador/hooks/use-solicitud-periodo-cerrado"
 
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
@@ -100,48 +99,12 @@ export function PlaneadorPlanillaPage() {
   // Periodo cerrado (estado distinto de "1" Calificable): las notas se
   // acumulan y se envían juntas; el backend abre la solicitud (Regla 55).
   const periodoCerrado = filtro != null && filtro.periodoEvaluacion.estado !== "1"
-  const [cambios, setCambios] = useState<Map<number, CambioPendiente>>(new Map())
-  const [confirmando, setConfirmando] = useState(false)
-  const [enviando, setEnviando] = useState(false)
-  const [enviada, setEnviada] = useState(false)
-  const { notify } = useNotify()
-  const calificar = useCalificarCeldaMutation()
+  const solicitud = useSolicitudPeriodoCerrado()
+  const { cambios, agregarCambio } = solicitud
 
   function cambiarFiltro(next: FiltroPlanillaValue | null) {
-    setCambios(new Map())
+    solicitud.limpiarCambios()
     setFiltro(next)
-  }
-
-  function agregarCambio(pk: number, cambio: CambioPendiente | null) {
-    setCambios((prev) => {
-      const next = new Map(prev)
-      if (cambio) next.set(pk, cambio)
-      else next.delete(pk)
-      return next
-    })
-  }
-
-  async function enviarSolicitud() {
-    setEnviando(true)
-    const pendientes = new Map(cambios)
-    let solicitudes = 0
-    let error: unknown = null
-    for (const [pk, cambio] of cambios) {
-      try {
-        const result = await calificar.mutateAsync(cambio.input)
-        solicitudes += result?.solicitudes_pendientes?.length ?? 0
-        pendientes.delete(pk)
-      } catch (e) {
-        error ??= e
-      }
-    }
-    setCambios(pendientes)
-    setEnviando(false)
-    setConfirmando(false)
-    if (error) notify(getErrorMessage(error), { variant: "error" })
-    // Una primera nota (sin nota previa) se aplica directo, sin solicitud.
-    if (solicitudes > 0) setEnviada(true)
-    else if (pendientes.size < cambios.size) notify("Notas guardadas.")
   }
 
   const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
@@ -235,7 +198,7 @@ export function PlaneadorPlanillaPage() {
               ) : (
               <div className="flex gap-2">
                 {puedeEditar && cambios.size > 0 && (
-                  <Button color="primary" size="sm" variant="fill" onClick={() => setConfirmando(true)}>
+                  <Button color="primary" size="sm" variant="fill" onClick={solicitud.pedirConfirmacion}>
                     Guardar
                   </Button>
                 )}
@@ -381,18 +344,19 @@ export function PlaneadorPlanillaPage() {
               onVolver={() => setColumnaEnBulk(null)}
               onEstadoGuardar={setEstadoGuardarBulk}
               guardarRef={guardarBulkRef}
+              periodoCerrado={periodoCerrado}
             />
           )}
         </TableScreenBody>
       </TableScreen>
 
       <DialogEnviarSolicitud
-        open={confirmando}
-        enviando={enviando}
-        onEnviar={enviarSolicitud}
-        onCancelar={() => setConfirmando(false)}
+        open={solicitud.confirmando}
+        enviando={solicitud.enviando}
+        onEnviar={solicitud.enviarSolicitud}
+        onCancelar={solicitud.cancelarConfirmacion}
       />
-      <DialogSolicitudEnviada open={enviada} onCerrar={() => setEnviada(false)} />
+      <DialogSolicitudEnviada open={solicitud.enviada} onCerrar={solicitud.cerrarEnviada} />
     </NoticeProvider>
   )
 }

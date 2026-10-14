@@ -134,6 +134,11 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term={`Nombre de la ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
           <Definition term={`Tipo de ${rotuloLabelLower}`}>{actividad.tipo}</Definition>
           <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
+          {/* Docente dueño (sso V553: quien dicta el grupo+asignatura o, sin
+              grupo, el autor de la unidad). Sirve sobre todo a Super Admin,
+              Rector y Coordinador mirando planeadores ajenos; se muestra
+              siempre que el backend lo resuelva. */}
+          {actividad.docenteNombre && <Definition term="Docente">{actividad.docenteNombre}</Definition>}
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
@@ -144,10 +149,16 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <UnidadFichaYEvidenciasDetalle actividad={actividad} className="mt-4" />
         )}
 
-        <DefinitionGrid cols={2} className="mt-4">
+        {/* "¿Requiere validación del coordinador?" va en Identificación, igual
+            que en el form de edición: es una propiedad de toda la actividad
+            (antes salía en Seguimiento, que no aplica a unidades formativas). */}
+        <DefinitionGrid cols={3} className="mt-4">
           <Definition term={`${subjectLabel} / materia`}>{actividad.asignatura}</Definition>
           <Definition term="Grado / Grupo">
             {actividad.grado} {actividad.grupo}
+          </Definition>
+          <Definition term="¿Requiere validación del coordinador?">
+            {actividad.requiereValidacion ? "Sí" : "No"}
           </Definition>
         </DefinitionGrid>
 
@@ -230,9 +241,6 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
               {actividad.generaEvidencias ? "Sí" : "No"}
             </Definition>
             <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
-            <Definition term="¿Requiere validación del coordinador?">
-              {actividad.requiereValidacion ? "Sí" : "No"}
-            </Definition>
           </DefinitionGrid>
           <Definition term="Observaciones del docente" className="mt-4">
             {actividad.observaciones}
