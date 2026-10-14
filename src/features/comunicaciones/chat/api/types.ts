@@ -52,6 +52,14 @@ export interface Mensaje {
   sistema?: boolean
   // Mensaje que es una votación rápida: se pinta como tarjeta.
   votacion?: VotacionRapida
+  reacciones?: Reaccion[]
+}
+
+// Emoji con el que reaccionaron; `mia`: el usuario actual reaccionó con él.
+export interface Reaccion {
+  emoji: string
+  total: number
+  mia: boolean
 }
 
 export type FormatoArchivo = AdjuntoMensaje["formato"]

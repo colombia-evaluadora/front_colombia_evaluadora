@@ -21,10 +21,11 @@ import {
   useFijarMensaje,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
+import { BotonReaccionar } from "@/features/comunicaciones/chat/components/reacciones-mensaje"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 
-// Barra flotante de un mensaje propio: editar, fijar y eliminar.
+// Barra flotante de un mensaje propio: reaccionar, editar, fijar y eliminar.
 export function MensajeAcciones({ mensaje: m }: { mensaje: Mensaje }) {
   const { notify } = useNotify()
   const [editando, setEditando] = useState(false)
@@ -36,7 +37,8 @@ export function MensajeAcciones({ mensaje: m }: { mensaje: Mensaje }) {
 
   return (
     <>
-      <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 max-md:opacity-100">
+      <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
+        <BotonReaccionar mensaje={m} />
         <Accion etiqueta="Editar mensaje" onClick={() => setEditando(true)}>
           <PencilSimpleIcon className="size-4.5" />
         </Accion>

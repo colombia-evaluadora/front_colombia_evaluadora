@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
+import {
+  BotonReaccionar,
+  ReaccionesMensaje,
+} from "@/features/comunicaciones/chat/components/reacciones-mensaje"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import {
   agruparPorDia,
@@ -162,15 +166,18 @@ function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
 
   if (m.esPropio) {
     return (
-      <article className="group/mensaje relative ml-auto w-fit max-w-[85%] min-w-40 rounded-xl bg-primary/10 px-4 py-3 md:max-w-[70%]">
-        <MensajeAcciones mensaje={m} />
-        <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="sr-only">Tú, </span>
-          {meta}
-        </header>
-        {m.texto && <TextoFormateado texto={m.texto} />}
-        {m.adjunto && <Adjunto mensaje={m} propio />}
-      </article>
+      <div className="ml-auto w-fit max-w-[85%] min-w-40 md:max-w-[70%]">
+        <article className="group/mensaje relative rounded-xl bg-primary/10 px-4 py-3">
+          <MensajeAcciones mensaje={m} />
+          <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="sr-only">Tú, </span>
+            {meta}
+          </header>
+          {m.texto && <TextoFormateado texto={m.texto} />}
+          {m.adjunto && <Adjunto mensaje={m} propio />}
+        </article>
+        <ReaccionesMensaje mensaje={m} />
+      </div>
     )
   }
 
@@ -186,13 +193,20 @@ function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
           </AvatarBadge>
         )}
       </Avatar>
-      <div className="min-w-0 rounded-xl bg-muted/40 px-4 py-3">
-        <header className="mb-1 flex items-baseline gap-2 text-xs">
-          <span className="font-medium">{m.autor.nombre}</span>
-          <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
-        </header>
-        {m.texto && <TextoFormateado texto={m.texto} />}
-        {m.adjunto && <Adjunto mensaje={m} />}
+      <div className="min-w-0">
+        <div className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3">
+          {/* Los mensajes ajenos solo se pueden reaccionar. */}
+          <div className="absolute -top-4 right-2 z-10 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
+            <BotonReaccionar mensaje={m} />
+          </div>
+          <header className="mb-1 flex items-baseline gap-2 text-xs">
+            <span className="font-medium">{m.autor.nombre}</span>
+            <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
+          </header>
+          {m.texto && <TextoFormateado texto={m.texto} />}
+          {m.adjunto && <Adjunto mensaje={m} />}
+        </div>
+        <ReaccionesMensaje mensaje={m} />
       </div>
     </article>
   )

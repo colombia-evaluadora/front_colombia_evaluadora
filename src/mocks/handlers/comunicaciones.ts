@@ -393,6 +393,25 @@ export const comunicacionesMensajesHandlers = [
     return HttpResponse.json({ rows: [m] })
   }),
 
+  http.post(URL("mensajes/:id/reacciones"), async ({ params, request }) => {
+    await delay(100)
+    const m = mensajes.find((x) => x.id === Number(params.id))
+    if (!m) return mensajeNoEncontrado()
+    const body = (await request.json()) as { EMOJI?: string }
+    const emoji = body.EMOJI?.trim()
+    if (!emoji) return HttpResponse.json({ message: "Elige un emoji." }, { status: 400 })
+    // Alterna la reacción del usuario; el emoji desaparece al quedar en cero.
+    const lista = m.reacciones ?? []
+    const r = lista.find((x) => x.emoji === emoji)
+    if (!r) lista.push({ emoji, total: 1, mia: true })
+    else {
+      r.total += r.mia ? -1 : 1
+      r.mia = !r.mia
+    }
+    m.reacciones = lista.filter((x) => x.total > 0)
+    return HttpResponse.json({ rows: [m] })
+  }),
+
   http.patch(URL("mensajes/:id/fijar"), async ({ params, request }) => {
     await delay(120)
     const m = mensajes.find((x) => x.id === Number(params.id))
