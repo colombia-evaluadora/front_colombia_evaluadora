@@ -1,0 +1,18 @@
+schema: spec-driven
+
+# Contexto del proyecto. El detalle está en openspec/project.md y CLAUDE.md.
+context: |
+  Front React 19 + TypeScript + Vite de Colombia Evaluadora (gestión académica escolar).
+  Escribir todos los artefactos en español; las palabras clave normativas de OpenSpec
+  (SHALL, MUST, WHEN, THEN, Requirement, Scenario) se mantienen en inglés.
+  Ver openspec/project.md para stack, convenciones y restricciones.
+  La iniciativa offline se diseña en docs/offline/PLAN-offline.md (fuente de diseño).
+  Restricciones del equipo: no se agregan columnas/tablas en el repo sso sin OK explícito
+  (solo BE-3B y BE-5 están aprobados, cada uno en su propio PR ajustando la migración
+  Flyway que posee el objeto); no se promueve a main sin pedido explícito.
+
+rules:
+  tasks:
+    - Cerrar cada tarea con `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde
+  design:
+    - Toda decisión nombra la alternativa descartada y el porqué
