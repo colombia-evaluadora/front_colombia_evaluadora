@@ -10,6 +10,7 @@ import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/u
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
 import { resolveTipoEvidenciaId } from "@/features/planeador/api/query/use-tipo-evidencia-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { toRecuperacionBody } from "@/features/planeador/api/mutations/recuperacion-body"
 
 interface UpdateActividadInput {
   actividadId: number
@@ -120,19 +121,7 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   // `recuperacionDestino` solo llega lleno si el backend ya expone los
   // catálogos (`campos_disponibles.recuperacion`, ver `RecuperacionSection`).
   if (data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino) {
-    body.RECUPERACION = {
-      destino: data.recuperacionDestino,
-      fkActividadRecuperar: data.recuperacionActividadId,
-      tipoAplicacion: data.recuperacionTipoAplicacion,
-      // Regla `tipoCalculoOcultoSi` de `campos_disponibles.recuperacion.
-      // reglas`: con REEMPLAZAR el campo se omite del todo (no se manda
-      // `""`) — la guía dice "si no viene se guarda PROMEDIADO", no "si
-      // viene vacío"; un string vacío no es un valor del catálogo y el
-      // backend podría rechazarlo en vez de aplicar el default.
-      tipoCalculo:
-        data.recuperacionTipoAplicacion === "REEMPLAZAR" ? undefined : data.recuperacionTipoCalculo,
-      valorPonderacion: data.recuperacionValorPonderacion,
-    }
+    body.RECUPERACION = await toRecuperacionBody(data)
   } else if (!data.esRecuperacion) {
     // El docente apagó el switch "Es una recuperación" (o la actividad
     // nunca lo fue): se manda SIEMPRE que no se esté configurando una en

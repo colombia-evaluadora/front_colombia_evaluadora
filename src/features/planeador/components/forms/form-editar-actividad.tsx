@@ -575,6 +575,13 @@ export function EditarActividadForm({
         // así que exigirlos antes sería un candado sin salida.
         form={form}
         disabled={readOnly}
+        // Una recuperación YA guardada no deja cambiar si es recuperación
+        // ni de qué: apagarla revierte las notas que aplicó sobre la
+        // original (`fn_actividad_recuperacion_revertir`) y cambiar el
+        // origen rompe la herencia de grupo/unidad/título/estudiantes. Para
+        // eso se crea otra actividad. El resto (cómo se aplica/calcula)
+        // sigue editable.
+        recuperacionFijada={!esNueva && actividadOriginal.esRecuperacion}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
@@ -768,7 +775,10 @@ function useRecuperacionAutoFill(form: FormActividad) {
   const recuperacionActividadId = useSelector(form.store, (state) => state.values.recuperacionActividadId)
   const activo = esRecuperacion && destino === "ACTIVIDAD" && recuperacionActividadId != null
   const { data: original } = useActividadDetalleQuery(activo ? recuperacionActividadId : undefined)
-  const aplicadoRef = useRef<number | undefined>(undefined)
+  // Arranca con el origen YA guardado (edición de una recuperación): esos
+  // datos ya están en el form tal como el docente los dejó; volver a
+  // copiarlos al abrir pisaría nombre/estudiantes y marcaría el form sucio.
+  const aplicadoRef = useRef<number | undefined>(form.options.defaultValues?.recuperacionActividadId)
 
   useEffect(() => {
     if (!activo || !original) return
@@ -841,11 +851,15 @@ const TIPO_CALCULO_RECUPERACION_FALLBACK = [
 function RecuperacionSection({
   form,
   disabled,
+  recuperacionFijada = false,
   camposEfectivos,
   actividadId,
 }: {
   form: FormActividad
   disabled: boolean
+  /** Edición de una actividad que ya se guardó como recuperación: el
+   *  toggle, el destino y la actividad de origen quedan de solo lectura. */
+  recuperacionFijada?: boolean
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   actividadId: number
 }) {
@@ -883,10 +897,15 @@ function RecuperacionSection({
                     id={field.name}
                     checked={field.state.value}
                     onCheckedChange={field.handleChange}
-                    disabled={disabled}
+                    disabled={disabled || recuperacionFijada}
                     className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
                   />
                   Es una recuperación
+                  {recuperacionFijada && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      No se puede cambiar en una recuperación ya creada
+                    </span>
+                  )}
                 </label>
               )}
             </form.Field>
@@ -918,7 +937,7 @@ function RecuperacionSection({
                               form.setFieldValue("recuperacionTipoCalculo", "")
                               form.setFieldValue("recuperacionValorPonderacion", undefined)
                             }}
-                            disabled={disabled}
+                            disabled={disabled || recuperacionFijada}
                           >
                             <SelectTrigger id={field.name}>
                               <SelectValue placeholder="Seleccione">
@@ -966,7 +985,7 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                   excludeActividadId={actividadId}
-                                  disabled={disabled}
+                                  disabled={disabled || recuperacionFijada}
                                 />
                               </Field>
                             )}
