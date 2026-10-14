@@ -46,6 +46,11 @@ export default {
 
     // Se reconstruye para que la respuesta sea mutable río abajo. El body va como
     // stream y los `Set-Cookie` (incluido `sso_refresh`) se conservan.
-    return new Response(response.body, response)
+    const proxied = new Response(response.body, response)
+    // BE-10 (plan offline): ninguna respuesta de la API debe quedar en caches
+    // HTTP (navegador, proxies, Cache API del service worker). Se toca solo
+    // este header: `headers.set` no altera los `Set-Cookie` copiados arriba.
+    proxied.headers.set("Cache-Control", "no-store")
+    return proxied
   },
 }

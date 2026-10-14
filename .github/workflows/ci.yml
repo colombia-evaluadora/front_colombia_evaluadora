@@ -112,7 +112,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Vitest (unit)
-        run: pnpm test
+        run: pnpm test:unit
 
   # ───────── Formato: NO es un gate todavía ─────────
   #

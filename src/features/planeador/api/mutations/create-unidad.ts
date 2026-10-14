@@ -85,6 +85,9 @@ export function useCreateUnidad({ mutationConfig }: UseCreateUnidadOptions = {})
     mutationFn: createUnidad,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
+      // X1: las pestañas por referente (`unidades.tabs`) viven fuera de
+      // `unidades.all`; sin alcance la key es prefijo de todas sus variantes.
+      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
       onSuccess?.(...args)
     },
     ...restConfig,

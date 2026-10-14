@@ -25,18 +25,18 @@
 
 ## 5. Navegación e invalidaciones
 - [x] 5.1 `isAlwaysAllowedPath` incluye `/app/pendientes` (ruta que crea la Fase 2)
-- [ ] 5.2 X1: crear/eliminar unidad invalida `unidades.tabs(alcance)`
-- [ ] 5.3 X2: calificar celda, bulk y observar invalidan `actividad.calificaciones(id)`
-- [ ] 5.4 Verificar que cada key invalidada prefija las keys de lectura (CLAUDE.md §11)
+- [x] 5.2 X1: crear/eliminar unidad invalida `unidades.tabs(alcance)`
+- [x] 5.3 X2: calificar celda, bulk y observar invalidan `actividad.calificaciones(id)`
+- [x] 5.4 Verificar que cada key invalidada prefija las keys de lectura (CLAUDE.md §11)
 
 ## 6. Worker y backend
-- [ ] 6.1 BE-10: `worker/index.js` agrega `Cache-Control: no-store` a respuestas `/api`
+- [x] 6.1 BE-10: `worker/index.js` agrega `Cache-Control: no-store` a respuestas `/api`
 - [ ] 6.2 BE-4: `GET /eval-col/health` liviano sin auth (PR en backend, sin esquema)
 - [x] 6.3 Handler MSW para `/eval-col/health` en modo mock
 
 ## 7. Pruebas
-- [ ] 7.1 Proyecto Vitest `unit` (node + `fake-indexeddb`) y script `pnpm test:unit`
-- [ ] 7.2 Paso `pnpm test:unit` en `.github/workflows/ci.yml`
+- [x] 7.1 Proyecto Vitest `unit` (node + `fake-indexeddb`) y script `pnpm test:unit`
+- [x] 7.2 Paso `pnpm test:unit` en `.github/workflows/ci.yml`
 - [ ] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
 - [ ] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
 - [ ] 7.5 E2E Playwright (`context.setOffline`): recarga offline en `/app/planeador/actividades` no va a `/login`; 0 toasts repetidos
