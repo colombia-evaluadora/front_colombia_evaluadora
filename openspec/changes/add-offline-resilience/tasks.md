@@ -1,21 +1,21 @@
 # Tasks: Resiliencia de red (Fase 0)
 
 ## 1. Sesión
-- [ ] 1.1 `getUser()` (`src/lib/auth.ts`) devuelve `null` solo ante 401/403 del refresh y lanza `NetworkSessionError` ante error de red
-- [ ] 1.2 `hasSession` reintenta 3 veces con backoff (1 s, 2 s, 4 s) ante `NetworkSessionError`
-- [ ] 1.3 `beforeLoad` de `/app` lanza el error de red al `ErrorPage` (copy "No pudimos comunicarnos con el servidor" + "Reintentar") en lugar de redirigir a `/login`
-- [ ] 1.4 Interceptor: un 403 cuyo refresh de revalidación falla por red no marca sesión vencida, no limpia cache y reporta `degraded`
+- [x] 1.1 `getUser()` (`src/lib/auth.ts`) devuelve `null` solo ante 401/403 del refresh y lanza `NetworkSessionError` ante error de red
+- [x] 1.2 `hasSession` reintenta 3 veces con backoff (1 s, 2 s, 4 s) ante `NetworkSessionError`
+- [x] 1.3 `beforeLoad` de `/app` lanza el error de red al `ErrorPage` (copy "No pudimos comunicarnos con el servidor" + "Reintentar") en lugar de redirigir a `/login`
+- [x] 1.4 Interceptor: un 403 cuyo refresh de revalidación falla por red no marca sesión vencida, no limpia cache y reporta `degraded`
 
 ## 2. Cliente HTTP
-- [ ] 2.1 `timeout: 20000` en `api`; `120000` en `postMultipart`/`patchMultipart`; override por llamada
-- [ ] 2.2 `isNetworkError(error)` exportado desde `src/lib/api-client.ts`
-- [ ] 2.3 Sin toast global para errores de red; se reportan al `connectivityStore`
-- [ ] 2.4 Header `Idempotency-Key` (UUID v4) en toda mutación (POST/PUT/PATCH/DELETE que no sea lectura `api.query`/`postRows`)
-- [ ] 2.5 Agregar `/eval-col/health` a `UNAUTHENTICATED_ENDPOINTS` y `PROBE_ENDPOINTS`
+- [x] 2.1 `timeout: 20000` en `api`; `120000` en `postMultipart`/`patchMultipart`; override por llamada
+- [x] 2.2 `isNetworkError(error)` exportado desde `src/lib/api-client.ts`
+- [x] 2.3 Sin toast global para errores de red; se reportan al `connectivityStore`
+- [x] 2.4 Header `Idempotency-Key` (UUID v4) en toda mutación (POST/PUT/PATCH/DELETE que no sea lectura `api.query`/`postRows`)
+- [x] 2.5 Agregar `/eval-col/health` a `UNAUTHENTICATED_ENDPOINTS` y `PROBE_ENDPOINTS`
 
 ## 3. Queries
-- [ ] 3.1 `queryConfig`: `retry: (n, e) => isNetworkError(e) && n < 2` y `networkMode: "online"`
-- [ ] 3.2 Revisar mutaciones: sin `retry` automático
+- [x] 3.1 `queryConfig`: `retry: (n, e) => isNetworkError(e) && n < 2` y `networkMode: "online"`
+- [x] 3.2 Revisar mutaciones: sin `retry` automático
 
 ## 4. Conectividad y banner
 - [x] 4.1 `src/lib/offline/connectivity.ts` (sin dependencias de features) con estados, heartbeat, histéresis y portal cautivo
@@ -37,8 +37,8 @@
 ## 7. Pruebas
 - [x] 7.1 Proyecto Vitest `unit` (node + `fake-indexeddb`) y script `pnpm test:unit`
 - [x] 7.2 Paso `pnpm test:unit` en `.github/workflows/ci.yml`
-- [ ] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
-- [ ] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
+- [x] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
+- [x] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
 - [ ] 7.5 E2E Playwright (`context.setOffline`): recarga offline en `/app/planeador/actividades` no va a `/login`; 0 toasts repetidos
 
 ## 8. PIGSE
