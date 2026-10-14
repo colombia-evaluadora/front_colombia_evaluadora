@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=`
@@ -180,6 +181,7 @@ export function useProgramacionActividadQuery(
   const enabled = grupoId != null && asignaturaId != null
   const unidadIdEfectivo = unidadId || undefined
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey: enabled
       ? planeadorKeys.actividades.programacion(grupoId, asignaturaId, unidadIdEfectivo)
       : planeadorKeys.actividades.programacion("none"),

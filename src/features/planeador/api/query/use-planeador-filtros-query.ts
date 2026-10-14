@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 /**
  * Cascada Sede → Año → Jornada del filtro avanzado del Planeador. Mismo
@@ -55,6 +56,7 @@ export interface PlaneadorFiltroPeriodo {
 
 export function usePlaneadorFiltroSedesQuery(enabled = true) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: planeadorKeys.filtros.sedes(),
     queryFn: async (): Promise<PlaneadorFiltroSede[]> => {
       const rows = await evalCol.getRows<SedeRow>("/planeador/filtros/sedes")
@@ -72,6 +74,7 @@ export function usePlaneadorFiltroSedesQuery(enabled = true) {
 
 export function usePlaneadorFiltroPeriodosQuery(sedeId: number | undefined, enabled = true) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: planeadorKeys.filtros.periodos(sedeId ?? "none"),
     queryFn: async (): Promise<PlaneadorFiltroPeriodo[]> => {
       const rows = await evalCol.getRows<PeriodoRow>(`/planeador/filtros/periodos?sede=${sedeId}`)

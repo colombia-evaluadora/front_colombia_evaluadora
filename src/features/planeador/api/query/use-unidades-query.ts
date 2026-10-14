@@ -13,6 +13,7 @@ import {
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceParams,
 } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
 
@@ -203,6 +204,7 @@ export function useUnidadesQuery(params: UseUnidadesParams = {}) {
   const scope = usePlaneadorDocenteScope()
   const conDocente = conAlcance(params, scope)
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.unidades.lista(conDocente),
     queryFn: () => fetchUnidades(conDocente),
     enabled: scope.consultasHabilitadas,
@@ -233,6 +235,7 @@ async function fetchUnidadDetalle(id: number): Promise<UnidadTematica> {
 
 export function useUnidadDetalleQuery(id: number | undefined) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: id !== undefined ? planeadorKeys.unidad.detalle(id) : planeadorKeys.unidad.detalle("none"),
     queryFn: () => fetchUnidadDetalle(id!),
     enabled: id !== undefined,

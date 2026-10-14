@@ -6,6 +6,7 @@ import type {
 } from "../types/evaluation-period"
 import { fetchSelectCategory } from "./fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR
 // (`GET /eval-col/select/ESTADOPERIODOEVALUACION`).
@@ -22,6 +23,7 @@ async function fetchEvaluationPeriodStatuses(): Promise<
 
 export function useEvaluationPeriodStatusesQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.evaluationPeriodStatuses(),
     queryFn: fetchEvaluationPeriodStatuses,
     staleTime: Infinity,

@@ -24,6 +24,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { useExportAsistencia } from "@/features/academic-management/asistencia/api/mutations/export"
 import type { AsistenciaQueryFilters } from "@/features/academic-management/asistencia/api/types/asistencia"
 import type { ExportFormat } from "@/features/academic-management/asistencia/api/types/export"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface ExportSeguimientoDialogProps {
   filters: AsistenciaQueryFilters
@@ -34,6 +35,7 @@ interface ExportSeguimientoDialogProps {
  * exige los tres (V281): sin grupo y rango no hay reporte que generar, así
  * que el botón queda deshabilitado hasta que estén puestos. */
 export function ExportSeguimientoDialog({ filters }: ExportSeguimientoDialogProps) {
+  const soloEnLinea = useOnlineOnly()
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -70,7 +72,7 @@ export function ExportSeguimientoDialog({ filters }: ExportSeguimientoDialogProp
                   color="neutral"
                   size="icon-sm"
                   aria-label="Exportar reporte de asistencia"
-                  disabled={faltaGrupoOFecha}
+                  disabled={faltaGrupoOFecha || soloEnLinea.disabled}
                 />
               }
             />
@@ -78,7 +80,7 @@ export function ExportSeguimientoDialog({ filters }: ExportSeguimientoDialogProp
         >
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>Exportar reporte de asistencia</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? "Exportar reporte de asistencia"}</TooltipContent>
       </Tooltip>
 
       <DialogContent showCloseButton={false}>

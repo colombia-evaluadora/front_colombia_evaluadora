@@ -11,7 +11,7 @@
 ## 2. Persistencia
 - [x] 2.1 `lib/offline/db.ts` (`ce-offline` v1: `meta`, `session`, `queries`)
 - [x] 2.2 `lib/offline/query-persister.ts`: lista blanca `meta.offline`, buster por usuario, throttle 1 s, entrada ≤ 2 MB, presupuesto 50 MB LRU
-- [ ] 2.3 `meta.offline` en ~40 queries y `persistSelect` para minimizar datos de estudiantes
+- [x] 2.3 `meta.offline` en ~40 queries y `persistSelect` para minimizar datos de estudiantes
 - [x] 2.4 Restaurar el persister antes de `router.load()`
 
 ## 3. Sesión offline
@@ -20,9 +20,9 @@
 - [x] 3.3 Menú y permisos con TTL 30 días; `sin-acceso` con aviso de menú viejo
 
 ## 4. UX
-- [ ] 4.1 `useOnlineOnly` en todas las vistas solo en línea (§8)
-- [ ] 4.2 Empty states y badge "Datos del …"
-- [ ] 4.3 Diálogo "Preparar para usar sin conexión" + `navigator.storage.persist()`
+- [x] 4.1 `useOnlineOnly` en todas las vistas solo en línea (§8)
+- [x] 4.2 Empty states y badge "Datos del …"
+- [x] 4.3 Diálogo "Preparar para usar sin conexión" + `navigator.storage.persist()`
 - [x] 4.4 Modo equipo compartido (checkbox en login, marcado por defecto mientras P6 esté pendiente)
 
 ## 5. Limpieza

@@ -7,6 +7,7 @@ import type {
   EstadoCeldaPlanilla,
   FilaPlanilla,
 } from "@/features/academic-management/reports/api/types"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 /** Las celdas llegan en camelCase aunque el resto de la fila sea snake_case
  *  —mismo caso que `/planeador/planilla/calificaciones`—. */
@@ -89,6 +90,7 @@ export const planillaInformeQueryKeyPrefix = () => ["informes", "planilla"] as c
  *  `SEARCH` filtra filas o columnas según dónde haya coincidencia. */
 export function usePlanillaInformeQuery(params: PlanillaInformeParams | null) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: params ? planillaInformeQueryKey(params) : (["informes", "planilla", "none"] as const),
     queryFn: async () => {
       const rows = await evalCol.postRows<FilaPlanillaRow>("/informes/planilla", {

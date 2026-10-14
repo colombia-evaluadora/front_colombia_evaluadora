@@ -9,6 +9,7 @@ import type {
 } from "@/features/planeador/api/types/planilla"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import type { EstadoResultado } from "@/features/planeador/api/types/calificacion"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 /** `GET /planeador/planilla/calificaciones` (confirmado real, ver colección
  *  Postman `planeador-planilla-flujo-completo`, paso 2.2).
@@ -129,6 +130,7 @@ async function fetchPlanillaCalificaciones(
 
 export function usePlanillaCalificacionesQuery(params: UsePlanillaCalificacionesParams | null) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: params
       ? planeadorKeys.planilla.calificaciones.lista(params)
       : planeadorKeys.planilla.calificaciones.lista("none"),

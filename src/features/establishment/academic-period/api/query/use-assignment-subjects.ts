@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { AssignmentSubject } from "@/features/establishment/academic-period/api/types/academic-assignment"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface AssignmentSubjectRow {
   id: string
@@ -43,6 +44,7 @@ async function fetchAssignmentSubjects(
 
 export function useAssignmentSubjectsQuery(academicPeriodId: number | undefined) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.assignmentSubjects.byPeriod(academicPeriodId ?? 0),
     queryFn: () => fetchAssignmentSubjects(academicPeriodId as number),
     enabled: academicPeriodId != null,

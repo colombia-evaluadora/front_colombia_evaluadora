@@ -8,6 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/grade"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseGradesQueryParams {
   filters: GradesQueryRequest["filters"]
@@ -82,6 +83,7 @@ async function fetchGrades(
 
 export function useGradesQuery(params: UseGradesQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.grades.list(params),
     queryFn: () => fetchGrades(params),
     placeholderData: (previous) => previous,

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/estudiantes?GRUPO=` (`fn_planeador_estudiantes_candidatos_
@@ -55,6 +56,7 @@ async function fetchMatriculasGrupo(grupoId: number): Promise<MatriculaGrupo[]> 
  */
 export function useActividadMatriculasGrupoQuery(grupoId: number | undefined) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: grupoId != null ? planeadorKeys.matriculasGrupo(grupoId) : planeadorKeys.matriculasGrupo("none"),
     queryFn: () => fetchMatriculasGrupo(grupoId!),
     enabled: grupoId != null,
