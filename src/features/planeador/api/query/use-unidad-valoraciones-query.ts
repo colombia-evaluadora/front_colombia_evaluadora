@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/unidades/:id/valoraciones` (confirmado real, colección
@@ -78,6 +79,7 @@ async function fetchUnidadValoraciones(unidadId: number): Promise<UnidadValoraci
 
 export function useUnidadValoracionesQuery(unidadId: number | undefined) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey:
       unidadId != null
         ? planeadorKeys.unidad.valoraciones(unidadId)

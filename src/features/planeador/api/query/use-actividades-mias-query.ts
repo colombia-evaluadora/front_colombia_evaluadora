@@ -12,6 +12,7 @@ import {
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceParams,
 } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -260,6 +261,7 @@ export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
   const scope = usePlaneadorDocenteScope()
   const conDocente = conAlcance(params, scope)
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.actividades.mias(conDocente),
     queryFn: () => fetchActividadesMias(conDocente),
     enabled: scope.consultasHabilitadas,

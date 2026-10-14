@@ -8,6 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/study-plan"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseStudyPlansQueryParams {
   filters: StudyPlanQueryRequest["filters"]
@@ -88,6 +89,7 @@ async function fetchStudyPlans(
 
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.studyPlans.list(params),
     queryFn: () => fetchStudyPlans(params),
     enabled: params.enabled ?? true,

@@ -6,6 +6,7 @@ import { env } from "@/config/env"
 import { unwrapRows } from "@/lib/response-envelope"
 
 import type { CurricularEvidence } from "@/features/academic-management/curricular-references/api/types/statement"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface EvidencesResponse {
   rows: CurricularEvidence[]
@@ -46,6 +47,7 @@ export const curricularEvidencesQueryKey = (statementId: number) => ["curricular
 
 export function useCurricularEvidencesQuery(statementId: number | null) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularEvidencesQueryKey(statementId ?? -1),
     queryFn: () => fetchEvidences(statementId as number),
     enabled: statementId != null,

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { Jornada } from "../types/jornada"
 import { fetchSelectCategory } from "./fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/JORNADA`).
 async function fetchJornadas(): Promise<Jornada[]> {
@@ -12,6 +13,7 @@ async function fetchJornadas(): Promise<Jornada[]> {
 
 export function useJornadasQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.jornadas(),
     queryFn: fetchJornadas,
     staleTime: Infinity,

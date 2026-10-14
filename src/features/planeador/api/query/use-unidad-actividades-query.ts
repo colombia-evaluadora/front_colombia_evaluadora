@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/unidades/:id/actividades` (real —
@@ -57,6 +58,7 @@ async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad
 
 export function useUnidadActividadesQuery(unidadId: number | undefined) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey:
       unidadId != null
         ? planeadorKeys.unidad.actividades(unidadId)

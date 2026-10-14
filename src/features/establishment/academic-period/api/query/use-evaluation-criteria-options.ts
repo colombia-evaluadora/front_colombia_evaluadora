@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { EvaluationCriteriaOptions } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Categorías de `TLISTA_VALOR` confirmadas leyendo el body de
 // `fn_criterio_eval_actualizar` (cada `FK_TLV_*` de TCRITERIO_EVALUACION
@@ -50,6 +51,7 @@ async function fetchEvaluationCriteriaOptions(): Promise<EvaluationCriteriaOptio
 
 export function useEvaluationCriteriaOptionsQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.evaluationCriteriaOptions(),
     queryFn: fetchEvaluationCriteriaOptions,
     staleTime: Infinity,

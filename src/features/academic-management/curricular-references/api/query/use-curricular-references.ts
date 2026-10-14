@@ -12,6 +12,7 @@ import type {
 } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { toPaginated } from "@/lib/pagination"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface UseCurricularReferencesQueryParams {
   filters: CurricularReferencesQueryRequest["filters"]
@@ -147,6 +148,7 @@ export const curricularReferencesQueryKey = (params: UseCurricularReferencesQuer
 
 export function useCurricularReferencesQuery(params: UseCurricularReferencesQueryParams) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularReferencesQueryKey(params),
     queryFn: () => fetchCurricularReferences(params),
     placeholderData: (previous) => previous,

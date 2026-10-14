@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { NotificacionesChat } from "@/features/comunicaciones/chat/components/notificaciones-chat"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { OfflineBanner } from "@/components/layout/offline-banner"
+import { OnlineOnlyRouteGate } from "@/components/offline/online-only-route-gate"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
 
@@ -55,7 +56,9 @@ export function ProtectedLayout() {
           `useIsMobile` (768px) para decidir el modo drawer.
         */}
         <div className="flex min-w-0 flex-1 flex-col pr-4 pb-4 max-md:pl-4 bg-sidebar">
-          <Outlet />
+          <OnlineOnlyRouteGate>
+            <Outlet />
+          </OnlineOnlyRouteGate>
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { RatingScaleType, RatingScaleTypeOption } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/TIPO_VALORACION`,
 // 2 filas: Fortaleza/Debilidad). `key` es el VALOR — lo que ya guarda
@@ -17,6 +18,7 @@ async function fetchRatingScaleTypes(): Promise<RatingScaleTypeOption[]> {
 // demás listas de referencia.
 export function useRatingScaleTypesQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.ratingScaleTypes(),
     queryFn: fetchRatingScaleTypes,
     staleTime: Infinity,

@@ -5,6 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { normalizeActividad } from "@/features/planeador/lib/normalize-actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 const ACTIVIDAD_LIST_URL = "/planeador/actividades"
 
@@ -32,6 +33,7 @@ async function fetchActividades(): Promise<Actividad[]> {
  */
 export function useActividadesQuery(enabled = true) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.actividades.lista(),
     queryFn: fetchActividades,
     enabled,

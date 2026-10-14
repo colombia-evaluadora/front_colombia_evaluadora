@@ -42,6 +42,7 @@ import type {
   ExportFormat,
   ExportResult,
 } from "@/features/academic-management/reports/api/types/export"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface DialogDescargaProps {
   trigger: ReactElement
@@ -162,6 +163,7 @@ export function DialogGenerarBoletin({
   listo,
   onIrAConsolidar,
 }: DialogGenerarBoletinProps) {
+  const soloEnLinea = useOnlineOnly("El boletín se genera en el servidor; necesitas conexión para descargarlo.")
   const { notify } = useNotify()
   const [avisoAbierto, setAvisoAbierto] = useState(false)
   const exportar = useExportBoletin()
@@ -276,7 +278,7 @@ export function DialogGenerarBoletin({
             variant="outline"
             color="primary"
             size="sm"
-            disabled={!puede || exportar.isPending}
+            disabled={!puede || exportar.isPending || soloEnLinea.disabled}
             aria-busy={exportar.isPending}
             onClick={handleClick}
           >
@@ -289,11 +291,12 @@ export function DialogGenerarBoletin({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {!listo
+          {soloEnLinea.tooltip ??
+          (!listo
             ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
             : varios
               ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
-              : "Generar el boletín del estudiante seleccionado."}
+              : "Generar el boletín del estudiante seleccionado.")}
         </TooltipContent>
       </Tooltip>
     </>

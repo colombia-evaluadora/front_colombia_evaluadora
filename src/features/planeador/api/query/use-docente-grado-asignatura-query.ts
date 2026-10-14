@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/docentes/grado-asignatura` (`fn_docente_grado_asignatura_listar`,
@@ -62,6 +63,7 @@ export function useDocenteGradoAsignaturaQuery(periodoId?: number) {
   // Sin periodo explícito, el del filtro avanzado (sede + año + jornada).
   const periodo = periodoId ?? periodoDelFiltro
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.docenteGradoAsignatura(periodo, funcionario, sedeId),
     queryFn: () => fetchDocenteGradoAsignatura(periodo, funcionario, sedeId),
     enabled: consultasHabilitadas,

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { EvaluationCriteria } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Fila cruda de `GET /eval-col/periodos/:ID/criterio-evaluacion`
 // (`fn_criterio_eval_obtener`, id_query 50) — snake_case, tal como declara la
@@ -83,6 +84,7 @@ async function fetchEvaluationCriteria(
 
 export function useEvaluationCriteriaQuery(academicPeriodId: number | undefined) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.evaluationCriteria.byPeriod(academicPeriodId ?? 0),
     queryFn: () => fetchEvaluationCriteria(academicPeriodId as number),
     enabled: academicPeriodId != null,

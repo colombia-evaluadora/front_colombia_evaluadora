@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 async function fetchPedagogicalApproaches(): Promise<CatalogItem[]> {
   const rows = await fetchSelectCategory("ENFOQUE_PEDAGOGICO")
@@ -12,6 +13,7 @@ export const pedagogicalApproachesQueryKey = () => ["curricular-reference-pedago
 
 export function usePedagogicalApproachesQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: pedagogicalApproachesQueryKey(),
     queryFn: fetchPedagogicalApproaches,
     staleTime: Infinity,

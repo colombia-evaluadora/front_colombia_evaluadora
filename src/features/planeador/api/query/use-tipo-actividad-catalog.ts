@@ -5,18 +5,20 @@ import { resolveCatalogId } from "@/features/establishment/academic-period/api/q
 
 import type { ActividadTipo } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 // Catálogo global `TIPO_ACTIVIDAD` de `TLISTA_VALOR`
 // (`GET /eval-col/select/TIPO_ACTIVIDAD`) — resuelve `FK_TLV_TIPO_ACTIVIDAD`
 // en `fn_actividad_crear`/`_actualizar` (V224, colección Postman
 // `planeador-actividad`). Mismo patrón que `use-grados-catalog.ts`.
-async function fetchTipoActividadCatalog(): Promise<ActividadTipo[]> {
+export async function fetchTipoActividadCatalog(): Promise<ActividadTipo[]> {
   const rows = await fetchSelectCategory("TIPO_ACTIVIDAD")
   return rows.map((row) => row.nombre as ActividadTipo)
 }
 
 export function useTipoActividadCatalogQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: planeadorKeys.catalogos.tipoActividad(),
     queryFn: fetchTipoActividadCatalog,
     staleTime: Infinity,
