@@ -1,12 +1,12 @@
 # Tasks: Lectura offline (Fase 1)
 
 ## 1. App shell
-- [ ] 1.1 `vite-plugin-pwa` con `injectManifest` y `src/sw.ts` (precache de `dist/`, `navigateFallback` excepto `/api`)
-- [ ] 1.2 Manifest e íconos; `/sw.js` con `Cache-Control: no-cache` en el Worker
-- [ ] 1.3 No registrar el SW cuando `ENABLE_API_MOCKING` está activo
-- [ ] 1.4 Toast de nueva versión con bloqueo durante sync
-- [ ] 1.5 Kill-switch: flag remoto + `VITE_APP_OFFLINE`, y build de emergencia autodesregistrable (documentar procedimiento)
-- [ ] 1.6 Medir tamaño del precache; si > 15 MB excluir chunks de vistas solo en línea
+- [x] 1.1 `vite-plugin-pwa` con `injectManifest` y `src/sw.ts` (precache de `dist/`, `navigateFallback` excepto `/api`)
+- [x] 1.2 Manifest e íconos; `/sw.js` con `Cache-Control: no-cache` en el Worker
+- [x] 1.3 No registrar el SW cuando `ENABLE_API_MOCKING` está activo
+- [x] 1.4 Toast de nueva versión con bloqueo durante sync
+- [x] 1.5 Kill-switch: flag remoto + `VITE_APP_OFFLINE`, y build de emergencia autodesregistrable (documentar procedimiento)
+- [x] 1.6 Medir tamaño del precache; si > 15 MB excluir chunks de vistas solo en línea
 
 ## 2. Persistencia
 - [x] 2.1 `lib/offline/db.ts` (`ce-offline` v1: `meta`, `session`, `queries`)
@@ -37,3 +37,5 @@
 
 ## 7. PIGSE
 - [ ] 7.1 Mantener `lib/offline/*` sin dependencias de features; port a `front_pigse` solo con pedido explícito
+
+Notas Fase 1 (tareas 1.1–1.6): precache medido en 324 entradas / 10,8 MB (< 15 MB, no se excluyen chunks). Kill-switch: `VITE_APP_OFFLINE`, flag remoto opcional (falla seguro si 404) y build de emergencia en `docs/offline/KILL-SWITCH.md`. `isSyncInProgress()`/`notifySyncIdle()` en `lib/offline/sw-update.ts` quedan para cablear en la Fase 2.
