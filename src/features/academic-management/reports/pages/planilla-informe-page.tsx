@@ -457,6 +457,10 @@ function PlanillaInformeContent() {
 
 const MOTIVO_MAX = 1000
 
+// Mismo borde que el motivo de la revisión de asistencia.
+const TEXTAREA_OUTLINED =
+  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
+
 /** Rechaza las correcciones de nota pendientes de la planilla (Regla 55):
  *  queda la nota vigente y vuelve a Informes. */
 function DialogRechazarCambios({
@@ -514,6 +518,7 @@ function DialogRechazarCambios({
             maxLength={MOTIVO_MAX}
             onChange={(e) => setMotivo(e.target.value)}
             placeholder="Por qué rechazas los cambios"
+            className={TEXTAREA_OUTLINED}
           />
         </Field>
         <DialogFooter>
