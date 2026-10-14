@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import { defaultRecuperacionCampoDisponible, type Actividad } from "@/features/planeador/api/types/actividad"
 import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/unidades/:id/configuracion-actividad?ES_SUMATIVO=S|N`
@@ -78,6 +79,7 @@ async function fetchConfiguracionActividad(
  */
 export function useConfiguracionActividadQuery(unidadId: number | undefined, esEvaluativa: boolean) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey:
       unidadId != null
         ? planeadorKeys.unidad.configuracionActividad(unidadId, esEvaluativa)
@@ -155,6 +157,7 @@ export function useConfiguracionContextoActividadQuery(
 ) {
   const enabled = grupoId != null && asignaturaId != null
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey: enabled
       ? planeadorKeys.actividad.configuracionContexto(grupoId, asignaturaId, esEvaluativa)
       : planeadorKeys.actividad.configuracionContexto("none", undefined, esEvaluativa),
@@ -192,6 +195,7 @@ export function useConfiguracionContextoActividadQuery(
  */
 export function actividadesRecuperablesQueryOptions(grupoId: number, asignaturaId: number) {
   return queryOptions({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey: planeadorKeys.actividad.recuperables(grupoId, asignaturaId),
     queryFn: () => fetchConfiguracionContexto(grupoId, asignaturaId, true, true),
     select: (campos) => campos?.recuperacion.actividadesRecuperables ?? [],
@@ -202,6 +206,7 @@ export function actividadesRecuperablesQueryOptions(grupoId: number, asignaturaI
 export function useActividadesRecuperablesQuery(grupoId: number | undefined, asignaturaId: number | undefined) {
   const enabled = grupoId != null && asignaturaId != null
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey: enabled
       ? planeadorKeys.actividad.recuperables(grupoId, asignaturaId)
       : planeadorKeys.actividad.recuperables("none"),

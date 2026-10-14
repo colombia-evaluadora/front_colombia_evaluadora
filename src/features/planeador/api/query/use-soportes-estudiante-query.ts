@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 /** Fila de `GET /planeador/actividades/estudiantes/:id/soportes` (V461). */
 interface SoporteRow {
@@ -32,6 +33,7 @@ async function fetchSoportesEstudiante(pkTactividadEstudiante: number): Promise<
  *  no traen `es_favorito`. */
 export function useSoportesEstudianteQuery(pkTactividadEstudiante: number | undefined) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey:
       pkTactividadEstudiante != null
         ? planeadorKeys.actividadEstudiante.soportes(pkTactividadEstudiante)

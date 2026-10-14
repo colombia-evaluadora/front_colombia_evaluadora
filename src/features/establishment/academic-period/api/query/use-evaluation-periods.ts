@@ -8,6 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseEvaluationPeriodsQueryParams {
   filters: EvaluationPeriodsQueryFilters
@@ -103,6 +104,7 @@ async function fetchEvaluationPeriods(
 
 export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.evaluationPeriods.list(params),
     queryFn: () => fetchEvaluationPeriods(params),
     placeholderData: (previous) => previous,

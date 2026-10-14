@@ -11,6 +11,7 @@ import type {
   InstrumentoTipo,
 } from "@/features/planeador/api/types/planilla"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /** `GET /planeador/actividades/:id/instrumento` (confirmado real, ver
  *  colección Postman `planeador-planilla-flujo-completo`, paso 3.1). Un 200
@@ -81,6 +82,7 @@ async function fetchInstrumentoActividad(actividadId: number): Promise<Instrumen
  */
 export function useInstrumentoActividadQuery(actividadId: number | undefined) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey:
       actividadId != null
         ? planeadorKeys.actividad.instrumento(actividadId)

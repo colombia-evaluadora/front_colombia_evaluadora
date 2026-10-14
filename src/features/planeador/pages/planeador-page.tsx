@@ -72,6 +72,9 @@ import {
   todayDateOnly,
 } from "@/features/planeador/lib/format-date"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -91,6 +94,7 @@ export function PlaneadorPage() {
 }
 
 function PlaneadorPageContent() {
+  const soloEnLinea = useOnlineOnly()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const search = useSearch({ from: planeadorRoute.id })
@@ -226,6 +230,7 @@ function PlaneadorPageContent() {
     error,
     refetch,
     isPlaceholderData,
+    dataUpdatedAt: miasUpdatedAt,
   } = useActividadesMiasQuery({
     search: buscar || undefined,
     estados: estadosQuery,
@@ -398,6 +403,7 @@ function PlaneadorPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle>Planeador</TableScreenTitle>
+        <DatosDelBadge updatedAt={miasUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
         <PlaneadorTabs />
 
         <TableScreenToolbar>
@@ -471,13 +477,13 @@ function PlaneadorPageContent() {
                     )}
                     <DropdownMenuItem onClick={() => refetch()}>Recargar</DropdownMenuItem>
                     <DropdownMenuItem
-                      disabled={exportandoTodo || exportarJson.isPending}
+                      disabled={exportandoTodo || exportarJson.isPending || soloEnLinea.disabled}
                       onClick={handleExportarJson}
                     >
                       Exportar todo
                     </DropdownMenuItem>
                     {puedeCrear && (
-                      <DropdownMenuItem onClick={() => setImportarOpen(true)}>
+                      <DropdownMenuItem disabled={soloEnLinea.disabled} onClick={() => setImportarOpen(true)}>
                         Importar
                       </DropdownMenuItem>
                     )}

@@ -46,7 +46,7 @@ function toEvaluationPeriod(row: PlaneadorPeriodoEvaluacionRow): PlaneadorPeriod
 
 /** Todos los periodos del año, por fecha de inicio (cuarta columna del
  *  filtro de la Planilla). */
-async function fetchPeriodosEvaluacion(): Promise<PlaneadorPeriodoEvaluacion[]> {
+export async function fetchPeriodosEvaluacion(): Promise<PlaneadorPeriodoEvaluacion[]> {
   const rows = await evalCol.getRows<PlaneadorPeriodoEvaluacionRow>(
     "/planeador/periodos-evaluacion",
   )

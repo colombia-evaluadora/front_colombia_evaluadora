@@ -6,6 +6,7 @@ import type {
   AsistenciaCalendarioParams,
   SesionCalendario,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 interface RawSesionCalendario
   extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "grado" | "grado_nombre" | "jornada" | "jornada_nombre"> {
@@ -45,6 +46,7 @@ export async function fetchAsistenciaCalendario(
 
 export function useAsistenciaCalendarioQuery(params: AsistenciaCalendarioParams, enabled = true) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: ["asistencia", "calendario", params],
     queryFn: () => fetchAsistenciaCalendario(params),
     enabled,
@@ -65,6 +67,7 @@ export function useAsistenciaCalendarioMesesQuery(
     queries: meses.map(({ anio, mes }) => {
       const params = { ...base, ANIO: anio, MES: mes }
       return {
+        meta: offlineMeta(TTL_OFFLINE.grupo),
         queryKey: ["asistencia", "calendario", params],
         queryFn: () => fetchAsistenciaCalendario(params),
       }

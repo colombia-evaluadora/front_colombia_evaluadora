@@ -15,6 +15,8 @@ import { ValidacionCoordinadorFooter } from "@/features/planeador/components/val
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 
 const ACCIONES = [
   { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
@@ -76,6 +78,10 @@ export function ActividadDetallePanel({
   onShowGrades,
   onShowApproval,
 }: ActividadDetallePanelProps) {
+  // Plan offline §8.8: en `?modo=approval` se puede revisar sin red, no decidir.
+  const aprobacionSinRed = useOnlineOnly(
+    "Las aprobaciones necesitan conexión. Puedes revisarlas, pero no decidir sin internet.",
+  )
   const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
   const { puedeEditar, puedeVer, soloLectura, viendoOtroDocente } = usePlaneadorSoloLectura()
   // En solo lectura (Coordinador): el mismo link abre la actividad completa
@@ -86,7 +92,16 @@ export function ActividadDetallePanel({
   // la pantalla de edición no conoce el `?docente=` y para un Super Admin
   // (que sí puede editar lo propio) abriría el formulario editable. Este
   // panel ya muestra el detalle completo.
-  const accionEditar = puedeEditar ? "Editar" : puedeVer && !viendoOtroDocente ? "Ver" : null
+  // Regla 37: con calificaciones u observaciones (o siendo base de una
+  // recuperación) el mismo link abre la actividad en solo lectura.
+  const bloqueoEdicion = motivoNoEditable(actividad)
+  const editable = puedeEditar && !bloqueoEdicion
+  const accionEditar = editable ? "Editar" : puedeEditar || (puedeVer && !viendoOtroDocente) ? "Ver" : null
+  const tooltipEditar = bloqueoEdicion && puedeEditar
+    ? bloqueoEdicion
+    : actividad
+      ? `${accionEditar} ${actividad.nombre}`
+      : accionEditar
 
   return (
     // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
@@ -147,9 +162,9 @@ export function ActividadDetallePanel({
                   />
                 }
               >
-                {puedeEditar ? <PencilIcon /> : <EyeIcon />}
+                {editable ? <PencilIcon /> : <EyeIcon />}
               </TooltipTrigger>
-              <TooltipContent>{actividad ? `${accionEditar} ${actividad.nombre}` : accionEditar}</TooltipContent>
+              <TooltipContent>{tooltipEditar}</TooltipContent>
             </Tooltip>
           )}
           {ACCIONES.filter(
@@ -228,7 +243,14 @@ export function ActividadDetallePanel({
           mode === "grades" && !soloLectura ? (
             <CalificacionesView actividad={actividad} />
           ) : mode === "approval" && !soloLectura ? (
-            <CalificacionesAprobacionView actividad={actividad} />
+            <>
+              {aprobacionSinRed.disabled && (
+                <p role="status" className="mb-3 rounded-md bg-navy-22 px-3 py-2 text-sm text-navy">
+                  {aprobacionSinRed.reason}
+                </p>
+              )}
+              <CalificacionesAprobacionView actividad={actividad} />
+            </>
           ) : (
             <div className="flex flex-col gap-3">
               <DetailSections actividad={actividad} />

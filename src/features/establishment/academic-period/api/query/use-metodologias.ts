@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { MetodologiaOption } from "@/features/establishment/academic-period/api/types/metodologia"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/MODELO_PEDAGOGICO`).
 async function fetchMetodologias(): Promise<MetodologiaOption[]> {
@@ -12,6 +13,7 @@ async function fetchMetodologias(): Promise<MetodologiaOption[]> {
 
 export function useMetodologiasQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.metodologias(),
     queryFn: fetchMetodologias,
     staleTime: Infinity,

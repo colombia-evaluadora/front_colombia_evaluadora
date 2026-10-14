@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 
 import type { SedeOption, SedesOptionsResponse } from "../types/sede-option"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // `GET /eval-col/establecimientos/sedes/opciones`. Alimenta el select de Sede
 // del form de periodo académico. El backend filtra por alcance/establecimiento
@@ -22,6 +23,7 @@ export async function fetchSedeOptions(): Promise<SedeOption[]> {
 
 export function useSedeOptionsQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.sedeOptions(),
     queryFn: fetchSedeOptions,
     staleTime: 0,

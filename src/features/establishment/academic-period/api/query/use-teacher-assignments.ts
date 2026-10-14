@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface AssignmentIdRow {
   assignment_id: string
@@ -30,6 +31,7 @@ export function useTeacherAssignmentsQuery(
   funcionarioId: string | undefined
 ) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.teacherAssignments.detail(
       academicPeriodId ?? 0,
       funcionarioId ?? ""

@@ -150,6 +150,7 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import { type CampoRecuperacion, erroresRecuperacion } from "@/features/planeador/lib/recuperacion-faltantes"
 import {
   avisoCamposObligatorios,
   camposObligatoriosFaltantes,
@@ -707,6 +708,19 @@ function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
 const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
 
 /**
+ * Error inline de un campo de la recuperación tras un intento de guardar
+ * (`erroresRecuperacion`, espejo de sso `fn_actividad_validar_recuperacion_config`).
+ */
+function useErrorRecuperacion(form: FormActividad, campo: CampoRecuperacion): string | undefined {
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const rotuloLower = useSelector(form.store, (state) =>
+    rotuloEnMinuscula(state.values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK),
+  )
+  const error = useSelector(form.store, (state) => erroresRecuperacion(state.values, rotuloLower)[campo])
+  return submissionAttempts > 0 ? error : undefined
+}
+
+/**
  * Solo lectura del form (`EditarActividadForm.readOnly`). Los campos de datos
  * siguen visibles y deshabilitados (por el `disabled` de cada sección) para
  * poder leer la actividad; los botones cuyo único fin es modificar (crear
@@ -866,6 +880,13 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
+  // Todos obligatorios: una recuperación se tiene que completar entera
+  // (`erroresRecuperacion`). Cada error solo se ve si su campo está visible.
+  const errorDestino = useErrorRecuperacion(form, "recuperacionDestino")
+  const errorActividad = useErrorRecuperacion(form, "recuperacionActividadId")
+  const errorAplicacion = useErrorRecuperacion(form, "recuperacionTipoAplicacion")
+  const errorCalculo = useErrorRecuperacion(form, "recuperacionTipoCalculo")
+  const errorPonderacion = useErrorRecuperacion(form, "recuperacionValorPonderacion")
   // "¿Esta recuperación aplica para?" tiene que aparecer SIEMPRE primero,
   // apenas se prende el toggle — sin esperar a Grado/Asignatura/Unidad
   // (`campos_disponibles.recuperacion.catalogos` no se puede pedir sin
@@ -918,9 +939,9 @@ function RecuperacionSection({
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
-                        <Field variant="outlined">
+                        <Field variant="outlined" data-invalid={!!errorDestino}>
                           <FieldLabel htmlFor={field.name}>
-                            ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
+                            ¿Esta recuperación aplica para? *
                           </FieldLabel>
                           <Select
                             value={field.state.value || "__none__"}
@@ -941,7 +962,7 @@ function RecuperacionSection({
                             }}
                             disabled={disabled || recuperacionFijada}
                           >
-                            <SelectTrigger id={field.name}>
+                            <SelectTrigger id={field.name} aria-invalid={!!errorDestino}>
                               <SelectValue placeholder="Seleccione">
                                 {(v) =>
                                   v === "__none__"
@@ -959,6 +980,7 @@ function RecuperacionSection({
                               ))}
                             </SelectContent>
                           </Select>
+                          {errorDestino && <FieldError errors={[{ message: errorDestino }]} />}
                         </Field>
                       )}
                     </form.Field>
@@ -972,8 +994,8 @@ function RecuperacionSection({
                         destino !== "ACTIVIDAD" ? null : (
                           <form.Field name="recuperacionActividadId">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorActividad}>
+                                <FieldLabel>¿Qué actividad deseas recuperar? *</FieldLabel>
                                 <ActividadRecuperarCascada
                                   value={field.state.value}
                                   onChange={(v) => {
@@ -989,6 +1011,7 @@ function RecuperacionSection({
                                   excludeActividadId={actividadId}
                                   disabled={disabled || recuperacionFijada}
                                 />
+                                {errorActividad && <FieldError errors={[{ message: errorActividad }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -1016,8 +1039,8 @@ function RecuperacionSection({
                         !destino || (destino === "ACTIVIDAD" && !actividadId) ? null : (
                           <form.Field name="recuperacionTipoAplicacion">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorAplicacion}>
+                                <FieldLabel>¿Cómo se aplicará la nota de recuperación? *</FieldLabel>
                                 <RadioGroup
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
@@ -1041,6 +1064,7 @@ function RecuperacionSection({
                                     </label>
                                   ))}
                                 </RadioGroup>
+                                {errorAplicacion && <FieldError errors={[{ message: errorAplicacion }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -1089,10 +1113,10 @@ function RecuperacionSection({
                         tipoAplicacion === "REEMPLAZAR" ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
-                              <Field variant="outlined">
+                              <Field variant="outlined" data-invalid={!!errorCalculo}>
                                 <FieldLabel>
                                   ¿Cómo deseas calcular la nota{" "}
-                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}? *
                                 </FieldLabel>
                                 <RadioGroup
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
@@ -1114,6 +1138,7 @@ function RecuperacionSection({
                                     </label>
                                   ))}
                                 </RadioGroup>
+                                {errorCalculo && <FieldError errors={[{ message: errorCalculo }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -1129,8 +1154,8 @@ function RecuperacionSection({
                         tipoCalculo !== "PONDERADO" ? null : (
                           <form.Field name="recuperacionValorPonderacion">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorPonderacion}>
+                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%) *</FieldLabel>
                                 <Input
                                   id={field.name}
                                   inputMode="numeric"
@@ -1144,7 +1169,9 @@ function RecuperacionSection({
                                     field.handleChange(parsed)
                                   }}
                                   disabled={disabled}
+                                  aria-invalid={!!errorPonderacion}
                                 />
+                                {errorPonderacion && <FieldError errors={[{ message: errorPonderacion }]} />}
                               </Field>
                             )}
                           </form.Field>

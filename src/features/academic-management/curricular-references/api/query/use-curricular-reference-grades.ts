@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { env } from "@/config/env"
 import { unwrapRows } from "@/lib/response-envelope"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 /** Grado que el referente ofrece según sus niveles educativos (Regla 12). */
 export interface CurricularReferenceGrade {
@@ -51,6 +52,7 @@ export const curricularReferenceGradesQueryKey = (curricularReferenceId: number)
 
 export function useCurricularReferenceGradesQuery(curricularReferenceId: number) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularReferenceGradesQueryKey(curricularReferenceId),
     queryFn: () => fetchCurricularReferenceGrades(curricularReferenceId),
     enabled: Number.isFinite(curricularReferenceId),

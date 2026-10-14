@@ -9,6 +9,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/academic-period"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseAcademicPeriodsQueryParams {
   filters: AcademicPeriodsQueryRequest["filters"]
@@ -162,6 +163,7 @@ async function fetchAcademicPeriods(
 
 export function useAcademicPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.academicPeriods.list(params),
     queryFn: () => fetchAcademicPeriods(params),
     placeholderData: (previous) => previous,
