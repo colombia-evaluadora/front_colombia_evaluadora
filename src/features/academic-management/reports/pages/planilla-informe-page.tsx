@@ -9,7 +9,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -276,13 +276,19 @@ function PlanillaInformeContent() {
   const [rechazando, setRechazando] = React.useState(false)
 
   async function handleAprobar() {
+    // Solo los estudiantes con cambios: sin matrículas el backend consolida
+    // el grupo entero, incluido quien nunca se consolidó.
+    const matriculas = filas.filter(filaConCambios).map((f) => f.matriculaId)
+    if (matriculas.length === 0) {
+      notify("No había cambios para consolidar en esta planilla.", { variant: "info" })
+      return
+    }
     try {
-      // Sin matrículas = todo el grupo (aprueba sus correcciones y consolida).
       const detalle = await guardar.mutateAsync({
         grupoId: Number(grupoId),
         asignaturaId: Number(asignaturaId),
         periodoId: Number(periodoId),
-        matriculas: [],
+        matriculas,
       })
       const consolidados = detalle.filter(
         (d) => d.resultado === "guardada" || d.resultado === "actualizada",
@@ -332,13 +338,20 @@ function PlanillaInformeContent() {
                       <DotsThreeIcon />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {/* Solo rechaza correcciones de nota; un cambio de definitiva sin
-                          corrección se resuelve consolidando. */}
+                      {/* Solo hay qué rechazar si hay correcciones de nota (Regla 55):
+                          una primera nota se aplica directo y solo se consolida. */}
                       <DropdownMenuItem
                         disabled={!hayCorrecciones}
                         onClick={() => setRechazando(true)}
                       >
-                        Rechazar cambios
+                        <span className="flex flex-col">
+                          Rechazar cambios
+                          {!hayCorrecciones && (
+                            <span className="text-muted-foreground text-xs">
+                              No hay correcciones por aprobar: las notas nuevas ya se aplicaron.
+                            </span>
+                          )}
+                        </span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -436,6 +449,7 @@ function PlanillaInformeContent() {
         grupoId={Number(grupoId)}
         asignaturaId={Number(asignaturaId)}
         periodoId={Number(periodoId)}
+        onRechazado={() => navigate({ to: paths.app.gestionAcademicaInformes.getHref(), search })}
       />
     </TableScreen>
   )
@@ -444,16 +458,18 @@ function PlanillaInformeContent() {
 const MOTIVO_MAX = 1000
 
 /** Rechaza las correcciones de nota pendientes de la planilla (Regla 55):
- *  vuelve la nota vigente y la alerta se apaga. */
+ *  queda la nota vigente y vuelve a Informes. */
 function DialogRechazarCambios({
   open,
   onOpenChange,
   grupoId,
   asignaturaId,
   periodoId,
+  onRechazado,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onRechazado: () => void
   grupoId: number
   asignaturaId: number
   periodoId: number
@@ -465,12 +481,17 @@ function DialogRechazarCambios({
   async function confirmar() {
     try {
       const { rechazadas, fallidas } = await rechazar.mutateAsync({ grupoId, asignaturaId, periodoId, motivo })
-      if (rechazadas === 0) notify("No había correcciones pendientes en esta planilla.", { variant: "info" })
-      else if (fallidas > 0)
-        notify(`Se rechazaron ${rechazadas} cambios; ${fallidas} no se pudieron rechazar.`, { variant: "warning" })
-      else notify("Cambios rechazados.")
       setMotivo("")
       onOpenChange(false)
+      if (rechazadas === 0) {
+        notify("No había correcciones pendientes en esta planilla.", { variant: "info" })
+        return
+      }
+      // Igual que Aprobar: resuelto, vuelve a Informes.
+      if (fallidas > 0)
+        queueNotice(`Se rechazaron ${rechazadas} cambios; ${fallidas} no se pudieron rechazar.`, { variant: "warning" })
+      else queueNotice("Cambios rechazados.")
+      onRechazado()
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
     }
@@ -482,7 +503,7 @@ function DialogRechazarCambios({
         <DialogHeader>
           <DialogTitle>Rechazar cambios</DialogTitle>
           <DialogDescription>
-            Las notas corregidas de esta planilla vuelven a su valor vigente. El docente verá el motivo.
+            Se descartan las correcciones pendientes de esta planilla y queda la nota vigente.
           </DialogDescription>
         </DialogHeader>
         <Field variant="outlined">
