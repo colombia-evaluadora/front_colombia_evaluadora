@@ -27,8 +27,11 @@ export interface MenuUrlSource {
  * - `/app`: no tiene página, solo redirige al primer ítem del menú.
  * - `/app/sin-acceso`: es justamente a donde manda el guard. Si dependiera
  *   del menú, un usuario sin acceso rebotaría contra ella en bucle.
+ * - `/app/pendientes`: cambios guardados sin conexión que esperan envío
+ *   (Fase 2 de `add-offline-resilience`). No está en `my-menus` y la tiene
+ *   que poder abrir cualquiera que haya guardado algo offline.
  */
-export const ALWAYS_ALLOWED_PATHS: readonly string[] = ["/app", "/app/sin-acceso"]
+export const ALWAYS_ALLOWED_PATHS: readonly string[] = ["/app", "/app/sin-acceso", "/app/pendientes"]
 
 /**
  * Rutas que NO cuelgan de la URL del ítem del menú al que pertenecen, con la
