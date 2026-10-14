@@ -31,7 +31,7 @@
 
 ## 6. Worker y backend
 - [x] 6.1 BE-10: `worker/index.js` agrega `Cache-Control: no-store` a respuestas `/api`
-- [ ] 6.2 BE-4: `GET /eval-col/health` liviano sin auth (PR en backend, sin esquema)
+- [x] 6.2 BE-4: `GET /eval-col/health` liviano sin auth (PR en backend, sin esquema)
 - [x] 6.3 Handler MSW para `/eval-col/health` en modo mock
 
 ## 7. Pruebas
@@ -39,13 +39,13 @@
 - [x] 7.2 Paso `pnpm test:unit` en `.github/workflows/ci.yml`
 - [x] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
 - [x] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
-- [ ] 7.5 E2E Playwright (`context.setOffline`): recarga offline en `/app/planeador/actividades` no va a `/login`; 0 toasts repetidos
+- [x] 7.5 E2E Playwright (`context.setOffline`): recarga offline en `/app/planeador/actividades` no va a `/login`; 0 toasts repetidos
 
 ## 8. PIGSE
 - [x] 8.1 Documentar en `lib/offline/README` (o comentario de módulo) qué copiar a `front_pigse`; **no** modificar PIGSE sin pedido explícito
 - [ ] 8.2 Si se pide el port: aplicar 1.x–4.x en `front_pigse` en su propio PR
 
 ## 9. Cierre
-- [ ] 9.1 `pnpm exec tsc -b --noEmit`, `pnpm lint`, `pnpm test:unit` en verde
+- [x] 9.1 `pnpm exec tsc -b --noEmit`, `pnpm lint`, `pnpm test:unit` en verde
 - [ ] 9.2 Validación manual en `test` con DevTools Offline / Slow 3G
-- [ ] 9.3 Actualizar `docs/offline/PLAN-offline.md` con el cierre de la fase
+- [x] 9.3 Actualizar `docs/offline/PLAN-offline.md` con el cierre de la fase
