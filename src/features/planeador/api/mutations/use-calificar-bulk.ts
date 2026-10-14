@@ -93,6 +93,8 @@ export function useCalificarBulkMutation({ mutationConfig }: UseCalificarBulkOpt
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
+      queryClient.invalidateQueries({ queryKey: ["informes"] })
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,

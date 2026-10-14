@@ -98,6 +98,8 @@ export function useCalificarCeldaMutation({ mutationConfig }: UseCalificarCeldaO
     mutationFn: calificarCelda,
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+      // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
+      queryClient.invalidateQueries({ queryKey: ["informes"] })
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
