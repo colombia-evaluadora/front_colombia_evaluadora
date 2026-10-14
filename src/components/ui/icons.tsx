@@ -27,6 +27,10 @@ import {
   MdBrush,
   MdBubbleChart,
   MdCalendarMonth,
+  MdCloudDone,
+  MdCloudOff,
+  MdCloudQueue,
+  MdCloudSync,
   MdCalendarToday,
   MdCancel,
   MdCancelPresentation,
@@ -218,6 +222,12 @@ export const BuildingsIcon = makeIcon(MdApartment)
 export const CalendarBlankIcon = makeIcon(MdCalendarToday)
 export const CalendarDotsIcon = makeIcon(MdEvent)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
+// Conectividad (banner offline). Material no tiene "cloud alert": se usa
+// `MdCloudQueue` para el estado degradado.
+export const CloudAlertIcon = makeIcon(MdCloudQueue)
+export const CloudCheckIcon = makeIcon(MdCloudDone)
+export const CloudOffIcon = makeIcon(MdCloudOff)
+export const CloudSyncIcon = makeIcon(MdCloudSync)
 export const ChalkboardTeacherIcon = makeIcon(MdCoPresent)
 export const ChartBarIcon = makeIcon(MdBarChart)
 export const ChartLineUpIcon = makeIcon(MdTrendingUp)

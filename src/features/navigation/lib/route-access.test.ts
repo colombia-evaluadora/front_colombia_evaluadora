@@ -154,6 +154,9 @@ describe("canAccessPath", () => {
     expect(canAccessPath("/app", [])).toBe(true)
     expect(canAccessPath("/app/sin-acceso", [])).toBe(true)
     expect(canAccessPath("/app/sin-acceso/", [])).toBe(true)
+    // Pendientes offline (Fase 2): no está en `my-menus`.
+    expect(isAlwaysAllowedPath("/app/pendientes")).toBe(true)
+    expect(canAccessPath("/app/pendientes", [])).toBe(true)
   })
 
   it("con el menú vacío no se abre ningún módulo", () => {
