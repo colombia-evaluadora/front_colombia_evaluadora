@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 
-import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
   TableScreenTitle,
-  TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
@@ -21,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useCreateRole } from "@/features/administration/roles-menus/api/mutations/create-role"
@@ -33,7 +33,10 @@ import {
   partitionKnownMenus,
   withRequiredParents,
 } from "@/features/administration/roles-menus/api/types/role-menu"
+import type { RoleViews } from "@/features/administration/roles-menus/api/types/role-views"
 import { MenuTransfer } from "@/features/administration/roles-menus/components/menu-transfer"
+import { RoleViewsEditor } from "@/features/administration/roles-menus/components/role-views-editor"
+
 
 /**
  * El `NoticeProvider` va acá y no adentro del contenido: `useNotify` lee el
@@ -64,6 +67,20 @@ function RolesMenusPageContent() {
   const assignedIds = useMemo(() => roleMenus.map((menu) => menu.id), [roleMenus])
 
   const tree = useMemo(() => buildMenuTree(menus), [menus])
+
+  const savedViews: RoleViews = useMemo(
+    () =>
+      new Map(
+        roleMenus.map((menu) => [
+          menu.id,
+          { acceso: true, guardar: menu.guardar, eliminar: menu.eliminar },
+        ]),
+      ),
+    [roleMenus],
+  )
+  // Con cambios sin guardar en "Vistas base por rol" no se cambia de rol: se
+  // perderían sin aviso.
+  const [viewsDirty, setViewsDirty] = useState(false)
 
   const [readOnlyIds, setReadOnlyIds] = useState<Set<number>>(new Set())
 
@@ -161,93 +178,115 @@ function RolesMenusPageContent() {
 
   const isLoading = rolesPending || menusPending || assignedPending
 
+  const roleName = roles.find((role) => role.id === roleId)?.name ?? ""
+
+  // El rol va dentro de cada pestaña, como en el prototipo: de él depende todo
+  // lo de abajo. Con cambios sin guardar queda bloqueado.
+  const roleSelect = (
+    <Field variant="outlined" className="w-full">
+      <FieldLabel htmlFor="role">Rol*</FieldLabel>
+      <Select
+        disabled={viewsDirty}
+        value={roleId != null ? String(roleId) : ""}
+        onValueChange={(value) => value && setSelectedRoleId(Number(value))}
+      >
+        <SelectTrigger id="role" size="sm">
+          <SelectValue>
+            {(value) => roles.find((role) => String(role.id) === value)?.name ?? "Seleccionar"}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={String(role.id)}>
+                {role.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          {/* Alta rápida al pie de la lista. Los eventos se frenan acá para que
+              el select no los tome como navegación ni se cierre al escribir. */}
+          <div
+            className="flex items-center gap-2 border-t border-border p-2"
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <Input
+              aria-label="Nombre del nuevo rol"
+              placeholder="Agregar"
+              className="h-10"
+              value={newRoleName}
+              onChange={(event) => setNewRoleName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  handleCreateRole()
+                }
+              }}
+            />
+            <Button
+              type="button"
+              size="icon"
+              disabled={newRoleName.trim().length === 0 || createRole.isPending}
+              onClick={handleCreateRole}
+            >
+              <span className="sr-only">Crear rol</span>
+              <ControlPointIcon />
+            </Button>
+          </div>
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description="Administra los roles del sistema y los menús a los que tiene acceso cada rol.">
-          Configuración de roles y menús
-        </TableScreenTitle>
-        {/* El rol es el filtro de la pantalla —de él depende todo lo de
-            abajo—, así que vive en la barra de herramientas, donde el resto de
-            los listados pone su buscador. El `NoticeOutlet` lo monta la propia
-            barra. */}
-        <TableScreenToolbar>
-          <Field variant="outlined" className="w-full max-w-md">
-            <FieldLabel htmlFor="role">Rol</FieldLabel>
-            <Select
-              value={roleId != null ? String(roleId) : ""}
-              onValueChange={(value) => value && setSelectedRoleId(Number(value))}
-            >
-              <SelectTrigger id="role" size="sm">
-                <SelectValue>
-                  {(value) =>
-                    roles.find((role) => String(role.id) === value)?.name ?? "Seleccionar"
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={String(role.id)}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-                {/* Alta rápida al pie de la lista: crear un rol es parte de esta
-                    pantalla y no amerita salir a otro formulario. Los eventos se
-                    frenan acá para que el select no los tome como navegación por
-                    teclado ni cierre el desplegable al escribir. */}
-                <div
-                  className="flex items-center gap-2 border-t border-border p-2"
-                  onKeyDown={(event) => event.stopPropagation()}
-                  onPointerDown={(event) => event.stopPropagation()}
-                >
-                  <Input
-                    aria-label="Nombre del nuevo rol"
-                    placeholder="Agregar"
-                    className="h-10"
-                    value={newRoleName}
-                    onChange={(event) => setNewRoleName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault()
-                        handleCreateRole()
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    disabled={newRoleName.trim().length === 0 || createRole.isPending}
-                    onClick={handleCreateRole}
-                  >
-                    <span className="sr-only">Crear rol</span>
-                    <ControlPointIcon />
-                  </Button>
-                </div>
-              </SelectContent>
-            </Select>
-          </Field>
-        </TableScreenToolbar>
+        <TableScreenTitle>Vistas por rol</TableScreenTitle>
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          <NoticeOutlet />
           {isLoading ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Skeleton className="h-80" />
-              <Skeleton className="h-80" />
-            </div>
+            <Skeleton className="h-96" />
           ) : (
-            <MenuTransfer
-              tree={tree}
-              assignedIds={assignedIds}
-              onAssign={handleAssign}
-              onUnassign={handleUnassign}
-              readOnlyIds={readOnlyIds}
-              onToggleReadOnly={handleToggleReadOnly}
-              disabled={updateRoleMenus.isPending}
-            />
+            // Pestañas de la Sección 4 (4.1 y 4.2). "Módulos y submódulos"
+            // todavía asigna menús al rol con el transfer de antes: el catálogo
+            // solo (sin rol) queda para cuando el SSO exponga las acciones
+            // disponibles de cada vista.
+            <Tabs defaultValue="vistas-base">
+              <TabsList variant="line">
+                <TabsTrigger value="modulos" disabled={viewsDirty}>
+                  Módulos y submódulos
+                </TabsTrigger>
+                <TabsTrigger value="vistas-base">Vistas base por rol</TabsTrigger>
+              </TabsList>
+              <TabsContent value="modulos" className="flex flex-col gap-4 pt-4">
+                <div className="w-full max-w-xs">{roleSelect}</div>
+                <MenuTransfer
+                  tree={tree}
+                  assignedIds={assignedIds}
+                  onAssign={handleAssign}
+                  onUnassign={handleUnassign}
+                  readOnlyIds={readOnlyIds}
+                  onToggleReadOnly={handleToggleReadOnly}
+                  disabled={updateRoleMenus.isPending}
+                />
+              </TabsContent>
+              <TabsContent value="vistas-base" className="pt-4">
+                {roleId != null ? (
+                  <RoleViewsEditor
+                    key={roleId}
+                    roleId={roleId}
+                    roleName={roleName}
+                    tree={tree}
+                    saved={savedViews}
+                    roleSelect={roleSelect}
+                    onDirtyChange={setViewsDirty}
+                  />
+                ) : null}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </TableScreenBody>
