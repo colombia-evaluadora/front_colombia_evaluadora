@@ -16,6 +16,7 @@
     "test:unit": "vitest run --project unit",
     "test:watch": "vitest --project unit",
     "test:e2e": "playwright test",
+    "test:e2e:pwa": "playwright test -c playwright.pwa.config.ts",
     "test-storybook": "test-storybook --url http://localhost:6006",
     "test-storybook:ci": "concurrently -k -s first -n SB,TEST -c blue,magenta \"http-server storybook-static -p 6006 --silent\" \"wait-on http://localhost:6006 && test-storybook --url http://localhost:6006 --ci\""
   },
@@ -97,8 +98,13 @@
     "storybook-dark-mode": "^5.0.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^4.1.10",
     "wait-on": "^9.0.10",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-window": "^7.4.1",
     "wrangler": "^4.113.0"
   },
   "msw": {

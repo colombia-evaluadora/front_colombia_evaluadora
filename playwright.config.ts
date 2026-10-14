@@ -8,6 +8,8 @@ const PORT = 5174
 
 export default defineConfig({
   testDir: "e2e",
+  // El app shell (SW) se prueba contra un build: `playwright.pwa.config.ts`.
+  testIgnore: "pwa/**",
   timeout: 60_000,
   fullyParallel: false,
   workers: 1,

@@ -5,7 +5,7 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client"],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
@@ -28,5 +28,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Los service workers tienen su propio tsconfig (lib WebWorker, no DOM).
+  "exclude": ["src/sw"]
 }
