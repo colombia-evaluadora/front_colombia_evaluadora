@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router"
 import type { ErrorComponentProps } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { isNetworkError } from "@/lib/network-error"
 
 // Vite versiona cada chunk con un hash (`tab-rating-scales-LY7U7DNM.js`); un
 // deploy nuevo borra los archivos del build anterior. Una pestaña que ya
@@ -54,6 +55,22 @@ export function ErrorPage({ error }: ErrorComponentProps) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
         <p className="text-muted-foreground">Actualizando la aplicación…</p>
+      </div>
+    )
+  }
+
+  // Sin red (p. ej. el guard de /app agotó los reintentos del refresh): no
+  // es "algo salió mal" sino "no llegamos al servidor", y reintentar sirve.
+  if (isNetworkError(error)) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
+        <h1 className="text-2xl font-semibold">No pudimos comunicarnos con el servidor</h1>
+        <p className="text-muted-foreground">
+          Revisa tu conexión a internet e intenta de nuevo.
+        </p>
+        <Button size="sm" onClick={() => void router.invalidate()} className="mt-2">
+          Reintentar
+        </Button>
       </div>
     )
   }

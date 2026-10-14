@@ -201,7 +201,7 @@ export function CeldaNotaPopover({
       })
       return
     }
-    calificar.mutate(input)
+    calificar.mutate({ ...input, actividadId })
   }
 
   return (

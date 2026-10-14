@@ -22,6 +22,7 @@ pnpm test                   # tests unitarios (Vitest, proyecto `unit`, entorno 
 pnpm test:watch             # ídem en modo watch
 pnpm test-storybook         # tests de interacción/a11y contra Storybook ya levantado en :6006
 pnpm test-storybook:ci      # sirve storybook-static + espera + corre test-runner
+pnpm test:e2e               # Playwright (e2e/) contra Vite :5174 con MSW; no corre en CI. Falla de API simulada con sessionStorage["msw:fault"]
 ```
 
 - **Tests unitarios**: Vitest tiene dos proyectos en `vite.config.ts`: `unit` (entorno `node`, incluye `src/**/*.test.{ts,tsx}`, excluye stories) y `storybook` (browser mode, Playwright Chromium). `pnpm test` corre solo `unit`, y CI lo corre en el job `test`. Los tests van **junto al archivo que prueban** (`foo.ts` → `foo.test.ts`). Los handlers MSW se prueban con `setupServer` de `msw/node`. Si un test necesita DOM/`window`, poné `// @vitest-environment jsdom` en la primera línea del archivo (jsdom ya está instalado; ver `planeador/lib/recurso-preview.test.ts`) en lugar de cambiar el entorno de todo el proyecto.
