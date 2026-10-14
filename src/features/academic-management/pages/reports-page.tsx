@@ -59,7 +59,14 @@ import {
 import {
   agruparPorEstudiante,
   columnasDeFilas,
+  etiquetaPeriodo,
 } from "@/features/academic-management/reports/lib/agrupar-filas"
+import {
+  marcaKey,
+  resolverObjetivos,
+  sinMarcasDe,
+  type MarcasPeriodo,
+} from "@/features/academic-management/reports/lib/periodos-marcados"
 import { GradesTable } from "@/features/academic-management/reports/components/grades-table"
 import { HistorialCambiosSheet } from "@/features/academic-management/reports/components/historial-cambios-sheet"
 import {
@@ -143,8 +150,12 @@ interface GrupoTabContentProps {
   onAbrirObservacion: (fila: FilaInforme) => void
   /** Permiso INFORMES/EDITAR y rol que no sea solo docente/director. */
   puedeEscribir: boolean
-  /** Períodos con `periodo_cerrado`: no se consolidan. */
-  periodosCerrados: number[]
+  /** Lo seleccionado (y marcado) tiene notas pendientes por consolidar. */
+  hayPorConsolidar: boolean
+  /** Varios períodos reales a la vista: check por período en "Pe". */
+  mostrarMarcas: boolean
+  marcas: MarcasPeriodo
+  onToggleMarca: (matriculaId: number, periodoId: number) => void
 }
 
 /** Una celda que el botón "Guardar notas" puede consolidar: pendiente, sin
@@ -182,7 +193,10 @@ function GrupoTabContent({
   guardando,
   onAbrirObservacion,
   puedeEscribir,
-  periodosCerrados,
+  hayPorConsolidar,
+  mostrarMarcas,
+  marcas,
+  onToggleMarca,
 }: GrupoTabContentProps) {
   const informe = useInformeGrupoQuery(periodos.length > 0 ? { grupoId, periodos } : null)
 
@@ -194,12 +208,6 @@ function GrupoTabContent({
   const columnas = React.useMemo(() => columnasDeFilas(filas), [filas])
 
   const esCualitativo = grupoEsCualitativo(informe.data)
-
-  const haySinConsolidar = (informe.data ?? []).some(
-    (fila) =>
-      seleccionados.has(fila.matriculaId) &&
-      fila.asignaturas.some((a) => celdaConsolidable(fila, a, periodosCerrados)),
-  )
 
   if (periodos.length === 0) {
     return (
@@ -244,7 +252,7 @@ function GrupoTabContent({
             </InputGroupAddon>
           </InputGroup>
         </Field>
-        {puedeEscribir && !esCualitativo && haySinConsolidar && (
+        {puedeEscribir && !esCualitativo && hayPorConsolidar && (
           <Button type="button" color="primary" size="sm" disabled={guardando} onClick={onGuardar}>
             <CheckIcon data-icon="inline-start" />
             Guardar notas seleccionadas
@@ -268,6 +276,9 @@ function GrupoTabContent({
             onToggleEstudiante={onToggleEstudiante}
             onToggleTodos={() => onSeleccionarTodos(estudiantes.map((e) => e.matriculaId))}
             onAbrirObservacion={onAbrirObservacion}
+            mostrarMarcas={mostrarMarcas}
+            marcas={marcas}
+            onToggleMarca={onToggleMarca}
           />
         ) : (
           <GradesTable
@@ -276,6 +287,9 @@ function GrupoTabContent({
             seleccionados={seleccionados}
             onToggleEstudiante={onToggleEstudiante}
             onToggleTodos={() => onSeleccionarTodos(estudiantes.map((e) => e.matriculaId))}
+            mostrarMarcas={mostrarMarcas}
+            marcas={marcas}
+            onToggleMarca={onToggleMarca}
           />
         ))}
     </div>
@@ -357,6 +371,7 @@ function ReportsPageContent() {
   const [agregarAbierto, setAgregarAbierto] = React.useState(false)
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
+  const [marcasPorGrupo, setMarcasPorGrupo] = React.useState<Record<number, MarcasPeriodo>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
 
   const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
@@ -456,43 +471,117 @@ function ReportsPageContent() {
     return partes.join("   ·   ")
   }, [grupos, grupoActivoId, periodos, periodosDisponibles, busqueda])
 
-  const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size > 0
+  // Checks de período por estudiante (columna "Pe"). Solo tienen sentido con
+  // varios períodos reales a la vista: con uno no hay nada que elegir, y las
+  // marcas que quedaran de antes se ignoran.
+  const mostrarMarcas = periodosReales.length > 1
+  const marcasActivas = mostrarMarcas
+    ? (marcasPorGrupo[grupoActivoId] ?? new Set<string>())
+    : new Set<string>()
 
-  // Los seleccionados vistos desde su fila del período del boletín, sobre los
-  // datos sin filtrar (un seleccionado puede estar oculto por el buscador).
-  const estudiantesBoletin: EstudianteBoletin[] = (informeActivo.data ?? [])
-    .filter(
-      (fila) =>
-        periodosReales.length === 1 &&
-        fila.periodoId === periodosReales[0] &&
-        seleccionActiva.has(fila.matriculaId),
-    )
-    .map((fila) => {
-      const esPreescolar = fila.formato === "cualitativo"
-      return {
+  // Sobre los datos sin filtrar: un seleccionado puede estar oculto por el
+  // buscador y la acción igual lo incluye.
+  const datosActivos = informeActivo.data ?? []
+  const filaDe = (matriculaId: number, periodoId: number) =>
+    datosActivos.find((f) => f.matriculaId === matriculaId && f.periodoId === periodoId)
+
+  // Guardar: sin marcas, todos los períodos reales a la vista (como siempre);
+  // con marcas, solo los marcados de cada estudiante. Por período, solo las
+  // matrículas con alguna celda consolidable, y nunca un período cerrado ni el
+  // Final (-1 es un centinela que el backend calcula al vuelo: da P0002).
+  const paraGuardar = resolverObjetivos(datosActivos, seleccionActiva, marcasActivas, "todos")
+  const lotesGuardar = periodosReales
+    .filter((periodoId) => !periodosCerrados.includes(periodoId))
+    .map((periodoId) => ({
+      periodoId,
+      matriculas: paraGuardar.objetivos
+        .filter((o) => o.periodoId === periodoId)
+        .map((o) => o.matriculaId)
+        .filter((matriculaId) => {
+          const fila = filaDe(matriculaId, periodoId)
+          return fila?.asignaturas.some((a) => celdaConsolidable(fila, a, periodosCerrados)) ?? false
+        }),
+    }))
+    .filter((lote) => lote.matriculas.length > 0)
+
+  // Boletín: un estudiante en UN período. Sin marcas vale el único período
+  // real a la vista; con varios hay que marcarlo, y los que falten bloquean.
+  const paraBoletin = resolverObjetivos(datosActivos, seleccionActiva, marcasActivas, "unico")
+  const estudiantesBoletin: EstudianteBoletin[] = paraBoletin.objetivos.flatMap((o) => {
+    const fila = filaDe(o.matriculaId, o.periodoId)
+    if (!fila) return []
+    const esPreescolar = fila.formato === "cualitativo"
+    return [
+      {
         matriculaId: fila.matriculaId,
         nombre: fila.nombreCompleto,
+        periodoId: fila.periodoId,
+        periodoEtiqueta: etiquetaPeriodo(fila),
         esPreescolar,
         sinConsolidar: !esPreescolar && !fila.consolidado,
         soloBorrador: esPreescolar && fila.observacionEstado === "BORRADOR",
-      }
-    })
+      },
+    ]
+  })
+  const listoParaBoletin = estudiantesBoletin.length > 0 && paraBoletin.sinPeriodo.length === 0
+  const sinPeriodoNombres = paraBoletin.sinPeriodo
+    .slice(0, 5)
+    .map((id) => datosActivos.find((f) => f.matriculaId === id)?.nombreCompleto ?? String(id))
+  const sinPeriodoResto = paraBoletin.sinPeriodo.length - sinPeriodoNombres.length
+  const motivoBoletin =
+    paraBoletin.sinPeriodo.length > 0
+      ? `Hay varios períodos a la vista: marca en la columna Pe el período del boletín de ${sinPeriodoNombres.join(", ")}${sinPeriodoResto > 0 ? ` y ${sinPeriodoResto} más` : ""}.`
+      : null
 
   function toggleEstudiante(matriculaId: number) {
+    const estaba = seleccionActiva.has(matriculaId)
     setSeleccionPorGrupo((prev) => {
       const next = new Set(prev[grupoActivoId] ?? [])
       if (next.has(matriculaId)) next.delete(matriculaId)
       else next.add(matriculaId)
       return { ...prev, [grupoActivoId]: next }
     })
+    // Al deseleccionarlo se van sus checks de período: si vuelve a
+    // seleccionarse, empieza de cero en vez de recuperar marcas olvidadas.
+    if (estaba) {
+      setMarcasPorGrupo((prev) => ({
+        ...prev,
+        [grupoActivoId]: sinMarcasDe(prev[grupoActivoId] ?? new Set(), matriculaId),
+      }))
+    }
   }
 
   function seleccionarTodos(matriculaIds: number[]) {
-    setSeleccionPorGrupo((prev) => {
-      const actual = prev[grupoActivoId] ?? new Set<number>()
-      const todosMarcados = matriculaIds.length > 0 && matriculaIds.every((id) => actual.has(id))
-      return { ...prev, [grupoActivoId]: todosMarcados ? new Set() : new Set(matriculaIds) }
+    const actual = seleccionActiva
+    const todosMarcados = matriculaIds.length > 0 && matriculaIds.every((id) => actual.has(id))
+    setSeleccionPorGrupo((prev) => ({
+      ...prev,
+      [grupoActivoId]: todosMarcados ? new Set() : new Set(matriculaIds),
+    }))
+    if (todosMarcados) setMarcasPorGrupo((prev) => ({ ...prev, [grupoActivoId]: new Set() }))
+  }
+
+  function toggleMarca(matriculaId: number, periodoId: number) {
+    setMarcasPorGrupo((prev) => {
+      const next = new Set(prev[grupoActivoId] ?? [])
+      const key = marcaKey(matriculaId, periodoId)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return { ...prev, [grupoActivoId]: next }
     })
+  }
+
+  /** "Ir a consolidar" del aviso del boletín: deja seleccionados solo los
+   *  pendientes y, con varios períodos a la vista, marcado su período. */
+  function irAConsolidar(pendientes: { matriculaId: number; periodoId: number }[]) {
+    setSeleccionPorGrupo((prev) => ({
+      ...prev,
+      [grupoActivoId]: new Set(pendientes.map((p) => p.matriculaId)),
+    }))
+    setMarcasPorGrupo((prev) => ({
+      ...prev,
+      [grupoActivoId]: new Set(pendientes.map((p) => marcaKey(p.matriculaId, p.periodoId))),
+    }))
   }
 
   async function handleGuardar() {
@@ -501,25 +590,9 @@ function ReportsPageContent() {
       notify("Selecciona al menos un estudiante para consolidar.", { variant: "error" })
       return
     }
-    // Solo períodos reales y abiertos: el Final (-1) es un centinela que el
-    // backend calcula al vuelo y mandarlo a /informes/guardar da P0002.
-    // Por período, solo las matrículas con alguna celda consolidable (las
-    // celdas con error de configuración no cuentan).
-    const datos = informeActivo.data ?? []
-    const lotes = periodosReales
-      .filter((periodoId) => !periodosCerrados.includes(periodoId))
-      .map((periodoId) => ({
-        periodoId,
-        matriculas: [...seleccionActiva].filter((matriculaId) =>
-          datos.some(
-            (fila) =>
-              fila.matriculaId === matriculaId &&
-              fila.periodoId === periodoId &&
-              fila.asignaturas.some((a) => celdaConsolidable(fila, a, periodosCerrados)),
-          ),
-        ),
-      }))
-      .filter((lote) => lote.matriculas.length > 0)
+    // Una llamada por período (ver `lotesGuardar`): el endpoint consolida un
+    // período a la vez, con las matrículas que se le indiquen.
+    const lotes = lotesGuardar
     if (lotes.length === 0) {
       notify("No hay notas pendientes por consolidar en lo seleccionado.", { variant: "error" })
       return
@@ -662,12 +735,10 @@ function ReportsPageContent() {
           <div className="flex items-center gap-2">
             <DialogGenerarBoletin
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
-              periodoId={periodosReales.length === 1 ? periodosReales[0] : null}
               estudiantes={estudiantesBoletin}
               listo={listoParaBoletin}
-              onIrAConsolidar={(ids) =>
-                setSeleccionPorGrupo((prev) => ({ ...prev, [grupoActivoId]: new Set(ids) }))
-              }
+              motivoNoListo={motivoBoletin}
+              onIrAConsolidar={irAConsolidar}
             />
             <Tooltip>
               <TooltipTrigger
@@ -835,7 +906,10 @@ function ReportsPageContent() {
                     guardando={guardarInforme.isPending}
                     onAbrirObservacion={setObservacionAbierta}
                     puedeEscribir={puedeEscribir}
-                    periodosCerrados={periodosCerrados}
+                    hayPorConsolidar={lotesGuardar.length > 0}
+                    mostrarMarcas={mostrarMarcas}
+                    marcas={marcasActivas}
+                    onToggleMarca={toggleMarca}
                   />
                 )}
               </TabsContent>

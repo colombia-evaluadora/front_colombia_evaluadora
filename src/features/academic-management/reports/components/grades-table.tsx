@@ -8,11 +8,12 @@ import type {
   AsignaturaInforme,
   FilaInforme,
 } from "@/features/academic-management/reports/api/types"
-import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type {
   ColumnaAsignatura,
   EstudianteFilas,
 } from "@/features/academic-management/reports/lib/agrupar-filas"
+import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
+import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
 
 interface GradesTableProps {
   estudiantes: EstudianteFilas[]
@@ -20,6 +21,11 @@ interface GradesTableProps {
   seleccionados: Set<number>
   onToggleEstudiante: (matriculaId: number) => void
   onToggleTodos: () => void
+  /** Con varios períodos a la vista: check por período en la columna "Pe"
+   *  de los seleccionados, para elegir a qué período aplica cada acción. */
+  mostrarMarcas: boolean
+  marcas: MarcasPeriodo
+  onToggleMarca: (matriculaId: number, periodoId: number) => void
 }
 
 function formatNota(valor: number | null): string {
@@ -226,6 +232,9 @@ export function GradesTable({
   seleccionados,
   onToggleEstudiante,
   onToggleTodos,
+  mostrarMarcas,
+  marcas,
+  onToggleMarca,
 }: GradesTableProps) {
   const todosSeleccionados =
     estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
@@ -306,9 +315,14 @@ export function GradesTable({
               <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
-                    <span key={fila.periodoId} className="px-2 py-1.5" title={fila.periodoNombre}>
-                      {etiquetaPeriodo(fila)}
-                    </span>
+                    <EtiquetaPeriodoMarcable
+                      key={fila.periodoId}
+                      fila={fila}
+                      className="px-2 py-1.5"
+                      marcable={mostrarMarcas && seleccionados.has(estudiante.matriculaId)}
+                      marcas={marcas}
+                      onToggleMarca={onToggleMarca}
+                    />
                   ))}
                 </div>
               </td>

@@ -121,11 +121,15 @@ function DialogDescarga({
   )
 }
 
-/** Lo que el diálogo necesita saber de cada estudiante seleccionado, calculado
- *  sobre los datos SIN filtrar del grupo (no sobre lo que deja el buscador). */
+/** Un boletín a generar: un estudiante en un período (el de su check o el
+ *  único a la vista), calculado sobre los datos SIN filtrar del grupo (no
+ *  sobre lo que deja el buscador). */
 export interface EstudianteBoletin {
   matriculaId: number
   nombre: string
+  periodoId: number
+  /** Abreviación ("P2") para los avisos cuando hay varios períodos. */
+  periodoEtiqueta: string
   /** Su fila del período es cualitativa → plantilla de preescolar. */
   esPreescolar: boolean
   /** Numérico sin consolidar: el boletín lo omite en silencio. */
@@ -137,79 +141,116 @@ export interface EstudianteBoletin {
 
 interface DialogGenerarBoletinProps {
   grupoId: number | null
-  /** Un boletín es de un único período (real). */
-  periodoId: number | null
-  /** Los seleccionados en la tabla: van todos en el mismo PDF (o dos, si el
-   *  grupo mezcla preescolar y numérico). */
+  /** Los boletines a generar. Los de un mismo período y plantilla van en un
+   *  solo PDF; cada combinación distinta es un documento aparte. */
   estudiantes: EstudianteBoletin[]
-  /** Falso mientras no haya exactamente un período y al menos un estudiante. */
+  /** Falso mientras no haya estudiantes o falte decidir algún período. */
   listo: boolean
-  /** "Ir a consolidar": deja seleccionados solo los pendientes. */
-  onIrAConsolidar: (matriculaIds: number[]) => void
+  /** Por qué no está listo (p. ej. a quién le falta marcar el período). */
+  motivoNoListo: string | null
+  /** "Ir a consolidar": deja seleccionados (y marcados) solo los pendientes. */
+  onIrAConsolidar: (pendientes: { matriculaId: number; periodoId: number }[]) => void
 }
 
-function listaNombres(estudiantes: EstudianteBoletin[]): string {
-  const max = 8
-  const nombres = estudiantes.slice(0, max).map((e) => e.nombre)
-  const resto = estudiantes.length - nombres.length
-  return nombres.join(", ") + (resto > 0 ? ` y ${resto} más` : "")
+/** Lo que pide UNA llamada al reporte: el backend recibe un solo período y
+ *  una sola plantilla (`nivel`) por llamada. */
+interface LoteBoletin {
+  periodoId: number
+  periodoEtiqueta: string
+  esPreescolar: boolean
+  matriculaIds: number[]
+}
+
+function armarLotes(estudiantes: EstudianteBoletin[]): LoteBoletin[] {
+  const porClave = new Map<string, LoteBoletin>()
+  for (const e of estudiantes) {
+    const clave = `${e.periodoId}|${e.esPreescolar}`
+    const lote = porClave.get(clave)
+    if (lote) {
+      lote.matriculaIds.push(e.matriculaId)
+      continue
+    }
+    porClave.set(clave, {
+      periodoId: e.periodoId,
+      periodoEtiqueta: e.periodoEtiqueta,
+      esPreescolar: e.esPreescolar,
+      matriculaIds: [e.matriculaId],
+    })
+  }
+  return [...porClave.values()]
+}
+
+function describirLote(lote: LoteBoletin): string {
+  const n = lote.matriculaIds.length
+  return `${lote.periodoEtiqueta} de ${lote.esPreescolar ? "preescolar" : "notas"} (${n} boletín${n === 1 ? "" : "es"})`
 }
 
 export function DialogGenerarBoletin({
   grupoId,
-  periodoId,
   estudiantes,
   listo,
+  motivoNoListo,
   onIrAConsolidar,
 }: DialogGenerarBoletinProps) {
   const { notify } = useNotify()
   const [avisoAbierto, setAvisoAbierto] = useState(false)
   const exportar = useExportBoletin()
 
-  const puede = listo && grupoId != null && periodoId != null
+  const puede = listo && grupoId != null && estudiantes.length > 0
   const varios = estudiantes.length > 1
   const sinConsolidar = estudiantes.filter((e) => e.sinConsolidar)
   const soloBorrador = estudiantes.filter((e) => e.soloBorrador)
-  const preescolar = estudiantes.filter((e) => e.esPreescolar)
-  const numericos = estudiantes.filter((e) => !e.esPreescolar)
-  // Grupo mixto (transición, aulas multigrado): el reporte elige UNA plantilla
-  // por llamada (`nivel`), así que se generan dos documentos, cada uno con su
+  // El reporte elige UN período y UNA plantilla por llamada: con períodos
+  // distintos por estudiante (checks de la columna "Pe") o un grupo mixto
+  // (transición, aulas multigrado) salen varios documentos, cada uno con su
   // plantilla, en vez de imprimir a la mitad con la equivocada.
-  const mixto = preescolar.length > 0 && numericos.length > 0
-  const hayAvisos = sinConsolidar.length > 0 || soloBorrador.length > 0 || mixto
+  const lotes = armarLotes(estudiantes)
+  const variosPeriodos = new Set(estudiantes.map((e) => e.periodoId)).size > 1
+  const hayAvisos = sinConsolidar.length > 0 || soloBorrador.length > 0 || lotes.length > 1
+
+  function listaNombres(lista: EstudianteBoletin[]): string {
+    const max = 8
+    const nombres = lista
+      .slice(0, max)
+      .map((e) => (variosPeriodos ? `${e.nombre} (${e.periodoEtiqueta})` : e.nombre))
+    const resto = lista.length - nombres.length
+    return nombres.join(", ") + (resto > 0 ? ` y ${resto} más` : "")
+  }
 
   async function generar() {
-    if (!puede || grupoId == null || periodoId == null) return
+    if (!puede || grupoId == null) return
     setAvisoAbierto(false)
-    const lotes = [
-      { esPreescolar: true, ids: preescolar.map((e) => e.matriculaId) },
-      { esPreescolar: false, ids: numericos.map((e) => e.matriculaId) },
-    ].filter((l) => l.ids.length > 0)
-    try {
-      const resultados = []
-      for (const lote of lotes) {
-        resultados.push(
-          await exportar.mutateAsync({
-            grupoId,
-            periodoId,
-            matriculaIds: lote.ids,
-            esPreescolar: lote.esPreescolar,
-          }),
-        )
+    // Uno detrás de otro: son descargas del navegador y un error en un lote
+    // no debe impedir los demás.
+    const fallidos: string[] = []
+    let ultimo: ExportResult | null = null
+    for (const lote of lotes) {
+      try {
+        const resultado = await exportar.mutateAsync({
+          grupoId,
+          periodoId: lote.periodoId,
+          matriculaIds: lote.matriculaIds,
+          esPreescolar: lote.esPreescolar,
+        })
+        if (resultado.status === "error") fallidos.push(`${describirLote(lote)}: ${resultado.message}`)
+        else ultimo = resultado
+      } catch (e) {
+        fallidos.push(`${describirLote(lote)}: ${getErrorMessage(e)}`)
       }
-      const error = resultados.find((r) => r.status === "error")
-      if (error) {
-        notify(error.message, { variant: "error" })
-        return
-      }
-      notify(
-        lotes.length > 1
-          ? `Se generaron dos documentos: ${preescolar.length} boletín(es) de preescolar y ${numericos.length} de notas.`
-          : resultados[0].message,
-      )
-    } catch (e) {
-      notify(getErrorMessage(e), { variant: "error" })
     }
+    if (fallidos.length > 0) {
+      const generados = lotes.length - fallidos.length
+      notify(
+        `${generados > 0 ? `Se generaron ${generados} de ${lotes.length} documentos. ` : ""}No se pudo generar — ${fallidos.join(" · ")}`,
+        { variant: "error" },
+      )
+      return
+    }
+    notify(
+      lotes.length > 1
+        ? `Se generaron ${lotes.length} documentos: ${lotes.map(describirLote).join(", ")}.`
+        : (ultimo?.message ?? "Boletín generado."),
+    )
   }
 
   function handleClick() {
@@ -231,7 +272,8 @@ export function DialogGenerarBoletin({
                     {sinConsolidar.length} estudiante{sinConsolidar.length === 1 ? "" : "s"} sin
                     consolidar
                   </strong>{" "}
-                  en este período no aparecerán en el boletín: {listaNombres(sinConsolidar)}.
+                  {variosPeriodos ? "en el período marcado" : "en este período"} no aparecerán en
+                  el boletín: {listaNombres(sinConsolidar)}.
                 </p>
               )}
               {soloBorrador.length > 0 && (
@@ -243,11 +285,10 @@ export function DialogGenerarBoletin({
                   no incluye: {listaNombres(soloBorrador)}. Revísalas y guárdalas para que salgan.
                 </p>
               )}
-              {mixto && (
+              {lotes.length > 1 && (
                 <p>
-                  El grupo mezcla preescolar y grados con notas: se descargarán dos documentos, uno
-                  por cada plantilla ({preescolar.length} de preescolar y {numericos.length} de
-                  notas).
+                  Se descargarán {lotes.length} documentos, uno por cada período y plantilla:{" "}
+                  {lotes.map(describirLote).join(", ")}.
                 </p>
               )}
             </AlertDialogDescription>
@@ -258,7 +299,11 @@ export function DialogGenerarBoletin({
               <AlertDialogCancel
                 variant="outline"
                 color="primary"
-                onClick={() => onIrAConsolidar(sinConsolidar.map((e) => e.matriculaId))}
+                onClick={() =>
+                  onIrAConsolidar(
+                    sinConsolidar.map((e) => ({ matriculaId: e.matriculaId, periodoId: e.periodoId })),
+                  )
+                }
               >
                 Ir a consolidar
               </AlertDialogCancel>
@@ -289,11 +334,14 @@ export function DialogGenerarBoletin({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {!listo
-            ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
-            : varios
-              ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
-              : "Generar el boletín del estudiante seleccionado."}
+          {!puede
+            ? (motivoNoListo ??
+              "Selecciona uno o varios estudiantes en la tabla. Con varios períodos a la vista, marca en la columna Pe el período de cada boletín.")
+            : lotes.length > 1
+              ? `Generar ${lotes.length} documentos, uno por cada período y plantilla.`
+              : varios
+                ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
+                : "Generar el boletín del estudiante seleccionado."}
         </TooltipContent>
       </Tooltip>
     </>
