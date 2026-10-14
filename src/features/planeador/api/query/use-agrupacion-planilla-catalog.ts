@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 /** Las dos únicas formas de agrupar columnas que entiende la Planilla —
  *  "Actividades" las deja sueltas, "Unidad" las agrupa bajo la unidad
@@ -41,7 +42,7 @@ function toKey(row: SelectCategoryRow): AgrupacionPlanillaKey | null {
  * opciones la vez pasada llevó a cablear el "Ver por" contra ese catálogo
  * equivocado.
  */
-async function fetchAgrupacionPlanillaOptions(): Promise<AgrupacionPlanillaOption[]> {
+export async function fetchAgrupacionPlanillaOptions(): Promise<AgrupacionPlanillaOption[]> {
   const rows = await fetchSelectCategory("AGRUPACION_PLANILLA")
   const options: AgrupacionPlanillaOption[] = []
   for (const row of rows) {
@@ -55,6 +56,7 @@ async function fetchAgrupacionPlanillaOptions(): Promise<AgrupacionPlanillaOptio
 
 export function useAgrupacionPlanillaOptionsQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: planeadorKeys.catalogos.agrupacionPlanilla(),
     queryFn: fetchAgrupacionPlanillaOptions,
     staleTime: Infinity,

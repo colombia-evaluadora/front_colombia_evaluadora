@@ -60,7 +60,7 @@ export const evalCol = {
    *  —incluidos los de lectura— porque cuatro reciben arreglos y en este
    *  esquema ningún GET los acepta. */
   async postRows<T>(url: string, data?: unknown): Promise<T[]> {
-    return toRows<T>(await api.post(`${PREFIX}${url}`, data))
+    return toRows<T>(await api.post(`${PREFIX}${url}`, data, { readOnly: true }))
   },
 
   /** PATCH que devuelve un único recurso. */

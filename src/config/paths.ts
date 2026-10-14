@@ -4,6 +4,11 @@ export const paths = {
     getHref: () => "/",
   },
 
+  verificarBoletin: {
+    path: "/verificar/b/$codigo",
+    getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
+  },
+
   auth: {
     login: {
       path: "/login",

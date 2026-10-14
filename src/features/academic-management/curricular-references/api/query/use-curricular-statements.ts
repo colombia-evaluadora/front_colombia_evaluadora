@@ -6,6 +6,7 @@ import { env } from "@/config/env"
 import { unwrapRows } from "@/lib/response-envelope"
 
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface StatementsResponse {
   rows: CurricularStatement[]
@@ -69,6 +70,7 @@ export function useCurricularStatementsQuery(
   gradeId: number | null | undefined = null,
 ) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularStatementsQueryKey(curricularReferenceId, areaId ?? null, gradeId ?? null),
     queryFn: () => fetchStatements(curricularReferenceId, areaId ?? null, gradeId ?? null),
     enabled: areaId !== undefined && gradeId !== undefined,

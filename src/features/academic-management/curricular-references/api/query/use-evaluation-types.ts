@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 async function fetchEvaluationTypes(): Promise<CatalogItem[]> {
   const rows = await fetchSelectCategory("TIPO_EVALUACION")
@@ -12,6 +13,7 @@ export const evaluationTypesQueryKey = () => ["curricular-reference-evaluation-t
 
 export function useEvaluationTypesQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: evaluationTypesQueryKey(),
     queryFn: fetchEvaluationTypes,
     staleTime: Infinity,

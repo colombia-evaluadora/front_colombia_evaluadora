@@ -10,6 +10,7 @@ import type {
   ModoPeriodo,
   ObservacionEstado,
 } from "@/features/academic-management/reports/api/types"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 interface AsignaturaRow {
   asignatura: number
@@ -30,6 +31,7 @@ interface AsignaturaRow {
   simbolo_original?: string | null
   ya_asegurado: boolean | null
   alcanzable: boolean | null
+  error_configuracion?: string | null
 }
 
 interface FilaInformeRow {
@@ -76,6 +78,7 @@ function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
     simboloOriginal: row.simbolo_original ?? null,
     yaAsegurado: row.ya_asegurado ?? false,
     alcanzable: row.alcanzable ?? true,
+    errorConfiguracion: row.error_configuracion?.trim() || null,
   }
 }
 
@@ -132,6 +135,7 @@ export const informeGrupoQueryKeyPrefix = () => ["informes", "grupo"] as const
  *  paginar rompería el puesto, que se calcula sobre el grupo entero. */
 export function useInformeGrupoQuery(params: InformeGrupoParams | null) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: params ? informeGrupoQueryKey(params) : (["informes", "grupo", "none"] as const),
     queryFn: () => fetchInformeGrupo(params!),
     enabled: params !== null,

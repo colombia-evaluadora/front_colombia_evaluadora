@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/actividades/configuracion?GRUPO=&ASIGNATURA=`
@@ -71,7 +72,13 @@ function firstRow(body: unknown): ConfiguracionContextoRow | undefined {
 }
 
 export interface ProgramacionActividad {
-  periodoAcademico: { nombre: string; fechaInicio: Date | null; fechaFin: Date | null; semanas: number } | null
+  periodoAcademico: {
+    id: number
+    nombre: string
+    fechaInicio: Date | null
+    fechaFin: Date | null
+    semanas: number
+  } | null
   intensidadHoraria: {
     bloquesPorSemana: number
     // Ya convertidos a la convención de `Date.getDay()`, mismo criterio
@@ -124,6 +131,7 @@ async function fetchProgramacionActividad(
   return {
     periodoAcademico: programacion.periodoAcademico
       ? {
+          id: programacion.periodoAcademico.pk,
           nombre: programacion.periodoAcademico.nombre,
           fechaInicio: toDate(programacion.periodoAcademico.fechaInicio),
           fechaFin: toDate(programacion.periodoAcademico.fechaFin),
@@ -173,6 +181,7 @@ export function useProgramacionActividadQuery(
   const enabled = grupoId != null && asignaturaId != null
   const unidadIdEfectivo = unidadId || undefined
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey: enabled
       ? planeadorKeys.actividades.programacion(grupoId, asignaturaId, unidadIdEfectivo)
       : planeadorKeys.actividades.programacion("none"),

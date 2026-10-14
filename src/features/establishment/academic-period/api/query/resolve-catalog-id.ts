@@ -4,6 +4,7 @@ import {
   fetchSelectCategory,
   type SelectCategoryRow,
 } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 /**
  * Resolver un `pk_lista_valor` de `TLISTA_VALOR` a partir del texto que tiene
@@ -67,6 +68,7 @@ export async function resolveCatalogId(
   if (!nombre) return undefined
   const rows = queryClient
     ? await queryClient.fetchQuery({
+        meta: catalogoMeta(),
         queryKey: selectCategoryQueryKey(categoria),
         queryFn: () => fetchSelectCategory(categoria),
         staleTime: Infinity,

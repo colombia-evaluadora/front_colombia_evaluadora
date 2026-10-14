@@ -1,4 +1,7 @@
-import { SignOutIcon } from "@/components/ui/icons"
+import { useState } from "react"
+
+import { CloudOffIcon, SignOutIcon } from "@/components/ui/icons"
+import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
@@ -20,6 +23,7 @@ import { useUser, useLogout } from "@/lib/auth"
 export function NavUser() {
   const navigate = useNavigate()
   const { data: user, isPending } = useUser()
+  const [prepareOpen, setPrepareOpen] = useState(false)
   const logoutMutation = useLogout({
     mutationConfig: {
       onSuccess: () => {
@@ -96,6 +100,10 @@ export function NavUser() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setPrepareOpen(true)}>
+            <CloudOffIcon data-icon="inline-start" />
+            Preparar para usar sin conexión
+          </DropdownMenuItem>
           <DropdownMenuItem
             disabled={logoutMutation.isPending}
             onClick={() => logoutMutation.mutate(undefined)}
@@ -105,6 +113,7 @@ export function NavUser() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
+      <PrepareOfflineDialog open={prepareOpen} onOpenChange={setPrepareOpen} />
     </DropdownMenu>
   )
 }

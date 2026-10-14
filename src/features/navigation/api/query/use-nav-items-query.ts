@@ -3,7 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toNavItemDtos } from "@/features/navigation/api/menu-mapper"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
-import type { NavItem } from "@/features/navigation/api/types/nav-item"
+import type { NavItem, NavItemDto } from "@/features/navigation/api/types/nav-item"
 
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
 
@@ -28,8 +28,11 @@ async function fetchNavItemsDto() {
   return toNavItemDtos(menus)
 }
 
-async function fetchNavItems(): Promise<NavItem[]> {
-  const items = await fetchNavItemsDto()
+// El cache guarda la forma CRUDA (íconos como texto): es serializable y se
+// persiste en la `session` para el modo sin conexión (`lib/offline/session.ts`).
+// El ícono se resuelve a componente en el `select` de `useNavItemsQuery`; el
+// guard de `/app` solo necesita las URLs.
+function resolveNavIcons(items: NavItemDto[]): NavItem[] {
   return items.map((item) => ({
     ...item,
     icon: getNavIcon(item.icon),
@@ -38,12 +41,17 @@ async function fetchNavItems(): Promise<NavItem[]> {
 
 export const navItemsQueryOptions = queryOptions({
   queryKey: ["navigation", "menu"],
-  queryFn: fetchNavItems,
+  queryFn: fetchNavItemsDto,
   staleTime: Infinity,
+  // El guard de `/app` hace `ensureQueryData` con esto: con el default
+  // `networkMode: "online"` y el `connectivityStore` en `offline` la query
+  // quedaba pausada y la pantalla en blanco en lugar de llegar al
+  // `ErrorPage` ("No pudimos comunicarnos con el servidor" + "Reintentar").
+  networkMode: "always",
 })
 
 export function useNavItemsQuery() {
-  return useQuery(navItemsQueryOptions)
+  return useQuery({ ...navItemsQueryOptions, select: resolveNavIcons })
 }
 
 /**
@@ -55,6 +63,6 @@ export function useNavItemsQuery() {
  * Los grupos ya heredan la ruta de su primer hijo en `toNavItemDtos`, así que
  * el `url` del primer item siempre es navegable. `null` si el menú vino vacío.
  */
-export function getFirstNavUrl(items: NavItem[]): string | null {
+export function getFirstNavUrl(items: readonly { url: string }[]): string | null {
   return items[0]?.url ?? null
 }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface SubjectLabelResolutionRow {
   nombre_asignatura: string | null
@@ -23,6 +24,7 @@ export const resolvedSubjectLabelQueryKey = (referenceId: number | null) =>
 
 export function useResolvedSubjectLabelQuery(referenceId: number | null | undefined) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: resolvedSubjectLabelQueryKey(referenceId ?? null),
     queryFn: () => fetchResolvedSubjectLabel(referenceId as number),
     enabled: referenceId != null,

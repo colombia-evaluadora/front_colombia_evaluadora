@@ -3,9 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
 export interface ObservarEstudianteInput {
   pkTactividadEstudiante: number
+  /** Actividad de la celda: si se pasa, solo se invalidan sus calificaciones
+   *  (X2); si no, las de todas las actividades en cache. */
+  actividadId?: number
   observacion: string
   fecha: string
   evidencias?: number[]
@@ -56,6 +60,7 @@ export function useObservarEstudianteMutation({
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
+      invalidarCalificacionesActividad(queryClient, variables.actividadId)
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,

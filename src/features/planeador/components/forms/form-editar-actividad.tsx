@@ -48,6 +48,8 @@ import {
   useConfiguracionContextoActividadQuery,
 } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
+import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
+import { periodosCerrados, rangosDePeriodos } from "@/features/planeador/lib/periodo-cerrado"
 import {
   useReferenteCurricularQuery,
   referenteCurricularQueryOptions,
@@ -148,6 +150,7 @@ import {
   saveActividadFormDraft,
   type ActividadFormDraftKey,
 } from "@/features/planeador/lib/actividad-form-draft"
+import { type CampoRecuperacion, erroresRecuperacion } from "@/features/planeador/lib/recuperacion-faltantes"
 import {
   avisoCamposObligatorios,
   camposObligatoriosFaltantes,
@@ -575,6 +578,13 @@ export function EditarActividadForm({
         // así que exigirlos antes sería un candado sin salida.
         form={form}
         disabled={readOnly}
+        // Una recuperación YA guardada no deja cambiar si es recuperación
+        // ni de qué: apagarla revierte las notas que aplicó sobre la
+        // original (`fn_actividad_recuperacion_revertir`) y cambiar el
+        // origen rompe la herencia de grupo/unidad/título/estudiantes. Para
+        // eso se crea otra actividad. El resto (cómo se aplica/calcula)
+        // sigue editable.
+        recuperacionFijada={!esNueva && actividadOriginal.esRecuperacion}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
@@ -698,6 +708,19 @@ function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
 const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
 
 /**
+ * Error inline de un campo de la recuperación tras un intento de guardar
+ * (`erroresRecuperacion`, espejo de sso `fn_actividad_validar_recuperacion_config`).
+ */
+function useErrorRecuperacion(form: FormActividad, campo: CampoRecuperacion): string | undefined {
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const rotuloLower = useSelector(form.store, (state) =>
+    rotuloEnMinuscula(state.values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK),
+  )
+  const error = useSelector(form.store, (state) => erroresRecuperacion(state.values, rotuloLower)[campo])
+  return submissionAttempts > 0 ? error : undefined
+}
+
+/**
  * Solo lectura del form (`EditarActividadForm.readOnly`). Los campos de datos
  * siguen visibles y deshabilitados (por el `disabled` de cada sección) para
  * poder leer la actividad; los botones cuyo único fin es modificar (crear
@@ -768,7 +791,10 @@ function useRecuperacionAutoFill(form: FormActividad) {
   const recuperacionActividadId = useSelector(form.store, (state) => state.values.recuperacionActividadId)
   const activo = esRecuperacion && destino === "ACTIVIDAD" && recuperacionActividadId != null
   const { data: original } = useActividadDetalleQuery(activo ? recuperacionActividadId : undefined)
-  const aplicadoRef = useRef<number | undefined>(undefined)
+  // Arranca con el origen YA guardado (edición de una recuperación): esos
+  // datos ya están en el form tal como el docente los dejó; volver a
+  // copiarlos al abrir pisaría nombre/estudiantes y marcaría el form sucio.
+  const aplicadoRef = useRef<number | undefined>(form.options.defaultValues?.recuperacionActividadId)
 
   useEffect(() => {
     if (!activo || !original) return
@@ -841,15 +867,26 @@ const TIPO_CALCULO_RECUPERACION_FALLBACK = [
 function RecuperacionSection({
   form,
   disabled,
+  recuperacionFijada = false,
   camposEfectivos,
   actividadId,
 }: {
   form: FormActividad
   disabled: boolean
+  /** Edición de una actividad que ya se guardó como recuperación: el
+   *  toggle, el destino y la actividad de origen quedan de solo lectura. */
+  recuperacionFijada?: boolean
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
+  // Todos obligatorios: una recuperación se tiene que completar entera
+  // (`erroresRecuperacion`). Cada error solo se ve si su campo está visible.
+  const errorDestino = useErrorRecuperacion(form, "recuperacionDestino")
+  const errorActividad = useErrorRecuperacion(form, "recuperacionActividadId")
+  const errorAplicacion = useErrorRecuperacion(form, "recuperacionTipoAplicacion")
+  const errorCalculo = useErrorRecuperacion(form, "recuperacionTipoCalculo")
+  const errorPonderacion = useErrorRecuperacion(form, "recuperacionValorPonderacion")
   // "¿Esta recuperación aplica para?" tiene que aparecer SIEMPRE primero,
   // apenas se prende el toggle — sin esperar a Grado/Asignatura/Unidad
   // (`campos_disponibles.recuperacion.catalogos` no se puede pedir sin
@@ -883,10 +920,15 @@ function RecuperacionSection({
                     id={field.name}
                     checked={field.state.value}
                     onCheckedChange={field.handleChange}
-                    disabled={disabled}
+                    disabled={disabled || recuperacionFijada}
                     className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
                   />
                   Es una recuperación
+                  {recuperacionFijada && (
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      No se puede cambiar en una recuperación ya creada
+                    </span>
+                  )}
                 </label>
               )}
             </form.Field>
@@ -897,9 +939,9 @@ function RecuperacionSection({
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
-                        <Field variant="outlined">
+                        <Field variant="outlined" data-invalid={!!errorDestino}>
                           <FieldLabel htmlFor={field.name}>
-                            ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
+                            ¿Esta recuperación aplica para? *
                           </FieldLabel>
                           <Select
                             value={field.state.value || "__none__"}
@@ -918,9 +960,9 @@ function RecuperacionSection({
                               form.setFieldValue("recuperacionTipoCalculo", "")
                               form.setFieldValue("recuperacionValorPonderacion", undefined)
                             }}
-                            disabled={disabled}
+                            disabled={disabled || recuperacionFijada}
                           >
-                            <SelectTrigger id={field.name}>
+                            <SelectTrigger id={field.name} aria-invalid={!!errorDestino}>
                               <SelectValue placeholder="Seleccione">
                                 {(v) =>
                                   v === "__none__"
@@ -938,6 +980,7 @@ function RecuperacionSection({
                               ))}
                             </SelectContent>
                           </Select>
+                          {errorDestino && <FieldError errors={[{ message: errorDestino }]} />}
                         </Field>
                       )}
                     </form.Field>
@@ -951,8 +994,8 @@ function RecuperacionSection({
                         destino !== "ACTIVIDAD" ? null : (
                           <form.Field name="recuperacionActividadId">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorActividad}>
+                                <FieldLabel>¿Qué actividad deseas recuperar? *</FieldLabel>
                                 <ActividadRecuperarCascada
                                   value={field.state.value}
                                   onChange={(v) => {
@@ -966,8 +1009,9 @@ function RecuperacionSection({
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                   excludeActividadId={actividadId}
-                                  disabled={disabled}
+                                  disabled={disabled || recuperacionFijada}
                                 />
+                                {errorActividad && <FieldError errors={[{ message: errorActividad }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -995,8 +1039,8 @@ function RecuperacionSection({
                         !destino || (destino === "ACTIVIDAD" && !actividadId) ? null : (
                           <form.Field name="recuperacionTipoAplicacion">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorAplicacion}>
+                                <FieldLabel>¿Cómo se aplicará la nota de recuperación? *</FieldLabel>
                                 <RadioGroup
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
@@ -1020,6 +1064,7 @@ function RecuperacionSection({
                                     </label>
                                   ))}
                                 </RadioGroup>
+                                {errorAplicacion && <FieldError errors={[{ message: errorAplicacion }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -1068,10 +1113,10 @@ function RecuperacionSection({
                         tipoAplicacion === "REEMPLAZAR" ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
-                              <Field variant="outlined">
+                              <Field variant="outlined" data-invalid={!!errorCalculo}>
                                 <FieldLabel>
                                   ¿Cómo deseas calcular la nota{" "}
-                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}? *
                                 </FieldLabel>
                                 <RadioGroup
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
@@ -1093,6 +1138,7 @@ function RecuperacionSection({
                                     </label>
                                   ))}
                                 </RadioGroup>
+                                {errorCalculo && <FieldError errors={[{ message: errorCalculo }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -1108,8 +1154,8 @@ function RecuperacionSection({
                         tipoCalculo !== "PONDERADO" ? null : (
                           <form.Field name="recuperacionValorPonderacion">
                             {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
+                              <Field variant="outlined" data-invalid={!!errorPonderacion}>
+                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%) *</FieldLabel>
                                 <Input
                                   id={field.name}
                                   inputMode="numeric"
@@ -1123,7 +1169,9 @@ function RecuperacionSection({
                                     field.handleChange(parsed)
                                   }}
                                   disabled={disabled}
+                                  aria-invalid={!!errorPonderacion}
                                 />
+                                {errorPonderacion && <FieldError errors={[{ message: errorPonderacion }]} />}
                               </Field>
                             )}
                           </form.Field>
@@ -3023,6 +3071,23 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
   const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
+  // Periodos de evaluación CERRADOS (NO Calificable y ya vencidos) del periodo
+  // académico del contexto: el backend rechaza crear o mover una actividad
+  // ahí (23514, `fn_actividad_validar_periodo_abierto`), así que esos días se
+  // deshabilitan en ambos calendarios y se explica por qué.
+  const { data: periodosEvaluacion = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const periodoAcademicoId = programacion?.periodoAcademico?.id
+  const cerrados =
+    periodoAcademicoId == null
+      ? []
+      : periodosCerrados(periodosEvaluacion.filter((p) => p.periodoAcademicoId === periodoAcademicoId))
+  const rangosCerrados = rangosDePeriodos(cerrados)
+  const avisoCerrados =
+    cerrados.length > 0
+      ? `Periodo cerrado: ${cerrados
+          .map((p) => `${p.nombre} (${formatDiaCorto(p.startDate)} – ${formatDiaCorto(p.endDate)})`)
+          .join(", ")}. No se pueden programar actividades en esas fechas.`
+      : null
   // Mismo criterio que "Inicio/Fin del período académico" en
   // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
   // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
@@ -3080,6 +3145,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   minDate={programacion?.fechaInicio.min ?? undefined}
                   maxDate={programacion?.fechaInicio.max ?? undefined}
                   enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
+                  disabledRanges={rangosCerrados}
                   disabled={disabled}
                   aria-invalid={isInvalid}
                 />
@@ -3087,6 +3153,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 {programacion?.fechaInicio.motivo && (
                   <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
                 )}
+                {avisoCerrados && <FieldDescription>{avisoCerrados}</FieldDescription>}
               </Field>
             )
           }}
@@ -3137,6 +3204,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                       }
                       maxDate={programacion?.fechaCierre.max ?? undefined}
                       enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
+                      disabledRanges={rangosCerrados}
                       disabled={disabled}
                       aria-invalid={isInvalid}
                     />
@@ -6515,4 +6583,10 @@ function CrearUnidadPopover({
       </PopoverContent>
     </Popover>
   )
+}
+
+/** `yyyy-MM-dd` → `dd/MM` para el aviso de periodos cerrados. */
+function formatDiaCorto(value: string): string {
+  const [, m, d] = value.split("-")
+  return `${d}/${m}`
 }

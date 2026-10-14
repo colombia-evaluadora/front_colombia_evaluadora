@@ -7,6 +7,7 @@ import type {
 } from "@/features/establishment/employees/api/types/employee"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseAssignmentTeachersQueryParams {
   academicPeriodId?: number
@@ -84,6 +85,7 @@ async function fetchAssignmentTeachers(
 
 export function useAssignmentTeachersQuery(params: UseAssignmentTeachersQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.assignmentTeachers.list(params),
     queryFn: () => fetchAssignmentTeachers(params),
     placeholderData: (previous) => previous,

@@ -1,6 +1,11 @@
 import * as React from "react"
 
-import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -22,7 +27,13 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckIcon, ClockCountdownIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  ClockCountdownIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { useUser } from "@/lib/auth"
 import { gestionAcademicaInformesRoute } from "@/router"
@@ -55,9 +66,11 @@ import {
   InformeFiltros,
   type FiltrosInforme,
 } from "@/features/academic-management/reports/components/informe-filtros"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import {
   DialogDescargarTabla,
   DialogGenerarBoletin,
+  type EstudianteBoletin,
 } from "@/features/academic-management/reports/components/dialog-export-informe"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
@@ -68,6 +81,13 @@ import {
 } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
+import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
+import { TTL_OFFLINE } from "@/lib/offline/query-meta"
+import { isOfflineWithoutData } from "@/lib/offline/query-status"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 
@@ -113,7 +133,7 @@ function guardarGruposAbiertos(filtros: FiltrosInforme, estado: GruposAbiertosSt
 function coincide(fila: FilaInforme, busqueda: string): boolean {
   const texto = busqueda.trim().toLowerCase()
   if (!texto) return true
-  return fila.nombreCompleto.toLowerCase().includes(texto) || fila.documento.includes(texto)
+  return fila.nombreCompleto.toLowerCase().includes(texto) || (fila.documento ?? "").includes(texto)
 }
 
 interface GrupoTabContentProps {
@@ -128,7 +148,32 @@ interface GrupoTabContentProps {
   onGuardar: () => void
   guardando: boolean
   onAbrirObservacion: (fila: FilaInforme) => void
-  onEsCualitativoChange: (esCualitativo: boolean) => void
+  /** Permiso INFORMES/EDITAR y rol que no sea solo docente/director. */
+  puedeEscribir: boolean
+  /** Períodos con `periodo_cerrado`: no se consolidan. */
+  periodosCerrados: number[]
+}
+
+/** Una celda que el botón "Guardar notas" puede consolidar: pendiente, sin
+ *  error de configuración y de un período abierto. */
+function celdaConsolidable(
+  fila: FilaInforme,
+  asignatura: FilaInforme["asignaturas"][number],
+  periodosCerrados: number[],
+): boolean {
+  return (
+    fila.modoPeriodo === "real" &&
+    !periodosCerrados.includes(fila.periodoId) &&
+    !asignatura.errorConfiguracion &&
+    (asignatura.estado === "proyectada" || asignatura.estado === "cambio_propuesto")
+  )
+}
+
+/** Cualitativo = TODAS las filas del grupo lo son. Se calcula sobre los datos
+ *  sin filtrar: con el buscador activo, el subconjunto visible podía cambiar
+ *  la plantilla del boletín y la tabla que se pinta. */
+function grupoEsCualitativo(filas: FilaInforme[] | undefined): boolean {
+  return (filas?.length ?? 0) > 0 && filas!.every((fila) => fila.formato === "cualitativo")
 }
 
 function GrupoTabContent({
@@ -143,11 +188,13 @@ function GrupoTabContent({
   onGuardar,
   guardando,
   onAbrirObservacion,
-  onEsCualitativoChange,
+  puedeEscribir,
+  periodosCerrados,
 }: GrupoTabContentProps) {
-  const informe = useInformeGrupoQuery(
-    periodos.length > 0 ? { grupoId, periodos } : null,
-  )
+  const soloEnLinea = useOnlineOnly()
+  const informe = useInformeGrupoQuery(periodos.length > 0 ? { grupoId, periodos } : null)
+  const { status: conectividad } = useConnectivity()
+  const informeSinDatosOffline = periodos.length > 0 && isOfflineWithoutData(informe, conectividad)
 
   const filas = React.useMemo(
     () => (informe.data ?? []).filter((fila) => coincide(fila, busqueda)),
@@ -156,16 +203,12 @@ function GrupoTabContent({
   const estudiantes = React.useMemo(() => agruparPorEstudiante(filas), [filas])
   const columnas = React.useMemo(() => columnasDeFilas(filas), [filas])
 
-  const esCualitativo = filas.length > 0 && filas.every((fila) => fila.formato === "cualitativo")
+  const esCualitativo = grupoEsCualitativo(informe.data)
 
-  React.useEffect(() => {
-    onEsCualitativoChange(esCualitativo)
-  }, [esCualitativo, onEsCualitativoChange])
-  const haySinConsolidar = filas.some(
+  const haySinConsolidar = (informe.data ?? []).some(
     (fila) =>
       seleccionados.has(fila.matriculaId) &&
-      fila.modoPeriodo === "real" &&
-      fila.asignaturas.some((a) => a.estado === "proyectada" || a.estado === "cambio_propuesto"),
+      fila.asignaturas.some((a) => celdaConsolidable(fila, a, periodosCerrados)),
   )
 
   if (periodos.length === 0) {
@@ -211,21 +254,23 @@ function GrupoTabContent({
             </InputGroupAddon>
           </InputGroup>
         </Field>
-        {!esCualitativo && haySinConsolidar && (
-          <Button type="button" color="primary" size="sm" disabled={guardando} onClick={onGuardar}>
-            <CheckIcon data-icon="inline-start" />
-            Guardar notas seleccionadas
-          </Button>
+        {puedeEscribir && !esCualitativo && haySinConsolidar && (
+          <OnlineOnlyTooltip tooltip={soloEnLinea.tooltip}>
+            <Button type="button" color="primary" size="sm" disabled={guardando || soloEnLinea.disabled} onClick={onGuardar}>
+              <CheckIcon data-icon="inline-start" />
+              Guardar notas seleccionadas
+            </Button>
+          </OnlineOnlyTooltip>
         )}
       </div>
 
-      {informe.isPending && (
+      <DatosDelBadge updatedAt={informe.dataUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mt-2" />
+      {informeSinDatosOffline && <OfflineEmptyState kind="sinDatosGuardados" onRetry={() => informe.refetch()} />}
+      {informe.isPending && !informeSinDatosOffline && (
         <p className="py-8 text-center text-sm text-muted-foreground">Cargando informe…</p>
       )}
-      {informe.isError && (
-        <p className="py-8 text-center text-sm text-red">
-          {getErrorMessage(informe.error)}
-        </p>
+      {informe.isError && !informeSinDatosOffline && (
+        <p className="py-8 text-center text-sm text-red">{getErrorMessage(informe.error)}</p>
       )}
       {!informe.isPending &&
         !informe.isError &&
@@ -327,7 +372,6 @@ function ReportsPageContent() {
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
-  const [esCualitativoActivo, setEsCualitativoActivo] = React.useState(false)
 
   const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
@@ -347,8 +391,7 @@ function ReportsPageContent() {
   React.useEffect(() => {
     if (grupos.length === 0) return
     const vigentes = gruposAbiertosIds.filter((id) => grupos.some((g) => g.grupoId === id))
-    const guardados =
-      gruposAbiertosIds.length === 0 ? leerGruposAbiertosGuardados(filtros) : null
+    const guardados = gruposAbiertosIds.length === 0 ? leerGruposAbiertosGuardados(filtros) : null
     const guardadosVigentes =
       guardados?.grupos.filter((id) => grupos.some((g) => g.grupoId === id)) ?? []
     const abiertos =
@@ -376,6 +419,23 @@ function ReportsPageContent() {
   const topeAlcanzado = gruposAbiertosIds.length >= MAX_GRUPOS_ABIERTOS
   const grupoActivoId = Number(activeTab)
   const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
+
+  // Misma key que la del tab activo: TanStack Query la deduplica. La página
+  // la necesita sin el filtro del buscador para decidir la plantilla del
+  // boletín y qué seleccionados están consolidados.
+  const informeActivo = useInformeGrupoQuery(
+    grupoActivoId > 0 && periodos.length > 0 ? { grupoId: grupoActivoId, periodos } : null,
+  )
+  const esCualitativoActivo = grupoEsCualitativo(informeActivo.data)
+
+  const { puedeEditar } = useMenuPermission("INFORMES")
+  // Docente / director de grupo solo consultan: consolidar y redactar
+  // observaciones es de coordinación, aunque el menú les dé EDITAR.
+  const puedeEscribir = puedeEditar && !soloSusGrupos
+  const periodosCerrados = React.useMemo(
+    () => periodosDisponibles.filter((p) => p.cerrado).map((p) => p.id),
+    [periodosDisponibles],
+  )
   const observacionLabel = useStudyPlanSubjectLabel(gradoActivoId, esCualitativoActivo)
 
   const alertasParams = { grupos: gruposAbiertosIds, periodos }
@@ -412,6 +472,26 @@ function ReportsPageContent() {
 
   const listoParaBoletin = periodosReales.length === 1 && seleccionActiva.size > 0
 
+  // Los seleccionados vistos desde su fila del período del boletín, sobre los
+  // datos sin filtrar (un seleccionado puede estar oculto por el buscador).
+  const estudiantesBoletin: EstudianteBoletin[] = (informeActivo.data ?? [])
+    .filter(
+      (fila) =>
+        periodosReales.length === 1 &&
+        fila.periodoId === periodosReales[0] &&
+        seleccionActiva.has(fila.matriculaId),
+    )
+    .map((fila) => {
+      const esPreescolar = fila.formato === "cualitativo"
+      return {
+        matriculaId: fila.matriculaId,
+        nombre: fila.nombreCompleto,
+        esPreescolar,
+        sinConsolidar: !esPreescolar && !fila.consolidado,
+        soloBorrador: esPreescolar && fila.observacionEstado === "BORRADOR",
+      }
+    })
+
   function toggleEstudiante(matriculaId: number) {
     setSeleccionPorGrupo((prev) => {
       const next = new Set(prev[grupoActivoId] ?? [])
@@ -430,45 +510,83 @@ function ReportsPageContent() {
   }
 
   async function handleGuardar() {
+    if (!puedeEscribir) return
     if (seleccionActiva.size === 0) {
       notify("Selecciona al menos un estudiante para consolidar.", { variant: "error" })
       return
     }
-    const matriculas = Array.from(seleccionActiva)
-    try {
-      const detalles = await Promise.all(
-        periodos.map((periodoId) =>
-          guardarInforme.mutateAsync({ grupoId: grupoActivoId, periodoId, matriculas }),
+    // Solo períodos reales y abiertos: el Final (-1) es un centinela que el
+    // backend calcula al vuelo y mandarlo a /informes/guardar da P0002.
+    // Por período, solo las matrículas con alguna celda consolidable (las
+    // celdas con error de configuración no cuentan).
+    const datos = informeActivo.data ?? []
+    const lotes = periodosReales
+      .filter((periodoId) => !periodosCerrados.includes(periodoId))
+      .map((periodoId) => ({
+        periodoId,
+        matriculas: [...seleccionActiva].filter((matriculaId) =>
+          datos.some(
+            (fila) =>
+              fila.matriculaId === matriculaId &&
+              fila.periodoId === periodoId &&
+              fila.asignaturas.some((a) => celdaConsolidable(fila, a, periodosCerrados)),
+          ),
         ),
-      )
-      const filas = detalles.flat()
-      // Un estudiante cuenta como consolidado si se le escribió al menos una
-      // asignatura. Es la misma regla con la que el backend decide registrar
-      // el historial (`IF v_g + v_a > 0` en fn_informe_periodo_guardar), así
-      // que el aviso y el historial no pueden contradecirse.
-      const escribio = (d: (typeof filas)[number]) => d.guardadas + d.actualizadas > 0
-      const consolidados = new Set(filas.filter(escribio).map((d) => d.matriculaId)).size
-      const sinProyeccion = new Set(
-        filas.filter((d) => !escribio(d) && d.sinProyeccion > 0).map((d) => d.matriculaId),
-      ).size
-      if (consolidados === 0 && sinProyeccion > 0) {
-        notify("No hay actividades calificadas para consolidar en lo seleccionado.", {
-          variant: "error",
-        })
-        return
-      }
-      if (consolidados === 0) {
-        notify("Lo seleccionado ya estaba consolidado: no hubo cambios.")
-        return
-      }
-      notify(
-        `Se consolidaron ${consolidados} estudiante${consolidados === 1 ? "" : "s"}${
-          sinProyeccion > 0 ? ` (${sinProyeccion} sin proyección)` : ""
-        }.`,
-      )
-    } catch {
-      notify("No se pudieron consolidar las notas.", { variant: "error" })
+      }))
+      .filter((lote) => lote.matriculas.length > 0)
+    if (lotes.length === 0) {
+      notify("No hay notas pendientes por consolidar en lo seleccionado.", { variant: "error" })
+      return
     }
+    const nombrePeriodo = (id: number) =>
+      periodosDisponibles.find((p) => p.id === id)?.nombre ?? String(id)
+    const resultados = await Promise.allSettled(
+      lotes.map((lote) =>
+        guardarInforme.mutateAsync({
+          grupoId: grupoActivoId,
+          periodoId: lote.periodoId,
+          matriculas: lote.matriculas,
+        }),
+      ),
+    )
+    const fallidos = resultados.flatMap((r, i) =>
+      r.status === "rejected"
+        ? [`${nombrePeriodo(lotes[i].periodoId)}: ${getErrorMessage(r.reason)}`]
+        : [],
+    )
+    const filas = resultados.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+    if (fallidos.length > 0) {
+      const okPeriodos = resultados.length - fallidos.length
+      notify(
+        `${okPeriodos > 0 ? `Se consolidaron ${okPeriodos} de ${resultados.length} períodos. ` : ""}No se pudo consolidar — ${fallidos.join(" · ")}`,
+        { variant: "error" },
+      )
+      return
+    }
+    // Un estudiante cuenta como consolidado si se le escribió al menos una
+    // asignatura. Es la misma regla con la que el backend decide registrar
+    // el historial (`IF v_g + v_a > 0` en fn_informe_periodo_guardar), así
+    // que el aviso y el historial no pueden contradecirse.
+    const escribio = (d: (typeof filas)[number]) => d.guardadas + d.actualizadas > 0
+    const consolidados = new Set(filas.filter(escribio).map((d) => d.matriculaId)).size
+    const sinProyeccion = new Set(
+      filas.filter((d) => !escribio(d) && d.sinProyeccion > 0).map((d) => d.matriculaId),
+    ).size
+    if (consolidados === 0 && sinProyeccion > 0) {
+      notify("No hay actividades calificadas para consolidar en lo seleccionado.", {
+        variant: "error",
+      })
+      return
+    }
+    if (consolidados === 0) {
+      notify("Lo seleccionado ya estaba consolidado: no hubo cambios.")
+      return
+    }
+    notify(
+      `Se consolidaron ${consolidados} estudiante${consolidados === 1 ? "" : "s"}${
+        sinProyeccion > 0 ? ` (${sinProyeccion} sin proyección)` : ""
+      }.`,
+    )
   }
 
   async function handleGuardarObservacion(
@@ -476,6 +594,7 @@ function ReportsPageContent() {
     texto: string,
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
+    if (!puedeEscribir || periodosCerrados.includes(fila.periodoId)) return
     const limpio = texto.trim()
     const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
@@ -498,8 +617,10 @@ function ReportsPageContent() {
         notify("Observación guardada.")
       }
       setObservacionAbierta(null)
-    } catch {
-      notify("No se pudo guardar la observación.", { variant: "error" })
+    } catch (error) {
+      // La página tiene NoticeProvider: el toast global de axios está
+      // suprimido, así que el mensaje del backend se muestra acá.
+      notify(getErrorMessage(error), { variant: "error" })
     }
   }
 
@@ -555,10 +676,12 @@ function ReportsPageContent() {
           <div className="flex items-center gap-2">
             <DialogGenerarBoletin
               grupoId={gruposAbiertos.length > 0 ? grupoActivoId : null}
-              periodos={periodosReales}
-              matriculas={[...seleccionActiva]}
+              periodoId={periodosReales.length === 1 ? periodosReales[0] : null}
+              estudiantes={estudiantesBoletin}
               listo={listoParaBoletin}
-              esPreescolar={esCualitativoActivo}
+              onIrAConsolidar={(ids) =>
+                setSeleccionPorGrupo((prev) => ({ ...prev, [grupoActivoId]: new Set(ids) }))
+              }
             />
             <Tooltip>
               <TooltipTrigger
@@ -604,6 +727,13 @@ function ReportsPageContent() {
           guardando={guardarObservacion.isPending || eliminarObservacion.isPending}
           onOpenChange={(open) => !open && setObservacionAbierta(null)}
           onGuardar={handleGuardarObservacion}
+          soloLecturaMotivo={
+            !puedeEscribir
+              ? "Solo lectura: no tienes permiso para editar observaciones."
+              : observacionAbierta && periodosCerrados.includes(observacionAbierta.periodoId)
+                ? "Periodo cerrado: la observación no se puede modificar."
+                : null
+          }
         />
 
         {!cascadaCompleta && (
@@ -612,7 +742,9 @@ function ReportsPageContent() {
           </p>
         )}
         {cascadaCompleta && gruposQuery.isPending && (
-          <p className="py-8 text-center text-sm text-muted-foreground">Cargando grados y grupos…</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Cargando grados y grupos…
+          </p>
         )}
         {cascadaCompleta && !gruposQuery.isPending && grupos.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
@@ -672,8 +804,8 @@ function ReportsPageContent() {
                   </PopoverHeader>
                   {topeAlcanzado ? (
                     <PopoverDescription className="text-xs">
-                      Llegaste al máximo de {MAX_GRUPOS_ABIERTOS} pestañas. Cierra alguna para
-                      abrir otra.
+                      Llegaste al máximo de {MAX_GRUPOS_ABIERTOS} pestañas. Cierra alguna para abrir
+                      otra.
                     </PopoverDescription>
                   ) : gruposDisponibles.length === 0 ? (
                     <PopoverDescription className="text-xs">
@@ -698,7 +830,11 @@ function ReportsPageContent() {
               </Popover>
             </TabsList>
             {gruposAbiertos.map((grupo) => (
-              <TabsContent key={grupo.grupoId} value={String(grupo.grupoId)} className={PANEL_CLASS}>
+              <TabsContent
+                key={grupo.grupoId}
+                value={String(grupo.grupoId)}
+                className={PANEL_CLASS}
+              >
                 {String(grupo.grupoId) === activeTab && (
                   <GrupoTabContent
                     grupoId={grupo.grupoId}
@@ -712,7 +848,8 @@ function ReportsPageContent() {
                     onGuardar={handleGuardar}
                     guardando={guardarInforme.isPending}
                     onAbrirObservacion={setObservacionAbierta}
-                    onEsCualitativoChange={setEsCualitativoActivo}
+                    puedeEscribir={puedeEscribir}
+                    periodosCerrados={periodosCerrados}
                   />
                 )}
               </TabsContent>

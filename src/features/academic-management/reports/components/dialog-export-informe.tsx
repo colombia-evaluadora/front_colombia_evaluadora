@@ -22,12 +22,27 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { getErrorMessage } from "@/lib/api-client"
 
 import {
   useExportBoletin,
   useExportTabla,
 } from "@/features/academic-management/reports/api/mutations/export-informe"
-import type { ExportFormat, ExportResult } from "@/features/academic-management/reports/api/types/export"
+import type {
+  ExportFormat,
+  ExportResult,
+} from "@/features/academic-management/reports/api/types/export"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface DialogDescargaProps {
   trigger: ReactElement
@@ -107,71 +122,184 @@ function DialogDescarga({
   )
 }
 
+/** Lo que el diálogo necesita saber de cada estudiante seleccionado, calculado
+ *  sobre los datos SIN filtrar del grupo (no sobre lo que deja el buscador). */
+export interface EstudianteBoletin {
+  matriculaId: number
+  nombre: string
+  /** Su fila del período es cualitativa → plantilla de preescolar. */
+  esPreescolar: boolean
+  /** Numérico sin consolidar: el boletín lo omite en silencio. */
+  sinConsolidar: boolean
+  /** Preescolar cuya única observación es un BORRADOR de IA sin revisar: el
+   *  boletín no la imprime. */
+  soloBorrador: boolean
+}
+
 interface DialogGenerarBoletinProps {
   grupoId: number | null
-  /** Un solo período: un boletín es de un período. */
-  periodos: number[]
-  /** Las matrículas seleccionadas en la tabla: todas van en el mismo PDF. */
-  matriculas: number[]
+  /** Un boletín es de un único período (real). */
+  periodoId: number | null
+  /** Los seleccionados en la tabla: van todos en el mismo PDF (o dos, si el
+   *  grupo mezcla preescolar y numérico). */
+  estudiantes: EstudianteBoletin[]
   /** Falso mientras no haya exactamente un período y al menos un estudiante. */
   listo: boolean
-  /** Grupo cualitativo: pide el boletín de preescolar; si no, el de notas. */
-  esPreescolar: boolean
+  /** "Ir a consolidar": deja seleccionados solo los pendientes. */
+  onIrAConsolidar: (matriculaIds: number[]) => void
+}
+
+function listaNombres(estudiantes: EstudianteBoletin[]): string {
+  const max = 8
+  const nombres = estudiantes.slice(0, max).map((e) => e.nombre)
+  const resto = estudiantes.length - nombres.length
+  return nombres.join(", ") + (resto > 0 ? ` y ${resto} más` : "")
 }
 
 export function DialogGenerarBoletin({
   grupoId,
-  periodos,
-  matriculas,
+  periodoId,
+  estudiantes,
   listo,
-  esPreescolar,
+  onIrAConsolidar,
 }: DialogGenerarBoletinProps) {
+  const soloEnLinea = useOnlineOnly("El boletín se genera en el servidor; necesitas conexión para descargarlo.")
   const { notify } = useNotify()
+  const [avisoAbierto, setAvisoAbierto] = useState(false)
+  const exportar = useExportBoletin()
 
-  const exportar = useExportBoletin({
-    mutationConfig: {
-      onSuccess: (result) => {
-        notify(result.message, { variant: result.status === "error" ? "error" : undefined })
-      },
-    },
-  })
+  const puede = listo && grupoId != null && periodoId != null
+  const varios = estudiantes.length > 1
+  const sinConsolidar = estudiantes.filter((e) => e.sinConsolidar)
+  const soloBorrador = estudiantes.filter((e) => e.soloBorrador)
+  const preescolar = estudiantes.filter((e) => e.esPreescolar)
+  const numericos = estudiantes.filter((e) => !e.esPreescolar)
+  // Grupo mixto (transición, aulas multigrado): el reporte elige UNA plantilla
+  // por llamada (`nivel`), así que se generan dos documentos, cada uno con su
+  // plantilla, en vez de imprimir a la mitad con la equivocada.
+  const mixto = preescolar.length > 0 && numericos.length > 0
+  const hayAvisos = sinConsolidar.length > 0 || soloBorrador.length > 0 || mixto
 
-  const puede = listo && grupoId != null
-  const varios = matriculas.length > 1
+  async function generar() {
+    if (!puede || grupoId == null || periodoId == null) return
+    setAvisoAbierto(false)
+    const lotes = [
+      { esPreescolar: true, ids: preescolar.map((e) => e.matriculaId) },
+      { esPreescolar: false, ids: numericos.map((e) => e.matriculaId) },
+    ].filter((l) => l.ids.length > 0)
+    try {
+      const resultados = []
+      for (const lote of lotes) {
+        resultados.push(
+          await exportar.mutateAsync({
+            grupoId,
+            periodoId,
+            matriculaIds: lote.ids,
+            esPreescolar: lote.esPreescolar,
+          }),
+        )
+      }
+      const error = resultados.find((r) => r.status === "error")
+      if (error) {
+        notify(error.message, { variant: "error" })
+        return
+      }
+      notify(
+        lotes.length > 1
+          ? `Se generaron dos documentos: ${preescolar.length} boletín(es) de preescolar y ${numericos.length} de notas.`
+          : resultados[0].message,
+      )
+    } catch (e) {
+      notify(getErrorMessage(e), { variant: "error" })
+    }
+  }
 
   function handleClick() {
-    if (!puede || grupoId == null) return
-    exportar.mutate({ grupoId, periodoId: periodos[0], matriculaIds: matriculas, esPreescolar })
+    if (!puede) return
+    if (hayAvisos) setAvisoAbierto(true)
+    else void generar()
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger render={<span className="inline-flex" />}>
-        <Button
-          type="button"
-          variant="outline"
-          color="primary"
-          size="sm"
-          disabled={!puede || exportar.isPending}
-          aria-busy={exportar.isPending}
-          onClick={handleClick}
-        >
-          {exportar.isPending ? (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          ) : (
-            <FileTextIcon data-icon="inline-start" />
-          )}
-          {varios ? `Generar ${matriculas.length} boletines` : "Generar boletín"}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        {!listo
-          ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
-          : varios
-            ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
-            : "Generar el boletín del estudiante seleccionado."}
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <AlertDialog open={avisoAbierto} onOpenChange={setAvisoAbierto}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Antes de generar el boletín</AlertDialogTitle>
+            <AlertDialogDescription render={<div className="flex flex-col gap-2 text-left" />}>
+              {sinConsolidar.length > 0 && (
+                <p>
+                  <strong>
+                    {sinConsolidar.length} estudiante{sinConsolidar.length === 1 ? "" : "s"} sin
+                    consolidar
+                  </strong>{" "}
+                  en este período no aparecerán en el boletín: {listaNombres(sinConsolidar)}.
+                </p>
+              )}
+              {soloBorrador.length > 0 && (
+                <p>
+                  <strong>
+                    {soloBorrador.length} estudiante{soloBorrador.length === 1 ? "" : "s"}
+                  </strong>{" "}
+                  solo tienen una observación en Borrador (IA) pendiente de revisión, que el boletín
+                  no incluye: {listaNombres(soloBorrador)}. Revísalas y guárdalas para que salgan.
+                </p>
+              )}
+              {mixto && (
+                <p>
+                  El grupo mezcla preescolar y grados con notas: se descargarán dos documentos, uno
+                  por cada plantilla ({preescolar.length} de preescolar y {numericos.length} de
+                  notas).
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => void generar()}>Continuar</AlertDialogAction>
+            {sinConsolidar.length > 0 && (
+              <AlertDialogCancel
+                variant="outline"
+                color="primary"
+                onClick={() => onIrAConsolidar(sinConsolidar.map((e) => e.matriculaId))}
+              >
+                Ir a consolidar
+              </AlertDialogCancel>
+            )}
+            <AlertDialogCancel variant="fill" color="neutral">
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Tooltip>
+        <TooltipTrigger render={<span className="inline-flex" />}>
+          <Button
+            type="button"
+            variant="outline"
+            color="primary"
+            size="sm"
+            disabled={!puede || exportar.isPending || soloEnLinea.disabled}
+            aria-busy={exportar.isPending}
+            onClick={handleClick}
+          >
+            {exportar.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <FileTextIcon data-icon="inline-start" />
+            )}
+            {varios ? `Generar ${estudiantes.length} boletines` : "Generar boletín"}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {soloEnLinea.tooltip ??
+          (!listo
+            ? "Selecciona un único período arriba y uno o varios estudiantes en la tabla para generar sus boletines."
+            : varios
+              ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
+              : "Generar el boletín del estudiante seleccionado.")}
+        </TooltipContent>
+      </Tooltip>
+    </>
   )
 }
 

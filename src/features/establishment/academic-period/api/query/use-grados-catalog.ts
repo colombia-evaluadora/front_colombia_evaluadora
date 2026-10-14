@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo global `GRADOS` de `TLISTA_VALOR` (`GET /eval-col/select/GRADOS`).
 // `fn_grado_crear` valida el nombre del grado contra este catálogo (por
@@ -32,6 +33,7 @@ async function fetchGradosCatalog(): Promise<GradoCatalogOption[]> {
 
 export function useGradosCatalogQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.gradosCatalog(),
     queryFn: fetchGradosCatalog,
     staleTime: Infinity,

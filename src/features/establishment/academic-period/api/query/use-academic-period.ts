@@ -6,6 +6,7 @@ import type {
   AcademicPeriodStatus,
 } from "@/features/establishment/academic-period/api/types/academic-period"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface AcademicPeriodDetailRow {
   id: number
@@ -88,6 +89,7 @@ async function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
 
 export function useAcademicPeriodQuery(id: number | undefined) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.academicPeriod.detail(id ?? 0),
     queryFn: () => fetchAcademicPeriod(id as number),
     enabled: id != null,

@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { InstrumentoTipo, PlanillaColumna } from "@/features/planeador/api/types/planilla"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /** `GET /planeador/planilla/columnas` (confirmado real, ver colección
  *  Postman `planeador-planilla-flujo-completo`, paso 2.1). */
@@ -85,6 +86,7 @@ async function fetchPlanillaColumnas(
  */
 export function usePlanillaColumnasQuery(params: UsePlanillaColumnasParams | null) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: params
       ? planeadorKeys.planilla.columnas(params)
       : planeadorKeys.planilla.columnas("none"),

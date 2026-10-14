@@ -111,7 +111,7 @@ export function reorderSiblings(
  * Un id queda "huérfano" cuando no aparece en el árbol: pasa cuando su menú
  * padre fue dado de baja (`active = false`) y el catálogo ya no lo devuelve, o
  * cuando la jerarquía tiene más de dos niveles y `buildMenuTree` no lo alcanza.
- * Esos ids son fantasmas: `MenuTransfer` no los pinta —se dibuja desde el
+ * Esos ids son fantasmas: la pantalla no los pinta —se dibuja desde el
  * árbol—, así que no se pueden ver ni quitar desde la pantalla, pero viajan en
  * cada guardado y hacen que el backend rechace la operación entera por la
  * invariante de jerarquía.
@@ -183,4 +183,16 @@ export function buildMenuTree(menus: MenuNode[]): MenuTreeNode[] {
       ...root,
       children: menus.filter((menu) => menu.idParent === root.id).sort(byOrder),
     }))
+}
+
+/** Menú del catálogo de la pestaña Módulos y submódulos (GET /menus/catalogo). */
+export interface MenuCatalogNode extends MenuNode {
+  /** Estado del menú; uno inactivo desaparece de los roles y del menú lateral. */
+  activo: boolean
+  /** Asignado a algún rol: no se puede eliminar, solo inactivar. */
+  enUso: boolean
+  /** La vista tiene crear y editar; si no, ningún rol los tiene en ella. */
+  admiteGuardar: boolean
+  /** La vista tiene eliminar; si no, ningún rol lo tiene en ella. */
+  admiteEliminar: boolean
 }

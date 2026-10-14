@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface TeachingLevelRow {
   id: number
@@ -31,6 +32,7 @@ export async function fetchTeachingLevels(): Promise<TeachingLevel[]> {
 
 export function useTeachingLevelsQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.teachingLevels(),
     queryFn: fetchTeachingLevels,
     staleTime: Infinity,

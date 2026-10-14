@@ -11,6 +11,7 @@ import type { QueryClient } from "@tanstack/react-query"
 import { paths } from "@/config/paths"
 import { humanizeSlug } from "@/config/breadcrumbs"
 import { hasSession } from "@/lib/auth"
+import { NetworkSessionError } from "@/lib/network-error"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
@@ -238,6 +239,24 @@ const homeRoute = createRoute({
   },
 })
 
+// Pública (QR del boletín): fuera de `_auth` y de `/app`, sin chequeo de
+// sesión ni layout de la app. Sin login solo se ve el estado; el PDF exige
+// los últimos 4 dígitos del documento del estudiante.
+export const verificarBoletinRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.verificarBoletin.path,
+  head: () => ({
+    meta: [
+      { title: `Verificación de boletín · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(
+    () => import("@/features/verificacion/pages/verificar-boletin-page"),
+    "VerificarBoletinPage",
+  ),
+})
+
 const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_auth",
@@ -255,7 +274,13 @@ const loginRoute = createRoute({
     ],
   }),
   beforeLoad: async ({ context, search }) => {
-    if (await hasSession(context.queryClient)) {
+    // Sin red no se puede saber si hay sesión: se muestra el login en vez
+    // del ErrorPage (es la pantalla a la que igual se llega para entrar).
+    const loggedIn = await hasSession(context.queryClient).catch((error) => {
+      if (error instanceof NetworkSessionError) return false
+      throw error
+    })
+    if (loggedIn) {
       throw redirect({ to: search.redirectTo || paths.app.root.getHref() })
     }
   },
@@ -346,6 +371,10 @@ const appLayoutRoute = createRoute({
   // backend, "el recorte por rol ES la autorización" — el superadmin entra a
   // lo que su menú le da (que hoy incluye todo lo de Administración).
   beforeLoad: async ({ context, location, matches }) => {
+    // `hasSession` solo devuelve false si el servidor CONFIRMA que no hay
+    // sesión (401/403 del refresh). Un error de red persistente (tras 3
+    // reintentos) se lanza tal cual y lo pinta `ErrorPage` con "Reintentar",
+    // conservando la URL — nunca manda a /login por estar offline.
     if (!(await hasSession(context.queryClient))) {
       throw redirect({
         to: paths.auth.login.path,
@@ -970,6 +999,7 @@ export const chatRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
+  verificarBoletinRoute,
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,

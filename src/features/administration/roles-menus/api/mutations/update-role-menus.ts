@@ -8,7 +8,7 @@ import type { UpdateRoleMenusResult } from "@/features/administration/roles-menu
 
 interface UpdateRoleMenusInput {
   roleId: number
-  menus: { id: number; soloLectura: boolean }[]
+  menus: { id: number; soloLectura: boolean; guardar?: boolean; eliminar?: boolean }[]
 }
 
 function updateRoleMenus({

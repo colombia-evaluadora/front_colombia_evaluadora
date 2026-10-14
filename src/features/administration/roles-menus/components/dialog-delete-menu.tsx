@@ -1,4 +1,3 @@
-import { useState, type ReactElement } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import {
@@ -10,7 +9,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
@@ -22,11 +20,12 @@ interface DialogDeleteMenuProps {
   menu: MenuNode
   /** Cuántos menús cuelgan de este, para avisarlo antes de borrar. */
   childrenCount: number
-  trigger: ReactElement
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteMenuProps) {
-  const [open, setOpen] = useState(false)
+export function DialogDeleteMenu({ menu, childrenCount, open, onOpenChange }: DialogDeleteMenuProps) {
+  const setOpen = onOpenChange
   const { notify } = useNotify()
 
   const deleteMenu = useDeleteMenu({
@@ -49,7 +48,6 @@ export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteM
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={trigger} />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar menú</AlertDialogTitle>
@@ -58,7 +56,8 @@ export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteM
             {childrenCount > 0 && ` y los ${childrenCount} menús que cuelgan de él`} para todos los
             roles. Esta acción no se puede deshacer.
           </AlertDialogDescription>
-        </AlertDialogHeader>        <AlertDialogFooter>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMenu.isPending}

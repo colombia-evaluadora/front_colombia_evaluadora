@@ -7,6 +7,7 @@ import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 
 import { fetchCurricularReferenceAreas } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-areas"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface CurricularReferenceResponse {
   status: "ok" | "error"
@@ -113,6 +114,7 @@ export const curricularReferenceQueryKey = (id: number) => ["curricular-referenc
 
 export function useCurricularReferenceQuery(id: number) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularReferenceQueryKey(id),
     queryFn: () => fetchCurricularReference(id),
     enabled: Number.isFinite(id),

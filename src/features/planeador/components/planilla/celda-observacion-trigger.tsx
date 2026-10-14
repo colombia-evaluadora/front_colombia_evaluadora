@@ -17,6 +17,8 @@ import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
 interface CeldaObservacionTriggerProps {
   pkTactividadEstudiante: number
+  /** Actividad de la celda: la mutación invalida solo sus calificaciones (X2). */
+  actividadId: number
   /** `yyyy-MM-dd` — `PlanillaCelda.fechaAsistencia`: el día con asistencia
    *  válida de ESE estudiante. `null` = no hay ninguno y el backend va a
    *  rechazar la observación, así que no se deja abrir. */
@@ -51,6 +53,7 @@ interface CeldaObservacionTriggerProps {
  */
 export function CeldaObservacionTrigger({
   pkTactividadEstudiante,
+  actividadId,
   fecha,
   estudianteNombre,
   contexto,
@@ -155,7 +158,7 @@ export function CeldaObservacionTrigger({
         }}
         onGuardar={(estudiante, texto, enlace, momento) => {
           if (!fecha) return
-          observar.mutate({ pkTactividadEstudiante: estudiante.id, observacion: texto.trim(), fecha, enlace, momento })
+          observar.mutate({ pkTactividadEstudiante: estudiante.id, actividadId, observacion: texto.trim(), fecha, enlace, momento })
         }}
         onAgregarEvidencia={(archivo) => {
           if (!fecha) return

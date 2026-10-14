@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { ScheduleEntry } from "@/features/establishment/academic-period/api/types/grade-config"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Fila cruda de `GET /eval-col/horarios/:FK_GRADO` (`fn_horario_listar`,
 // id_query 80 — V77: FK_GRADO pasó de `:QUERY.fkGrado` a `:PARAM.FK_GRADO`
@@ -59,6 +60,7 @@ async function fetchHorario(gradeId: number): Promise<ScheduleEntry[]> {
 
 export function useHorarioQuery(gradeId?: number) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.horario.byGrade(gradeId),
     queryFn: () => fetchHorario(gradeId as number),
     enabled: gradeId != null,

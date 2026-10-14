@@ -9,6 +9,7 @@ import type {
   EstadoResultado,
 } from "@/features/planeador/api/types/calificacion"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 function calificacionesUrl(id: number, fecha?: string): string {
   const base = `/planeador/actividades/${id}/calificaciones`
@@ -136,6 +137,7 @@ async function fetchCalificaciones(id: number, fecha?: string): Promise<Califica
  */
 export function calificacionesQueryOptions(id: number, fecha?: string) {
   return queryOptions({
+    meta: estudiantesMeta(),
     queryKey: planeadorKeys.actividad.calificaciones(id, fecha),
     queryFn: () => fetchCalificaciones(id, fecha),
     staleTime: 1000 * 60,
@@ -148,6 +150,7 @@ export function calificacionesQueryOptions(id: number, fecha?: string) {
  *  asistencia esté tomada. */
 export function useCalificacionesQuery(id: number | undefined, fecha?: string) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey:
       id !== undefined
         ? planeadorKeys.actividad.calificaciones(id, fecha)

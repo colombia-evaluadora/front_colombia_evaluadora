@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { unwrapRows } from "@/lib/response-envelope"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 export interface CurricularReferenceArea {
   id: number
@@ -38,6 +39,7 @@ export const curricularReferenceAreasQueryKey = (curricularReferenceId: number) 
 
 export function useCurricularReferenceAreasQuery(curricularReferenceId: number) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: curricularReferenceAreasQueryKey(curricularReferenceId),
     queryFn: () => fetchCurricularReferenceAreas(curricularReferenceId),
     enabled: Number.isFinite(curricularReferenceId),

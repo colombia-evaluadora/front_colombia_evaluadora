@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 
 import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 interface PeriodoRow {
   fk_tperiodo_evaluacion: number
@@ -18,6 +19,7 @@ interface PeriodoRow {
   termino: boolean
   en_curso: boolean
   calificable: boolean
+  periodo_cerrado?: boolean | null
   fk_tperiodo_academico: number
   periodo_academico: string | null
   fk_tsede: number
@@ -37,6 +39,7 @@ function toPeriodo(row: PeriodoRow): PeriodoInforme {
     termino: row.termino,
     enCurso: row.en_curso,
     calificable: row.calificable,
+    cerrado: row.periodo_cerrado ?? false,
     sede: row.sede_nombre,
     jornada: row.jornada,
   }
@@ -57,6 +60,7 @@ export const periodosInformeQueryKey = (params: PeriodosInformeParams) =>
  *  todas las sedes del alcance, con nombres repetidos e indistinguibles. */
 export function usePeriodosInformeQuery(params: PeriodosInformeParams) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: periodosInformeQueryKey(params),
     queryFn: async (): Promise<PeriodoInforme[]> => {
       const rows = await evalCol.postRows<PeriodoRow>("/informes/periodos", {

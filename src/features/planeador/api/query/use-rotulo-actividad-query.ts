@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /** Rótulo por defecto: el que usa el backend cuando ningún referente
  *  aplica al grado (`docs/rotulo-actividad.md`), y también lo que pinta
@@ -68,6 +69,7 @@ export function useRotuloActividadQuery(
   anio?: number,
 ) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryKey:
       gradoId != null
         ? planeadorKeys.rotuloActividad(gradoId, asignaturaId, anio)

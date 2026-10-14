@@ -17,6 +17,7 @@ import { esActividadFormativa } from "@/features/planeador/lib/actividad-formati
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { downloadJson } from "@/features/planeador/lib/download-json"
+import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
@@ -119,6 +120,7 @@ export function ActividadCard({
   const accent = statusAccentFor(actividad.status)
   const { notify } = useNotify()
   const { puedeEditar, soloLectura } = usePlaneadorSoloLectura()
+  const bloqueoEdicion = motivoNoEditable(actividad)
 
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
@@ -154,6 +156,9 @@ export function ActividadCard({
     .filter((accion) => !soloLectura || accion.id === "editar")
     .map((accion) => {
       const label = labelFor(accion.id)
+      // Regla 37: con calificaciones u observaciones el lápiz queda
+      // deshabilitado y el tooltip dice por qué.
+      if (accion.id === "editar" && bloqueoEdicion) return { ...accion, label: bloqueoEdicion }
       if (accion.id === "editar" && onEdit) return { ...accion, label, onClick: onEdit }
       if (accion.id === "marcar" && onShowGrades) return { ...accion, label, onClick: onShowGrades }
       if (accion.id === "aprobar" && onShowApproval) return { ...accion, label, onClick: onShowApproval }
@@ -254,7 +259,11 @@ export function ActividadCard({
           // varias cards a la vista (mismo texto en las dos) — se le suma el
           // nombre, mismo criterio que ya usan "Exportar"/"Eliminar" acá
           // abajo.
-          const labelConNombre = `${label} ${actividad.nombre}`
+          const labelConNombre =
+            id === "editar" && bloqueoEdicion ? bloqueoEdicion : `${label} ${actividad.nombre}`
+          // Editar bloqueado no usa `disabled`: un botón deshabilitado no
+          // recibe hover y el tooltip con el motivo nunca se vería.
+          const editarBloqueado = id === "editar" && !!bloqueoEdicion
           return (
             <Tooltip key={id}>
               <TooltipTrigger
@@ -263,9 +272,10 @@ export function ActividadCard({
                     variant="ghost"
                     color="neutral"
                     size="icon-sm"
-                    disabled={!onClick}
+                    disabled={!onClick && !editarBloqueado}
+                    aria-disabled={editarBloqueado || undefined}
                     aria-label={labelConNombre}
-                    className="size-6"
+                    className={cn("size-6", editarBloqueado && "cursor-not-allowed opacity-50")}
                     // `stopPropagation` para que el click del action no se propague
                     // al `<button>` invisible que cubre toda la card y termine
                     // disparando `onSelect` (selección de la actividad).

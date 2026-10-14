@@ -31,7 +31,10 @@ export type EstadoNota =
    *  (solo en `modo_periodo: "final"`). */
   | "final"
 
-export type ObservacionEstado = "APROBADA" | "MODIFICADA"
+/** `BORRADOR` = la generó la IA y nadie la revisó todavía: el boletín no la
+ *  imprime hasta que una persona la guarde (eso la pasa a APROBADA o
+ *  MODIFICADA). Llega con el cambio de sso `fix/observaciones-ia-borrador`. */
+export type ObservacionEstado = "APROBADA" | "MODIFICADA" | "BORRADOR"
 
 /** La terna sede + año + jornada resuelve un periodo académico, y de ahí
  *  salen los períodos de evaluación y los grupos. */
@@ -93,6 +96,9 @@ export interface PeriodoInforme {
   termino: boolean
   enCurso: boolean
   calificable: boolean
+  /** `periodo_cerrado` (sso `fix/informes-boletin`): cerrado = no se
+   *  consolida ni se editan observaciones. Si no llega, se asume abierto. */
+  cerrado: boolean
   sede: string | null
   jornada: string | null
 }
@@ -124,6 +130,10 @@ export interface AsignaturaInforme {
   /** Modo requerido: `false` = ya perdió pase lo que pase. El valor llega
    *  igual aunque supere el máximo. */
   alcanzable: boolean
+  /** `error_configuracion` (sso `fix/informes-boletin`): por qué no se puede
+   *  calcular esta nota (sin criterio, sin escala…). Con valor, la celda no
+   *  se consolida. `null` si no hay problema o si el backend aún no lo manda. */
+  errorConfiguracion: string | null
 }
 
 export interface FilaInforme {

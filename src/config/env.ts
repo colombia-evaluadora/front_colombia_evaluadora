@@ -15,6 +15,11 @@ const createEnv = () => {
     // Identifica esta app ante el backend SSO (ej. `?app=` en /sso-admin/myMenu)
     // para que sepa de qué aplicación traer rutas/menú/permisos.
     NAME: z.string().optional().default("COLOMBIA-EVALUADORA"),
+    // Kill-switch de build del modo offline (plan §11.6): `off` desregistra el
+    // Service Worker y no persiste nada; `read` = Fase 1 (lecturas); `full`
+    // habilita además la outbox (Fase 2). Lo puede bajar el flag remoto
+    // `GET /eval-col/config/offline` (`lib/offline/offline-mode.ts`).
+    OFFLINE: z.enum(["off", "read", "full"]).optional().default("read"),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(

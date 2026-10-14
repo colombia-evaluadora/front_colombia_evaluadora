@@ -6,6 +6,7 @@ import {
   type SelectCategoryRow,
 } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 function isImageValue(value: string): boolean {
   return (
@@ -103,6 +104,7 @@ async function fetchRatingSymbols(): Promise<RatingSymbol[]> {
 
 export function useRatingSymbolsQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.ratingSymbols(),
     queryFn: fetchRatingSymbols,
     staleTime: Infinity,

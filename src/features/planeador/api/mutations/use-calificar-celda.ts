@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
 /**
  * `PUT /planeador/actividades/estudiantes/:id/calificar` (confirmado real,
@@ -19,6 +20,9 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
  */
 export type CalificarCeldaInput = {
   pkTactividadEstudiante: number
+  /** Actividad de la celda: si se pasa, solo se invalidan sus calificaciones
+   *  (X2); si no, las de todas las actividades en cache. */
+  actividadId?: number
   /** `yyyy-MM-dd` — la fecha de la actividad (`PlanillaColumna.fechaInicio`). */
   fecha: string
 } & (
@@ -94,9 +98,12 @@ export function useCalificarCeldaMutation({ mutationConfig }: UseCalificarCeldaO
     mutationFn: calificarCelda,
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+      // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
+      queryClient.invalidateQueries({ queryKey: ["informes"] })
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
+      invalidarCalificacionesActividad(queryClient, variables.actividadId)
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,
