@@ -42,7 +42,7 @@ import { useEliminarBorrador } from "@/features/comunicaciones/chat/api/mutation
 import type { Borrador, CategoriaCanal } from "@/features/comunicaciones/chat/api/types"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 
-const CANALES_DE_ACTIVIDAD: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN", "ANUNCIO"]
+const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
 export function ChatPage() {
   return (
@@ -81,10 +81,12 @@ function ChatContent() {
   const evaluacion = evaluacionQuery.data
   const esComunicado = activa?.categoria === "ANUNCIO"
   const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
-  // Sin comentarios habilitados el canal de la elección es solo lectura.
-  const sinComentarios = esEleccion && eleccion && !eleccion.permitirComentarios
-  // En los canales de actividad (elección, encuesta, evaluación, comunicado) el estudiante solo participa; no escribe.
-  const soloLectura = esEstudiante && !!activa && CANALES_DE_ACTIVIDAD.includes(activa.categoria)
+  // Elecciones, encuestas y exámenes son canales sin comentarios para todos.
+  // En el comunicado el estudiante solo lee; no escribe.
+  const soloLectura =
+    !!activa &&
+    (CANALES_SIN_COMENTARIOS.includes(activa.categoria) ||
+      (esEstudiante && activa.categoria === "ANUNCIO"))
 
   const enviar = useEnviarMensaje()
   const marcarLeido = useMarcarLeido()
@@ -221,10 +223,6 @@ function ChatContent() {
               {soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   En este canal no se pueden enviar mensajes.
-                </p>
-              ) : sinComentarios ? (
-                <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  Los comentarios están desactivados en esta elección.
                 </p>
               ) : (
               <ChatComposer

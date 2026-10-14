@@ -18,7 +18,6 @@ export interface CrearEleccionInput {
   fechaCierre: string | null
   jornadaId: number
   verResultadosEnVivo: boolean
-  permitirComentarios: boolean
   // Ids de las personas habilitadas para votar.
   votantes: number[]
   candidatos: CandidatoNuevo[]
@@ -34,7 +33,6 @@ async function crearEleccion(v: CrearEleccionInput) {
     FECHA_CIERRE: v.fechaCierre,
     FK_JORNADA: v.jornadaId,
     VER_RESULTADOS: v.verResultadosEnVivo ? "S" : "N",
-    COMENTARIOS: v.permitirComentarios ? "S" : "N",
     VOTANTES: v.votantes,
     CANDIDATOS: v.candidatos.map((c) => ({
       NOMBRE: c.nombre,

@@ -97,7 +97,6 @@ export interface Eleccion {
   fechaCierre: string | null
   jornadaId: number
   verResultadosEnVivo: boolean
-  permitirComentarios: boolean
   candidatos: Candidato[]
   votosEnBlanco: number
   // El creador la cerró antes de tiempo desde el menú del canal.
