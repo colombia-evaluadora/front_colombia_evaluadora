@@ -71,7 +71,13 @@ function firstRow(body: unknown): ConfiguracionContextoRow | undefined {
 }
 
 export interface ProgramacionActividad {
-  periodoAcademico: { nombre: string; fechaInicio: Date | null; fechaFin: Date | null; semanas: number } | null
+  periodoAcademico: {
+    id: number
+    nombre: string
+    fechaInicio: Date | null
+    fechaFin: Date | null
+    semanas: number
+  } | null
   intensidadHoraria: {
     bloquesPorSemana: number
     // Ya convertidos a la convención de `Date.getDay()`, mismo criterio
@@ -124,6 +130,7 @@ async function fetchProgramacionActividad(
   return {
     periodoAcademico: programacion.periodoAcademico
       ? {
+          id: programacion.periodoAcademico.pk,
           nombre: programacion.periodoAcademico.nombre,
           fechaInicio: toDate(programacion.periodoAcademico.fechaInicio),
           fechaFin: toDate(programacion.periodoAcademico.fechaFin),

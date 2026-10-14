@@ -24,7 +24,11 @@ function toDateOnly(value: string): string {
   return value.slice(0, 10)
 }
 
-function toEvaluationPeriod(row: PlaneadorPeriodoEvaluacionRow): EvaluationPeriod {
+/** El periodo académico al que pertenece hace falta para cruzarlo con la
+ *  `programacion` del formulario de actividad (ver `lib/periodo-cerrado.ts`). */
+export type PlaneadorPeriodoEvaluacion = EvaluationPeriod & { periodoAcademicoId: number }
+
+function toEvaluationPeriod(row: PlaneadorPeriodoEvaluacionRow): PlaneadorPeriodoEvaluacion {
   return {
     id: row.pk_tperiodo_evaluacion,
     codigo: row.codigo,
@@ -36,12 +40,13 @@ function toEvaluationPeriod(row: PlaneadorPeriodoEvaluacionRow): EvaluationPerio
     estado: row.estado_valor as EvaluationPeriod["estado"],
     estadoId: row.fk_tlv_estado,
     estadoName: row.estado_nombre,
+    periodoAcademicoId: row.fk_tperiodo_academico,
   }
 }
 
 /** Todos los periodos del año, por fecha de inicio (cuarta columna del
  *  filtro de la Planilla). */
-async function fetchPeriodosEvaluacion(): Promise<EvaluationPeriod[]> {
+async function fetchPeriodosEvaluacion(): Promise<PlaneadorPeriodoEvaluacion[]> {
   const rows = await evalCol.getRows<PlaneadorPeriodoEvaluacionRow>(
     "/planeador/periodos-evaluacion",
   )
