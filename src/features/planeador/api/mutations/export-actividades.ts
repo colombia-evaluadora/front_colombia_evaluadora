@@ -18,21 +18,43 @@ export interface PlaneadorActividadesReportFilters {
   ESTADOS?: string[]
   /** Pares "grado:asignatura" de la pestaña de Rótulo de Ejecución activa. */
   GRADO_ASIGNATURA_PARES?: string[]
+  /** `PK_TFUNCIONARIO` del docente elegido (super admin / coordinador), el `?funcionario=` de `/mias`. */
+  FUNCIONARIO?: number
+  /** Filtro avanzado sede/año/jornada, el `?sede=&periodo=` de `/mias`. */
+  SEDE?: number
+  PERIODO?: number
+  /** `pk_lista_valor` del filtro "Instrumento", el `?instrumento=` de `/mias`. */
+  INSTRUMENTO?: number
+}
+
+/** Cómo se llaman, en la pestaña exportada, la actividad y su unidad
+ *  ("Experiencia" / "Proyecto pedagógico"…): los rótulos del referente
+ *  curricular. El reporte trae fijos "Actividad" y "Unidad tematica". */
+export interface RotulosExportActividades {
+  actividad: string
+  unidad: string
 }
 
 interface ExportActividadesInput {
   filters: PlaneadorActividadesReportFilters
   format: ExportFormat
+  rotulos?: RotulosExportActividades
 }
 
-function exportActividades(input: ExportActividadesInput): Promise<ExportResult> {
+function exportActividades({ filters, format, rotulos }: ExportActividadesInput): Promise<ExportResult> {
   // Antes esto mandaba las FILAS ya filtradas en el cliente a
   // `/eval-col/planeador/actividades/export-all` (el endpoint de depuración
   // del query-service, que solo devuelve JSON crudo) en vez del objeto de
   // filtros que espera el reporte real. `downloadReport` pega al
   // reporting-service (`POST /reportes/planeador-actividades`), que
   // devuelve el PDF/Excel — mismo patrón que matrícula/asistencia.
-  return downloadReport("planeador-actividades", input)
+  return downloadReport("planeador-actividades", {
+    filters,
+    format,
+    // `titulo` y `unidad` son las claves de esas columnas en el reporte
+    // (reporting-service application.yml, planeador-actividades).
+    columnLabels: rotulos ? { titulo: rotulos.actividad, unidad: rotulos.unidad } : undefined,
+  })
 }
 
 interface UseExportActividadesOptions {
