@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { NotificacionesChat } from "@/features/comunicaciones/chat/components/notificaciones-chat"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
+import { OfflineBanner } from "@/components/layout/offline-banner"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
 
@@ -40,6 +41,7 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
+        <OfflineBanner />
         {/*
           `flex flex-col` para que la card de contenido de cada página pueda
           estirarse (`grow`) hasta el borde inferior cuando la tabla es corta.

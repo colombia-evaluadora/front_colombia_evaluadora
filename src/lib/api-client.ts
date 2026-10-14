@@ -289,7 +289,9 @@ api.interceptors.response.use(
     // no tostea —el único reflejo es el banner de conectividad—.
     if (Axios.isCancel(error)) return Promise.reject(error)
     if (isNetworkError(error)) {
-      connectivityStore.reportNetworkFailure(error.code ?? error.message)
+      // 502/503/504/52x: el gateway respondió, la red del usuario está bien.
+      const status = error.response?.status
+      connectivityStore.reportNetworkFailure(status != null ? "server" : "network")
       return Promise.reject(error)
     }
 

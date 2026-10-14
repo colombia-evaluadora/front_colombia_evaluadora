@@ -18,13 +18,13 @@
 - [x] 3.2 Revisar mutaciones: sin `retry` automático
 
 ## 4. Conectividad y banner
-- [ ] 4.1 `src/lib/offline/connectivity.ts` (sin dependencias de features) con estados, heartbeat, histéresis y portal cautivo
-- [ ] 4.2 Hook `useConnectivity()`
-- [ ] 4.3 `OfflineBanner` en `components/layout` con estados offline y degradado (copy de la spec), `role="status"` y `aria-live="polite"`
-- [ ] 4.4 Íconos `CloudOffIcon`, `CloudCheckIcon`, `CloudSyncIcon`, `CloudAlertIcon` en `components/ui/icons.tsx`
+- [x] 4.1 `src/lib/offline/connectivity.ts` (sin dependencias de features) con estados, heartbeat, histéresis y portal cautivo
+- [x] 4.2 Hook `useConnectivity()`
+- [x] 4.3 `OfflineBanner` en `components/layout` con estados offline y degradado (copy de la spec), `role="status"` y `aria-live="polite"`
+- [x] 4.4 Íconos `CloudOffIcon`, `CloudCheckIcon`, `CloudSyncIcon`, `CloudAlertIcon` en `components/ui/icons.tsx`
 
 ## 5. Navegación e invalidaciones
-- [ ] 5.1 `isAlwaysAllowedPath` incluye `/app/pendientes` (ruta que crea la Fase 2)
+- [x] 5.1 `isAlwaysAllowedPath` incluye `/app/pendientes` (ruta que crea la Fase 2)
 - [ ] 5.2 X1: crear/eliminar unidad invalida `unidades.tabs(alcance)`
 - [ ] 5.3 X2: calificar celda, bulk y observar invalidan `actividad.calificaciones(id)`
 - [ ] 5.4 Verificar que cada key invalidada prefija las keys de lectura (CLAUDE.md §11)
@@ -32,17 +32,17 @@
 ## 6. Worker y backend
 - [ ] 6.1 BE-10: `worker/index.js` agrega `Cache-Control: no-store` a respuestas `/api`
 - [ ] 6.2 BE-4: `GET /eval-col/health` liviano sin auth (PR en backend, sin esquema)
-- [ ] 6.3 Handler MSW para `/eval-col/health` en modo mock
+- [x] 6.3 Handler MSW para `/eval-col/health` en modo mock
 
 ## 7. Pruebas
 - [ ] 7.1 Proyecto Vitest `unit` (node + `fake-indexeddb`) y script `pnpm test:unit`
 - [ ] 7.2 Paso `pnpm test:unit` en `.github/workflows/ci.yml`
-- [ ] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
-- [ ] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
+- [x] 7.3 Unit: `isNetworkError`, `getUser` (401 vs red), histéresis y portal cautivo de `connectivity`
+- [x] 7.4 Integración (Vitest + MSW con `HttpResponse.error()`, `delay("infinite")`, 403/503): 403 con refresh caído no limpia cache; timeout dispara `degraded`
 - [ ] 7.5 E2E Playwright (`context.setOffline`): recarga offline en `/app/planeador/actividades` no va a `/login`; 0 toasts repetidos
 
 ## 8. PIGSE
-- [ ] 8.1 Documentar en `lib/offline/README` (o comentario de módulo) qué copiar a `front_pigse`; **no** modificar PIGSE sin pedido explícito
+- [x] 8.1 Documentar en `lib/offline/README` (o comentario de módulo) qué copiar a `front_pigse`; **no** modificar PIGSE sin pedido explícito
 - [ ] 8.2 Si se pide el port: aplicar 1.x–4.x en `front_pigse` en su propio PR
 
 ## 9. Cierre

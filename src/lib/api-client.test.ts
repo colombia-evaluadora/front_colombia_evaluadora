@@ -12,7 +12,7 @@ vi.mock("sonner", () => ({ toast: { error: toastError } }))
 const { api, setAuthToken } = await import("@/lib/api-client")
 const { getUser } = await import("@/lib/auth")
 const { NetworkSessionError } = await import("@/lib/network-error")
-const { connectivityStore } = await import("@/lib/offline/connectivity")
+const { connectivityStore, __resetConnectivityForTests } = await import("@/lib/offline/connectivity")
 const { queryClient } = await import("@/lib/query-client")
 
 const BASE = "http://localhost/api"
@@ -24,7 +24,8 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 beforeEach(() => {
   toastError.mockClear()
-  connectivityStore.reportSuccess()
+  __resetConnectivityForTests()
+  vi.restoreAllMocks()
   location.href = location.pathname
 })
 
@@ -62,7 +63,11 @@ describe("interceptor de respuesta", () => {
       http.get(`${BASE}/eval-col/cosa`, () => new HttpResponse(null, { status: 403 })),
       http.post(`${BASE}/auth/refresh`, () => HttpResponse.error()),
     )
+    const spy = vi.spyOn(connectivityStore, "reportNetworkFailure")
+    // La conectividad degrada con 2 fallas en la ventana: una previa + la del refresh.
+    connectivityStore.reportNetworkFailure("network")
     await expect(api.get("/eval-col/cosa")).rejects.toMatchObject({ response: { status: 403 } })
+    expect(spy).toHaveBeenLastCalledWith("network")
     expect(queryClient.getQueryData(["algo"])).toBe(1)
     expect(location.href).toBe(location.pathname)
     expect(connectivityStore.getState().status).toBe("degraded")
@@ -75,6 +80,7 @@ describe("interceptor de respuesta", () => {
         await delay("infinite")
       }),
     )
+    await expect(api.get("/eval-col/lenta", { timeout: 50 })).rejects.toBeTruthy()
     await expect(api.get("/eval-col/lenta", { timeout: 50 })).rejects.toMatchObject({
       code: "ECONNABORTED",
     })
@@ -92,6 +98,14 @@ describe("interceptor de respuesta", () => {
     expect(toastError).toHaveBeenCalledWith("ya existe")
     expect(connectivityStore.getState().status).toBe("online")
   })
+})
+
+it("un 503 del gateway reporta reason server", async () => {
+  server.use(http.get(`${BASE}/eval-col/caido`, () => new HttpResponse(null, { status: 503 })))
+  await expect(api.get("/eval-col/caido")).rejects.toBeTruthy()
+  await expect(api.get("/eval-col/caido")).rejects.toBeTruthy()
+  expect(connectivityStore.getState()).toMatchObject({ status: "degraded", reason: "server" })
+  expect(toastError).not.toHaveBeenCalled()
 })
 
 describe("Idempotency-Key", () => {
