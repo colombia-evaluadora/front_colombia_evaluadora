@@ -339,6 +339,10 @@ export interface Actividad {
   docenteId?: number
   docenteNombre?: string
   esPropia?: boolean
+  /** Motivo por el que ya no se puede editar (Regla 37, sso V553:
+   *  `motivo_no_editable`), o `undefined` si se puede. Ver
+   *  `lib/actividad-editable.ts`. */
+  motivoNoEditable?: string
   /**
    * `PK_TMATRICULA` (no `Estudiante.id`/`PK_TESTUDIANTE`) de los
    * estudiantes elegidos a mano en "Estudiantes" — mutuamente excluyente

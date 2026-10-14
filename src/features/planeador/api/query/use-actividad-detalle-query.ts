@@ -21,6 +21,7 @@ import {
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
+import { MENSAJE_ACTIVIDAD_NO_EDITABLE } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -129,6 +130,9 @@ interface ActividadDetalleRow {
    *  columnas no rompe nada, solo no se muestra el docente. */
   fk_tfuncionario_docente?: number | null
   docente_nombre?: string | null
+  /** Regla 37 (sso V553): `editable` 'S'/'N' y el motivo cuando es 'N'. */
+  editable?: "S" | "N" | null
+  motivo_no_editable?: string | null
 }
 
 interface EvidenciaRelacionadaRow {
@@ -581,6 +585,9 @@ function toActividadDetalle(
     // alcance de la URL.
     docenteId: row.fk_tfuncionario_docente ?? undefined,
     docenteNombre: row.docente_nombre?.trim() || undefined,
+    motivoNoEditable:
+      row.motivo_no_editable?.trim() ||
+      (row.editable === "N" ? MENSAJE_ACTIVIDAD_NO_EDITABLE : undefined),
   }
 }
 
