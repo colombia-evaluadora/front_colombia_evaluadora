@@ -28,6 +28,7 @@ import { reservationsHandlers } from "@/mocks/handlers/reservations"
 import { rolesHandlers } from "@/mocks/handlers/roles"
 import { plansHandlers } from "@/mocks/handlers/plans"
 import { reportesHandlers } from "@/mocks/handlers/reportes"
+import { verificacionBoletinHandlers } from "@/mocks/handlers/verificacion-boletin"
 import { preMatriculaHandlers } from "@/mocks/handlers/pre-matricula"
 import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
@@ -51,6 +52,7 @@ import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicacion
 
 export const handlers = [
   ...authHandlers,
+  ...verificacionBoletinHandlers,
   ...reportesHandlers,
   ...auditsHandlers,
   ...auditTablesHandlers,
