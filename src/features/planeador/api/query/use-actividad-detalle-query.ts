@@ -20,6 +20,7 @@ import {
   type RecursoTipo,
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -605,16 +606,19 @@ function actividadDetalleUrl(id: number): string {
 function fetchCatalogosDetalle(queryClient: QueryClient) {
   return Promise.all([
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "tipo-recurso"] as const,
       queryFn: fetchTipoRecursoOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "tipo-adaptacion"] as const,
       queryFn: fetchTipoAdaptacionOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "aplica-a"] as const,
       queryFn: fetchAplicaAOptions,
       staleTime: Infinity,
@@ -712,6 +716,7 @@ async function fetchActividadDetalle(id: number, queryClient: QueryClient): Prom
 /** Opciones del detalle, compartidas por el hook y el prefetch. */
 function actividadDetalleQueryOptions(id: number, queryClient: QueryClient) {
   return {
+    meta: estudiantesMeta(),
     queryKey: planeadorKeys.actividad.detalle(id),
     queryFn: () => fetchActividadDetalle(id, queryClient),
     staleTime: 1000 * 60,
@@ -730,6 +735,7 @@ export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
 export function useActividadDetalleQuery(id: number | undefined) {
   const queryClient = useQueryClient()
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: id !== undefined ? planeadorKeys.actividad.detalle(id) : planeadorKeys.actividad.detalle("none"),
     queryFn: () => fetchActividadDetalle(id!, queryClient),
     enabled: id !== undefined,

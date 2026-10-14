@@ -7,6 +7,7 @@ import {
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceParams,
 } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/unidades/tabs` (confirmado real, colección Postman
@@ -113,6 +114,7 @@ export function useUnidadesTabsQuery() {
   const { funcionario, sedeId, periodoId, consultasHabilitadas } = usePlaneadorDocenteScope()
   const alcance = { funcionario, sede: sedeId, periodo: periodoId }
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.unidades.tabs(alcance),
     queryFn: () => fetchUnidadesTabs(alcance),
     enabled: consultasHabilitadas,

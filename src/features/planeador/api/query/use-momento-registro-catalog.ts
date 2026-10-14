@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 export interface MomentoRegistroOption {
   id: number
@@ -9,13 +10,14 @@ export interface MomentoRegistroOption {
 }
 
 // Catálogo `MOMENTO_REGISTRO` de TLISTA_VALOR (`GET /eval-col/select/MOMENTO_REGISTRO`).
-async function fetchMomentosRegistro(): Promise<MomentoRegistroOption[]> {
+export async function fetchMomentosRegistro(): Promise<MomentoRegistroOption[]> {
   const rows = await fetchSelectCategory("MOMENTO_REGISTRO")
   return rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
 }
 
 export function useMomentoRegistroCatalog() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: planeadorKeys.catalogos.momentoRegistro(),
     queryFn: fetchMomentosRegistro,
     staleTime: Infinity,

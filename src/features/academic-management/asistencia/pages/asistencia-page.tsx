@@ -28,6 +28,8 @@ import {
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
 import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
+import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 
 function toIsoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
@@ -99,7 +101,7 @@ function AsistenciaPageContent() {
 
   // Sin MIAS: el back ya acota lo visible por el alcance del usuario en la sede
   // y jornada de cada grupo (V542/V136); los roles del token no lo saben.
-  const { data: sesiones } = useAsistenciaCalendarioQuery(
+  const { data: sesiones, dataUpdatedAt: sesionesUpdatedAt } = useAsistenciaCalendarioQuery(
     { SEDE: sedeId ?? 0, ANIO: anio, MES: mes },
     sedeId !== null,
   )
@@ -228,6 +230,7 @@ function AsistenciaPageContent() {
         >
           Asistencia
         </TableScreenTitle>
+        <DatosDelBadge updatedAt={sesionesUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody>

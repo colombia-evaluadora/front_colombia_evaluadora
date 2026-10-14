@@ -13,7 +13,7 @@ Plan: `docs/offline/PLAN-offline.md` §11.6 · Change: `openspec/changes/add-off
 ## 2. Flag remoto `GET /api/eval-col/config/offline` (opcional, sin backend hoy)
 
 - Respuesta esperada: `{ "mode": "off" | "read" | "full" }`. Solo puede **bajar** el modo del build.
-- Se consulta al arrancar online con timeout de 3 s. Si da 404, error de red o JSON inválido, se usa el valor del build (falla seguro).
+- Se consulta al arrancar online con timeout de 3 s y el último valor se guarda en `meta.killSwitch` (IndexedDB `ce-offline`): un arranque sin red usa el último modo conocido. 404 = sin flag (se borra lo guardado, vale el build); error de red, 5xx o JSON inválido = último valor guardado (falla seguro).
 - Ventaja: no requiere redeploy del front. Limitación: lo evalúa el bundle **nuevo** o el que ya está instalado; un SW que sirve un shell roto que ni siquiera arranca la app no lo va a leer → nivel 3.
 
 ## 3. Build de emergencia autodesregistrable

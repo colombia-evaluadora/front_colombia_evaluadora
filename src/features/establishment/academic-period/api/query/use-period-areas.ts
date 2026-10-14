@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface AreaListRow {
   id: number
@@ -39,6 +40,7 @@ async function fetchPeriodAreas(academicPeriodId: number): Promise<AreaOption[]>
 
 export function usePeriodAreasQuery(academicPeriodId?: number) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.periodAreas.byPeriod(academicPeriodId),
     queryFn: () => fetchPeriodAreas(academicPeriodId as number),
     enabled: academicPeriodId != null,

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface GeneralAreaRow {
   id: number
@@ -25,6 +26,7 @@ async function fetchGeneralAreas(): Promise<GeneralArea[]> {
 
 export function useGeneralAreasQuery() {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.generalAreas(),
     queryFn: fetchGeneralAreas,
     staleTime: Infinity,

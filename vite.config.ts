@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
           swDest: "dist/sw.js",
           // Sin `mockServiceWorker.js` (MSW nunca convive con la PWA) ni
           // `_headers` (config de Cloudflare). Incluye los chunks lazy de TODAS
-          // las vistas: el precache mide ~10,8 MB (324 entradas, medido en la Fase 1), por debajo del umbral
+          // las vistas: el precache mide ~10,6 MB (339 entradas, medido en la Fase 1), por debajo del umbral
           // de 15 MB del plan (§11 Fase 1), así que no se excluye ninguna.
           globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff2,webmanifest}"],
           globIgnores: ["mockServiceWorker.js", "_headers"],

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 
 import type { GrupoPeriodo } from "@/features/academic-management/reports/api/types"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 interface GrupoPeriodoRow {
   grupo_id: number
@@ -59,6 +60,7 @@ export const gruposPeriodoQueryKey = (params: GruposPeriodoParams) =>
  *  dicta — un rector o un coordinador no veía ninguno. */
 export function useGruposPeriodoQuery(params: GruposPeriodoParams) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: gruposPeriodoQueryKey(params),
     queryFn: async (): Promise<GrupoPeriodo[]> => {
       const rows = await evalCol.postRows<GrupoPeriodoRow>("/informes/grupos-periodo", {

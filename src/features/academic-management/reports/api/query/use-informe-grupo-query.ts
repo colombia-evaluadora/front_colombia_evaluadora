@@ -10,6 +10,7 @@ import type {
   ModoPeriodo,
   ObservacionEstado,
 } from "@/features/academic-management/reports/api/types"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 interface AsignaturaRow {
   asignatura: number
@@ -134,6 +135,7 @@ export const informeGrupoQueryKeyPrefix = () => ["informes", "grupo"] as const
  *  paginar rompería el puesto, que se calcula sobre el grupo entero. */
 export function useInformeGrupoQuery(params: InformeGrupoParams | null) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: params ? informeGrupoQueryKey(params) : (["informes", "grupo", "none"] as const),
     queryFn: () => fetchInformeGrupo(params!),
     enabled: params !== null,

@@ -64,6 +64,11 @@ import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { useSolicitudPeriodoCerrado } from "@/features/planeador/hooks/use-solicitud-periodo-cerrado"
+import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
+import { TTL_OFFLINE } from "@/lib/offline/query-meta"
+import { isOfflineWithoutData } from "@/lib/offline/query-status"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
@@ -135,9 +140,20 @@ export function PlaneadorPlanillaPage() {
     isPending: isPendingCalificaciones,
     error: errorCalificaciones,
     refetch: refetchCalificaciones,
+    dataUpdatedAt: calificacionesUpdatedAt,
+    fetchStatus: fetchStatusCalificaciones,
+    isError: isErrorCalificaciones,
   } = usePlanillaCalificacionesQuery(params)
+  const { status: conectividad } = useConnectivity()
+  // Sin red y sin la planilla de este grupo guardada en el equipo (tarea 4.2).
+  const sinDatosOffline =
+    filtro !== null &&
+    isOfflineWithoutData(
+      { data: calificacionesResult, fetchStatus: fetchStatusCalificaciones, isError: isErrorCalificaciones },
+      conectividad,
+    )
   const filas = calificacionesResult?.rows ?? []
-  const cargandoPlanilla = filtro !== null && (isPendingColumnas || isPendingCalificaciones)
+  const cargandoPlanilla = filtro !== null && !sinDatosOffline && (isPendingColumnas || isPendingCalificaciones)
 
   const columnas = useMemo(() => {
     if (!filtro) return []
@@ -257,6 +273,12 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
+          <DatosDelBadge
+            updatedAt={calificacionesUpdatedAt}
+            ttl={TTL_OFFLINE.grupo}
+            className="mx-(--screen-spacing) mt-4"
+          />
+
           <TableScreenToolbar>
             <div className="grid flex-1 gap-4 sm:grid-cols-3">
               <Field variant="outlined">
@@ -314,7 +336,11 @@ export function PlaneadorPlanillaPage() {
           )}
 
           {/* Sin esto un error se veía como "sin estudiantes asignados". */}
-          {filtro && !columnaEnBulk && !cargandoPlanilla && errorCalificaciones && (
+          {filtro && !columnaEnBulk && sinDatosOffline && (
+            <OfflineEmptyState kind="sinDatosGuardados" onRetry={() => refetchCalificaciones()} />
+          )}
+
+          {filtro && !columnaEnBulk && !cargandoPlanilla && !sinDatosOffline && errorCalificaciones && (
             <div className="flex flex-col items-center gap-2 py-24 text-center">
               <p className="text-red text-sm">{getErrorMessage(errorCalificaciones)}</p>
               <Button variant="outline" color="neutral" size="sm" onClick={() => refetchCalificaciones()}>
@@ -323,7 +349,7 @@ export function PlaneadorPlanillaPage() {
             </div>
           )}
 
-          {filtro && !columnaEnBulk && !cargandoPlanilla && !errorCalificaciones && (
+          {filtro && !columnaEnBulk && !cargandoPlanilla && !sinDatosOffline && !errorCalificaciones && (
             <PlanillaGrid
               columnas={columnas}
               verPor={verPor}

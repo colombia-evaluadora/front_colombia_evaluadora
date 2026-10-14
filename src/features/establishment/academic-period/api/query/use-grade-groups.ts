@@ -8,6 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/grade-group"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseGradeGroupsQueryParams {
   filters: GradeGroupsQueryRequest["filters"]
@@ -80,6 +81,7 @@ async function fetchGradeGroups(
 
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.gradeGroups.list(params),
     queryFn: () => fetchGradeGroups(params),
     placeholderData: (previous) => previous,
