@@ -2,7 +2,23 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import * as z from "zod"
 
 import { api, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
-import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
+import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
+import { paths } from "@/config/paths"
+import { connectivityStore } from "@/lib/offline/connectivity"
+import {
+  activatePersistUser,
+  clearUserData,
+  deactivatePersistUser,
+  getActivePersistUser,
+  initOfflinePersistence,
+  startQueryPersister,
+} from "@/lib/offline/query-persister"
+import {
+  getUsableOfflineSession,
+  saveOnlineSession,
+  seedNavigationFromSession,
+  startSessionSnapshotSync,
+} from "@/lib/offline/session"
 import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
 import type { AuthResponse } from "@/types/api"
@@ -108,7 +124,13 @@ export function useLogout({
   return useMutation({
     mutationFn: logout,
     ...mutationConfig,
-    onSuccess: (...args) => {
+    onSuccess: async (...args) => {
+      // Lo persistido de ESTE usuario (queries + session) se borra antes de
+      // vaciar la memoria (§5.5). Si IndexedDB falla, el logout sigue.
+      const sub = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)?.id ?? getActivePersistUser()
+      deactivatePersistUser()
+      lastAuthedUser = null
+      if (sub) await clearUserData(sub).catch(() => undefined)
       setAuthToken(null)
       // Full clear, not just the user key — otherwise cached protected data
       // (nav menu, ...) stays "fresh" for `staleTime` and could be
@@ -119,17 +141,134 @@ export function useLogout({
   })
 }
 
+// ---- Modo "autenticado sin conexión" (D7) ----------------------------------
+
+// Último usuario online ya registrado (activación + `session`): evita
+// reescribir IndexedDB en cada navegación, porque el guard corre siempre.
+let lastAuthedUser: AuthUser | null = null
+
+/**
+ * Usuario confirmado por el servidor: pasa a ser el dueño de lo persistido
+ * (si cambió, el cache del anterior se vacía y se restaura el suyo) y se
+ * guarda su `session` con `lastOnlineAuthAt = ahora`.
+ */
+async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
+  if (lastAuthedUser === user) return
+  lastAuthedUser = user
+  try {
+    await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
+    await saveOnlineSession({
+      sub: user.id,
+      name: user.name,
+      roles: user.roles,
+      isSuperAdmin: user.isSuperAdmin,
+    })
+  } catch (error) {
+    console.warn("[offline] no se pudo guardar la sesión", error)
+  }
+}
+
+/**
+ * Entra sin red con la `session` del último usuario del equipo (solo equipo
+ * personal y ≤ 14 días desde la última autenticación online). Siembra el
+ * usuario, su cache persistido y el menú/permisos (≤ 30 días). Sin token: las
+ * requests no salen hasta que vuelva la red y el refresh lo reautentique.
+ */
+export async function enterOfflineSession(queryClient: QueryClient): Promise<AuthUser | null> {
+  await initOfflinePersistence()
+  const session = await getUsableOfflineSession()
+  if (!session) return null
+  const user: AuthUser = {
+    ...toAuthUser({
+      id: session.sub,
+      email: session.sub,
+      name: session.name,
+      role: session.roles.includes("ADMIN") ? "ADMIN" : "USER",
+      roles: session.roles,
+    }),
+    offline: true,
+  }
+  queryClient.setQueryData(USER_QUERY_KEY, user)
+  lastAuthedUser = null
+  await activatePersistUser(queryClient, session.sub, { keep: [USER_QUERY_KEY] })
+  seedNavigationFromSession(queryClient, session)
+  return user
+}
+
+/** Nombre a ofrecer en "Continuar sin conexión como {nombre}", si se puede. */
+export async function getOfflineContinueName(): Promise<string | null> {
+  await initOfflinePersistence()
+  return (await getUsableOfflineSession())?.name ?? null
+}
+
+let revalidating = false
+
+/**
+ * Al volver la red con un usuario offline: refresh normal. Si el servidor
+ * confirma que no hay sesión (401/403), se vacía la memoria y se pide login
+ * (lo persistido del `sub` se conserva, §D7). Un error de red no hace nada.
+ */
+async function revalidateOfflineUser(queryClient: QueryClient) {
+  const current = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)
+  if (!current?.offline || revalidating) return
+  revalidating = true
+  try {
+    const user = await getUser()
+    if (user) {
+      queryClient.setQueryData(USER_QUERY_KEY, user)
+      await onOnlineAuthenticated(queryClient, user)
+      // Lo sembrado offline (menú, permisos, datos) se refresca con la red.
+      void queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== USER_QUERY_KEY[0] })
+      return
+    }
+    deactivatePersistUser()
+    lastAuthedUser = null
+    queryClient.clear()
+    if (typeof window !== "undefined") {
+      window.location.href = paths.auth.login.getHref(window.location.pathname)
+    }
+  } catch {
+    // Sigue sin red de verdad: se reintenta en el próximo cambio a `online`.
+  } finally {
+    revalidating = false
+  }
+}
+
+let offlineSupportStarted = false
+
+/**
+ * Conecta la persistencia: persister de queries, snapshot de menú/permisos y
+ * reautenticación al volver la red. Se llama una vez al crear el provider.
+ */
+export function startOfflineSupport(queryClient: QueryClient) {
+  if (offlineSupportStarted) return
+  offlineSupportStarted = true
+  void initOfflinePersistence()
+  startQueryPersister(queryClient)
+  startSessionSnapshotSync(queryClient, getActivePersistUser)
+  connectivityStore.subscribe((state) => {
+    if (state.status === "online") void revalidateOfflineUser(queryClient)
+  })
+}
+
 // Usado en `beforeLoad` de las rutas protegidas (TanStack Router). Es async
 // porque debe poder disparar y esperar el refresh la primera vez (recarga de
 // página) en vez de asumir "sin sesión" solo porque la query todavía no corrió.
 //
 // Ante `NetworkSessionError` reintenta 3 veces con backoff 1 s, 2 s, 4 s
-// (≈7 s en total) antes de propagar el error al `ErrorPage`.
+// (≈7 s en total). Si sigue sin red (o el `connectivityStore` ya dice
+// `offline`, y entonces sin esperar) intenta el modo autenticado sin conexión;
+// si no hay `session` usable, propaga el error al `ErrorPage`.
+//
+// Antes de decidir espera la inicialización de `ce-offline` y, con usuario,
+// restaura su cache persistido: así todo lo que corre después en el router
+// (loaders, componentes) ya ve los datos restaurados.
 export const SESSION_RETRY_DELAYS_MS = [1000, 2000, 4000]
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function hasSession(queryClient: QueryClient): Promise<boolean> {
+  await initOfflinePersistence()
   for (let attempt = 0; ; attempt++) {
     try {
       const user = await queryClient.ensureQueryData({
@@ -144,10 +283,14 @@ export async function hasSession(queryClient: QueryClient): Promise<boolean> {
         // llegaría al `ErrorPage` con "Reintentar".
         networkMode: "always",
       })
+      if (user && !user.offline) await onOnlineAuthenticated(queryClient, user)
       return !!user
     } catch (error) {
-      if (!(error instanceof NetworkSessionError) || attempt >= SESSION_RETRY_DELAYS_MS.length) {
-        throw error
+      if (!(error instanceof NetworkSessionError)) throw error
+      const exhausted = attempt >= SESSION_RETRY_DELAYS_MS.length
+      if (exhausted || connectivityStore.getState().status === "offline") {
+        if (await enterOfflineSession(queryClient)) return true
+        if (exhausted) throw error
       }
       await wait(SESSION_RETRY_DELAYS_MS[attempt])
     }
