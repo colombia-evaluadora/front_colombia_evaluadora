@@ -48,6 +48,8 @@ import {
   useConfiguracionContextoActividadQuery,
 } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
+import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
+import { periodosCerrados, rangosDePeriodos } from "@/features/planeador/lib/periodo-cerrado"
 import {
   useReferenteCurricularQuery,
   referenteCurricularQueryOptions,
@@ -3042,6 +3044,23 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
   const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
+  // Periodos de evaluación CERRADOS (NO Calificable y ya vencidos) del periodo
+  // académico del contexto: el backend rechaza crear o mover una actividad
+  // ahí (23514, `fn_actividad_validar_periodo_abierto`), así que esos días se
+  // deshabilitan en ambos calendarios y se explica por qué.
+  const { data: periodosEvaluacion = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const periodoAcademicoId = programacion?.periodoAcademico?.id
+  const cerrados =
+    periodoAcademicoId == null
+      ? []
+      : periodosCerrados(periodosEvaluacion.filter((p) => p.periodoAcademicoId === periodoAcademicoId))
+  const rangosCerrados = rangosDePeriodos(cerrados)
+  const avisoCerrados =
+    cerrados.length > 0
+      ? `Periodo cerrado: ${cerrados
+          .map((p) => `${p.nombre} (${formatDiaCorto(p.startDate)} – ${formatDiaCorto(p.endDate)})`)
+          .join(", ")}. No se pueden programar actividades en esas fechas.`
+      : null
   // Mismo criterio que "Inicio/Fin del período académico" en
   // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
   // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
@@ -3099,6 +3118,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                   minDate={programacion?.fechaInicio.min ?? undefined}
                   maxDate={programacion?.fechaInicio.max ?? undefined}
                   enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
+                  disabledRanges={rangosCerrados}
                   disabled={disabled}
                   aria-invalid={isInvalid}
                 />
@@ -3106,6 +3126,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 {programacion?.fechaInicio.motivo && (
                   <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
                 )}
+                {avisoCerrados && <FieldDescription>{avisoCerrados}</FieldDescription>}
               </Field>
             )
           }}
@@ -3156,6 +3177,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                       }
                       maxDate={programacion?.fechaCierre.max ?? undefined}
                       enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
+                      disabledRanges={rangosCerrados}
                       disabled={disabled}
                       aria-invalid={isInvalid}
                     />
@@ -6534,4 +6556,10 @@ function CrearUnidadPopover({
       </PopoverContent>
     </Popover>
   )
+}
+
+/** `yyyy-MM-dd` → `dd/MM` para el aviso de periodos cerrados. */
+function formatDiaCorto(value: string): string {
+  const [, m, d] = value.split("-")
+  return `${d}/${m}`
 }
