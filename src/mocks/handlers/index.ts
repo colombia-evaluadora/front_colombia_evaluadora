@@ -50,6 +50,7 @@ import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicacione
 import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
+import { pushHandlers } from "@/mocks/handlers/notificaciones/push"
 
 export const handlers = [
   ...authHandlers,
@@ -101,6 +102,7 @@ export const handlers = [
   ...comunicacionesEncuestasHandlers,
   ...comunicacionesEvaluacionesHandlers,
   ...comunicacionesComunicadosHandlers,
+  ...pushHandlers,
   ...comunicacionesMensajesHandlers,
   ...comunicacionesHandlers,
 ]

@@ -153,6 +153,10 @@ const PROBE_ENDPOINTS = [
   "/auth/register/cval/funcionario/estado-cuenta",
   // Heartbeat de conectividad: falla justamente cuando no hay red.
   "/eval-col/health",
+  // Suscripciones Web Push: se dan de baja en segundo plano (logout, cambio
+  // de usuario, `pushsubscriptionchange`) y `PushToggle` muestra sus propios
+  // errores; un fallo acá no debe sacar un toast ni cerrar la sesión.
+  "/notificaciones/push/suscripciones",
 ]
 
 // Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
