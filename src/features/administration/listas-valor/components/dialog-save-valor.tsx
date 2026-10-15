@@ -21,13 +21,16 @@ import { getErrorMessage } from "@/lib/api-client"
 import { maxLength, required } from "@/lib/forms/messages"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
+import { useEstadoValor } from "@/features/administration/listas-valor/api/mutations/estado-valor"
 import { useSaveValor } from "@/features/administration/listas-valor/api/mutations/save-valor"
-import type {
-  Categoria,
-  ListaValor,
-} from "@/features/administration/listas-valor/api/types/lista-valor"
 import {
-  CategoriaPadreSelect,
+  CODIGO_VALOR,
+  toCodigo,
+  type Categoria,
+  type ListaValor,
+} from "@/features/administration/listas-valor/api/types/lista-valor"
+import { EstadoField } from "@/features/administration/listas-valor/components/estado-field"
+import {
   NONE,
   ValorPadreSelect,
 } from "@/features/administration/listas-valor/components/padre-select"
@@ -35,70 +38,72 @@ import {
 interface Draft {
   nombre: string
   valor: string
+  etiqueta: string
   accion: string
-  categoriaPadre: string
   padre: string
+  habilitado: boolean
 }
 
-function toDraft(categoria: Categoria, valor?: ListaValor): Draft {
+function toDraft(valor?: ListaValor): Draft {
   return {
     nombre: valor?.nombre ?? "",
     valor: valor?.valor ?? "",
+    etiqueta: valor?.etiqueta ?? "",
     accion: valor?.accion ?? "",
-    categoriaPadre: valor?.padre?.categoria ?? categoria.categoriasPadre[0] ?? NONE,
     padre: valor?.padre ? String(valor.padre.pkListaValor) : NONE,
+    habilitado: valor?.habilitado ?? true,
   }
 }
 
-function validate(draft: Draft) {
+// Mismos límites que V101: nombre <= 100, etiqueta <= 10, acción <= 150.
+function validate(draft: Draft, isEditing: boolean, conPadre: boolean) {
   const errors: Partial<Record<keyof Draft, string>> = {}
   if (!draft.nombre.trim()) errors.nombre = required("El nombre")
-  else if (draft.nombre.length > 120) errors.nombre = maxLength(120, "El nombre")
-  if (!draft.valor.trim()) errors.valor = required("El código")
-  else if (draft.valor.length > 130) errors.valor = maxLength(130, "El código")
+  else if (draft.nombre.length > 100) errors.nombre = maxLength(100, "El nombre")
+  // Los códigos viejos pueden no cumplir el formato: solo se valida al crear.
+  if (!isEditing && !CODIGO_VALOR.test(draft.valor)) {
+    errors.valor = draft.valor
+      ? "Use de 2 a 20 mayúsculas, números o guion bajo"
+      : required("El código")
+  }
+  if (draft.etiqueta.length > 10) errors.etiqueta = maxLength(10, "La etiqueta")
   if (draft.accion.length > 150) errors.accion = maxLength(150, "La acción")
+  if (conPadre && draft.padre === NONE) errors.padre = required("El valor padre")
   return errors
 }
 
 interface DialogSaveValorProps {
   categoria: Categoria
-  categorias: Categoria[]
   /** Presente = edición. */
   valor?: ListaValor
 }
 
-/** Alta y edición de un valor, incluido su padre (autorreferencia). */
-export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValorProps) {
+/** Alta y edición de un valor. Si la lista tiene lista padre, el valor padre es obligatorio. */
+export function DialogSaveValor({ categoria, valor }: DialogSaveValorProps) {
   const isEditing = valor != null
+  const conPadre = categoria.categoriaPadre != null
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
-  const [draft, setDraft] = useState<Draft>(() => toDraft(categoria, valor))
+  const [draft, setDraft] = useState<Draft>(() => toDraft(valor))
   const [submitted, setSubmitted] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
 
-  const errors = submitted ? validate(draft) : {}
-  const initial = toDraft(categoria, valor)
-  const dirty = JSON.stringify(draft) !== JSON.stringify(initial)
+  const errors = submitted ? validate(draft, isEditing, conPadre) : {}
+  const dirty = JSON.stringify(draft) !== JSON.stringify(toDraft(valor))
 
-  // Todos los valores de una lista cuelgan de una misma lista padre (V101). Solo
-  // se puede cambiar la lista padre si este es el único valor que la fija.
-  const padreFijo =
-    categoria.categoriasPadre.length > 0 && !(isEditing && categoria.totalValores === 1)
-
-  const save = useSaveValor({
-    mutationConfig: {
-      onSuccess: () => {
-        setOpen(false)
-        notify(isEditing ? SUCCESS_MESSAGES.listaValor.updated : SUCCESS_MESSAGES.listaValor.created)
-      },
-      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
-    },
-  })
+  const save = useSaveValor()
+  const estado = useEstadoValor()
+  const busy = save.isPending || estado.isPending
+  const cambiaEstado = isEditing && draft.habilitado !== valor.habilitado
+  // Solo cambió el estado: no hace falta el PUT de los datos.
+  const cambianDatos =
+    !isEditing ||
+    JSON.stringify({ ...draft, habilitado: valor.habilitado }) !== JSON.stringify(toDraft(valor))
 
   function handleOpenChange(next: boolean) {
     if (next) {
-      setDraft(toDraft(categoria, valor))
+      setDraft(toDraft(valor))
       setSubmitted(false)
     }
     setNotice(null)
@@ -106,7 +111,7 @@ export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValo
   }
 
   function requestClose() {
-    if (save.isPending) return
+    if (busy) return
     if (dirty) {
       setConfirmDiscardOpen(true)
       return
@@ -121,19 +126,50 @@ export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValo
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setSubmitted(true)
-    if (Object.keys(validate(draft)).length > 0) return
-    save.mutate({
+    if (Object.keys(validate(draft, isEditing, conPadre)).length > 0) return
+    if (!dirty) {
+      handleOpenChange(false)
+      return
+    }
+    void guardar()
+  }
+
+  // Datos y estado son dos endpoints: primero los datos, luego el estado.
+  async function guardar() {
+    try {
+      if (cambianDatos) await save.mutateAsync(datos())
+      if (cambiaEstado)
+        await estado.mutateAsync({ id: valor.pkListaValor, habilitado: draft.habilitado })
+      setOpen(false)
+      notify(
+        !isEditing
+          ? SUCCESS_MESSAGES.listaValor.created
+          : cambiaEstado && !cambianDatos
+            ? draft.habilitado
+              ? SUCCESS_MESSAGES.listaValor.activated
+              : SUCCESS_MESSAGES.listaValor.deactivated
+            : SUCCESS_MESSAGES.listaValor.updated,
+      )
+    } catch (error) {
+      setNotice({ id: Date.now(), message: getErrorMessage(error) })
+    }
+  }
+
+  function datos() {
+    return {
       id: valor?.pkListaValor,
       categoria: categoria.categoria,
       nombre: draft.nombre.trim(),
-      valor: draft.valor.trim(),
+      valor: draft.valor,
+      etiqueta: draft.etiqueta.trim() || null,
       accion: draft.accion.trim() || null,
       padre: draft.padre === NONE ? null : Number(draft.padre),
-    })
+      // Nuevo: al final (el back lo pone así sin ORDEN). Edición: el actual.
+      orden: valor?.orden ?? null,
+    }
   }
 
   const formId = `valor-form-${valor?.pkListaValor ?? "nuevo"}`
-  const categoriaPadre = draft.categoriaPadre === NONE ? null : draft.categoriaPadre
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? handleOpenChange(true) : requestClose())}>
@@ -158,37 +194,57 @@ export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValo
       <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar valor" : "Agregar valor"}</DialogTitle>
-          <DialogDescription>Lista {categoria.categoria}</DialogDescription>
+          <DialogDescription className="font-mono">{categoria.categoria}</DialogDescription>
         </DialogHeader>
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
-        <form id={formId} onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <form id={formId} onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-[1fr_9rem]">
           <Field variant="outlined" data-invalid={errors.nombre ? "true" : undefined}>
             <FieldLabel htmlFor={`${formId}-nombre`}>Nombre*</FieldLabel>
             <Input
               id={`${formId}-nombre`}
               placeholder="Agregar"
-              maxLength={120}
+              maxLength={100}
               value={draft.nombre}
               onChange={(e) => set("nombre", e.target.value)}
               aria-invalid={Boolean(errors.nombre)}
             />
             <FieldError>{errors.nombre}</FieldError>
           </Field>
-          <Field variant="outlined" data-invalid={errors.valor ? "true" : undefined}>
+          <Field variant="outlined" data-invalid={errors.etiqueta ? "true" : undefined}>
+            <FieldLabel htmlFor={`${formId}-etiqueta`}>Etiqueta</FieldLabel>
+            <Input
+              id={`${formId}-etiqueta`}
+              placeholder="Ej. Med"
+              maxLength={10}
+              value={draft.etiqueta}
+              onChange={(e) => set("etiqueta", e.target.value)}
+              aria-invalid={Boolean(errors.etiqueta)}
+            />
+            <FieldError>{errors.etiqueta}</FieldError>
+          </Field>
+          <Field
+            variant="outlined"
+            className="sm:col-span-2"
+            data-invalid={errors.valor ? "true" : undefined}
+          >
             <FieldLabel htmlFor={`${formId}-valor`}>Código*</FieldLabel>
             <Input
               id={`${formId}-valor`}
-              placeholder="Agregar"
-              maxLength={130}
+              placeholder="Ej. MEDELLIN"
               value={draft.valor}
               disabled={isEditing}
-              onChange={(e) => set("valor", e.target.value)}
+              className="font-mono"
+              onChange={(e) => set("valor", toCodigo(e.target.value, 20))}
               aria-invalid={Boolean(errors.valor)}
             />
-            {isEditing ? (
-              <FieldDescription>El código no se puede cambiar.</FieldDescription>
-            ) : (
+            {errors.valor ? (
               <FieldError>{errors.valor}</FieldError>
+            ) : (
+              <FieldDescription>
+                {isEditing
+                  ? "El código no se puede cambiar."
+                  : "Mayúsculas, números y guion bajo. De 2 a 20."}
+              </FieldDescription>
             )}
           </Field>
           <Field
@@ -206,37 +262,36 @@ export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValo
             />
             <FieldError>{errors.accion}</FieldError>
           </Field>
-
-          <fieldset className="grid gap-4 rounded-lg border border-border p-4 sm:col-span-2 sm:grid-cols-2">
-            <legend className="px-1 text-sm font-medium">Depende de</legend>
-            <Field variant="outlined">
-              <FieldLabel htmlFor={`${formId}-categoria-padre`}>Lista padre</FieldLabel>
-              <CategoriaPadreSelect
-                id={`${formId}-categoria-padre`}
-                value={draft.categoriaPadre}
-                categorias={categorias}
-                exclude={categoria.categoria}
-                disabled={padreFijo}
-                onChange={(next) =>
-                  setDraft((prev) => ({ ...prev, categoriaPadre: next, padre: NONE }))
-                }
-              />
-              {padreFijo && (
-                <FieldDescription>
-                  Todos los valores de esta lista dependen de {categoria.categoriasPadre[0]}.
-                </FieldDescription>
-              )}
-            </Field>
-            <Field variant="outlined">
-              <FieldLabel htmlFor={`${formId}-padre`}>Valor padre</FieldLabel>
+          {conPadre && (
+            <Field
+              variant="outlined"
+              className="sm:col-span-2"
+              data-invalid={errors.padre ? "true" : undefined}
+            >
+              <FieldLabel htmlFor={`${formId}-padre`}>Valor padre*</FieldLabel>
               <ValorPadreSelect
                 id={`${formId}-padre`}
-                categoria={categoriaPadre}
+                categoria={categoria.categoriaPadre}
                 value={draft.padre}
+                required
                 onChange={(next) => set("padre", next)}
               />
+              {errors.padre ? (
+                <FieldError>{errors.padre}</FieldError>
+              ) : (
+                <FieldDescription>De la lista {categoria.categoriaPadre}.</FieldDescription>
+              )}
             </Field>
-          </fieldset>
+          )}
+          {isEditing && (
+            <EstadoField
+              id={`${formId}-estado`}
+              de="valor"
+              className="sm:col-span-2"
+              checked={draft.habilitado}
+              onChange={(next) => set("habilitado", next)}
+            />
+          )}
         </form>
         <DialogFooter>
           <Button
@@ -244,10 +299,10 @@ export function DialogSaveValor({ categoria, categorias, valor }: DialogSaveValo
             type="submit"
             color="primary"
             form={formId}
-            disabled={save.isPending}
-            aria-busy={save.isPending}
+            disabled={busy}
+            aria-busy={busy}
           >
-            {save.isPending ? (
+            {busy ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
               <CheckIcon data-icon="inline-start" />
