@@ -71,3 +71,20 @@ Decisiones pendientes del usuario (PLAN §10):
 5. **WS vs Centrifugo**: el evento `notification.read` que cierra notificaciones llega por el gateway elegido.
 6. **iOS PWA**: ¿se exige instalar la PWA para recibir notificaciones en iOS o basta el fallback in-app + email?
 7. **ClamAV**: no aplica.
+
+## Contrato (front, `features/notificaciones/push`)
+
+Clave pública VAPID: del build (`VITE_APP_VAPID_PUBLIC_KEY`); vacía → el botón no se muestra. La privada nunca sale del gestor de secretos de `notification-service`.
+
+| Método | Path (gateway `/api`) | Body | Respuesta |
+|---|---|---|---|
+| `GET` | `/notificaciones/push/suscripciones` | — | `[{ id, endpoint, user_agent, plataforma, creada_en, ultimo_uso }]` (acepta también `{ rows }`) |
+| `POST` | `/notificaciones/push/suscripciones` | `{ endpoint, keys: { p256dh, auth }, userAgent, plataforma }` | fila creada/reasignada (upsert por `endpoint`) |
+| `DELETE` | `/notificaciones/push/suscripciones` | `{ endpoint }` | 204 (idempotente) |
+| `DELETE` | `/notificaciones/push/suscripciones/{id}` | — | 204 / 404 |
+
+Payload push (cifrado `aes128gcm`): `{ id, tipo, titulo?, cuerpo?, url? }`. El SW muestra siempre "Colombia Evaluadora" / "Tienes una notificación nueva", `tag = id`; `url` solo se usa si es del mismo origen (default `/app/notificaciones`).
+
+Mensajes SW → pestaña: `PUSH_RECEIVED { id, tipo }`, `PUSH_CLICKED { id, url }` (la pestaña navega y hace `PATCH .../leida`), `PUSH_SUBSCRIPTION_CHANGED` (la pestaña re-registra con `POST`). Pestaña → SW: `CLOSE_NOTIFICATION { id }`.
+
+Equipo compartido (`lib/offline`, modo `compartido`): el botón exige un opt-in explícito. Logout: `DELETE` + `unsubscribe()` antes de `POST /auth/logout`; login de otro usuario: `unsubscribe()` local.

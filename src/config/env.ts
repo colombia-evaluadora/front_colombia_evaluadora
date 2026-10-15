@@ -20,6 +20,11 @@ const createEnv = () => {
     // habilita además la outbox (Fase 2). Lo puede bajar el flag remoto
     // `GET /eval-col/config/offline` (`lib/offline/offline-mode.ts`).
     OFFLINE: z.enum(["off", "read", "full"]).optional().default("read"),
+    // Clave PÚBLICA VAPID propia (Web Push self-hosted,
+    // `openspec/changes/add-notificaciones-push-webpush` D-4.1). Vacía = el
+    // push queda oculto (`features/notificaciones/push`). La privada vive SOLO
+    // en el gestor de secretos de `notification-service`: nunca acá.
+    VAPID_PUBLIC_KEY: z.string().optional().default(""),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(

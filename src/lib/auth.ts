@@ -4,6 +4,7 @@ import * as z from "zod"
 import { api, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
 import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import { paths } from "@/config/paths"
+import { env } from "@/config/env"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import {
   activatePersistUser,
@@ -57,6 +58,14 @@ export async function getUser(): Promise<AuthUser | null> {
  * sola en el servidor). Un error HTTP real sí se propaga.
  */
 const logout = async (): Promise<void> => {
+  // Web Push (D-4.4): la suscripción de este navegador se borra ANTES del
+  // logout, mientras el token todavía sirve para el `DELETE`. En un equipo
+  // compartido el siguiente usuario no debe recibir los avisos del anterior.
+  // Import dinámico: solo se carga si el build trae clave VAPID.
+  if (env.VAPID_PUBLIC_KEY) {
+    const { cleanupPushOnLogout } = await import("@/features/notificaciones/push/lib/push-client")
+    await cleanupPushOnLogout()
+  }
   try {
     await api.post("/auth/logout")
   } catch (error) {
@@ -123,6 +132,16 @@ export function useLogin({
       // `clear()`, esto cubre cualquier otro camino). El guard de `/app` decide
       // con este menú: tiene que salir del token nuevo, no de la caché.
       queryClient.removeQueries({ queryKey: ["navigation"] })
+      // Web Push: si este navegador quedó suscrito por OTRO usuario, se
+      // suelta (cambio de usuario en equipo compartido, D-4.4).
+      if (env.VAPID_PUBLIC_KEY) {
+        const sub = toAuthUserFromToken(data.token)?.id
+        if (sub) {
+          void import("@/features/notificaciones/push/lib/push-client").then((m) =>
+            m.releasePushIfOtherUser(sub),
+          )
+        }
+      }
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },
   })
