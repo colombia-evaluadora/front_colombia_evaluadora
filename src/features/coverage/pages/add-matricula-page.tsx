@@ -13,6 +13,7 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { getErrorMessage } from "@/lib/api-client"
 import { useCreateMatricula } from "@/features/coverage/api/mutations/create-matricula"
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
@@ -91,6 +92,13 @@ export function AddMatriculaPage() {
 
 function AddMatriculaPageContent() {
   const navigate = useNavigate()
+  const { puedeCrear, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
+  // Sin Guardar, entrar por URL vuelve a la lista.
+  useEffect(() => {
+    if (!permisoCargando && !puedeCrear) {
+      navigate({ to: paths.app.coberturaMatricula.getHref(), replace: true })
+    }
+  }, [permisoCargando, puedeCrear, navigate])
   const { notify, dismiss } = useNotify()
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()

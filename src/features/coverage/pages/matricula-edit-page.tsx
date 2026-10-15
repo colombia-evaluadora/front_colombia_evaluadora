@@ -15,6 +15,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { coberturaMatriculaEditarRoute } from "@/router"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
@@ -81,6 +82,17 @@ export function MatriculaEditPage() {
 function MatriculaEditPageContent() {
   const { matriculaId } = coberturaMatriculaEditarRoute.useParams()
   const navigate = useNavigate()
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
+  // Sin Guardar, entrar por URL lleva al detalle.
+  useEffect(() => {
+    if (!permisoCargando && !puedeEditar) {
+      navigate({
+        to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId),
+        search: (prev) => prev,
+        replace: true,
+      })
+    }
+  }, [permisoCargando, puedeEditar, navigate, matriculaId])
   const { notify, dismiss } = useNotify()
   const { user } = useAuth()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
