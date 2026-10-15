@@ -48,9 +48,9 @@ export const ALWAYS_ALLOWED_PATHS: readonly string[] = ["/app", "/app/sin-acceso
  * `route-access.test.ts` que recorre el router lo avisa.
  */
 export const NAV_PATH_ALIASES: ReadonlyArray<readonly [from: string, to: string]> = [
-  // Agregar y editar establecimiento viven **al lado** de la lista
-  // (`/agregar`, `/editar/$id` vs `/general`), no debajo.
+  // Agregar, detalle y editar establecimiento viven al lado de `/general`.
   ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
+  ["/app/establecimiento-educativo/detalle", "/app/establecimiento-educativo/general"],
   ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
   // El registro de actividad tiene dos vistas hermanas (`/sesiones` y
   // `/tablas`) pero un solo ítem de menú, que apunta a la de sesiones: todo

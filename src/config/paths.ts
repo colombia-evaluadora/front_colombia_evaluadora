@@ -149,6 +149,11 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/agregar",
         },
 
+        detail: {
+          path: "establecimiento-educativo/detalle/$establishmentId",
+          getHref: (establishmentId: string | number) => `/app/establecimiento-educativo/detalle/${establishmentId}`,
+        },
+
         edit: {
           path: "establecimiento-educativo/editar/$establishmentId",
           getHref: (establishmentId: string | number) => `/app/establecimiento-educativo/editar/${establishmentId}`,

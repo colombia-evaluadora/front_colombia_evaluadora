@@ -152,6 +152,10 @@ const ListasValorPage = lazyRouteComponent(
   "ListasValorPage"
 )
 
+const EstablishmentDetailPage = lazyRouteComponent(
+  () => import("@/features/establishment/institution/pages/establishment-detail-page"),
+  "EstablishmentDetailPage"
+)
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
@@ -711,6 +715,20 @@ export const addEstablishmentRoute = createRoute({
   component: AddEstablishmentPage,
 })
 
+export const establishmentDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.detail.path,
+  validateSearch: establishmentsSearchSchema,
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: EstablishmentDetailPage,
+})
+
 export const editEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
@@ -1040,6 +1058,7 @@ const routeTree = rootRoute.addChildren([
       campusesRoute,
       employeesRoute,
       addEstablishmentRoute,
+      establishmentDetailRoute,
       editEstablishmentRoute,
     ]),
     planeadorRoute,

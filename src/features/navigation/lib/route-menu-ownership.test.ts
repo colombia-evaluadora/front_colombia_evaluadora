@@ -66,6 +66,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
   "/app/establecimiento-educativo/agregar": MENU.establecimiento,
+  "/app/establecimiento-educativo/detalle/$establishmentId": MENU.establecimiento,
   "/app/establecimiento-educativo/editar/$establishmentId": MENU.establecimiento,
   "/app/establecimiento-educativo/sedes": MENU.sedes,
   "/app/establecimiento-educativo/funcionarios": MENU.funcionarios,
