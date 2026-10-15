@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CheckCircleFillIcon, ProhibitIcon } from "@/components/ui/icons"
@@ -125,15 +126,20 @@ export const columnsPreMatricula: ColumnDef<PreMatricula>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <DetailPreMatriculaDialog preMatricula={row.original} />
-        <DetailPreMatriculaDialog preMatricula={row.original} variant="pencil" />
-        <DeletePreMatriculaDialog preMatricula={row.original} />
-      </div>
-    ),
+    cell: ({ row }) => <ActionsCell preMatricula={row.original} />,
     enableSorting: false,
     enableHiding: false,
     size: 112,
   },
 ]
+
+function ActionsCell({ preMatricula }: { preMatricula: PreMatricula }) {
+  const { puedeEditar, puedeEliminar } = useMenuPermission("PRE_MATRICULA")
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <DetailPreMatriculaDialog preMatricula={preMatricula} />
+      {puedeEditar ? <DetailPreMatriculaDialog preMatricula={preMatricula} variant="pencil" /> : null}
+      {puedeEliminar ? <DeletePreMatriculaDialog preMatricula={preMatricula} /> : null}
+    </div>
+  )
+}

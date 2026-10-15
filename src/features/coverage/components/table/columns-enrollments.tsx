@@ -10,6 +10,7 @@ import {
   ENROLLMENT_STATUS_LABELS,
 } from "@/features/coverage/api/ui-mappings-enrollments"
 import type { Enrollment } from "@/features/coverage/api/types/enrollment"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { DetailEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-detail-enrollment"
 import { DeleteEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-delete-enrollment"
 
@@ -94,15 +95,20 @@ export const columnsEnrollments: ColumnDef<Enrollment>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <DetailEnrollmentDialog enrollment={row.original} />
-        <DetailEnrollmentDialog enrollment={row.original} variant="pencil" />
-        <DeleteEnrollmentDialog enrollment={row.original} />
-      </div>
-    ),
+    cell: ({ row }) => <ActionsCell enrollment={row.original} />,
     enableSorting: false,
     enableHiding: false,
     size: 112,
   },
 ]
+
+function ActionsCell({ enrollment }: { enrollment: Enrollment }) {
+  const { puedeEditar, puedeEliminar } = useMenuPermission("INSCRITOS")
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <DetailEnrollmentDialog enrollment={enrollment} />
+      {puedeEditar ? <DetailEnrollmentDialog enrollment={enrollment} variant="pencil" /> : null}
+      {puedeEliminar ? <DeleteEnrollmentDialog enrollment={enrollment} /> : null}
+    </div>
+  )
+}

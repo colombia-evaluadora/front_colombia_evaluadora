@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { PencilIcon } from "@/components/ui/icons"
+import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { toSentenceCase } from "@/lib/utils"
 import { paths } from "@/config/paths"
@@ -16,10 +16,30 @@ import { DeleteEstablishmentDialog } from "@/features/establishment/institution/
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 function ActionsCell({ establishment }: { establishment: Establishment }) {
-  const { puedeEditar } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeVer, puedeEditar } = useMenuPermission("ESTABLECIMIENTO")
 
   return (
     <div className="flex items-center justify-end gap-1">
+      {puedeVer ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Ver detalle de ${establishment.name}`}
+                render={<Link to={paths.app.establishments.detail.getHref(establishment.id)} search={(prev) => prev} />}
+                nativeButton={false}
+              />
+            }
+          >
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Ver detalle de ${establishment.name}`}</TooltipContent>
+        </Tooltip>
+      ) : null}
       {puedeEditar ? (
         <Tooltip>
           <TooltipTrigger
@@ -131,6 +151,6 @@ export const columns: ColumnDef<Establishment>[] = [
     cell: ({ row }) => <ActionsCell establishment={row.original} />,
     enableSorting: false,
     enableHiding: false,
-    size: 96,
+    size: 144,
   },
 ]

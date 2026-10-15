@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -140,6 +141,7 @@ function CurricularReferenceDetailPageContent() {
   const { data: reference, isPending, isError, error } = useCurricularReferenceQuery(id)
   const [editorOpen, setEditorOpen] = useState(false)
   const soloEnLinea = useOnlineOnly()
+  const { puedeEditar } = useMenuPermission("REFERENTES_CURRICULARES")
 
   const { data: educationLevels = [] } = useEducationLevelsQuery()
   const { data: pedagogicalApproaches = [] } = usePedagogicalApproachesQuery()
@@ -205,6 +207,7 @@ function CurricularReferenceDetailPageContent() {
                 </p>
               ) : null}
 
+              {puedeEditar ? (
               <Button
                 type="button"
                 variant="outline"
@@ -218,6 +221,7 @@ function CurricularReferenceDetailPageContent() {
               >
                 <PencilIcon />
               </Button>
+              ) : null}
             </div>
 
             <Tabs defaultValue="general">

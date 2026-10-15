@@ -45,6 +45,7 @@ export function DialogMenuActions({ name, initial, busy, onSave, onOpenChange }:
           <div className="flex items-center justify-between gap-4">
             <Label htmlFor="menu-action-guardar">Guardar (crear y editar)</Label>
             <Switch
+          round
               id="menu-action-guardar"
               checked={actions.guardar}
               disabled={busy}
@@ -54,6 +55,7 @@ export function DialogMenuActions({ name, initial, busy, onSave, onOpenChange }:
           <div className="flex items-center justify-between gap-4">
             <Label htmlFor="menu-action-eliminar">Eliminar</Label>
             <Switch
+          round
               id="menu-action-eliminar"
               checked={actions.eliminar}
               disabled={busy}

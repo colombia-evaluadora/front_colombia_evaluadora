@@ -15,6 +15,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { coberturaMatriculaEditarRoute } from "@/router"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
@@ -81,6 +82,17 @@ export function MatriculaEditPage() {
 function MatriculaEditPageContent() {
   const { matriculaId } = coberturaMatriculaEditarRoute.useParams()
   const navigate = useNavigate()
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
+  // Sin Guardar, entrar por URL lleva al detalle.
+  useEffect(() => {
+    if (!permisoCargando && !puedeEditar) {
+      navigate({
+        to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId),
+        search: (prev) => prev,
+        replace: true,
+      })
+    }
+  }, [permisoCargando, puedeEditar, navigate, matriculaId])
   const { notify, dismiss } = useNotify()
   const { user } = useAuth()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
@@ -115,13 +127,10 @@ function MatriculaEditPageContent() {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const initialGradeRef = useRef<string | null>(null)
   const initialSedeRef = useRef<string | null>(null)
-  // El cambio de sede se detecta por id: dos colegios pueden tener sedes con
-  // el mismo nombre.
+  // Por id: dos colegios pueden tener sedes con el mismo nombre.
   const initialSedeIdRef = useRef<string | null>(null)
   const initialGroupRef = useRef<string | null>(null)
-  // Documento con el que se cargó el acudiente -- si el usuario lo cambia
-  // en el formulario, ya no es "editar en sitio" sino sustituir por otra
-  // persona (ver `performSave`).
+  // Si el documento cambia, se sustituye al acudiente (ver `performSave`).
   const initialGuardianDocumentRef = useRef<{ documentType: string; documentNumber: string } | null>(null)
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
@@ -186,11 +195,7 @@ function MatriculaEditPageContent() {
                     secondName: found.secondName,
                     lastName: found.lastName,
                     secondLastName: found.secondLastName,
-                    // Sin esto el género se quedaba con el del acudiente que
-                    // SALE, que es peor que dejarlo vacío: si la persona nueva
-                    // no tiene cuenta, `performSave` llama a
-                    // `registerMatriculaPersona` con `values.guardian.gender`
-                    // y la registraría con el género del anterior.
+                    // Sin esto quedaba el género del acudiente que sale.
                     gender: found.gender,
                   },
                   guardianContact: {
@@ -203,8 +208,6 @@ function MatriculaEditPageContent() {
           )
         })
         .catch(() => {
-          // Sin cuenta encontrada no se bloquea nada acá -- el guardado
-          // real (`performSave`) decide si crea una persona nueva.
         })
     }, 600)
 
@@ -271,8 +274,6 @@ function MatriculaEditPageContent() {
 
     const { pkUsuarioEstudiante, pkUsuarioAcudiente } = data.details
     const originalGuardianDocument = initialGuardianDocumentRef.current
-    // Documento distinto al que traía la matrícula = sustituir al
-    // acudiente por otra persona (caso 3), no editar al actual.
     const guardianReplaced =
       originalGuardianDocument != null &&
       (values.guardian.documentType !== originalGuardianDocument.documentType ||
@@ -296,10 +297,7 @@ function MatriculaEditPageContent() {
         })
       }
       if (guardianReplaced) {
-        // Mismo patrón que el alta: primero se busca si la persona ya
-        // tiene cuenta (autocompletar por documento); solo si no existe se
-        // crea por /register/usuario. Estos campos alimentan el alta del
-        // nuevo, no editan los datos del que sale.
+        // Se busca la cuenta por documento; si no existe se crea por /register/usuario.
         const documentTypeId = Number(values.guardian.documentType)
         const found = await findMatriculaUsuarioPorDocumento(documentTypeId, values.guardian.documentNumber)
         if (found) {
@@ -464,8 +462,6 @@ function MatriculaEditPageContent() {
               toGrade: currentSedeChange.toGrade,
               fromGroup: moved?.anterior.grupo ?? data?.matricula?.group ?? "",
               toGroup: moved?.nuevo.grupo ?? toGroupCodigo ?? "",
-              // El cambio de sede no pregunta por calificaciones (ver
-              // `dialog-cambio-sede-matricula.tsx`).
               gradesAction: null,
               date: new Date(),
               userName: user?.name ?? "",

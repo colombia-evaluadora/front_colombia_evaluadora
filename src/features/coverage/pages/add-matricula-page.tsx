@@ -13,6 +13,7 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { getErrorMessage } from "@/lib/api-client"
 import { useCreateMatricula } from "@/features/coverage/api/mutations/create-matricula"
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
@@ -47,10 +48,7 @@ import {
 
 const ADD_MATRICULA_FORM_ID = "create-matricula-form"
 
-// Mock — el backend real va a devolver los periodos del colegio de origen y
-// los de la institución actual junto con `MatriculaHomologationInfo`; acá se
-// simulan con listas de largo variable a propósito, para no asumir que
-// siempre son 4 y 2 respectivamente.
+// Mock: largos variables a propósito, no siempre 4 y 2.
 const MOCK_ORIGIN_PERIODS = [
   { id: "origin-1", label: "1° periodo", startDate: "01/02/2024", endDate: "30/04/2024" },
   { id: "origin-2", label: "2° periodo", startDate: "02/05/2024", endDate: "12/07/2024" },
@@ -63,8 +61,7 @@ const MOCK_INSTITUTION_PERIODS = [
   { id: 2, abbreviation: "P2", name: "Segundo periodo" },
 ]
 
-// Mock del paso 2 (Asignaturas) — el backend real todavía no expone el cruce
-// automático entre asignaturas del colegio de origen y las de la institución.
+// Mock: el backend aún no cruza asignaturas de origen y destino.
 const MOCK_GRADE_PERIOD_LABELS = ["P1", "P2", "P3", "P4"]
 
 const MOCK_SUBJECT_MATCHES = [
@@ -91,13 +88,19 @@ export function AddMatriculaPage() {
 
 function AddMatriculaPageContent() {
   const navigate = useNavigate()
+  const { puedeCrear, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
+  // Sin Guardar, entrar por URL vuelve a la lista.
+  useEffect(() => {
+    if (!permisoCargando && !puedeCrear) {
+      navigate({ to: paths.app.coberturaMatricula.getHref(), replace: true })
+    }
+  }, [permisoCargando, puedeCrear, navigate])
   const { notify, dismiss } = useNotify()
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const [values, setValues] = useState<CreateMatriculaInput>(createInitialMatriculaValues)
 
-  // La configuración es del colegio de la sede elegida: un rector de varios
-  // colegios no puede pedirla sin decir cuál (el backend respondería 22023).
+  // La configuración es del colegio de la sede elegida (si no, 22023).
   const colegio = useEstablecimientoDeSede({
     sedeId: values.academic.campusId ? Number(values.academic.campusId) : null,
     sedeNombre: values.academic.campus,
@@ -143,20 +146,11 @@ function AddMatriculaPageContent() {
   const [existingMatricula, setExistingMatricula] = useState<Matricula | null>(null)
   const [duplicateDialogDismissed, setDuplicateDialogDismissed] = useState(false)
 
-  // `pkTusuario` resuelto por el autocompletado de abajo — matrícula asume
-  // que estudiante/acudiente YA tienen cuenta (creada acá o en otra alta),
-  // así que esto es lo que se manda en el create
-  // (`PK_USUARIO_ESTUDIANTE`/`PK_USUARIO_ACUDIENTE`), no un registro nuevo.
-  // Va en un ref (no `useState`): todavía no hay nada que lo lea (el
-  // guardado real no está armado, ver Fase 4 pendiente) y no debe disparar
-  // un re-render — cuando esa parte se conecte, se lee desde acá.
+  // Cuenta ya existente de estudiante/acudiente que va en el create.
   const pkUsuarioEstudianteRef = useRef<number | null>(null)
   const pkUsuarioAcudienteRef = useRef<number | null>(null)
 
-  // Refleja lo que encontró (o no) el autocompletado por documento —
-  // `false` es lo que hace que el correo pase a ser obligatorio más abajo
-  // (cuenta nueva, ver `MatriculaAccountsFound`). `null` = todavía sin
-  // resolver, no bloquea nada.
+  // `false` hace obligatorio el correo (cuenta nueva); `null` = sin resolver.
   const [studentAccountFound, setStudentAccountFound] = useState<boolean | null>(null)
   const [guardianAccountFound, setGuardianAccountFound] = useState<boolean | null>(null)
   const accountsFound: MatriculaAccountsFound = {
@@ -193,11 +187,7 @@ function AddMatriculaPageContent() {
     setMissingFields(validateMatricula(values, files, fieldSettings, accountsFound))
   }, [values, files, hasSubmitted, fieldSettings, studentAccountFound, guardianAccountFound])
 
-  // Detección de matrícula activa duplicada — mismo criterio que el
-  // autocompletado por documento de establecimiento: se dispara por
-  // documentType + documentNumber, pero acá recién 600ms después de la
-  // última tecla, no en cada cambio — el objetivo es esperar a que el
-  // usuario termine de escribir, no consultar en cada dígito.
+  // Matrícula activa duplicada: se consulta 600 ms después de la última tecla.
   const { documentType, documentNumber } = values.student
   useEffect(() => {
     setExistingMatricula(null)
@@ -213,8 +203,7 @@ function AddMatriculaPageContent() {
           if (!cancelled) setExistingMatricula(result.matricula)
         })
         .catch(() => {
-          // Si la consulta falla no se bloquea el alta por eso — el
-          // backend real igual va a rechazar el duplicado al guardar.
+          // Si falla no se bloquea: el backend rechaza el duplicado al guardar.
         })
     }, 600)
 
@@ -299,12 +288,7 @@ function AddMatriculaPageContent() {
               secondName: found.secondName,
               lastName: found.lastName,
               secondLastName: found.secondLastName,
-              // El género tiene que ir en el parche aunque venga vacío. Es el
-              // único campo de catálogo que trae el autocompletado, y omitirlo
-              // no lo deja "sin tocar": deja el del acudiente ANTERIOR pegado a
-              // una persona distinta. Un `""` limpia el select y obliga a
-              // elegirlo, que es lo correcto — el 44% de los TUSUARIO no tienen
-              // género guardado.
+              // El género va aunque venga vacío: si no, queda el del acudiente anterior.
               gender: found.gender,
             },
             guardianContact: {
@@ -315,8 +299,6 @@ function AddMatriculaPageContent() {
           }))
         })
         .catch(() => {
-          // Sin cuenta encontrada no se bloquea nada acá — el guardado
-          // real decide qué hacer (ver Fase 3, todavía pendiente).
         })
     }, 600)
 
@@ -532,8 +514,7 @@ function AddMatriculaPageContent() {
           matricula={existingMatricula}
           onClose={() => {
             setDuplicateDialogDismissed(true)
-            // Se limpia el documento para que el usuario tenga que escribirlo
-            // de nuevo — no queda el del estudiante que ya está matriculado.
+            // Se limpia el documento del estudiante ya matriculado.
             setValues((prev) => ({
               ...prev,
               student: { ...prev.student, documentType: "", documentNumber: "" },
