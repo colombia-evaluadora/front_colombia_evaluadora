@@ -6,6 +6,8 @@ export type VistaChat = (typeof VISTAS_CHAT)[number]
 export const chatSearchSchema = z.object({
   canal: z.coerce.number().int().positive().optional().catch(undefined),
   vista: z.enum(VISTAS_CHAT).optional().catch(undefined),
+  // Deep link de notificaciones (canal + mensaje): salta al mensaje y lo resalta.
+  mensaje: z.coerce.number().int().positive().optional().catch(undefined),
 })
 
 export type ChatSearch = z.infer<typeof chatSearchSchema>

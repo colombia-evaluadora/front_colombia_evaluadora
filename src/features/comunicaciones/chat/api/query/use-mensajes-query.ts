@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { realtimeEnabled } from "@/lib/realtime"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
 
@@ -14,5 +15,7 @@ export function useMensajesQuery(conversacionId: number | undefined) {
     // `enabled` garantiza que hay id.
     queryFn: () => fetchMensajes(conversacionId as number),
     enabled: Boolean(conversacionId),
+    // Con tiempo real los eventos parchean la cache; sin él, polling.
+    refetchInterval: realtimeEnabled ? false : 15_000,
   })
 }

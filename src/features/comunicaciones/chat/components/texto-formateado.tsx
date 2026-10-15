@@ -3,9 +3,13 @@ import {
   segmentosEnLinea,
   type Segmento,
 } from "@/features/comunicaciones/chat/lib/formato-texto"
+import { segmentarMenciones } from "@/features/comunicaciones/chat/lib/menciones"
+import type { Mencion } from "@/features/comunicaciones/chat/api/types"
+import { cn } from "@/lib/utils"
 
 // Pinta el texto de un mensaje con su formato (negrita, listas, código…).
-export function TextoFormateado({ texto }: { texto: string }) {
+// `menciones`: las que reconoció el servidor; solo esas se resaltan.
+export function TextoFormateado({ texto, menciones }: { texto: string; menciones?: Mencion[] }) {
   return (
     <div className="space-y-1.5 text-sm wrap-break-word">
       {bloques(texto).map((b, i) => {
@@ -22,7 +26,7 @@ export function TextoFormateado({ texto }: { texto: string }) {
             <Lista key={i} className={b.tipo === "numerada" ? "list-decimal pl-5" : "list-disc pl-5"}>
               {b.lineas.map((l, j) => (
                 <li key={j}>
-                  <EnLinea linea={l} />
+                  <EnLinea linea={l} menciones={menciones} />
                 </li>
               ))}
             </Lista>
@@ -33,7 +37,7 @@ export function TextoFormateado({ texto }: { texto: string }) {
             <blockquote key={i} className="border-l-3 border-muted-foreground/40 pl-3 text-muted-foreground">
               {b.lineas.map((l, j) => (
                 <p key={j}>
-                  <EnLinea linea={l} />
+                  <EnLinea linea={l} menciones={menciones} />
                 </p>
               ))}
             </blockquote>
@@ -44,7 +48,7 @@ export function TextoFormateado({ texto }: { texto: string }) {
             {b.lineas.map((l, j) => (
               <span key={j}>
                 {j > 0 && <br />}
-                <EnLinea linea={l} />
+                <EnLinea linea={l} menciones={menciones} />
               </span>
             ))}
           </p>
@@ -54,8 +58,34 @@ export function TextoFormateado({ texto }: { texto: string }) {
   )
 }
 
-function EnLinea({ linea }: { linea: string }) {
-  return segmentosEnLinea(linea).map((s, i) => <Pieza key={i} segmento={s} />)
+function EnLinea({ linea, menciones }: { linea: string; menciones?: Mencion[] }) {
+  return segmentosEnLinea(linea).map((s, i) =>
+    s.tipo === "texto" && menciones?.length ? (
+      segmentarMenciones(s.valor, menciones).map((p, j) =>
+        p.tipo === "texto" ? (
+          <span key={`${i}-${j}`}>{p.valor}</span>
+        ) : (
+          <MencionChip key={`${i}-${j}`} mencion={p.mencion} />
+        ),
+      )
+    ) : (
+      <Pieza key={i} segmento={s} />
+    ),
+  )
+}
+
+function MencionChip({ mencion }: { mencion: Mencion }) {
+  const masiva = mencion.tipo !== "USUARIO"
+  return (
+    <span
+      className={cn(
+        "rounded px-0.5 font-medium",
+        masiva ? "bg-yellow-22 text-yellow-foreground" : "bg-primary/15 text-primary",
+      )}
+    >
+      @{mencion.nombre}
+    </span>
+  )
 }
 
 function Pieza({ segmento: s }: { segmento: Segmento }) {

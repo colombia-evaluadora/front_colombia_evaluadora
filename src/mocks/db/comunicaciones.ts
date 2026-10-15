@@ -9,6 +9,10 @@ import type {
   TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
 import { ETIQUETAS_VOTACION_RAPIDA } from "@/features/comunicaciones/chat/lib/votacion-rapida"
+import {
+  POLITICA_CHAT_SUGERIDA,
+  type PoliticaChat,
+} from "@/features/comunicaciones/chat/lib/politica-chat"
 
 // Datos del chat. Fechas relativas a hoy para que "Hoy"/"Ayer" siempre se vean.
 
@@ -181,8 +185,8 @@ export const mensajes: Mensaje[] = [
       { nombre: "planeación_fracciones.docx", formato: "WORD", eliminadoEn: null },
     ),
     reacciones: [
-      { emoji: "🙌", total: 2, mia: true },
-      { emoji: "📚", total: 1, mia: false },
+      { emoji: "🙌", total: 2, mia: true, personas: ["Tú", "Marta Lucía Ríos"] },
+      { emoji: "📚", total: 1, mia: false, personas: ["Jorge Pineda"] },
     ],
   },
   mensaje(
@@ -236,10 +240,24 @@ export function nuevoMensaje(
   conversacionId: number,
   texto: string,
   adjunto: Mensaje["adjunto"] = null,
+  extra: Pick<Mensaje, "respuestaA" | "menciones"> = {},
+  autor: AutorMensaje = USUARIO_ACTUAL,
 ) {
-  const m = mensaje(conversacionId, USUARIO_ACTUAL, texto, new Date().toISOString(), adjunto)
+  const m = { ...mensaje(conversacionId, autor, texto, new Date().toISOString(), adjunto), ...extra }
   mensajes.push(m)
   return m
+}
+
+/**
+ * Política de DMs y menciones masivas que "configura la institución". Es la
+ * matriz SUGERIDA del plan, pendiente de aprobación: cámbiala acá para probar
+ * otras combinaciones (p. ej. `directos.DOCENTE.ESTUDIANTE = "CON_COPIA"`).
+ */
+export const politicaChat: PoliticaChat = structuredClone(POLITICA_CHAT_SUGERIDA)
+
+/** Autor de mensaje a partir de una persona o miembro (para la simulación en vivo). */
+export function autorDe(id: number, nombre: string, enLinea = true): AutorMensaje {
+  return { id, nombre, enLinea }
 }
 
 export const archivos: ArchivoCompartido[] = [
@@ -315,13 +333,16 @@ export const borradores: Borrador[] = [
 ]
 
 export const personas: Persona[] = [
-  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co" },
-  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co" },
-  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co" },
-  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co" },
-  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co" },
-  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co" },
-  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co" },
+  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  // Para probar la política de DMs (pendiente de aprobación, ver `politicaChat`).
+  { id: 9, nombre: "Luis Fernando Henao", correo: "luis.henao@correo.com", perfil: "ACUDIENTE" },
+  { id: 10, nombre: "Sofía Henao Ruiz", correo: "sofia.henao@iesimonbolivar.edu.co", perfil: "ESTUDIANTE" },
 ]
 
 // "X se ha unido a <canal>."
@@ -371,11 +392,12 @@ export function miembrosDe(conversacionId: number): Miembro[] {
   if (!lista) {
     lista = [
       // Algunas personas del colegio quedan fuera para poder añadirlas.
-      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", enLinea: i % 3 !== 2, bloqueado: false })),
+      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", perfil: "DOCENTE" as const, enLinea: i % 3 !== 2, bloqueado: false })),
       ...EXTRA_MIEMBROS.map((nombre, i) => ({
         id: 100 + i,
         nombre,
         rol: i % 4 === 3 ? "Coordinador" : "Docente",
+        perfil: i % 4 === 3 ? ("DIRECTIVO" as const) : ("DOCENTE" as const),
         enLinea: i % 2 === 0,
         bloqueado: i === 0,
       })),
