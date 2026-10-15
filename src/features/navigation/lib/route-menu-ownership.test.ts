@@ -38,6 +38,8 @@ type Owner = (typeof MENU)[keyof typeof MENU] | typeof ALWAYS | typeof NONE
 const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/": ALWAYS,
   "/app/sin-acceso": ALWAYS,
+  "/app/notificaciones": ALWAYS,
+  "/app/notificaciones/preferencias": ALWAYS,
 
   // Sin ítem de menú: bloqueada para todos.
   "/app/cobertura/reserva-de-cupo": NONE,

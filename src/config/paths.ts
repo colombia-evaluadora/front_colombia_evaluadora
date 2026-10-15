@@ -235,6 +235,14 @@ export const paths = {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
     },
+    notificaciones: {
+      path: "notificaciones",
+      getHref: () => "/app/notificaciones",
+    },
+    notificacionesPreferencias: {
+      path: "notificaciones/preferencias",
+      getHref: () => "/app/notificaciones/preferencias",
+    },
     // Destino del guard de `/app`; lleva `?desde=<ruta pedida>`.
     sinAcceso: {
       path: "sin-acceso",

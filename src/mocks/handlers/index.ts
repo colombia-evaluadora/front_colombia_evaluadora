@@ -1,4 +1,5 @@
 import { authHandlers } from "@/mocks/handlers/auth"
+import { notificacionesHandlers } from "@/mocks/handlers/notificaciones"
 import { healthHandlers } from "@/mocks/handlers/health"
 import { auditsHandlers } from "@/mocks/handlers/audits"
 import { auditTablesHandlers } from "@/mocks/handlers/audit-tables"
@@ -103,4 +104,5 @@ export const handlers = [
   ...comunicacionesComunicadosHandlers,
   ...comunicacionesMensajesHandlers,
   ...comunicacionesHandlers,
+  ...notificacionesHandlers,
 ]

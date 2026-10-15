@@ -15,9 +15,9 @@
 - [ ] 2.4 Email digest diario de no leídas
 
 ## 3. Front
-- [ ] 3.1 Query y mutación de preferencias (`["notificaciones", "preferencias"]`)
-- [ ] 3.2 Ruta `/app/notificaciones/preferencias` (`paths.ts` + `createRoute` + `routeTree` + miga)
-- [ ] 3.3 Formulario TanStack Form + zod: matriz tipo × canal, horario silencioso, silencios temporales
+- [x] 3.1 Query y mutación de preferencias (`["notificaciones", "preferencias"]`)
+- [x] 3.2 Ruta `/app/notificaciones/preferencias` (`paths.ts` + `createRoute` + `routeTree` + miga)
+- [ ] 3.3 Formulario TanStack Form + zod: matriz tipo × canal, horario silencioso, silencios temporales (matriz y horario hechos; falta silencio temporal por tipo)
 - [ ] 3.4 Acción "Silenciar este tipo" en la bandeja
-- [ ] 3.5 Handlers MSW
-- [ ] 3.6 `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde
+- [x] 3.5 Handlers MSW
+- [x] 3.6 `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde
