@@ -33,10 +33,7 @@ export const paths = {
       getHref: (token?: string | null) =>
         `/restore-password${token ? `?token=${encodeURIComponent(token)}` : ""}`,
     },
-    // Destino del enlace de "Activa tu cuenta" (creación de cuenta por un
-    // administrador) — mismo patrón que restorePassword, contra
-    // /activationTokenStatus y /activateAccount en vez de sus pares de
-    // restore.
+    // Destino del enlace "Activa tu cuenta".
     activate: {
       path: "/activate",
       getHref: (token?: string | null) =>
@@ -78,10 +75,7 @@ export const paths = {
       path: "cobertura/matricula/configuracion",
       getHref: () => "/app/cobertura/matricula/configuracion",
     },
-    // Bajo `detalle/`, no `matricula/$matriculaId` a secas: un dinámico de un
-    // solo segmento ahí colisionaría con los estáticos de al lado (`agregar`,
-    // `configuracion`) — mismo motivo por el que establecimiento cuelga su
-    // edición de `editar/$id`, no de `$id` suelto.
+    // Bajo `detalle/`: un `$id` suelto chocaría con `agregar` y `configuracion`.
     coberturaMatriculaDetalle: {
       path: "cobertura/matricula/detalle/$matriculaId",
       getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}`,
@@ -90,11 +84,7 @@ export const paths = {
       path: "cobertura/matricula/detalle/$matriculaId/editar",
       getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}/editar`,
     },
-    // Las dos vistas del registro de actividad (por sesión y por tablas)
-    // cuelgan del mismo prefijo `registro-de-actividad` para que el item del
-    // menú pueda marcarse activo en cualquiera de las dos y en sus subrutas
-    // (ver `resolveNavPathname` en nav-main.tsx). El prefijo a secas no es una
-    // ruta: no hay pantalla que mostrar ahí.
+    // Mismo prefijo para las dos vistas: el ítem del menú se marca en ambas.
     auditoriaSesiones: {
       path: "registro-de-actividad/sesiones",
       getHref: () => "/app/registro-de-actividad/sesiones",
@@ -175,18 +165,11 @@ export const paths = {
       },
   },
 
-    // Las dos vistas del Planeador (actividades y unidades temáticas)
-    // cuelgan del mismo prefijo `planeador`, igual que las de registro de
-    // actividad: así el ítem del menú se marca activo en cualquiera de las
-    // dos y en sus subrutas. El prefijo a secas no es una ruta.
+    // Mismo prefijo `planeador` para todas sus vistas (un solo ítem del menú).
     planeadorActividades: {
       path: "planeador/actividades",
       getHref: () => "/app/planeador/actividades",
     },
-    // Segmento estático `agregar`, hermano de `$actividadId`: TanStack
-    // Router resuelve los segmentos estáticos antes que los dinámicos, así
-    // que no choca con el detalle/editar (mismo criterio documentado en
-    // `establishments.add` vs `establishments.edit`).
     planeadorActividadCrear: {
       path: "planeador/actividades/agregar",
       getHref: () => "/app/planeador/actividades/agregar",
@@ -199,10 +182,7 @@ export const paths = {
       path: "planeador/unidades",
       getHref: () => "/app/planeador/unidades",
     },
-    // Misma idea que `planeadorActividadCrear`/`planeadorActividadEditar`:
-    // páginas aparte, no modales — el detalle de la unidad no tiene ruta
-    // propia (vive en `?unidad=` sobre `planeadorUnidades`), así que
-    // "editar" no necesita el segmento intermedio que sí usa Actividad.
+    // El detalle de la unidad vive en `?unidad=`, sin ruta propia.
     planeadorUnidadCrear: {
       path: "planeador/unidades/agregar",
       getHref: () => "/app/planeador/unidades/agregar",
@@ -211,10 +191,7 @@ export const paths = {
       path: "planeador/unidades/editar/$unidadId",
       getHref: (unidadId: string) => `/app/planeador/unidades/editar/${unidadId}`,
     },
-    // El recurso a previsualizar viaja por `search` (ver
-    // `planeadorRecursoPreviewSearchSchema`), no por params: un recurso recién
-    // agregado en el form todavía no tiene contraparte en el mock backend, así
-    // que no hay id contra el cual buscarlo.
+    // El recurso viaja por `search`: uno recién agregado aún no tiene id.
     planeadorRecursoPreview: {
       path: "planeador/recursos/vista-previa",
       getHref: () => "/app/planeador/recursos/vista-previa",
@@ -227,9 +204,7 @@ export const paths = {
       path: "gestion-academica/informes",
       getHref: () => "/app/gestion-academica/informes",
     },
-    // La planilla del informe se identifica por (grupo, asignatura, período),
-    // no por docente: es la asignatura la que se consolida, y el mismo par
-    // grupo/asignatura puede tener más de un docente asignado.
+    // Por (grupo, asignatura, período): una asignatura puede tener varios docentes.
     gestionAcademicaInformesPlanilla: {
       path: "gestion-academica/informes/planilla/$grupoId/$asignaturaId/$periodoId",
       getHref: (grupoId: number | string, asignaturaId: number | string, periodoId: number | string) =>
@@ -260,9 +235,7 @@ export const paths = {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
     },
-    // A donde manda el guard de `/app` cuando la ruta pedida no es de ningún
-    // ítem del menú del usuario (ver `features/navigation/lib/route-access.ts`).
-    // El guard agrega `?desde=<ruta pedida>`: queda en la URL para soporte.
+    // Destino del guard de `/app`; lleva `?desde=<ruta pedida>`.
     sinAcceso: {
       path: "sin-acceso",
       getHref: () => "/app/sin-acceso",

@@ -4,14 +4,8 @@ import { router } from "@/router"
 import { canAccessPath } from "@/features/navigation/lib/route-access"
 
 /**
- * Recorre TODAS las rutas hoja de `/app` del router real y verifica que cada
- * una la abra solo el ítem de menú que es su dueño. Si se agrega una ruta y
- * no se decide a qué menú pertenece, este test falla (y el guard de `/app` la
- * bloquearía para todos: falla cerrado).
- *
- * Las URLs de menú son las que siembra el backend (`academico_test.tmenu`,
- * migraciones V195/V207/V331 del SSO) y las del mock (`mocks/db/navigation.ts`):
- * coinciden entre sí y con las rutas del front.
+ * Cada ruta hoja de `/app` la abre solo su ítem de menú dueño. Una ruta
+ * nueva sin dueño hace fallar este test (y el guard la bloquearía).
  */
 const MENU = {
   inscritos: "/app/cobertura/inscritos",
@@ -45,8 +39,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/": ALWAYS,
   "/app/sin-acceso": ALWAYS,
 
-  // Sin ítem de menú ni en el mock ni en el backend (y sus endpoints solo
-  // existen en MSW): bloqueada para todos.
+  // Sin ítem de menú: bloqueada para todos.
   "/app/cobertura/reserva-de-cupo": NONE,
   "/app/cobertura/pre-matricula": MENU.preMatricula,
   "/app/cobertura/inscritos": MENU.inscritos,
