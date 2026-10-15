@@ -10,8 +10,17 @@ export interface MenuUrlSource {
   items?: { url: string }[]
 }
 
-/** Abiertas a cualquier sesión: `/app` redirige, `/app/sin-acceso` es el destino del guard y `/app/pendientes` lista lo guardado sin conexión. */
-export const ALWAYS_ALLOWED_PATHS: readonly string[] = ["/app", "/app/sin-acceso", "/app/pendientes"]
+/**
+ * Abiertas a cualquier sesión: `/app` redirige, `/app/sin-acceso` es el destino del guard y `/app/pendientes` lista lo guardado sin conexión.
+ * La bandeja de notificaciones y sus preferencias son de cada usuario (la campana está en el header de todos), así que no dependen de un ítem de menú.
+ */
+export const ALWAYS_ALLOWED_PATHS: readonly string[] = [
+  "/app",
+  "/app/sin-acceso",
+  "/app/pendientes",
+  "/app/notificaciones",
+  "/app/notificaciones/preferencias",
+]
 
 /**
  * Rutas que no cuelgan de la URL de su ítem del menú, con la URL de ese ítem.

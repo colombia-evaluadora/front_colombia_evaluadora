@@ -10,6 +10,7 @@ export const BANNER_DELAY_MS = 1_500
  */
 const OFFLINE_CAPABLE_PREFIXES = [
   "/app/planeador",
+  "/app/notificaciones",
   "/app/asistencia",
   "/app/pendientes",
   "/app/gestion-academica/referentes-curriculares",

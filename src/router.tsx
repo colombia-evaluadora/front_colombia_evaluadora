@@ -57,6 +57,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
+import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -948,6 +949,38 @@ export const chatRoute = createRoute({
   component: ChatPage,
 })
 
+const NotificacionesPage = lazyRouteComponent(
+  () => import("@/features/notificaciones/pages/notificaciones-page"),
+  "NotificacionesPage",
+)
+
+const NOTIFICACIONES_CRUMB = { label: "Notificaciones", to: paths.app.notificaciones.getHref() }
+
+export const notificacionesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.notificaciones.path,
+  validateSearch: notificacionesSearchSchema,
+  staticData: { breadcrumb: [NOTIFICACIONES_CRUMB] },
+  component: NotificacionesPage,
+})
+
+const PreferenciasNotificacionesPage = lazyRouteComponent(
+  () => import("@/features/notificaciones/pages/preferencias-page"),
+  "PreferenciasNotificacionesPage",
+)
+
+export const notificacionesPreferenciasRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.notificacionesPreferencias.path,
+  staticData: {
+    breadcrumb: [
+      NOTIFICACIONES_CRUMB,
+      { label: "Preferencias", to: paths.app.notificacionesPreferencias.getHref() },
+    ],
+  },
+  component: PreferenciasNotificacionesPage,
+})
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   verificarBoletinRoute,
@@ -1006,6 +1039,8 @@ const routeTree = rootRoute.addChildren([
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,
     chatRoute,
+    notificacionesRoute,
+    notificacionesPreferenciasRoute,
   ]),
 ])
 

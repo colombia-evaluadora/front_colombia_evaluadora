@@ -17,12 +17,12 @@
 - [ ] 2.5 Job de purga por retención
 
 ## 3. Front
-- [ ] 3.1 `features/notificaciones/api/query` (`useNotificacionesInfiniteQuery`, `useContadorQuery`) con mapeo `toNotificacion`
-- [ ] 3.2 Mutaciones leída / no leída / leer todas / archivar con invalidación de `["notificaciones"]`
-- [ ] 3.3 Campana en el header con contador y dropdown de 10
-- [ ] 3.4 Ruta `/app/notificaciones` (`paths.ts` + `createRoute` + `routeTree` + miga completa)
-- [ ] 3.5 Filtros con sintaxis Gmail y schema `validateSearch` con `.catch(undefined)`
+- [x] 3.1 `features/notificaciones/api/query` (`useNotificacionesInfiniteQuery`, `useContadorQuery`) con mapeo `toNotificacion`
+- [x] 3.2 Mutaciones leída / no leída / leer todas / archivar con invalidación de `["notificaciones"]`
+- [x] 3.3 Campana en el header con contador y dropdown de 10
+- [x] 3.4 Ruta `/app/notificaciones` (`paths.ts` + `createRoute` + `routeTree` + miga completa)
+- [x] 3.5 Filtros con sintaxis Gmail y schema `validateSearch` con `.catch(undefined)`
 - [ ] 3.6 Suscripción a `notification.*` con `useRealtimeEvent`
-- [ ] 3.7 `meta.offline` de solo lectura para lista y contador
-- [ ] 3.8 Handlers MSW y datos fixture
-- [ ] 3.9 `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde
+- [x] 3.7 `meta.offline` de solo lectura para lista y contador
+- [x] 3.8 Handlers MSW y datos fixture
+- [x] 3.9 `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde
