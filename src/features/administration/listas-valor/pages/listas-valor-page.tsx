@@ -15,22 +15,24 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { CaretRightIcon, LockIcon, MagnifyingGlassIcon, TreeIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-import { useDeleteValor } from "@/features/administration/listas-valor/api/mutations/delete-valor"
+import { useOrdenarValores } from "@/features/administration/listas-valor/api/mutations/ordenar-valores"
+import { usePredeterminadoValor } from "@/features/administration/listas-valor/api/mutations/predeterminado-valor"
 import { useCategoriasQuery } from "@/features/administration/listas-valor/api/query/use-categorias-query"
 import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
 import type {
   Categoria,
   ListaValor,
 } from "@/features/administration/listas-valor/api/types/lista-valor"
+import { useArrastrarFilas } from "@/features/administration/listas-valor/hooks/use-arrastrar-filas"
 import { createValoresColumns } from "@/features/administration/listas-valor/components/columns-valores"
 import { DialogModificarCategoria } from "@/features/administration/listas-valor/components/dialog-modificar-categoria"
 import { DialogCreateCategoria } from "@/features/administration/listas-valor/components/dialog-create-categoria"
@@ -53,9 +55,11 @@ const normalizar = (text: string) =>
 
 /** Texto por el que se ordena cada columna. */
 function valorOrdenable(valor: ListaValor, columna: string) {
+  if (columna === "orden") return String(valor.orden)
   if (columna === "padre") return valor.padre?.nombre ?? ""
   if (columna === "valor") return valor.valor
-  if (columna === "accion") return valor.accion ?? ""
+  if (columna === "etiqueta") return valor.etiqueta ?? ""
+  if (columna === "habilitado") return valor.habilitado ? "0" : "1"
   return valor.nombre
 }
 
@@ -63,11 +67,11 @@ function valorOrdenable(valor: ListaValor, columna: string) {
 function cadenaDePadres(categoria: string, categorias: Categoria[]) {
   const porNombre = new Map(categorias.map((c) => [c.categoria, c]))
   const cadena: string[] = []
-  let actual = porNombre.get(categoria)?.categoriasPadre[0]
+  let actual = porNombre.get(categoria)?.categoriaPadre
   // El corte por repetidos evita un bucle si la base llegara con un ciclo.
   while (actual && !cadena.includes(actual) && actual !== categoria) {
     cadena.unshift(actual)
-    actual = porNombre.get(actual)?.categoriasPadre[0]
+    actual = porNombre.get(actual)?.categoriaPadre
   }
   return cadena
 }
@@ -82,11 +86,14 @@ function ListasValorPageContent() {
   const busquedaValor = search.q ?? ""
   const paginacion = useTablePagination()
 
-  const { data: categorias = [], isPending: categoriasPending, isError, error } =
-    useCategoriasQuery()
+  const {
+    data: categorias = [],
+    isPending: categoriasPending,
+    isError,
+    error,
+  } = useCategoriasQuery()
   // Sin selección (o si la lista elegida dejó de existir) se muestra la primera.
-  const categoria =
-    categorias.find((c) => c.categoria === search.lista) ?? categorias[0] ?? null
+  const categoria = categorias.find((c) => c.categoria === search.lista) ?? categorias[0] ?? null
   const {
     data: valores = [],
     isPending: valoresPending,
@@ -95,14 +102,22 @@ function ListasValorPageContent() {
     refetch: refetchValores,
   } = useValoresQuery(categoria?.categoria ?? null)
 
-  const listasFiltradas = categorias.filter((c) =>
-    normalizar(c.categoria).includes(normalizar(busquedaLista)),
+  const qLista = normalizar(busquedaLista).replace(/\s+/g, "_")
+  const listasFiltradas = categorias.filter(
+    (c) =>
+      normalizar(c.categoria).includes(qLista) ||
+      normalizar(c.nombre).includes(normalizar(busquedaLista)) ||
+      normalizar(c.descripcion ?? "").includes(normalizar(busquedaLista)),
   )
-  const valoresFiltrados = valores.filter((v) => {
+  // Mientras se arrastra la tabla muestra el orden local; al soltar se guarda.
+  const [ordenLocal, setOrdenLocal] = useState<ListaValor[] | null>(null)
+  const valoresBase = ordenLocal ?? valores
+  const valoresFiltrados = valoresBase.filter((v) => {
     const q = normalizar(busquedaValor)
     return (
       normalizar(v.nombre).includes(q) ||
       normalizar(v.valor).includes(q) ||
+      normalizar(v.etiqueta ?? "").includes(q) ||
       (v.padre && normalizar(v.padre.nombre).includes(q))
     )
   })
@@ -125,15 +140,69 @@ function ListasValorPageContent() {
     (pageIndex + 1) * paginacion.pageSize,
   )
 
+  const ordenarValores = useOrdenarValores({
+    mutationConfig: {
+      onSuccess: () => notify("El orden de los valores se actualizó correctamente."),
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+      onSettled: () => setOrdenLocal(null),
+    },
+  })
+  const ordenable =
+    permisos.puedeEditar &&
+    !orden &&
+    !busquedaValor &&
+    valores.length > 1 &&
+    !ordenarValores.isPending
+
+  function moverA(pk: number, destino: number) {
+    setOrdenLocal((prev) => {
+      const lista = prev ?? valores
+      const desde = lista.findIndex((v) => v.pkListaValor === pk)
+      if (desde < 0 || destino < 0 || destino >= lista.length || desde === destino) return prev
+      const next = [...lista]
+      const [item] = next.splice(desde, 1)
+      next.splice(destino, 0, item)
+      return next
+    })
+  }
+
+  function guardarOrden(lista = ordenLocal) {
+    if (!categoria || !lista) return
+    const cambio = lista.some((v, i) => v.pkListaValor !== valores[i]?.pkListaValor)
+    if (!cambio) {
+      setOrdenLocal(null)
+      return
+    }
+    setOrdenLocal(lista)
+    ordenarValores.mutate({
+      categoria: categoria.categoria,
+      orden: lista.map((v) => v.pkListaValor),
+    })
+  }
+
+  // Los índices del arrastre son de la página: se llevan a la lista completa.
+  const asa = useArrastrarFilas((desde, hasta) => {
+    const offset = pageIndex * paginacion.pageSize
+    const next = [...valoresBase]
+    const [item] = next.splice(offset + desde, 1)
+    next.splice(offset + hasta, 0, item)
+    guardarOrden(next)
+  })
+
   const cadena = categoria ? cadenaDePadres(categoria.categoria, categorias) : []
-  const hijas = categoria
-    ? categorias.filter((c) => c.categoriasPadre.includes(categoria.categoria))
-    : []
-  const tienePadre = (categoria?.categoriasPadre.length ?? 0) > 0
+  const hijas = categoria ? categorias.filter((c) => c.categoriaPadre === categoria.categoria) : []
+  const tienePadre = categoria?.categoriaPadre != null
 
   function seleccionar(nombre: string | undefined) {
     navigate({
-      search: (prev) => ({ ...prev, lista: nombre, q: undefined, page: 0, sortBy: undefined, sortDir: undefined }),
+      search: (prev) => ({
+        ...prev,
+        lista: nombre,
+        q: undefined,
+        page: 0,
+        sortBy: undefined,
+        sortDir: undefined,
+      }),
     })
   }
 
@@ -141,26 +210,40 @@ function ListasValorPageContent() {
     navigate({ search: (prev) => ({ ...prev, q: q || undefined, page: 0 }), replace: true })
   }
 
-  const deleteValor = useDeleteValor()
-
-  // `ConfirmRemoveButton` espera la promesa: el error se muestra en el aviso de la página.
-  async function eliminarValor(valor: ListaValor) {
-    try {
-      await deleteValor.mutateAsync({ id: valor.pkListaValor })
-      notify(SUCCESS_MESSAGES.listaValor.deleted)
-    } catch (e) {
-      notify(getErrorMessage(e), { variant: "error" })
-    }
-  }
+  // El predeterminado se aplica al instante desde la fila; el error va al aviso de la página.
+  const [pendiente, setPendiente] = useState<number | null>(null)
+  const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
+  const onSettled = () => setPendiente(null)
+  const predeterminado = usePredeterminadoValor({
+    mutationConfig: {
+      onSuccess: (v) => notify(`«${v.nombre}» quedó como valor predeterminado.`),
+      onError,
+      onSettled,
+    },
+  })
 
   const columns = categoria
     ? createValoresColumns({
         categoria,
-        categorias,
         puedeEditar: permisos.puedeEditar,
-        puedeEliminar: permisos.puedeEliminar,
+        pendiente,
         onIrALista: seleccionar,
-        onEliminar: eliminarValor,
+        onPredeterminado: (v) => {
+          setPendiente(v.pkListaValor)
+          predeterminado.mutate({ id: v.pkListaValor, predeterminado: true })
+        },
+        ordenable,
+        offset: pageIndex * paginacion.pageSize,
+        asa,
+        onMover: (v, delta) => {
+          const desde = valoresBase.findIndex((x) => x.pkListaValor === v.pkListaValor)
+          moverA(v.pkListaValor, desde + delta)
+          // El asa sigue al valor: con getRowId la fila se reutiliza, pero por si cambia de página.
+          requestAnimationFrame(() =>
+            document.querySelector<HTMLElement>(`[data-orden-asa="${v.pkListaValor}"]`)?.focus(),
+          )
+        },
+        onSoltar: () => guardarOrden(),
       })
     : []
 
@@ -244,25 +327,52 @@ function ListasValorPageContent() {
                             // Ring inset: el contenedor con scroll recorta el ring exterior.
                             "flex w-full flex-col gap-0.5 rounded-md px-3 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
                             activa && "bg-primary/10 text-primary hover:bg-primary/15",
+                            !c.habilitada && !activa && "opacity-60",
                           )}
                         >
                           <span className="flex items-center gap-2">
-                            <span className={cn("truncate font-mono text-[0.8125rem]", activa ? "font-semibold" : "font-medium")}>
-                              {c.categoria}
+                            <span
+                              className={cn(
+                                "truncate text-sm",
+                                activa ? "font-semibold" : "font-medium",
+                              )}
+                            >
+                              {c.nombre}
                             </span>
                             {c.esSistema && (
                               <LockIcon
                                 aria-label="Lista del sistema"
-                                className={cn("size-3.5 shrink-0", !activa && "text-muted-foreground")}
+                                className={cn(
+                                  "size-3.5 shrink-0",
+                                  !activa && "text-muted-foreground",
+                                )}
                               />
                             )}
-                            <span className={cn("ml-auto text-xs tabular-nums", !activa && "text-muted-foreground")}>
+                            <span
+                              className={cn(
+                                "ml-auto text-xs tabular-nums",
+                                !activa && "text-muted-foreground",
+                              )}
+                            >
                               {c.totalValores}
                             </span>
                           </span>
-                          {c.categoriasPadre.length > 0 && (
+                          <span className="truncate font-mono text-[0.75rem] text-muted-foreground">
+                            {c.categoria}
+                          </span>
+                          {c.descripcion && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">
+                              {c.descripcion}
+                            </span>
+                          )}
+                          {(c.categoriaPadre || !c.habilitada) && (
                             <span className="truncate text-xs text-muted-foreground">
-                              Depende de {c.categoriasPadre.join(", ")}
+                              {[
+                                c.categoriaPadre && `Depende de ${c.categoriaPadre}`,
+                                !c.habilitada && "Inactiva",
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </span>
                           )}
                         </button>
@@ -281,7 +391,9 @@ function ListasValorPageContent() {
                 <Empty>
                   <EmptyHeader>
                     <EmptyTitle>Aún no hay listas</EmptyTitle>
-                    <EmptyDescription>Agrega una lista para empezar a cargar valores.</EmptyDescription>
+                    <EmptyDescription>
+                      Agrega una lista para empezar a cargar valores.
+                    </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
               )
@@ -305,10 +417,31 @@ function ListasValorPageContent() {
                       ))}
                       <li>
                         <h2 id="lista-actual" className="text-lg font-semibold">
-                          {categoria.categoria}
+                          {categoria.nombre}{" "}
+                          <span className="font-mono text-sm font-normal text-muted-foreground">
+                            {categoria.categoria}
+                          </span>
                         </h2>
                       </li>
                     </ol>
+                    {categoria.descripcion && (
+                      <p className="max-w-prose text-sm text-muted-foreground">
+                        {categoria.descripcion}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 empty:hidden">
+                      {/* Se activa o inactiva desde "Modificar". */}
+                      {!categoria.habilitada && (
+                        <Badge variant="outline" color="neutral">
+                          Inactiva: sus valores no salen en los formularios
+                        </Badge>
+                      )}
+                      {categoria.esOrdinal && (
+                        <Badge variant="soft" color="info">
+                          Ordinal
+                        </Badge>
+                      )}
+                    </div>
                     {hijas.length > 0 && (
                       <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <TreeIcon aria-hidden className="size-3.5" />
@@ -329,20 +462,16 @@ function ListasValorPageContent() {
                   <div className="flex items-center gap-2">
                     {(permisos.puedeEditar || permisos.puedeEliminar) && (
                       <DialogModificarCategoria
+                        key={`mod-${categoria.categoria}`}
                         categoria={categoria}
                         categorias={categorias}
-                        valores={valores}
                         puedeEditar={permisos.puedeEditar}
                         puedeEliminar={permisos.puedeEliminar}
                         onDeleted={() => seleccionar(undefined)}
                       />
                     )}
                     {permisos.puedeCrear && (
-                      <DialogSaveValor
-                        key={`nuevo-${categoria.categoria}`}
-                        categoria={categoria}
-                        categorias={categorias}
-                      />
+                      <DialogSaveValor key={`nuevo-${categoria.categoria}`} categoria={categoria} />
                     )}
                   </div>
                 </div>
@@ -351,26 +480,33 @@ function ListasValorPageContent() {
                   <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     aria-label="Buscar valor"
-                    placeholder={tienePadre ? "Buscar por nombre, código o padre" : "Buscar por nombre o código"}
+                    placeholder={
+                      tienePadre
+                        ? "Buscar por nombre, código o padre"
+                        : "Buscar por nombre o código"
+                    }
                     variant="outlined"
-                  className="pl-9"
+                    className="pl-9"
                     value={busquedaValor}
                     onChange={(e) => setBusquedaValor(e.target.value)}
                   />
                 </div>
 
-                <DataTable
-                  table={table}
-                  isPending={valoresPending}
-                  isError={valoresError}
-                  onRetry={refetchValores}
-                  errorMessage={valoresErr ? getErrorMessage(valoresErr) : undefined}
-                  emptyMessage={
-                    valores.length === 0
-                      ? "Esta lista no tiene valores."
-                      : "Ningún valor coincide con la búsqueda."
-                  }
-                />
+                {/* La fila que se arrastra flota sobre las demás. */}
+                <div className="contents [&_tr[data-arrastrando]]:relative [&_tr[data-arrastrando]]:z-10 [&_tr[data-arrastrando]]:bg-card [&_tr[data-arrastrando]]:shadow-lg [&_tr[data-arrastrando]]:select-none">
+                  <DataTable
+                    table={table}
+                    isPending={valoresPending}
+                    isError={valoresError}
+                    onRetry={refetchValores}
+                    errorMessage={valoresErr ? getErrorMessage(valoresErr) : undefined}
+                    emptyMessage={
+                      valores.length === 0
+                        ? "Esta lista no tiene valores."
+                        : "Ningún valor coincide con la búsqueda."
+                    }
+                  />
+                </div>
                 <Pagination
                   viewOptions={<DataTableViewOptions table={table} />}
                   pageIndex={pageIndex}

@@ -15,69 +15,65 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { CheckIcon, PencilIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
+import { TEXTAREA_OUTLINED, Textarea } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
+import { useEstadoCategoria } from "@/features/administration/listas-valor/api/mutations/estado-categoria"
 import { useDeleteCategoria } from "@/features/administration/listas-valor/api/mutations/delete-categoria"
-import { useSaveValor } from "@/features/administration/listas-valor/api/mutations/save-valor"
-import type {
-  Categoria,
-  ListaValor,
-} from "@/features/administration/listas-valor/api/types/lista-valor"
+import { useUpdateCategoria } from "@/features/administration/listas-valor/api/mutations/update-categoria"
+import type { Categoria } from "@/features/administration/listas-valor/api/types/lista-valor"
+import { EstadoField } from "@/features/administration/listas-valor/components/estado-field"
 import {
   CategoriaPadreSelect,
   NONE,
-  ValorPadreSelect,
 } from "@/features/administration/listas-valor/components/padre-select"
 
-interface Fila {
-  pk: number
+interface Draft {
   nombre: string
-  valor: string
-  accion: string
+  descripcion: string
   padre: string
+  ordinal: boolean
+  habilitada: boolean
 }
 
-const toFila = (v: ListaValor): Fila => ({
-  pk: v.pkListaValor,
-  nombre: v.nombre,
-  valor: v.valor,
-  accion: v.accion ?? "",
-  padre: v.padre ? String(v.padre.pkListaValor) : NONE,
+const toDraft = (categoria: Categoria): Draft => ({
+  nombre: categoria.nombre,
+  descripcion: categoria.descripcion ?? "",
+  padre: categoria.categoriaPadre ?? NONE,
+  ordinal: categoria.esOrdinal,
+  habilitada: categoria.habilitada,
 })
-
-const mismaFila = (a: Fila, b: Fila) => a.padre === b.padre
 
 interface DialogModificarCategoriaProps {
   categoria: Categoria
   categorias: Categoria[]
-  valores: ListaValor[]
   puedeEditar: boolean
   puedeEliminar: boolean
   onDeleted: () => void
 }
 
 /**
- * Modificar una lista: de qué lista depende (y el valor padre de cada valor), o
- * eliminarla completa. El nombre queda bloqueado hasta que el backend permita
- * renombrar. Nombre y acción de cada valor se reenvían tal cual: el PUT reemplaza todo.
+ * Modificar una lista (`PUT /listas-valor/categorias/:CATEGORIA`): nombre, descripción, lista
+ * padre y si es ordinal, o eliminarla. El código es inmutable. Cambiar la lista padre
+ * de una lista cuyos valores ya tienen valor padre lo rechaza el back: hay que
+ * quitárselos primero (V101).
  */
 export function DialogModificarCategoria({
   categoria,
   categorias,
-  valores,
   puedeEditar,
   puedeEliminar,
   onDeleted,
@@ -86,20 +82,50 @@ export function DialogModificarCategoria({
   const [open, setOpen] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
-  const [categoriaPadre, setCategoriaPadre] = useState(NONE)
-  const [filas, setFilas] = useState<Fila[]>([])
-  const [saving, setSaving] = useState(false)
+  const [draft, setDraft] = useState<Draft>(() => toDraft(categoria))
+  const [submitted, setSubmitted] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
 
-  const iniciales = valores.map(toFila)
-  const padreInicial = categoria.categoriasPadre[0] ?? NONE
-  const cambiadas = filas.filter((f) => {
-    const original = iniciales.find((i) => i.pk === f.pk)
-    return !original || !mismaFila(f, original)
-  })
-  const dirty = cambiadas.length > 0 || categoriaPadre !== padreInicial
+  const dirty = JSON.stringify(draft) !== JSON.stringify(toDraft(categoria))
+  const largo = draft.descripcion.trim().length
+  const descInvalida = largo > 0 && (largo < 10 || largo > 300)
+  const descError = submitted && descInvalida ? "Entre 10 y 300 caracteres" : undefined
+  const nombreError = submitted && !draft.nombre.trim() ? "El nombre es obligatorio" : undefined
 
-  const save = useSaveValor()
+  const update = useUpdateCategoria()
+  const estado = useEstadoCategoria()
+  const cambiaEstado = draft.habilitada !== categoria.habilitada
+  const cambianDatos =
+    JSON.stringify({ ...draft, habilitada: categoria.habilitada }) !==
+    JSON.stringify(toDraft(categoria))
+
+  // Datos y estado son dos endpoints: primero los datos, luego el estado.
+  async function guardar() {
+    try {
+      if (cambianDatos)
+        await update.mutateAsync({
+          categoria: categoria.categoria,
+          nombre: draft.nombre.trim(),
+          descripcion: draft.descripcion.trim() || null,
+          padre: draft.padre === NONE ? null : draft.padre,
+          ordinal: draft.ordinal,
+        })
+      if (cambiaEstado)
+        await estado.mutateAsync({ categoria: categoria.categoria, habilitada: draft.habilitada })
+      setOpen(false)
+      const m = SUCCESS_MESSAGES.listaValorCategoria
+      notify(
+        cambiaEstado && !cambianDatos
+          ? draft.habilitada
+            ? m.activated
+            : m.deactivated
+          : m.updated,
+      )
+    } catch (error) {
+      setNotice({ id: Date.now(), message: getErrorMessage(error) })
+    }
+  }
+
   const deleteCategoria = useDeleteCategoria({
     mutationConfig: {
       onSuccess: () => {
@@ -115,12 +141,12 @@ export function DialogModificarCategoria({
     },
   })
 
-  const busy = saving || deleteCategoria.isPending
+  const busy = update.isPending || estado.isPending || deleteCategoria.isPending
 
   function handleOpenChange(next: boolean) {
     if (next) {
-      setCategoriaPadre(padreInicial)
-      setFilas(iniciales)
+      setDraft(toDraft(categoria))
+      setSubmitted(false)
     }
     setNotice(null)
     setOpen(next)
@@ -135,40 +161,16 @@ export function DialogModificarCategoria({
     handleOpenChange(false)
   }
 
-  function updateFila(pk: number, patch: Partial<Fila>) {
-    setFilas((prev) => prev.map((f) => (f.pk === pk ? { ...f, ...patch } : f)))
-  }
-
-  // No hay PUT en bloque: se guarda valor por valor y se corta en el primer error,
-  // dejando en el diálogo lo que falta para reintentar.
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (cambiadas.length === 0) {
+    setSubmitted(true)
+    if (descInvalida || !draft.nombre.trim()) return
+    if (!dirty) {
       handleOpenChange(false)
       return
     }
-    setSaving(true)
-    try {
-      for (const f of cambiadas) {
-        await save.mutateAsync({
-          id: f.pk,
-          categoria: categoria.categoria,
-          nombre: f.nombre,
-          valor: f.valor,
-          accion: f.accion || null,
-          padre: f.padre === NONE ? null : Number(f.padre),
-        })
-      }
-      setOpen(false)
-      notify(SUCCESS_MESSAGES.listaValorCategoria.updated)
-    } catch (error) {
-      setNotice({ id: Date.now(), message: getErrorMessage(error) })
-    } finally {
-      setSaving(false)
-    }
+    void guardar()
   }
-
-  const padre = categoriaPadre === NONE ? null : categoriaPadre
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? handleOpenChange(true) : requestClose())}>
@@ -176,84 +178,90 @@ export function DialogModificarCategoria({
         <PencilIcon data-icon="inline-start" />
         Modificar
       </DialogTrigger>
-      <DialogContent
-        className="flex max-h-[85vh] flex-col sm:max-w-2xl"
-        inert={confirmDiscardOpen || confirmDeleteOpen}
-      >
+      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen || confirmDeleteOpen}>
         <DialogHeader>
           <DialogTitle>Modificar lista</DialogTitle>
-          <DialogDescription className="font-mono">{categoria.categoria}</DialogDescription>
         </DialogHeader>
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
 
         <form
           id="modificar-categoria-form"
           onSubmit={handleSubmit}
-          className="flex min-h-0 flex-col gap-4"
+          className="grid gap-4 sm:grid-cols-2"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* El backend todavía no permite renombrar la lista: se muestra bloqueado. */}
-            <Field variant="outlined">
-              <FieldLabel htmlFor="modificar-categoria-nombre">Nombre de la lista</FieldLabel>
-              <Input
-                id="modificar-categoria-nombre"
-                value={categoria.categoria}
-                disabled
-                className="font-mono"
-              />
-            </Field>
-            <Field variant="outlined">
-              <FieldLabel htmlFor="modificar-categoria-padre">Depende de</FieldLabel>
-              <CategoriaPadreSelect
-                id="modificar-categoria-padre"
-                value={categoriaPadre}
-                categorias={categorias}
-                exclude={categoria.categoria}
-                disabled={!puedeEditar}
-                onChange={(next) => {
-                  setCategoriaPadre(next)
-                  // Todos los valores cuelgan de una sola lista padre (V101): al cambiarla
-                  // los padres anteriores ya no sirven.
-                  setFilas((prev) =>
-                    prev.map((f) => ({
-                      ...f,
-                      padre:
-                        next === padreInicial
-                          ? (iniciales.find((i) => i.pk === f.pk)?.padre ?? NONE)
-                          : NONE,
-                    })),
-                  )
-                }}
-              />
-            </Field>
-          </div>
-
-          {/* La dependencia vive en cada valor: al elegir lista padre hay que decir de
-              qué valor cuelga cada uno. */}
-          {padre && (
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">Valor padre de cada valor ({filas.length})</h3>
-              {/* Alto de 5 filas; con más, scroll interno. El padding deja ver el ring de foco. */}
-              <ul className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1">
-                {filas.map((fila) => (
-                  <li key={fila.pk} className="grid items-center gap-2 sm:grid-cols-2">
-                    <span className="truncate text-sm">
-                      {fila.nombre}{" "}
-                      <span className="font-mono text-xs text-muted-foreground">{fila.valor}</span>
-                    </span>
-                    <ValorPadreSelect
-                      id={`modificar-padre-${fila.pk}`}
-                      aria-label={`Valor padre de ${fila.nombre}`}
-                      categoria={padre}
-                      value={fila.padre}
-                      disabled={!puedeEditar}
-                      onChange={(next) => updateFila(fila.pk, { padre: next })}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <Field variant="outlined" data-invalid={nombreError ? "true" : undefined}>
+            <FieldLabel htmlFor="modificar-categoria-nombre">Nombre de la lista*</FieldLabel>
+            <Input
+              id="modificar-categoria-nombre"
+              maxLength={100}
+              value={draft.nombre}
+              disabled={!puedeEditar}
+              onChange={(e) => setDraft((prev) => ({ ...prev, nombre: e.target.value }))}
+              aria-invalid={Boolean(nombreError)}
+            />
+            {nombreError ? (
+              <FieldError>{nombreError}</FieldError>
+            ) : (
+              <FieldDescription>
+                Código <span className="font-mono">{categoria.categoria}</span>, no se cambia.
+              </FieldDescription>
+            )}
+          </Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="modificar-categoria-padre">Depende de</FieldLabel>
+            <CategoriaPadreSelect
+              id="modificar-categoria-padre"
+              value={draft.padre}
+              categorias={categorias}
+              exclude={categoria.categoria}
+              disabled={!puedeEditar}
+              onChange={(next) => setDraft((prev) => ({ ...prev, padre: next }))}
+            />
+          </Field>
+          <Field
+            variant="outlined"
+            className="sm:col-span-2"
+            data-invalid={descError ? "true" : undefined}
+          >
+            <FieldLabel htmlFor="modificar-categoria-descripcion">Descripción</FieldLabel>
+            <Textarea
+              className={TEXTAREA_OUTLINED}
+              id="modificar-categoria-descripcion"
+              placeholder="Para qué se usa la lista"
+              maxLength={300}
+              rows={2}
+              value={draft.descripcion}
+              disabled={!puedeEditar}
+              onChange={(e) => setDraft((prev) => ({ ...prev, descripcion: e.target.value }))}
+              aria-invalid={Boolean(descError)}
+            />
+            {descError ? (
+              <FieldError>{descError}</FieldError>
+            ) : (
+              <FieldDescription>Opcional. Entre 10 y 300 caracteres.</FieldDescription>
+            )}
+          </Field>
+          <label className="flex items-start gap-2 text-sm sm:col-span-2">
+            <Checkbox
+              checked={draft.ordinal}
+              disabled={!puedeEditar}
+              onCheckedChange={(next) => setDraft((prev) => ({ ...prev, ordinal: next === true }))}
+            />
+            <span>
+              Lista ordinal
+              <span className="block text-xs text-muted-foreground">
+                Sus valores tienen un orden con significado, como Bajo, Básico, Alto y Superior.
+              </span>
+            </span>
+          </label>
+          <EstadoField
+            id="modificar-categoria-estado"
+            de="lista"
+            className="sm:col-span-2"
+            checked={draft.habilitada}
+            disabled={!puedeEditar}
+            onChange={(next) => setDraft((prev) => ({ ...prev, habilitada: next }))}
+          />
         </form>
 
         <DialogFooter className="sm:justify-between">
@@ -277,8 +285,9 @@ export function DialogModificarCategoria({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Eliminar lista</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Se eliminarán los {categoria.totalValores} valores de {categoria.categoria}. No
-                    se puede si alguno está en uso o tiene valores que dependen de él.
+                    Se eliminarán los {categoria.totalValores} valores de {categoria.nombre}. No se
+                    puede si alguno está en uso, si tiene valores del sistema o si otra lista
+                    depende de ella; en esos casos, inactívela.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -313,9 +322,9 @@ export function DialogModificarCategoria({
                 color="primary"
                 form="modificar-categoria-form"
                 disabled={busy}
-                aria-busy={saving}
+                aria-busy={update.isPending || estado.isPending}
               >
-                {saving ? (
+                {update.isPending || estado.isPending ? (
                   <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                 ) : (
                   <CheckIcon data-icon="inline-start" />

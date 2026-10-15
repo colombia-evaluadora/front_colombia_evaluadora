@@ -18,6 +18,8 @@ interface EntityMessages {
   /** Mensaje específico cuando una acción puntual no encaja en
    *  created/updated/deleted (p. ej. "desactivar reserva de cupos"). */
   deactivated?: string
+  /** Reactivar lo que se inactivó (listas de valor). */
+  activated?: string
   /** Validación por un tercero (p. ej. el Coordinador sobre una actividad
    *  del Planeador): aprobar o declinar. */
   approved?: string
@@ -29,11 +31,15 @@ export const SUCCESS_MESSAGES = {
     created: "La lista se creó correctamente.",
     updated: "La lista se actualizó correctamente.",
     deleted: "La lista se eliminó correctamente.",
+    activated: "La lista se activó correctamente.",
+    deactivated: "La lista se inactivó correctamente.",
   },
   listaValor: {
     created: "El valor se creó correctamente.",
     updated: "El valor se actualizó correctamente.",
     deleted: "El valor se eliminó correctamente.",
+    activated: "El valor se activó correctamente.",
+    deactivated: "El valor se inactivó correctamente.",
   },
   establishment: {
     created: "El establecimiento educativo se creó correctamente.",
