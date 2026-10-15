@@ -1,3 +1,4 @@
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Link } from "@tanstack/react-router"
@@ -54,6 +55,7 @@ function ActionsCell({
   onEdit: (curricularReference: CurricularReference) => void
 }) {
   const label = curricularReference.name || "referente"
+  const soloEnLinea = useOnlineOnly()
 
   return (
     <div className="flex items-center justify-end gap-1">
@@ -89,13 +91,14 @@ function ActionsCell({
               color="neutral"
               size="icon-sm"
               aria-label={`Editar ${label}`}
+              disabled={soloEnLinea.disabled}
               onClick={() => onEdit(curricularReference)}
             />
           }
         >
           <PencilIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Editar ${label}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Editar ${label}`}</TooltipContent>
       </Tooltip>
       <ToggleStatusButton curricularReference={curricularReference} />
       <DeleteCurricularReferenceDialog curricularReference={curricularReference} />

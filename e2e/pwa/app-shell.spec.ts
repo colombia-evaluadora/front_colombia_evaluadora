@@ -33,6 +33,15 @@ test("recarga sin red sirve el app shell desde el precache", async ({ page, cont
   // Navegación profunda que nunca se visitó: el fallback responde index.html.
   await page.goto("/verificar/b/ABC123")
   await expect(page.locator("#root")).not.toBeEmpty()
+  // Tarea 6.3 / C-80: solo el shell y el aviso sin conexión, nunca un estado
+  // de verificación cacheado.
+  await expect(
+    page.getByText("No pudimos verificar el boletín porque no hay conexión. Intenta de nuevo cuando tengas internet."),
+  ).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Boletín auténtico|Código no válido|fue reemplazado/)).toHaveCount(0)
+  if (process.env.E2E_SCREENSHOTS_DIR) {
+    await page.screenshot({ path: `${process.env.E2E_SCREENSHOTS_DIR}/f1-pwa-verificar-sin-red.png` })
+  }
 
   // `/api` no se intercepta: sin red falla, no viene del cache.
   const apiStatus = await page.evaluate(async () => {

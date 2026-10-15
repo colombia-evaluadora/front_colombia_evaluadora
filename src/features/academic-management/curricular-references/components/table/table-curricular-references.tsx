@@ -1,5 +1,6 @@
 "use no memo"
 
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useMemo, useState } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -50,6 +51,7 @@ export function CurricularReferencesDataTable() {
   })
 
   const [editorOpen, setEditorOpen] = useState(false)
+  const soloEnLinea = useOnlineOnly()
   const [editingReferenceId, setEditingReferenceId] = useState<number | null>(null)
 
   function openCreateDialog() {
@@ -105,6 +107,8 @@ export function CurricularReferencesDataTable() {
               color="primary"
               size="sm"
               onClick={openCreateDialog}
+              disabled={soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
               className="text-sm [&_svg:not([class*='size-'])]:size-4"
             >
               <ControlPointIcon data-icon="inline-start" />
@@ -119,7 +123,9 @@ export function CurricularReferencesDataTable() {
         <DataTable
           table={table}
           isPending={isPending}
-          isError={isError}
+          // Sin red el refetch falla pero hay datos restaurados de IndexedDB
+          // (`catalogoMeta`, plan offline §8.7): se muestran en vez del error.
+          isError={isError && !data}
           onRetry={refetch}
           // Inactivo: visible y filtrable, pero atenuado (Regla 5).
           isRowMuted={(row) => !(row.original as CurricularReference).active}

@@ -961,6 +961,28 @@ Tareas: `vite-plugin-pwa` (`injectManifest`, prompt de actualización, sin `/api
 Aceptación: tras preparar, en modo avión y recargando, se navega planeador/planilla/asistencia/referentes con datos y badge de fecha; vistas SO muestran empty state; logout borra todo (verificado en DevTools → Application); otro usuario no ve datos del anterior.
 Métricas go/no-go: tamaño promedio persistido < 20 MB; tiempo de hidratación < 300 ms p95; 0 errores de SW en 1 semana de `test`.
 
+#### Cierre de la Fase 1 (2026-10)
+Estado: **implementada en `dev`**; change `add-offline-reads` archivado. Falta la validación manual multi-navegador (tarea 6.4: Chrome Android, Safari iOS, Chrome Windows, Firefox) y medir las métricas go/no-go en `test`.
+
+Qué salió y en qué PR:
+- **#691** — `ce-offline` (`db.ts`), persister selectivo por usuario con buster, `session` persistida, `hasSession` offline, "Continuar sin conexión como…", modo equipo compartido, limpieza en logout/cambio de usuario.
+- **#693** — `meta.offline` en las lecturas (con `persistSelect` para estudiantes), `useOnlineOnly`, `OnlineOnlyRouteGate`, badge "Datos del …", diálogo "Preparar para usar sin conexión".
+- **#692** — Service Worker de app shell (`injectManifest`), manifest, aviso de nueva versión, kill-switch (`VITE_APP_OFFLINE` + flag remoto + build de emergencia, `docs/offline/KILL-SWITCH.md`).
+- **PR de cierre** — E2E `e2e/offline-reads.spec.ts` (6.2/6.3) y 6.3 en `e2e/pwa/app-shell.spec.ts`, más ajustes que salieron de la revisión de escenarios:
+  - Logout sin red (§7.8): el POST fallido por red se trata como logout local y la mutación va con `networkMode: "always"` (antes quedaba pausada y no limpiaba IndexedDB).
+  - `/verificar/b` sin red: `networkMode: "always"` (antes quedaba en "Verificando…") y el copy "No pudimos verificar el boletín porque no hay conexión…".
+  - Referentes curriculares: la tabla muestra los datos restaurados en vez del error cuando el refetch falla, y la ruta cuenta como legible offline para el banner.
+  - `useOnlineOnly` en: crear/editar referente, crear/editar/ceder/eliminar unidad, aprobar/rechazar cambios de asistencia y editar seguimiento.
+  - `data-slot="offline-banner"` en el banner (los E2E lo confundían con otros `role="status"`).
+
+Desvíos y pendientes:
+- **E2E en dos mitades**: el SW no se registra con MSW (spec "Convivencia con MSW"). Los DATOS (preparar → sin red → recargar → navegar, equipo compartido, logout, cambio de usuario, vistas solo en línea) se prueban contra el dev server con `msw:fault = "network"`; el SHELL (recarga con el navegador realmente offline, `/verificar/b`) contra el build de `playwright.pwa.config.ts`, que no tiene backend y no puede iniciar sesión.
+- **"Preparar"** refresca los catálogos y las queries `meta.offline` que ya están en memoria (lo abierto en la sesión). No hay selección de grupo/asignatura/periodo, ni opción de incluir archivos, ni botón en el header de Planeador/Asistencia (solo en el menú de la cuenta).
+- **Pertenencia al piloto** para desmarcar "Este es un equipo compartido" no se valida: cualquiera puede desmarcarlo (el aviso sí se muestra).
+- Quedan sin `useOnlineOnly`: activar/inactivar y eliminar referentes, enunciados/evidencias y la vista previa de calificación; sin red fallan con el error normal.
+- El docente fixture del mock no tiene Cobertura ni Referentes en su menú: sin red cae a `sin-acceso` con el aviso de menú viejo (escenario cubierto); el empty state "Esta sección necesita conexión" se prueba con el administrador.
+- Port a PIGSE (7.1): solo documentado; `lib/offline/*` sigue sin dependencias de features.
+
 ### Fase 2 — Escrituras piloto (asistencia + planilla) · 4–5 semanas
 Tareas: outbox (enqueue, procesador, backoff, clasificación, líder, BroadcastChannel), blobs, handlers `asistencia.registrar/editar`, `planilla.calificar/estado-resultado/observacion/soporte`, `actividad.asistencia`; capa optimista reaplicable; `/app/pendientes`; resolución de conflictos; indicador header; logout con pendientes; BE-1, BE-2, BE-5 (aprobado, PR propio), BE-7, BE-8; handlers adicionales `planilla.calificar-bulk`, `planilla.soporte-quitar/favorito`, `actividad.estado-resultado`, `asistencia.marcar-todos`; absorción de la cola en memoria de periodo cerrado (B16); log exportable.
 Aceptación (Playwright): calificar 40 celdas offline, cerrar y reabrir, volver online → 40 en servidor, sin duplicados; matar la respuesta de 1 request (route.abort tras enviar) → no duplica; conflicto simulado muestra diálogo; regla 75 notifica.

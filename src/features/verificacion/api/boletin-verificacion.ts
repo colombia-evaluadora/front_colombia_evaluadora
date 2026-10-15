@@ -75,7 +75,16 @@ export function useBoletinVerificacion(codigo: string) {
     queryKey: ["verificacion-boletin", codigo],
     queryFn: () => fetchBoletin(codigo),
     enabled: Boolean(codigo),
+    // C-80 / spec app-shell: sin red el fetch debe fallar y mostrar el copy
+    // offline, no quedar pausado en "Verificando…" por el `onlineManager`.
+    // Nunca lleva `meta.offline`: un estado de verificación no se persiste.
+    networkMode: "always",
   })
+}
+
+/** `true` si el error es de red (fetch rechazado) o el navegador está sin conexión. */
+export function isOfflineVerificationError(error: unknown): boolean {
+  return error instanceof TypeError || (typeof navigator !== "undefined" && navigator.onLine === false)
 }
 
 /** Error con el status HTTP para que la UI distinga 403 (no coincide) de 429. */

@@ -10,6 +10,7 @@ import {
 } from "@/features/planeador/api/ui-mappings"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
@@ -59,6 +60,7 @@ export function UnidadCard({
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
   const { puedeEditar } = usePlaneadorSoloLectura()
+  const soloEnLinea = useOnlineOnly()
 
   return (
     <article
@@ -145,7 +147,7 @@ export function UnidadCard({
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
-                  disabled={!onEdit}
+                  disabled={!onEdit || soloEnLinea.disabled}
                   onClick={onEdit}
                   aria-label={`Editar ${unidad.nombre}`}
                   className="size-6"
@@ -154,7 +156,7 @@ export function UnidadCard({
             >
               <PencilIcon />
             </TooltipTrigger>
-            <TooltipContent>{`Editar ${unidad.nombre}`}</TooltipContent>
+            <TooltipContent>{soloEnLinea.tooltip ?? `Editar ${unidad.nombre}`}</TooltipContent>
           </Tooltip>
         )}
         <DialogDeleteUnidad
