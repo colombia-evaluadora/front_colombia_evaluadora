@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import "./index.css"
 import { env } from "@/config/env"
 import { AppProvider } from "@/provider"
+import { setupServiceWorker } from "@/lib/offline/sw-update"
 
 async function enableMocking() {
   if (!env.ENABLE_API_MOCKING) return
@@ -20,6 +21,9 @@ async function enableMocking() {
     },
   })
 }
+
+// App shell offline (Fase 1). No bloquea el render y no corre con MSW activo.
+void setupServiceWorker()
 
 enableMocking().then(() => {
   createRoot(document.getElementById("root")!).render(

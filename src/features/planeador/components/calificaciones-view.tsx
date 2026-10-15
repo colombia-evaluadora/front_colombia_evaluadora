@@ -70,7 +70,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 
   // Periodo de la actividad no Calificable (estado distinto de "1"): igual
   // que en la Planilla, las notas se acumulan y se envían como solicitud.
-  const periodoCerrado = usePeriodoCerrado(actividad.fechaInicio)
+  const periodoCerrado = usePeriodoCerrado(actividad.fechaCierre || actividad.fechaInicio)
   const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la

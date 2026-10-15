@@ -51,6 +51,7 @@ import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planead
 
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 type PanelTab = "general" | "rubricas" | "actividades"
 
@@ -737,6 +738,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   const [tab, setTab] = React.useState<PanelTab>("general")
   const { puedeEditar } = usePlaneadorSoloLectura()
+  const soloEnLinea = useOnlineOnly()
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col rounded-md border bg-card">
@@ -757,8 +759,9 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
                       color="neutral"
                       size="icon-sm"
                       aria-label="Editar"
+                      disabled={soloEnLinea.disabled}
                       render={
-                        <Link
+                        soloEnLinea.disabled ? undefined : <Link
                           to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))}
                           search={{ instrumento: rotuloUnidad }}
                         />
@@ -768,7 +771,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
                 >
                   <PencilIcon />
                 </TooltipTrigger>
-                <TooltipContent>Editar</TooltipContent>
+                <TooltipContent>{soloEnLinea.tooltip ?? "Editar"}</TooltipContent>
               </Tooltip>
             )}
             <DialogDeleteUnidad unidad={unidad} rotuloUnidad={rotuloUnidad} onDeleted={onDeleted} />

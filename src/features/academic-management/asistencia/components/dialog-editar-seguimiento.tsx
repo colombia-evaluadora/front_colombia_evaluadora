@@ -1,3 +1,4 @@
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -76,6 +77,7 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
 export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
   const { notify } = useNotify()
   const [open, setOpen] = React.useState(false)
+  const soloEnLinea = useOnlineOnly()
   const [tipo, setTipo] = React.useState(row.tipo_asistencia_valor.toString())
   const [observacion, setObservacion] = React.useState(row.observacion ?? "")
   const [soporteNuevo, setSoporteNuevo] = React.useState<File | null>(null)
@@ -273,7 +275,8 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
             size="sm"
             type="button"
             color="primary"
-            disabled={editar.isPending}
+            title={soloEnLinea.tooltip ?? undefined}
+            disabled={editar.isPending || soloEnLinea.disabled}
             aria-busy={editar.isPending}
             onClick={handleGuardar}
           >

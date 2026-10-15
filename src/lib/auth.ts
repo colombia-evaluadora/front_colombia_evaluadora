@@ -51,7 +51,18 @@ export async function getUser(): Promise<AuthUser | null> {
   }
 }
 
-const logout = (): Promise<void> => api.post("/auth/logout")
+/**
+ * Sin red (§7.8) el logout igual tiene que limpiar este equipo: si el POST
+ * falla por red se resuelve como logout local (la cookie `sso_refresh` vence
+ * sola en el servidor). Un error HTTP real sí se propaga.
+ */
+const logout = async (): Promise<void> => {
+  try {
+    await api.post("/auth/logout")
+  } catch (error) {
+    if (!isNetworkError(error)) throw error
+  }
+}
 
 export const loginInputSchema = z.object({
   // Limpia caracteres invisibles (word joiner, zero-width, BOM, NBSP) antes
@@ -123,6 +134,9 @@ export function useLogout({
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: logout,
+    // Sin `always` el `onlineManager` (offline) deja la mutación pausada y el
+    // logout nunca corre.
+    networkMode: "always",
     ...mutationConfig,
     onSuccess: async (...args) => {
       // Lo persistido de ESTE usuario (queries + session) se borra antes de

@@ -35,7 +35,9 @@ async function setApiFault(page: Page, fault: "network" | "server" | null) {
   }, fault)
 }
 
-const banner = (page: Page) => page.getByRole("status").filter({ hasText: /\S/ })
+// El banner es el `role="status"` con `aria-live`; los avisos de pantalla
+// (`NoticeOutlet`) también son `status` y pueden coexistir con él.
+const banner = (page: Page) => page.locator("[data-slot=offline-banner]").filter({ hasText: /\S/ })
 const toasts = (page: Page) => page.locator("[data-sonner-toast]")
 
 async function shot(page: Page, name: string) {
