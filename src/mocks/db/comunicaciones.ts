@@ -172,13 +172,19 @@ export const mensajes: Mensaje[] = [
     haceDias(1, 10, 14),
   ),
   mensaje(3, USUARIO_ACTUAL, "En Word está perfecto, ¡muchas gracias!", haceDias(1, 10, 25)),
-  mensaje(
-    3,
-    darlene,
-    "Listo, ya te la adjunté. Avísame si necesitas algo más.",
-    haceDias(0, 7, 30),
-    { nombre: "planeación_fracciones.docx", formato: "WORD", eliminadoEn: null },
-  ),
+  {
+    ...mensaje(
+      3,
+      darlene,
+      "Listo, ya te la adjunté. Avísame si necesitas algo más.",
+      haceDias(0, 7, 30),
+      { nombre: "planeación_fracciones.docx", formato: "WORD", eliminadoEn: null },
+    ),
+    reacciones: [
+      { emoji: "🙌", total: 2, mia: true },
+      { emoji: "📚", total: 1, mia: false },
+    ],
+  },
   mensaje(
     3,
     USUARIO_ACTUAL,

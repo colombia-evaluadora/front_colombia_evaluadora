@@ -33,6 +33,16 @@ export function useFijarMensaje() {
   })
 }
 
+// Pone o quita la reacción del usuario con ese emoji.
+export function useReaccionarMensaje() {
+  const actualizar = useActualizarEnCache()
+  return useMutation({
+    mutationFn: ({ id, emoji }: { id: number; emoji: string }) =>
+      evalCol.postRow<Mensaje>(`${base(id)}/reacciones`, { EMOJI: emoji }),
+    onSuccess: actualizar,
+  })
+}
+
 export function useEliminarAdjunto() {
   const queryClient = useQueryClient()
   const actualizar = useActualizarEnCache()

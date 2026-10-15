@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { SelectorEmoji } from "@/features/comunicaciones/chat/components/selector-emoji"
 import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
@@ -94,7 +95,7 @@ export function ChatComposer({
     }
   }
 
-  // Inserta en el cursor (menciones).
+  // Inserta en el cursor (menciones y emojis).
   const insertar = (valor: string) => {
     const area = areaRef.current
     const inicio = area?.selectionStart ?? texto.length
@@ -237,9 +238,13 @@ export function ChatComposer({
           <Herramienta etiqueta="Formato de texto" pendiente>
             <TextAaIcon className="size-5" />
           </Herramienta>
-          <Herramienta etiqueta="Emoji" pendiente>
+          <SelectorEmoji
+            etiqueta="Insertar emoji"
+            onElegir={insertar}
+            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground"
+          >
             <SmileyIcon className="size-5" />
-          </Herramienta>
+          </SelectorEmoji>
           <Herramienta etiqueta="Mencionar a alguien" onClick={() => insertar("@")}>
             <AtIcon className="size-5" />
           </Herramienta>
