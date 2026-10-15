@@ -44,6 +44,7 @@ import {
 } from "@/features/planeador/components/planeador-docente-selector"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 /**
  * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
@@ -67,6 +68,8 @@ function PlaneadorUnidadesPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
   const { puedeCrear } = usePlaneadorSoloLectura()
+  // Crear/editar/ceder/eliminar unidades necesita red (Fase 1 es solo lectura).
+  const soloEnLinea = useOnlineOnly()
   // Sede/Año/Jornada/Docente del filtro avanzado, ver `planeador-page.tsx`:
   // los hooks de consulta leen el alcance de la URL.
   const scope = usePlaneadorDocenteScope()
@@ -187,9 +190,10 @@ function PlaneadorUnidadesPageContent() {
                 variant="fill"
                 className="min-w-0 max-w-[18rem] shrink"
                 aria-label={`Agregar ${tabLabel}`}
-                title={`Agregar ${tabLabel}`}
+                title={soloEnLinea.tooltip ?? `Agregar ${tabLabel}`}
+                disabled={soloEnLinea.disabled}
                 render={
-                  <Link
+                  soloEnLinea.disabled ? undefined : <Link
                     to={paths.app.planeadorUnidadCrear.getHref()}
                     search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
                   />

@@ -40,7 +40,7 @@ export function OfflineBanner() {
   // El contenedor con `role="status"` queda siempre montado (vacío en
   // `online`) para que los lectores de pantalla anuncien el cambio.
   return (
-    <div role="status" aria-live="polite">
+    <div role="status" aria-live="polite" data-slot="offline-banner">
       {message && (
         <div
           className={cn(

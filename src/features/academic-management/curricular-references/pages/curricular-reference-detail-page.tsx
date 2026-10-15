@@ -1,5 +1,6 @@
 "use no memo"
 
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -138,6 +139,7 @@ function CurricularReferenceDetailPageContent() {
 
   const { data: reference, isPending, isError, error } = useCurricularReferenceQuery(id)
   const [editorOpen, setEditorOpen] = useState(false)
+  const soloEnLinea = useOnlineOnly()
 
   const { data: educationLevels = [] } = useEducationLevelsQuery()
   const { data: pedagogicalApproaches = [] } = usePedagogicalApproachesQuery()
@@ -209,6 +211,8 @@ function CurricularReferenceDetailPageContent() {
                 color="primary"
                 size="icon-sm"
                 aria-label="Editar referente curricular"
+                title={soloEnLinea.tooltip ?? undefined}
+                disabled={soloEnLinea.disabled}
                 className="absolute top-0 right-0"
                 onClick={() => setEditorOpen(true)}
               >

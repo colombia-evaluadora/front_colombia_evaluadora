@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getErrorMessage, isConflictError } from "@/lib/api-client"
 
 import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unidad"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useCederUnidad } from "@/features/planeador/api/mutations/ceder-unidad"
 import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -138,6 +139,8 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
   })
 
   const { puedeEliminar } = usePlaneadorSoloLectura()
+  // Fase 1 offline es solo lectura: eliminar/ceder necesitan red.
+  const soloEnLinea = useOnlineOnly()
   if (!puedeEliminar) return null
 
   return (
@@ -154,6 +157,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                   size="icon-sm"
                   aria-label={`Eliminar ${unidad.nombre}`}
                   {...triggerProps}
+                  disabled={soloEnLinea.disabled || triggerProps?.disabled}
                 />
               }
             />
@@ -161,7 +165,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
         >
           <TrashIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Eliminar ${unidad.nombre}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${unidad.nombre}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent className={conflictMessage ? "sm:max-w-lg" : undefined}>
         {conflictMessage ? (
