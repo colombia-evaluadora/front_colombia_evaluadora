@@ -34,6 +34,7 @@ import { DeleteEvidenceDialog } from "@/features/academic-management/curricular-
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CurricularEvidence, CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface TabStatementsProps {
   reference: CurricularReference
@@ -42,6 +43,8 @@ interface TabStatementsProps {
 export function TabStatements({ reference }: TabStatementsProps) {
   // Enunciados y evidencias son parte del referente: agregar y editar piden Guardar.
   const { puedeEditar, puedeEliminar } = useMenuPermission("REFERENTES_CURRICULARES")
+  // Enunciados y evidencias no se crean ni editan sin red (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const level1Label = toSentenceCase(reference.level1 || "Enunciado")
   const level2Label = toSentenceCase(reference.level2 || "Evidencia")
   const [areaId, setAreaId] = useState<number | null | undefined>(
@@ -221,8 +224,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
             color="primary"
             size="sm"
             className="min-w-0 shrink"
-            disabled={!canAddStatement || !puedeEditar}
-            title={canAddStatement ? undefined : "Selecciona grado y área para agregar"}
+            disabled={!canAddStatement || !puedeEditar || soloEnLinea.disabled}
+            title={soloEnLinea.tooltip ?? (canAddStatement ? undefined : "Selecciona grado y área para agregar")}
             onClick={() => setStatementDialog({ open: true, statement: null })}
           >
             <ControlPointIcon data-icon="inline-start" className="size-5 shrink-0" />
@@ -277,6 +280,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
                           color="neutral"
                           size="icon-sm"
                           aria-label={`Editar ${level1Label.toLowerCase()}`}
+                          disabled={soloEnLinea.disabled}
+                          title={soloEnLinea.tooltip ?? undefined}
                           onClick={(event) => {
                             event.stopPropagation()
                             setStatementDialog({ open: true, statement })
@@ -348,7 +353,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
               color="primary"
               size="sm"
               className="min-w-0 max-w-48"
-              disabled={selectedStatementId == null || !puedeEditar}
+              disabled={selectedStatementId == null || !puedeEditar || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
               onClick={() => setEvidenceDialog({ open: true, evidence: null })}
             >
               <ControlPointIcon data-icon="inline-start" className="size-5 shrink-0" />
@@ -440,6 +446,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
                           color="neutral"
                           size="icon-sm"
                           aria-label={`Editar ${level2Label.toLowerCase()}`}
+                          disabled={soloEnLinea.disabled}
+                          title={soloEnLinea.tooltip ?? undefined}
                           onClick={() => setEvidenceDialog({ open: true, evidence })}
                         >
                           <PencilIcon />

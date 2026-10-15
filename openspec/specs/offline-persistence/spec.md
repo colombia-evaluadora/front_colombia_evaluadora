@@ -30,6 +30,17 @@ Mientras la política institucional sobre datos de menores (P6) siga pendiente, 
 - **WHEN** un docente que no está en el piloto inicia sesión
 - **THEN** el equipo queda en modo compartido y no se persiste nada
 
+### Requirement: Pertenencia al piloto offline
+La pertenencia al piloto SHALL configurarse en el build con `VITE_APP_OFFLINE_PILOT`: lista separada por comas de correos (contienen `@`) y/o roles del JWT; `*` habilita a todos y vacío (default) a nadie. No existe rol ni permiso de menú del backend que la represente. Antes del login el checkbox "Este es un equipo compartido" MUST quedar marcado y deshabilitado si el correo escrito no está en la lista (salvo que la lista tenga roles o `*`), con "Solo los usuarios del piloto sin conexión pueden usar este equipo como personal."; después del login, si el usuario del token (correo y roles) no es del piloto, el equipo MUST volver a modo compartido.
+
+#### Scenario: Correo fuera de la lista
+- **WHEN** se escribe un correo que no está en `VITE_APP_OFFLINE_PILOT` y la lista no tiene roles
+- **THEN** "Este es un equipo compartido" queda marcado y no se puede desmarcar
+
+#### Scenario: Piloto por rol
+- **WHEN** la lista tiene un rol y el usuario desmarcó el checkbox pero su token no trae ese rol
+- **THEN** tras el login el equipo vuelve a modo compartido y se borra lo persistido
+
 ### Requirement: Antigüedad de los datos
 Los datos persistidos SHALL mostrarse con "Datos del {fecha}, {hora}" y, vencido el TTL duro (7 días datos de grupo, 30 días catálogos), MUST bloquear escribir sobre ellos con "Estos datos tienen más de 7 días. Conéctate para actualizarlos antes de calificar."
 
@@ -38,7 +49,15 @@ Los datos persistidos SHALL mostrarse con "Datos del {fecha}, {hora}" y, vencido
 - **THEN** ve los datos con la fecha en rojo y no puede calificar
 
 ### Requirement: Preparar para usar sin conexión
-El sistema SHALL ofrecer el diálogo "Preparar para usar sin conexión" que descarga actividades, unidades, planillas, rosters del periodo actual y catálogos de los grupos elegidos, solicita `navigator.storage.persist()` y muestra el progreso "Descargando X de N…".
+El sistema SHALL ofrecer el diálogo "Preparar para usar sin conexión" (desde el menú de la cuenta y desde el botón "Preparar sin conexión" del header de Planeador, Planilla y Asistencia) donde el docente elige grupos, asignaturas y periodos (por defecto: todos sus grupos y asignaturas y el periodo vigente) y opcionalmente "Incluir archivos". Descarga los catálogos, la lista de estudiantes de cada grupo elegido, columnas y calificaciones de cada grupo × asignatura (del mismo grado) × periodo con las mismas query keys que la Planilla, refresca las queries `meta.offline` ya abiertas, solicita `navigator.storage.persist()` y muestra el progreso "Descargando X de N…". Con "Incluir archivos" MUST descargar además las evidencias de esas planillas (hasta 5 MB cada una) a Cache Storage (`ce-offline-archivos`), que `useArchivoViewUrl` usa como respaldo sin red; esa cache MUST borrarse al pasar a modo compartido y al limpiar los datos de un usuario.
+
+#### Scenario: Preparar con selección
+- **WHEN** el docente deja un solo grupo y un periodo y pulsa "Preparar"
+- **THEN** solo se descargan las planillas de ese grupo para sus asignaturas en ese periodo, además de catálogos y lo ya abierto
+
+#### Scenario: Evidencia sin red
+- **WHEN** se preparó con "Incluir archivos" y luego se abre sin red una evidencia de esa planilla
+- **THEN** la imagen se muestra desde el archivo guardado en el equipo
 
 #### Scenario: Preparación completa
 - **WHEN** termina la descarga sin errores

@@ -5,6 +5,7 @@ import { CheckCircleIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import { useToggleStatus } from "@/features/academic-management/curricular-references/api/mutations/use-toggle-status"
 import { fetchCurricularReferenceImpact } from "@/features/academic-management/curricular-references/api/query/fetch-impact"
@@ -25,6 +26,8 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
   const { notify } = useNotify()
   const nextActive = !curricularReference.active
   const label = nextActive ? "Activar" : "Inactivar"
+  // Sin red no se puede activar/inactivar (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
 
   // Inactivar con unidades/actividades pasa por el modal (Regla 5).
   const [impactAlerts, setImpactAlerts] = useState<HighImpactAlert[]>([])
@@ -57,6 +60,7 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
   })
 
   function toggle() {
+    if (soloEnLinea.disabled) return
     toggleMutation.mutate({ reference: curricularReference, active: nextActive })
   }
 
@@ -100,7 +104,7 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
               color="neutral"
               size="icon-sm"
               aria-label={`${label} ${curricularReference.name}`}
-              disabled={isPending}
+              disabled={isPending || soloEnLinea.disabled}
               onClick={handleClick}
             />
           }
@@ -113,7 +117,7 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
             <ProhibitIcon />
           )}
         </TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? label}</TooltipContent>
       </Tooltip>
 
       <HighImpactDialog

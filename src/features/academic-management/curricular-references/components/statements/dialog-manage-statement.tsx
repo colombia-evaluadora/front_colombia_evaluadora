@@ -16,6 +16,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import { useCreateStatement, useUpdateStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
@@ -80,6 +81,8 @@ export function ManageStatementDialog({
   })
 
   const isPending = createMutation.isPending || updateMutation.isPending
+  // Si la red cae con el diálogo abierto, Guardar queda deshabilitado (§7.5).
+  const soloEnLinea = useOnlineOnly()
 
   const hasRequiredFields = text.trim().length > 0
   const hasChanges = isEditMode
@@ -163,7 +166,8 @@ export function ManageStatementDialog({
               form="manage-statement-form"
               variant="fill"
               color="primary"
-              disabled={isPending}
+              disabled={isPending || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
             >
               <CheckIcon data-icon="inline-start" />
               {isPending ? "Guardando..." : "Guardar"}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { IoMdCheckboxOutline } from "react-icons/io"
 import {
@@ -179,6 +180,9 @@ export function CeldaNotaPopover({
   const notasOriginales = notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? []
 
   const previsualizar = usePrevisualizarNotaMutation()
+  // Calificar y la vista previa de la nota (periodo cerrado) van al servidor:
+  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const completitud = instrumentoCompletitud(instrumento, draft)
 
   function guardar() {
@@ -235,13 +239,14 @@ export function CeldaNotaPopover({
         {completitud.mensaje && (
           <p className="text-muted-foreground text-xs">{completitud.mensaje}</p>
         )}
+        {soloEnLinea.disabled && <p className="text-muted-foreground text-xs">{soloEnLinea.tooltip}</p>}
 
         <div className="flex items-center justify-end gap-2">
           <Button
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || calificar.isPending || previsualizar.isPending}
+            disabled={!completitud.completo || calificar.isPending || previsualizar.isPending || soloEnLinea.disabled}
             onClick={guardar}
           >
             {calificar.isPending || previsualizar.isPending ? (

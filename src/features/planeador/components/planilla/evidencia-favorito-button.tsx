@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 
 import { useSoportesEstudianteQuery } from "@/features/planeador/api/query/use-soportes-estudiante-query"
@@ -31,6 +32,7 @@ export function EvidenciaFavoritoButton({
   const esFavorito = soportes?.some((s) => s.pk === pkTactividadSoporte && s.esFavorito) ?? false
   const marcandoEsta = marcar.isPending && marcar.variables?.pkTactividadSoporte === pkTactividadSoporte
   const etiqueta = esFavorito ? "Quitar de favorita" : "Marcar como favorita"
+  const soloEnLinea = useOnlineOnly()
 
   return (
     <Tooltip>
@@ -53,7 +55,7 @@ export function EvidenciaFavoritoButton({
           className="rounded-full"
           aria-label={etiqueta}
           aria-pressed={esFavorito}
-          disabled={soportes == null || marcar.isPending}
+          disabled={soportes == null || marcar.isPending || soloEnLinea.disabled}
           onClick={() =>
             marcar.mutate({ pkTactividadSoporte, pkTactividadEstudiante, esFavorito: !esFavorito })
           }
@@ -68,7 +70,8 @@ export function EvidenciaFavoritoButton({
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {esFavorito ? "Evidencia favorita — clic para quitarla" : "Marcar como evidencia favorita"}
+        {soloEnLinea.tooltip ??
+          (esFavorito ? "Evidencia favorita — clic para quitarla" : "Marcar como evidencia favorita")}
       </TooltipContent>
     </Tooltip>
   )

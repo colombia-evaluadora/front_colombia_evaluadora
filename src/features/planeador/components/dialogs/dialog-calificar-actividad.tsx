@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import {
   Dialog,
   DialogClose,
@@ -139,6 +140,9 @@ export function DialogCalificarActividad({
   const previsualizar = usePrevisualizarNotaMutation()
   const completitud = instrumentoCompletitud(instrumento, draft)
   const guardando = calificar.isPending || previsualizar.isPending
+  // Calificar y la vista previa de la nota (periodo cerrado) van al servidor:
+  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
 
   function guardar() {
     if (!instrumento) return
@@ -250,6 +254,9 @@ export function DialogCalificarActividad({
         </div>
 
         <DialogFooter className="shrink-0 sm:justify-end">
+          {soloEnLinea.disabled && (
+            <p className="text-muted-foreground mr-auto self-center text-xs">{soloEnLinea.tooltip}</p>
+          )}
           <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -258,7 +265,7 @@ export function DialogCalificarActividad({
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || guardando}
+            disabled={!completitud.completo || guardando || soloEnLinea.disabled}
             onClick={guardar}
           >
             {guardando ? (
