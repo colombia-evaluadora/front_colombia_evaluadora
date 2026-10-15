@@ -40,31 +40,15 @@ import { personDataChangedSinceMatch, type Person } from "@/features/establishme
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-/**
- * Solo para los acordeones de esta página: título más grande y el caret
- * (botón de abrir/cerrar) a la izquierda, antes del título. `flex-row-reverse`
- * + `justify-end` invierte el orden visual sin tocar el componente compartido.
- */
+/** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
 const accordionTriggerClassName =
   "flex-row-reverse justify-end items-center gap-3 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
 
-/**
- * Las cards dentro de los acordeones ya viven en un contenedor con su propio
- * aire, así que el `py` de 8 de la Card se sentía enorme: lo bajamos a 5 sin
- * tocar el padding horizontal.
- */
 const accordionCardClassName = "py-5"
 
-/**
- * Fallback defensivo para `persistPersonIfAny`: solo se usa si `person.id`
- * viene poblado (persona existente) pero `existingEmployee` es `null` — no
- * debería pasar en la práctica (si hay `id` es porque `fetchEstablishment`
- * lo hidrató desde `fn_usu_empleado_buscar_por_pk`), pero evita mandar
- * `undefined` en los campos de empleo si algún día no fuera así. Catálogos
- * en `null` + `status: "ACTIVE"` + `permissions: []` == "no cambiar nada de
- * esto" según el COALESCE de `fn_fun_actualizar` (ver `update.ts`).
- */
+/** Catálogos en `null` = "no cambiar" para el COALESCE de `fn_fun_actualizar`; fallback si falta `existingEmployee`. */
 function createEmptyEmployeeShell(): Omit<Employee, "person"> {
   return {
     employeeClass: null,
@@ -93,8 +77,7 @@ function createEmptyPerson(): Person {
   }
 }
 
-// Sin `id`: lo asigna el backend al crear (POST /establishments). El
-// formulario de alta arranca sin ninguno, no con uno inventado en el cliente.
+// Sin `id`: lo asigna el backend al crear.
 function createInitialEstablishmentValues(): EstablishmentDetails {
   return {
     basicInfo: {
@@ -144,43 +127,35 @@ export function AddEstablishmentPage() {
   const establishmentIdParam = location.pathname.includes("/editar/")
     ? location.pathname.split("/editar/").at(1) ?? null
     : null
-  // El segmento de ruta siempre llega como string; el `id` real del dominio
-  // es number, así que se convierte una sola vez acá.
   const establishmentId = establishmentIdParam !== null ? Number(establishmentIdParam) : null
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
+  // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
+  const { puedeCrear, puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
+  useEffect(() => {
+    if (permisoCargando || (isEditMode ? puedeEditar : puedeCrear)) return
+    navigate({
+      to: isEditMode
+        ? paths.app.establishments.detail.getHref(establishmentId)
+        : paths.app.establishments.general.getHref(),
+      search: (prev) => prev,
+      replace: true,
+    })
+  }, [permisoCargando, isEditMode, puedeCrear, puedeEditar, establishmentId, navigate])
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
-  // Mensaje por campo, indexado por ruta (`basicInfo.name`, `principal.email`, …).
-  // Escudo elegido en el dropzone. Vive acá y no en la sección del formulario
-  // porque es esta página la que guarda: se manda como el archivo `logo` del
-  // multipart, aparte del JSON. `null` = no se eligió ninguno, y en edición
-  // eso significa conservar el que ya tiene.
+  // `null` en edición = conservar el escudo guardado.
   const [shield, setShield] = useState<File | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [invalidFields, setInvalidFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  // Mismo criterio que `shield`, pero por persona: la foto de rector y
-  // secretaria se manda como `fkTarchivoFoto` del multipart de SU propio
-  // registro/actualización de funcionario, no del establecimiento.
+  // La foto va en el multipart del funcionario, no del establecimiento.
   const [photos, setPhotos] = useState<Record<string, File | null>>({
     principal: null,
     secretary: null,
   })
-  // Registro completo de TFUNCIONARIO (no solo `Person`) para rector y
-  // secretaria, cuando el EE ya tenía uno enlazado — se necesita al guardar
-  // para reenviar sus campos de empleo (clase, jornada, estado, dirección)
-  // tal cual vinieron, sin pisarlos con `null` (ver `persistPersonIfAny`).
-  // `null` en mock, o si el EE nunca tuvo uno asignado.
+  // Se reenvía al guardar para no pisar con `null` los campos de empleo.
   const [principalEmployee, setPrincipalEmployee] = useState<Employee | null>(null)
   const [secretaryEmployee, setSecretaryEmployee] = useState<Employee | null>(null)
-  // Snapshot crudo que devolvió el autocompletado por documento, por persona — `null` mientras no
-  // hubo match o el documento cambió después de uno. Solo aplica al caso
-  // "existe la cuenta pero todavía no hay TFUNCIONARIO" (`found.id`
-  // ausente): si el usuario corrige algún dato del form antes de guardar,
-  // `persistPersonIfAny` lo compara contra este snapshot para saber si hay
-  // que encadenar un PATCH además de `registerFuncionario` (ver
-  // `personDataChangedSinceMatch`). Cuando el match SÍ trae `id` (ya es
-  // funcionario activo), `persistPersonIfAny` ya toma la rama de edición
-  // normal por `person.id` y este snapshot no hace falta.
+  // Snapshot del autocompletado (solo si el match no trae `id`) para detectar ediciones antes de guardar.
   const principalMatchRef = useRef<Partial<Person> | null>(null)
   const secretaryMatchRef = useRef<Partial<Person> | null>(null)
 
@@ -219,9 +194,7 @@ export function AddEstablishmentPage() {
     setInvalidFields(validation.invalidFields)
   }, [formValues, shield, photos, hasSubmitted])
 
-  // Sin `onSuccess` acá: en real hay que invitar a rector/secretaria (si se
-  // registraron de nuevo) DESPUÉS de crear el establecimiento y ANTES de
-  // navegar — `handleSubmit` orquesta todo eso a mano tras `mutateAsync`.
+  // Sin `onSuccess`: `handleSubmit` invita a rector/secretaria antes de navegar.
   const createMutation = useCreate({
     mutationConfig: {
       onError: (error) => {
@@ -232,11 +205,7 @@ export function AddEstablishmentPage() {
     },
   })
 
-  // Avisos de "correo de activación enviado" de rector/secretaria (ver
-  // persistPersonIfAny); se muestran junto al mensaje de éxito del EE.
-  // `activationFailedRef`: falló la reactivación por cambio de correo (error).
-  // `invitationWarningRef`: el alta quedó hecha pero la invitación no salió
-  // (warning — se puede reenviar desde la tabla de funcionarios).
+  // Avisos de rector/secretaria que se muestran junto al éxito del EE.
   const activationNoticesRef = useRef<string[]>([])
   const activationFailedRef = useRef(false)
   const invitationWarningRef = useRef(false)
@@ -254,20 +223,7 @@ export function AddEstablishmentPage() {
     return { avisos, variant }
   }
 
-  /**
-   * Manda la invitación ("Activa tu cuenta") a rector/secretaria registrados
-   * en este submit — SOLO después de que el establecimiento se guardó. Se
-   * registraron con `enviarInvitacion: false` (ver `persistPersonIfAny`):
-   * si el EE falla, `cancelarPendientesRegistrados` los deshace y nadie
-   * recibe un correo de una cuenta que no quedó asignada.
-   *
-   * El alta no dice si la cuenta quedó pendiente o si se reusó una ya activa
-   * (ambos casos: `invitacionEnviada: false`, `mensajeInvitacion: null`), así
-   * que se intenta siempre: un 409 ("La cuenta ya está activa") significa que
-   * la persona ya puede iniciar sesión y no hay nada que avisar. Un fallo no
-   * deshace nada (el EE ya está guardado): se avisa como `warning` y se puede
-   * reenviar desde Funcionarios.
-   */
+  /** Invita a rector/secretaria solo tras guardar el EE (si el EE falla, se cancelan sin correo).\n * Un 409 = cuenta ya activa, nada que avisar; otro fallo es warning reenviable desde Funcionarios. */
   async function enviarInvitacionesPendientes(pendientes: PendingInvitation[]) {
     for (const { label, correo } of pendientes) {
       try {
@@ -283,9 +239,7 @@ export function AddEstablishmentPage() {
     }
   }
 
-  // Sin `onSuccess` acá: el aviso de éxito y la navegación los hace
-  // `handleSubmit`, porque antes tiene que mandar las invitaciones de
-  // rector/secretaria (`enviarInvitacionesPendientes`) y esperar su resultado.
+  // Sin `onSuccess`: igual que en `createMutation`.
   const updateMutation = useUpdate({
     mutationConfig: {
       onError: (error) => {
@@ -298,10 +252,6 @@ export function AddEstablishmentPage() {
 
   const createPersonMutation = useCreateWithPerson()
 
-  /**
-   * Devuelve true si la persona ya trae al menos un dato capturado (la
-   * consideramos "presente" y por tanto debe persistirse).
-   */
   function personHasAnyData(person: Person | null): boolean {
     if (!person) {
       return false
@@ -323,22 +273,9 @@ export function AddEstablishmentPage() {
 
   interface PersistedPerson {
     person: Person
-    /**
-     * PK_TFUNCIONARIO del funcionario recién REGISTRADO en este submit —
-     * solo cuando de verdad se llamó a `/register/cval/funcionario` acá (persona
-     * sin `id` previo, ver más abajo). Es el candidato a rollback si el paso
-     * siguiente (crear/actualizar el establecimiento) falla —
-     * `cancelarPendientesRegistrados`, en `handleSubmit`. `null` en mock, y
-     * también `null` cuando la persona ya existía y solo se actualizó
-     * (`updateFuncionario`) — ya está en uso, cancelarla sería un error.
-     */
+    /** Registrado en este submit; candidato a rollback si el EE falla. */
     pkFuncionarioRegistrado: number | null
-    /**
-     * Correo al que hay que mandar la invitación cuando el establecimiento
-     * se guarde (ver `enviarInvitacionesPendientes`). Solo en el alta real
-     * de una persona nueva; `null` si no hay nada que invitar (persona ya
-     * existente, mock, o el backend ya explicó por qué no — `mensajeInvitacion`).
-     */
+    /** Correo a invitar tras guardar el EE; `null` si no hay a quién. */
     pendingInvitation: PendingInvitation | null
   }
 
@@ -347,51 +284,14 @@ export function AddEstablishmentPage() {
     correo: string
   }
 
-  /**
-   * Persiste rector/secretaria. En alta, se llama ANTES de crear el
-   * establecimiento (hace falta su id para `p_fk_tfuncionario_rector`/
-   * `secretaria`); en edición, el EE ya existe así que el orden no importa.
-   *
-   * - Mock: POST /person (como siempre) — `upsertPerson` ya distingue alta
-   *   de actualización por la presencia de `person.id`.
-   * - Real, persona EXISTENTE (`person.id` presente — vino del GET al editar
-   *   un EE, o del autocompletado por documento cuando la persona YA es
-   *   funcionario activo en otro lado, ver `findPersonByDocument`/V51 REV5):
-   *   PATCH `/establecimientos/funcionarios/:id` (`fn_fun_actualizar`) —
-   *   TFUNCIONARIO es una sola fila por persona (ya no una por
-   *   establecimiento), así que "ya existe" siempre significa "editar ese
-   *   mismo registro", sea cual sea el establecimiento donde se lo esté
-   *   asignando ahora. Se reenvía el resto del `Employee`
-   *   (`existingEmployee`) tal cual vino, para no pisar clase/jornada/
-   *   estado/dirección con `null` — el form de establecimiento solo edita
-   *   los campos de `Person`. `existingEmployee` es `null` cuando el `id`
-   *   vino del autocompletado (nunca se cargó un `Employee` completo para
-   *   esa persona en esta pantalla): se usa `createEmptyEmployeeShell()`,
-   *   cuyos catálogos en `null` el COALESCE de `fn_fun_actualizar` traduce
-   *   como "no cambiar nada de esto".
-   * - Real, persona NUEVA (`person.id` ausente): POST /register/cval/funcionario
-   *   (auth-center, Java) — crea TUSUARIO + TFUNCIONARIO (`fn_fun_crear`
-   *   reusa el TUSUARIO si `accountExists` era `true`, o crea uno nuevo si
-   *   no). El vínculo con el EE lo pone `fn_est_crear`/`fn_est_actualizar`
-   *   directo vía `FK_TFUNCIONARIO_RECTOR`/`SECRETARIA` (se le manda el
-   *   `pkFuncionario` en el mismo POST/PATCH del establecimiento) — ya NO
-   *   hace falta un paso de "enlazar" aparte.
-   *
-   *   `matchSnapshot` (solo aplica a esta rama, cuando `accountExists` era
-   *   `true`): lo que trajo el autocompletado ANTES de que el usuario
-   *   editara algo. `fn_fun_crear` reusa el TUSUARIO tal cual estaba —
-   *   si el usuario corrigió un dato en el form (p. ej. el teléfono) antes
-   *   de guardar, esa corrección se pierde a menos que se encadene un PATCH
-   *   aparte con el `pkFuncionario` recién creado (`personDataChangedSinceMatch`).
-   */
+  /** Va antes del EE (se necesita su PK). Con `id`: PATCH reenviando el `Employee` para no pisarlo.\n * Sin `id`: registro; si se editó tras el match se encadena un PATCH (`fn_fun_crear` reusa el TUSUARIO). */
   async function persistPersonIfAny(
     person: Person | null,
     existingEmployee: Employee | null,
     label: string,
     /** Foto recién elegida; `null` en edición = conservar la guardada. */
     foto: File | null,
-    /** Ver el párrafo de `matchSnapshot` arriba. `null` si no hubo match, o
-     * si el match ya traía `id` (esa rama no la necesita). */
+    /** `null` si no hubo match o el match traía `id`. */
     matchSnapshot: Partial<Person> | null,
   ): Promise<PersistedPerson | null> {
     if (!person || !personHasAnyData(person)) {
@@ -401,15 +301,7 @@ export function AddEstablishmentPage() {
     if (!env.ENABLE_API_MOCKING) {
       try {
         if (person.id) {
-          // `fn_fun_actualizar` (id_query=119) solo devuelve el PK
-          // actualizado (`{rows:[{pk_funcionario_actualizado}]}`), no un
-          // `Employee` completo — a diferencia del tipo de retorno de
-          // `update()` (pensado para el mock, que sí devuelve `{status,
-          // message, employee}`). El módulo de funcionarios ya convive con
-          // esto (su propio `onSuccess` nunca lee `.employee`, ver
-          // `dialog-manage.tsx`); acá tampoco hay que leerlo del response —
-          // ya tenemos el `person` que se acaba de mandar, se devuelve tal
-          // cual.
+          // `fn_fun_actualizar` solo devuelve el PK: se devuelve el `person` enviado.
           await updateFuncionario(
             person.id,
             {
@@ -418,9 +310,7 @@ export function AddEstablishmentPage() {
             },
             foto,
           )
-          // Correo del rector/secretaria cambiado: la cuenta queda pendiente
-          // de activación y se envía la activación al correo nuevo. Un fallo
-          // acá no deshace el guardado (ya quedó hecho): se avisa al final.
+          // Correo cambiado: se reactiva al nuevo; un fallo no deshace el guardado.
           const correoAnterior = existingEmployee?.person?.email
           if (correoCambio(correoAnterior, person.email)) {
             try {
@@ -443,15 +333,11 @@ export function AddEstablishmentPage() {
           return { person, pkFuncionarioRegistrado: null, pendingInvitation: null }
         }
 
-        // `enviarInvitacion: false`: el correo de activación sale recién
-        // cuando el establecimiento se guardó (`enviarInvitacionesPendientes`).
-        // Si el EE falla, este registro se cancela y no se invita a nadie.
+        // La invitación sale recién cuando el EE se guardó.
         const registered = await registerFuncionario(person, foto, { enviarInvitacion: false })
         const persistedPerson = { ...person, id: registered.pkFuncionario }
 
-        // `mensajeInvitacion` no nulo: el backend ya sabe que no se puede
-        // invitar (p. ej. cuenta de baja) — se muestra su motivo y no se
-        // intenta el reenvío. Si no, queda pendiente para después del EE.
+        // `mensajeInvitacion` no nulo: el backend ya sabe que no se puede invitar.
         let pendingInvitation: PendingInvitation | null = null
         if (registered.mensajeInvitacion != null) {
           activationNoticesRef.current.push(`${label}: ${registered.mensajeInvitacion}`)
@@ -463,9 +349,7 @@ export function AddEstablishmentPage() {
           }
         }
 
-        // Ver "matchSnapshot" en el comentario de arriba: `fn_fun_crear`
-        // reusó el TUSUARIO tal cual estaba, así que cualquier corrección
-        // que el usuario haya hecho en el form todavía no llegó al backend.
+        // `fn_fun_crear` reusó el TUSUARIO: las correcciones del form van por PATCH.
         if (matchSnapshot && personDataChangedSinceMatch(matchSnapshot, person)) {
           await updateFuncionario(
             registered.pkFuncionario,
@@ -480,10 +364,7 @@ export function AddEstablishmentPage() {
           pendingInvitation,
         }
       } catch (error) {
-        // getErrorMessage y no error.message: un AxiosError ES un Error, y su
-        // .message es el genérico de axios ("Request failed with status code
-        // 400"). El texto que explica el problema viene en response.data.message,
-        // que es lo que este lee.
+        // El mensaje útil viene en response.data, no en error.message de axios.
         notify(getErrorMessage(error) || `No fue posible guardar el ${label}.`, {
           variant: "error",
         })
@@ -501,10 +382,7 @@ export function AddEstablishmentPage() {
     return { person: result.person, pkFuncionarioRegistrado: null, pendingInvitation: null }
   }
 
-  // Cubre TODO el guardado (registro de rector/secretaria → EE →
-  // invitaciones), no solo la mutación del EE: con solo `isPending`, el botón
-  // quedaba habilitado mientras se registraban las personas o se mandaban las
-  // invitaciones, y un doble clic podía registrar dos veces.
+  // Cubre todo el guardado, no solo la mutación del EE: evita doble registro por doble clic.
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -533,11 +411,6 @@ export function AddEstablishmentPage() {
       return
     }
 
-    // Persistimos rector/secretaria antes del establecimiento para que
-    // los `Person` queden con `id` en `personsDb` (mock) o con el
-    // `pkFuncionario` que devolvió /register/cval/funcionario (real, solo si
-    // eran nuevos — si ya existían, `persistPersonIfAny` los actualiza en
-    // el mismo paso y no hay nada que enlazar después).
     let nextPrincipal = formValues.principal
     let nextSecretary = formValues.secretary
     const pendingInvitations: PendingInvitation[] = []
@@ -580,25 +453,7 @@ export function AddEstablishmentPage() {
       secretary: nextSecretary,
     }
 
-    /**
-     * Rollback: deshace cualquier rector/secretaria REGISTRADO de cero en
-     * este submit (`pkFuncionarioRegistrado` no nulo) cuando crear/
-     * actualizar el establecimiento falla — sin esto, ese `TFUNCIONARIO`
-     * quedaba huérfano (no referenciado por ningún establecimiento) sin
-     * ninguna forma de deshacerlo desde el front. Confirmado con datos
-     * reales: un funcionario de prueba con 3 `TFUNCIONARIO`, uno de ellos
-     * sin ningún establecimiento que lo referenciara — la creación del EE
-     * había fallado DESPUÉS de que `registerFuncionario` ya lo hubiera
-     * creado (ver `fn_fun_cancelar_pendiente`, V51 REV5).
-     *
-     * Ya no hay un paso de "enlazar" aparte que distinguir (rector/
-     * secretaria se referencian directo vía `FK_TFUNCIONARIO_RECTOR`/
-     * `SECRETARIA` dentro del propio POST/PATCH del establecimiento, ver
-     * `persistPersonIfAny`) — si `createMutation`/`updateMutation` fallan,
-     * la transacción de `fn_est_crear`/`fn_est_actualizar` se abortó
-     * entera, así que el `TFUNCIONARIO` nunca llegó a quedar referenciado
-     * y es siempre seguro cancelarlo.
-     */
+    /** Cancela lo registrado en este submit si el EE falla (su transacción se abortó entera). */
     async function cancelarPendientesRegistrados() {
       const pendientes = [principalPkFuncionario, secretaryPkFuncionario].filter(
         (pk): pk is number => pk !== null,
@@ -608,9 +463,7 @@ export function AddEstablishmentPage() {
       const results = await Promise.allSettled(
         pendientes.map((pk) => cancelarFuncionarioPendiente(pk)),
       )
-      // Solo se avisa si el rollback FALLO. Cuando funciona no quedo nada
-      // registrado, asi que contarlo no le sirve a quien esta leyendo el
-      // error: le agrega un segundo mensaje sobre algo que ya no existe.
+      // Solo se avisa si el rollback falló.
       if (results.every((r) => r.status === "rejected")) {
         notify(
           "No fue posible deshacer el registro de rector/secretaria — puede haber quedado un registro a medias, contacta soporte.",
@@ -651,10 +504,7 @@ export function AddEstablishmentPage() {
     try {
       result = await createMutation.mutateAsync({ values: nextValues, logo: shield })
     } catch {
-      // El establecimiento nunca llegó a crearse — safe cancelar. El
-      // `onError` de `createMutation` ya avisó el motivo puntual del
-      // fallo (NIT duplicado, etc.); acá solo se agrega el aviso del
-      // rollback.
+      // El EE nunca se creó: seguro cancelar.
       await cancelarPendientesRegistrados()
       return
     }
@@ -677,11 +527,6 @@ export function AddEstablishmentPage() {
   const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending
 
   return (
-    /*
-      El mismo andamiaje que las pantallas de listado: encabezado pegajoso,
-      cuerpo que se estira hasta el borde inferior y —lo propio de un
-      formulario— la barra de guardar pegada abajo.
-    */
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
@@ -702,20 +547,13 @@ export function AddEstablishmentPage() {
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
 
-      {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
-          el suyo — si no, quedan dos líneas de 1px juntas. */}
+      {/* Sin borde abajo: ahí se acopla la barra de acciones. */}
       <TableScreenBody className="rounded-b-none border-b-0">
-        {/* Sin resumen de errores arriba: cada mensaje vive debajo de su campo
-            (`fieldErrors`), que es donde el usuario tiene que actuar. Del aviso
-            general se encarga el `notify` del submit. */}
         <form id="create-establishment-form" onSubmit={handleSubmit}>
           <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                {/* Dos cards, igual que rector y secretaria: identificación,
-                    domicilio y contacto describen al establecimiento y van
-                    juntos; la información complementaria es un bloque aparte. */}
                 <div className="space-y-4">
                   <Card className={accordionCardClassName}>
                     <CardContent>
@@ -750,8 +588,6 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                {/* Una card por persona: rector y secretaria son bloques
-                    independientes, no un solo formulario partido en dos. */}
                 <div className="space-y-4">
                   <Card className={accordionCardClassName}>
                     <CardContent>
@@ -768,10 +604,7 @@ export function AddEstablishmentPage() {
                           setPhotos((current) => ({ ...current, principal: file }))
                         }
                         onMatched={(found) => {
-                          // Solo hace falta guardar el snapshot cuando el
-                          // match NO trae `id` (ver `persistPersonIfAny`):
-                          // si ya trae `id`, esa rama edita directo por PK
-                          // y no compara contra nada.
+                          // Solo sin `id`: con `id` se edita directo por PK.
                           principalMatchRef.current = found && !found.id ? found : null
                         }}
                       />

@@ -40,6 +40,7 @@ import type {
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { agruparPorBloquesContinuos, compararPorHora, esFechaFutura, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
 const ASISTIO: TipoAsistencia = 1
@@ -128,9 +129,7 @@ function registrosPorBloque(
       for (const bloque of bloquesNumericos) {
         const tipoBloque: TipoAsistencia =
           bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
-        // El soporte de la tardanza va SOLO en el bloque marcado "Llegó
-        // tarde" -- los bloques "No asistió"/"Asistió" generados por la
-        // cascada no llevan justificación propia.
+        // El soporte va solo en el bloque "Llegó tarde", no en los que genera la cascada.
         const archivo =
           tipoBloque === LLEGO_TARDE
             ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
@@ -144,10 +143,7 @@ function registrosPorBloque(
       continue
     }
 
-    // El soporte solo aplica a No asistió / Llegó tarde (única combinación
-    // que la UI deja elegir) -- si `tipo` cambió a Asistió sin pasar por
-    // "Marcar todo" (que sí limpia el borrador), un archivo que haya quedado
-    // en `soporte` de una selección anterior no se re-envía.
+    // Un soporte que quedó de una selección anterior no se re-envía si `tipo` pasó a Asistió.
     const admiteSoporte = tipo === NO_ASISTIO || tipo === LLEGO_TARDE
     for (const bloque of bloques) {
       const archivo = admiteSoporte
@@ -209,6 +205,7 @@ function SesionTabContent({
   controlRef: React.RefObject<SesionControl | null>
 }) {
   const { notify } = useNotify()
+  const { puedeEditar } = useMenuPermission("ASISTENCIAS")
   const {
     porBloque: rosterOficial,
     isPending,
@@ -219,8 +216,7 @@ function SesionTabContent({
     {
       GRUPO: sesion.fkGrupo,
       FECHA: fecha,
-      // Sesión formativa (preescolar): el padrón/registro se identifican por
-      // ACTIVIDAD, no por ASIGNATURA+BLOQUE.
+      // Sesión formativa: se identifica por actividad, no por asignatura+bloque.
       ...(sesion.esFormativa
         ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
         : { ASIGNATURA: sesion.fkAsignatura }),
@@ -258,10 +254,7 @@ function SesionTabContent({
     [tipoOptionsCompleto],
   )
 
-  // El padrón (nombre/documento) es el mismo en cualquier bloque; el primero
-  // alcanza para eso. Lo que SÍ varía por bloque es el estado guardado, así
-  // que cada fila se reemplaza por su registro autoritativo (abajo) antes de
-  // pasarla a la tabla.
+  // El padrón es igual en todo bloque; el estado guardado sí varía y se reemplaza por fila.
   const primerBloqueRoster = React.useMemo(
     () => rosterPorBloque.get(sesion.bloque) ?? [],
     [rosterPorBloque, sesion.bloque],
@@ -291,8 +284,7 @@ function SesionTabContent({
       if (row.tipo_asistencia_valor == null) continue
       const base = tipoBase(row.tipo_asistencia_valor)
       inicialSeleccion[fkMatricula] = base
-      // Sin bloque real no hay "en cuál bloque llegó" que preseleccionar
-      // (sesión suelta o de un solo bloque -- el selector ni se muestra).
+      // Sin bloque real no hay bloque de llegada que preseleccionar.
       if (base === LLEGO_TARDE && bloque !== null) {
         inicialBloqueTarde[fkMatricula] = bloque
       }
@@ -342,8 +334,10 @@ function SesionTabContent({
         onBloqueTardeChange: (fkMatricula, bloque) =>
           setBloqueTarde((prev) => ({ ...prev, [fkMatricula]: bloque })),
         conPendiente,
+        soloLectura: !puedeEditar,
       }),
     [
+      puedeEditar,
       conPendiente,
       fecha,
       sesion.horaInicio,
@@ -429,9 +423,7 @@ function SesionTabContent({
     )
     const seleccionGuardada = seleccionLista
     setGuardando(true)
-    // Regla 75: `registrar` hace upsert sin pedir aprobación (V138), así que
-    // un registro que ya existe se corrige por PATCH, que es el que la pide.
-    // Lo que ya quedó propuesto en esta sesión no se vuelve a mandar.
+    // Regla 75: `registrar` hace upsert sin aprobación, así que lo existente se corrige por PATCH.
     const yaPropuesto = (registro: AsistenciaRegistroManual) =>
       pendientesLocales.has(registro.fkMatricula) &&
       tipoBase(registro.tipoAsistencia) === baseline.current[registro.fkMatricula] &&
@@ -544,7 +536,7 @@ function SesionTabContent({
           variant="outline"
           color="primary"
           size="sm"
-          disabled={roster_.length === 0}
+          disabled={roster_.length === 0 || !puedeEditar}
           onClick={handleMarcarTodoAsistio}
         >
           <CheckCircleFillIcon data-icon="inline-start" />
@@ -610,7 +602,7 @@ function SesionTabContent({
             </span>
           )}
         </div>
-        {mostrarGuardar && (
+        {mostrarGuardar && puedeEditar && (
           <Button
             type="button"
             color="primary"
@@ -634,10 +626,7 @@ function SesionTabContent({
 
 export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
-  // A esta pantalla solo se llega desde el calendario (`asistencia-month-grid`),
-  // que siempre manda `fecha` y `sede`. Si faltan o son inválidas (URL editada a
-  // mano, enlace viejo) el schema las deja en `undefined` en vez de tirar, y
-  // volvemos al calendario conservando lo que sí haya llegado.
+  // Sin `fecha`/`sede` válidas se vuelve al calendario conservando lo que haya llegado.
   if (!fecha || sede == null) {
     return <Navigate to={paths.app.asistencia.getHref()} search={{ sede, fecha }} replace />
   }
@@ -648,10 +637,7 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
   const [anio, mes] = fecha.split("-").map(Number)
 
   const { isDocente } = useAsistenciaAccess()
-  // Esta pantalla es SOLO de escritura: a diferencia del calendario/Seguimiento
-  // (de solo lectura para Director de Grupo/Coordinador), aquí SIEMPRE se
-  // filtra a lo que el usuario dicta, aunque además sea director de grupo —
-  // su alcance amplio de lectura no le da permiso de escritura ajena (Regla 74).
+  // Solo escritura: se filtra a lo que el usuario dicta aunque sea director de grupo (Regla 74).
   const { data: sesiones, isPending } = useAsistenciaCalendarioQuery(
     {
       SEDE: sede,
@@ -667,8 +653,7 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
     return agruparPorBloquesContinuos(delDia)
       .sort(compararPorHora)
       .map((b) => ({
-        // Una actividad no tiene bloque -- se identifica sola, distinta de
-        // cualquier otra sesión del mismo grupo/asignatura ese día.
+        // Una actividad no tiene bloque: se identifica sola.
         id: b.esFormativa ? `${b.fkGrupo}-actividad-${b.fkActividad}` : `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
         fkGrupo: b.fkGrupo,
         grado: b.grado,

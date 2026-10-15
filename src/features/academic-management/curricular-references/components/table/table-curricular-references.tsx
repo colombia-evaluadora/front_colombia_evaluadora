@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useMemo, useState } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -52,6 +53,7 @@ export function CurricularReferencesDataTable() {
 
   const [editorOpen, setEditorOpen] = useState(false)
   const soloEnLinea = useOnlineOnly()
+  const { puedeCrear } = useMenuPermission("REFERENTES_CURRICULARES")
   const [editingReferenceId, setEditingReferenceId] = useState<number | null>(null)
 
   function openCreateDialog() {
@@ -102,6 +104,7 @@ export function CurricularReferencesDataTable() {
           />
 
           <TableScreenActions>
+            {puedeCrear ? (
             <Button
               variant="fill"
               color="primary"
@@ -114,6 +117,7 @@ export function CurricularReferencesDataTable() {
               <ControlPointIcon data-icon="inline-start" />
               Nuevo referente
             </Button>
+            ) : null}
             <ExportCurricularReferencesDialog filters={queryFilters} sorting={sorting} columns={exportColumns} />
           </TableScreenActions>
         </TableScreenToolbar>
