@@ -13,6 +13,8 @@ import {
   notificacionesDeMensaje,
 } from "@/mocks/db/comunicaciones-notificaciones"
 import { onConnect, publish, publishEphemeral } from "@/mocks/realtime/server"
+// Registra el sink que lleva las notificaciones del chat a la bandeja del mock.
+import "@/mocks/db/comunicaciones-notificaciones-puente"
 
 /**
  * Eventos del chat sobre el gateway simulado y una simulación mínima de "otras

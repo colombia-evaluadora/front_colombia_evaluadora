@@ -57,6 +57,9 @@ export function useChatTiempoRealUsuario() {
       } else if (e.event === "notificacion.creada") {
         // La campana del chat (y la de `features/notificaciones`) leen por REST.
         void queryClient.invalidateQueries({ queryKey: chatKeys.notificaciones })
+        // Bandeja de `features/notificaciones` (sus keys cuelgan de ["notificaciones"]).
+        // Se invalida por prefijo para no importar nada de ese feature.
+        void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
       }
     },
     () => void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
