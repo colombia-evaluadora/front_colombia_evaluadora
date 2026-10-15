@@ -65,7 +65,7 @@ export interface UsePlanillaColumnasParams {
   periodoId?: number
 }
 
-async function fetchPlanillaColumnas(
+export async function fetchPlanillaColumnas(
   params: UsePlanillaColumnasParams,
 ): Promise<PlanillaColumna[]> {
   const query = new URLSearchParams({

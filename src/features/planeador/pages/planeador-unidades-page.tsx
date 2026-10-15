@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -162,7 +163,7 @@ function PlaneadorUnidadesPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Planeador</TableScreenTitle>
+        <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
 
         <PlaneadorTabs />
 

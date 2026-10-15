@@ -126,6 +126,7 @@ export function initOfflinePersistence(): Promise<void> {
  */
 export async function setDeviceMode(mode: DeviceMode): Promise<void> {
   deviceMode = mode
+  if (mode === "compartido") clearArchivos()
   if (!isIndexedDbAvailable()) return
   await setMeta(DEVICE_MODE_KEY, mode)
   if (mode === "compartido") {
@@ -337,9 +338,19 @@ export async function getLastUserSub(): Promise<string | undefined> {
   return getMeta<string>(LAST_USER_KEY)
 }
 
-/** Borra queries + session del `sub` (logout, §5.5). */
+/**
+ * Archivos guardados por "Incluir archivos" (`file-cache.ts`). Import
+ * dinámico: `file-cache` arrastra el cliente HTTP y este módulo no debe
+ * depender de él (ni de un posible ciclo con `api-client`).
+ */
+function clearArchivos() {
+  void import("@/lib/offline/file-cache").then((m) => m.clearArchivosCache()).catch(() => undefined)
+}
+
+/** Borra queries + session del `sub` (logout, §5.5) y los archivos guardados. */
 export async function clearUserData(userSub: string): Promise<void> {
   if (activeUser === userSub) deactivatePersistUser()
+  clearArchivos()
   if (!isIndexedDbAvailable()) return
   const db = await getDb()
   const keys = await db.getAllKeysFromIndex("queries", "byUser", userSub)
