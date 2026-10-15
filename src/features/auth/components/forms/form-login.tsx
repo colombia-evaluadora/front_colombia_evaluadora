@@ -1,8 +1,9 @@
-import { useState } from "react"
-import { useForm } from "@tanstack/react-form"
+import { useEffect, useState } from "react"
+import { useForm, useStore } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
 import { toEmailInput } from "@/lib/text-input"
+import { canChoosePersonalDevice } from "@/lib/offline/pilot"
 
 import {
   Field,
@@ -43,6 +44,15 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
     },
     onSubmit: ({ value }) => onSubmit(value),
   })
+
+  // Solo el piloto puede desmarcar "equipo compartido" (plan §0.3). Antes del
+  // login se decide por el correo escrito; la página revalida con el token.
+  const email = useStore(form.store, (state) => state.values.email)
+  const sharedDevice = useStore(form.store, (state) => state.values.sharedDevice)
+  const puedeElegirPersonal = canChoosePersonalDevice(email)
+  useEffect(() => {
+    if (!puedeElegirPersonal && !sharedDevice) form.setFieldValue("sharedDevice", true)
+  }, [form, puedeElegirPersonal, sharedDevice])
 
   return (
     <form
@@ -160,12 +170,18 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               <Checkbox
                 id={field.name}
                 checked={field.state.value}
+                disabled={!puedeElegirPersonal}
                 onCheckedChange={(checked) => field.handleChange(checked === true)}
               />
               <div className="flex flex-col gap-1">
                 <FieldLabel htmlFor={field.name} className="font-normal text-muted-foreground">
                   Este es un equipo compartido
                 </FieldLabel>
+                {!puedeElegirPersonal && (
+                  <FieldDescription>
+                    Solo los usuarios del piloto sin conexión pueden usar este equipo como personal.
+                  </FieldDescription>
+                )}
                 {!field.state.value && (
                   <FieldDescription>
                     Al desmarcar, este equipo guardará nombres de tus estudiantes y tus registros
