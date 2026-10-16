@@ -11,7 +11,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
-import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
+import { useAreasOficialesOpcionesQuery } from "@/features/administration/areas-oficiales/api/query/use-areas-oficiales-opciones-query"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
 import { SubjectLabelSelect } from "@/features/academic-management/curricular-references/components/forms/subject-label-select"
@@ -48,8 +48,12 @@ export function CurricularReferenceDetailsForm({
   )
   const evaluationTypeLabels = Object.fromEntries(evaluationTypes.map((item) => [item.id, item.name]))
 
-  const { data: generalAreas = [] } = useGeneralAreasQuery()
-  const areaById = new Map(generalAreas.map((area) => [area.id, area]))
+  // Activas del catálogo de Áreas oficiales + las ya asociadas (que pueden estar
+  // inactivas): sin estas últimas, tocar el selector las borraba del referente.
+  const { data: areasOficiales = [] } = useAreasOficialesOpcionesQuery()
+  const areaById = new Map(value.areas.map((area) => [area.id, area]))
+  for (const area of areasOficiales)
+    areaById.set(area.pkAreaOficial, { id: area.pkAreaOficial, code: "", name: area.nombre })
 
   const isFormativo = value.pedagogicalApproach?.id === FORMATIVO_APPROACH_ID
 
@@ -251,13 +255,14 @@ export function CurricularReferenceDetailsForm({
           <SelectGeneralAreasDialog
             id="curricular-reference-areas"
             value={value.areas.map((area) => area.id)}
+            selected={value.areas}
             onChange={(ids) =>
               onChange({
                 ...value,
                 areas: ids
                   .map((id) => areaById.get(id))
                   .filter((area): area is NonNullable<typeof area> => area != null)
-                  .map((area) => ({ id: area.id, code: "", name: area.nombre })),
+                  .map((area) => ({ id: area.id, code: "", name: area.name })),
               })
             }
             placeholder="Seleccione"

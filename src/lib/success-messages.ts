@@ -34,6 +34,14 @@ export const SUCCESS_MESSAGES = {
     activated: "La lista se activó correctamente.",
     deactivated: "La lista se inactivó correctamente.",
   },
+  // Textos del requerimiento: guardar (crear o modificar) dice lo mismo.
+  areaOficial: {
+    created: "Área oficial guardada.",
+    updated: "Área oficial guardada.",
+    deleted: "Área oficial eliminada.",
+    activated: "Área oficial activada.",
+    deactivated: "Área oficial inactivada.",
+  },
   listaValor: {
     created: "El valor se creó correctamente.",
     updated: "El valor se actualizó correctamente.",
