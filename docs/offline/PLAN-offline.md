@@ -1010,6 +1010,9 @@ Aceptación: crear actividad con 2 recursos con imagen + rúbrica + adaptaciones
 ### Fase 4 — Resto (opcional) · 2–3 semanas
 Unidades crear/editar/ponderaciones offline; observaciones de informes (si P8); cache de imágenes de recursos; métricas finas.
 
+#### Cierre de la Fase 4 (2026-10)
+Estado: **implementada** (change `add-offline-rest` archivado). Outbox para referentes curriculares (enunciados/evidencias CRUD, activar; inactivar sigue en línea por la consulta de impacto) y observaciones de informes escritas a mano (P8 resuelta solo para la edición manual; IA sigue en línea). Solo consulta sin red: periodos/horario/asignaciones e historial del informe. Administración sigue solo en línea. Unidades/ponderaciones, cache de imágenes y telemetría quedan en backlog. Cierre: `pnpm test:e2e:matrix` (Chromium/Firefox/WebKit), [CHECKLIST-MULTINAVEGADOR.md](CHECKLIST-MULTINAVEGADOR.md), [GO-NO-GO.md](GO-NO-GO.md), [PORT-PIGSE.md](PORT-PIGSE.md).
+
 ### 11.6 Kill-switch y rollback
 - **Flag remoto**: `GET /api/eval-col/config/offline` (o el `ENV_FILE` del deploy, `VITE_APP_OFFLINE` = `off|read|full`) consultado al arrancar online y guardado en `meta.killSwitch`. `off` → no se persiste, la outbox solo envía (no acepta encolar offline), se muestra solo banner.
 - **Flag por feature**: `meta.offline` y handlers se registran solo si `offlineFeatures.includes("planilla")` etc.

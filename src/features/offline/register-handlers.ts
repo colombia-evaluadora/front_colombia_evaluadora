@@ -17,6 +17,10 @@ import "@/features/planeador/api/mutations/use-asistencia-actividad"
 import "@/features/planeador/api/mutations/use-observacion-soporte"
 // Fase 3: pasos de las sagas de actividad/unidad (se reanudan tras recargar).
 import "@/features/planeador/offline/saga-handlers"
+// Fase 4 (`add-offline-rest`): referentes curriculares y observaciones de informes.
+import "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
+import "@/features/academic-management/curricular-references/api/mutations/use-toggle-status"
+import "@/features/academic-management/reports/api/mutations/use-observacion"
 
 const SYNC_TOAST_ID = "outbox-sync"
 

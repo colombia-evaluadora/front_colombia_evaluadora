@@ -25,6 +25,7 @@ import type {
 import { useAssignmentSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
 import { useTeacherAssignmentsQuery } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useSaveTeacherAssignments } from "@/features/establishment/academic-period/api/mutations/save-teacher-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
 import { AssignmentTransfer } from "@/features/establishment/academic-period/components/assignment-transfer"
@@ -76,6 +77,8 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, savedIdsUpdatedAt])
 
+  // Fase 4 offline: el tab se consulta sin red, pero guardar sigue siendo solo en línea.
+  const soloEnLinea = useOnlineOnly()
   const saveAssignments = useSaveTeacherAssignments({
     mutationConfig: {
       onSuccess: (result) => {
@@ -216,7 +219,8 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
                   type="button"
                   color="primary"
                   size="sm"
-                  disabled={saveAssignments.isPending}
+                  disabled={saveAssignments.isPending || soloEnLinea.disabled}
+                  title={soloEnLinea.tooltip ?? undefined}
                   aria-busy={saveAssignments.isPending}
                   onClick={() =>
                     saveAssignments.mutate({

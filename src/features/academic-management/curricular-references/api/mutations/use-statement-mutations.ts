@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { env } from "@/config/env"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type {
@@ -39,6 +41,133 @@ function enunciadoUrl(id: number) {
   return apiPath(`/academic-management/curricular-statements/${id}`, `/referentes-curriculares/enunciados/${id}`)
 }
 
+/** Resultado común de las escrituras que pueden quedar en la outbox. */
+export interface Queued {
+  /** `true` = se guardó en este equipo y se enviará al volver la conexión. */
+  queued?: boolean
+}
+
+const RUTA_REFERENTES = "/app/gestion-academica/referentes-curriculares"
+
+type CreateStatementInput = {
+  curricularReferenceId: number
+  areaId: number | null
+  gradeId: number | null
+  text: string
+  active: boolean
+}
+
+/**
+ * Fase 4 offline (`add-offline-rest`): enunciados y evidencias se encolan en
+ * la outbox. Un enunciado creado sin red NO tiene id hasta sincronizar, así que
+ * no se le pueden colgar evidencias offline (la UI las pide sobre un enunciado
+ * ya existente). Editar/eliminar se fusionan por enunciado: la última edición
+ * gana (`coalesce`); un eliminar posterior viaja detrás, en orden FIFO.
+ */
+registerOutboxHandler<CreateStatementInput>({
+  kind: "referente.enunciado.crear",
+  version: 1,
+  // Cada creación es su propia entidad (no se fusionan dos enunciados nuevos).
+  entityKey: (p) => `referente:${p.curricularReferenceId}:nuevo:${p.text}`,
+  send: (p) => sendCreateStatement(p),
+  invalidates: () => [["curricular-statements"], ["curricular-reference-grades"], ["curricular-reference"], ["curricular-references"]],
+  describe: (p) => ({ titulo: "Nuevo enunciado", detalle: p.text.slice(0, 80), ruta: RUTA_REFERENTES }),
+})
+
+type UpdateEnunciadoPayload = { id: number; values: Partial<CurricularStatementDraft>; evidence?: boolean }
+
+registerOutboxHandler<UpdateEnunciadoPayload>({
+  kind: "referente.enunciado.editar",
+  version: 1,
+  entityKey: (p) => `referente:enunciado:${p.id}`,
+  coalesce: (prev, next) => ({ ...next, values: { ...prev.values, ...next.values } }),
+  send: (p) => (p.evidence ? sendUpdateEvidence(p) : sendUpdateStatement(p)),
+  invalidates: (p) => (p.evidence ? [["curricular-evidences"]] : [["curricular-statements"]]),
+  describe: (p) => ({
+    titulo: p.evidence ? "Edición de evidencia" : "Edición de enunciado",
+    detalle: p.values.text?.slice(0, 80) ?? (p.values.active != null ? (p.values.active ? "Activar" : "Inactivar") : `#${p.id}`),
+    ruta: RUTA_REFERENTES,
+  }),
+})
+
+type DeleteEnunciadoPayload = { id: number; evidence?: boolean }
+
+registerOutboxHandler<DeleteEnunciadoPayload>({
+  kind: "referente.enunciado.eliminar",
+  version: 1,
+  entityKey: (p) => `referente:enunciado:${p.id}`,
+  send: (p) => (p.evidence ? sendDeleteEvidence(p.id) : sendDeleteStatement(p.id)),
+  invalidates: () => [["curricular-statements"], ["curricular-evidences"], ["curricular-reference-grades"], ["curricular-reference"], ["curricular-references"]],
+  describe: (p) => ({ titulo: p.evidence ? "Eliminar evidencia" : "Eliminar enunciado", detalle: `#${p.id}`, ruta: RUTA_REFERENTES }),
+})
+
+type CreateEvidencePayload = { curricularReferenceId: number; statementId: number; text: string; active: boolean }
+
+registerOutboxHandler<CreateEvidencePayload>({
+  kind: "referente.evidencia.crear",
+  version: 1,
+  entityKey: (p) => `referente:enunciado:${p.statementId}:evidencia-nueva:${p.text}`,
+  send: (p) => sendCreateEvidences({ ...p, texts: [p.text] }),
+  invalidates: () => [["curricular-evidences"]],
+  describe: (p) => ({ titulo: "Nueva evidencia", detalle: p.text.slice(0, 80), ruta: RUTA_REFERENTES }),
+})
+
+async function createStatement(input: CreateStatementInput): Promise<StatementResult & Queued> {
+  const outcome = await runOrQueue<CreateStatementInput, StatementResult>("referente.enunciado.crear", input)
+  return outcome.queued ? { status: "ok", queued: true } : outcome.result
+}
+
+async function updateStatement(input: { id: number; values: Partial<CurricularStatementDraft> }): Promise<StatementResult & Queued> {
+  const outcome = await runOrQueue<UpdateEnunciadoPayload, StatementResult>("referente.enunciado.editar", input)
+  return outcome.queued ? { status: "ok", queued: true } : outcome.result
+}
+
+async function deleteStatement(id: number): Promise<{ status?: "ok" | "error"; message?: string } & Queued> {
+  const outcome = await runOrQueue<DeleteEnunciadoPayload, { status?: "ok" | "error"; message?: string }>(
+    "referente.enunciado.eliminar",
+    { id },
+  )
+  return outcome.queued ? { status: "ok", queued: true } : outcome.result
+}
+
+async function updateEvidence(input: { id: number; values: Partial<CurricularEvidenceDraft> }): Promise<StatementResult & Queued> {
+  const outcome = await runOrQueue<UpdateEnunciadoPayload, StatementResult>("referente.enunciado.editar", {
+    ...input,
+    evidence: true,
+  })
+  return outcome.queued ? { status: "ok", queued: true } : outcome.result
+}
+
+async function deleteEvidence(id: number): Promise<{ status?: "ok" | "error"; message?: string } & Queued> {
+  const outcome = await runOrQueue<DeleteEnunciadoPayload, { status?: "ok" | "error"; message?: string }>(
+    "referente.enunciado.eliminar",
+    { id, evidence: true },
+  )
+  return outcome.queued ? { status: "ok", queued: true } : outcome.result
+}
+
+/** Una op por texto: si se corta la red a mitad, se sabe cuáles entraron. */
+async function createEvidences(input: {
+  curricularReferenceId: number
+  statementId: number
+  texts: string[]
+  active: boolean
+}): Promise<EvidencesResult & Queued> {
+  const evidences: CurricularEvidence[] = []
+  let queued = false
+  for (const text of input.texts) {
+    const outcome = await runOrQueue<CreateEvidencePayload, EvidencesResult>("referente.evidencia.crear", {
+      curricularReferenceId: input.curricularReferenceId,
+      statementId: input.statementId,
+      text,
+      active: input.active,
+    })
+    if (outcome.queued) queued = true
+    else evidences.push(...(outcome.result.evidences ?? []))
+  }
+  return { status: "ok", evidences, queued }
+}
+
 // Grados y "Grados vinculados" dependen de los enunciados de nivel 1.
 function invalidateStatementDerived(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
@@ -47,7 +176,7 @@ function invalidateStatementDerived(queryClient: ReturnType<typeof useQueryClien
   queryClient.invalidateQueries({ queryKey: ["curricular-references"] })
 }
 
-async function createStatement(input: {
+async function sendCreateStatement(input: {
   curricularReferenceId: number
   areaId: number | null
   /** Grado del filtro; queda fijo desde la creación (Regla 11). */
@@ -83,6 +212,7 @@ export function useCreateStatement(options: { mutationConfig?: MutationConfig<ty
 
   return useMutation({
     mutationFn: createStatement,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       invalidateStatementDerived(queryClient)
@@ -91,7 +221,7 @@ export function useCreateStatement(options: { mutationConfig?: MutationConfig<ty
   })
 }
 
-function updateStatement({ id, values }: { id: number; values: Partial<CurricularStatementDraft> }) {
+function sendUpdateStatement({ id, values }: { id: number; values: Partial<CurricularStatementDraft> }) {
   const url = enunciadoUrl(id)
   if (env.ENABLE_API_MOCKING) {
     return api.put<StatementResult>(url, values)
@@ -108,6 +238,7 @@ export function useUpdateStatement(options: { mutationConfig?: MutationConfig<ty
 
   return useMutation({
     mutationFn: updateStatement,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
@@ -116,7 +247,7 @@ export function useUpdateStatement(options: { mutationConfig?: MutationConfig<ty
   })
 }
 
-function deleteStatement(id: number) {
+function sendDeleteStatement(id: number) {
   if (env.ENABLE_API_MOCKING) {
     return api.delete<{ status: "ok" | "error"; message: string }>(
       `/academic-management/curricular-statements/${id}`,
@@ -132,6 +263,7 @@ export function useDeleteStatement(options: { mutationConfig?: MutationConfig<ty
 
   return useMutation({
     mutationFn: deleteStatement,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       invalidateStatementDerived(queryClient)
@@ -147,12 +279,12 @@ interface EvidencesResult {
   evidences?: CurricularEvidence[]
 }
 
-async function createEvidences(input: {
+async function sendCreateEvidences(input: {
   curricularReferenceId: number
   statementId: number
   texts: string[]
   active: boolean
-}) {
+}): Promise<EvidencesResult> {
   if (env.ENABLE_API_MOCKING) {
     const url = apiPath(`/academic-management/curricular-statements/${input.statementId}/evidences`, "")
     return api.post<EvidencesResult>(url, { texts: input.texts, active: input.active })
@@ -176,6 +308,7 @@ export function useCreateEvidences(options: { mutationConfig?: MutationConfig<ty
 
   return useMutation({
     mutationFn: createEvidences,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-evidences"] })
@@ -184,7 +317,7 @@ export function useCreateEvidences(options: { mutationConfig?: MutationConfig<ty
   })
 }
 
-function updateEvidence({ id, values }: { id: number; values: Partial<CurricularEvidenceDraft> }) {
+function sendUpdateEvidence({ id, values }: { id: number; values: Partial<CurricularEvidenceDraft> }) {
   const url = enunciadoUrl(id)
   if (env.ENABLE_API_MOCKING) {
     return api.put<{ status: "ok" | "error"; message?: string; evidence: CurricularEvidence }>(url, values)
@@ -200,6 +333,7 @@ export function useUpdateEvidence(options: { mutationConfig?: MutationConfig<typ
 
   return useMutation({
     mutationFn: updateEvidence,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-evidences"] })
@@ -208,7 +342,7 @@ export function useUpdateEvidence(options: { mutationConfig?: MutationConfig<typ
   })
 }
 
-function deleteEvidence(id: number) {
+function sendDeleteEvidence(id: number) {
   if (env.ENABLE_API_MOCKING) {
     return api.delete<{ status: "ok" | "error"; message: string }>(
       `/academic-management/curricular-evidences/${id}`,
@@ -224,6 +358,7 @@ export function useDeleteEvidence(options: { mutationConfig?: MutationConfig<typ
 
   return useMutation({
     mutationFn: deleteEvidence,
+    networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-evidences"] })
