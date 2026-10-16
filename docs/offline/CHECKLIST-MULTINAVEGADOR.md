@@ -13,7 +13,15 @@ pnpm test:e2e:pwa                # app shell + SW (solo Chromium: build de produ
 
 Cubre: banner y estados de conectividad, lectura desde cache persistida, encolado y sincronización de la outbox, recarga a mitad de envío, dos pestañas, 401/403 durante el flush. WebKit de Playwright en Windows **no es Safari iOS**: no reproduce cuotas, evicción a los 7 días ni el comportamiento de PWA instalada.
 
-Resultados de la última corrida: ver el PR de la Fase 4 (`feat/offline-f4-resto`).
+Resultados de la primera corrida (2026-10-16, Windows 11, Playwright 1.61):
+
+| Spec | Chromium | Firefox | WebKit |
+|---|---|---|---|
+| `offline-resilience.spec.ts` | ✔ | ✘ 1 de 4 ("recarga con la API caída… Reintentar recupera": no aparece el `ErrorPage`) | ✔ |
+| `offline-reads.spec.ts` | ✔ | ✘ 5 (todos los escenarios con `context.setOffline`; el worker termina por timeout) | sin correr (corte por tiempo) |
+| `offline-writes*.spec.ts` | ✔ (corrida de la Fase 2) | sin correr | sin correr |
+
+**Pendiente**: investigar Firefox (sospecha: `context.setOffline` en Firefox no corta el heartbeat igual que en Chromium, o `navigator.locks`/IndexedDB en contexto efímero) y completar WebKit. Hasta entonces Firefox se valida a mano con la tabla de abajo.
 
 ## 2. Manual (por dispositivo)
 
