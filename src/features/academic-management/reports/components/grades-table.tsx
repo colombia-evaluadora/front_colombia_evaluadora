@@ -14,6 +14,10 @@ import type {
 } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
 import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
+import {
+  CeldaUltimaActualizacion,
+  EncabezadoUltimaActualizacion,
+} from "@/features/academic-management/reports/components/ultima-actualizacion"
 
 interface GradesTableProps {
   estudiantes: EstudianteFilas[]
@@ -26,6 +30,8 @@ interface GradesTableProps {
   mostrarMarcas: boolean
   marcas: MarcasPeriodo
   onToggleMarca: (matriculaId: number, periodoId: number) => void
+  /** Último guardado por (matrícula, período), ver `useUltimaActualizacionQuery`. */
+  fechas: Map<string, string> | undefined
 }
 
 function formatNota(valor: number | null): string {
@@ -235,6 +241,7 @@ export function GradesTable({
   mostrarMarcas,
   marcas,
   onToggleMarca,
+  fechas,
 }: GradesTableProps) {
   const todosSeleccionados =
     estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
@@ -266,6 +273,7 @@ export function GradesTable({
               Pe
               <InfoIcon className="ml-1 inline size-3 text-muted-foreground" />
             </th>
+            <EncabezadoUltimaActualizacion className="align-bottom" />
             {COLUMNAS_RESUMEN.map((columna) => (
               <th
                 key={columna.key}
@@ -322,6 +330,18 @@ export function GradesTable({
                       marcable={mostrarMarcas && seleccionados.has(estudiante.matriculaId)}
                       marcas={marcas}
                       onToggleMarca={onToggleMarca}
+                    />
+                  ))}
+                </div>
+              </td>
+              <td className="border-l border-border p-0 text-center align-top">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <CeldaUltimaActualizacion
+                      key={fila.periodoId}
+                      fila={fila}
+                      fechas={fechas}
+                      className="px-3 py-1.5"
                     />
                   ))}
                 </div>

@@ -50,6 +50,7 @@ import {
 import { useGruposPeriodoQuery } from "@/features/academic-management/reports/api/query/use-grupos-periodo-query"
 import { useHistorialQuery } from "@/features/academic-management/reports/api/query/use-historial-query"
 import { useInformeGrupoQuery } from "@/features/academic-management/reports/api/query/use-informe-grupo-query"
+import { useUltimaActualizacionQuery } from "@/features/academic-management/reports/api/query/use-ultima-actualizacion-query"
 import { usePeriodosInformeQuery } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
 import type { InformesSearch } from "@/features/academic-management/reports/api/schema"
 import {
@@ -207,6 +208,10 @@ function GrupoTabContent({
 }: GrupoTabContentProps) {
   const soloEnLinea = useOnlineOnly()
   const informe = useInformeGrupoQuery(periodos.length > 0 ? { grupoId, periodos } : null)
+  // Columna "Actualizado": aparte del listado, que reutilizan reporte y boletines.
+  const ultimaActualizacion = useUltimaActualizacionQuery(
+    periodos.length > 0 ? { grupoId, periodos } : null,
+  )
   const { status: conectividad } = useConnectivity()
   const informeSinDatosOffline = periodos.length > 0 && isOfflineWithoutData(informe, conectividad)
 
@@ -293,6 +298,7 @@ function GrupoTabContent({
             mostrarMarcas={mostrarMarcas}
             marcas={marcas}
             onToggleMarca={onToggleMarca}
+            fechas={ultimaActualizacion.data}
           />
         ) : (
           <GradesTable
@@ -304,6 +310,7 @@ function GrupoTabContent({
             mostrarMarcas={mostrarMarcas}
             marcas={marcas}
             onToggleMarca={onToggleMarca}
+            fechas={ultimaActualizacion.data}
           />
         ))}
     </div>

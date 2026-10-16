@@ -9,6 +9,10 @@ import type { FilaInforme } from "@/features/academic-management/reports/api/typ
 import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
 import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
+import {
+  CeldaUltimaActualizacion,
+  EncabezadoUltimaActualizacion,
+} from "@/features/academic-management/reports/components/ultima-actualizacion"
 
 const SUBFILA_CLASS = "flex h-12 items-center"
 
@@ -23,6 +27,8 @@ interface ObservacionesTableProps {
   mostrarMarcas: boolean
   marcas: MarcasPeriodo
   onToggleMarca: (matriculaId: number, periodoId: number) => void
+  /** Último guardado por (matrícula, período), ver `useUltimaActualizacionQuery`. */
+  fechas: Map<string, string> | undefined
 }
 
 export function ObservacionesTable({
@@ -35,6 +41,7 @@ export function ObservacionesTable({
   mostrarMarcas,
   marcas,
   onToggleMarca,
+  fechas,
 }: ObservacionesTableProps) {
   const todosSeleccionados =
     estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
@@ -65,6 +72,7 @@ export function ObservacionesTable({
             <th className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase">
               Pe
             </th>
+            <EncabezadoUltimaActualizacion className="align-bottom" />
             <th className="border-l border-border px-3 py-3 text-left font-semibold uppercase">
               {columnaLabel}
             </th>
@@ -97,6 +105,18 @@ export function ObservacionesTable({
                       marcable={mostrarMarcas && seleccionados.has(estudiante.matriculaId)}
                       marcas={marcas}
                       onToggleMarca={onToggleMarca}
+                    />
+                  ))}
+                </div>
+              </td>
+              <td className="border-l border-border p-0 text-center align-top">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <CeldaUltimaActualizacion
+                      key={fila.periodoId}
+                      fila={fila}
+                      fechas={fechas}
+                      className={cn(SUBFILA_CLASS, "justify-center px-3")}
                     />
                   ))}
                 </div>
