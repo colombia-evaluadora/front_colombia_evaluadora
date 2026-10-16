@@ -17,7 +17,6 @@ export const chatKeys = {
     [...conversacion(conversacionId), "evaluacion", "entregas"] as const,
   miembros: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "miembros"] as const,
-  notificaciones: [...all, "notificaciones"] as const,
   politica: [...all, "politica"] as const,
   votantesOpciones: [...all, "votantes", "opciones"] as const,
   votantes: (grupo: string, valor: string) => [...all, "votantes", grupo, valor] as const,

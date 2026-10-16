@@ -55,8 +55,7 @@ export function useChatTiempoRealUsuario() {
           prev?.some((x) => x.id === c.id) ? prev.map((x) => (x.id === c.id ? c : x)) : prev,
         )
       } else if (e.event === "notificacion.creada") {
-        // La campana del chat (y la de `features/notificaciones`) leen por REST.
-        void queryClient.invalidateQueries({ queryKey: chatKeys.notificaciones })
+        // Campana única: la general de `features/notificaciones` (lee por REST).
         // Bandeja de `features/notificaciones` (sus keys cuelgan de ["notificaciones"]).
         // Se invalida por prefijo para no importar nada de ese feature.
         void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })

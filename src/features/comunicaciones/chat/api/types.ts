@@ -301,17 +301,6 @@ export interface VotacionRapida {
   miVoto: number | null
 }
 
-// Aviso de la campana: hoy, invitaciones a votar en una elección.
-export interface NotificacionChat {
-  id: number
-  conversacionId: number
-  categoria: CategoriaCanal
-  titulo: string
-  texto: string
-  fecha: string
-  pendientes: number
-}
-
 // Personas habilitadas para votar en una elección, filtradas por grado o tipo de funcionario.
 export type GrupoVotantes = "GRADO" | "FUNCIONARIO"
 

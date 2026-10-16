@@ -4,6 +4,7 @@ import {
   type TipoNotificacionChat,
 } from "@/mocks/db/comunicaciones-notificaciones"
 import { notificacionesDb } from "@/mocks/db/notificaciones"
+import { eleccionCerrada, elecciones } from "@/mocks/db/comunicaciones-elecciones"
 
 /**
  * Puente MSW chat → bandeja de notificaciones (`src/mocks/db/notificaciones`,
@@ -37,3 +38,29 @@ registrarSinkNotificacionesChat((n) => {
     archivada: false,
   })
 })
+
+/**
+ * Elección abierta → aviso "entra a votar" en la bandeja general. Reemplaza a
+ * la antigua campana propia del chat (se unificaron las dos campanas).
+ */
+export function notificarEleccionAbierta(conversacionId: number, nombre: string, fecha = new Date().toISOString()) {
+  notificacionesDb.unshift({
+    id: `chat-eleccion-${conversacionId}`,
+    tipo: "CHAT_ELECCION",
+    categoria: "CHAT",
+    titulo: `Elección abierta: ${nombre}`,
+    cuerpo_corto: "Entra al canal para votar.",
+    deep_link: `/app/comunicaciones/chat?canal=${conversacionId}`,
+    prioridad: "ALTA",
+    creada_en: fecha,
+    leida_en: null,
+    actores: null,
+    conteo: null,
+    archivada: false,
+  })
+}
+
+// Las elecciones abiertas del fixture también avisan (antes lo hacía la campana del chat).
+for (const e of elecciones) {
+  if (!eleccionCerrada(e)) notificarEleccionAbierta(e.conversacionId, e.nombre, e.fechaInicio ?? undefined)
+}
