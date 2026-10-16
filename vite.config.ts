@@ -19,7 +19,14 @@ export default defineConfig(({ mode }) => {
   const swKill = env.VITE_APP_SW_KILL === "true"
   const apiProxyTarget = env.VITE_APP_API_PROXY_TARGET || "http://localhost:8080"
 
+  // Versión del build para X-Client-Version (offline de meses, D-7):
+  // fecha + SHA corto. En CI viene de GITHUB_SHA; local, "local".
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const appVersion = `${now.getUTCFullYear()}.${pad(now.getUTCMonth() + 1)}.${pad(now.getUTCDate())}-${(process.env.GITHUB_SHA ?? "local").slice(0, 7)}`
+
   return {
+    define: { __APP_VERSION__: JSON.stringify(appVersion) },
     plugins: [
       react(),
       tailwindcss(),

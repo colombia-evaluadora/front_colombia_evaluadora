@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { isNetworkError } from "@/lib/network-error"
+import { APP_VERSION, noteMinClientVersion } from "@/lib/app-version"
 import { noteServerTime } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { assertNoTmpIds } from "@/lib/offline/outbox/tmp-id"
@@ -299,6 +300,10 @@ export function idempotencyKeyInterceptor(config: InternalAxiosRequestConfig) {
 
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.request.use(idempotencyKeyInterceptor)
+api.interceptors.request.use((config) => {
+  if (config.headers) config.headers["X-Client-Version"] = APP_VERSION
+  return config
+})
 // Fase 3: un id temporal `tmp:<uuid>` de una saga offline nunca llega al
 // backend; si se escapara (bug de remapeo) la request falla acá, antes de salir.
 api.interceptors.request.use((config) => {
@@ -312,6 +317,7 @@ api.interceptors.response.use(
     connectivityStore.reportSuccess()
     // BE-7: hora del servidor para corregir un reloj del equipo mal puesto.
     noteServerTime(response.headers?.["x-server-time"] as string | undefined)
+    noteMinClientVersion(response.headers?.["x-min-client-version"] as string | undefined)
     return response.data
   },
   async (error) => {
