@@ -21,3 +21,19 @@ export function useEliminarBorrador() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.borradores }),
   })
 }
+
+/**
+ * Guarda lo que quedó escrito en el editor de un canal (un borrador por canal y
+ * persona; texto vacío lo descarta). Se dispara al salir del canal, sin aviso:
+ * un fallo solo significa que no quedó el borrador.
+ */
+export function useGuardarBorrador() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ conversacionId, texto }: { conversacionId: number; texto: string }) =>
+      evalCol.put(`/comunicaciones/conversaciones/${conversacionId}/borrador`, {
+        TEXTO: texto,
+      }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: chatKeys.borradores }),
+  })
+}
