@@ -721,7 +721,7 @@ export async function fetchActividadDetalle(id: number, queryClient: QueryClient
 }
 
 /** Opciones del detalle, compartidas por el hook y el prefetch. */
-function actividadDetalleQueryOptions(id: number, queryClient: QueryClient) {
+export function actividadDetalleQueryOptions(id: number, queryClient: QueryClient) {
   return {
     meta: estudiantesMeta(),
     queryKey: planeadorKeys.actividad.detalle(id),

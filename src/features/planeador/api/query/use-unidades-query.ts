@@ -170,7 +170,7 @@ function isSentinel(row: unknown): row is UnidadSentinelRow {
   return (row as { pk_tunidad?: unknown } | null)?.pk_tunidad === null
 }
 
-async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
+export async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
   const query = new URLSearchParams({ size: String(PAGE_SIZE), offset: "0" })
   if (params.dia) query.set("dia", params.dia)
   setAlcanceQuery(query, params)

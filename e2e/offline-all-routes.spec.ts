@@ -50,7 +50,7 @@ test("ninguna ruta no administrativa muestra el empty state sin red tras prepara
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar" }).click()
+  await dialog.getByRole("button", { name: "Preparar todo el año" }).click()
   await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 90_000 })
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 
