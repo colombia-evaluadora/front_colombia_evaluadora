@@ -96,6 +96,11 @@ describe("classifyError", () => {
     expect(classifyError(httpError(422, { code: "IDEMPOTENCY_KEY_REUSED" }), 0).kind).toBe("fatal")
   })
 
+  it("409 IDEMPOTENCY_IN_PROGRESS (gateway, BE-1) → retry con Retry-After", () => {
+    const c = classifyError(httpError(409, { code: "IDEMPOTENCY_IN_PROGRESS" }, { "retry-after": "2" }), 0)
+    expect(c).toMatchObject({ kind: "retry", retryAfterMs: 2_000 })
+  })
+
   it("500 reintenta hasta 8 veces y luego rechaza", () => {
     expect(classifyError(httpError(500), MAX_SERVER_ATTEMPTS - 2).kind).toBe("retry")
     expect(classifyError(httpError(500), MAX_SERVER_ATTEMPTS - 1).kind).toBe("rejected")

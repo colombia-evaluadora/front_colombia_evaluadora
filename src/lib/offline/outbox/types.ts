@@ -69,6 +69,8 @@ export interface SendCtx {
    * a su `pk_tarchivo`: lo sube (una sola vez; un reintento reutiliza el id).
    */
   resolveFile: (fileKey: string) => Promise<number>
+  /** El archivo mismo, para ops cuya request ES la subida (multipart). */
+  getFile: (fileKey: string) => Promise<File>
 }
 
 export interface ClassifiedError {

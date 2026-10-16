@@ -24,7 +24,6 @@ import {
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
@@ -75,9 +74,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   // que en la Planilla, las notas se acumulan y se envían como solicitud.
   const periodoCerrado = usePeriodoCerrado(actividad.fechaCierre || actividad.fechaInicio)
   const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
-  // Calificar, asistencia de la actividad y "No presentó" van al servidor:
-  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // "Guardar" de la solicitud de periodo cerrado: se encola sin red (Fase 2).
+  const soloEnLinea = useOfflineWritable()
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la
    *  Vista Asistencias. La excusa se adjunta allá; acá solo se refleja. */

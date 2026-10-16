@@ -14,6 +14,7 @@ import "@/features/planeador/api/mutations/use-calificar-bulk"
 import "@/features/planeador/api/mutations/use-observar-estudiante"
 import "@/features/planeador/api/mutations/use-estado-resultado"
 import "@/features/planeador/api/mutations/use-asistencia-actividad"
+import "@/features/planeador/api/mutations/use-observacion-soporte"
 
 const SYNC_TOAST_ID = "outbox-sync"
 

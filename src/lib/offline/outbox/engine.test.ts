@@ -31,6 +31,8 @@ interface Celda {
   baseVersion?: string | null
 }
 
+const SOLICITUD_NOTE = "El periodo se cerró antes de sincronizar: tus cambios quedaron como solicitud al coordinador."
+
 const send = vi.fn<(p: Celda, ctx: SendCtx) => Promise<unknown>>()
 
 registerOutboxHandler<Celda>({
@@ -41,6 +43,7 @@ registerOutboxHandler<Celda>({
   send: (p, ctx) => send(p, ctx),
   invalidates: () => [["test"]],
   rebase: (p, c) => ({ ...p, baseVersion: c.serverVersion ?? null }),
+  noteOf: (r) => ((r as { solicitudes_pendientes?: number[] })?.solicitudes_pendientes?.length ? SOLICITUD_NOTE : null),
   describe: (p) => ({ titulo: `Celda ${p.pk}`, detalle: "" }),
 })
 
@@ -174,6 +177,16 @@ describe("syncNow", () => {
     await syncNow()
     expect(send.mock.calls[1][0].baseVersion).toBe("v2")
     expect(ops()[0].status).toBe("done")
+  })
+
+  it("periodo cerrado con solicitud (regla 55/75): done con la nota y el resumen la informa", async () => {
+    await encolarOffline(1)
+    const reports: { notes: string[] }[] = []
+    configureOutbox({ ensureAuth: async () => "ok", onBatchEnd: (r) => reports.push(r) })
+    send.mockResolvedValueOnce({ calificacion: null, solicitudes_pendientes: [9] })
+    await syncNow()
+    expect(ops()[0]).toMatchObject({ status: "done", resultNote: SOLICITUD_NOTE })
+    expect(reports.at(-1)?.notes).toEqual([SOLICITUD_NOTE])
   })
 
   it("periodo cerrado → rejected visible (nada se pierde)", async () => {

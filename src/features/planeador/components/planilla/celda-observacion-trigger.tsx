@@ -91,7 +91,11 @@ export function CeldaObservacionTrigger({
   // Los errores de evidencias se muestran dentro de la sección Evidencias.
   const agregarEvidencia = useAgregarObservacionSoporteMutation({
     mutationConfig: {
-      onSuccess: () => onGuardado?.(),
+      onSuccess: (pk) => {
+        // `null` = quedó en la outbox: aparece al sincronizar.
+        if (pk == null) notify(QUEUED_MESSAGE, { variant: "info" })
+        onGuardado?.()
+      },
     },
   })
   const quitarEvidencia = useQuitarObservacionSoporteMutation({

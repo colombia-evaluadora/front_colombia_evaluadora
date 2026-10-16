@@ -6,7 +6,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
-import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
+import { isOutboxEnabled, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { PendingBadge } from "@/features/offline/components/pending-badge"
 import { celdaEntityKey } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
@@ -44,6 +44,8 @@ interface CeldaNotaPopoverProps {
   onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
   cambioPendiente?: CambioPendiente
   calificacionPropuesta?: unknown
+  /** Versión de la celda en la planilla (CAS al calificar sin conexión, BE-2). */
+  baseVersion?: string | null
 }
 
 export interface CambioPendiente {
@@ -152,6 +154,7 @@ export function CeldaNotaPopover({
   onCambio,
   cambioPendiente,
   calificacionPropuesta,
+  baseVersion,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -213,7 +216,9 @@ export function CeldaNotaPopover({
       })
       return
     }
-    calificar.mutate({ ...input, actividadId })
+    // La versión solo viaja con la outbox habilitada (piloto): un cambio hecho
+    // sin red no pisa en silencio una nota que otra persona cambió.
+    calificar.mutate({ ...input, actividadId, ...(isOutboxEnabled() && baseVersion ? { baseVersion } : {}) })
   }
 
   return (

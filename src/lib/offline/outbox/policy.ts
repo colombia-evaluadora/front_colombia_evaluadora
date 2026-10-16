@@ -31,6 +31,8 @@ export const ERROR_CODES = {
   conflict: "OFFLINE_CONFLICT",
   periodoCerrado: "PERIODO_CERRADO",
   idempotencyReused: "IDEMPOTENCY_KEY_REUSED",
+  /** El gateway todavía procesa la misma clave (BE-1): se reintenta. */
+  idempotencyInProgress: "IDEMPOTENCY_IN_PROGRESS",
 } as const
 
 /** `min(5 min, 2 s · 2^n) · random(0.8..1.2)`. */
@@ -57,7 +59,7 @@ export function extractErrorCode(data: unknown): string | null {
     if (typeof value === "string" && value) return value
   }
   const message = typeof body.message === "string" ? body.message : ""
-  const match = /\b(OFFLINE_CONFLICT|PERIODO_CERRADO|IDEMPOTENCY_KEY_REUSED|CK_TASISTENCIA_CONTEXTO)\b/.exec(message)
+  const match = /\b(OFFLINE_CONFLICT|PERIODO_CERRADO|IDEMPOTENCY_KEY_REUSED|IDEMPOTENCY_IN_PROGRESS|CK_TASISTENCIA_CONTEXTO)\b/.exec(message)
   return match?.[1] ?? null
 }
 
@@ -123,6 +125,14 @@ export function classifyError(error: unknown, attempts: number): ClassifiedError
       kind: "conflict",
       conflict: extractConflict(data),
       error: { code, status, message: "Otra persona cambió este dato." },
+    }
+  }
+  if (code === ERROR_CODES.idempotencyInProgress) {
+    const ra = Number(headers?.["retry-after"])
+    return {
+      kind: "retry",
+      retryAfterMs: Number.isFinite(ra) && ra > 0 ? ra * 1000 : undefined,
+      error: { code, status, message: "El servidor todavía procesa este cambio; se reintentará." },
     }
   }
   if (code === ERROR_CODES.idempotencyReused) {

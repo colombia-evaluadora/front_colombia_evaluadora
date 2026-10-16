@@ -70,7 +70,7 @@ import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { isOfflineWithoutData } from "@/lib/offline/query-status"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
@@ -107,7 +107,8 @@ export function PlaneadorPlanillaPage() {
   // acumulan y se envían juntas; el backend abre la solicitud (Regla 55).
   const periodoCerrado = filtro != null && filtro.periodoEvaluacion.estado !== "1"
   // "Guardar" (bulk o solicitud de periodo cerrado) va al servidor (§7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 2: "Guardar" (bloque y solicitud de periodo cerrado) se encola sin red.
+  const soloEnLinea = useOfflineWritable()
   const solicitud = useSolicitudPeriodoCerrado()
   const { cambios, agregarCambio } = solicitud
 

@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { isNetworkError } from "@/lib/network-error"
+import { noteServerTime } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
@@ -294,6 +295,8 @@ api.interceptors.response.use(
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
   (response) => {
     connectivityStore.reportSuccess()
+    // BE-7: hora del servidor para corregir un reloj del equipo mal puesto.
+    noteServerTime(response.headers?.["x-server-time"] as string | undefined)
     return response.data
   },
   async (error) => {

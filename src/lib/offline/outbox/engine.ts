@@ -6,6 +6,7 @@
 import type { QueryClient } from "@tanstack/react-query"
 
 import { isNetworkError } from "@/lib/network-error"
+import { CLOCK_SKEW_WARN_MS, getClockSkewMs } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { getPersistedSession } from "@/lib/offline/session"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
@@ -199,7 +200,14 @@ export async function enqueue<P>(kind: string, payload: P, options: EnqueueOptio
     if (isQuotaError(error)) throw new OutboxRejectedError(QUOTA_MESSAGE)
     throw error
   }
-  await logEvent({ level: "info", event: "enqueue", opId: op.id, data: { kind } })
+  // BE-7: un reloj del equipo muy desfasado queda en el registro para soporte.
+  const skew = getClockSkewMs()
+  await logEvent({
+    level: Math.abs(skew) > CLOCK_SKEW_WARN_MS ? "warn" : "info",
+    event: "enqueue",
+    opId: op.id,
+    data: { kind, clockSkewMs: skew },
+  })
   if (handler.applyOptimistic && queryClientRef) handler.applyOptimistic(queryClientRef, payload)
   void requestBackgroundSync()
   scheduleSync(0)
@@ -227,6 +235,11 @@ function directCtx(handler: OutboxHandler<never>, idempotencyKey: string, files:
         cache.set(fileKey, handler.upload(file, false))
       }
       return cache.get(fileKey) as Promise<number>
+    },
+    async getFile(fileKey) {
+      const file = files[fileKey]
+      if (!file) throw new Error(`Archivo ${fileKey} no disponible`)
+      return file
     },
   }
 }
@@ -338,6 +351,11 @@ async function sendOp(
       row.uploadedArchivoId = await handler.upload(file, true)
       await putBlob(row)
       return row.uploadedArchivoId
+    },
+    async getFile(fileKey) {
+      const row = blobs.find((b) => b.fileKey === fileKey)
+      if (!row) throw new Error(`Archivo ${fileKey} no encontrado en la cola`)
+      return new File([row.blob], row.name, { type: row.type })
     },
   }
   try {
