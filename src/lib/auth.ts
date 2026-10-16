@@ -23,7 +23,8 @@ import {
 } from "@/lib/offline/session"
 import { configureOutbox, isSyncing, startOutbox, syncNow } from "@/lib/offline/outbox/engine"
 import { notifySyncIdle, setSyncInProgressProbe } from "@/lib/offline/sw-update"
-import { setOutboxUser } from "@/lib/offline/outbox/store"
+import { outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
+import { toast } from "sonner"
 import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
 import type { AuthResponse } from "@/types/api"
@@ -200,6 +201,8 @@ async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
   try {
     await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
     await setOutboxUser(user.id)
+    const pendientes = outboxStore.getSummary().total
+    if (pendientes > 0) toast.info(`Tienes ${pendientes} cambios guardados de una sesión anterior. Sincronizando…`)
     void syncNow()
     await saveOnlineSession({
       sub: user.id,

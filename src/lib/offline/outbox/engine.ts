@@ -201,6 +201,7 @@ export async function enqueue<P>(kind: string, payload: P, options: EnqueueOptio
   }
   await logEvent({ level: "info", event: "enqueue", opId: op.id, data: { kind } })
   if (handler.applyOptimistic && queryClientRef) handler.applyOptimistic(queryClientRef, payload)
+  void requestBackgroundSync()
   scheduleSync(0)
   return op
 }
@@ -356,9 +357,31 @@ async function processOp(op: OutboxOp, report: BatchReport, invalidate: Map<stri
 
 class AuthPause extends Error {}
 
-/** Un lote de sincronización (§6.2). Nunca tira. */
-export async function syncNow(): Promise<void> {
-  if (running || paused || !isOutboxEnabled()) return
+let currentRun: Promise<void> | null = null
+let queuedRun: Promise<void> | null = null
+
+/**
+ * Un lote de sincronización (§6.2). Nunca tira. Si ya hay uno en curso, se
+ * encadena UNO más al terminar (lo encolado durante el lote también sale).
+ */
+export function syncNow(): Promise<void> {
+  if (!currentRun) {
+    currentRun = runBatch().finally(() => {
+      currentRun = null
+    })
+    return currentRun
+  }
+  if (!queuedRun) {
+    queuedRun = currentRun.then(() => {
+      queuedRun = null
+      return syncNow()
+    })
+  }
+  return queuedRun
+}
+
+async function runBatch(): Promise<void> {
+  if (paused || !isOutboxEnabled()) return
   if (connectivityStore.getState().status === "offline") return
   const now = Date.now()
   const open = outboxStore.getOps().filter((o) => o.status !== "done")
@@ -529,6 +552,8 @@ export async function requestBackgroundSync() {
 export function __resetEngineForTests() {
   running = false
   paused = false
+  currentRun = null
+  queuedRun = null
   if (timer) clearTimeout(timer)
   timer = undefined
 }

@@ -164,3 +164,11 @@ self.addEventListener("message", (event) => {
       .then((list) => list.forEach((n) => n.close())),
   )
 })
+
+// Background Sync (Chromium): al volver la red el navegador dispara `sync`
+// con el tag que registró la outbox. El SW no envía nada (la sync corre en la
+// página, D4): solo despierta a las pestañas abiertas con `outbox:wake`.
+self.addEventListener("sync", ((event: Event & { tag?: string; waitUntil: (p: Promise<unknown>) => void }) => {
+  if (event.tag !== "ce-outbox") return
+  event.waitUntil(postToClients({ type: "outbox:wake" }))
+}) as EventListener)
