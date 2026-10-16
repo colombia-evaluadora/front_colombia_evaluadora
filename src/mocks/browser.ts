@@ -10,6 +10,16 @@ import { handlers } from "@/mocks/handlers"
  * antepuestos a los de dominio, lo leen en cada request:
  * - `"network"`: toda `/api/*` falla como `Network Error`.
  * - `"server"`: toda `/api/*` responde 503 JSON (gateway/eval-col caído).
+ * - `"writes"`: solo las escrituras de asistencia y planilla fallan como
+ *   `Network Error` (la respuesta se pierde); lecturas y heartbeat siguen bien.
+ * - `"count"`: calificar celda responde 200 sin validar el pk y cuenta cuántas
+ *   veces llegó cada uno en `sessionStorage["msw:calificar-count"]` (E2E de
+ *   la outbox: 40 celdas una sola vez, dos pestañas sin duplicados).
+ * - `"conflict"`: las escrituras de asistencia y planilla responden 409
+ *   `OFFLINE_CONFLICT` (CAS de la Fase 2 offline, sso V137/V138), con el
+ *   valor actual en `detail`; el resto sigue normal.
+ * - `"planeador-writes"`: las escrituras de actividades y unidades del
+ *   planeador (sagas de la Fase 3) fallan como `Network Error`.
  * Sin la clave no hacen nada (`return` → sigue el handler real).
  */
 function currentFault(): string | null {
@@ -20,12 +30,43 @@ function currentFault(): string | null {
   }
 }
 
+function conflictFault() {
+  if (currentFault() === "writes") return HttpResponse.error()
+  if (currentFault() !== "conflict") return
+  return HttpResponse.json(
+    {
+      code: "OFFLINE_CONFLICT",
+      message: "El dato cambió en el servidor mientras estabas sin conexión.",
+      detail: JSON.stringify({ current: 2, version: "2026-10-01T10:00:00.000000" }),
+    },
+    { status: 409 },
+  )
+}
+
+function planeadorWritesFault() {
+  if (currentFault() === "planeador-writes") return HttpResponse.error()
+}
+
 const faultHandlers = [
   http.all("/api/*", () => {
     const fault = currentFault()
     if (fault === "network") return HttpResponse.error()
     if (fault === "server") return HttpResponse.json({ status: "DOWN" }, { status: 503 })
   }),
+  http.post("/api/eval-col/asistencias/registrar", () => conflictFault()),
+  http.patch("/api/eval-col/asistencias/:id", () => conflictFault()),
+  http.put("/api/eval-col/planeador/actividades/estudiantes/:id/calificar", ({ params }) => {
+    if (currentFault() !== "count") return conflictFault()
+    const counts = JSON.parse(sessionStorage.getItem("msw:calificar-count") ?? "{}") as Record<string, number>
+    const pk = String(params.id)
+    counts[pk] = (counts[pk] ?? 0) + 1
+    sessionStorage.setItem("msw:calificar-count", JSON.stringify(counts))
+    return HttpResponse.json({ rows: [{ calificacion: 100, solicitudes_pendientes: [] }] })
+  }),
+  http.post("/api/eval-col/planeador/unidades", () => planeadorWritesFault()),
+  http.put("/api/eval-col/planeador/unidades/:id", () => planeadorWritesFault()),
+  http.post("/api/eval-col/planeador/actividades", () => planeadorWritesFault()),
+  http.put("/api/eval-col/planeador/actividades/:id", () => planeadorWritesFault()),
 ]
 
 export const worker = setupWorker(...faultHandlers, ...handlers)

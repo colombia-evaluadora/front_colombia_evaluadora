@@ -16,6 +16,8 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useCreateStatement, useUpdateStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
@@ -61,7 +63,7 @@ export function ManageStatementDialog({
   const createMutation = useCreateStatement({
     mutationConfig: {
       onSuccess: (result) => {
-        notify(`${levelLabel} creado correctamente.`)
+        notify(result.queued ? QUEUED_MESSAGE : `${levelLabel} creado correctamente.`)
         if (result.id != null) onCreated?.(result.id)
         onOpenChange(false)
       },
@@ -71,8 +73,8 @@ export function ManageStatementDialog({
 
   const updateMutation = useUpdateStatement({
     mutationConfig: {
-      onSuccess: () => {
-        notify(`${levelLabel} actualizado correctamente.`)
+      onSuccess: (result) => {
+        notify(result?.queued ? QUEUED_MESSAGE : `${levelLabel} actualizado correctamente.`)
         onOpenChange(false)
       },
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
@@ -80,6 +82,9 @@ export function ManageStatementDialog({
   })
 
   const isPending = createMutation.isPending || updateMutation.isPending
+  // Si la red cae con el diálogo abierto, Guardar queda deshabilitado (§7.5).
+  // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
+  const soloEnLinea = useOfflineWritable()
 
   const hasRequiredFields = text.trim().length > 0
   const hasChanges = isEditMode
@@ -163,7 +168,8 @@ export function ManageStatementDialog({
               form="manage-statement-form"
               variant="fill"
               color="primary"
-              disabled={isPending}
+              disabled={isPending || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
             >
               <CheckIcon data-icon="inline-start" />
               {isPending ? "Guardando..." : "Guardar"}

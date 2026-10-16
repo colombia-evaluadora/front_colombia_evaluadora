@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
+import { api, hasAuthToken, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
 import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import { paths } from "@/config/paths"
+import { env } from "@/config/env"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { stopRealtime } from "@/lib/realtime"
 import {
   activatePersistUser,
   clearUserData,
@@ -19,6 +21,10 @@ import {
   seedNavigationFromSession,
   startSessionSnapshotSync,
 } from "@/lib/offline/session"
+import { configureOutbox, isSyncing, startOutbox, syncNow } from "@/lib/offline/outbox/engine"
+import { notifySyncIdle, setSyncInProgressProbe } from "@/lib/offline/sw-update"
+import { outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
+import { toast } from "sonner"
 import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
 import type { AuthResponse } from "@/types/api"
@@ -57,6 +63,14 @@ export async function getUser(): Promise<AuthUser | null> {
  * sola en el servidor). Un error HTTP real sí se propaga.
  */
 const logout = async (): Promise<void> => {
+  // Web Push (D-4.4): la suscripción de este navegador se borra ANTES del
+  // logout, mientras el token todavía sirve para el `DELETE`. En un equipo
+  // compartido el siguiente usuario no debe recibir los avisos del anterior.
+  // Import dinámico: solo se carga si el build trae clave VAPID.
+  if (env.VAPID_PUBLIC_KEY) {
+    const { cleanupPushOnLogout } = await import("@/features/notificaciones/push/lib/push-client")
+    await cleanupPushOnLogout()
+  }
   try {
     await api.post("/auth/logout")
   } catch (error) {
@@ -123,6 +137,16 @@ export function useLogin({
       // `clear()`, esto cubre cualquier otro camino). El guard de `/app` decide
       // con este menú: tiene que salir del token nuevo, no de la caché.
       queryClient.removeQueries({ queryKey: ["navigation"] })
+      // Web Push: si este navegador quedó suscrito por OTRO usuario, se
+      // suelta (cambio de usuario en equipo compartido, D-4.4).
+      if (env.VAPID_PUBLIC_KEY) {
+        const sub = toAuthUserFromToken(data.token)?.id
+        if (sub) {
+          void import("@/features/notificaciones/push/lib/push-client").then((m) =>
+            m.releasePushIfOtherUser(sub),
+          )
+        }
+      }
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },
   })
@@ -144,8 +168,13 @@ export function useLogout({
       const sub = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)?.id ?? getActivePersistUser()
       deactivatePersistUser()
       lastAuthedUser = null
+      // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
+      // pendientes decide conservar o descartar antes de llamar al logout.
+      await setOutboxUser(null)
       if (sub) await clearUserData(sub).catch(() => undefined)
       setAuthToken(null)
+      // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
+      stopRealtime()
       // Full clear, not just the user key — otherwise cached protected data
       // (nav menu, ...) stays "fresh" for `staleTime` and could be
       // reused if a different user logs in on the same tab before it expires.
@@ -171,6 +200,10 @@ async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
   lastAuthedUser = user
   try {
     await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
+    await setOutboxUser(user.id)
+    const pendientes = outboxStore.getSummary().total
+    if (pendientes > 0) toast.info(`Tienes ${pendientes} cambios guardados de una sesión anterior. Sincronizando…`)
+    void syncNow()
     await saveOnlineSession({
       sub: user.id,
       name: user.name,
@@ -206,6 +239,7 @@ export async function enterOfflineSession(queryClient: QueryClient): Promise<Aut
   lastAuthedUser = null
   await activatePersistUser(queryClient, session.sub, { keep: [USER_QUERY_KEY] })
   seedNavigationFromSession(queryClient, session)
+  await setOutboxUser(session.sub).catch(() => undefined)
   return user
 }
 
@@ -248,6 +282,20 @@ async function revalidateOfflineUser(queryClient: QueryClient) {
   }
 }
 
+/**
+ * La outbox asegura un token antes de enviar (§6.2). Sin token (sesión
+ * offline) o forzado tras un 401: refresh. 401/403 → "unauth" (se pausa y
+ * el banner pide iniciar sesión); red → "network".
+ */
+async function ensureOutboxAuth(force?: boolean): Promise<"ok" | "unauth" | "network"> {
+  if (hasAuthToken() && !force) return "ok"
+  try {
+    return (await getUser()) ? "ok" : "unauth"
+  } catch {
+    return "network"
+  }
+}
+
 let offlineSupportStarted = false
 
 /**
@@ -260,6 +308,10 @@ export function startOfflineSupport(queryClient: QueryClient) {
   void initOfflinePersistence()
   startQueryPersister(queryClient)
   startSessionSnapshotSync(queryClient, getActivePersistUser)
+  configureOutbox({ queryClient, ensureAuth: ensureOutboxAuth, onIdle: notifySyncIdle })
+  // No se actualiza el SW mientras se sincroniza (§7.10).
+  setSyncInProgressProbe(isSyncing)
+  startOutbox()
   connectivityStore.subscribe((state) => {
     if (state.status === "online") void revalidateOfflineUser(queryClient)
   })

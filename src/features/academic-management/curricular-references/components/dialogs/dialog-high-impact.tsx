@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
@@ -26,6 +27,8 @@ interface HighImpactDialogProps {
 // Con alertas "block" no se puede confirmar: solo se cierra.
 export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, onCancel }: HighImpactDialogProps) {
   const [understood, setUnderstood] = useState(false)
+  // Confirmar siempre escribe (activar/inactivar o guardar el referente).
+  const soloEnLinea = useOnlineOnly()
 
   useEffect(() => {
     if (open) setUnderstood(false)
@@ -57,6 +60,12 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
           </label>
         )}
 
+        {!isBlocked && soloEnLinea.disabled ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {soloEnLinea.tooltip}
+          </p>
+        ) : null}
+
         {isBlocked ? (
           <AlertDialogFooter>
             <Button size="sm" variant="fill" color="primary" onClick={onCancel}>
@@ -70,7 +79,7 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
               size="sm"
               variant="fill"
               color="primary"
-              disabled={!understood || isPending}
+              disabled={!understood || isPending || soloEnLinea.disabled}
               aria-busy={isPending}
               onClick={onConfirm}
             >

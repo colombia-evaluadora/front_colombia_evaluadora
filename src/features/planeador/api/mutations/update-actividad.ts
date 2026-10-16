@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
@@ -46,9 +47,9 @@ interface UpdateActividadInput {
  * que `FK_TMATRICULAS` arriba). SÍ manda `EVIDENCIAS`/`CRITERIOS` — ver más
  * abajo.
  */
-async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
+export async function updateActividad({ actividadId, data }: UpdateActividadInput, req?: WriteRequest): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
-    return api.put(`/eval-col/planeador/actividades/${actividadId}`, data)
+    return api.put(`/eval-col/planeador/actividades/${actividadId}`, data, writeConfig(req))
   }
   const body: Record<string, unknown> = {
     TITULO: data.nombre,
@@ -144,7 +145,7 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     body.EVIDENCIAS = data.evidenciasIds
     body.CRITERIOS = data.criteriosUnidadIds
   }
-  return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
+  return api.put(`/eval-col/planeador/actividades/${actividadId}`, body, writeConfig(req))
 }
 
 interface UseUpdateActividadOptions {
@@ -156,7 +157,7 @@ export function useUpdateActividad({ mutationConfig }: UseUpdateActividadOptions
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: updateActividad,
+    mutationFn: (input: UpdateActividadInput) => updateActividad(input),
     onSuccess: (data, variables, ...rest) => {
       // Refresca el detalle Y el rail/calendario/stats — no solo el listado
       // legado (ver el comentario del helper).

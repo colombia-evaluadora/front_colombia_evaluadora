@@ -25,6 +25,14 @@ async function enableMocking() {
 // App shell offline (Fase 1). No bloquea el render y no corre con MSW activo.
 void setupServiceWorker()
 
+// Web Push: re-registra en el backend la suscripción que rote el navegador
+// (`pushsubscriptionchange` en el SW). Solo si el build trae clave VAPID.
+if (env.VAPID_PUBLIC_KEY) {
+  void import("@/features/notificaciones/push/lib/push-client").then((m) =>
+    m.startPushClientSync(),
+  )
+}
+
 enableMocking().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

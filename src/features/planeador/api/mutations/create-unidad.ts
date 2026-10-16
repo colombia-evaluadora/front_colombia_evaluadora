@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
@@ -38,9 +39,9 @@ interface CreateUnidadResponse {
   id: number
 }
 
-async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadResponse> {
+export async function createUnidad(data: UnidadInfoGeneral, req?: WriteRequest): Promise<CreateUnidadResponse> {
   if (env.ENABLE_API_MOCKING) {
-    const created = await api.post<UnidadTematica>("/eval-col/planeador/unidades", data)
+    const created = await api.post<UnidadTematica>("/eval-col/planeador/unidades", data, writeConfig(req))
     return { id: created.id }
   }
   if (data.gradoId == null || data.asignaturaId == null) {
@@ -67,7 +68,7 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadRespon
   // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
   // primer (y único) campo de la fila (confirmado, colección Postman
   // `planeador-flujo-unidad-actividad`, paso 4).
-  const row = await evalCol.postRow<Record<string, number>>("/planeador/unidades", body)
+  const row = await evalCol.postRow<Record<string, number>>("/planeador/unidades", body, writeConfig(req))
   const [pk] = Object.values(row)
   if (pk == null) throw new Error("La creación de la unidad no devolvió su identificador.")
   return { id: pk }
@@ -82,7 +83,7 @@ export function useCreateUnidad({ mutationConfig }: UseCreateUnidadOptions = {})
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: createUnidad,
+    mutationFn: (data: UnidadInfoGeneral) => createUnidad(data),
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
       // X1: las pestañas por referente (`unidades.tabs`) viven fuera de

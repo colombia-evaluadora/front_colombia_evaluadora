@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Comunicado } from "@/features/comunicaciones/chat/api/types"
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 
 export function useComunicadoQuery(conversacionId: number | undefined) {
   return useQuery({
@@ -13,6 +14,6 @@ export function useComunicadoQuery(conversacionId: number | undefined) {
       )
       return row ?? null
     },
-    enabled: Boolean(conversacionId),
+    enabled: CHAT_FUNCIONES.comunicados && Boolean(conversacionId),
   })
 }

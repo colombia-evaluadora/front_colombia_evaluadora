@@ -1,8 +1,10 @@
 import * as React from "react"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { ClipboardCheckIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -204,6 +206,15 @@ function AsistenciaPageContent() {
         ),
       )
       const sesionLabel = `${entry.grupo} · ${nombreSesion(entry)}`
+      if (solicitudes.some((s) => s.queued)) {
+        // P17: no se pinta a nadie; se resuelve con el estado del servidor al sincronizar.
+        notify(
+          `${QUEUED_MESSAGE} Se marcará Asistió a quienes no tengan registro en ${sesionLabel} cuando se sincronice.`,
+          { variant: "info" },
+        )
+        setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
+        return
+      }
       // En período cerrado no se escribe nada (afectados 0): todo queda como solicitud.
       const escribioDirecto = solicitudes.some((s) => s.afectados > 0)
       if (escribioDirecto && !solicitudes.some((s) => s.pendientes.length > 0)) {
@@ -226,7 +237,12 @@ function AsistenciaPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          action={<AsistenciaSedeSelector sedeId={sedeId} onChange={setSedeId} />}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <PrepareOfflineButton />
+              <AsistenciaSedeSelector sedeId={sedeId} onChange={setSedeId} />
+            </div>
+          }
         >
           Asistencia
         </TableScreenTitle>

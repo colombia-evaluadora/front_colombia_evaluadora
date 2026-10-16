@@ -15,6 +15,8 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { cn } from "@/lib/utils"
 
 import {
@@ -56,8 +58,8 @@ export function AddEvidencesDialog({
 
   const createMutation = useCreateEvidences({
     mutationConfig: {
-      onSuccess: () => {
-        notify(`${levelLabel} agregada correctamente.`)
+      onSuccess: (result) => {
+        notify(result?.queued ? QUEUED_MESSAGE : `${levelLabel} agregada correctamente.`)
         onOpenChange(false)
       },
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
@@ -66,8 +68,8 @@ export function AddEvidencesDialog({
 
   const updateMutation = useUpdateEvidence({
     mutationConfig: {
-      onSuccess: () => {
-        notify(`${levelLabel} actualizada correctamente.`)
+      onSuccess: (result) => {
+        notify(result?.queued ? QUEUED_MESSAGE : `${levelLabel} actualizada correctamente.`)
         onOpenChange(false)
       },
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
@@ -75,6 +77,9 @@ export function AddEvidencesDialog({
   })
 
   const isPending = createMutation.isPending || updateMutation.isPending
+  // Si la red cae con el diálogo abierto, Guardar queda deshabilitado (§7.5).
+  // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
+  const soloEnLinea = useOfflineWritable()
 
   const hasRequiredFields = text.trim().length > 0
   const hasChanges = isEditMode
@@ -154,7 +159,8 @@ export function AddEvidencesDialog({
               form="add-evidences-form"
               variant="fill"
               color="primary"
-              disabled={isPending}
+              disabled={isPending || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
             >
               <CheckIcon data-icon="inline-start" />
               {isPending ? "Guardando..." : "Guardar"}

@@ -7,6 +7,7 @@ import type {
   AcademicPeriodsFiltersFormValues,
 } from "../api/schema"
 import type { AcademicPeriodsQueryFilters } from "../api/types/academic-period"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface AcademicPeriodFilters {
   filters: AcademicPeriodsFiltersFormInput
@@ -87,14 +88,18 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     search.startTo,
   ])
 
+  const filtrosForm = {
+    sedeName: search.sedeName ?? "",
+    schoolYearId: search.schoolYearId ? String(search.schoolYearId) : "",
+    statusId: search.statusId != null ? String(search.statusId) : "",
+    startFrom: search.startFrom ?? "",
+    startTo: search.startTo ?? "",
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      sedeName: search.sedeName ?? "",
-      schoolYearId: search.schoolYearId ? String(search.schoolYearId) : "",
-      statusId: search.statusId != null ? String(search.statusId) : "",
-      startFrom: search.startFrom ?? "",
-      startTo: search.startTo ?? "",
-    },
+    filters: filtrosForm,
     queryFilters,
     applyFilters,
     clearAllFilters,

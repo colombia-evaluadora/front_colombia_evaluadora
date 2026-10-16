@@ -44,6 +44,7 @@ import type {
   ViewAction,
 } from "@/features/administration/roles-menus/api/types/role-views"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ACTIONS: ViewAction[] = ["acceso", "guardar", "eliminar"]
 
@@ -58,11 +59,7 @@ interface RoleViewsEditorProps {
   onDirtyChange: (dirty: boolean) => void
 }
 
-/**
- * Vistas base por rol (Administración del Sistema, Sección 4.2): árbol de
- * módulos y submódulos con Acceso, Guardar y Eliminar por vista. Los cambios
- * quedan en borrador hasta Guardar; si alguno quita permisos, se confirma antes.
- */
+/** Vistas base por rol (Sección 4.2): borrador hasta Guardar; quitar permisos pide confirmación. */
 export function RoleViewsEditor({
   roleId,
   roleName,
@@ -137,8 +134,7 @@ export function RoleViewsEditor({
   }
 
   function save() {
-    // El backend rechaza un submódulo sin su módulo, y lo guardado puede venir
-    // así de la base: el padre que falte viaja con solo Acceso.
+    // El backend rechaza un submódulo sin su módulo: el padre que falte viaja con solo Acceso.
     const views = new Map(draft)
     for (const id of withRequiredParents([...draft.keys()], tree)) {
       if (!views.has(id)) views.set(id, { acceso: true, guardar: false, eliminar: false })
@@ -146,14 +142,16 @@ export function RoleViewsEditor({
     updateRoleMenus.mutate({ roleId, menus: toPayload(views) })
   }
 
-  const busy = updateRoleMenus.isPending
+  const { puedeEditar } = useMenuPermission("CONFIG_ROLES_MENUS")
+  // Sin Guardar los interruptores quedan bloqueados (`busy`) y no hay botones.
+  const busy = updateRoleMenus.isPending || !puedeEditar
   const dirty = changes.length > 0
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="w-full max-w-xs">{roleSelect}</div>
-        <div className="flex items-center gap-2">
+        <div className={puedeEditar ? "flex items-center gap-2" : "hidden"}>
           <Button
             type="button"
             variant="outline"
@@ -284,10 +282,7 @@ export function RoleViewsEditor({
 }
 
 
-/**
- * Acceso del módulo es el suyo. Guardar y Eliminar del módulo resumen a sus
- * submódulos: encendidos si alguno los tiene.
- */
+/** Guardar y Eliminar del módulo resumen a sus submódulos: encendidos si alguno los tiene. */
 function moduleChecked(
   draft: RoleViews,
   group: MenuTreeNode,
@@ -336,6 +331,7 @@ function ActionCell({ label, available, checked, changed, disabled, onChange }: 
     <TableCell>
       <span className="inline-flex items-center gap-2">
         <Switch
+          round
           aria-label={label}
           checked={checked}
           disabled={disabled}

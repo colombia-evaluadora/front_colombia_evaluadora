@@ -242,6 +242,9 @@ test("vista solo en línea sin red: empty state 'Esta sección necesita conexió
   // y las escrituras deshabilitadas.
   await expect(page.getByText(/No fue posible/)).toHaveCount(0)
   await expect(page.getByRole("button", { name: /Nuevo referente/ })).toBeDisabled()
+  // Activar/inactivar y eliminar referentes también quedan deshabilitados.
+  await expect(page.getByRole("button", { name: /^(Activar|Inactivar) / }).first()).toBeDisabled()
+  await expect(page.getByRole("button", { name: /^Eliminar / }).first()).toBeDisabled()
   await shot(page, "f1-i-referentes-admin-sin-red")
   await page.evaluate(() => {
     history.pushState({}, "", "/app/cobertura/matricula")
@@ -250,5 +253,77 @@ test("vista solo en línea sin red: empty state 'Esta sección necesita conexió
   await expect(page.getByText("Esta sección necesita conexión", { exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole("button", { name: "Reintentar" }).first()).toBeVisible()
   await shot(page, "f1-j-matricula-solo-en-linea")
+  await setApiFault(page, null)
+})
+
+test("piloto: fuera de VITE_APP_OFFLINE_PILOT no se puede desmarcar 'equipo compartido'", async ({ page }) => {
+  // El E2E corre con `VITE_APP_OFFLINE_PILOT` = los tres usuarios fixture.
+  await page.goto("/login")
+  const checkbox = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
+  await page.getByLabel("Correo electrónico").fill("fuera-del-piloto@example.com")
+  await expect(checkbox).toBeChecked()
+  await expect(checkbox).toBeDisabled()
+  await expect(page.getByText(/Solo los usuarios del piloto sin conexión/)).toBeVisible()
+  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await expect(checkbox).toBeEnabled()
+  await expect(page.getByText(/Solo los usuarios del piloto sin conexión/)).toHaveCount(0)
+})
+
+test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el botón queda deshabilitado", async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  await login(page, "docente@example.com", { shared: false })
+  await page.goto("/app/planeador/planilla")
+  await page.getByRole("button", { name: "Preparar sin conexión" }).click()
+  const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
+  const grupos = dialog.getByRole("group", { name: "Grupos" })
+  await expect(grupos.getByRole("checkbox").first()).toBeVisible({ timeout: 30_000 })
+  await expect(dialog.getByRole("group", { name: "Asignaturas" }).getByRole("checkbox").first()).toBeVisible()
+  await expect(dialog.getByRole("group", { name: "Periodos" }).getByRole("checkbox").first()).toBeVisible()
+  // Por defecto: todos los grupos. Se deja uno solo.
+  const totalGrupos = await grupos.getByRole("checkbox").count()
+  if (totalGrupos > 1) {
+    await grupos.getByRole("button", { name: "Ninguno" }).click()
+    await grupos.getByRole("checkbox").first().click()
+  }
+  await dialog.getByRole("checkbox", { name: "Incluir archivos" }).click()
+  await dialog.getByRole("button", { name: "Preparar" }).click()
+  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 90_000 })
+  await shot(page, "f1-k-preparar-seleccion")
+  await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
+
+  // La planilla elegida quedó persistida (se lee de IndexedDB, no de memoria).
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            new Promise<number>((resolve) => {
+              const req = indexedDB.open("ce-offline")
+              req.onsuccess = () => {
+                const all = req.result.transaction("queries").objectStore("queries").getAll()
+                all.onsuccess = () => {
+                  const keys = (all.result as { queryKey?: unknown[]; key?: unknown[] }[]).map((r) =>
+                    JSON.stringify(r.queryKey ?? r.key ?? r),
+                  )
+                  req.result.close()
+                  resolve(keys.filter((k) => k.includes("planilla") && k.includes("calificaciones")).length)
+                }
+              }
+              req.onerror = () => resolve(0)
+            }),
+        ),
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(0)
+
+  await setApiFault(page, "network")
+  await page.reload()
+  await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({
+    timeout: 30_000,
+  })
+  await expect(page.getByRole("button", { name: "Preparar sin conexión" })).toBeDisabled()
+  await shot(page, "f1-l-preparar-sin-red")
   await setApiFault(page, null)
 })

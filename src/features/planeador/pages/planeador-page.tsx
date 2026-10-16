@@ -1,7 +1,9 @@
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -402,7 +404,7 @@ function PlaneadorPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Planeador</TableScreenTitle>
+        <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
         <DatosDelBadge updatedAt={miasUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
         <PlaneadorTabs />
 
@@ -511,6 +513,7 @@ function PlaneadorPageContent() {
         </TableScreenToolbar>
       </TableScreenHeader>
 
+      <PendingCreations tipo="actividad" />
       <TableScreenBody>
           <>
             <PlaneadorLecturaBanner className="mb-4" />

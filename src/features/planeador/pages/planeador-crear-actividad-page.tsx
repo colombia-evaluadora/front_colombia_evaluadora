@@ -14,23 +14,24 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
-import { useCreateActividad } from "@/features/planeador/api/mutations/create-actividad"
-import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
-import {
-  tieneDefinicionInstrumento,
-  useUpdateInstrumentoActividad,
-} from "@/features/planeador/api/mutations/update-instrumento-actividad"
-import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
-import { useAgregarCriterioUnidadActividad } from "@/features/planeador/api/mutations/agregar-criterio-unidad-actividad"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useActividadesTabsQuery, type ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { buildCrearActividadSaga } from "@/features/planeador/offline/build-sagas"
+import { runSaga } from "@/features/planeador/offline/run-saga"
+import {
+  fallosDeSaga,
+  mensajeErrorSaga,
+  recursosOmitidosDe,
+  SAGA_PARTIAL_QUEUED_MESSAGE,
+  SAGA_QUEUED_MESSAGE,
+} from "@/features/planeador/offline/saga-messages"
 
 const FORM_ID = "crear-actividad-form"
 
@@ -109,80 +110,54 @@ function PlaneadorCrearActividadPageContent() {
   // `actividad` sin la unidad (se lee UNA sola vez al montar).
   const esperandoPreseleccion = Boolean(unidadId) && isPendingUnidades
 
-  const createMutation = useCreateActividad({
-    mutationConfig: {
-      // El motivo real lo manda el backend (una validación del planeador es
-      // accionable: qué instrumento no aplica, qué unidad lo impide). Mismo
-      // criterio que la página de editar, que ya mostraba `getErrorMessage`.
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
-    },
-  })
-  // Materiales, instrumento y adaptaciones son pasos APARTE de crear la
-  // actividad (rutas dedicadas, ver sus comentarios): si alguno falla, la
-  // actividad YA quedó creada. Sus errores NO se avisan con `notify()` acá
-  // (antes sí, en el `onError` de cada mutación): `handleSubmit` navega
-  // apenas termina, y el `NoticeProvider` de esta pantalla se desmontaba
-  // con el aviso adentro — el docente veía "Actividad creada correctamente"
-  // aunque, por ejemplo, el backend hubiera rechazado la definición del
-  // instrumento (bug de QA: "no sale mensaje de error"). Ahora se juntan en
-  // `handleSubmit` y viajan con `queueNotice()` a la pantalla de destino.
-  const updateMateriales = useUpdateMaterialesActividad()
-  const updateInstrumento = useUpdateInstrumentoActividad()
-  const updateAdaptaciones = useUpdateAdaptacionesActividad()
-  // Cada criterio de la unidad marcado es su propio `POST`, DESPUÉS de
-  // crear la actividad (recién ahí existe `actividadId`) — a diferencia de
-  // `EVIDENCIAS`, que sí viaja directo en el body de `POST /actividades`
-  // (ver `create-actividad.ts`).
-  const agregarCriterio = useAgregarCriterioUnidadActividad()
+  // Guardado como saga (Fase 3 offline, `features/planeador/offline`): los
+  // mismos pasos y en el mismo orden de siempre —actividad → materiales →
+  // instrumento → adaptaciones → criterios—, pero cada uno con su
+  // `Idempotency-Key` fija. Con red se envían desde acá; sin red (o si la red
+  // se cae a mitad) lo que falta queda en la outbox y se reanuda solo.
+  //
+  // Los fallos de los pasos posteriores NO se avisan con `notify()`:
+  // `handleSubmit` navega apenas termina y el `NoticeProvider` de esta
+  // pantalla se desmonta con el aviso adentro (bug de QA "no sale mensaje de
+  // error"). Se juntan y viajan con `queueNotice()` a la pantalla de destino.
+  const [guardando, setGuardando] = useState(false)
+  const escritura = useOfflineWritable("Necesitas conexión para crear actividades en este equipo.")
 
   async function handleSubmit(values: Actividad) {
-    let id: number
+    if (guardando) return
+    setGuardando(true)
+    let run: Awaited<ReturnType<typeof runSaga>>
     try {
-      ;({ id } = await createMutation.mutateAsync(values))
-    } catch {
-      return // `onError` de `createMutation` ya avisó (la pantalla sigue montada).
+      run = await runSaga(await buildCrearActividadSaga(values), { continueOnError: true })
+    } catch (error) {
+      notify(mensajeErrorSaga(error), { variant: "error" })
+      setGuardando(false)
+      return
+    }
+    setGuardando(false)
+
+    if (run.queued && run.queuedFrom === 0) {
+      queueNotice(SAGA_QUEUED_MESSAGE)
+      navigate({ to: paths.app.planeadorActividades.getHref() })
+      return
+    }
+    const [creada] = run.outcomes
+    if (!creada?.ok) {
+      // El motivo real lo manda el backend (una validación del planeador es
+      // accionable: qué instrumento no aplica, qué unidad lo impide).
+      notify(getErrorMessage(creada?.error), { variant: "error" })
+      return
+    }
+    const { id } = creada.result as { id: number }
+
+    if (run.queued) {
+      queueNotice(SAGA_PARTIAL_QUEUED_MESSAGE)
+      navigate({ to: paths.app.planeadorActividades.getHref() })
+      return
     }
 
-    // Lo que no se pudo guardar después de crear la actividad, con el motivo
-    // real del backend — ver el comentario de `updateMateriales`.
-    const fallos: string[] = []
-    let recursosOmitidos: string[] = []
-    if (values.recursos.length > 0) {
-      try {
-        ;({ recursosOmitidos } = await updateMateriales.mutateAsync({ actividadId: id, recursos: values.recursos }))
-      } catch (error) {
-        fallos.push(`los materiales de apoyo (${getErrorMessage(error)})`)
-      }
-    }
-    if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
-      try {
-        await updateInstrumento.mutateAsync({ actividadId: id, actividad: values })
-      } catch (error) {
-        fallos.push(`la definición del instrumento de evaluación (${getErrorMessage(error)})`)
-      }
-    }
-    if (values.adaptaciones.length > 0) {
-      try {
-        await updateAdaptaciones.mutateAsync({
-          actividadId: id,
-          // Sin estudiantes que ya no están en la actividad (Regla 47).
-          adaptaciones: adaptacionesConEstudiantesDeLaActividad(values),
-        })
-      } catch (error) {
-        fallos.push(`las adaptaciones curriculares (${getErrorMessage(error)})`)
-      }
-    }
-    const resultadosCriterios = await Promise.allSettled(
-      values.criteriosUnidadIds.map((criterioUnidadId) =>
-        agregarCriterio.mutateAsync({ actividadId: id, criterioUnidadId }),
-      ),
-    )
-    const criterioFallido = resultadosCriterios.find((r) => r.status === "rejected")
-    if (criterioFallido) {
-      fallos.push(`todos los criterios de la unidad (${getErrorMessage(criterioFallido.reason)})`)
-    }
+    const fallos = fallosDeSaga(run.outcomes)
+    const recursosOmitidos = recursosOmitidosDe(run.outcomes)
     if (recursosOmitidos.length > 0) {
       fallos.push(
         `estos materiales de tipo "Archivo", porque no tenían un archivo cargado: ${recursosOmitidos.join(", ")}`,
@@ -249,34 +224,26 @@ function PlaneadorCrearActividadPageContent() {
       <TableScreenFooter>
         {isDirty ? (
           <>
-            <p className="text-sm">Completa los datos y guarda para crear la actividad.</p>
+            <p className="text-sm">
+              {escritura.queues
+                ? "Sin conexión: al guardar, la actividad queda en este equipo y se crea al reconectar."
+                : "Completa los datos y guarda para crear la actividad."}
+            </p>
             <Button
               type="submit"
               form={FORM_ID}
               color="primary"
               variant="fill"
               size="sm"
-              disabled={
-                createMutation.isPending ||
-                updateMateriales.isPending ||
-                updateInstrumento.isPending ||
-                updateAdaptaciones.isPending
-              }
+              disabled={guardando || escritura.disabled}
+              title={escritura.tooltip ?? undefined}
             >
-              {createMutation.isPending ||
-              updateMateriales.isPending ||
-              updateInstrumento.isPending ||
-              updateAdaptaciones.isPending ? (
+              {guardando ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
                 <CheckIcon data-icon="inline-start" />
               )}
-              {createMutation.isPending ||
-              updateMateriales.isPending ||
-              updateInstrumento.isPending ||
-              updateAdaptaciones.isPending
-                ? "Guardando..."
-                : "Guardar"}
+              {guardando ? "Guardando..." : "Guardar"}
             </Button>
           </>
         ) : (

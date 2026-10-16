@@ -19,7 +19,23 @@ const createEnv = () => {
     // Service Worker y no persiste nada; `read` = Fase 1 (lecturas); `full`
     // habilita además la outbox (Fase 2). Lo puede bajar el flag remoto
     // `GET /eval-col/config/offline` (`lib/offline/offline-mode.ts`).
+    // Gateway de tiempo real (comms-service, PR SSO #692), p. ej.
+    // `/api/comms/ws` (mismo origen: Worker / proxy de Vite) o una URL
+    // absoluta `wss://<dominio>/api/comms/ws`. Vacío = desactivado: el cliente no abre socket y
+    // las pantallas vuelven a su polling. Con mocks activos se ignora y se usa
+    // el gateway simulado en memoria (`src/mocks/realtime`).
+    REALTIME_URL: z.string().optional().default(""),
     OFFLINE: z.enum(["off", "read", "full"]).optional().default("read"),
+    // Clave PÚBLICA VAPID propia (Web Push self-hosted,
+    // `openspec/changes/add-notificaciones-push-webpush` D-4.1). Vacía = el
+    // push queda oculto (`features/notificaciones/push`). La privada vive SOLO
+    // en el gestor de secretos de `notification-service`: nunca acá.
+    VAPID_PUBLIC_KEY: z.string().optional().default(""),
+    // Piloto offline (plan §0.3): quién puede desmarcar "Este es un equipo
+    // compartido". Lista separada por comas de correos y/o roles del JWT
+    // (`docente@x.edu.co,CEVAL-DOCENTE_PILOTO`); `*` = todos. Vacío (default)
+    // = nadie: todo equipo queda en modo compartido. Ver `lib/offline/pilot.ts`.
+    OFFLINE_PILOT: z.string().optional().default(""),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(

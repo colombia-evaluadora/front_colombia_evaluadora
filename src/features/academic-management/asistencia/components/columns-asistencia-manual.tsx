@@ -56,6 +56,8 @@ interface BuildColumnsParams {
   onBloqueTardeChange: (fkMatricula: number, bloque: number) => void
   /** Regla 75: matrículas con un cambio esperando aprobación. */
   conPendiente: Set<number>
+  /** Sin Guardar en ASISTENCIAS: se ve, no se cambia. */
+  soloLectura: boolean
 }
 
 export function buildColumnsAsistenciaManual({
@@ -72,6 +74,7 @@ export function buildColumnsAsistenciaManual({
   bloqueTarde,
   onBloqueTardeChange,
   conPendiente,
+  soloLectura,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
   const bloqueItems = Object.fromEntries(
     bloques.map((b) => {
@@ -115,6 +118,7 @@ export function buildColumnsAsistenciaManual({
             <Select
               items={tipoItems}
               value={value?.toString() ?? ""}
+              disabled={soloLectura}
               onValueChange={(next) => onChange(fkMatricula, Number(next) as TipoAsistencia)}
             >
               <SelectTrigger variant="outlined" size="sm" className="h-8 w-64">
@@ -132,6 +136,7 @@ export function buildColumnsAsistenciaManual({
               <Select
                 items={bloqueItems}
                 value={bloqueTarde[fkMatricula]?.toString() ?? ""}
+                disabled={soloLectura}
                 onValueChange={(next) => onBloqueTardeChange(fkMatricula, Number(next))}
               >
                 <SelectTrigger variant="outlined" size="sm" className="h-8 w-64">
@@ -174,6 +179,7 @@ export function buildColumnsAsistenciaManual({
               accept=".pdf,.jpg,.jpeg,.png"
               maxSize={10 * 1024 * 1024}
               className="w-fit"
+              disabled={soloLectura}
             >
               <FileUploadTrigger
                 render={
@@ -191,7 +197,7 @@ export function buildColumnsAsistenciaManual({
               </FileUploadTrigger>
             </FileUpload>
             {hayArchivo && <VerSoporteButton archivoLocal={archivo} fkSoporteArchivo={fkSoporteExistente} />}
-            {hayArchivo && (
+            {hayArchivo && !soloLectura && (
               <button
                 type="button"
                 aria-label="Quitar justificación"

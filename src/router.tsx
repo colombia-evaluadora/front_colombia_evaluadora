@@ -57,6 +57,8 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
+import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
+import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -152,14 +154,15 @@ const ListasValorPage = lazyRouteComponent(
   "ListasValorPage"
 )
 
+const EstablishmentDetailPage = lazyRouteComponent(
+  () => import("@/features/establishment/institution/pages/establishment-detail-page"),
+  "EstablishmentDetailPage"
+)
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
 )
 
-// Planeador (Gestión Académica) — read-only en esta iteración. Las tres rutas
-// cuelgan directo de `appLayoutRoute` (no hay layout agrupador) porque no hay
-// mutaciones que requieran un `NoticeProvider` compartido.
 const PlaneadorPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-page"),
   "PlaneadorPage"
@@ -239,9 +242,7 @@ const homeRoute = createRoute({
   },
 })
 
-// Pública (QR del boletín): fuera de `_auth` y de `/app`, sin chequeo de
-// sesión ni layout de la app. Sin login solo se ve el estado; el PDF exige
-// los últimos 4 dígitos del documento del estudiante.
+// Pública (QR del boletín): sin sesión ni layout de la app.
 export const verificarBoletinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: paths.verificarBoletin.path,
@@ -274,8 +275,7 @@ const loginRoute = createRoute({
     ],
   }),
   beforeLoad: async ({ context, search }) => {
-    // Sin red no se puede saber si hay sesión: se muestra el login en vez
-    // del ErrorPage (es la pantalla a la que igual se llega para entrar).
+    // Sin red no se sabe si hay sesión: se muestra el login.
     const loggedIn = await hasSession(context.queryClient).catch((error) => {
       if (error instanceof NetworkSessionError) return false
       throw error
@@ -356,25 +356,11 @@ const appLayoutRoute = createRoute({
   head: () => ({
     meta: [{ name: "robots", content: "noindex, nofollow" }],
   }),
-  // Dos guards, en este orden, y los dos corren en CADA navegación dentro de
-  // `/app` (TanStack Router re-ejecuta el `beforeLoad` de todos los matches,
-  // no solo el de la hoja):
-  //
-  // 1. Sesión: sin sesión, al login con `redirectTo`.
-  // 2. Menú: la ruta tiene que ser de algún ítem del menú del usuario
-  //    (`GET /eval-col/my-menus`, el mismo que pinta el sidebar). Si no, a
-  //    `/app/sin-acceso`. Vive acá y no en cada ruta para fallar CERRADO:
-  //    una ruta nueva que nadie mapeó queda bloqueada, no abierta (ver
-  //    `NAV_PATH_ALIASES` en `route-access.ts`).
-  //
-  // Sin bypass de superadmin, a propósito: igual que `fn_list_my_menus` en el
-  // backend, "el recorte por rol ES la autorización" — el superadmin entra a
-  // lo que su menú le da (que hoy incluye todo lo de Administración).
+  // Dos guards en cada navegación: sesión (si no, al login) y menú (la ruta
+  // debe ser de un ítem del menú del usuario; si no, a `/app/sin-acceso`).
+  // Falla cerrado: una ruta sin mapear queda bloqueada. Sin bypass de superadmin.
   beforeLoad: async ({ context, location, matches }) => {
-    // `hasSession` solo devuelve false si el servidor CONFIRMA que no hay
-    // sesión (401/403 del refresh). Un error de red persistente (tras 3
-    // reintentos) se lanza tal cual y lo pinta `ErrorPage` con "Reintentar",
-    // conservando la URL — nunca manda a /login por estar offline.
+    // Solo un 401/403 del refresh manda al login; un error de red va al ErrorPage.
     if (!(await hasSession(context.queryClient))) {
       throw redirect({
         to: paths.auth.login.path,
@@ -382,25 +368,13 @@ const appLayoutRoute = createRoute({
       })
     }
 
-    // Una URL que no existe es un 404, no un "sin acceso": que la pinte el
-    // `NotFoundPage` del router en lugar de decirle al usuario que no tiene
-    // permiso sobre algo que no hay.
+    // Una URL que no existe es un 404, no un "sin acceso".
     if (matches.some((match) => match.globalNotFound)) return
-    // `/app` (resuelve el primer ítem por su cuenta) y `/app/sin-acceso`
-    // (el destino de este mismo guard: si dependiera del menú, rebotaría en
-    // bucle).
     if (isAlwaysAllowedPath(location.pathname)) return
 
-    // Si el menú no carga, el error sube y lo pinta el `ErrorPage` con
-    // "Reintentar": nunca se concede acceso a ciegas ni se cierra la sesión
-    // por eso. `staleTime: Infinity` → después de la primera carga esto sale
-    // de la caché; logout y el 401 de sesión vencida la vacían
-    // (`queryClient.clear()`) y la pantalla de roles y menús la invalida al
-    // guardar.
+    // Si el menú no carga, el error va al ErrorPage: nunca se da acceso a ciegas.
     const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
     if (!canAccessPath(location.pathname, getMenuUrls(items))) {
-      // `redirect` reemplaza la entrada del historial: "Atrás" vuelve a la
-      // pantalla anterior, no a la bloqueada.
       throw redirect({
         to: paths.app.sinAcceso.getHref(),
         search: { desde: location.pathname },
@@ -410,9 +384,7 @@ const appLayoutRoute = createRoute({
   component: ProtectedLayout,
 })
 
-// Agrupadores sin página propia: enlazan a su primer hijo, igual que el grupo
-// colapsable del sidebar (ver nav-main.tsx). Así toda miga es un `<a href>`
-// navegable y la cadena del BreadcrumbList queda completa para Google.
+// Agrupadores sin página propia: la miga enlaza a su primer hijo.
 const COBERTURA_CRUMB = {
   label: "Cobertura",
   to: paths.app.coberturaReservaCupo.getHref(),
@@ -438,14 +410,7 @@ const GESTION_ACADEMICA_CRUMB = {
   to: paths.app.planeadorActividades.getHref(),
 }
 
-// `/app` no tiene página propia: manda a la primera pantalla del menú del
-// usuario (el primer item del sidebar), no a una ruta fija — hay roles sin
-// Cobertura asignada, que caían en una pantalla que no les corresponde.
-//
-// Ya no hay ruta fija de último recurso: con el guard de `appLayoutRoute`,
-// mandar a una pantalla que no está en el menú terminaría igual en "sin
-// acceso". Menú vacío → directo a "sin acceso"; si la llamada falla, el error
-// sube al `ErrorPage` (con "Reintentar"), igual que en el resto de `/app`.
+// `/app` manda al primer ítem del menú del usuario; sin menú, a "sin acceso".
 const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/",
@@ -455,8 +420,7 @@ const appIndexRoute = createRoute({
   },
 })
 
-// Pantalla a la que manda el guard de `appLayoutRoute`. Cuelga del layout
-// protegido para que el sidebar y el encabezado sigan visibles.
+// Destino del guard; dentro del layout para conservar el sidebar.
 export const sinAccesoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.sinAcceso.path,
@@ -541,7 +505,6 @@ export const coberturaMatriculaAgregarRoute = createRoute({
 export const coberturaMatriculaEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatriculaEditar.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: matriculaSearchSchema,
   staticData: {
     breadcrumb: [
@@ -566,16 +529,10 @@ export const coberturaMatriculaConfiguracionRoute = createRoute({
   component: MatriculaFieldConfigPage,
 })
 
-// El id vive bajo `detalle/$matriculaId`, no `matricula/$matriculaId` a
-// secas: un dinámico de un solo segmento ahí competía con los estáticos de
-// al lado (`agregar`, `configuracion`) y en la práctica ganaba el dinámico
-// —entrar a "Configuración" abría el detalle de un estudiante inexistente—,
-// así que se sacó la ambigüedad de raíz en vez de confiar en el orden de
-// declaración.
+// `detalle/$id` y no `$id` suelto: competía con `agregar` y `configuracion`.
 export const coberturaMatriculaDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatriculaDetalle.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: matriculaSearchSchema,
   staticData: {
     breadcrumb: [
@@ -587,9 +544,7 @@ export const coberturaMatriculaDetalleRoute = createRoute({
   component: MatriculaDetailPage,
 })
 
-// Mismo criterio que `_establishment`: las cuatro vistas de auditoría
-// comparten un `NoticeProvider` para que el aviso de una exportación o de un
-// revert siga visible al moverse entre ellas.
+// Un `NoticeProvider` para las cuatro vistas de auditoría.
 const auditsLayoutRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   id: "_audits",
@@ -658,10 +613,8 @@ export const listasValorRoute = createRoute({
   component: ListasValorPage,
 })
 
-// Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
-// único `NoticeProvider` para que un aviso disparado en un formulario de
-// alta/edición siga visible al navegar de vuelta al listado (a diferencia de
-// un provider por página, que se desmonta antes de que el usuario lo vea).
+// Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
+// volver al listado.
 const establishmentLayoutRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   id: "_establishment",
@@ -699,7 +652,6 @@ export const employeesRoute = createRoute({
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: establishmentsSearchSchema,
   staticData: {
     breadcrumb: [
@@ -711,12 +663,24 @@ export const addEstablishmentRoute = createRoute({
   component: AddEstablishmentPage,
 })
 
+export const establishmentDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.detail.path,
+  validateSearch: establishmentsSearchSchema,
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: EstablishmentDetailPage,
+})
+
 export const editEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: establishmentsSearchSchema,
-  // El `establishmentId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [
       ESTABLECIMIENTO_CRUMB,
@@ -731,7 +695,6 @@ export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
   validateSearch: sessionOperationsSearchSchema,
-  // El `sessionId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [
       ADMINISTRACION_CRUMB,
@@ -754,7 +717,6 @@ export const periodosAcademicosRoute = createRoute({
 export const periodosAcademicosAgregarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosAgregar.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: academicPeriodsSearchSchema,
   staticData: {
     breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Agregar" }],
@@ -765,9 +727,7 @@ export const periodosAcademicosAgregarRoute = createRoute({
 export const periodosAcademicosEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosEditar.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: academicPeriodsSearchSchema,
-  // El `periodId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Editar" }],
   },
@@ -828,7 +788,6 @@ const REFERENTES_CURRICULARES_CRUMB = {
 export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.gestionAcademicaReferentesCurricularesDetalle.path,
-  // Los filtros y la página de la tabla viajan ida y vuelta.
   validateSearch: curricularReferencesSearchSchema,
   staticData: {
     breadcrumb: [GESTION_ACADEMICA_CRUMB, REFERENTES_CURRICULARES_CRUMB, { label: "Detalle" }],
@@ -836,8 +795,6 @@ export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
   component: CurricularReferenceDetailPage,
 })
 
-// Planeador — miga única "Planeador" (los placeholders Informes / Asistencia
-// del menú todavía no tienen ruta propia).
 const PLANEADOR_CRUMB = {
   label: "Planeador",
   to: paths.app.planeadorActividades.getHref(),
@@ -859,9 +816,7 @@ export const planeadorActividadCrearRoute = createRoute({
   component: PlaneadorCrearActividadPage,
 })
 
-// La miga del medio es el rótulo de la pestaña de Unidades ("Unidad
-// temática"/"Proyecto pedagógico"/…, ver `planeador-tabs.tsx`), que viaja
-// en `?instrumento=` — sin él (entrada directa por URL) cae al genérico.
+// La miga del medio es la pestaña de Unidades (`?instrumento=`).
 const unidadesCrumb = (search: Record<string, unknown>) => ({
   label: typeof search.instrumento === "string" && search.instrumento ? search.instrumento : "Unidad temática",
 })
@@ -897,8 +852,6 @@ export const planeadorUnidadEditarRoute = createRoute({
 export const planeadorActividadEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorActividadEditar.path,
-  // Editar no preserva el search (no aporta nada: el listado se navega con
-  // sus propios filtros en la URL al volver). Mismo miga que el detalle.
   staticData: {
     breadcrumb: (params) => [
       PLANEADOR_CRUMB,
@@ -997,6 +950,50 @@ export const chatRoute = createRoute({
   component: ChatPage,
 })
 
+const PendientesPage = lazyRouteComponent(() => import("@/features/offline/pages/pendientes-page"), "PendientesPage")
+
+// Cambios guardados sin conexión (Fase 2 offline). Fuera del menú del backend:
+// `isAlwaysAllowedPath` la deja pasar y se llega desde el header y el banner.
+export const pendientesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.pendientes.path,
+  validateSearch: pendientesSearchSchema,
+  staticData: { breadcrumb: [{ label: "Cambios pendientes", to: paths.app.pendientes.getHref() }] },
+  component: PendientesPage,
+})
+
+const NotificacionesPage = lazyRouteComponent(
+  () => import("@/features/notificaciones/pages/notificaciones-page"),
+  "NotificacionesPage",
+)
+
+const NOTIFICACIONES_CRUMB = { label: "Notificaciones", to: paths.app.notificaciones.getHref() }
+
+export const notificacionesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.notificaciones.path,
+  validateSearch: notificacionesSearchSchema,
+  staticData: { breadcrumb: [NOTIFICACIONES_CRUMB] },
+  component: NotificacionesPage,
+})
+
+const PreferenciasNotificacionesPage = lazyRouteComponent(
+  () => import("@/features/notificaciones/pages/preferencias-page"),
+  "PreferenciasNotificacionesPage",
+)
+
+export const notificacionesPreferenciasRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.notificacionesPreferencias.path,
+  staticData: {
+    breadcrumb: [
+      NOTIFICACIONES_CRUMB,
+      { label: "Preferencias", to: paths.app.notificacionesPreferencias.getHref() },
+    ],
+  },
+  component: PreferenciasNotificacionesPage,
+})
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   verificarBoletinRoute,
@@ -1040,6 +1037,7 @@ const routeTree = rootRoute.addChildren([
       campusesRoute,
       employeesRoute,
       addEstablishmentRoute,
+      establishmentDetailRoute,
       editEstablishmentRoute,
     ]),
     planeadorRoute,
@@ -1054,6 +1052,9 @@ const routeTree = rootRoute.addChildren([
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,
     chatRoute,
+    notificacionesRoute,
+    pendientesRoute,
+    notificacionesPreferenciasRoute,
   ]),
 ])
 

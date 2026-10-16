@@ -34,14 +34,10 @@ import {
 import type { RoleViews } from "@/features/administration/roles-menus/api/types/role-views"
 import { MenuCatalog } from "@/features/administration/roles-menus/components/menu-catalog"
 import { RoleViewsEditor } from "@/features/administration/roles-menus/components/role-views-editor"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 
-/**
- * El `NoticeProvider` va acá y no adentro del contenido: `useNotify` lee el
- * contexto de sus ancestros, así que montarlo en el mismo componente que lo
- * consume lo dejaría leyendo el fallback (que manda un toast suelto en vez del
- * aviso de la barra de herramientas).
- */
+/** El provider va acá: `useNotify` lee el contexto de sus ancestros, no del mismo componente. */
 export function RolesMenusPage() {
   return (
     <NoticeProvider>
@@ -52,12 +48,12 @@ export function RolesMenusPage() {
 
 function RolesMenusPageContent() {
   const { notify } = useNotify()
+  const { puedeCrear } = useMenuPermission("CONFIG_ROLES_MENUS")
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [newRoleName, setNewRoleName] = useState("")
 
   const { data: roles = [], isPending: rolesPending } = useRolesQuery()
-  // Sin selección explícita se edita el primer rol: la pantalla no tiene
-  // estado válido "sin rol", y así no arranca vacía.
+  // Sin selección se edita el primer rol: no hay estado válido "sin rol".
   const roleId = selectedRoleId ?? roles[0]?.id ?? null
 
   const { data: menus = [], isPending: menusPending } = useMenusQuery()
@@ -65,9 +61,7 @@ function RolesMenusPageContent() {
 
   const tree = useMemo(() => buildMenuTree(menus), [menus])
 
-  // Los asignados que el catálogo no ubica (su padre está dado de baja o
-  // inactivo) no se pueden ver ni quitar, y el backend rechaza la lista entera
-  // si viajan: se dejan fuera, y al guardar el rol se queda sin ellos.
+  // Asignados sin padre activo: el backend rechaza la lista entera si viajan.
   const savedViews: RoleViews = useMemo(() => {
     const { known } = partitionKnownMenus(
       roleMenus.map((menu) => menu.id),
@@ -79,15 +73,13 @@ function RolesMenusPageContent() {
         .map((menu) => [menu.id, { acceso: true, guardar: menu.guardar, eliminar: menu.eliminar }]),
     )
   }, [roleMenus, tree])
-  // Con cambios sin guardar en "Vistas base por rol" no se cambia de rol: se
-  // perderían sin aviso.
+  // Con cambios sin guardar no se cambia de rol: se perderían sin aviso.
   const [viewsDirty, setViewsDirty] = useState(false)
 
   const createRole = useCreateRole({
     mutationConfig: {
       onSuccess: (role) => {
         setNewRoleName("")
-        // El rol nuevo queda seleccionado: se crea para configurarle los menús.
         setSelectedRoleId(role.id)
         notify("El rol se creó correctamente.")
       },
@@ -105,8 +97,7 @@ function RolesMenusPageContent() {
 
   const roleName = roles.find((role) => role.id === roleId)?.name ?? ""
 
-  // El rol va dentro de cada pestaña, como en el prototipo: de él depende todo
-  // lo de abajo. Con cambios sin guardar queda bloqueado.
+  // Con cambios sin guardar el rol queda bloqueado.
   const roleSelect = (
     <Field variant="outlined" className="w-full">
       <FieldLabel htmlFor="role">Rol*</FieldLabel>
@@ -128,8 +119,8 @@ function RolesMenusPageContent() {
               </SelectItem>
             ))}
           </SelectGroup>
-          {/* Alta rápida al pie de la lista. Los eventos se frenan acá para que
-              el select no los tome como navegación ni se cierre al escribir. */}
+          {/* Se frenan los eventos para que el select no los tome como navegación ni se cierre al escribir. */}
+          {puedeCrear ? (
           <div
             className="flex items-center gap-2 border-t border-border p-2"
             onKeyDown={(event) => event.stopPropagation()}
@@ -158,6 +149,7 @@ function RolesMenusPageContent() {
               <ControlPointIcon />
             </Button>
           </div>
+          ) : null}
         </SelectContent>
       </Select>
     </Field>
@@ -171,16 +163,12 @@ function RolesMenusPageContent() {
 
       <TableScreenBody>
         <div className="flex flex-col gap-4">
-          {/* Fijo arriba al desplazarse: el resultado de borrar o mover una
-              fila lejana se ve sin volver al inicio. */}
           <div className="sticky top-2 z-20 rounded-md bg-card shadow-md empty:hidden">
             <NoticeOutlet />
           </div>
           {isLoading ? (
             <Skeleton className="h-96" />
           ) : (
-            // Pestañas de la Sección 4: el catálogo de vistas (4.1) y lo que
-            // puede cada rol sobre ellas (4.2).
             <Tabs defaultValue="vistas-base">
               <TabsList variant="line">
                 <TabsTrigger value="modulos" disabled={viewsDirty}>

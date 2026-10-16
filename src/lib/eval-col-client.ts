@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from "axios"
+
 import { api } from "@/lib/api-client"
 
 /**
@@ -52,8 +54,8 @@ export const evalCol = {
   },
 
   /** POST que devuelve un único recurso (`{rows:[dto]}` → `dto`). */
-  async postRow<T>(url: string, data?: unknown): Promise<T> {
-    return toRow<T>(await api.post(`${PREFIX}${url}`, data), url)
+  async postRow<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return toRow<T>(await api.post(`${PREFIX}${url}`, data, config), url)
   },
 
   /** POST que devuelve una lista. Los endpoints de Informes son todos POST
@@ -64,17 +66,17 @@ export const evalCol = {
   },
 
   /** PATCH que devuelve un único recurso. */
-  async patchRow<T>(url: string, data?: unknown): Promise<T> {
-    return toRow<T>(await api.patch(`${PREFIX}${url}`, data), url)
+  async patchRow<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return toRow<T>(await api.patch(`${PREFIX}${url}`, data, config), url)
   },
 
   /** PUT que devuelve un único recurso (típicamente `{status, message}`). */
-  async putRow<T>(url: string, data?: unknown): Promise<T> {
-    return toRow<T>(await api.put(`${PREFIX}${url}`, data), url)
+  async putRow<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return toRow<T>(await api.put(`${PREFIX}${url}`, data, config), url)
   },
 
   /** PUT sin cuerpo de interés: alcanza con que no haya fallado. */
-  async put(url: string, data?: unknown): Promise<void> {
-    await api.put(`${PREFIX}${url}`, data)
+  async put(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<void> {
+    await api.put(`${PREFIX}${url}`, data, config)
   },
 }

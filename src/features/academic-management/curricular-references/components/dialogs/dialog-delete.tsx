@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import { useDelete } from "@/features/academic-management/curricular-references/api/mutations/use-delete"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
@@ -29,6 +30,8 @@ export function DeleteCurricularReferenceDialog({
   curricularReference,
 }: DeleteCurricularReferenceDialogProps) {
   const [open, setOpen] = useState(false)
+  // Sin red no se puede eliminar (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const { notify } = useNotify()
   const label = curricularReference.name || "referente"
 
@@ -61,6 +64,7 @@ export function DeleteCurricularReferenceDialog({
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
+                  disabled={soloEnLinea.disabled}
                   aria-label={`Eliminar ${label}`}
                 />
               }
@@ -69,7 +73,7 @@ export function DeleteCurricularReferenceDialog({
         >
           <TrashIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Eliminar ${label}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${label}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -82,7 +86,7 @@ export function DeleteCurricularReferenceDialog({
         <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
-            disabled={deleteMutation.isPending}
+            disabled={deleteMutation.isPending || soloEnLinea.disabled}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(curricularReference.id)}
           >

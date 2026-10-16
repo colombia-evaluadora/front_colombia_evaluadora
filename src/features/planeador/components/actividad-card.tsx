@@ -1,7 +1,9 @@
 import { IoMdCheckboxOutline } from "react-icons/io"
 import * as React from "react"
+import { SagaBadge } from "@/features/offline/components/saga-badge"
 
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useNotify } from "@/components/notice/notice-context"
 import {
   ClipboardCheckIcon,
@@ -122,6 +124,8 @@ export function ActividadCard({
   const { puedeEditar, soloLectura } = usePlaneadorSoloLectura()
   const bloqueoEdicion = motivoNoEditable(actividad)
 
+  // Exportar se arma en el servidor: sin red, deshabilitado (§7.5).
+  const soloEnLinea = useOnlineOnly()
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
       onSuccess: (actividadesExportadas) => {
@@ -200,6 +204,7 @@ export function ActividadCard({
           <StatusIcon className="size-3.5" />
         </span>
         <h3 className="min-w-0 text-xs leading-snug font-bold break-words">{actividad.nombre}</h3>
+        <SagaBadge target={`actividad:${actividad.id}`} />
       </div>
 
       {/* `esRecuperacion` ahora llega en el propio resumen del listado
@@ -305,7 +310,8 @@ export function ActividadCard({
                 size="icon-sm"
                 className="size-6"
                 aria-label={`Exportar ${actividad.nombre}`}
-                disabled={exportarJson.isPending}
+                disabled={exportarJson.isPending || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
                 aria-busy={exportarJson.isPending}
                 onClick={(e) => {
                   e.stopPropagation()

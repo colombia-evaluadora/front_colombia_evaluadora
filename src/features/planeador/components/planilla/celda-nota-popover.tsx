@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { isOutboxEnabled, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
+import { PendingBadge } from "@/features/offline/components/pending-badge"
+import { celdaEntityKey } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { IoMdCheckboxOutline } from "react-icons/io"
 import {
@@ -39,6 +44,8 @@ interface CeldaNotaPopoverProps {
   onCambio?: (pkTactividadEstudiante: number, cambio: CambioPendiente | null) => void
   cambioPendiente?: CambioPendiente
   calificacionPropuesta?: unknown
+  /** Versión de la celda en la planilla (CAS al calificar sin conexión, BE-2). */
+  baseVersion?: string | null
 }
 
 export interface CambioPendiente {
@@ -147,6 +154,7 @@ export function CeldaNotaPopover({
   onCambio,
   cambioPendiente,
   calificacionPropuesta,
+  baseVersion,
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
@@ -165,8 +173,8 @@ export function CeldaNotaPopover({
 
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
-      onSuccess: () => {
-        notify("Nota guardada.")
+      onSuccess: (result) => {
+        notify(result.queued ? QUEUED_MESSAGE : "Nota guardada.", result.queued ? { variant: "info" } : undefined)
         setOpen(false)
         onGuardado?.()
       },
@@ -179,6 +187,13 @@ export function CeldaNotaPopover({
   const notasOriginales = notasDeCalificacion(calificacionPropuesta) ?? notaActual?.notas ?? []
 
   const previsualizar = usePrevisualizarNotaMutation()
+  // Calificar y la vista previa de la nota (periodo cerrado) van al servidor:
+  // Fase 2: calificar se encola sin red; la vista previa (periodo cerrado) sigue solo en línea.
+  // Fase 2: calificar se encola sin red (piloto). La vista previa de nota de
+  // periodo cerrado (`onCambio`) necesita al servidor: sigue solo en línea.
+  const soloEnLineaPrevia = useOnlineOnly()
+  const escribible = useOfflineWritable()
+  const soloEnLinea = onCambio ? soloEnLineaPrevia : escribible
   const completitud = instrumentoCompletitud(instrumento, draft)
 
   function guardar() {
@@ -201,10 +216,16 @@ export function CeldaNotaPopover({
       })
       return
     }
-    calificar.mutate({ ...input, actividadId })
+    // La versión solo viaja con la outbox habilitada (piloto): un cambio hecho
+    // sin red no pisa en silencio una nota que otra persona cambió.
+    calificar.mutate({ ...input, actividadId, ...(isOutboxEnabled() && baseVersion ? { baseVersion } : {}) })
   }
 
   return (
+    <>
+    {/* Estado en la outbox (Pendiente / Conflicto / No guardado). La definitiva
+        no se recalcula en el front (D9): se refresca al sincronizar. */}
+    <PendingBadge entityKey={celdaEntityKey(pkTactividadEstudiante)} />
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger
@@ -235,13 +256,14 @@ export function CeldaNotaPopover({
         {completitud.mensaje && (
           <p className="text-muted-foreground text-xs">{completitud.mensaje}</p>
         )}
+        {soloEnLinea.disabled && <p className="text-muted-foreground text-xs">{soloEnLinea.tooltip}</p>}
 
         <div className="flex items-center justify-end gap-2">
           <Button
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || calificar.isPending || previsualizar.isPending}
+            disabled={!completitud.completo || calificar.isPending || previsualizar.isPending || soloEnLinea.disabled}
             onClick={guardar}
           >
             {calificar.isPending || previsualizar.isPending ? (
@@ -258,5 +280,6 @@ export function CeldaNotaPopover({
         </div>
       </PopoverContent>
     </Popover>
+    </>
   )
 }

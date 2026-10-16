@@ -3,6 +3,9 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import {
   Dialog,
   DialogClose,
@@ -125,8 +128,8 @@ export function DialogCalificarActividad({
 
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
-      onSuccess: () => {
-        notify("Nota guardada.")
+      onSuccess: (result) => {
+        notify(result.queued ? QUEUED_MESSAGE : "Nota guardada.", result.queued ? { variant: "info" } : undefined)
         setOpen(false)
         onGuardado?.()
       },
@@ -139,6 +142,11 @@ export function DialogCalificarActividad({
   const previsualizar = usePrevisualizarNotaMutation()
   const completitud = instrumentoCompletitud(instrumento, draft)
   const guardando = calificar.isPending || previsualizar.isPending
+  // Calificar y la vista previa de la nota (periodo cerrado) van al servidor:
+  // Fase 2: calificar se encola sin red; la vista previa (periodo cerrado) sigue solo en línea.
+  const soloEnLineaPrevia = useOnlineOnly()
+  const escribible = useOfflineWritable()
+  const soloEnLinea = onCambio ? soloEnLineaPrevia : escribible
 
   function guardar() {
     if (!instrumento) return
@@ -250,6 +258,9 @@ export function DialogCalificarActividad({
         </div>
 
         <DialogFooter className="shrink-0 sm:justify-end">
+          {soloEnLinea.disabled && (
+            <p className="text-muted-foreground mr-auto self-center text-xs">{soloEnLinea.tooltip}</p>
+          )}
           <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -258,7 +269,7 @@ export function DialogCalificarActividad({
             variant="fill"
             color="primary"
             size="sm"
-            disabled={!completitud.completo || guardando}
+            disabled={!completitud.completo || guardando || soloEnLinea.disabled}
             onClick={guardar}
           >
             {guardando ? (

@@ -13,7 +13,6 @@ export const elecciones: Eleccion[] = [
     fechaCierre: cierre,
     jornadaId: 1,
     verResultadosEnVivo: true,
-    permitirComentarios: true,
     candidatos: [
       { id: 1, nombre: "Fernney Antonio Jaramillo Gomez", numero: "41", lema: "Más ideas para crecer", fotoUrl: null, votos: 74 },
       { id: 2, nombre: "Laura Martínez Gómez", numero: "20", lema: "Tu voz impulsa el cambio", fotoUrl: null, votos: 53 },

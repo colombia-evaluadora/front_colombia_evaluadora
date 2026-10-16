@@ -1,9 +1,8 @@
-import * as React from "react"
-import { ChatCircleDotsIcon } from "@/components/ui/icons"
-import type { UIMessage } from "@tanstack/ai-react"
+import { CheckCircleIcon, SparkleIcon, SpinnerIcon, WarningCircleIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
+import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Message, MessageContent } from "@/components/ui/message"
 import {
@@ -14,80 +13,132 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
 
-import { StreamingText } from "@/features/assistant/components/streaming-text"
-import {
-  ASSISTANT_DISPONIBLE,
-  ASSISTANT_PROXIMAMENTE_MENSAJE,
-} from "@/features/assistant/lib/availability"
+import type { EstadoTurno } from "@/features/assistant/api/types"
+import { RespuestaAgente } from "@/features/assistant/components/respuesta-agente"
+import type { MensajeChat, PasoHerramienta } from "@/features/assistant/hooks/use-asistente"
+import { etiquetaEstado } from "@/features/assistant/lib/sugerencias"
 
 interface ChatMessageListProps {
-  messages: UIMessage[]
-  isLoading: boolean
+  mensajes: MensajeChat[]
+  enviando: boolean
+  estado: EstadoTurno | null
+  /** Herramientas del turno en curso, en orden de inicio. */
+  herramientas?: PasoHerramienta[]
+  bloqueado: boolean
+  puedeAccionar?: boolean
+  sugerencias: string[]
+  onEnviar: (texto: string) => void
+  onConfirmar: (mensaje: MensajeChat) => void
+  onCancelar: (mensaje: MensajeChat) => void
+  onReintentar: (mensaje: MensajeChat) => void
 }
 
-function getMessageText(message: UIMessage) {
-  return message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.content)
-    .join("")
-}
-
-export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
-  const seenIds = React.useRef<Set<string> | null>(null)
-
-  if (seenIds.current === null) {
-    seenIds.current = new Set(messages.map((message) => message.id))
-  }
-
-  React.useEffect(() => {
-    const seen = seenIds.current!
-    for (const message of messages) {
-      seen.add(message.id)
-    }
-  })
-
-  if (messages.length === 0) {
+export function ChatMessageList({
+  mensajes,
+  enviando,
+  estado,
+  herramientas = [],
+  bloqueado,
+  puedeAccionar = true,
+  sugerencias,
+  onEnviar,
+  onConfirmar,
+  onCancelar,
+  onReintentar,
+}: ChatMessageListProps) {
+  if (mensajes.length === 0) {
     return (
       <Empty className="flex-1">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <ChatCircleDotsIcon />
+            <SparkleIcon />
           </EmptyMedia>
-          <EmptyTitle>{ASSISTANT_DISPONIBLE ? "Asistente" : "Próximamente"}</EmptyTitle>
+          <EmptyTitle>¿En qué te ayudo?</EmptyTitle>
           <EmptyDescription>
-            {ASSISTANT_DISPONIBLE
-              ? "Escribe un mensaje para comenzar la conversación."
-              : ASSISTANT_PROXIMAMENTE_MENSAJE}
+            Consulto información, te llevo a la pantalla correcta y preparo cambios que tú confirmas.
           </EmptyDescription>
         </EmptyHeader>
+        <div className="flex w-full flex-col gap-2">
+          {sugerencias.map((sugerencia) => (
+            <Button
+              key={sugerencia}
+              variant="outline"
+              color="neutral"
+              size="sm"
+              className="h-auto justify-start py-2 text-left whitespace-normal"
+              disabled={bloqueado}
+              onClick={() => onEnviar(sugerencia)}
+            >
+              {sugerencia}
+            </Button>
+          ))}
+        </div>
       </Empty>
     )
   }
 
+  const ultimo = mensajes.at(-1)
+
   return (
     <MessageScroller>
       <MessageScrollerViewport>
-        <MessageScrollerContent aria-busy={isLoading} className="px-6 py-3 flex flex-col gap-4">
-          {messages.map((message) => {
-            const isUser = message.role === "user"
-            const isNew = !seenIds.current!.has(message.id)
-            const text = getMessageText(message)
-
+        <MessageScrollerContent aria-busy={enviando} className="flex flex-col gap-4 px-6 py-3">
+          {mensajes.map((mensaje) => {
+            const esUsuario = mensaje.rol === "user"
+            const cargando = enviando && mensaje === ultimo && !esUsuario && !mensaje.respuesta && !mensaje.error
             return (
               <MessageScrollerItem
-                key={message.id}
-                messageId={message.id}
-                scrollAnchor={isUser}
-                className={cn(
-                  isNew &&
-                    "animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none",
-                )}
+                key={mensaje.id}
+                messageId={mensaje.id}
+                scrollAnchor={esUsuario}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
               >
-                <Message align={isUser ? "end" : "start"}>
-                  <MessageContent>
-                    <Bubble align={isUser ? "end" : "start"} variant={isUser ? "default" : "muted"}>
+                <Message align={esUsuario ? "end" : "start"}>
+                  <MessageContent className={cn(!esUsuario && "w-full")}>
+                    <Bubble
+                      align={esUsuario ? "end" : "start"}
+                      variant={esUsuario ? "default" : "muted"}
+                      className={cn(!esUsuario && "max-w-full")}
+                    >
                       <BubbleContent>
-                        {!isUser && isNew ? <StreamingText text={text} /> : text}
+                        {esUsuario ? (
+                          <span className="whitespace-pre-wrap">{mensaje.texto}</span>
+                        ) : cargando ? (
+                          <div className="flex flex-col gap-1.5" aria-live="polite">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <SpinnerIcon className="size-4 animate-spin" />
+                              {etiquetaEstado(estado)}
+                            </span>
+                            {herramientas.length > 0 && (
+                              <ul className="flex flex-col gap-1 text-xs">
+                                {herramientas.map((paso) => (
+                                  <li key={paso.id} className="flex items-center gap-1.5">
+                                    {paso.estado === "EN_CURSO" ? (
+                                      <SpinnerIcon className="size-3.5 animate-spin text-muted-foreground" />
+                                    ) : paso.estado === "OK" ? (
+                                      <CheckCircleIcon className="size-3.5 text-green" />
+                                    ) : (
+                                      <WarningCircleIcon className="size-3.5 text-yellow" />
+                                    )}
+                                    <span className={paso.estado === "EN_CURSO" ? "" : "text-muted-foreground"}>
+                                      {paso.etiqueta}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ) : (
+                          <RespuestaAgente
+                            mensaje={mensaje}
+                            bloqueado={bloqueado || enviando}
+                            puedeAccionar={puedeAccionar}
+                            onResponder={onEnviar}
+                            onConfirmar={onConfirmar}
+                            onCancelar={onCancelar}
+                            onReintentar={onReintentar}
+                          />
+                        )}
                       </BubbleContent>
                     </Bubble>
                   </MessageContent>

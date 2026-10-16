@@ -15,6 +15,8 @@ import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { enterOfflineSession, getOfflineContinueName, useLogin } from "@/lib/auth"
+import { toAuthUserFromToken } from "@/lib/auth-mapper"
+import { canChoosePersonalDevice, isOfflinePilotUser } from "@/lib/offline/pilot"
 import { setDeviceMode } from "@/lib/offline/query-persister"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 
@@ -62,8 +64,17 @@ export function LoginPage() {
   async function handleSubmit({ sharedDevice, ...values }: LoginFormValues) {
     // El modo del equipo se fija ANTES del login: en "compartido" no se
     // persiste nada (y se borra lo que hubiera) desde la primera respuesta.
-    await setDeviceMode(sharedDevice ? "compartido" : "personal").catch(() => undefined)
-    loginMutation.mutate(values)
+    const personal = !sharedDevice && canChoosePersonalDevice(values.email)
+    await setDeviceMode(personal ? "personal" : "compartido").catch(() => undefined)
+    loginMutation.mutate(values, {
+      onSuccess: async (data) => {
+        // Revalidación con el token (correo + roles): fuera del piloto el
+        // equipo vuelve a "compartido" y se borra lo que se hubiera escrito.
+        if (personal && !isOfflinePilotUser(toAuthUserFromToken(data.token))) {
+          await setDeviceMode("compartido").catch(() => undefined)
+        }
+      },
+    })
   }
 
   return (

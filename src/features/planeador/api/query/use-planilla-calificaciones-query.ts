@@ -108,7 +108,7 @@ interface PlanillaCalificacionesResult {
   totalCount: number
 }
 
-async function fetchPlanillaCalificaciones(
+export async function fetchPlanillaCalificaciones(
   params: UsePlanillaCalificacionesParams,
 ): Promise<PlanillaCalificacionesResult> {
   const query = new URLSearchParams({

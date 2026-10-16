@@ -21,11 +21,15 @@ import {
   useFijarMensaje,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
+import { BotonReaccionar } from "@/features/comunicaciones/chat/components/reacciones-mensaje"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
+import { decodificarMenciones, mencionadosEn } from "@/features/comunicaciones/chat/lib/menciones"
+import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 
-// Barra flotante de un mensaje propio: editar, fijar y eliminar.
-export function MensajeAcciones({ mensaje: m }: { mensaje: Mensaje }) {
+// Barra flotante de un mensaje propio: reaccionar, responder (`extra`), editar, fijar y eliminar.
+export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra?: ReactNode }) {
   const { notify } = useNotify()
   const [editando, setEditando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
@@ -33,10 +37,15 @@ export function MensajeAcciones({ mensaje: m }: { mensaje: Mensaje }) {
   const fijar = useFijarMensaje()
   const eliminar = useEliminarMensaje()
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
+  // Solo se piden al abrir la edición (para el autocompletado de menciones).
+  const miembros = useMiembrosQuery(editando ? m.conversacionId : undefined)
+  const { puedeMencionarMasivo } = useChatAccess()
 
   return (
     <>
-      <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 max-md:opacity-100">
+      <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
+        <BotonReaccionar mensaje={m} />
+        {extra}
         <Accion etiqueta="Editar mensaje" onClick={() => setEditando(true)}>
           <PencilSimpleIcon className="size-4.5" />
         </Accion>
@@ -68,14 +77,17 @@ export function MensajeAcciones({ mensaje: m }: { mensaje: Mensaje }) {
               <p className="mb-1 text-xs text-muted-foreground">
                 <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
               </p>
-              <TextoFormateado texto={m.texto} />
+              <TextoFormateado texto={m.texto} menciones={m.menciones} />
             </div>
           </div>
           <ChatComposer
             variante="edicion"
             autoFocus
             destino=""
-            textoInicial={m.texto}
+            textoInicial={decodificarMenciones(m.texto, m.menciones)}
+            mencionesIniciales={mencionadosEn(m.texto, m.menciones)}
+            miembros={miembros.data ?? []}
+            permitirMasivas={puedeMencionarMasivo}
             enviando={editar.isPending}
             className="border-t-0 p-0 md:p-0"
             onEnviar={(texto) =>

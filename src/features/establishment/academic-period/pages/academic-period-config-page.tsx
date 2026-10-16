@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
@@ -20,6 +20,7 @@ import {
 } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
 import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
@@ -81,6 +82,13 @@ function AcademicPeriodConfigPageContent() {
   const navigate = useNavigate()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
+  // Sin Guardar, entrar por URL a agregar vuelve a la lista.
+  const { puedeCrear, isLoading: permisoCargando } = useMenuPermission("PERIODOS_ACADEMICOS")
+  useEffect(() => {
+    if (!isEditing && !permisoCargando && !puedeCrear) {
+      navigate({ to: paths.app.periodosAcademicos.getHref(), replace: true })
+    }
+  }, [isEditing, permisoCargando, puedeCrear, navigate])
   const parsedPeriodId = periodId ? Number(periodId) : undefined
   const isValidPeriodId = parsedPeriodId != null && Number.isInteger(parsedPeriodId)
   const numericPeriodId = isValidPeriodId ? parsedPeriodId : undefined

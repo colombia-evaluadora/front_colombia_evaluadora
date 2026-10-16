@@ -4,7 +4,8 @@ import { defineConfig, devices } from "@playwright/test"
 // Vite con MSW activo (`VITE_APP_ENABLE_API_MOCKING=active`), en un puerto
 // propio para no chocar con un `pnpm dev` abierto. No está en CI: ver
 // `e2e/README` en el PR (lento y depende de timers reales de conectividad).
-const PORT = 5174
+// `E2E_PORT` permite correrlo junto a otro dev server de E2E (otro worktree) en 5174.
+const PORT = Number(process.env.E2E_PORT ?? 5174)
 
 export default defineConfig({
   testDir: "e2e",
@@ -23,6 +24,6 @@ export default defineConfig({
     url: `http://localhost:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { VITE_APP_ENABLE_API_MOCKING: "active" },
+    env: { VITE_APP_ENABLE_API_MOCKING: "active", VITE_APP_OFFLINE: "full", VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com" },
   },
 })

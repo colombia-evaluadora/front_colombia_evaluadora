@@ -22,6 +22,7 @@ import { useEnrollmentFilters } from "@/features/coverage/hooks/use-enrollment-f
 import { columnsEnrollments } from "@/features/coverage/components/table/columns-enrollments"
 import { SearchEnrollments } from "@/features/coverage/components/search/search-enrollments"
 import { AddEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-add-enrollment"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { ConfirmAsignarCupoEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-confirm-asignar-cupo-enrollment"
 import { Button } from "@/components/ui/button"
 import { FileDownloadOutlinedIcon, UserGroupAddIcon } from "@/components/ui/icons"
@@ -34,6 +35,7 @@ interface EnrollmentsTableProps {
 
 export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTableProps) {
   const [openAsignarCupo, setOpenAsignarCupo] = useState(false)
+  const { puedeCrear, puedeEditar } = useMenuPermission("INSCRITOS")
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEnrollmentFilters()
@@ -85,7 +87,7 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
           />
 
           <TableScreenActions>
-            {canAsignarCupo ? (
+            {canAsignarCupo && puedeEditar ? (
               <>
                 <Button size="sm" color="primary" onClick={() => setOpenAsignarCupo(true)}>
                   <UserGroupAddIcon data-icon="inline-start" />
@@ -101,9 +103,9 @@ export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTable
                   }}
                 />
               </>
-            ) : (
+            ) : !canAsignarCupo && puedeCrear ? (
               <AddEnrollmentDialog />
-            )}
+            ) : null}
             <Button
               size="icon-sm"
               variant="outline"

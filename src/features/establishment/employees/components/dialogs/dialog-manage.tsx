@@ -84,6 +84,7 @@ import { useEmployeeQuery } from "@/features/establishment/employees/api/query/u
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { useAsistenteFuncionario } from "@/features/establishment/employees/hooks/use-asistente-funcionario"
 import type {
   Employee,
   EmployeeStatus,
@@ -507,6 +508,23 @@ function ManageEmployeeDialogContent({
    */
   const activeEmployeeId = isEditMode ? (employeeId ?? null) : createdEmployeeId
   const canOpenOptionalSections = Boolean(activeEmployeeId)
+
+  // UI asistida: el agente puede rellenar/limpiar/señalar campos y abrir los
+  // sub-diálogos, nunca guardar (ver `use-asistente-funcionario.ts`).
+  useAsistenteFuncionario({
+    open,
+    employeeId,
+    person,
+    setPerson,
+    additionalInfo,
+    setAdditionalInfo,
+    abrirPermisos: () => {
+      if (canOpenOptionalSections) setPermissionsDialogOpen(true)
+    },
+    abrirInformacionAdicional: () => {
+      if (canOpenOptionalSections) setAdditionalInfoDialogOpen(true)
+    },
+  })
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()

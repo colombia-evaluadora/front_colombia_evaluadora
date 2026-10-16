@@ -75,6 +75,9 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: apiProxyTarget,
           changeOrigin: false,
+          // Upgrade de `/api/comms/ws` (tiempo real, comms-service) con
+          // `VITE_APP_REALTIME_URL=/api/comms/ws`, igual que el Worker en deploy.
+          ws: true,
         },
       },
     },

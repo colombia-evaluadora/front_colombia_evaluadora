@@ -17,6 +17,7 @@ import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
@@ -189,6 +190,8 @@ function DialogValidarActividad({
   const [intentoDeclinar, setIntentoDeclinar] = useState(false)
   const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
   const noticeIdRef = useRef(0)
+  // Aprobar/declinar va al servidor (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
 
   const resolver = useResolverValidacionCoordinador({
     mutationConfig: {
@@ -275,7 +278,15 @@ function DialogValidarActividad({
 
         <DialogFooter className="sm:justify-end">
           {!declinando && (
-            <Button type="button" variant="fill" color="primary" size="sm" disabled={resolver.isPending} onClick={aprobar}>
+            <Button
+              type="button"
+              variant="fill"
+              color="primary"
+              size="sm"
+              disabled={resolver.isPending || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
+              onClick={aprobar}
+            >
               {decisionEnCurso === "APROBADA" ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
@@ -289,7 +300,8 @@ function DialogValidarActividad({
             variant={declinando ? "fill" : "outline"}
             color="destructive"
             size="sm"
-            disabled={resolver.isPending}
+            disabled={resolver.isPending || soloEnLinea.disabled}
+            title={soloEnLinea.tooltip ?? undefined}
             onClick={declinar}
           >
             {decisionEnCurso === "DECLINADA" ? (

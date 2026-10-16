@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { SelectorEmoji } from "@/features/comunicaciones/chat/components/selector-emoji"
 import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
@@ -44,6 +45,13 @@ import {
   insertarEnlace,
   type Edicion,
 } from "@/features/comunicaciones/chat/lib/formato-texto"
+import {
+  codificarMenciones,
+  consultaMencion,
+  sugerenciasMencion,
+  type Mencionable,
+  type Sugerencia,
+} from "@/features/comunicaciones/chat/lib/menciones"
 
 const MAX_CARACTERES = 4000
 
@@ -59,6 +67,17 @@ interface ChatComposerProps {
   variante?: "nuevo" | "edicion"
   className?: string
   autoFocus?: boolean
+  // Autocompletado de menciones: miembros del canal (sin el usuario actual).
+  miembros?: readonly (Mencionable & { rol?: string })[]
+  // `@canal` / `@todos` según la política de la institución.
+  permitirMasivas?: boolean
+  // Personas ya mencionadas en `textoInicial` (al editar), para volver a codificarlas.
+  mencionesIniciales?: Mencionable[]
+  // Barra "Respondiendo a …" sobre el editor.
+  respondiendoA?: { autor: string; texto: string } | null
+  onCancelarRespuesta?: () => void
+  // Señal "escribiendo" (con throttle en quien la recibe).
+  onEscribiendo?: () => void
 }
 
 export function ChatComposer({
@@ -69,6 +88,12 @@ export function ChatComposer({
   variante = "nuevo",
   className,
   autoFocus,
+  miembros = [],
+  permitirMasivas = false,
+  mencionesIniciales = [],
+  respondiendoA,
+  onCancelarRespuesta,
+  onEscribiendo,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
@@ -80,13 +105,57 @@ export function ChatComposer({
   // La barra de formato se ve mientras el editor (o la propia barra) tiene el foco.
   const [enfocado, setEnfocado] = useState(false)
   const listo = (texto.trim().length > 0 || !!archivo) && !enviando
+  const listaId = useId()
+  // Personas elegidas en el autocompletado: al enviar `@Nombre` pasa a `<@id>`.
+  const [elegidos, setElegidos] = useState<Mencionable[]>(mencionesIniciales)
+  const [consulta, setConsulta] = useState<{ inicio: number; consulta: string } | null>(null)
+  const [activa, setActiva] = useState(0)
+  const sugerencias = consulta ? sugerenciasMencion(consulta.consulta, miembros, permitirMasivas) : []
+  const abiertas = sugerencias.length > 0
+
+  const actualizarConsulta = (valor: string, cursor: number) => {
+    setConsulta(consultaMencion(valor, cursor))
+    setActiva(0)
+  }
+
+  const elegir = (s: Sugerencia) => {
+    const area = areaRef.current
+    if (!consulta || !area) return
+    const fin = area.selectionStart
+    const valor = `@${s.nombre} `
+    setTexto(texto.slice(0, consulta.inicio) + valor + texto.slice(fin))
+    if (s.tipo === "USUARIO") setElegidos((prev) => [...prev, { id: s.id, nombre: s.nombre }])
+    setConsulta(null)
+    const pos = consulta.inicio + valor.length
+    requestAnimationFrame(() => {
+      area.focus()
+      area.setSelectionRange(pos, pos)
+    })
+  }
+
+  // Teclas del autocompletado; devuelve true si las consumió.
+  const navegarSugerencias = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!abiertas) return false
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const paso = e.key === "ArrowDown" ? 1 : -1
+      setActiva((i) => (i + paso + sugerencias.length) % sugerencias.length)
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      elegir(sugerencias[activa] ?? sugerencias[0])
+    } else if (e.key === "Escape") {
+      setConsulta(null)
+    } else return false
+    e.preventDefault()
+    return true
+  }
 
   const enviar = async () => {
     if (!listo) return
     try {
-      await onEnviar(texto.trim(), archivo)
+      await onEnviar(codificarMenciones(texto.trim(), elegidos), archivo)
       setTexto("")
       setArchivo(null)
+      setElegidos([])
+      setConsulta(null)
     } catch {
       // El error lo muestra la página; se conserva el texto para reintentar.
     } finally {
@@ -94,12 +163,14 @@ export function ChatComposer({
     }
   }
 
-  // Inserta en el cursor (menciones).
+  // Inserta en el cursor (menciones y emojis).
   const insertar = (valor: string) => {
     const area = areaRef.current
     const inicio = area?.selectionStart ?? texto.length
     const fin = area?.selectionEnd ?? texto.length
-    setTexto(texto.slice(0, inicio) + valor + texto.slice(fin))
+    const nuevo = texto.slice(0, inicio) + valor + texto.slice(fin)
+    setTexto(nuevo)
+    actualizarConsulta(nuevo, inicio + valor.length)
     requestAnimationFrame(() => {
       area?.focus()
       area?.setSelectionRange(inicio + valor.length, inicio + valor.length)
@@ -136,8 +207,51 @@ export function ChatComposer({
         e.preventDefault()
         void enviar()
       }}
-      className={cn("shrink-0 border-t p-3 md:p-4", className)}
+      className={cn("relative shrink-0 border-t p-3 md:p-4", className)}
     >
+      {abiertas && (
+        <ul
+          id={listaId}
+          role="listbox"
+          aria-label="Personas para mencionar"
+          className="absolute inset-x-3 bottom-full z-20 mb-1 max-h-64 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md md:inset-x-4"
+        >
+          {sugerencias.map((s, i) => (
+            <li
+              key={s.tipo === "USUARIO" ? `u-${s.id}` : s.tipo}
+              id={`${listaId}-${i}`}
+              role="option"
+              aria-selected={i === activa}
+              // mousedown: elegir antes de que el textarea pierda el foco.
+              onMouseDown={(e) => {
+                e.preventDefault()
+                elegir(s)
+              }}
+              onMouseEnter={() => setActiva(i)}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-muted"
+            >
+              <span className="font-medium">@{s.nombre}</span>
+              {s.detalle && <span className="truncate text-xs text-muted-foreground">{s.detalle}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {respondiendoA && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-1.5 text-xs">
+          <span className="min-w-0 flex-1 truncate">
+            Respondiendo a <span className="font-semibold">{respondiendoA.autor}</span>
+            {respondiendoA.texto && <span className="text-muted-foreground">: {respondiendoA.texto}</span>}
+          </span>
+          <button
+            type="button"
+            aria-label="Cancelar respuesta"
+            onClick={onCancelarRespuesta}
+            className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            <XIcon className="size-4" />
+          </button>
+        </div>
+      )}
       <div
         onFocus={() => setEnfocado(true)}
         onBlur={(e) => {
@@ -195,8 +309,23 @@ export function ChatComposer({
           rows={1}
           value={texto}
           maxLength={MAX_CARACTERES}
-          onChange={(e) => setTexto(e.target.value)}
+          role="combobox"
+          aria-expanded={abiertas}
+          aria-controls={abiertas ? listaId : undefined}
+          aria-autocomplete="list"
+          aria-activedescendant={abiertas ? `${listaId}-${activa}` : undefined}
+          onChange={(e) => {
+            setTexto(e.target.value)
+            actualizarConsulta(e.target.value, e.target.selectionStart)
+            if (e.target.value) onEscribiendo?.()
+          }}
+          onBlur={() => setConsulta(null)}
           onKeyDown={(e) => {
+            if (navegarSugerencias(e)) return
+            if (e.key === "Escape" && respondiendoA) {
+              onCancelarRespuesta?.()
+              return
+            }
             if (atajo(e)) return
             // Enter envía; Shift+Enter hace salto de línea.
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -237,9 +366,13 @@ export function ChatComposer({
           <Herramienta etiqueta="Formato de texto" pendiente>
             <TextAaIcon className="size-5" />
           </Herramienta>
-          <Herramienta etiqueta="Emoji" pendiente>
+          <SelectorEmoji
+            etiqueta="Insertar emoji"
+            onElegir={insertar}
+            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground"
+          >
             <SmileyIcon className="size-5" />
-          </Herramienta>
+          </SelectorEmoji>
           <Herramienta etiqueta="Mencionar a alguien" onClick={() => insertar("@")}>
             <AtIcon className="size-5" />
           </Herramienta>

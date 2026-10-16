@@ -46,4 +46,12 @@ describe("isOnlineOnlyPath", async () => {
     expect(isOnlineOnlyPath("/app/asistencia")).toBe(false)
     expect(isOnlineOnlyPath("/app/coberturas")).toBe(false)
   })
+
+  it("deja consultar periodos, horario y asignaciones sin red (Fase 4), pero no agregar ni el resto de establecimiento", () => {
+    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos")).toBe(false)
+    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos/12/editar")).toBe(false)
+    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos/agregar")).toBe(true)
+    expect(isOnlineOnlyPath("/app/establecimiento-educativo/sedes")).toBe(true)
+    expect(isOnlineOnlyPath("/app/administracion/roles-menus")).toBe(true)
+  })
 })

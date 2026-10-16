@@ -15,23 +15,38 @@ interface SaveValorVariables {
   categoria: string
   nombre: string
   valor: string
+  etiqueta: string | null
   accion: string | null
   padre: number | null
+  /** Solo al crear; después el orden se cambia arrastrando (`/orden`). */
+  orden: number | null
 }
 
-// El PUT reemplaza todo: ACCION y PADRE siempre van (null = quitar). CATEGORIA y VALOR no se editan.
-async function saveValor({ id, categoria, nombre, valor, accion, padre }: SaveValorVariables) {
+// El PUT reemplaza todo: ETIQUETA, ACCION y PADRE siempre van (null = quitar). CATEGORIA y VALOR no se editan.
+async function saveValor({
+  id,
+  categoria,
+  nombre,
+  valor,
+  etiqueta,
+  accion,
+  padre,
+  orden,
+}: SaveValorVariables) {
   const row =
     id == null
       ? await evalCol.postRow<Resultado<ListaValor>>("/listas-valor", {
           CATEGORIA: categoria,
           NOMBRE: nombre,
           VALOR: valor,
+          ETIQUETA: etiqueta,
           ACCION: accion,
           PADRE: padre,
+          ORDEN: orden,
         })
       : await evalCol.putRow<Resultado<ListaValor>>(`/listas-valor/${id}`, {
           NOMBRE: nombre,
+          ETIQUETA: etiqueta,
           ACCION: accion,
           PADRE: padre,
         })
@@ -47,7 +62,7 @@ export function useSaveValor({
     mutationFn: saveValor,
     ...rest,
     onSuccess: (...args) => {
-      // Todo el feature: cambia el conteo y, con el padre, la dependencia de la categoría.
+      // Todo el feature: cambia el conteo de la lista y, con el padre, sus dependencias.
       queryClient.invalidateQueries({ queryKey: listaValorKeys.all })
       onSuccess?.(...args)
     },

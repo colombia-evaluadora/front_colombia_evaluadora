@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
@@ -66,14 +68,18 @@ export function CeldaObservacionTrigger({
   bloqueo,
 }: CeldaObservacionTriggerProps) {
   const [abierto, setAbierto] = useState(false)
+  // Observaciones y evidencias se guardan en el servidor (plan offline §7.5).
+  // Fase 2: el texto de la observación se encola sin red; las evidencias
+  // (archivos) siguen solo en línea (D-F2-12) y fallan visibles en el sheet.
+  const soloEnLinea = useOfflineWritable()
   const { notify } = useNotify()
 
   const { data: notaActual } = useNotaEstudianteQuery(abierto ? pkTactividadEstudiante : undefined)
 
   const observar = useObservarEstudianteMutation({
     mutationConfig: {
-      onSuccess: () => {
-        notify("Observación guardada.")
+      onSuccess: (result) => {
+        notify(result.queued ? QUEUED_MESSAGE : "Observación guardada.", result.queued ? { variant: "info" } : undefined)
         setAbierto(false)
         onGuardado?.()
       },
@@ -85,7 +91,11 @@ export function CeldaObservacionTrigger({
   // Los errores de evidencias se muestran dentro de la sección Evidencias.
   const agregarEvidencia = useAgregarObservacionSoporteMutation({
     mutationConfig: {
-      onSuccess: () => onGuardado?.(),
+      onSuccess: (pk) => {
+        // `null` = quedó en la outbox: aparece al sincronizar.
+        if (pk == null) notify(QUEUED_MESSAGE, { variant: "info" })
+        onGuardado?.()
+      },
     },
   })
   const quitarEvidencia = useQuitarObservacionSoporteMutation({
@@ -112,7 +122,7 @@ export function CeldaObservacionTrigger({
             variant="outline"
             color="neutral"
             size="icon-xs"
-            disabled={fecha === null || Boolean(bloqueo)}
+            disabled={fecha === null || Boolean(bloqueo) || soloEnLinea.disabled}
             aria-label={etiqueta}
             onClick={() => setAbierto(true)}
           >
@@ -120,7 +130,9 @@ export function CeldaObservacionTrigger({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {bloqueo
+          {soloEnLinea.tooltip
+            ? soloEnLinea.tooltip
+            : bloqueo
             ? bloqueo
             : fecha === null
             ? actividadSinComenzar

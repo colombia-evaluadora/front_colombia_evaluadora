@@ -1,6 +1,8 @@
 import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -44,7 +46,7 @@ import {
 } from "@/features/planeador/components/planeador-docente-selector"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 /**
  * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
@@ -69,7 +71,8 @@ function PlaneadorUnidadesPageContent() {
   const search = useSearch({ from: planeadorUnidadesRoute.id })
   const { puedeCrear } = usePlaneadorSoloLectura()
   // Crear/editar/ceder/eliminar unidades necesita red (Fase 1 es solo lectura).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 3: con la outbox habilitada, crear/editar unidades queda activo sin red.
+  const soloEnLinea = useOfflineWritable()
   // Sede/Año/Jornada/Docente del filtro avanzado, ver `planeador-page.tsx`:
   // los hooks de consulta leen el alcance de la URL.
   const scope = usePlaneadorDocenteScope()
@@ -162,7 +165,7 @@ function PlaneadorUnidadesPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Planeador</TableScreenTitle>
+        <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
 
         <PlaneadorTabs />
 
@@ -223,6 +226,7 @@ function PlaneadorUnidadesPageContent() {
         </TableScreenToolbar>
       </TableScreenHeader>
 
+      <PendingCreations tipo="unidad" />
       <TableScreenBody>
           <>
             <PlaneadorLecturaBanner className="mb-4" />

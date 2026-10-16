@@ -64,6 +64,18 @@ Subsecciones de §8: [8.1 Públicas](#81-rutas-públicas) · [8.2 `/app` y sin-a
 
 ---
 
+**Decisiones tomadas por defecto (revisables) para la Fase 2** — P15–P20 sin respuesta; detalle en `openspec/changes/add-offline-writes-asistencia-planilla/design.md`:
+
+- Conflictos (P15): detección por celda/estudiante con versión del servidor (`updated_at` → `BASE_VERSION`); el servidor gana (409 `OFFLINE_CONFLICT` con valor actual) y el docente resuelve en la UI ("Conservar el mío" / "Usar el del servidor" / "Editar").
+- TTL de la outbox = ventana de 14 días de la sesión offline (§0.2).
+- Periodo cerrado al sincronizar: 422 `PERIODO_CERRADO` → op `rejected` visible con el motivo; si el backend genera solicitud (regla 55/75), `done` con aviso. Nada se pierde en silencio.
+- Reenvío idempotente con `Idempotency-Key` (BE-1) y FIFO por entidad.
+- La outbox se borra solo tras sync exitosa o descarte explícito; el logout con pendientes avisa (§7.8).
+- **Online-first** (desvío aprobado de §6.1.3): con red la mutación va directo con su `Idempotency-Key`; se encola con la misma clave solo si falla por red, si no hay red o si hay pendientes de la misma entidad.
+- Escritura offline solo con modo `full`, equipo personal (piloto) y sesión ≤ 14 días.
+- P16: índice con `COALESCE(bloque,0)` + detección de duplicados; P17: "Marcar todos" sin optimista; P18–P20: propuesta del plan.
+
+---
 ## 1. Resumen ejecutivo
 
 - **Objetivo realista**: que un docente pueda, sin red o con red intermitente, **consultar** lo que ya preparó (planeador, unidades, planilla, asistencia, referentes) y **registrar** lo que hace en el aula (asistencia, calificaciones de planilla, observaciones, estado de resultado y, en una fase posterior, crear/editar actividades), y que todo eso se suba solo cuando vuelva la conexión, sin duplicados y con conflictos visibles.
@@ -977,9 +989,9 @@ Qué salió y en qué PR:
 
 Desvíos y pendientes:
 - **E2E en dos mitades**: el SW no se registra con MSW (spec "Convivencia con MSW"). Los DATOS (preparar → sin red → recargar → navegar, equipo compartido, logout, cambio de usuario, vistas solo en línea) se prueban contra el dev server con `msw:fault = "network"`; el SHELL (recarga con el navegador realmente offline, `/verificar/b`) contra el build de `playwright.pwa.config.ts`, que no tiene backend y no puede iniciar sesión.
-- **"Preparar"** refresca los catálogos y las queries `meta.offline` que ya están en memoria (lo abierto en la sesión). No hay selección de grupo/asignatura/periodo, ni opción de incluir archivos, ni botón en el header de Planeador/Asistencia (solo en el menú de la cuenta).
-- **Pertenencia al piloto** para desmarcar "Este es un equipo compartido" no se valida: cualquiera puede desmarcarlo (el aviso sí se muestra).
-- Quedan sin `useOnlineOnly`: activar/inactivar y eliminar referentes, enunciados/evidencias y la vista previa de calificación; sin red fallan con el error normal.
+- ~~"Preparar" sin selección ni archivos ni botón en el header~~ **Cerrado (PR de gaps F1)**: el diálogo deja elegir grupos, asignaturas y periodos (defaults: todos los grupos/asignaturas del docente y el periodo vigente, por fechas) y "Incluir archivos". Descarga catálogos, `matriculas-grupo` de cada grupo y columnas + calificaciones de cada grupo × asignatura (del mismo grado) × periodo con los mismos params/keys que la Planilla; con archivos, los soportes de cada celda con evidencias y el contenido (≤ 5 MB) a Cache Storage `ce-offline-archivos` (`lib/offline/file-cache.ts`), que `useArchivoViewUrl` usa como respaldo sin red (`networkMode: "always"`); la cache se borra con `setDeviceMode("compartido")` y `clearUserData`. Botón "Preparar sin conexión" en el header de Planeador (actividades, unidades, planilla) y Asistencia. Los rosters por sesión de Asistencia (`["asistencia","sesion-estudiantes",params]`, dependen de fecha/bloque) siguen entrando solo por "lo ya abierto".
+- ~~Pertenencia al piloto no validada~~ **Cerrado**: no hay rol ni permiso de menú de piloto en el backend (agregarlo sería cambio de esquema), así que es configuración de build `VITE_APP_OFFLINE_PILOT` (correos y/o roles del JWT separados por comas; `*` = todos; vacío = nadie, default). Antes del login se habilita el checkbox por correo escrito (o si la lista tiene roles/`*`); después, `isOfflinePilotUser` con el token y, si no es del piloto, el equipo vuelve a "compartido" (`lib/offline/pilot.ts`). Para el piloto real hay que cargar la lista en el `ENV_FILE` de `test`/`production`.
+- ~~Escrituras sin `useOnlineOnly`~~ **Cerrado**: activar/inactivar y eliminar referentes (y el modal de alto impacto), enunciados/evidencias (crear, editar, eliminar), calificar celda/en bloque/aprobación, vista previa de nota de periodo cerrado, "Guardar" de solicitud, observaciones/evidencias/favorita, "No presentó" y asistencia de la actividad, aprobar/declinar del coordinador, eliminar/vincular/desvincular actividades, ponderación/puntaje, criterios de unidad, exportar/importar JSON, y registrar/editar/marcar todos en Asistencia (calendario y registro manual). Son las que la Fase 2 pasará a la outbox.
 - El docente fixture del mock no tiene Cobertura ni Referentes en su menú: sin red cae a `sin-acceso` con el aviso de menú viejo (escenario cubierto); el empty state "Esta sección necesita conexión" se prueba con el administrador.
 - Port a PIGSE (7.1): solo documentado; `lib/offline/*` sigue sin dependencias de features.
 
@@ -988,12 +1000,18 @@ Tareas: outbox (enqueue, procesador, backoff, clasificación, líder, BroadcastC
 Aceptación (Playwright): calificar 40 celdas offline, cerrar y reabrir, volver online → 40 en servidor, sin duplicados; matar la respuesta de 1 request (route.abort tras enviar) → no duplica; conflicto simulado muestra diálogo; regla 75 notifica.
 Go/no-go: piloto con 3–5 docentes 2 semanas (única población con escritura offline mientras P6 siga pendiente, §0.3); tasa de `rejected` < 1 %, 0 pérdidas reportadas, 0 duplicados en auditoría.
 
+#### Estado de la Fase 2 (2026-10)
+En PR (sin mergear). Front: outbox en `src/lib/offline/outbox/` (online-first D-F2-7, FIFO por entidad, backoff, líder por Web Locks, Background Sync, blobs de soportes de asistencia, log exportable), handlers de asistencia (registrar, editar, marcar todos) y planilla (calificar, bulk, observación, estado de resultado, asistencia de la actividad), `/app/pendientes`, indicador del header, banner de cola, conflictos y logout con pendientes. Backend (sso): CAS por estudiante en asistencia sobre `MODIFIED_AT/CREATED_AT` (sin columnas nuevas; el índice único ya existía en V139), SQLSTATE `CE409`/`CE422` → 409 `OFFLINE_CONFLICT` / 422 `PERIODO_CERRADO`. Segunda tanda: BE-1 (Idempotency-Key en el gateway sobre Redis, TTL 15 días, fail open), BE-2 (CAS de calificar con versión por celda), BE-7 (`X-Server-Time`), soportes de planilla en la outbox, solicitud de periodo cerrado encolada y E2E de 40 celdas y dos pestañas. Pendiente: métricas del piloto y CAS de la observación.
+
 ### Fase 3 — Sagas del planeador · 3–4 semanas
 Tareas: extraer orquestación de `planeador-crear-actividad-page.tsx` / `planeador-editar-actividad-page.tsx` a handler con expansión en ops dependientes (beneficia también online: reanudable); ids `tmp:`; idmap; drafts en IndexedDB; manejo de reemplazo total con `fkTarchivo` (refetch del detalle antes de armar el PUT); resolvers de catálogo desde cache; BE-3 opción B (aprobada, PR propio), BE-6.
 Aceptación: crear actividad con 2 recursos con imagen + rúbrica + adaptaciones offline, reiniciar el equipo, reconectar → todo creado una vez, en orden, archivos presentes.
 
 ### Fase 4 — Resto (opcional) · 2–3 semanas
 Unidades crear/editar/ponderaciones offline; observaciones de informes (si P8); cache de imágenes de recursos; métricas finas.
+
+#### Cierre de la Fase 4 (2026-10)
+Estado: **implementada** (change `add-offline-rest` archivado). Outbox para referentes curriculares (enunciados/evidencias CRUD, activar; inactivar sigue en línea por la consulta de impacto) y observaciones de informes escritas a mano (P8 resuelta solo para la edición manual; IA sigue en línea). Solo consulta sin red: periodos/horario/asignaciones e historial del informe. Administración sigue solo en línea. Unidades/ponderaciones, cache de imágenes y telemetría quedan en backlog. Cierre: `pnpm test:e2e:matrix` (Chromium/Firefox/WebKit), [CHECKLIST-MULTINAVEGADOR.md](CHECKLIST-MULTINAVEGADOR.md), [GO-NO-GO.md](GO-NO-GO.md), [PORT-PIGSE.md](PORT-PIGSE.md).
 
 ### 11.6 Kill-switch y rollback
 - **Flag remoto**: `GET /api/eval-col/config/offline` (o el `ENV_FILE` del deploy, `VITE_APP_OFFLINE` = `off|read|full`) consultado al arrancar online y guardado en `meta.killSwitch`. `off` → no se persiste, la outbox solo envía (no acepta encolar offline), se muestra solo banner.

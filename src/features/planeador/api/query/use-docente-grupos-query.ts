@@ -47,7 +47,7 @@ function toDocenteGrupo(row: DocenteGrupoRow): DocenteGrupo {
   }
 }
 
-async function fetchDocenteGrupos(
+export async function fetchDocenteGrupos(
   periodoId?: number,
   funcionario?: number,
   sede?: number,

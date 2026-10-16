@@ -41,6 +41,7 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { metodoCalculoInfo } from "@/features/planeador/lib/metodo-calculo-info"
+import { useAsistenteUnidad } from "@/features/planeador/hooks/use-asistente-unidad"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -172,7 +173,10 @@ export function UnidadInfoGeneralFields({
   onChange,
   tab,
   rotuloUnidad = UNIDAD_TAB_FALLBACK,
+  unidadId,
 }: {
+  /** Id de la unidad que se edita (para el asistente); sin él es un alta. */
+  unidadId?: number
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
   tab?: UnidadTab
@@ -284,6 +288,14 @@ export function UnidadInfoGeneralFields({
   const hasGradoAsignatura = draft.gradoId != null && draft.asignaturaId != null
 
   const disabled = !hasGradoAsignatura
+
+  // UI asistida (`planeador.unidad`): rellenar/limpiar/señalar, nunca guardar.
+  useAsistenteUnidad({
+    draft,
+    onChange,
+    unidadId,
+    metodosCalculo: METODO_CALCULO_OPTIONS.map((valor) => ({ valor, etiqueta: METODO_CALCULO_INFO[valor].label })),
+  })
 
   return (
     <div className="flex flex-col gap-4">
@@ -398,6 +410,7 @@ export function UnidadInfoGeneralFields({
             maxLength={50}
             value={draft.nombre}
             onChange={(e) => onChange({ nombre: e.target.value })}
+            id="unidad-nombre"
             disabled={disabled}
           />
         </Field>
@@ -413,6 +426,7 @@ export function UnidadInfoGeneralFields({
           disabled={disabled}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
+          id="unidad-descripcion"
         />
       </Field>
 
@@ -473,6 +487,7 @@ export function UnidadInfoGeneralFields({
           </FieldDescription>
 
           <RadioGroup
+            id="unidad-metodo-calculo"
             value={draft.metodoCalculo}
             onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
             className="grid gap-3 sm:grid-cols-3"

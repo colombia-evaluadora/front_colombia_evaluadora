@@ -10,6 +10,7 @@ import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dia
 import { RetirarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-retirar-matricula"
 import { ReingresarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-reingresar-matricula"
 import type { Matricula, MatriculaStatus } from "@/features/coverage/api/types/matricula"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface MatriculaToolbarProps {
   matricula: Matricula
@@ -21,10 +22,11 @@ const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
 
 export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false }: MatriculaToolbarProps) {
   const navigate = useNavigate()
+  const { puedeEditar, puedeEliminar } = useMenuPermission("MATRICULA")
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {showModificar && !NOT_EDITABLE_STATUSES.includes(matricula.status) && (
+      {puedeEditar && showModificar && !NOT_EDITABLE_STATUSES.includes(matricula.status) && (
         <Button
           render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} search={(prev) => prev} />}
           variant="fill"
@@ -43,14 +45,16 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
         Asignaturas
       </Button>
       */}
-      <RetirarMatriculaDialog matricula={matricula} trigger="button" />
-      <ReingresarMatriculaDialog matricula={matricula} trigger="button" />
-      <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable} />
-      <DeleteMatriculaDialog
-        matricula={matricula}
-        trigger="button"
-        onDeleted={() => navigate({ to: paths.app.coberturaMatricula.getHref() })}
-      />
+      {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" /> : null}
+      {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
+      <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />
+      {puedeEliminar ? (
+        <DeleteMatriculaDialog
+          matricula={matricula}
+          trigger="button"
+          onDeleted={() => navigate({ to: paths.app.coberturaMatricula.getHref() })}
+        />
+      ) : null}
     </div>
   )
 }

@@ -52,6 +52,7 @@ import { DialogMenuActions } from "@/features/administration/roles-menus/compone
 import { DialogMoveMenu } from "@/features/administration/roles-menus/components/dialog-move-menu"
 import { DialogSaveMenu } from "@/features/administration/roles-menus/components/dialog-save-menu"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /**
  * Módulos y submódulos (Administración del Sistema, Sección 4.1): el catálogo de
@@ -60,6 +61,7 @@ import { getNavIcon } from "@/features/navigation/api/ui-mappings"
  */
 export function MenuCatalog() {
   const { notify } = useNotify()
+  const { puedeCrear, puedeEditar, puedeEliminar } = useMenuPermission("CONFIG_ROLES_MENUS")
   const { data: menus = [], isPending } = useMenuCatalogQuery()
   // Los módulos arrancan plegados; aquí van los que el usuario desplegó.
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -181,6 +183,7 @@ export function MenuCatalog() {
           </Badge>
         </TableCell>
         <TableCell className="text-right">
+          {puedeEditar || (puedeEliminar && !node.enUso) ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -197,6 +200,8 @@ export function MenuCatalog() {
               <DotsThreeVerticalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {puedeEditar ? (
+              <>
               <DropdownMenuItem
                 onClick={() => setEditing(isModule ? (tree.find((it) => it.id === node.id) ?? node) : node)}
               >
@@ -234,7 +239,9 @@ export function MenuCatalog() {
                 {node.activo ? <EyeSlashIcon /> : <EyeIcon />}
                 {node.activo ? "Inactivar" : "Activar"}
               </DropdownMenuItem>
-              {node.enUso ? null : (
+              </>
+              ) : null}
+              {node.enUso || !puedeEliminar ? null : (
                 <DropdownMenuItem
                   variant="destructive"
                   onClick={() => setDeleting({ menu: node, childrenCount: children.length })}
@@ -245,6 +252,7 @@ export function MenuCatalog() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          ) : null}
         </TableCell>
       </TableRow>
     )
@@ -260,10 +268,12 @@ export function MenuCatalog() {
           {roots.length === 1 ? "módulo" : "módulos"}.
           <HelpTip text="Incluye vistas activas e inactivas. Lo que puede hacer cada rol en ellas se define en Vistas base por rol." />
         </p>
-        <Button type="button" onClick={() => setEditing("new")}>
-          <PlusIcon data-icon="inline-start" />
-          Nuevo módulo o submódulo
-        </Button>
+        {puedeCrear ? (
+          <Button type="button" onClick={() => setEditing("new")}>
+            <PlusIcon data-icon="inline-start" />
+            Nuevo módulo o submódulo
+          </Button>
+        ) : null}
       </div>
 
       <Table>

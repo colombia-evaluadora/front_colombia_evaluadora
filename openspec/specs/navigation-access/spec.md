@@ -62,3 +62,18 @@ Las vistas y acciones fuera del alcance offline SHALL deshabilitarse sin red con
 #### Scenario: Matrícula sin red
 - **WHEN** el usuario abre la lista de matrícula sin red
 - **THEN** ve el empty state de sección solo en línea
+
+#### Scenario: Escrituras de las vistas legibles offline
+- **WHEN** no hay red en Referentes curriculares, Planeador, Planilla o Asistencia
+- **THEN** quedan deshabilitadas (con `useOnlineOnly`) las escrituras hasta la Fase 2: activar/inactivar y eliminar referentes; crear, editar y eliminar enunciados y evidencias; calificar celda, en bloque y la vista previa de nota de periodo cerrado; "Guardar" de la solicitud de periodo cerrado; observaciones, evidencias y favorita; "No presentó" y asistencia de la actividad; aprobar/declinar (coordinador); eliminar, vincular y desvincular actividades; ponderación y puntaje; criterios de unidad; exportar/importar actividades; y registrar/editar/marcar todos en Asistencia
+
+### Requirement: Horario y asignaciones en solo consulta sin conexión
+La lista de periodos y la edición de un periodo (tabs de horario y asignaciones académicas) SHALL abrirse sin red desde la cache persistida, mientras que agregar un periodo y el resto de establecimiento y administración MUST seguir siendo solo en línea; guardar horario o asignaciones MUST estar deshabilitado sin red.
+
+#### Scenario: Abrir el horario sin red
+- **WHEN** el docente entra sin conexión a la edición de un periodo ya consultado
+- **THEN** ve el horario y las asignaciones, con "Guardar" deshabilitado
+
+#### Scenario: Administración sin red
+- **WHEN** se entra sin conexión a roles y menús
+- **THEN** se muestra "Esta sección necesita conexión"

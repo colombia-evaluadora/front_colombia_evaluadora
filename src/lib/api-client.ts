@@ -4,7 +4,9 @@ import { toast } from "sonner"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { isNetworkError } from "@/lib/network-error"
+import { noteServerTime } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { assertNoTmpIds } from "@/lib/offline/outbox/tmp-id"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
 
@@ -15,6 +17,10 @@ declare module "axios" {
     // Marca una lectura por POST (`api.query`, `evalCol.postRows`): no lleva
     // `Idempotency-Key` porque no muta nada.
     readOnly?: boolean
+    // Request enviada por la outbox (Fase 2 offline): sin toast global y sin
+    // redirigir a /login ante un 401 — la cola se pausa, conserva las ops y el
+    // banner pide iniciar sesión (`lib/offline/outbox/processor.ts`).
+    background?: boolean
   }
   export interface AxiosInstance {
     // El response interceptor de abajo desenvuelve `response.data` en runtime
@@ -58,8 +64,21 @@ declare module "axios" {
  */
 let authToken: string | null = null
 
+/** ¿Hay access token en memoria? (la outbox lo asegura antes de enviar). */
+export function hasAuthToken(): boolean {
+  return authToken != null
+}
+
 export function setAuthToken(token: string | null) {
   authToken = token
+}
+
+/**
+ * Para clientes que no pasan por axios (el streaming SSE del asistente usa
+ * `fetch`: axios en el navegador no expone el cuerpo como stream).
+ */
+export function getAuthToken(): string | null {
+  return authToken
 }
 
 /**
@@ -153,6 +172,10 @@ const PROBE_ENDPOINTS = [
   "/auth/register/cval/funcionario/estado-cuenta",
   // Heartbeat de conectividad: falla justamente cuando no hay red.
   "/eval-col/health",
+  // Suscripciones Web Push: se dan de baja en segundo plano (logout, cambio
+  // de usuario, `pushsubscriptionchange`) y `PushToggle` muestra sus propios
+  // errores; un fallo acá no debe sacar un toast ni cerrar la sesión.
+  "/notificaciones/push/suscripciones",
 ]
 
 // Las pantallas con `NoticeProvider` muestran sus propios avisos (banner
@@ -276,11 +299,19 @@ export function idempotencyKeyInterceptor(config: InternalAxiosRequestConfig) {
 
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.request.use(idempotencyKeyInterceptor)
+// Fase 3: un id temporal `tmp:<uuid>` de una saga offline nunca llega al
+// backend; si se escapara (bug de remapeo) la request falla acá, antes de salir.
+api.interceptors.request.use((config) => {
+  assertNoTmpIds(config)
+  return config
+})
 api.interceptors.response.use(
   // El response interceptor desenvuelve `response.data` — todas las llamadas
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
   (response) => {
     connectivityStore.reportSuccess()
+    // BE-7: hora del servidor para corregir un reloj del equipo mal puesto.
+    noteServerTime(response.headers?.["x-server-time"] as string | undefined)
     return response.data
   },
   async (error) => {
@@ -300,6 +331,10 @@ api.interceptors.response.use(
     // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
     // ya lo captura y devuelve null. Lo mismo vale para los endpoints de
     // recuperación, que corren sin sesión.
+    // La outbox clasifica sus propios errores (§6.4): nada de toasts,
+    // revalidaciones ni redirecciones por cada op que falla.
+    if (error.config?.background) return Promise.reject(error)
+
     const requestUrl = error.config?.url ?? ""
     const isPublicEndpoint = PUBLIC_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
     const isUnauthorized = error.response?.status === 401
@@ -418,7 +453,8 @@ function mensajeDelCuerpo(data: unknown): string {
 
   const cuerpo = data as Record<string, unknown>
 
-  for (const clave of ["message", "detail", "error_description"]) {
+  // `mensaje`: cuerpo de error del agente de ai-control-service (`ErrorDto`).
+  for (const clave of ["message", "mensaje", "detail", "error_description"]) {
     const valor = cuerpo[clave]
     if (typeof valor === "string" && valor.trim() !== "") return valor.trim()
   }

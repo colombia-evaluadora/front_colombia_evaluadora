@@ -319,6 +319,7 @@ export function PlanillaGrid({
                               setRefrescando((prev) => new Set(prev).add(claveCelda))
                             }
                             onCambio={onCambio}
+                            baseVersion={celda.version ?? null}
                             cambioPendiente={cambio}
                             calificacionPropuesta={
                               celda.solicitudPendiente ? celda.calificacionPropuesta : undefined

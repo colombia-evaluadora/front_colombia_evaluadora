@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { paths } from "@/config/paths"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -96,6 +97,8 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
 
   const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
   const linkActividad = useLinkActividadUnidad()
+  // Sin red no se vinculan actividades (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
 
   // Formativa: no hay calificación en absoluto —las actividades se
@@ -192,7 +195,16 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
-        render={<Button color="primary" variant="fill" size="sm" className="shrink-0" />}
+        render={
+          <Button
+            color="primary"
+            variant="fill"
+            size="sm"
+            className="shrink-0"
+            disabled={soloEnLinea.disabled}
+            title={soloEnLinea.tooltip ?? undefined}
+          />
+        }
       >
         <PlusIcon data-icon="inline-start" />
         Vincular {rotuloLabelLower}
@@ -386,7 +398,8 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                                   color="primary"
                                   size="sm"
                                   type="button"
-                                  disabled={linkActividad.isPending}
+                                  disabled={linkActividad.isPending || soloEnLinea.disabled}
+                                  title={soloEnLinea.tooltip ?? undefined}
                                   onClick={() => handleVincular(actividad.id)}
                                 >
                                   <PlusCircleIcon data-icon="inline-start" />
@@ -407,7 +420,8 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                               color="primary"
                               size="sm"
                               type="button"
-                              disabled={linkActividad.isPending}
+                              disabled={linkActividad.isPending || soloEnLinea.disabled}
+                              title={soloEnLinea.tooltip ?? undefined}
                               onClick={() => handleVincular(actividad.id)}
                             >
                               <PlusCircleIcon data-icon="inline-start" />

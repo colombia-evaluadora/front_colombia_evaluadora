@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
+import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
@@ -73,11 +76,31 @@ function buildBulkBody(input: CalificarBulkInput): Record<string, unknown> {
   return { ...base, PK_NIVEL: input.pkNivel }
 }
 
-function calificarBulk(input: CalificarBulkInput): Promise<unknown> {
-  return evalCol.putRow(
-    `/planeador/actividades/${input.actividadId}/calificar-bulk/${BULK_PATH[input.tipo]}`,
-    buildBulkBody(input),
-  )
+registerOutboxHandler<CalificarBulkInput>({
+  kind: "planilla.calificar-bulk",
+  version: 1,
+  entityKey: (p) => `planilla:bulk:${p.actividadId}`,
+  send: (input: CalificarBulkInput, ctx: SendCtx) =>
+    evalCol.putRow(
+      `/planeador/actividades/${input.actividadId}/calificar-bulk/${BULK_PATH[input.tipo]}`,
+      buildBulkBody(input),
+      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    ),
+  invalidates: (p) => [
+    planeadorKeys.planilla.calificaciones.all,
+    planeadorKeys.actividad.calificaciones(p.actividadId),
+    ["informes"],
+  ],
+  describe: (p) => ({
+    titulo: `Calificación en bloque — ${p.estudianteIds.length} estudiante(s)`,
+    detalle: `Actividad ${p.actividadId}, fecha ${p.fecha}`,
+    ruta: "/app/planeador/planilla",
+  }),
+})
+
+async function calificarBulk(input: CalificarBulkInput): Promise<{ queued: boolean }> {
+  const outcome = await runOrQueue("planilla.calificar-bulk", input)
+  return { queued: outcome.queued }
 }
 
 interface UseCalificarBulkOptions {
@@ -90,6 +113,7 @@ export function useCalificarBulkMutation({ mutationConfig }: UseCalificarBulkOpt
 
   return useMutation({
     mutationFn: calificarBulk,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       invalidarCalificacionesActividad(queryClient, variables.actividadId)

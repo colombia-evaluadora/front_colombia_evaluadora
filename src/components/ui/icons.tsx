@@ -170,6 +170,7 @@ import {
   MdOutlineRule,
   MdArrowDropUp,
   MdUndo,
+  MdReply,
   MdRedo,
   MdFormatColorText,
   MdFormatAlignLeft,
@@ -182,6 +183,9 @@ import {
   MdFormatClear,
   MdPrint,
   MdOutlineSave,
+  MdStop,
+  MdAutoAwesome,
+  MdHistory,
 } from "react-icons/md"
 
 /**
@@ -405,6 +409,7 @@ export const TextAlignLeftIcon = makeIcon(MdNotes)
 export const YesNoIcon = makeIcon(MdOutlineRule)
 export const CaretUpFillIcon = makeIcon(MdArrowDropUp)
 export const ArrowUUpLeftIcon = makeIcon(MdUndo)
+export const ArrowBendUpLeftIcon = makeIcon(MdReply)
 export const ArrowUUpRightIcon = makeIcon(MdRedo)
 export const TextColorIcon = makeIcon(MdFormatColorText)
 export const TextAlignLeftFillIcon = makeIcon(MdFormatAlignLeft)
@@ -417,3 +422,6 @@ export const TextIndentIcon = makeIcon(MdFormatIndentIncrease)
 export const TextClearIcon = makeIcon(MdFormatClear)
 export const PrinterIcon = makeIcon(MdPrint)
 export const FloppyDiskIcon = makeIcon(MdOutlineSave)
+export const StopIcon = makeIcon(MdStop)
+export const SparkleIcon = makeIcon(MdAutoAwesome)
+export const ClockCounterClockwiseIcon = makeIcon(MdHistory)

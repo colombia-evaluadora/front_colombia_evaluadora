@@ -23,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useGenerarObservacionMutation } from "@/features/academic-management/reports/api/mutations/use-observacion"
 import { useEvidenciasInformeQuery } from "@/features/academic-management/reports/api/query/use-evidencias-informe-query"
 import type {
@@ -74,6 +75,9 @@ export function ObservacionSheet({
   // `sobrescribir: true`.
   const [confirmarSobrescribir, setConfirmarSobrescribir] = React.useState(false)
   const generar = useGenerarObservacionMutation()
+  // Fase 4 offline: guardar a mano se encola en la outbox, pero generar con IA
+  // necesita el modelo del servidor y sigue siendo solo en línea.
+  const soloEnLinea = useOnlineOnly("Generar con IA necesita conexión. Puedes escribir la observación a mano.")
 
   // La fila Final tiene el mismo ciclo que un período —generar, revisar,
   // guardar— pero contra otra tabla y otro endpoint: su borrador encadena los
@@ -247,7 +251,8 @@ export function ObservacionSheet({
                 type="button"
                 variant="outline"
                 color="neutral"
-                disabled={guardando || generar.isPending}
+                disabled={guardando || generar.isPending || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
                 onClick={() => handleGenerar()}
               >
                 <BrainIcon data-icon="inline-start" />

@@ -19,10 +19,33 @@ import {
   miembrosDe,
   nuevaVotacionRapida,
   contenidoDocumentos,
+  politicaChat,
+  USUARIO_ACTUAL,
 } from "@/mocks/db/comunicaciones"
+import {
+  extraerMenciones,
+} from "@/features/comunicaciones/chat/lib/menciones"
+import {
+  perfilDeRoles,
+  puedeMencionarMasivo,
+  reglaDirecto,
+} from "@/features/comunicaciones/chat/lib/politica-chat"
+import {
+  citaDe,
+  participantes,
+  publicarConversacion,
+  publicarMensajeActualizado,
+  publicarMensajeCreado,
+  publicarMensajeEliminado,
+  simularRespuesta,
+} from "@/mocks/realtime/chat"
 
 // Mock del chat de comunicaciones; el backend aún no existe.
-const URL = (path: string) => `/api/eval-col/comunicaciones/${path}`
+// `*` delante: también matchea con `msw/node` en los tests (URL absoluta).
+const URL = (path: string) => `*/api/eval-col/comunicaciones/${path}`
+
+/** `CLIENT_MESSAGE_ID` → id del mensaje creado (reintentos idempotentes). */
+const enviadosPorCliente = new Map<string, number>()
 
 function buscar(id: string | readonly string[] | undefined) {
   return conversaciones.find((c) => c.id === Number(id))
@@ -30,6 +53,18 @@ function buscar(id: string | readonly string[] | undefined) {
 
 function noEncontrada() {
   return HttpResponse.json({ message: "La conversación no existe." }, { status: 404 })
+}
+
+/** Perfil del usuario de la request; sin token se asume docente (prototipo). */
+function perfilDe(request: Request) {
+  return perfilDeRoles(usuarioDe(request)?.roles ?? [])
+}
+
+/** El servidor decide qué menciones valen: `@canal`/`@todos` solo con permiso. */
+function mencionesDe(texto: string, conversacionId: number, request: Request) {
+  const conv = buscar(String(conversacionId))
+  const miembros = conv ? participantes(conv) : []
+  return extraerMenciones(texto, miembros, puedeMencionarMasivo(politicaChat, perfilDe(request)))
 }
 
 function hastaSilencio(duracion: SilencioDuracion) {
@@ -51,6 +86,12 @@ export const comunicacionesHandlers = [
       return HttpResponse.json({ rows })
     }
     return HttpResponse.json({ rows: conversaciones })
+  }),
+
+  // Política de DMs y menciones masivas de la institución (pendiente de aprobación).
+  http.get(URL("politica"), async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [politicaChat] })
   }),
 
   http.get(URL("personas"), async () => {
@@ -109,6 +150,13 @@ export const comunicacionesHandlers = [
     await delay(200)
     const conv = buscar(params.id)
     if (!conv) return noEncontrada()
+    // En un DM los "miembros" son la otra persona (autocompletado de menciones).
+    if (conv.tipo === "DIRECTO") {
+      const rows = participantes(conv)
+        .filter((p) => p.id !== USUARIO_ACTUAL.id)
+        .map((p) => ({ ...p, rol: "Docente", bloqueado: false }))
+      return HttpResponse.json({ rows })
+    }
     return HttpResponse.json({ rows: miembrosDe(conv.id) })
   }),
 
@@ -154,6 +202,13 @@ export const comunicacionesHandlers = [
     const body = (await request.json()) as { FK_PERSONA?: number }
     const p = personas.find((x) => x.id === body.FK_PERSONA)
     if (!p) return HttpResponse.json({ message: "La persona no existe." }, { status: 404 })
+    // La UI ya oculta a quien no se puede escribir; el backend igual lo rechaza.
+    if (reglaDirecto(politicaChat, perfilDe(request), p.perfil ?? "DOCENTE") === "PROHIBIDO") {
+      return HttpResponse.json(
+        { message: "La política de la institución no permite este mensaje directo." },
+        { status: 403 },
+      )
+    }
     const existente = conversaciones.find((c) => c.tipo === "DIRECTO" && c.nombre === p.nombre)
     if (existente) return HttpResponse.json({ rows: [existente] })
     const directo = {
@@ -173,13 +228,19 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: [directo] })
   }),
 
-  http.get(URL("conversaciones/:id/mensajes"), async ({ params }) => {
+  // Igual que comms-service: sin parámetros, los últimos 200 en orden
+  // ascendente; `?antes=<id>&limite=<n>` (máx. 500) trae el tramo anterior.
+  http.get(URL("conversaciones/:id/mensajes"), async ({ params, request }) => {
     await delay(300)
     const conv = buscar(params.id)
     if (!conv) return noEncontrada()
+    const url = new globalThis.URL(request.url)
+    const antes = Number(url.searchParams.get("antes")) || null
+    const limite = Math.min(Number(url.searchParams.get("limite")) || 200, 500)
     const rows = mensajes
-      .filter((m) => m.conversacionId === conv.id)
+      .filter((m) => m.conversacionId === conv.id && (antes == null || m.id < antes))
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .slice(-limite)
     return HttpResponse.json({ rows })
   }),
 
@@ -191,7 +252,13 @@ export const comunicacionesHandlers = [
       TEXTO?: string
       ADJUNTO_NOMBRE?: string
       ADJUNTO_FORMATO?: AdjuntoMensaje["formato"]
+      FK_MENSAJE_RESPUESTA?: number | null
+      CLIENT_MESSAGE_ID?: string
     }
+    // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
+    const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
+    const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
+    if (previo) return HttpResponse.json({ rows: [previo] })
     const texto = body.TEXTO?.trim() ?? ""
     const adjunto = body.ADJUNTO_NOMBRE
       ? { nombre: body.ADJUNTO_NOMBRE, formato: body.ADJUNTO_FORMATO ?? "OTRO", eliminadoEn: null }
@@ -199,7 +266,20 @@ export const comunicacionesHandlers = [
     if (!texto && !adjunto) {
       return HttpResponse.json({ message: "Escribe un mensaje o adjunta un archivo." }, { status: 400 })
     }
-    return HttpResponse.json({ rows: [nuevoMensaje(conv.id, texto, adjunto)] })
+    const original = body.FK_MENSAJE_RESPUESTA
+      ? mensajes.find((m) => m.id === body.FK_MENSAJE_RESPUESTA && m.conversacionId === conv.id)
+      : undefined
+    if (body.FK_MENSAJE_RESPUESTA && !original) {
+      return HttpResponse.json({ message: "El mensaje al que respondes ya no existe." }, { status: 404 })
+    }
+    const m = nuevoMensaje(conv.id, texto, adjunto, {
+      respuestaA: original ? citaDe(original) : null,
+      menciones: mencionesDe(texto, conv.id, request),
+    })
+    if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
+    publicarMensajeCreado(m, original?.autor.id)
+    simularRespuesta(conv, m)
+    return HttpResponse.json({ rows: [m] })
   }),
 
   http.patch(URL("conversaciones/:id/silenciar"), async ({ params, request }) => {
@@ -224,6 +304,9 @@ export const comunicacionesHandlers = [
     const conv = buscar(params.id)
     if (!conv) return noEncontrada()
     conv.noLeidos = 0
+    conv.menciones = 0
+    // Las demás sesiones del usuario también lo ven leído.
+    publicarConversacion(conv)
     return HttpResponse.json({ rows: [conv] })
   }),
 
@@ -393,12 +476,37 @@ export const comunicacionesMensajesHandlers = [
     return HttpResponse.json({ rows: [m] })
   }),
 
+  http.post(URL("mensajes/:id/reacciones"), async ({ params, request }) => {
+    await delay(100)
+    const m = mensajes.find((x) => x.id === Number(params.id))
+    if (!m) return mensajeNoEncontrado()
+    const body = (await request.json()) as { EMOJI?: string }
+    const emoji = body.EMOJI?.trim()
+    if (!emoji) return HttpResponse.json({ message: "Elige un emoji." }, { status: 400 })
+    // Alterna la reacción del usuario; el emoji desaparece al quedar en cero.
+    const lista = m.reacciones ?? []
+    const r = lista.find((x) => x.emoji === emoji)
+    // `usuarios` (ids) como en comms-service: el cliente calcula `mia` con él.
+    if (!r) lista.push({ emoji, total: 1, mia: true, personas: ["Tú"], usuarios: [USUARIO_ACTUAL.id] })
+    else {
+      r.total += r.mia ? -1 : 1
+      r.personas = r.mia ? (r.personas ?? []).filter((p) => p !== "Tú") : [...(r.personas ?? []), "Tú"]
+      const otros = (r.usuarios ?? []).filter((u) => u !== USUARIO_ACTUAL.id)
+      r.usuarios = r.mia ? otros : [...otros, USUARIO_ACTUAL.id]
+      r.mia = !r.mia
+    }
+    m.reacciones = lista.filter((x) => x.total > 0)
+    publicarMensajeActualizado(m)
+    return HttpResponse.json({ rows: [m] })
+  }),
+
   http.patch(URL("mensajes/:id/fijar"), async ({ params, request }) => {
     await delay(120)
     const m = mensajes.find((x) => x.id === Number(params.id))
     if (!m) return mensajeNoEncontrado()
     const body = (await request.json()) as { FIJADO: "S" | "N" }
     m.fijado = body.FIJADO === "S"
+    publicarMensajeActualizado(m)
     return HttpResponse.json({ rows: [m] })
   }),
 
@@ -414,7 +522,18 @@ export const comunicacionesMensajesHandlers = [
     await delay(150)
     const idx = mensajes.findIndex((x) => x.id === Number(params.id))
     if (idx === -1) return mensajeNoEncontrado()
+    if (!mensajes[idx].esPropio) {
+      return HttpResponse.json({ message: "Solo puedes eliminar tus mensajes." }, { status: 403 })
+    }
     const [m] = mensajes.splice(idx, 1)
+    // Las respuestas que lo citaban muestran "Mensaje eliminado".
+    for (const x of mensajes) {
+      if (x.respuestaA?.id === m.id) {
+        x.respuestaA = { ...x.respuestaA, texto: "", eliminado: true }
+        publicarMensajeActualizado(x)
+      }
+    }
+    publicarMensajeEliminado(m)
     return HttpResponse.json({ rows: [m] })
   }),
 
@@ -427,8 +546,14 @@ export const comunicacionesMensajesHandlers = [
     if (!texto && !m.adjunto) {
       return HttpResponse.json({ message: "El mensaje no puede quedar vacío." }, { status: 400 })
     }
+    if (!m.esPropio) {
+      return HttpResponse.json({ message: "Solo puedes editar tus mensajes." }, { status: 403 })
+    }
     m.texto = texto ?? ""
     m.editado = true
+    // Editar no vuelve a notificar (como Discord): solo se recalculan las menciones.
+    m.menciones = mencionesDe(m.texto, m.conversacionId, request)
+    publicarMensajeActualizado(m)
     return HttpResponse.json({ rows: [m] })
   }),
 ]

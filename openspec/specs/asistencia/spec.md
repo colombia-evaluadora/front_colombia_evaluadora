@@ -16,13 +16,6 @@ El sistema SHALL registrar la asistencia de una sesión con un único `registrar
 - **WHEN** dos docentes registran la misma sesión
 - **THEN** el último registro pisa al anterior sin aviso
 
-### Requirement: Edición puntual por registro
-El sistema SHALL editar registros existentes con un PATCH por pk, lanzados en paralelo desde el llamador.
-
-#### Scenario: Fallo parcial
-- **WHEN** una de varias ediciones falla
-- **THEN** las demás pueden haberse aplicado y la UI no identifica cuáles
-
 ### Requirement: Regla 75 calculada en servidor
 El sistema SHALL mostrar las solicitudes que el servidor devuelve en `solicitudes_pendientes` tras registrar, sin calcularlas en el front.
 
@@ -36,3 +29,29 @@ El calendario SHALL permitir "Marcar todos" por bloque, cuyo efecto depende de l
 #### Scenario: Marcar todos en un bloque
 - **WHEN** el docente usa "Marcar todos" en un bloque
 - **THEN** se envía la operación y la UI informa los registros afectados
+
+### Requirement: Asistencia sin conexión
+El registro, la edición y "Marcar todos" SHALL encolarse como operaciones de la outbox (`asistencia.registrar`, `asistencia.editar`, `asistencia.marcar-todos`); una corrección de un estudiante con `registrar` pendiente MUST fusionarse en sus `REGISTROS`.
+
+#### Scenario: Registrar en el aula sin red
+- **WHEN** el docente registra la asistencia de una sesión sin red
+- **THEN** cada estudiante muestra el badge "Pendiente" y se envía al reconectar
+
+#### Scenario: Marcar todos offline
+- **WHEN** el docente usa "Marcar todos" sin red
+- **THEN** no se pinta optimista por estudiante y el resumen informa los afectados al sincronizar
+
+#### Scenario: Preescolar
+- **WHEN** la sesión es formativa
+- **THEN** la op lleva `ACTIVIDAD` y nunca `BLOQUE`
+
+### Requirement: Conflicto por estudiante
+Con BE-5, `registrar` SHALL enviar el estado base por estudiante y el servidor MUST devolver conflicto estructurado en lugar de pisar en silencio; la resolución es por fila (P15).
+
+#### Scenario: Co-docencia
+- **WHEN** otro docente registró la misma sesión mientras el primero estaba offline
+- **THEN** las filas en conflicto se resuelven una a una
+
+#### Scenario: Contexto inválido
+- **WHEN** el servidor responde 409 `CK_TASISTENCIA_CONTEXTO`
+- **THEN** la op queda `rejected`, no `conflict`

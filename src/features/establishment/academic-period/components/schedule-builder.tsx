@@ -16,6 +16,7 @@ import {
   ComboboxGroup,
 } from "@/components/ui/combobox"
 
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useUpdateHorario } from "../api/mutations/update-horario"
 import type { ScheduleEntry } from "../api/types/grade-config"
 import { useHorarioQuery } from "../api/query/use-horario"
@@ -161,6 +162,8 @@ export const ScheduleBuilder = forwardRef<
   const isDirty = JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current
 
   const updateHorario = useUpdateHorario()
+  // Fase 4 offline: el horario se consulta sin red; limpiar y guardar son solo en línea.
+  const soloEnLinea = useOnlineOnly()
 
   const subjectsById = useMemo(
     () => Object.fromEntries(subjects.map((s) => [s.id, s])),
@@ -333,7 +336,8 @@ export const ScheduleBuilder = forwardRef<
               variant="outline"
               color="destructive"
               onClick={clearAllSlots}
-              disabled={saving}
+              disabled={saving || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
             >
               <TrashIcon data-icon="inline-start" />
               Limpiar todo el horario
@@ -345,7 +349,8 @@ export const ScheduleBuilder = forwardRef<
               type="button"
               color="primary"
               onClick={handleSaveClick}
-              disabled={saving}
+              disabled={saving || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
               aria-busy={saving}
             >
               {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
