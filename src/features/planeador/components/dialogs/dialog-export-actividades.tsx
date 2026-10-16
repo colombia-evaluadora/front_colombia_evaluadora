@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   useExportActividades,
   type PlaneadorActividadesReportFilters,
+  type RotulosExportActividades,
 } from "@/features/planeador/api/mutations/export-actividades"
 import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
 import {
@@ -37,6 +38,9 @@ interface DialogExportActividadesProps {
   rows: Actividad[]
   /** Los mismos criterios que produjeron `rows`, en la forma que espera el reporte real. */
   filters: PlaneadorActividadesReportFilters
+  /** Rótulos de la pestaña exportada: encabezados de las columnas de la
+   *  actividad y la unidad en el PDF/Excel, y el texto del diálogo. */
+  rotulos?: RotulosExportActividades
 }
 
 /**
@@ -49,18 +53,19 @@ interface DialogExportActividadesProps {
  * `TableScreenActions` del listado —acá no se renderiza solo, para no
  * duplicar el botón si la página lo quiere posicionar a mano—.
  */
-export function DialogExportActividades({ rows, filters }: DialogExportActividadesProps) {
+export function DialogExportActividades({ rows, filters, rotulos }: DialogExportActividadesProps) {
   const soloEnLinea = useOnlineOnly()
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
-  // Rótulo real (Regla 13) solo si TODAS las filas filtradas comparten el
-  // mismo — el filtro puede cruzar varios grados a la vez, y ahí no hay un
-  // rótulo único que mostrar (mismo criterio que `resolverInstrumentoUnico`
-  // en `unidad-detalle-panel.tsx`). Con una sola fila (exportar desde la
-  // card de una actividad puntual) siempre resuelve a la suya.
+  // El de la pestaña si lo hay. Si no, rótulo real (Regla 13) solo si TODAS
+  // las filas filtradas comparten el mismo — el filtro puede cruzar varios
+  // grados a la vez, y ahí no hay un rótulo único que mostrar (mismo criterio
+  // que `resolverInstrumentoUnico` en `unidad-detalle-panel.tsx`).
   const rotulosUnicos = new Set(rows.map((r) => r.rotuloEjecucion).filter(Boolean))
-  const rotuloLabel = rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK
+  const rotuloLabel =
+    rotulos?.actividad ??
+    (rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK)
   const rotuloLower = rotuloEnMinuscula(rotuloLabel)
 
   const exportAll = useExportActividades({
@@ -77,7 +82,7 @@ export function DialogExportActividades({ rows, filters }: DialogExportActividad
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ filters, format, rotulos })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined

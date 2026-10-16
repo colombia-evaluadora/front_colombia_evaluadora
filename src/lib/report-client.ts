@@ -49,6 +49,7 @@ export type ReportKey =
   | "informes-tabla"
   | "boletin"
   | "planeador-actividades"
+  | "planeador-unidades"
   | "referentes-curriculares"
   | "auditoria-sesiones"
   | "auditoria-tabla-operaciones"
@@ -78,6 +79,13 @@ interface ReportInput {
    * como siempre.
    */
   filtersLabel?: string
+  /**
+   * Encabezados a usar en vez de los configurados, por clave de columna
+   * (`ReportRequest.columnLabels`). Para nombres que dependen de datos, como
+   * los rótulos del planeador ("Experiencia" en vez de "Actividad"). Igual
+   * que `columns`, solo renombra columnas ya declaradas del reporte.
+   */
+  columnLabels?: Record<string, string>
   /** Query params de la URL (ej. `nivel` del boletín). */
   params?: Record<string, string>
 }
@@ -95,7 +103,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
  */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting, columns, filtersLabel, params }: ReportInput,
+  { format, filters, sorting, columns, filtersLabel, columnLabels, params }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // El genérico explícito NO es decorativo: `api-client` tiene un
@@ -111,6 +119,7 @@ export async function downloadReport(
       sorting,
       columns,
       filtersLabel,
+      columnLabels,
     }, { params })
 
     const blob = response.data as Blob

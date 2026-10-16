@@ -4,7 +4,6 @@ import { PendingCreations } from "@/features/planeador/components/pending-creati
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   TableScreen,
@@ -14,12 +13,15 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { PlusCircleIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
+import { PlusCircleIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { DialogExportUnidades } from "@/features/planeador/components/dialogs/dialog-export-unidades"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
@@ -145,6 +147,24 @@ function PlaneadorUnidadesPageContent() {
     )
   }, [unidades, buscar, tabActiva, filters.estado, filters.filtro])
 
+  // Export PDF/Excel: estado, instrumento, búsqueda y pestaña se filtran acá
+  // (el listado no los recibe), así que la lista visible viaja como `IDS`, con
+  // el mismo alcance que `GET /planeador/unidades`.
+  const exportFilters = {
+    FUNCIONARIO: scope.funcionario,
+    SEDE: scope.sedeId,
+    PERIODO: scope.periodoId,
+    IDS: filtered.map((u) => u.id),
+  }
+  // Encabezados con los rótulos de la pestaña: la unidad ("Proyecto
+  // pedagógico") y sus actividades, del mismo referente ("Experiencias").
+  const { data: actividadTabs = [] } = useActividadesTabsQuery()
+  const referenteActivo = tabActiva?.referenteId ?? unidadTabs[0]?.referenteId ?? null
+  const rotuloActividad =
+    actividadTabs.find((t) => referenteActivo != null && t.referenteId === referenteActivo)?.rotulo ??
+    (actividadTabs.length === 1 ? actividadTabs[0].rotulo : ROTULO_ACTIVIDAD_FALLBACK)
+  const rotulosExport = { unidad: rotuloUnidad, actividades: pluralizarRotulo(rotuloActividad) }
+
 
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna
@@ -206,22 +226,13 @@ function PlaneadorUnidadesPageContent() {
                 <span className="truncate">Agregar {tabLabel}</span>
               </Button>
             )}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    color="muted"
-                    size="icon-sm"
-                    disabled
-                    aria-label={exportarLabel}
-                  />
-                }
-              >
-                <FileDownloadOutlinedIcon />
-              </TooltipTrigger>
-              <TooltipContent>{exportarLabel}</TooltipContent>
-            </Tooltip>
+            <DialogExportUnidades
+              label={exportarLabel}
+              rotuloPlural={tabLabelPlural}
+              filters={exportFilters}
+              rotulos={rotulosExport}
+              disabled={filtered.length === 0}
+            />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>

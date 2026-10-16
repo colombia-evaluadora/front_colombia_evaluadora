@@ -31,6 +31,8 @@ import {
   useActividadesMiasQuery,
 } from "@/features/planeador/api/query/use-actividades-mias-query"
 import { parToString, useActividadesTabsQuery } from "@/features/planeador/api/query/use-actividades-tabs-query"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { resolverRotuloUnidad } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useInstrumentoFiltroOptions } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
@@ -285,15 +287,32 @@ function PlaneadorPageContent() {
   // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
   // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
   // export lleva todas las actividades del usuario que cumplen la búsqueda,
-  // el estado y la pestaña, no solo las del día que muestra el rail.
+  // el estado y la pestaña, no solo las del día que muestra el rail. También
+  // el alcance (docente elegido, sede/año/jornada) y el instrumento: sin
+  // ellos el archivo traía actividades que la pantalla no mostraba.
   const exportFilters = React.useMemo(
     () => ({
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
       GRADO_ASIGNATURA_PARES: tabActiva?.pares.length ? tabActiva.pares.map(parToString) : undefined,
+      FUNCIONARIO: scope.funcionario,
+      SEDE: scope.sedeId,
+      PERIODO: scope.periodoId,
+      INSTRUMENTO: instrumento,
     }),
-    [buscar, estado, tabActiva],
+    [buscar, estado, tabActiva, scope.funcionario, scope.sedeId, scope.periodoId, instrumento],
   )
+  // Encabezados del PDF/Excel: el reporte trae fijos "Actividad" y "Unidad
+  // tematica"; la pestaña sabe cómo se llaman de verdad. La unidad sale del
+  // referente de la pestaña (su "Rótulo de secuencia"), con el mismo
+  // resolvedor que el resto del planeador.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const rotulosExport = tabActiva
+    ? {
+        actividad: tabActiva.rotulo,
+        unidad: resolverRotuloUnidad(tabActiva.referenteId, tabActiva.gradoIds[0], unidadTabs),
+      }
+    : undefined
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
   // actividades (colección Postman
@@ -503,7 +522,11 @@ function PlaneadorPageContent() {
                 exportar mirando a otro docente bajaría las actividades
                 equivocadas, así que se oculta hasta que lo soporte. */}
               {scope.funcionario == null && (
-                <DialogExportActividades rows={filtered} filters={exportFilters} />
+                <DialogExportActividades
+                  rows={filtered}
+                  filters={exportFilters}
+                  rotulos={rotulosExport}
+                />
               )}
               {/* Controlado desde acá y no con su propio `DialogTrigger`: el
                 que lo abre es un `DropdownMenuItem`, y un diálogo anidado
