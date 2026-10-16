@@ -1,8 +1,8 @@
 import { useState } from "react"
 
-import { CloudOffIcon, SignOutIcon } from "@/components/ui/icons"
+import { CloudOffIcon, CloudSyncIcon, SignOutIcon } from "@/components/ui/icons"
 import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -106,6 +106,10 @@ export function NavUser() {
           <DropdownMenuItem onClick={() => setPrepareOpen(true)}>
             <CloudOffIcon data-icon="inline-start" />
             Preparar para usar sin conexión
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link to={paths.app.sincronizar.getHref()} />}>
+            <CloudSyncIcon data-icon="inline-start" />
+            Sincronizar ahora
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={logoutMutation.isPending}

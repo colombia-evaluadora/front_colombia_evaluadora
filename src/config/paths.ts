@@ -264,6 +264,11 @@ export const paths = {
       path: "pendientes",
       getHref: () => "/app/pendientes",
     },
+    // Día de sincronización (offline de meses, D-11). Fuera del menú del backend.
+    sincronizar: {
+      path: "sincronizar",
+      getHref: () => "/app/sincronizar",
+    },
     // Destino del guard de `/app`; lleva `?desde=<ruta pedida>`.
     sinAcceso: {
       path: "sin-acceso",

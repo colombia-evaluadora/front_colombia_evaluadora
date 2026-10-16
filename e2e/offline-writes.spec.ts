@@ -145,3 +145,22 @@ test("logout con pendientes pregunta antes de salir y conserva la cola", async (
   // La op sigue en el equipo (no se borra sin avisar, D-F2-6).
   expect(await outboxStatuses(page)).toEqual([expect.stringMatching(/pending|retry/)])
 })
+
+test("Sincronizar ahora: progreso y resumen con conflictos", async ({ page }) => {
+  test.setTimeout(150_000)
+  await login(page)
+  await page.goto(ASISTENCIA)
+  await page.waitForTimeout(2_000)
+  await setApiFault(page, "writes")
+  await marcarTodos(page)
+  await expect.poll(() => outboxStatuses(page)).toEqual([expect.stringMatching(/pending|retry|inflight/)])
+
+  // El servidor responde conflicto: el resumen lo cuenta y no se descarta nada.
+  await setApiFault(page, "conflict")
+  await page.goto("/app/sincronizar")
+  await page.getByRole("button", { name: "Sincronizar ahora", exact: true }).click()
+  const resumen = page.getByRole("region", { name: "Resumen de la sincronización" })
+  await expect(resumen).toBeVisible({ timeout: 60_000 })
+  await expect(resumen).toContainText(/Conflictos: 1|Subidos: 1/)
+  await shot(page, "f5-sincronizar-resumen")
+})
