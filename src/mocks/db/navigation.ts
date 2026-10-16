@@ -83,6 +83,18 @@ export const navigationMenu: MockMenu[] = [
     roleIds: [1],
     maxLines: 2,
   },
+  // V317: solo el Superadministrador. El código AREAS_OFICIALES sale del nombre
+  // (`menuCodigo` en handlers/roles.ts), igual que en el backend real.
+  {
+    id: 43,
+    name: "Áreas oficiales",
+    icon: "",
+    path: "/app/administracion/areas-oficiales",
+    menuOrder: 4,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   {
     id: 5,
     name: "Usuarios",
