@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { Input } from "@/components/ui/input"
@@ -65,6 +66,8 @@ function CeldaPonderacion({
   maxDisponible: number
 }) {
   const [editando, setEditando] = useState(false)
+  // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const [valor, setValor] = useState(String(actividad.ponderacion))
   const { notify } = useNotify()
   const mutation = useUpdatePonderacionActividadUnidad({
@@ -116,7 +119,7 @@ function CeldaPonderacion({
           setValor(raw === "" ? "" : String(Math.min(Number(raw) || 0, maxDisponible)))
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") guardar()
+          if (e.key === "Enter" && !soloEnLinea.disabled) guardar()
           if (e.key === "Escape") setEditando(false)
         }}
         disabled={mutation.isPending}
@@ -129,7 +132,7 @@ function CeldaPonderacion({
               variant="ghost"
               color="primary"
               size="icon-xs"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || soloEnLinea.disabled}
               onClick={guardar}
               aria-label="Guardar ponderación"
             />
@@ -149,6 +152,8 @@ function CeldaPonderacion({
  *  de forma proporcional sobre el total de puntajes del (unidad, grupo). */
 function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; unidadId: number }) {
   const [editando, setEditando] = useState(false)
+  // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const [valor, setValor] = useState(String(actividad.notaMaxima ?? ""))
   const { notify } = useNotify()
   const mutation = useUpdatePuntajeActividadUnidad({
@@ -193,7 +198,7 @@ function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; uni
         value={valor}
         onChange={(e) => setValor(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") guardar()
+          if (e.key === "Enter" && !soloEnLinea.disabled) guardar()
           if (e.key === "Escape") setEditando(false)
         }}
         disabled={mutation.isPending}
@@ -206,7 +211,7 @@ function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; uni
               variant="ghost"
               color="primary"
               size="icon-xs"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || soloEnLinea.disabled}
               onClick={guardar}
               aria-label="Guardar puntaje"
             />
@@ -237,6 +242,7 @@ function BotonDesvincular({
   const { notify } = useNotify()
   const actividadLower = rotuloEnMinuscula(rotuloActividad)
   const desvincularLabel = `Desvincular ${actividadLower}`
+  const soloEnLinea = useOnlineOnly()
   const genero = terminacionRotulo(rotuloActividad)
   const unlink = useUnlinkActividadUnidad({
     unidadId,
@@ -264,6 +270,7 @@ function BotonDesvincular({
                   color="neutral"
                   size="icon-sm"
                   aria-label={desvincularLabel}
+                  disabled={soloEnLinea.disabled}
                 />
               }
             />
@@ -271,7 +278,7 @@ function BotonDesvincular({
         >
           <LinkBreakIcon />
         </TooltipTrigger>
-        <TooltipContent>{desvincularLabel}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? desvincularLabel}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -284,7 +291,7 @@ function BotonDesvincular({
         <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
-            disabled={unlink.isPending}
+            disabled={unlink.isPending || soloEnLinea.disabled}
             aria-busy={unlink.isPending}
             onClick={() => unlink.mutate(actividad.actividadId)}
           >

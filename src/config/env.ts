@@ -25,6 +25,11 @@ const createEnv = () => {
     // push queda oculto (`features/notificaciones/push`). La privada vive SOLO
     // en el gestor de secretos de `notification-service`: nunca acá.
     VAPID_PUBLIC_KEY: z.string().optional().default(""),
+    // Piloto offline (plan §0.3): quién puede desmarcar "Este es un equipo
+    // compartido". Lista separada por comas de correos y/o roles del JWT
+    // (`docente@x.edu.co,CEVAL-DOCENTE_PILOTO`); `*` = todos. Vacío (default)
+    // = nadie: todo equipo queda en modo compartido. Ver `lib/offline/pilot.ts`.
+    OFFLINE_PILOT: z.string().optional().default(""),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(

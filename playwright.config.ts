@@ -23,6 +23,6 @@ export default defineConfig({
     url: `http://localhost:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { VITE_APP_ENABLE_API_MOCKING: "active" },
+    env: { VITE_APP_ENABLE_API_MOCKING: "active", VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com" },
   },
 })

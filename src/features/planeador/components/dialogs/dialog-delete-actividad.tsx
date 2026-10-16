@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
@@ -79,6 +80,8 @@ export function DialogDeleteActividad({
   })
 
   const { puedeEliminar } = usePlaneadorSoloLectura()
+  // Sin red no se elimina (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   if (!puedeEliminar) return null
 
   return (
@@ -95,6 +98,7 @@ export function DialogDeleteActividad({
                   size="icon-sm"
                   aria-label={`Eliminar ${actividad.nombre}`}
                   {...triggerProps}
+                  disabled={soloEnLinea.disabled || triggerProps?.disabled}
                 />
               }
             />
@@ -102,7 +106,7 @@ export function DialogDeleteActividad({
         >
           <TrashIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Eliminar ${actividad.nombre}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${actividad.nombre}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -116,7 +120,7 @@ export function DialogDeleteActividad({
         <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
-            disabled={deleteMutation.isPending}
+            disabled={deleteMutation.isPending || soloEnLinea.disabled}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(actividad.id)}
           >

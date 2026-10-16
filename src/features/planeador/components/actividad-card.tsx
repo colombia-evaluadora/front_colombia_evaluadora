@@ -2,6 +2,7 @@ import { IoMdCheckboxOutline } from "react-icons/io"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useNotify } from "@/components/notice/notice-context"
 import {
   ClipboardCheckIcon,
@@ -122,6 +123,8 @@ export function ActividadCard({
   const { puedeEditar, soloLectura } = usePlaneadorSoloLectura()
   const bloqueoEdicion = motivoNoEditable(actividad)
 
+  // Exportar se arma en el servidor: sin red, deshabilitado (§7.5).
+  const soloEnLinea = useOnlineOnly()
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
       onSuccess: (actividadesExportadas) => {
@@ -305,7 +308,8 @@ export function ActividadCard({
                 size="icon-sm"
                 className="size-6"
                 aria-label={`Exportar ${actividad.nombre}`}
-                disabled={exportarJson.isPending}
+                disabled={exportarJson.isPending || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
                 aria-busy={exportarJson.isPending}
                 onClick={(e) => {
                   e.stopPropagation()

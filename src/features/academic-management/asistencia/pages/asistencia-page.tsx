@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { ClipboardCheckIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -226,7 +227,12 @@ function AsistenciaPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          action={<AsistenciaSedeSelector sedeId={sedeId} onChange={setSedeId} />}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <PrepareOfflineButton />
+              <AsistenciaSedeSelector sedeId={sedeId} onChange={setSedeId} />
+            </div>
+          }
         >
           Asistencia
         </TableScreenTitle>

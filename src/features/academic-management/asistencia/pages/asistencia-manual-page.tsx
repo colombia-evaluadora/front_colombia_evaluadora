@@ -6,6 +6,7 @@ import { Link, Navigate } from "@tanstack/react-router"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -248,6 +249,9 @@ function SesionTabContent({
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
   const registrar = useAsistenciaRegistrarMutation()
+  // Registrar asistencia va al servidor: sin red, deshabilitado hasta la
+  // outbox de la Fase 2 (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
   const tipoOptions = React.useMemo(
     () => tipoOptionsCompleto.filter((opt) => TIPOS_ALTA_NUEVA.includes(opt.value)),
@@ -536,7 +540,8 @@ function SesionTabContent({
           variant="outline"
           color="primary"
           size="sm"
-          disabled={roster_.length === 0 || !puedeEditar}
+          disabled={roster_.length === 0 || !puedeEditar || soloEnLinea.disabled}
+          title={soloEnLinea.tooltip ?? undefined}
           onClick={handleMarcarTodoAsistio}
         >
           <CheckCircleFillIcon data-icon="inline-start" />
@@ -607,7 +612,8 @@ function SesionTabContent({
             type="button"
             color="primary"
             size="sm"
-            disabled={registrar.isPending || editar.isPending}
+            disabled={registrar.isPending || editar.isPending || soloEnLinea.disabled}
+            title={soloEnLinea.tooltip ?? undefined}
             aria-busy={registrar.isPending || editar.isPending}
             onClick={handleGuardar}
           >
@@ -692,6 +698,8 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
     if (tabPendiente) setActiveTab(tabPendiente)
     setTabPendiente(null)
   }
+
+  const soloEnLineaCambio = useOnlineOnly()
 
   async function handleGuardarYCambiar() {
     setGuardandoCambio(true)
@@ -792,7 +800,13 @@ function AsistenciaManualContent({ fecha, sede }: { fecha: string; sede: number 
                 <TrashIcon data-icon="inline-start" />
                 Descartar
               </Button>
-              <Button color="primary" disabled={guardandoCambio} aria-busy={guardandoCambio} onClick={handleGuardarYCambiar}>
+              <Button
+                color="primary"
+                disabled={guardandoCambio || soloEnLineaCambio.disabled}
+                title={soloEnLineaCambio.tooltip ?? undefined}
+                aria-busy={guardandoCambio}
+                onClick={handleGuardarYCambiar}
+              >
                 {guardandoCambio ? (
                   <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                 ) : (

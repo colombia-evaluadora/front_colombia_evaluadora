@@ -18,7 +18,7 @@ export interface SoporteEstudiante {
   esFavorito: boolean
 }
 
-async function fetchSoportesEstudiante(pkTactividadEstudiante: number): Promise<SoporteEstudiante[]> {
+export async function fetchSoportesEstudiante(pkTactividadEstudiante: number): Promise<SoporteEstudiante[]> {
   const rows = await evalCol.getRows<SoporteRow>(
     `/planeador/actividades/estudiantes/${pkTactividadEstudiante}/soportes`,
   )

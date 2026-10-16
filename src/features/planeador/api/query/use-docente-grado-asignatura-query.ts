@@ -40,7 +40,7 @@ function toDocenteGradoAsignatura(row: DocenteGradoAsignaturaRow): DocenteGradoA
   }
 }
 
-async function fetchDocenteGradoAsignatura(
+export async function fetchDocenteGradoAsignatura(
   periodoId?: number,
   funcionario?: number,
   sede?: number,

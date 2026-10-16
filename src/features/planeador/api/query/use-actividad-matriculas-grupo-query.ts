@@ -43,7 +43,7 @@ function toMatriculaGrupo(row: EstudianteGrupoRow): MatriculaGrupo {
   }
 }
 
-async function fetchMatriculasGrupo(grupoId: number): Promise<MatriculaGrupo[]> {
+export async function fetchMatriculasGrupo(grupoId: number): Promise<MatriculaGrupo[]> {
   const rows = await evalCol.getRows<EstudianteGrupoRow>(`/planeador/estudiantes?GRUPO=${grupoId}`)
   return rows.map(toMatriculaGrupo)
 }

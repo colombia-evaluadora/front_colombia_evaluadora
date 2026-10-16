@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/icons";
 import { useNotify } from "@/components/notice/notice-context";
 import { getErrorMessage } from "@/lib/api-client";
+import { useOnlineOnly } from "@/lib/offline/use-online-only";
 
 import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query";
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query";
@@ -99,6 +100,8 @@ export function CalificacionesAprobacionView({
   };
 
   const calificarBulk = useCalificarBulkMutation();
+  // Sin red no se califica en bloque (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly();
   const completitud = instrumentoCompletitud(instrumento, nota);
   const efectivoBulk = resolverInstrumentoEfectivo(instrumento);
   const escalaSinBulk = instrumentoSinBulk(efectivoBulk);
@@ -286,8 +289,10 @@ export function CalificacionesAprobacionView({
                 efectivos.length === 0 ||
                 !completitud.completo ||
                 guardando ||
-                escalaSinBulk
+                escalaSinBulk ||
+                soloEnLinea.disabled
               }
+              title={soloEnLinea.tooltip ?? undefined}
               onClick={
                 periodoCerrado
                   ? () => setConfirmando(true)

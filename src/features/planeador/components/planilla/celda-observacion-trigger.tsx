@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
@@ -66,6 +67,8 @@ export function CeldaObservacionTrigger({
   bloqueo,
 }: CeldaObservacionTriggerProps) {
   const [abierto, setAbierto] = useState(false)
+  // Observaciones y evidencias se guardan en el servidor (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const { notify } = useNotify()
 
   const { data: notaActual } = useNotaEstudianteQuery(abierto ? pkTactividadEstudiante : undefined)
@@ -112,7 +115,7 @@ export function CeldaObservacionTrigger({
             variant="outline"
             color="neutral"
             size="icon-xs"
-            disabled={fecha === null || Boolean(bloqueo)}
+            disabled={fecha === null || Boolean(bloqueo) || soloEnLinea.disabled}
             aria-label={etiqueta}
             onClick={() => setAbierto(true)}
           >
@@ -120,7 +123,9 @@ export function CeldaObservacionTrigger({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {bloqueo
+          {soloEnLinea.tooltip
+            ? soloEnLinea.tooltip
+            : bloqueo
             ? bloqueo
             : fecha === null
             ? actividadSinComenzar

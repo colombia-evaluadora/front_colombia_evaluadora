@@ -15,6 +15,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 
 import {
@@ -75,6 +76,8 @@ export function AddEvidencesDialog({
   })
 
   const isPending = createMutation.isPending || updateMutation.isPending
+  // Si la red cae con el diálogo abierto, Guardar queda deshabilitado (§7.5).
+  const soloEnLinea = useOnlineOnly()
 
   const hasRequiredFields = text.trim().length > 0
   const hasChanges = isEditMode
@@ -154,7 +157,8 @@ export function AddEvidencesDialog({
               form="add-evidences-form"
               variant="fill"
               color="primary"
-              disabled={isPending}
+              disabled={isPending || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
             >
               <CheckIcon data-icon="inline-start" />
               {isPending ? "Guardando..." : "Guardar"}
