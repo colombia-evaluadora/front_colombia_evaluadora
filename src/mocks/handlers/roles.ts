@@ -158,6 +158,19 @@ export const rolesHandlers = [
         puede_ver: true,
       }))
 
+    // Menú sin pantalla del asistente (SSO #696): todos los roles mock lo
+    // tienen, igual que en el sembrado del backend.
+    permisos.push({
+      pk_tmenu: 9001,
+      codigo: "ASISTENTE",
+      nombre: "Asistente",
+      path: "",
+      puede_crear: true,
+      puede_editar: true,
+      puede_eliminar: false,
+      puede_ver: true,
+    })
+
     // El Coordinador recibe el Planeador con todos los permisos, igual que en
     // testv2 (`permisos-menu` le da editar). Aun así lo ve en solo lectura:
     // lo decide el rol, ver `usePlaneadorSoloLectura`.

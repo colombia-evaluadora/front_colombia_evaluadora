@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import type { AccionUi, DatosTabla, Faltante } from "@/features/assistant/api/types"
+import type { AccionUi, DatosTabla, EstadoAccionPendiente, Faltante } from "@/features/assistant/api/types"
 import { Markdown } from "@/features/assistant/components/markdown"
 import type { MensajeChat } from "@/features/assistant/hooks/use-asistente"
 import { describirAccion, esRutaInterna, type ResultadoAccion } from "@/features/assistant/lib/acciones-ui"
@@ -23,6 +23,8 @@ interface RespuestaAgenteProps {
   mensaje: MensajeChat
   /** Sin conexión o con un turno en curso: los botones de acción se deshabilitan. */
   bloqueado: boolean
+  /** Permiso de crear/editar en el menú `ASISTENTE`: sin él no se confirman acciones. */
+  puedeAccionar?: boolean
   onResponder: (texto: string) => void
   onConfirmar: (mensaje: MensajeChat) => void
   onCancelar: (mensaje: MensajeChat) => void
@@ -34,6 +36,7 @@ const MAX_FILAS = 50
 export function RespuestaAgente({
   mensaje,
   bloqueado,
+  puedeAccionar = true,
   onResponder,
   onConfirmar,
   onCancelar,
@@ -97,6 +100,7 @@ export function RespuestaAgente({
         <TarjetaConfirmacion
           mensaje={mensaje}
           bloqueado={bloqueado}
+          puedeAccionar={puedeAccionar}
           onConfirmar={onConfirmar}
           onCancelar={onCancelar}
         />
@@ -188,7 +192,10 @@ function AccionesUi({ acciones, resultados }: { acciones: AccionUi[]; resultados
         const resultado = resultados?.find((r) => r.accion === accion)
         return (
           <li key={i} className="flex flex-wrap items-center gap-2 text-xs">
-            {resultado?.aplicada ? (
+            {resultados == null ? (
+              // Restaurada del historial: no se reaplicó en esta pantalla.
+              <CheckCircleIcon className="size-4 text-muted-foreground" />
+            ) : resultado?.aplicada ? (
               <CheckCircleIcon className="size-4 text-green" />
             ) : (
               <WarningCircleIcon className="size-4 text-yellow" />
@@ -221,28 +228,45 @@ function expiraLegible(expira: string): string {
   return Number.isNaN(fecha.getTime()) ? "" : format(fecha, "HH:mm")
 }
 
+const ETIQUETA_ESTADO_ACCION: Record<Exclude<EstadoAccionPendiente, "PENDIENTE">, string> = {
+  EJECUTADA: "Ejecutada",
+  FALLIDA: "Falló",
+  DESCARTADA: "Cancelada",
+  EXPIRADA: "Vencida",
+}
+
 function TarjetaConfirmacion({
   mensaje,
   bloqueado,
+  puedeAccionar,
   onConfirmar,
   onCancelar,
 }: {
   mensaje: MensajeChat
   bloqueado: boolean
+  puedeAccionar: boolean
   onConfirmar: (mensaje: MensajeChat) => void
   onCancelar: (mensaje: MensajeChat) => void
 }) {
   const accion = mensaje.respuesta!.accionPendiente!
   const estado = mensaje.estadoAccion ?? "PENDIENTE"
   const vencida = new Date(accion.expira).getTime() < Date.now()
-  const pendiente = estado === "PENDIENTE" && !vencida
+  const pendiente = estado === "PENDIENTE" && !vencida && puedeAccionar
+  // Estado real del backend (historial); en vivo siempre es PENDIENTE.
+  const etiquetaFinal = accion.estado && accion.estado !== "PENDIENTE" ? ETIQUETA_ESTADO_ACCION[accion.estado] : null
   const hora = expiraLegible(accion.expira)
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-yellow-stroke bg-yellow-22 p-3">
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold">Confirma esta acción</span>
-        {estado === "RESUELTA" && <Badge variant="soft" color="muted">Resuelta</Badge>}
+        {etiquetaFinal ? (
+          <Badge variant="soft" color={accion.estado === "EJECUTADA" ? "success" : accion.estado === "FALLIDA" ? "destructive" : "muted"}>
+            {etiquetaFinal}
+          </Badge>
+        ) : (
+          estado === "RESUELTA" && <Badge variant="soft" color="muted">Resuelta</Badge>
+        )}
         {estado === "PENDIENTE" && vencida && <Badge variant="soft" color="muted">Vencida</Badge>}
       </div>
       <p className="text-sm whitespace-pre-wrap">{accion.resumen}</p>
@@ -268,6 +292,9 @@ function TarjetaConfirmacion({
             {estado === "CANCELANDO" ? "Cancelando…" : "Cancelar"}
           </Button>
         </div>
+      )}
+      {!puedeAccionar && estado === "PENDIENTE" && !etiquetaFinal && (
+        <p className="text-xs text-muted-foreground">No tienes permiso para ejecutar acciones desde el asistente.</p>
       )}
       <p className="text-xs text-muted-foreground">Escribir "sí" en el chat no ejecuta la acción: usa los botones.</p>
     </div>

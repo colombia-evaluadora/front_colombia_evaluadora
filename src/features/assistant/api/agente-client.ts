@@ -5,8 +5,10 @@ import type {
   ConversacionDetalle,
   ConversacionResumen,
   EstadoTurno,
+  EventoHerramienta,
   MensajeRequest,
   RespuestaAgente,
+  SugerenciasRespuesta,
 } from "@/features/assistant/api/types"
 import { leerSse } from "@/features/assistant/lib/sse"
 
@@ -64,9 +66,26 @@ export function cancelarAccion(id: string): Promise<RespuestaAgente> {
   return api.post<RespuestaAgente>(`${AGENTE_PATH}/acciones/${id}/cancelar`)
 }
 
+/**
+ * Corta el turno en curso de la conversación y libera el turno del usuario
+ * (SSO #696). `cancelado: false` si ya no había nada en marcha.
+ */
+export async function cancelarTurno(conversacionId: string): Promise<boolean> {
+  const { cancelado } = await api.post<{ cancelado: boolean }>(
+    `${AGENTE_PATH}/conversaciones/${conversacionId}/cancelar`,
+  )
+  return Boolean(cancelado)
+}
+
+/** Sugerencias de la pantalla y capacidades del usuario (ayuda de UX, no autoriza nada). */
+export function obtenerSugerencias(ruta: string): Promise<SugerenciasRespuesta> {
+  return api.get<SugerenciasRespuesta>(`${AGENTE_PATH}/sugerencias`, { params: { ruta: ruta.slice(0, 1000) } })
+}
+
 interface StreamOptions {
   signal?: AbortSignal
   onEstado?: (estado: EstadoTurno) => void
+  onHerramienta?: (evento: EventoHerramienta) => void
 }
 
 async function postStream(conversacionId: string, body: MensajeRequest, signal?: AbortSignal) {
@@ -106,13 +125,14 @@ async function errorDeRespuesta(res: Response): Promise<AgenteError> {
  * endpoint síncrono) o `error`. El backend NO emite texto parcial del modelo:
  * el "streaming" es de estados, la respuesta llega entera al final.
  *
- * Abortar la señal cierra la conexión, pero el turno sigue en el servidor y
- * queda en el historial (no hay endpoint para cancelarlo).
+ * Abortar la señal cierra la conexión (el servidor lo toma como cancelación);
+ * para liberar el turno en el acto, además, `cancelarTurno`. Eventos
+ * desconocidos se ignoran.
  */
 export async function enviarMensajeStream(
   conversacionId: string,
   body: MensajeRequest,
-  { signal, onEstado }: StreamOptions = {},
+  { signal, onEstado, onHerramienta }: StreamOptions = {},
 ): Promise<RespuestaAgente> {
   let res = await postStream(conversacionId, body, signal)
   if (res.status === 401) {
@@ -127,6 +147,8 @@ export async function enviarMensajeStream(
     if (evento === "estado") {
       const { estado } = JSON.parse(datos) as { estado: EstadoTurno }
       onEstado?.(estado)
+    } else if (evento === "herramienta") {
+      onHerramienta?.(JSON.parse(datos) as EventoHerramienta)
     } else if (evento === "respuesta") {
       return JSON.parse(datos) as RespuestaAgente
     } else if (evento === "error") {
