@@ -31,6 +31,7 @@ import {
 } from "@/components/offline/prepare-offline-plan"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { StorageStatusCard } from "@/components/offline/storage-status-card"
+import { PinSetupCard } from "@/components/offline/pin-setup-card"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { fetchMatriculasGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { fetchAgrupacionPlanillaOptions } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
@@ -498,6 +499,7 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
 
         <div className="flex flex-col gap-3 text-sm">
           {!shared && <StorageStatusCard />}
+          {!shared && <PinSetupCard />}
           {shared && <p className="rounded-md bg-yellow-22 px-3 py-2 text-yellow">{SHARED_DEVICE_COPY}</p>}
           {!shared && onlineOnly.disabled && <p className="text-muted-foreground">{onlineOnly.tooltip}</p>}
 
