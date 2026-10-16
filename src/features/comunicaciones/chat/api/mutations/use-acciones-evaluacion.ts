@@ -27,6 +27,8 @@ export interface CrearEvaluacionInput {
   intentos: number | null
   mostrarResultados: MostrarResultados
   preguntas: PreguntaEvaluacionNueva[]
+  // Ids (users) de quienes la presentan; comms-service los vuelve miembros del canal.
+  participantes: number[]
 }
 
 const sn = (v: boolean) => (v ? "S" : "N")
@@ -44,6 +46,7 @@ export function useCrearEvaluacion() {
         PUNTAJE_TOTAL: v.puntajeTotal,
         INTENTOS: v.intentos,
         MOSTRAR_RESULTADOS: v.mostrarResultados,
+        PARTICIPANTES: v.participantes,
         PREGUNTAS: v.preguntas.map((p, i) => ({
           ORDEN: i + 1,
           TIPO: p.tipo,

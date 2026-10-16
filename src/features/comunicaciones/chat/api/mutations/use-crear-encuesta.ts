@@ -21,6 +21,8 @@ export interface CrearEncuestaInput {
   fechaInicio: string | null
   fechaCierre: string | null
   resultados: VisibilidadResultados
+  // Ids (users) de quienes responden; comms-service los vuelve miembros del canal.
+  participantes: number[]
   preguntas: PreguntaNueva[]
 }
 
@@ -31,6 +33,7 @@ async function crearEncuesta(v: CrearEncuestaInput) {
     FECHA_INICIO: v.fechaInicio,
     FECHA_CIERRE: v.fechaCierre,
     RESULTADOS: v.resultados,
+    PARTICIPANTES: v.participantes,
     PREGUNTAS: v.preguntas.map((p, i) => ({
       ORDEN: i + 1,
       TIPO: p.tipo,

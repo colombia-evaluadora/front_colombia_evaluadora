@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import type { MostrarResultados } from "@/features/comunicaciones/chat/api/types"
 import { useCrearEvaluacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-evaluacion"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
+import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import {
   errorPregunta,
   nuevaPregunta,
@@ -87,6 +88,7 @@ export function CrearEvaluacionDialog({
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [participantes, setParticipantes] = useState<Set<number>>(new Set())
   const [tope, setTope] = useState(false)
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
@@ -126,6 +128,7 @@ export function CrearEvaluacionDialog({
   const reiniciar = () => {
     datos.reset()
     setPreguntas([])
+    setParticipantes(new Set())
     setIntentado(false)
     setPaso(1)
     crear.reset()
@@ -141,6 +144,7 @@ export function CrearEvaluacionDialog({
   const crearEvaluacion = () => {
     setIntentado(true)
     if (preguntas.some((p) => errorPregunta(p, "EVALUACION")) || !cuadra) return
+    if (participantes.size === 0) return
     const v = datos.state.values
     crear.mutate(
       {
@@ -152,6 +156,7 @@ export function CrearEvaluacionDialog({
         puntajeTotal: v.puntajeTotal,
         intentos: v.intentos || null,
         mostrarResultados: v.mostrarResultados,
+        participantes: [...participantes],
         preguntas: preguntas.map((p) => ({
           tipo: p.tipo,
           texto: p.texto.trim(),
@@ -305,6 +310,16 @@ export function CrearEvaluacionDialog({
                   </span>
                 </p>
               }
+            />
+          )}
+          {paso === 2 && (
+            // Quiénes la presentan: entran al canal y reciben el aviso al abrir.
+            <SelectorVotantes
+              titulo="Estudiantes que la presentan"
+              mensajeInvalido="Selecciona al menos un estudiante."
+              seleccion={participantes}
+              onCambio={setParticipantes}
+              invalido={intentado && participantes.size === 0}
             />
           )}
 
