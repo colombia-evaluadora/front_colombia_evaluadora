@@ -1,3 +1,4 @@
+import { UpdateRequiredBanner } from "@/components/offline/update-required-banner"
 import { StorageWarningBanner } from "@/components/offline/storage-warning-banner"
 import { Outlet } from "@tanstack/react-router"
 
@@ -46,6 +47,7 @@ export function ProtectedLayout() {
           </div>
         </header>
         <OfflineBanner />
+        <UpdateRequiredBanner />
         <StorageWarningBanner />
         {/*
           `flex flex-col` para que la card de contenido de cada página pueda
