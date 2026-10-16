@@ -1,3 +1,4 @@
+import { proveedorMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -55,6 +56,7 @@ async function fetchCampusesOptions(): Promise<Campus[]> {
 export function useCampusesOptionsQuery() {
   return useQuery({
     queryKey: ["campuses", "options"],
+    meta: proveedorMeta(),
     queryFn: fetchCampusesOptions,
   })
 }

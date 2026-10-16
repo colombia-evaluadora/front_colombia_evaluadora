@@ -1,3 +1,4 @@
+import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -41,6 +42,7 @@ async function fetchEtnias(): Promise<CatalogItem[]> {
 export function useEtniasQuery() {
   return useQuery({
     queryKey: ["catalogs", "etnias"],
+    meta: catalogoMeta(),
     queryFn: fetchEtnias,
   })
 }

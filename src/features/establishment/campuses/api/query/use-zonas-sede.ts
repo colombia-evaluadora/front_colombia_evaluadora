@@ -1,3 +1,4 @@
+import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -69,6 +70,7 @@ async function fetchZonasSede(establishmentId: number | null): Promise<CatalogIt
 export function useZonasSedeQuery(establishmentId: number | null) {
   return useQuery({
     queryKey: ["zonas-sede", establishmentId],
+    meta: catalogoMeta(),
     queryFn: () => fetchZonasSede(establishmentId),
   })
 }

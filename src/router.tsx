@@ -63,9 +63,10 @@ import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema
 import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
-  getFirstNavUrl,
+  getLandingNavUrl,
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
+import { connectivityStore } from "@/lib/offline/connectivity"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
   canAccessPath,
@@ -425,8 +426,15 @@ const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/",
   beforeLoad: async ({ context }) => {
-    const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
-    throw redirect({ to: getFirstNavUrl(items) ?? paths.app.sinAcceso.getHref() })
+    const offline = connectivityStore.getState().status === "offline"
+    // Sin red y sin menú guardado (equipo compartido o nunca se cargó) el
+    // `ensureQueryData` falla: se cae al planeador, que funciona sin conexión.
+    const items = await context.queryClient.ensureQueryData(navItemsQueryOptions).catch((error: unknown) => {
+      if (offline) return []
+      throw error
+    })
+    const fallback = paths.app.planeadorActividades.getHref()
+    throw redirect({ to: getLandingNavUrl(items, { offline, fallback }) ?? paths.app.sinAcceso.getHref() })
   },
 })
 

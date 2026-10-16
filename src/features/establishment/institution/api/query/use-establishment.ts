@@ -1,3 +1,4 @@
+import { proveedorMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -196,6 +197,7 @@ async function fetchEstablishment(id: number): Promise<EstablishmentQueryResult>
 export function useEstablishmentQuery(id: number | null, enabled = true) {
   return useQuery({
     queryKey: ["establishments", id],
+    meta: proveedorMeta(),
     queryFn: () => fetchEstablishment(id as number),
     enabled: enabled && Boolean(id),
   })

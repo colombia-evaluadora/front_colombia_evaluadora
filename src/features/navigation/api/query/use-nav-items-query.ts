@@ -1,6 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
 import { toNavItemDtos } from "@/features/navigation/api/menu-mapper"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import type { NavItem, NavItemDto } from "@/features/navigation/api/types/nav-item"
@@ -65,4 +66,18 @@ export function useNavItemsQuery() {
  */
 export function getFirstNavUrl(items: readonly { url: string }[]): string | null {
   return items[0]?.url ?? null
+}
+
+/**
+ * Destino de `/app` según la conectividad. Sin red, el primer ítem del menú
+ * suele ser solo en línea (Cobertura, Establecimiento…) y el docente caía en
+ * "Esta sección necesita conexión" apenas abría la app: se salta a la primera
+ * pantalla del menú que funciona sin conexión, o a `fallback` si no hay ninguna.
+ */
+export function getLandingNavUrl(
+  items: readonly { url: string }[],
+  { offline, fallback }: { offline: boolean; fallback: string },
+): string | null {
+  if (!offline) return getFirstNavUrl(items)
+  return items.find((item) => !isOnlineOnlyPath(item.url))?.url ?? fallback
 }

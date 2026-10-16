@@ -36,8 +36,13 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       email: "",
       password: "",
       rememberMe: false,
-      // Conservador por defecto (§0.3): un equipo compartido no guarda nada.
-      sharedDevice: true,
+      // Un equipo compartido no guarda nada (§0.3). Si el piloto offline
+      // abarca a todos (`VITE_APP_OFFLINE_PILOT=*`), el default es "personal":
+      // con "compartido" marcado por defecto el docente que solo iniciaba
+      // sesión se quedaba sin menú ni datos guardados y offline no podía
+      // trabajar. Fuera del piloto sigue siendo "compartido" y la página
+      // revalida con el token (`isOfflinePilotUser`).
+      sharedDevice: !canChoosePersonalDevice(""),
     },
     validators: {
       onChange: loginFormSchema,

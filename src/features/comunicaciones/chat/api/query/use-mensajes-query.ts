@@ -1,3 +1,4 @@
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
@@ -40,6 +41,7 @@ export function useMensajesQuery(conversacionId: number | undefined) {
   const key = chatKeys.mensajes(conversacionId ?? "none")
   return useQuery({
     queryKey: key,
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     // `enabled` garantiza que hay id.
     queryFn: async () =>
       conservarAnteriores(

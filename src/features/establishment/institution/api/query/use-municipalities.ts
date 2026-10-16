@@ -1,3 +1,4 @@
+import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -44,6 +45,7 @@ async function fetchMunicipalities(): Promise<Municipality[]> {
 export function useMunicipalitiesQuery() {
   return useQuery({
     queryKey: ["catalogs", "municipalities"],
+    meta: catalogoMeta(),
     queryFn: fetchMunicipalities,
   })
 }

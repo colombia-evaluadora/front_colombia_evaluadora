@@ -23,6 +23,14 @@ export const ONLINE_ONLY_PREFIXES = [
 const READ_ONLY_OFFLINE_PATTERNS = [
   /^\/app\/establecimiento-educativo\/periodos\/?$/,
   /^\/app\/establecimiento-educativo\/periodos\/[^/]+\/editar\/?$/,
+  // Auditoría de rutas offline (docs/offline/AUDITORIA-RUTAS.md): la ficha del
+  // EE y las sedes son consulta diaria del rector/coordinador y sus queries ya
+  // se persisten (`proveedorMeta`). Agregar/editar EE y funcionarios (datos
+  // personales del personal) siguen solo en línea.
+  /^\/app\/establecimiento-educativo\/?$/,
+  /^\/app\/establecimiento-educativo\/general\/?$/,
+  /^\/app\/establecimiento-educativo\/detalle\/[^/]+\/?$/,
+  /^\/app\/establecimiento-educativo\/sedes\/?$/,
 ] as const
 
 export function isReadOnlyOfflinePath(pathname: string): boolean {

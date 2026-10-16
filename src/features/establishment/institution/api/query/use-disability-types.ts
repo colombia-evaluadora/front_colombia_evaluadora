@@ -1,3 +1,4 @@
+import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -36,6 +37,7 @@ async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
 export function useDisabilityTypesQuery() {
   return useQuery({
     queryKey: ["catalogs", "disability-types"],
+    meta: catalogoMeta(),
     queryFn: fetchDisabilityTypes,
   })
 }
