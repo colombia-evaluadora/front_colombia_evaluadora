@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Encolado de escrituras
-El sistema SHALL encolar en IndexedDB toda escritura con handler registrado (online u offline, un solo camino), con `kind`, `entityKey`, `dependsOn`, `idempotencyKey` y `userSub`, y MUST rechazar visiblemente la operación si no se puede guardar (nunca perder en silencio).
+Toda escritura con handler registrado SHALL pasar por `runOrQueue` (online-first, decisión D-F2-7): con red se envía directo con su `Idempotency-Key`; sin red, ante un error de red o con ops abiertas de la misma `entityKey`, MUST encolarse en IndexedDB con la misma clave, `kind`, `entityKey`, `dependsOn` y `userSub`. Si no se puede guardar, la operación MUST rechazarse visiblemente (nunca perder en silencio).
+
+#### Scenario: Respuesta perdida con red
+- **WHEN** la escritura sale con red pero la respuesta no llega
+- **THEN** queda en la cola con la misma `Idempotency-Key` y el reintento no duplica el cambio
 
 #### Scenario: Guardar sin red
 - **WHEN** el docente guarda una calificación sin red
@@ -36,6 +40,13 @@ El procesador SHALL correr en la página con un único líder entre pestañas, a
 #### Scenario: Pestaña cerrada a mitad
 - **WHEN** una op queda `inflight` más de 60 s tras reabrir
 - **THEN** vuelve a `retry`
+
+### Requirement: Versión base por celda y estudiante
+Cada escritura encolable de asistencia SHALL llevar la versión del registro que vio el docente (`version_registro`, `updated_at`; `NONE` si no había registro) cuando la outbox está habilitada, y el servidor MUST responder 409 `OFFLINE_CONFLICT` con el valor y la versión actuales en lugar de pisar el dato.
+
+#### Scenario: Otro docente registró la misma sesión
+- **WHEN** el registro del estudiante cambió en el servidor desde la versión enviada
+- **THEN** nada se escribe y la op queda `conflict` con una fila por estudiante
 
 ### Requirement: Conflictos y rechazos visibles
 Un 409 de CAS SHALL marcar la op como `conflict` y ofrecer "Conservar el mío", "Usar el del servidor" y "Editar"; un rechazo de negocio MUST marcarla `rejected` con el mensaje del servidor y bloquear sus dependientes.
