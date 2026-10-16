@@ -30,6 +30,7 @@ interface CrearEncuestaBody {
   FECHA_INICIO?: string | null
   FECHA_CIERRE?: string | null
   RESULTADOS?: VisibilidadResultados
+  PARTICIPANTES?: number[]
   PREGUNTAS?: Array<{ ORDEN: number; TIPO: TipoPregunta; TEXTO: string; OPCIONES: string[] }>
 }
 
@@ -104,7 +105,7 @@ export const comunicacionesEncuestasHandlers = [
       fechaInicio: body.FECHA_INICIO ?? null,
       fechaCierre: body.FECHA_CIERRE ?? null,
       resultados: body.RESULTADOS ?? "PUBLICOS",
-      totalHabilitados: 300,
+      totalHabilitados: body.PARTICIPANTES?.length || 300,
       participantes: 0,
       creadoPor: "Andrés Gómez",
       esCreador: true,

@@ -92,6 +92,15 @@ export function ComunicadoPanel({
                 <dd className="inline">{audiencia}</dd>
               </div>
             )}
+            {c.leidos != null && c.totalDestinatarios != null && (
+              // Confirmación de lectura: solo la recibe quien lo publicó.
+              <div>
+                <dt className="inline">Leído por: </dt>
+                <dd className="inline tabular-nums">
+                  {c.leidos} de {c.totalDestinatarios}
+                </dd>
+              </div>
+            )}
           </dl>
         </header>
         <div

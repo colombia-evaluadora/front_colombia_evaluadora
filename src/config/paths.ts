@@ -110,6 +110,10 @@ export const paths = {
       path: "administracion/listas-valor",
       getHref: () => "/app/administracion/listas-valor",
     },
+    areasOficiales: {
+      path: "administracion/areas-oficiales",
+      getHref: () => "/app/administracion/areas-oficiales",
+    },
     parametrosEdad: {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",

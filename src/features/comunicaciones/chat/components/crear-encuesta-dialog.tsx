@@ -25,6 +25,7 @@ import {
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
+import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 const datosSchema = z
@@ -55,6 +56,7 @@ export function CrearEncuestaDialog({
   const [paso, setPaso] = useState<1 | 2>(1)
   const [resultados, setResultados] = useState<VisibilidadResultados>("PUBLICOS")
   const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [participantes, setParticipantes] = useState<Set<number>>(new Set())
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crear = useCrearEncuesta()
@@ -72,6 +74,7 @@ export function CrearEncuestaDialog({
     datos.reset()
     setResultados("PUBLICOS")
     setPreguntas([])
+    setParticipantes(new Set())
     setIntentado(false)
     setPaso(1)
     crear.reset()
@@ -87,6 +90,7 @@ export function CrearEncuestaDialog({
   const crearEncuesta = () => {
     setIntentado(true)
     if (preguntas.length === 0 || preguntas.some((p) => errorPregunta(p, "ENCUESTA"))) return
+    if (participantes.size === 0) return
     const v = datos.state.values
     crear.mutate(
       {
@@ -95,6 +99,7 @@ export function CrearEncuestaDialog({
         fechaInicio: aIso(v.fechaInicio),
         fechaCierre: aIso(v.fechaCierre),
         resultados,
+        participantes: [...participantes],
         preguntas: preguntas.map((p) => ({
           tipo: p.tipo,
           texto: p.texto.trim(),
@@ -191,12 +196,22 @@ export function CrearEncuestaDialog({
               </fieldset>
             </form>
           ) : (
-            <ListaPreguntas
-              modo="ENCUESTA"
-              preguntas={preguntas}
-              onCambio={setPreguntas}
-              intentado={intentado}
-            />
+            <div className="-mx-1 space-y-4 overflow-y-auto px-1 py-1">
+              <ListaPreguntas
+                modo="ENCUESTA"
+                preguntas={preguntas}
+                onCambio={setPreguntas}
+                intentado={intentado}
+              />
+              {/* Quiénes responden: entran al canal y reciben el aviso al abrir. */}
+              <SelectorVotantes
+                titulo="Participantes"
+                mensajeInvalido="Selecciona al menos una persona que responda la encuesta."
+                seleccion={participantes}
+                onCambio={setParticipantes}
+                invalido={intentado && participantes.size === 0}
+              />
+            </div>
           )}
 
           {crear.isError && (

@@ -41,6 +41,7 @@ interface CrearEvaluacionBody {
   PUNTAJE_TOTAL?: number
   INTENTOS?: number | null
   MOSTRAR_RESULTADOS?: MostrarResultados
+  PARTICIPANTES?: number[]
   PREGUNTAS?: Array<{
     TIPO: TipoPregunta
     TEXTO: string
