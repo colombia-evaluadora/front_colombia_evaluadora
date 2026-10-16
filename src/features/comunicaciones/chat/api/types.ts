@@ -2,7 +2,8 @@
 
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
-export type TipoConversacion = "CANAL" | "DIRECTO"
+// FORO: canal de foros (publicaciones con hilos); vive en `/app/comunicaciones/foros`, no en el chat.
+export type TipoConversacion = "CANAL" | "DIRECTO" | "FORO"
 
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"

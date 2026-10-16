@@ -53,6 +53,11 @@ export const evalCol = {
     return toRows<T>(await api.get(`${PREFIX}${url}`))
   },
 
+  /** GET que devuelve un único recurso (`{rows:[dto]}` → `dto`); tira si no hay filas. */
+  async getRow<T>(url: string): Promise<T> {
+    return toRow<T>(await api.get(`${PREFIX}${url}`), url)
+  },
+
   /** POST que devuelve un único recurso (`{rows:[dto]}` → `dto`). */
   async postRow<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     return toRow<T>(await api.post(`${PREFIX}${url}`, data, config), url)
