@@ -2,6 +2,8 @@ import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-ro
 
 import { TableScreenTabs } from "@/components/layout/table-screen"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { plegarTexto } from "@/features/assistant/lib/campos-ui"
+import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
 import { paths } from "@/config/paths"
 
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
@@ -113,6 +115,18 @@ export function PlaneadorTabs() {
     : (views.find((v) => v.key.startsWith("actividad:") && v.rotulo === search.rotulo) ??
       views.find((v) => v.key.startsWith("actividad:")))
   const active = activeView?.key
+
+  // UI asistida: `ABRIR_PESTANA` con el nombre visible de la pestaña
+  // ("Unidad temática", "Proyecto pedagógico", el rótulo de actividades…).
+  usePestanasAsistente({
+    abrir: (pestana) => {
+      const nombre = plegarTexto(pestana)
+      const view = views.find((v) => plegarTexto(v.label) === nombre)
+      if (!view) return false
+      navigate({ to: view.to, search: searchDe(view) })
+      return true
+    },
+  })
 
   return (
     <TableScreenTabs>

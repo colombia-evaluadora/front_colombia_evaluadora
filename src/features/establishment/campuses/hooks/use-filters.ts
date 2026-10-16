@@ -4,6 +4,7 @@ import { campusesRoute } from "@/router"
 
 import type { CampusFiltersFormInput } from "@/features/establishment/campuses/api/schema"
 import type { CampusesQueryRequest } from "@/features/establishment/campuses/api/types/campus"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface CampusesFilters {
   filters: CampusFiltersFormInput
@@ -59,11 +60,15 @@ export function useCampusesFilters(): CampusesFilters {
     return count
   }, [search.search, search.zones])
 
+  const filtrosForm = {
+    search: search.search ?? "",
+    zones: search.zones ?? [],
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      search: search.search ?? "",
-      zones: search.zones ?? [],
-    },
+    filters: filtrosForm,
     queryFilters,
     applyFilters,
     clearAllFilters,

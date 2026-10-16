@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 
 import type { CampoUi, CodigoFormularioAgente, FormularioUi } from "@/features/assistant/api/types"
+import { valorFiltroComo } from "@/features/assistant/lib/campos-ui"
 
 // Registro de lo que la pantalla abierta le expone al asistente (UI asistida).
 // Las pantallas se registran con los hooks de abajo y el asistente lee de acá
@@ -89,5 +90,32 @@ export function usePestanasAsistente(registro: PestanasAsistente | null) {
     return () => {
       if (pestanas === registro) pestanas = null
     }
+  })
+}
+
+/**
+ * Registra los filtros de un listado a partir de su hook de filtros
+ * (`useXxxFilters`): los nombres son las claves del formulario de filtros y
+ * `APLICAR_FILTROS` los aplica con el mismo `applyFilters` que usa la
+ * persona (que ya resetea `page: 0` y escribe la URL). Los filtros que el
+ * agente no menciona conservan su valor.
+ */
+export function useFiltrosDeListado<T extends object>(
+  filters: T,
+  applyFilters: (values: T) => void,
+  /** Claves que no se exponen (p. ej. ids internos). */
+  excluir: string[] = [],
+) {
+  useFiltrosAsistente({
+    nombres: Object.keys(filters).filter((k) => !excluir.includes(k)),
+    aplicar: (valores) => {
+      const actuales = filters as Record<string, unknown>
+      const siguiente: Record<string, unknown> = { ...actuales }
+      for (const [nombre, valor] of Object.entries(valores)) {
+        if (!(nombre in actuales) || excluir.includes(nombre)) continue
+        siguiente[nombre] = valorFiltroComo(actuales[nombre], valor)
+      }
+      applyFilters(siguiente as T)
+    },
   })
 }
