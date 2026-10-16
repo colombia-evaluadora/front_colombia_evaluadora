@@ -637,7 +637,7 @@ function ReportsPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle description="Consulta, sincroniza y genera boletines del período">
-          Informes y consolidación de calificaciones
+          Informe y consolidados
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
