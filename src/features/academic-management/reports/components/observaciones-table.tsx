@@ -6,8 +6,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
-import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
+import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
+import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
+import {
+  CeldaUltimaActualizacion,
+  EncabezadoUltimaActualizacion,
+} from "@/features/academic-management/reports/components/ultima-actualizacion"
 
 const SUBFILA_CLASS = "flex h-12 items-center"
 
@@ -18,6 +23,12 @@ interface ObservacionesTableProps {
   onToggleEstudiante: (matriculaId: number) => void
   onToggleTodos: () => void
   onAbrirObservacion: (fila: FilaInforme) => void
+  /** Igual que en `GradesTable`: check por período de los seleccionados. */
+  mostrarMarcas: boolean
+  marcas: MarcasPeriodo
+  onToggleMarca: (matriculaId: number, periodoId: number) => void
+  /** Último guardado por (matrícula, período), ver `useUltimaActualizacionQuery`. */
+  fechas: Map<string, string> | undefined
 }
 
 export function ObservacionesTable({
@@ -27,6 +38,10 @@ export function ObservacionesTable({
   onToggleEstudiante,
   onToggleTodos,
   onAbrirObservacion,
+  mostrarMarcas,
+  marcas,
+  onToggleMarca,
+  fechas,
 }: ObservacionesTableProps) {
   const todosSeleccionados =
     estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
@@ -57,6 +72,7 @@ export function ObservacionesTable({
             <th className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase">
               Pe
             </th>
+            <EncabezadoUltimaActualizacion className="align-bottom" />
             <th className="border-l border-border px-3 py-3 text-left font-semibold uppercase">
               {columnaLabel}
             </th>
@@ -78,17 +94,30 @@ export function ObservacionesTable({
               <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
-                    <span
+                    <EtiquetaPeriodoMarcable
                       key={fila.periodoId}
+                      fila={fila}
                       // Alto fijo, igual al de la celda de observación: las dos
                       // columnas apilan sus sub-filas por separado, así que si
                       // una mide distinto la diferencia se acumula y la última
                       // fila queda desalineada.
-                      className={cn(SUBFILA_CLASS, "justify-center px-2")}
-                      title={fila.periodoNombre}
-                    >
-                      {etiquetaPeriodo(fila)}
-                    </span>
+                      className={cn(SUBFILA_CLASS, "px-2")}
+                      marcable={mostrarMarcas && seleccionados.has(estudiante.matriculaId)}
+                      marcas={marcas}
+                      onToggleMarca={onToggleMarca}
+                    />
+                  ))}
+                </div>
+              </td>
+              <td className="border-l border-border p-0 text-center align-top">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <CeldaUltimaActualizacion
+                      key={fila.periodoId}
+                      fila={fila}
+                      fechas={fechas}
+                      className={cn(SUBFILA_CLASS, "justify-center px-3")}
+                    />
                   ))}
                 </div>
               </td>

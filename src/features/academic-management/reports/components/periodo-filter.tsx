@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
   PERIODO_FINAL_ID,
@@ -44,18 +45,32 @@ export function PeriodoFilter({
             checked={seleccionados.includes(periodo.id)}
             onCheckedChange={() => toggle(periodo.id)}
           />
-          <Label htmlFor={`periodo-${periodo.id}`} className="font-normal text-foreground">
-            {periodo.nombre}
-          </Label>
-          {periodo.cerrado && (
-            <Badge
-              variant="soft"
-              color="neutral"
-              title="Período cerrado: no se puede consolidar ni editar observaciones"
-            >
-              Periodo cerrado
-            </Badge>
-          )}
+          {/* El estado va debajo del nombre y abreviado (A/C) para no
+              ensanchar la fila; el tooltip lo explica. */}
+          <div className="flex flex-col items-start gap-0.5">
+            <Label htmlFor={`periodo-${periodo.id}`} className="font-normal text-foreground">
+              {periodo.nombre}
+            </Label>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Badge
+                    variant="soft"
+                    color={periodo.cerrado ? "neutral" : "success"}
+                    className="cursor-default"
+                    aria-label={periodo.cerrado ? "Período cerrado" : "Período abierto"}
+                  />
+                }
+              >
+                {periodo.cerrado ? "C" : "A"}
+              </TooltipTrigger>
+              <TooltipContent>
+                {periodo.cerrado
+                  ? "Período cerrado: no se puede consolidar ni editar observaciones."
+                  : "Período abierto: se puede consolidar y editar observaciones."}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       ))}
       {/* No va dentro del map: existe siempre, incluso mientras los períodos
