@@ -7,6 +7,7 @@ import type {
   PlaneadorFiltersFormValues,
 } from "@/features/planeador/api/schema"
 import type { PlaneadorAlcanceSeleccion } from "@/features/planeador/components/planeador-docente-selector"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface PlaneadorFilters {
   filters: PlaneadorFiltersFormInput
@@ -116,12 +117,16 @@ function useFiltersFor(
     return n
   }, [search.buscar, search.filtro, search.estado, search.sede, search.ano, search.jornada, search.docente])
 
+  const filtrosForm = {
+    buscar: search.buscar ?? "",
+    filtro: search.filtro ?? "",
+    estado: search.estado ?? "",
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      buscar: search.buscar ?? "",
-      filtro: search.filtro ?? "",
-      estado: search.estado ?? "",
-    },
+    filters: filtrosForm,
     applyFilters,
     clearAllFilters,
     activeFilterCount,

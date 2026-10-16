@@ -4,6 +4,7 @@ import { gestionAcademicaReferentesCurricularesRoute } from "@/router"
 
 import type { CurricularReferenceFiltersFormInput } from "@/features/academic-management/curricular-references/api/schema"
 import type { CurricularReferencesQueryRequest } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface CurricularReferencesFilters {
   filters: CurricularReferenceFiltersFormInput
@@ -85,14 +86,18 @@ export function useCurricularReferencesFilters(): CurricularReferencesFilters {
     search.active,
   ])
 
+  const filtrosForm = {
+    search: search.search ?? "",
+    educationLevels: search.educationLevels ?? [],
+    pedagogicalApproaches: search.pedagogicalApproaches ?? [],
+    evaluationTypes: search.evaluationTypes ?? [],
+    active: search.active ?? "",
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      search: search.search ?? "",
-      educationLevels: search.educationLevels ?? [],
-      pedagogicalApproaches: search.pedagogicalApproaches ?? [],
-      evaluationTypes: search.evaluationTypes ?? [],
-      active: search.active ?? "",
-    },
+    filters: filtrosForm,
     queryFilters,
     applyFilters,
     clearAllFilters,

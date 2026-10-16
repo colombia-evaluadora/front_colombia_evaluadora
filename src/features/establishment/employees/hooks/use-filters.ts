@@ -4,6 +4,7 @@ import { employeesRoute } from "@/router"
 
 import type { EmployeeFiltersFormInput } from "@/features/establishment/employees/api/schema"
 import type { EmployeesQueryRequest } from "@/features/establishment/employees/api/types/employee"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface EmployeesFilters {
   filters: EmployeeFiltersFormInput
@@ -67,13 +68,17 @@ export function useEmployeesFilters(): EmployeesFilters {
     return count
   }, [search.roles, search.search, search.statuses, search.workSchedules])
 
+  const filtrosForm = {
+    search: search.search ?? "",
+    roles: search.roles ?? [],
+    workSchedules: search.workSchedules ?? [],
+    statuses: search.statuses ?? [],
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      search: search.search ?? "",
-      roles: search.roles ?? [],
-      workSchedules: search.workSchedules ?? [],
-      statuses: search.statuses ?? [],
-    },
+    filters: filtrosForm,
     queryFilters,
     applyFilters,
     clearAllFilters,
