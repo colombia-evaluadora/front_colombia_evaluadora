@@ -109,4 +109,26 @@ describe("foros (mock)", () => {
     const foro = (await llamar<Foro>("GET", "/foros/900")).rows[0]
     expect(foro.etiquetas.some((x) => x.id === e.id)).toBe(false)
   })
+
+  it("adjuntos reales: publica y responde por multipart (file-service) y el archivo se quita", async () => {
+    const multipart = async <T,>(path: string, campos: Record<string, string>, archivo: File) => {
+      const form = new FormData()
+      for (const [k, v] of Object.entries(campos)) form.append(k, v)
+      form.append("ADJUNTO", archivo)
+      const res = await fetch(`http://localhost/api/files/eval-col/comunicaciones${path}`, { method: "POST", body: form })
+      return ((await res.json()) as { rows: T[] }).rows[0]
+    }
+    const pdf = new File(["%PDF"], "guia.pdf", { type: "application/pdf" })
+    const p = await multipart<Publicacion>("/foros/900/publicaciones", { TITULO: "Con guía", TEXTO: "" }, pdf)
+    expect(p.mensaje?.adjunto).toMatchObject({ nombre: "guia.pdf", formato: "PDF", peso: 4 })
+    expect(p.mensaje?.adjunto?.archivoId).toEqual(expect.any(Number))
+
+    const foto = new File(["x"], "foto.png", { type: "image/png" })
+    const r = await multipart<Mensaje>(`/foros/publicaciones/${p.id}/respuestas`, { TEXTO: "Mira" }, foto)
+    expect(r.adjunto).toMatchObject({ nombre: "foto.png", formato: "IMAGEN" })
+
+    const quitada = (await llamar<Mensaje>("PATCH", `/foros/mensajes/${r.id}/adjunto/eliminar`)).rows[0]
+    expect(quitada.adjunto?.eliminadoEn).not.toBeNull()
+    await llamar("PATCH", `/foros/publicaciones/${p.id}/eliminar`)
+  })
 })
