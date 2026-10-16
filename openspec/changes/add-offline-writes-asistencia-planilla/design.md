@@ -31,7 +31,7 @@ El usuario no respondió P15–P20. Se tomaron defaults conservadores, coherente
 | D-F2-9 (P16) | Índice único de asistencia con `COALESCE(bloque,0)` y contexto asignatura/actividad; script de duplicados previo en la migración. | |
 | D-F2-10 (P17) | "Marcar todos" offline sin optimista por estudiante. | El día muestra "Pendiente" y "Se marcará Asistió a quienes no tengan registro cuando se sincronice." |
 | D-F2-11 (P18–P20) | Se mantienen las propuestas del plan. | Recursos > 10 MB solo online; orden real de la saga (Fase 3); el SW sirve el shell de `/verificar/b`. |
-| D-F2-12 | Adjuntos offline (soportes) en Fase 2: **solo asistencia**. | Las evidencias de observación de planilla nuevas siguen siendo solo en línea; observación de texto sí se encola. |
+| D-F2-12 | Adjuntos offline: soportes de asistencia y evidencias de observación de planilla. | El archivo se copia como blob (≤ 10 MB, 3 por op, 150 MB / 60 por usuario). La subida multipart no pasa por la Idempotency-Key del gateway: una respuesta perdida puede duplicar la evidencia (se quita a mano). |
 | D-F2-13 | El SW no se actualiza mientras haya ops `inflight` o un lote en curso (`isSyncInProgress`). | |
 
 ## Flujo de sincronización
