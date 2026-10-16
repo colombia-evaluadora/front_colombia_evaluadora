@@ -2,9 +2,11 @@ import { apiPath } from "@/lib/api-routes"
 
 /**
  * Prefijo del gateway hacia `notification-service` (D-2.2: el inbox NO vive en
- * eval-col). Cuando el backend exista y se registre su ruta en el api-gateway,
- * si el `requesturi` resulta ser otro (p. ej. `/notification`), basta con
- * cambiar esta constante: el mock de MSW intercepta las rutas "sin prefijo".
+ * eval-col). El api-gateway expone `/api/notificaciones/**` →
+ * `lb://notification-service` con StripPrefix=1 (PR SSO #690), o sea que la
+ * ruta real es la misma que intercepta MSW: prefijo vacío en ambos modos.
+ * Los ids de notificación son UUID (string); el dueño de la bandeja es el
+ * `sub` del JWT (correo), que el backend saca del Bearer: el front nunca lo manda.
  */
 export const NOTIFICACIONES_API_PREFIX = ""
 

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { realtimeEnabled } from "@/lib/realtime"
 import { offlineMeta, TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { NOTIFICACIONES_ENDPOINTS } from "@/features/notificaciones/api/endpoints"
 import type { ContadorRow } from "@/features/notificaciones/api/types"
@@ -13,16 +14,15 @@ async function fetchContador(): Promise<number> {
 }
 
 /**
- * Contador de no leídas de la campana. Hasta que exista el gateway de tiempo
- * real (`add-tiempo-real-gateway`, evento `notification.created`) se refresca
- * por polling; cuando llegue, `useRealtimeEvent` hará `setQueryData` sobre
- * esta key y el intervalo se puede quitar.
+ * Contador de no leídas de la campana. Con tiempo real lo refrescan los
+ * eventos `notification.*` (`useNotificacionesTiempoReal`); sin él, polling.
+ * Con socket se deja un polling lento de respaldo (el gateway es best-effort).
  */
 export function useContadorQuery() {
   return useQuery({
     queryKey: contadorQueryKey,
     queryFn: fetchContador,
-    refetchInterval: 60_000,
+    refetchInterval: realtimeEnabled ? 5 * 60_000 : 60_000,
     meta: offlineMeta(TTL_OFFLINE.detalle),
   })
 }

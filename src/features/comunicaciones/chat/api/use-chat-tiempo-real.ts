@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
+import { topicoUsuario } from "@/lib/auth-mapper"
 import { realtime } from "@/lib/realtime"
 import { useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import type { RealtimeEvent } from "@/lib/realtime/protocol"
@@ -41,24 +42,23 @@ function setEnLinea(queryClient: QueryClient, usuarioId: number, enLinea: boolea
 const esMiembros = (q: { queryKey: readonly unknown[] }) => q.queryKey.at(-1) === "miembros"
 const esMensajes = (q: { queryKey: readonly unknown[] }) => q.queryKey.at(-1) === "mensajes"
 
-/** Bandeja personal: no leídos/menciones por conversación y notificaciones. */
+/**
+ * Bandeja personal: no leídos/menciones por conversación. Las notificaciones
+ * (`notification.*` en el mismo tópico) las atiende
+ * `features/notificaciones/hooks/use-notificaciones-tiempo-real.ts`.
+ */
 export function useChatTiempoRealUsuario() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
   useRealtimeTopic(
-    user ? `user:${user.id}` : null,
+    user ? topicoUsuario(user) : null,
     (e) => {
       if (e.event === "conversacion.actualizada") {
         const c = e.data as Conversacion
         queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
           prev?.some((x) => x.id === c.id) ? prev.map((x) => (x.id === c.id ? c : x)) : prev,
         )
-      } else if (e.event === "notificacion.creada") {
-        // Campana única: la general de `features/notificaciones` (lee por REST).
-        // Bandeja de `features/notificaciones` (sus keys cuelgan de ["notificaciones"]).
-        // Se invalida por prefijo para no importar nada de ese feature.
-        void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
       }
     },
     () => void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),

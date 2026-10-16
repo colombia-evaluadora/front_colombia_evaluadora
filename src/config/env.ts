@@ -19,8 +19,9 @@ const createEnv = () => {
     // Service Worker y no persiste nada; `read` = Fase 1 (lecturas); `full`
     // habilita además la outbox (Fase 2). Lo puede bajar el flag remoto
     // `GET /eval-col/config/offline` (`lib/offline/offline-mode.ts`).
-    // Gateway de tiempo real (`add-tiempo-real-gateway`, D-1.5), p. ej.
-    // `wss://rt.<dominio>/ws`. Vacío = desactivado: el cliente no abre socket y
+    // Gateway de tiempo real (comms-service, PR SSO #692), p. ej.
+    // `/api/comms/ws` (mismo origen: Worker / proxy de Vite) o una URL
+    // absoluta `wss://<dominio>/api/comms/ws`. Vacío = desactivado: el cliente no abre socket y
     // las pantallas vuelven a su polling. Con mocks activos se ignora y se usa
     // el gateway simulado en memoria (`src/mocks/realtime`).
     REALTIME_URL: z.string().optional().default(""),

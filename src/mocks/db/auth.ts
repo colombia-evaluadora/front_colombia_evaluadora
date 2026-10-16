@@ -126,6 +126,10 @@ export function createMockAccessToken(user: User): string {
     // lateral muestra el prefijo del correo en vez del nombre de la persona.
     name: user.name,
     roles: user.roles,
+    // `users.id_user` como en el backend real. El mock del chat tiene un solo
+    // usuario con identidad (`USUARIO_ACTUAL.id = 1` en mocks/db/comunicaciones):
+    // toda sesión mock es ese usuario al calcular `esPropio`/`meMenciona`/`mia`.
+    uid: 1,
     iat: issuedAt,
     exp: issuedAt + ACCESS_TOKEN_TTL_SECONDS,
   })

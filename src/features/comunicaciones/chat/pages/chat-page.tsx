@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { ChatCircleTextIcon } from "@/components/ui/icons"
@@ -6,7 +6,12 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { chatRoute } from "@/router"
 import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
-import { useMensajesQuery } from "@/features/comunicaciones/chat/api/query/use-mensajes-query"
+import {
+  hayMensajesAnteriores,
+  useCargarMensajesAnteriores,
+  useMensajesQuery,
+} from "@/features/comunicaciones/chat/api/query/use-mensajes-query"
+import { Button } from "@/components/ui/button"
 import { useEnviarMensaje } from "@/features/comunicaciones/chat/api/mutations/use-enviar-mensaje"
 import { useMarcarLeido } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-sidebar"
@@ -119,6 +124,16 @@ function ChatContent() {
   }
 
   const enviar = useEnviarMensaje()
+  // Mismo `CLIENT_MESSAGE_ID` mientras se reintenta el mismo texto en el mismo
+  // canal (envío fallido → reintento): el backend no lo duplica.
+  const intento = useRef<{ clave: string; id: string } | null>(null)
+  const idDeIntento = (clave: string) => {
+    if (intento.current?.clave !== clave) intento.current = { clave, id: crypto.randomUUID() }
+    return intento.current.id
+  }
+  const cargarAnteriores = useCargarMensajesAnteriores()
+  // Canales cuyo historial anterior ya se agotó.
+  const [agotados, setAgotados] = useState<Set<number>>(() => new Set())
   const marcarLeido = useMarcarLeido()
   const eliminarBorrador = useEliminarBorrador()
 
@@ -217,6 +232,28 @@ function ChatContent() {
                 primerNoLeidoId={marca?.conversacionId === activa.id ? (marca.id ?? undefined) : undefined}
                 onResponder={soloLectura ? undefined : setRespondiendo}
                 onIrAMensaje={irAMensaje}
+                anteriores={
+                  hayMensajesAnteriores(mensajesQuery.data, agotados.has(activa.id)) && (
+                    <div className="mb-2 flex justify-center">
+                      <Button
+                        variant="ghost"
+                        color="neutral"
+                        size="sm"
+                        disabled={cargarAnteriores.isPending}
+                        onClick={() =>
+                          cargarAnteriores.mutate(activa.id, {
+                            onSuccess: ({ agotado }) => {
+                              if (agotado) setAgotados((prev) => new Set(prev).add(activa.id))
+                            },
+                            onError,
+                          })
+                        }
+                      >
+                        {cargarAnteriores.isPending ? "Cargando…" : "Cargar mensajes anteriores"}
+                      </Button>
+                    </div>
+                  )
+                }
                 antes={
                   activa.categoria === "GENERAL" && activa.creadoPor ? (
                     <CanalBienvenida
@@ -290,8 +327,15 @@ function ChatContent() {
                 onEscribiendo={avisarEscribiendo}
                 onEnviar={(texto, archivo) =>
                   enviar
-                    .mutateAsync({ conversacionId: activa.id, texto, archivo, respuestaA: respondiendo?.id })
+                    .mutateAsync({
+                      conversacionId: activa.id,
+                      texto,
+                      archivo,
+                      respuestaA: respondiendo?.id,
+                      clientMessageId: idDeIntento(`${activa.id}|${respondiendo?.id ?? ""}|${texto}|${archivo?.name ?? ""}`),
+                    })
                     .then(() => {
+                      intento.current = null
                       setRespondiendo(null)
                       if (borrador?.conversacionId === activa.id) {
                         eliminarBorrador.mutate(borrador.id)
