@@ -158,6 +158,10 @@ const AreasOficialesPage = lazyRouteComponent(
   () => import("@/features/administration/areas-oficiales/pages/areas-oficiales-page"),
   "AreasOficialesPage"
 )
+const ParametrosEdadPage = lazyRouteComponent(
+  () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
+  "ParametrosEdadPage"
+)
 
 const EstablishmentDetailPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/establishment-detail-page"),
@@ -628,6 +632,15 @@ export const areasOficialesRoute = createRoute({
   component: AreasOficialesPage,
 })
 
+export const parametrosEdadRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.parametrosEdad.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Parámetros de edad" }],
+  },
+  component: ParametrosEdadPage,
+})
+
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
 // volver al listado.
 const establishmentLayoutRoute = createRoute({
@@ -1041,6 +1054,7 @@ const routeTree = rootRoute.addChildren([
     rolesMenusRoute,
     listasValorRoute,
     areasOficialesRoute,
+    parametrosEdadRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

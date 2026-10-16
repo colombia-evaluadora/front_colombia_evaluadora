@@ -23,10 +23,23 @@ export const ESCRIBIENDO_THROTTLE_MS = 2_500
 export const topicCanal = (conversacionId: number) => `canal:${conversacionId}`
 
 /** Inserta o reemplaza por id, manteniendo el orden por fecha. */
+/**
+ * El evento en vivo llega en forma neutra (`miVoto: null`, igual para todos). Un
+ * voto no se retira, así que se conserva el propio mientras sea la misma
+ * votación; editarla cambia `cierraEn` y reinicia los votos.
+ */
+function conMiVoto(prev: Mensaje, m: Mensaje): Mensaje {
+  const antes = prev.votacion
+  const ahora = m.votacion
+  if (!antes || !ahora || ahora.miVoto != null || antes.miVoto == null) return m
+  if (antes.cierraEn !== ahora.cierraEn) return m
+  return { ...m, votacion: { ...ahora, miVoto: antes.miVoto } }
+}
+
 export function upsertMensaje(prev: Mensaje[] | undefined, m: Mensaje): Mensaje[] | undefined {
   if (!prev) return prev
   const i = prev.findIndex((x) => x.id === m.id)
-  if (i >= 0) return prev.map((x) => (x.id === m.id ? m : x))
+  if (i >= 0) return prev.map((x) => (x.id === m.id ? conMiVoto(x, m) : x))
   return [...prev, m].sort((a, b) => a.fecha.localeCompare(b.fecha))
 }
 

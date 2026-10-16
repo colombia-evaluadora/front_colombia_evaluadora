@@ -14,9 +14,11 @@ import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { fetchDocumento, useDocumentoQuery } from "@/features/comunicaciones/chat/api/query/use-documento-query"
 import { useEliminarArchivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-archivo"
 import { descargarDocumento } from "@/features/comunicaciones/chat/lib/documento"
+import { descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 
-const SIN_SERVICIO = "Disponible cuando se conecte el servicio de archivos"
+const SIN_COPIA = "Archivo sin copia en el servidor"
 
 // Barra que aparece sobre la tarjeta al pasar el cursor: descargar, editar, ver, eliminar.
 export function ArchivoAcciones({
@@ -33,10 +35,14 @@ export function ArchivoAcciones({
   const eliminar = useEliminarArchivo()
   const [viendo, setViendo] = useState(false)
 
-  // Los documentos editables se descargan con su contenido actual; el resto
-  // necesita el file-service.
+  // Los documentos editables (mock) se descargan con su contenido actual; el
+  // resto, el binario de file-service.
   const descargar = async () => {
     try {
+      if (a.archivoId != null) {
+        await descargarAdjunto(a.archivoId, a.nombre)
+        return
+      }
       const html = await queryClient.fetchQuery({
         queryKey: chatKeys.documento(a.id),
         queryFn: () => fetchDocumento(a.id),
@@ -55,8 +61,8 @@ export function ArchivoAcciones({
     >
       <Accion
         etiqueta={`Descargar ${a.nombre}`}
-        titulo={a.editable ? "Descargar" : SIN_SERVICIO}
-        disabled={!a.editable}
+        titulo={a.editable || a.archivoId != null ? "Descargar" : SIN_COPIA}
+        disabled={!a.editable && a.archivoId == null}
         onClick={() => void descargar()}
       >
         <FileDownloadOutlinedIcon />
@@ -150,15 +156,38 @@ function VistaPrevia({ archivo: a, onClose }: { archivo: ArchivoCompartido; onCl
             />
           )
         ) : (
-          <div className="grid place-items-center gap-3 rounded-lg border border-dashed py-12 text-center">
-            <Icono aria-hidden className={cn("size-14", color)} />
-            <p className="max-w-sm text-sm text-muted-foreground">
-              La vista previa de {tipo.toLowerCase()} estará disponible cuando se conecte el
-              servicio de archivos.
-            </p>
-          </div>
+          <VistaBinario archivo={a} icono={<Icono aria-hidden className={cn("size-14", color)} />} tipo={tipo} />
         )}
       </DialogContent>
     </Dialog>
   )
+}
+
+// Imagen, PDF y video se ven en el navegador con un token de vista; el resto
+// (Word, Excel…) solo se descarga.
+function VistaBinario({ archivo: a, icono, tipo }: { archivo: ArchivoCompartido; icono: ReactNode; tipo: string }) {
+  const visible = a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
+  const { data: url, isPending, isError } = useArchivoViewUrl(visible ? a.archivoId : null)
+  if (visible && isPending) return <Skeleton className="h-80 w-full" />
+  if (!visible || isError || !url) {
+    return (
+      <div className="grid place-items-center gap-3 rounded-lg border border-dashed py-12 text-center">
+        {icono}
+        <p className="max-w-sm text-sm text-muted-foreground">
+          {a.archivoId == null
+            ? "Este archivo no tiene copia en el servidor."
+            : isError
+              ? "No se pudo abrir el archivo."
+              : `La vista previa de ${tipo.toLowerCase()} no está disponible; descárgalo para abrirlo.`}
+        </p>
+      </div>
+    )
+  }
+  if (a.formato === "IMAGEN") {
+    return <img src={url} alt={a.nombre} className="max-h-[70dvh] w-full rounded-lg object-contain" />
+  }
+  if (a.formato === "VIDEO") {
+    return <video src={url} controls className="max-h-[70dvh] w-full rounded-lg" />
+  }
+  return <iframe src={url} title={a.nombre} className="h-[70dvh] w-full rounded-lg border" />
 }

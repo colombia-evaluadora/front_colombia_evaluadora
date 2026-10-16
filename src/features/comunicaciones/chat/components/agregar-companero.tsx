@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PlusIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
-import { usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
+import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -14,17 +14,15 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void }) {
   const [open, setOpen] = useState(false)
   const [texto, setTexto] = useState("")
-  const personas = usePersonasQuery(open)
+  const personas = usePersonasQuery(open, texto)
   const abrir = useAbrirDirecto()
   // La política de DMs es configurable por institución (PLAN §6, pendiente):
   // quien no se puede escribir no aparece; el backend igual responde 403.
   const { reglaDirectoCon } = useChatAccess()
 
-  const t = texto.trim().toLowerCase()
+  const delServidor = !personas.isPlaceholderData && texto.trim().length >= 2
   const lista = (personas.data ?? []).filter(
-    (p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO",
-  ).filter(
-    (p) => !t || p.nombre.toLowerCase().includes(t) || p.correo.toLowerCase().includes(t),
+    (p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO" && coincidePersona(p, texto, delServidor),
   )
 
   const cerrar = () => {

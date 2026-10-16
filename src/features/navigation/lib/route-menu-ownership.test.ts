@@ -15,6 +15,7 @@ const MENU = {
   rolesMenus: "/app/administracion/roles-menus",
   listasValor: "/app/administracion/listas-valor",
   areasOficiales: "/app/administracion/areas-oficiales",
+  parametrosEdad: "/app/administracion/parametros-edad",
   establecimiento: "/app/establecimiento-educativo/general",
   sedes: "/app/establecimiento-educativo/sedes",
   funcionarios: "/app/establecimiento-educativo/funcionarios",
@@ -62,6 +63,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/roles-menus": MENU.rolesMenus,
   "/app/administracion/listas-valor": MENU.listasValor,
   "/app/administracion/areas-oficiales": MENU.areasOficiales,
+  "/app/administracion/parametros-edad": MENU.parametrosEdad,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
   "/app/establecimiento-educativo/agregar": MENU.establecimiento,
