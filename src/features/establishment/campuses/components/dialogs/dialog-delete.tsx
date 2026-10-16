@@ -32,7 +32,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
   const [open, setOpen] = useState(false)
   const navigate = campusesRoute.useNavigate()
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("SEDES_EDUCATIVAS")
+  const { puedeEliminar } = useMenuPermission("SEDES_EDUCATIVAS", { onlineOnlyWrites: true })
 
   const deleteMutation = useDelete({
     mutationConfig: {
