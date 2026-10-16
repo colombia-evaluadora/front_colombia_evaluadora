@@ -1,4 +1,4 @@
-import { SparkleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, SparkleIcon, SpinnerIcon, WarningCircleIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -15,14 +15,17 @@ import {
 
 import type { EstadoTurno } from "@/features/assistant/api/types"
 import { RespuestaAgente } from "@/features/assistant/components/respuesta-agente"
-import type { MensajeChat } from "@/features/assistant/hooks/use-asistente"
+import type { MensajeChat, PasoHerramienta } from "@/features/assistant/hooks/use-asistente"
 import { etiquetaEstado } from "@/features/assistant/lib/sugerencias"
 
 interface ChatMessageListProps {
   mensajes: MensajeChat[]
   enviando: boolean
   estado: EstadoTurno | null
+  /** Herramientas del turno en curso, en orden de inicio. */
+  herramientas?: PasoHerramienta[]
   bloqueado: boolean
+  puedeAccionar?: boolean
   sugerencias: string[]
   onEnviar: (texto: string) => void
   onConfirmar: (mensaje: MensajeChat) => void
@@ -34,7 +37,9 @@ export function ChatMessageList({
   mensajes,
   enviando,
   estado,
+  herramientas = [],
   bloqueado,
+  puedeAccionar = true,
   sugerencias,
   onEnviar,
   onConfirmar,
@@ -99,14 +104,35 @@ export function ChatMessageList({
                         {esUsuario ? (
                           <span className="whitespace-pre-wrap">{mensaje.texto}</span>
                         ) : cargando ? (
-                          <span className="flex items-center gap-2 text-muted-foreground" aria-live="polite">
-                            <SpinnerIcon className="size-4 animate-spin" />
-                            {etiquetaEstado(estado)}
-                          </span>
+                          <div className="flex flex-col gap-1.5" aria-live="polite">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <SpinnerIcon className="size-4 animate-spin" />
+                              {etiquetaEstado(estado)}
+                            </span>
+                            {herramientas.length > 0 && (
+                              <ul className="flex flex-col gap-1 text-xs">
+                                {herramientas.map((paso) => (
+                                  <li key={paso.id} className="flex items-center gap-1.5">
+                                    {paso.estado === "EN_CURSO" ? (
+                                      <SpinnerIcon className="size-3.5 animate-spin text-muted-foreground" />
+                                    ) : paso.estado === "OK" ? (
+                                      <CheckCircleIcon className="size-3.5 text-green" />
+                                    ) : (
+                                      <WarningCircleIcon className="size-3.5 text-yellow" />
+                                    )}
+                                    <span className={paso.estado === "EN_CURSO" ? "" : "text-muted-foreground"}>
+                                      {paso.etiqueta}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         ) : (
                           <RespuestaAgente
                             mensaje={mensaje}
                             bloqueado={bloqueado || enviando}
+                            puedeAccionar={puedeAccionar}
                             onResponder={onEnviar}
                             onConfirmar={onConfirmar}
                             onCancelar={onCancelar}

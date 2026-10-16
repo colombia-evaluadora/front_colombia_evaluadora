@@ -18,20 +18,41 @@ import { ChatComposer } from "@/features/assistant/components/chat-composer"
 import { ChatMessageList } from "@/features/assistant/components/chat-message-list"
 import { ConversationList } from "@/features/assistant/components/conversation-list"
 import { useAsistente } from "@/features/assistant/hooks/use-asistente"
-import { sugerenciasPara } from "@/features/assistant/lib/sugerencias"
+import { useSugerenciasQuery } from "@/features/assistant/api/queries"
+import { elegirSugerencias } from "@/features/assistant/lib/sugerencias"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const SIN_CONEXION = "El asistente necesita conexión a internet."
 
+/**
+ * Código del menú del asistente (SSO #696): menú sin pantalla sembrado para
+ * los mismos roles que ya usaban el agente. `puedeVer` lo muestra;
+ * `puedeCrear`/`puedeEditar` habilitan confirmar acciones y rellenar
+ * formularios. El backend igual valida cada herramienta por su menú.
+ */
+export const MENU_ASISTENTE = "ASISTENTE"
+
 export function AssistantSheet() {
-  const asistente = useAsistente()
+  const permiso = useMenuPermission(MENU_ASISTENTE)
+  // Mientras carga, todo denegado (mismo criterio que el resto de pantallas).
+  if (!permiso.puedeVer) return null
+  return <AssistantSheetContenido puedeAccionar={permiso.puedeCrear || permiso.puedeEditar} />
+}
+
+function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) {
+  const asistente = useAsistente({ puedeAccionar })
   const online = useOnlineOnly(SIN_CONEXION)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const [vista, setVista] = useState<"chat" | "historial">("chat")
+  const [abierto, setAbierto] = useState(false)
+  const sugerenciasQuery = useSugerenciasQuery(pathname, { enabled: abierto && !online.disabled })
+  const sugerencias = elegirSugerencias(sugerenciasQuery.data?.sugerencias, pathname)
 
   return (
     <Sheet
-      onOpenChange={(abierto) => {
-        if (abierto && !online.disabled) asistente.restaurar()
+      onOpenChange={(siguiente) => {
+        setAbierto(siguiente)
+        if (siguiente && !online.disabled) asistente.restaurar()
       }}
     >
       <MessageScrollerProvider>
@@ -113,8 +134,10 @@ export function AssistantSheet() {
                 mensajes={asistente.mensajes}
                 enviando={asistente.enviando}
                 estado={asistente.estado}
+                herramientas={asistente.herramientas}
+                puedeAccionar={puedeAccionar}
                 bloqueado={online.disabled}
-                sugerencias={sugerenciasPara(pathname)}
+                sugerencias={sugerencias}
                 onEnviar={(texto) => void asistente.enviar(texto)}
                 onConfirmar={(m) => void asistente.confirmar(m)}
                 onCancelar={(m) => void asistente.cancelar(m)}

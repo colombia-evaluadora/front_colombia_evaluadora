@@ -5,6 +5,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   AgenteError,
   cancelarAccion,
+  cancelarTurno,
   confirmarAccion,
   crearConversacion,
   enviarMensajeStream,
@@ -16,6 +17,7 @@ import type {
   ContextoUi,
   ConversacionDetalle,
   EstadoTurno,
+  EventoHerramienta,
   RespuestaAgente,
 } from "@/features/assistant/api/types"
 import {
@@ -23,7 +25,8 @@ import {
   filtrosDisponibles,
   type ResultadoAccion,
 } from "@/features/assistant/lib/acciones-ui"
-import { definicionFormularios } from "@/features/assistant/lib/registro-ui"
+import { definicionFormularios, filtrosRegistrados } from "@/features/assistant/lib/registro-ui"
+import { construirParametros } from "@/features/assistant/lib/parametros-ui"
 
 export type EstadoAccionChat = "PENDIENTE" | "CONFIRMANDO" | "CANCELANDO" | "RESUELTA"
 
@@ -31,7 +34,7 @@ export interface MensajeChat {
   id: string
   rol: "user" | "assistant"
   texto: string
-  /** Respuesta estructurada (solo en turnos de esta sesión; el historial trae texto). */
+  /** Respuesta estructurada (en vivo o restaurada del historial). */
   respuesta?: RespuestaAgente
   resultadosUi?: ResultadoAccion[]
   estadoAccion?: EstadoAccionChat
@@ -41,7 +44,20 @@ export interface MensajeChat {
 }
 
 const CLAVE_SESION = "asistente:conversacion"
-const MAX_RUTA = 200
+const MAX_RUTA = 1000
+
+/** Texto con el que el backend cierra un turno cortado (`/cancelar`). */
+export const TEXTO_CANCELADO = "Cancelaste la petición."
+
+/** Paso de una herramienta en el turno en curso (`event: herramienta`). */
+export interface PasoHerramienta {
+  id: string
+  etiqueta: string
+  estado: "EN_CURSO" | "OK" | "FALLO"
+}
+
+/** Ops que modifican un formulario: requieren permiso de crear/editar en `ASISTENTE`. */
+const OPS_ESCRITURA_UI = new Set(["RELLENAR", "LIMPIAR_CAMPO"])
 
 function leerConversacionGuardada(): string | null {
   try {
@@ -68,15 +84,32 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
   return detalle.mensajes
     .filter((m) => m.rol === "USER" || m.rol === "ASSISTANT")
     .sort((a, b) => a.secuencia - b.secuencia)
-    .map((m) => ({
-      id: `h-${m.id}`,
-      rol: m.rol === "USER" ? "user" : "assistant",
-      texto: m.texto,
-      respuesta: m.rol === "ASSISTANT" && m.tipoRespuesta ? { tipo: m.tipoRespuesta, texto: m.texto } : undefined,
-      // Una confirmación del historial no trae el id de la acción: no se puede
-      // confirmar desde acá (brecha del backend).
-      estadoAccion: m.tipoRespuesta === "CONFIRMACION" ? "RESUELTA" : undefined,
-    }))
+    .map((m) => {
+      // SSO #696: cada ASSISTANT trae `respuesta` completa. Mensajes viejos
+      // vienen sin ella (o reducida): se cae al texto + tipo de siempre.
+      const respuesta =
+        m.rol === "ASSISTANT"
+          ? (m.respuesta ?? (m.tipoRespuesta ? { tipo: m.tipoRespuesta, texto: m.texto } : undefined))
+          : undefined
+      const accion = respuesta?.accionPendiente
+      // Solo una acción `PENDIENTE` (estado actual, ya vencida = EXPIRADA)
+      // vuelve a mostrar Confirmar / Cancelar. Las acciones de UI del
+      // historial NO se reaplican: la pantalla ya no es la de ese turno.
+      const estadoAccion: EstadoAccionChat | undefined = accion
+        ? accion.estado === "PENDIENTE"
+          ? "PENDIENTE"
+          : "RESUELTA"
+        : m.tipoRespuesta === "CONFIRMACION"
+          ? "RESUELTA"
+          : undefined
+      return {
+        id: `h-${m.id}`,
+        rol: m.rol === "USER" ? ("user" as const) : ("assistant" as const),
+        texto: m.texto,
+        respuesta,
+        estadoAccion,
+      }
+    })
 }
 
 /**
@@ -84,7 +117,7 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
  * estados, detener, reintentar, confirmar/cancelar escrituras y aplicar las
  * acciones de UI sobre la pantalla abierta.
  */
-export function useAsistente() {
+export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean } = {}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useRouterState({ select: (s) => s.location })
@@ -93,6 +126,7 @@ export function useAsistente() {
   const [mensajes, setMensajes] = useState<MensajeChat[]>([])
   const [enviando, setEnviando] = useState(false)
   const [estado, setEstado] = useState<EstadoTurno | null>(null)
+  const [herramientas, setHerramientas] = useState<PasoHerramienta[]>([])
   const [cargandoHistorial, setCargandoHistorial] = useState(false)
   const [errorHistorial, setErrorHistorial] = useState<string | null>(null)
   const [historialCargado, setHistorialCargado] = useState<string | null>(null)
@@ -114,16 +148,22 @@ export function useAsistente() {
     const ruta = `${location.pathname}${location.searchStr ?? ""}`.slice(0, MAX_RUTA)
     const formularios = definicionFormularios()
     const filtros = filtrosDisponibles(search)
+    // URL primero (ids de la pantalla), después los valores de los filtros
+    // registrados por el listado abierto.
+    const parametros = construirParametros(search, filtrosRegistrados()?.valores?.())
     return {
       ruta,
       ...(filtros.length > 0 ? { filtros } : {}),
+      ...(Object.keys(parametros).length > 0 ? { parametros } : {}),
       ...(formularios.length > 0 ? { formularios } : {}),
     }
   }
 
   function aplicarRespuesta(respuesta: RespuestaAgente): ResultadoAccion[] | undefined {
     if (respuesta.tipo !== "UI" || !respuesta.acciones?.length) return undefined
-    return aplicarAcciones(respuesta.acciones, {
+    // Sin permiso de crear/editar en `ASISTENTE`, el agente no toca formularios.
+    const acciones = puedeAccionar ? respuesta.acciones : respuesta.acciones.filter((a) => !OPS_ESCRITURA_UI.has(a.op))
+    return aplicarAcciones(acciones, {
       navegar: (url, params) => {
         const [to, query] = url.split("?")
         const desdeUrl = Object.fromEntries(new URLSearchParams(query ?? ""))
@@ -190,6 +230,7 @@ export function useAsistente() {
     })
     setEnviando(true)
     setEstado(null)
+    setHerramientas([])
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -203,7 +244,7 @@ export function useAsistente() {
       const respuesta = await enviarMensajeStream(
         id,
         { texto: limpio, contextoUi: construirContexto() },
-        { signal: controller.signal, onEstado: setEstado },
+        { signal: controller.signal, onEstado: setEstado, onHerramienta: registrarHerramienta },
       )
       actualizar(idRespuesta, {
         texto: respuesta.texto ?? "",
@@ -216,7 +257,9 @@ export function useAsistente() {
       if (controller.signal.aborted) {
         actualizar(idRespuesta, {
           detenido: true,
-          texto: "Detuviste la respuesta. Si el asistente alcanzó a terminarla, la verás al reabrir la conversación.",
+          // Mismo texto con que el backend cierra el turno cortado (queda así en el historial).
+          texto: TEXTO_CANCELADO,
+          respuesta: { tipo: "RESPUESTA", texto: TEXTO_CANCELADO },
         })
       } else {
         // 404 (conversación inexistente o ajena) o 409 por archivada: la
@@ -235,11 +278,36 @@ export function useAsistente() {
       if (abortRef.current === controller) abortRef.current = null
       setEnviando(false)
       setEstado(null)
+      setHerramientas([])
     }
   }
 
+  function registrarHerramienta(evento: EventoHerramienta) {
+    if (!evento?.id || !evento.etiqueta) return
+    const estadoPaso: PasoHerramienta["estado"] =
+      evento.fase === "FIN" ? (evento.ok === false ? "FALLO" : "OK") : "EN_CURSO"
+    setHerramientas((prev) => {
+      const existente = prev.some((p) => p.id === evento.id)
+      return existente
+        ? prev.map((p) => (p.id === evento.id ? { ...p, estado: estadoPaso } : p))
+        : [...prev, { id: evento.id, etiqueta: evento.etiqueta, estado: estadoPaso }]
+    })
+  }
+
+  /**
+   * Detener: corta la conexión y, además, pide al backend que cancele el
+   * turno (libera el turno en el acto, sin esperar el 409). Un fallo del
+   * `/cancelar` no importa: cerrar el streaming ya lo cancela.
+   */
   function detener() {
-    abortRef.current?.abort()
+    const enCurso = abortRef.current
+    if (!enCurso) return
+    enCurso.abort()
+    if (conversacionId) {
+      void cancelarTurno(conversacionId)
+        .catch(() => false)
+        .finally(() => queryClient.invalidateQueries({ queryKey: conversacionesQueryKey }))
+    }
   }
 
   function reintentar(mensaje: MensajeChat) {
@@ -248,7 +316,7 @@ export function useAsistente() {
 
   async function resolverAccion(mensaje: MensajeChat, decision: "confirmar" | "cancelar") {
     const accion = mensaje.respuesta?.accionPendiente
-    if (!accion || mensaje.estadoAccion !== "PENDIENTE") return
+    if (!accion || mensaje.estadoAccion !== "PENDIENTE" || !puedeAccionar) return
     actualizar(mensaje.id, { estadoAccion: decision === "confirmar" ? "CONFIRMANDO" : "CANCELANDO" })
     try {
       const respuesta = decision === "confirmar" ? await confirmarAccion(accion.id) : await cancelarAccion(accion.id)
@@ -284,6 +352,8 @@ export function useAsistente() {
     mensajes,
     enviando,
     estado,
+    herramientas,
+    puedeAccionar,
     cargandoHistorial,
     errorHistorial,
     enviar,

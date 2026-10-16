@@ -1,7 +1,7 @@
 import type { EstadoTurno } from "@/features/assistant/api/types"
 
-// Sugerencias por pantalla. El backend no expone un endpoint de sugerencias
-// (brecha anotada en el PR), así que se escriben acá alineadas con las
+// Sugerencias fijas por pantalla: respaldo de `GET /sugerencias` (SSO #696)
+// para cuando el endpoint falla o no devuelve nada. Se escriben acá alineadas con las
 // herramientas que el agente tiene en el catálogo (V557.2): lecturas de
 // planeador/funcionarios/periodos, escrituras del planeador con confirmación,
 // `buscar_pantalla` y `consulta_analitica` (planeador_estadisticas).
@@ -60,6 +60,14 @@ const GENERALES = [
   "¿Dónde registro las calificaciones?",
   "¿Qué actividades tengo esta semana?",
 ]
+
+const MAX_SUGERENCIAS = 6
+
+/** Las del servidor (máx. 6) si vinieron; si no, las fijas de la pantalla. */
+export function elegirSugerencias(delServidor: { texto: string }[] | undefined, pathname: string): string[] {
+  const textos = (delServidor ?? []).map((s) => s?.texto?.trim()).filter((t): t is string => Boolean(t))
+  return textos.length > 0 ? textos.slice(0, MAX_SUGERENCIAS) : sugerenciasPara(pathname)
+}
 
 export function sugerenciasPara(pathname: string): string[] {
   return POR_RUTA.find((r) => pathname.startsWith(r.prefijo))?.sugerencias ?? GENERALES

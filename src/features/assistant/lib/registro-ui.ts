@@ -27,6 +27,8 @@ export interface FiltrosAsistente {
   /** Nombres de filtro que admite el listado abierto (`APLICAR_FILTROS` solo usa estos). */
   nombres: string[]
   aplicar: (filtros: Record<string, unknown>) => void
+  /** Valores actuales de los filtros (van en `contextoUi.parametros`). */
+  valores?: () => Record<string, unknown>
 }
 
 export interface PestanasAsistente {
@@ -117,5 +119,7 @@ export function useFiltrosDeListado<T extends object>(
       }
       applyFilters(siguiente as T)
     },
+    valores: () =>
+      Object.fromEntries(Object.entries(filters as Record<string, unknown>).filter(([k]) => !excluir.includes(k))),
   })
 }

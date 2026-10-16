@@ -4,6 +4,7 @@ import {
   archivarConversacion,
   listarConversaciones,
   obtenerConversacion,
+  obtenerSugerencias,
 } from "@/features/assistant/api/agente-client"
 
 export const conversacionesQueryKey = ["asistente", "conversaciones"] as const
@@ -38,5 +39,23 @@ export function useArchivarConversacion() {
       queryClient.invalidateQueries({ queryKey: conversacionesQueryKey })
       queryClient.removeQueries({ queryKey: conversacionQueryKey(id) })
     },
+  })
+}
+
+export const sugerenciasQueryKey = (ruta: string) => ["asistente", "sugerencias", ruta] as const
+
+/**
+ * Sugerencias del backend para la pantalla (`GET /sugerencias?ruta=`), ya
+ * filtradas por los menús y roles del usuario. Se piden por `pathname` (sin
+ * query) para no repetir la consulta en cada cambio de filtro; si fallan, el
+ * sheet cae a las sugerencias fijas de `lib/sugerencias.ts`.
+ */
+export function useSugerenciasQuery(ruta: string, { enabled }: { enabled: boolean }) {
+  return useQuery({
+    queryKey: sugerenciasQueryKey(ruta),
+    queryFn: () => obtenerSugerencias(ruta),
+    enabled,
+    staleTime: 5 * 60_000,
+    networkMode: "online",
   })
 }
