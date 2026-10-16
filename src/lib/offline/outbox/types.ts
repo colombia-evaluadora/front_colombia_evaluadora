@@ -62,13 +62,13 @@ export interface OutboxOp<P = unknown> {
 
 export interface SendCtx {
   idempotencyKey: string
-  /** Archivos de la op ya subidos: `blobId → pk_tarchivo`. */
-  uploaded: Record<string, number>
-}
-
-export interface SendResult {
-  /** Texto para el resumen de sync (p. ej. regla 75). */
-  note?: string | null
+  /** `true` cuando la envía el procesador de la cola (sin toasts globales). */
+  background: boolean
+  /**
+   * Resuelve un archivo referenciado en el payload por su clave (`fileKey`)
+   * a su `pk_tarchivo`: lo sube (una sola vez; un reintento reutiliza el id).
+   */
+  resolveFile: (fileKey: string) => Promise<number>
 }
 
 export interface ClassifiedError {
@@ -95,7 +95,9 @@ export interface OutboxHandler<P = unknown> {
    * Devuelve el payload fusionado o `null` para no fusionar (§6.7).
    */
   coalesce?: (prev: P, next: P) => P | null
-  send: (payload: P, ctx: SendCtx) => Promise<SendResult | void>
+  send: (payload: P, ctx: SendCtx) => Promise<unknown>
+  /** Nota para el resumen a partir del resultado (p. ej. regla 75 → solicitud). */
+  noteOf?: (result: unknown) => string | null
   /** Clasificación propia (p. ej. 409 de contexto = rejected); si devuelve `null` usa la por defecto. */
   classify?: (error: unknown) => ClassifiedError | null
   /** Keys a invalidar al terminar el lote (deduplicadas, §6.9). */
@@ -104,8 +106,8 @@ export interface OutboxHandler<P = unknown> {
   applyOptimistic?: (queryClient: QueryClient, payload: P) => void
   /** "Conservar el mío": payload a reenviar sobre la versión del servidor. */
   rebase?: (payload: P, conflict: OutboxConflict) => P
-  /** Sube los archivos de la op (uno por vez); devuelve `pk_tarchivo`. */
-  upload?: (blob: Blob, name: string) => Promise<number>
+  /** Sube un archivo de la op; devuelve `pk_tarchivo`. */
+  upload?: (file: File, background: boolean) => Promise<number>
   describe: (payload: P) => OutboxDescription
 }
 

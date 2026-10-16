@@ -62,6 +62,11 @@ declare module "axios" {
  */
 let authToken: string | null = null
 
+/** ¿Hay access token en memoria? (la outbox lo asegura antes de enviar). */
+export function hasAuthToken(): boolean {
+  return authToken != null
+}
+
 export function setAuthToken(token: string | null) {
   authToken = token
 }

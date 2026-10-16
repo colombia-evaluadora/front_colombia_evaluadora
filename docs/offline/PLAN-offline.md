@@ -64,6 +64,18 @@ Subsecciones de §8: [8.1 Públicas](#81-rutas-públicas) · [8.2 `/app` y sin-a
 
 ---
 
+**Decisiones tomadas por defecto (revisables) para la Fase 2** — P15–P20 sin respuesta; detalle en `openspec/changes/add-offline-writes-asistencia-planilla/design.md`:
+
+- Conflictos (P15): detección por celda/estudiante con versión del servidor (`updated_at` → `BASE_VERSION`); el servidor gana (409 `OFFLINE_CONFLICT` con valor actual) y el docente resuelve en la UI ("Conservar el mío" / "Usar el del servidor" / "Editar").
+- TTL de la outbox = ventana de 14 días de la sesión offline (§0.2).
+- Periodo cerrado al sincronizar: 422 `PERIODO_CERRADO` → op `rejected` visible con el motivo; si el backend genera solicitud (regla 55/75), `done` con aviso. Nada se pierde en silencio.
+- Reenvío idempotente con `Idempotency-Key` (BE-1) y FIFO por entidad.
+- La outbox se borra solo tras sync exitosa o descarte explícito; el logout con pendientes avisa (§7.8).
+- **Online-first** (desvío aprobado de §6.1.3): con red la mutación va directo con su `Idempotency-Key`; se encola con la misma clave solo si falla por red, si no hay red o si hay pendientes de la misma entidad.
+- Escritura offline solo con modo `full`, equipo personal (piloto) y sesión ≤ 14 días.
+- P16: índice con `COALESCE(bloque,0)` + detección de duplicados; P17: "Marcar todos" sin optimista; P18–P20: propuesta del plan.
+
+---
 ## 1. Resumen ejecutivo
 
 - **Objetivo realista**: que un docente pueda, sin red o con red intermitente, **consultar** lo que ya preparó (planeador, unidades, planilla, asistencia, referentes) y **registrar** lo que hace en el aula (asistencia, calificaciones de planilla, observaciones, estado de resultado y, en una fase posterior, crear/editar actividades), y que todo eso se suba solo cuando vuelva la conexión, sin duplicados y con conflictos visibles.

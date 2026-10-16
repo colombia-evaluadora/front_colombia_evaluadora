@@ -20,11 +20,17 @@ const WAIT_SYNC_MESSAGE = "Termina de sincronizar para actualizar"
 const UPDATE_CHECK_MS = 60 * 60 * 1000
 
 /**
- * Punto de enganche para la outbox (Fase 2): debe devolver `true` mientras
- * haya un lote sincronizando u operaciones pendientes. Hoy no hay outbox.
+ * `true` mientras la outbox esté enviando un lote u ops `inflight` (D-F2-13).
  */
 export function isSyncInProgress(): boolean {
-  return false
+  return syncInProgressProbe()
+}
+
+let syncInProgressProbe: () => boolean = () => false
+
+/** La outbox registra su sonda (evita que este módulo dependa de ella). */
+export function setSyncInProgressProbe(probe: () => boolean) {
+  syncInProgressProbe = probe
 }
 
 let applyUpdate: (() => Promise<void>) | null = null

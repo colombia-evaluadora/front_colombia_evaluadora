@@ -71,6 +71,8 @@ export interface BlobRowShape {
   id: string
   userSub: string
   opId: string
+  /** Clave con la que el payload referencia el archivo. */
+  fileKey: string
   name: string
   type: string
   size: number
