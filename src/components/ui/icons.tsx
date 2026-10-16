@@ -183,6 +183,9 @@ import {
   MdFormatClear,
   MdPrint,
   MdOutlineSave,
+  MdStop,
+  MdAutoAwesome,
+  MdHistory,
 } from "react-icons/md"
 
 /**
@@ -419,3 +422,6 @@ export const TextIndentIcon = makeIcon(MdFormatIndentIncrease)
 export const TextClearIcon = makeIcon(MdFormatClear)
 export const PrinterIcon = makeIcon(MdPrint)
 export const FloppyDiskIcon = makeIcon(MdOutlineSave)
+export const StopIcon = makeIcon(MdStop)
+export const SparkleIcon = makeIcon(MdAutoAwesome)
+export const ClockCounterClockwiseIcon = makeIcon(MdHistory)
