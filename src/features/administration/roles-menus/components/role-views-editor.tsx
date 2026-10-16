@@ -172,8 +172,8 @@ export function RoleViewsEditor({
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
+      <Table containerClassName="max-h-[calc(100dvh-20rem)] min-h-64 overflow-y-auto">
+        <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow>
             <TableHead>
               <span className="inline-flex items-center gap-1.5">
@@ -243,7 +243,6 @@ export function RoleViewsEditor({
                       <TableRow key={child.id}>
                         <TableCell className="pl-14">
                           <span className="inline-flex items-center gap-2">
-                            <NodeIcon node={child} />
                             {child.name}
                           </span>
                         </TableCell>

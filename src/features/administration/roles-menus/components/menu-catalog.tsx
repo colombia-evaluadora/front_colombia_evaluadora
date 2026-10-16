@@ -1,28 +1,18 @@
-import { Fragment, useState } from "react"
+import { useState, type ReactNode } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ArrowsDownUpIcon,
-  DotsThreeVerticalIcon,
+  DotsSixVerticalIcon,
   EyeIcon,
   EyeSlashIcon,
-  GearIcon,
   InfoIcon,
   MinusIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
 } from "@/components/ui/icons"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -33,10 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useArrastrarFilas } from "@/hooks/use-arrastrar-filas"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useReorderMenus } from "@/features/administration/roles-menus/api/mutations/reorder-menus"
-import { useSetMenuActions } from "@/features/administration/roles-menus/api/mutations/set-menu-actions"
 import { useSetMenuState } from "@/features/administration/roles-menus/api/mutations/set-menu-state"
 import { useMenuCatalogQuery } from "@/features/administration/roles-menus/api/query/use-menu-catalog-query"
 import {
@@ -48,8 +38,6 @@ import type {
   MenuTreeNode,
 } from "@/features/administration/roles-menus/api/types/role-menu"
 import { DialogDeleteMenu } from "@/features/administration/roles-menus/components/dialog-delete-menu"
-import { DialogMenuActions } from "@/features/administration/roles-menus/components/dialog-menu-actions"
-import { DialogMoveMenu } from "@/features/administration/roles-menus/components/dialog-move-menu"
 import { DialogSaveMenu } from "@/features/administration/roles-menus/components/dialog-save-menu"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -67,12 +55,11 @@ export function MenuCatalog() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   // "new" = alta; un menú = edición; null = diálogo cerrado.
   const [editing, setEditing] = useState<MenuCatalogNode | MenuTreeNode | "new" | null>(null)
-  const [moving, setMoving] = useState<{ menu: MenuCatalogNode; siblings: MenuCatalogNode[] } | null>(null)
-  const [editingActions, setEditingActions] = useState<MenuCatalogNode | null>(null)
   const [deleting, setDeleting] = useState<{ menu: MenuCatalogNode; childrenCount: number } | null>(null)
 
   const tree = buildMenuTree(menus)
   const byId = new Map(menus.map((menu) => [menu.id, menu]))
+  const roots = tree.map((group) => byId.get(group.id)!)
 
   const onError = (error: Error) => notify(getErrorMessage(error), { variant: "error" })
   const reorderMenus = useReorderMenus({
@@ -91,22 +78,6 @@ export function MenuCatalog() {
     },
   })
 
-  const setMenuActions = useSetMenuActions({
-    mutationConfig: {
-      onSuccess: (result) => {
-        setEditingActions(null)
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify("Acciones disponibles actualizadas.")
-      },
-      onError: (error) => {
-        setEditingActions(null)
-        onError(error)
-      },
-    },
-  })
 
   function toggleExpanded(id: number) {
     setExpanded((prev) => {
@@ -130,22 +101,60 @@ export function MenuCatalog() {
     if (items.length > 0) reorderMenus.mutate(items)
   }
 
+  // Se arrastra entre hermanos: los módulos son un tbody cada uno, los submódulos filas del suyo.
+  const arrastreModulo = useArrastrarFilas(
+    (desde, hasta) => moveTo(roots[desde], roots, hasta),
+    {
+      unidad: (asa) => asa.closest("tbody"),
+      hermanas: (tbody) =>
+        Array.from(tbody.parentElement?.querySelectorAll(":scope > tbody") ?? []) as HTMLElement[],
+    },
+  )
+  const arrastreSubmodulo = useArrastrarFilas(
+    (desde, hasta, fila) => {
+      const group = tree.find((it) => it.id === Number(fila.dataset.padre))
+      const siblings = (group?.children ?? []).map((child) => byId.get(child.id)!)
+      moveTo(siblings[desde], siblings, hasta)
+    },
+    {
+      hermanas: (fila) =>
+        Array.from(fila.parentElement?.querySelectorAll(":scope > tr[data-padre]") ?? []) as HTMLElement[],
+    },
+  )
+
   if (isPending) return <Skeleton className="h-96" />
 
-  const roots = tree.map((group) => byId.get(group.id)!)
   const busy = reorderMenus.isPending || setMenuState.isPending
 
   function renderRow(node: MenuCatalogNode, siblings: MenuCatalogNode[], children: MenuCatalogNode[]) {
     const isModule = node.idParent == null
     const open = expanded.has(node.id)
+    const deleteBlock = deleteBlockReason(node, children)
     const index = siblings.findIndex((it) => it.id === node.id)
     const Icon = getNavIcon(node.icon)
     const parent = node.idParent != null ? byId.get(node.idParent) : null
 
     return (
-      <TableRow key={node.id}>
+      <TableRow key={node.id} className="group/row" data-padre={node.idParent ?? undefined}>
         <TableCell className={isModule ? "font-semibold" : "pl-12"}>
           <span className="inline-flex items-center gap-2">
+            {puedeEditar && siblings.length > 1 ? (
+              <button
+                type="button"
+                aria-label={`Mover ${node.name}, posición ${index + 1}. Usa las flechas arriba y abajo`}
+                disabled={busy}
+                {...(isModule ? arrastreModulo : arrastreSubmodulo)}
+                onKeyDown={(e) => {
+                  const delta = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0
+                  if (!delta) return
+                  e.preventDefault()
+                  move(node, siblings, delta)
+                }}
+                className="cursor-grab touch-none rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 active:cursor-grabbing disabled:cursor-default disabled:opacity-50"
+              >
+                <DotsSixVerticalIcon className="size-5" />
+              </button>
+            ) : null}
             {isModule ? (
               <button
                 type="button"
@@ -163,7 +172,8 @@ export function MenuCatalog() {
         </TableCell>
         <TableCell>{parent?.name ?? "—"}</TableCell>
         <TableCell className="text-center">
-          <Icon className="inline size-4" aria-label={node.icon ?? "Sin ícono"} />
+          {/* El sidebar solo pinta el ícono del módulo. */}
+          {isModule ? <Icon className="inline size-4" aria-label={node.icon ?? "Sin ícono"} /> : "—"}
         </TableCell>
         <TableCell className="text-right tabular-nums">{node.menuOrder ?? "—"}</TableCell>
         <TableCell>
@@ -182,77 +192,37 @@ export function MenuCatalog() {
             {node.activo ? "Activo" : "Inactivo"}
           </Badge>
         </TableCell>
-        <TableCell className="text-right">
-          {puedeEditar || (puedeEliminar && !node.enUso) ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="muted"
-                  size="icon"
-                  className="size-7"
-                  aria-label={`Opciones de ${node.name}`}
-                />
-              }
-            >
-              <DotsThreeVerticalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {puedeEditar ? (
+        <TableCell>
+          {/* Aparecen al pasar el mouse o con el foco; en pantallas táctiles, siempre. */}
+          <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 pointer-coarse:opacity-100">
+            {puedeEditar ? (
               <>
-              <DropdownMenuItem
-                onClick={() => setEditing(isModule ? (tree.find((it) => it.id === node.id) ?? node) : node)}
-              >
-                <PencilIcon />
-                Modificar
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={busy || index <= 0} onClick={() => move(node, siblings, -1)}>
-                <ArrowUpIcon />
-                Subir
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={busy || index === siblings.length - 1}
-                onClick={() => move(node, siblings, 1)}
-              >
-                <ArrowDownIcon />
-                Bajar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={busy || siblings.length < 2}
-                onClick={() => setMoving({ menu: node, siblings })}
-              >
-                <ArrowsDownUpIcon />
-                Mover a posición…
-              </DropdownMenuItem>
-              {isModule ? null : (
-                <DropdownMenuItem disabled={busy} onClick={() => setEditingActions(node)}>
-                  <GearIcon />
-                  Acciones disponibles…
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                disabled={busy}
-                onClick={() => setMenuState.mutate({ id: node.id, activo: !node.activo })}
-              >
-                {node.activo ? <EyeSlashIcon /> : <EyeIcon />}
-                {node.activo ? "Inactivar" : "Activar"}
-              </DropdownMenuItem>
-              </>
-              ) : null}
-              {node.enUso || !puedeEliminar ? null : (
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setDeleting({ menu: node, childrenCount: children.length })}
+                <RowAction
+                  label="Modificar"
+                  onClick={() => setEditing(isModule ? (tree.find((it) => it.id === node.id) ?? node) : node)}
                 >
-                  <TrashIcon />
-                  Eliminar
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          ) : null}
+                  <PencilIcon />
+                </RowAction>
+                <RowAction
+                  label={node.activo ? "Inactivar" : "Activar"}
+                  disabled={busy}
+                  onClick={() => setMenuState.mutate({ id: node.id, activo: !node.activo })}
+                >
+                  {node.activo ? <EyeSlashIcon /> : <EyeIcon />}
+                </RowAction>
+              </>
+            ) : null}
+            {puedeEliminar ? (
+              <RowAction
+                label={deleteBlock ?? "Eliminar"}
+                disabled={deleteBlock != null}
+                destructive
+                onClick={() => setDeleting({ menu: node, childrenCount: children.length })}
+              >
+                <TrashIcon />
+              </RowAction>
+            ) : null}
+          </div>
         </TableCell>
       </TableRow>
     )
@@ -276,8 +246,9 @@ export function MenuCatalog() {
         ) : null}
       </div>
 
-      <Table>
-        <TableHeader>
+      {/* Lo que se arrastra flota sobre lo demás. */}
+      <Table containerClassName="max-h-[calc(100dvh-20rem)] min-h-64 overflow-y-auto [&_[data-arrastrando]]:relative [&_[data-arrastrando]]:z-10 [&_[data-arrastrando]]:bg-card [&_[data-arrastrando]]:shadow-lg [&_[data-arrastrando]]:select-none">
+        <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow className="bg-muted/50">
             <TableHead>Nombre</TableHead>
             <TableHead>Módulo padre</TableHead>
@@ -300,24 +271,24 @@ export function MenuCatalog() {
                 <HelpTip text="Una vista inactiva no aparece en el menú de ningún rol. Si el módulo está inactivo, tampoco sus submódulos." />
               </span>
             </TableHead>
-            <TableHead className="w-14">
+            <TableHead>
               <span className="sr-only">Acciones</span>
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {tree.map((group) => {
-            const children = group.children.map((child) => byId.get(child.id)!)
-            return (
-              <Fragment key={group.id}>
-                {renderRow(byId.get(group.id)!, roots, children)}
-                {!expanded.has(group.id)
-                  ? null
-                  : children.map((child) => renderRow(child, children, []))}
-              </Fragment>
-            )
-          })}
-        </TableBody>
+        {tree.map((group) => {
+          const children = group.children.map((child) => byId.get(child.id)!)
+          return (
+            // Un tbody por módulo: la última fila de cada uno conserva su línea, salvo la del final.
+            <TableBody
+              key={group.id}
+              className="[&_tr:last-child]:border-b last:[&_tr:last-child]:border-0"
+            >
+              {renderRow(byId.get(group.id)!, roots, children)}
+              {!expanded.has(group.id) ? null : children.map((child) => renderRow(child, children, []))}
+            </TableBody>
+          )
+        })}
       </Table>
 
       <DialogSaveMenu
@@ -326,24 +297,6 @@ export function MenuCatalog() {
         roots={tree}
         menu={editing === "new" ? undefined : (editing ?? undefined)}
       />
-      {moving ? (
-        <DialogMoveMenu
-          name={moving.menu.name}
-          current={moving.siblings.findIndex((it) => it.id === moving.menu.id) + 1}
-          total={moving.siblings.length}
-          onMove={(position) => moveTo(moving.menu, moving.siblings, position - 1)}
-          onOpenChange={(open) => !open && setMoving(null)}
-        />
-      ) : null}
-      {editingActions ? (
-        <DialogMenuActions
-          name={editingActions.name}
-          initial={{ guardar: editingActions.admiteGuardar, eliminar: editingActions.admiteEliminar }}
-          busy={setMenuActions.isPending}
-          onSave={(actions) => setMenuActions.mutate({ id: editingActions.id, ...actions })}
-          onOpenChange={(open) => !open && setEditingActions(null)}
-        />
-      ) : null}
       {deleting ? (
         <DialogDeleteMenu
           menu={deleting.menu}
@@ -353,6 +306,40 @@ export function MenuCatalog() {
         />
       ) : null}
     </div>
+  )
+}
+
+/** Botón de ícono con tooltip, como en las demás tablas; deshabilitado conserva el tooltip. */
+function RowAction({
+  label,
+  disabled,
+  destructive,
+  onClick,
+  children,
+}: {
+  label: string
+  disabled?: boolean
+  destructive?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex" />}>
+        <Button
+          type="button"
+          variant="ghost"
+          color={destructive ? "destructive" : "neutral"}
+          size="icon-sm"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -367,4 +354,14 @@ function HelpTip({ text }: { text: string }) {
       <TooltipContent className="max-w-64">{text}</TooltipContent>
     </Tooltip>
   )
+}
+
+/** Por qué el SSO rechazaría la baja (V115): ningún menú de la rama puede estar asignado. */
+function deleteBlockReason(node: MenuCatalogNode, children: MenuCatalogNode[]): string | null {
+  const rama = [node, ...children]
+  const what = children.length > 0 ? "El módulo o alguno de sus submódulos" : "El menú"
+  if (rama.some((menu) => menu.enUso)) {
+    return `${what} está asignado a un rol. Quítalo en Vistas por rol para eliminarlo.`
+  }
+  return null
 }

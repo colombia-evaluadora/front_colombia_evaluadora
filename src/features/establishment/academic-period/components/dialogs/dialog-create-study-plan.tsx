@@ -135,8 +135,7 @@ export function CreateStudyPlanDialog({
       ?.label ?? ""
   const esCriterioPorcentaje = areaCriteriaLabel.toLowerCase().includes("porcentaje")
   const showInfluenciaArea = !isPreescolar && esCriterioPorcentaje
-  // Preescolar no maneja créditos: la asignatura ahí es una dimensión
-  // formativa, sin equivalente al crédito de primaria/secundaria.
+  // Preescolar no maneja créditos.
   const showNumeroCreditos = !isPreescolar
   const camposNumericosVisibles = 1 + Number(showInfluenciaArea) + Number(showNumeroCreditos)
   const camposNumericosGridCols =
@@ -173,10 +172,7 @@ export function CreateStudyPlanDialog({
 
   const { data: subjectDetails = [] } = useSubjectDetailsQuery(academicPeriodId)
 
-  // Todo el plan del grado, sin paginar (mismo criterio que `otherPeriods` en
-  // `dialog-create-evaluation-period.tsx`): hace falta la suma REAL de
-  // `influenciaArea` entre todas las asignaturas de la misma área, no solo
-  // la página que esté mostrando la tabla en ese momento.
+  // Todo el plan sin paginar: la suma de `influenciaArea` es de toda el área.
   const { data: allStudyPlanItemsData } = useStudyPlansQuery({
     filters: {},
     sorting: [],
@@ -193,7 +189,7 @@ export function CreateStudyPlanDialog({
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
       onSuccess: () => {
-        notify("Asignatura agregada al plan de estudio.")
+        notify(`${subjectLabel} agregada al plan de estudio.`)
         form.reset()
         setPersonalizar(false)
         setSubjectName("")
@@ -255,10 +251,7 @@ export function CreateStudyPlanDialog({
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const selectedAsignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
 
-  // Área de la asignatura elegida (viene de `subjectDetails`, que cubre
-  // TODAS las asignaturas del periodo, no solo las disponibles para agregar
-  // — a diferencia de `asignaturaOptions`/`useAvailableStudyPlanSubjectsQuery`,
-  // que excluye justamente las que ya están en el plan).
+  // De `subjectDetails`: las opciones disponibles excluyen las que ya están en el plan.
   const selectedAreaId = subjectDetails.find((s) => s.id === selectedAsignaturaId)?.areaId
   const otherAreaInfluenciaSum = (allStudyPlanItemsData?.rows ?? [])
     .filter((row) => {
@@ -269,13 +262,7 @@ export function CreateStudyPlanDialog({
     .reduce((sum, row) => sum + (row.influenciaArea ?? 0), 0)
   const maxAllowedInfluenciaArea = Math.max(0, 100 - otherAreaInfluenciaSum)
 
-  // Mientras no se personaliza, el combobox muestra `formatoHeredado`/
-  // `criterioHeredado` (línea de abajo), no el valor del campo — pero ese
-  // valor del campo es justo lo que se ve al prender "Personalizar". Sin
-  // esto quedaba en el default con el que se montó el formulario ("" para
-  // una asignatura nueva, o lo que hubiera cuando `criteria` todavía no
-  // había resuelto), así que activar el switch parecía "borrar" un
-  // contenido que en realidad nunca se había guardado ahí.
+  // Al prender "Personalizar" el campo arranca con lo heredado, no vacío.
   useEffect(() => {
     if (!personalizar) form.setFieldValue("formatoCalificacion", formatoHeredado)
   }, [formatoHeredado, personalizar, form])
@@ -284,8 +271,6 @@ export function CreateStudyPlanDialog({
     if (!personalizar) form.setFieldValue("criterioNota", criterioHeredado)
   }, [criterioHeredado, personalizar, form])
 
-  // `useCreateSubject` ya invalidó el detalle de asignaturas y esperó el
-  // refetch de las disponibles para el plan: la nueva ya es una opción.
   function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
     form.setFieldValue("asignaturaId", created.id)
     setSubjectName(created.nombreInterno)
@@ -613,8 +598,7 @@ export function CreateStudyPlanDialog({
                                   aria-invalid={isInvalid}
                                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                                   onBlur={field.handleBlur}
-                                  // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
-                                  // se bloquea signo/notación científica.
+                                  // Admite decimales; solo se bloquea signo y notación científica.
                                   onKeyDown={(e) => {
                                     if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
                                   }}
@@ -693,9 +677,7 @@ export function CreateStudyPlanDialog({
               !personalizar && "pointer-events-none opacity-50",
             )}
           >
-            {/* No aplica en preescolar (no hay evaluación de desempeño que
-                influenciar) ni en niveles formativos (no reprueban, no hay
-                nada que "influir en el desempeño académico"). */}
+            {/* Preescolar y formativos no se califican: no hay desempeño que influir. */}
             {!isPreescolar && !isFormativo && (
               <form.Field name="influyeDesempeno">
                 {(field) => (
@@ -721,10 +703,7 @@ export function CreateStudyPlanDialog({
               </form.Field>
             )}
 
-            {/* Acta 19-sep-2026: en niveles formativos solo aplica "Matrícula
-                obligatoria" (sí se matricula) — no hay aprobación/formato/
-                criterio de nota que personalizar porque no se califica
-                numéricamente. */}
+            {/*En formativos solo aplica "Matrícula obligatoria". */}
             <form.Field name="matriculaObligatoria">
               {(field) => (
                 <Field variant="outlined">
