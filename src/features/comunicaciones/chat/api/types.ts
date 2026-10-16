@@ -90,6 +90,9 @@ export interface Reaccion {
   mia: boolean
   // Quiénes reaccionaron (tooltip); "Tú" representa al usuario actual.
   personas?: string[]
+  // Ids (`users.id_user`) de quienes reaccionaron. Con esto el cliente calcula
+  // `mia`: los eventos del socket llegan iguales para todos (`mia: false`).
+  usuarios?: number[]
 }
 
 export type FormatoArchivo = AdjuntoMensaje["formato"]

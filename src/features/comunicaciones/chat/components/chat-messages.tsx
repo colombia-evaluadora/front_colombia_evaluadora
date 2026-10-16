@@ -38,6 +38,8 @@ interface ChatMessagesProps {
   nombreConversacion: string
   // Contenido fijo al inicio del historial (p. ej. resultados de una elección).
   antes?: ReactNode
+  // Botón "Cargar mensajes anteriores" (historial paginado con `?antes=`).
+  anteriores?: ReactNode
   // Primer mensaje sin leer al abrir el canal: lleva el divisor "Mensajes nuevos".
   primerNoLeidoId?: number
   onResponder?: (mensaje: Mensaje) => void
@@ -53,6 +55,7 @@ export function ChatMessages({
   destacado,
   nombreConversacion,
   antes,
+  anteriores,
   primerNoLeidoId,
   onResponder,
   onIrAMensaje,
@@ -61,10 +64,12 @@ export function ChatMessages({
   const contenedorRef = useRef<HTMLDivElement>(null)
   const visibles = mensajes
 
-  // Al llegar mensajes nuevos se baja al último.
+  // Al llegar mensajes nuevos se baja al último. Se sigue el id del último y
+  // no el largo: cargar historial anterior no debe saltar al final.
+  const ultimoId = mensajes.at(-1)?.id
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: "end" })
-  }, [mensajes.length])
+  }, [ultimoId])
 
   useEffect(() => {
     if (!destacado) return
@@ -117,6 +122,7 @@ export function ChatMessages({
       className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5"
     >
       {antes}
+      {anteriores}
       {agruparPorDia(visibles).map((grupo) => (
         <section key={grupo.clave} aria-label={grupo.etiqueta}>
           <div className="relative my-4 flex justify-center">

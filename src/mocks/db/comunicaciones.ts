@@ -185,8 +185,8 @@ export const mensajes: Mensaje[] = [
       { nombre: "planeación_fracciones.docx", formato: "WORD", eliminadoEn: null },
     ),
     reacciones: [
-      { emoji: "🙌", total: 2, mia: true, personas: ["Tú", "Marta Lucía Ríos"] },
-      { emoji: "📚", total: 1, mia: false, personas: ["Jorge Pineda"] },
+      { emoji: "🙌", total: 2, mia: true, personas: ["Tú", "Marta Lucía Ríos"], usuarios: [USUARIO_ACTUAL.id, marta.id] },
+      { emoji: "📚", total: 1, mia: false, personas: ["Jorge Pineda"], usuarios: [6] },
     ],
   },
   mensaje(

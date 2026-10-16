@@ -1,0 +1,27 @@
+import { env } from "@/config/env"
+
+/**
+ * Funciones del chat que hoy SOLO existen en MSW. comms-service (PR SSO #692)
+ * implementa conversaciones, miembros, mensajes, reacciones, fijar/editar/
+ * eliminar y directos, pero no: duplicar canal, votaciones rápidas,
+ * `archivos/*`, `borradores/*`, comunicados, encuestas, elecciones ni
+ * evaluaciones. Con mocks apagados esas entradas se muestran deshabilitadas
+ * con "Próximamente" (o se ocultan) y sus queries no se disparan, para que no
+ * aparezcan 404 en pantalla.
+ *
+ * Cuando el backend las agregue, basta con volver `true` la que corresponda.
+ */
+const soloMock = env.ENABLE_API_MOCKING
+
+export const CHAT_FUNCIONES = {
+  duplicar: soloMock,
+  votacionRapida: soloMock,
+  archivos: soloMock,
+  borradores: soloMock,
+  comunicados: soloMock,
+  encuestas: soloMock,
+  elecciones: soloMock,
+  evaluaciones: soloMock,
+} as const
+
+export const PROXIMAMENTE = "Próximamente"

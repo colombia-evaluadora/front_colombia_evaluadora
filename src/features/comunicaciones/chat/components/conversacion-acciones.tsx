@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -160,10 +161,12 @@ export function ConversacionAcciones({
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
+              disabled={!CHAT_FUNCIONES.votacionRapida}
               onClick={() => setDialogo("votacion")}
             >
               <LightningIcon />
-              Votación rápida
+              <span className="flex-1">Votación rápida</span>
+              {!CHAT_FUNCIONES.votacionRapida && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
             </DropdownMenuItem>
           )}
           {/* Solo quien creó la elección puede cerrarla, y solo mientras sigue abierta. */}
@@ -223,6 +226,7 @@ export function ConversacionAcciones({
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
+              disabled={!CHAT_FUNCIONES.duplicar}
               onClick={() =>
                 duplicar.mutate(c.id, {
                   onSuccess: (copia) => notify(`Se creó ${copia.nombre}.`),
@@ -231,7 +235,8 @@ export function ConversacionAcciones({
               }
             >
               <CopyIcon />
-              Duplicar
+              <span className="flex-1">Duplicar</span>
+              {!CHAT_FUNCIONES.duplicar && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
