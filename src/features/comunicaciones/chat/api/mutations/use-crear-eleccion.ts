@@ -75,7 +75,8 @@ export function useVotarEleccion(conversacionId: number) {
       }),
     onSuccess: (eleccion) => {
       queryClient.setQueryData(chatKeys.eleccion(conversacionId), eleccion)
-      return queryClient.invalidateQueries({ queryKey: chatKeys.notificaciones })
+      // El aviso "entra a votar" vive en la bandeja general (`CHAT_ELECCION`).
+      return queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
     },
   })
 }

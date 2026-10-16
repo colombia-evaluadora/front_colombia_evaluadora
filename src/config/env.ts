@@ -19,6 +19,11 @@ const createEnv = () => {
     // Service Worker y no persiste nada; `read` = Fase 1 (lecturas); `full`
     // habilita además la outbox (Fase 2). Lo puede bajar el flag remoto
     // `GET /eval-col/config/offline` (`lib/offline/offline-mode.ts`).
+    // Gateway de tiempo real (`add-tiempo-real-gateway`, D-1.5), p. ej.
+    // `wss://rt.<dominio>/ws`. Vacío = desactivado: el cliente no abre socket y
+    // las pantallas vuelven a su polling. Con mocks activos se ignora y se usa
+    // el gateway simulado en memoria (`src/mocks/realtime`).
+    REALTIME_URL: z.string().optional().default(""),
     OFFLINE: z.enum(["off", "read", "full"]).optional().default("read"),
     // Clave PÚBLICA VAPID propia (Web Push self-hosted,
     // `openspec/changes/add-notificaciones-push-webpush` D-4.1). Vacía = el

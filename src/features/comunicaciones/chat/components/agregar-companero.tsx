@@ -8,6 +8,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 
 // "+" junto a "Mensajes directos": elegir a un compañero abre (o crea) el chat con él.
 export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void }) {
@@ -15,9 +16,14 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
   const [texto, setTexto] = useState("")
   const personas = usePersonasQuery(open)
   const abrir = useAbrirDirecto()
+  // La política de DMs es configurable por institución (PLAN §6, pendiente):
+  // quien no se puede escribir no aparece; el backend igual responde 403.
+  const { reglaDirectoCon } = useChatAccess()
 
   const t = texto.trim().toLowerCase()
   const lista = (personas.data ?? []).filter(
+    (p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO",
+  ).filter(
     (p) => !t || p.nombre.toLowerCase().includes(t) || p.correo.toLowerCase().includes(t),
   )
 
@@ -97,6 +103,11 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate">{p.nombre}</span>
                       <span className="block truncate text-sm text-muted-foreground">{p.correo}</span>
+                      {reglaDirectoCon(p.perfil) === "CON_COPIA" && (
+                        <span className="block text-xs text-muted-foreground">
+                          Coordinación podrá ver esta conversación
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>

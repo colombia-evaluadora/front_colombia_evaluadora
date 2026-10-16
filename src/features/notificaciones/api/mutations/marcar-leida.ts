@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { closeSystemNotification } from "@/features/notificaciones/push/lib/push-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { NOTIFICACIONES_ENDPOINTS } from "@/features/notificaciones/api/endpoints"
 import { contadorQueryKey } from "@/features/notificaciones/api/query/use-contador-query"
@@ -48,10 +49,9 @@ export function useMarcarLeida({ mutationConfig }: { mutationConfig?: MutationCo
         queryClient.setQueryData<number>(contadorQueryKey, (n) => Math.max(0, (n ?? 0) + cambio))
       }
     },
-    // TODO(push, PR #702 tarea 3.6): al integrar `features/notificaciones/push`, cerrar la
-    // notificación del sistema acá: `if (variables.leida) closeSystemNotification(variables.id)`
-    // (args[1] = variables). Se deja sin importar para que este PR y #702 aterricen en cualquier orden.
     onSuccess: (...args) => {
+      // Push (tarea 3.6): leída acá = cerrar la notificación del sistema en este dispositivo.
+      if (args[1].leida) void closeSystemNotification(args[1].id)
       void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
       onSuccess?.(...args)
     },

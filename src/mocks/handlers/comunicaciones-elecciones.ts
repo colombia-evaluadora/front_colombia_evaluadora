@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
+import { notificarEleccionAbierta } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { conversaciones } from "@/mocks/db/comunicaciones"
@@ -69,25 +70,6 @@ export const comunicacionesEleccionesHandlers = [
     return HttpResponse.json({ rows: [{ ...e, yaVoto: true }] })
   }),
 
-  // Avisos de la campana: elecciones abiertas en las que el estudiante aún no vota.
-  http.get(URL("notificaciones"), async ({ request }) => {
-    await delay(150)
-    const user = usuarioDe(request)
-    if (!user?.roles.includes("CEVAL-ESTUDIANTE")) return HttpResponse.json({ rows: [] })
-    const rows = elecciones
-      .filter((e) => !eleccionCerrada(e) && !yaVoto(e.conversacionId, user.email))
-      .map((e) => ({
-        id: e.conversacionId,
-        conversacionId: e.conversacionId,
-        categoria: "VOTACION",
-        titulo: e.nombre,
-        texto: `Te damos la bienvenida a ${e.nombre}. Entra para votar.`,
-        fecha: e.fechaInicio ?? new Date(Date.now() - 20 * 60_000).toISOString(),
-        pendientes: 1,
-      }))
-    return HttpResponse.json({ rows })
-  }),
-
   http.patch(URL("conversaciones/:id/eleccion/cerrar"), async ({ params }) => {
     await delay(200)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
@@ -141,6 +123,8 @@ export const comunicacionesEleccionesHandlers = [
       archivada: false,
     }
     conversaciones.push(canal)
+    // Campana única: el aviso "entra a votar" va a la bandeja general.
+    notificarEleccionAbierta(canal.id, nombre)
     elecciones.push({
       conversacionId: canal.id,
       nombre,

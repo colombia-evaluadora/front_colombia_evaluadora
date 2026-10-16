@@ -6,6 +6,7 @@ import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mappe
 import { paths } from "@/config/paths"
 import { env } from "@/config/env"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { stopRealtime } from "@/lib/realtime"
 import {
   activatePersistUser,
   clearUserData,
@@ -165,6 +166,8 @@ export function useLogout({
       lastAuthedUser = null
       if (sub) await clearUserData(sub).catch(() => undefined)
       setAuthToken(null)
+      // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
+      stopRealtime()
       // Full clear, not just the user key — otherwise cached protected data
       // (nav menu, ...) stays "fresh" for `staleTime` and could be
       // reused if a different user logs in on the same tab before it expires.

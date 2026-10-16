@@ -53,8 +53,8 @@ export function ReaccionesMensaje({ mensaje: m }: { mensaje: Mensaje }) {
             type="button"
             aria-pressed={r.mia}
             disabled={pendiente}
-            aria-label={`${r.emoji} ${r.total}${r.mia ? ", incluida la tuya" : ""}`}
-            title={r.mia ? "Quitar tu reacción" : "Reaccionar igual"}
+            aria-label={`${r.emoji}: ${quienes(r.personas, r.total)}`}
+            title={`${quienes(r.personas, r.total)}\n${r.mia ? "Clic para quitar tu reacción" : "Clic para reaccionar igual"}`}
             onClick={() => alternar(r.emoji)}
             className="flex h-7 items-center gap-1 rounded-full border bg-card px-2 text-sm tabular-nums hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-70 aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary"
           >
@@ -69,4 +69,19 @@ export function ReaccionesMensaje({ mensaje: m }: { mensaje: Mensaje }) {
       ))}
     </ul>
   )
+}
+
+// "Tú, Marta y 2 más reaccionaron": quién reaccionó, como en Discord.
+function quienes(personas: string[] | undefined, total: number): string {
+  const lista = personas ?? []
+  if (lista.length === 0) return `${total} ${total === 1 ? "persona reaccionó" : "personas reaccionaron"}`
+  const visibles = lista.slice(0, 3)
+  const resto = total - visibles.length
+  const nombres =
+    resto > 0
+      ? `${visibles.join(", ")} y ${resto} más`
+      : visibles.length > 1
+        ? `${visibles.slice(0, -1).join(", ")} y ${visibles.at(-1)}`
+        : visibles[0]
+  return `${nombres} ${total === 1 ? "reaccionó" : "reaccionaron"}`
 }

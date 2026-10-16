@@ -1,5 +1,7 @@
 // Tipos de dominio del chat. El backend aún no existe: la forma la fija el mock.
 
+import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
+
 export type TipoConversacion = "CANAL" | "DIRECTO"
 
 // Qué representa el canal; cambia el ícono de la lista.
@@ -23,6 +25,8 @@ export interface Conversacion {
   // Solo canales creados desde "Agregar canales": activan el mensaje de bienvenida.
   creadoPor?: string | null
   esCreador?: boolean
+  // Menciones pendientes (badge "@" en la lista, como Discord).
+  menciones?: number
 }
 
 export interface AutorMensaje {
@@ -53,6 +57,30 @@ export interface Mensaje {
   // Mensaje que es una votación rápida: se pinta como tarjeta.
   votacion?: VotacionRapida
   reacciones?: Reaccion[]
+  // Respuesta citada: el original resumido (las "respuestas citadas" del MVP).
+  respuestaA?: CitaMensaje | null
+  // Menciones que el servidor reconoció en `texto` (tokens `<@id>`, `@canal`,
+  // `@todos`). Un `@todos` sin permiso no aparece acá: queda como texto y no notifica.
+  menciones?: Mencion[]
+  // El mensaje menciona al usuario actual (directa o masivamente): se resalta.
+  meMenciona?: boolean
+}
+
+export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"
+
+export interface Mencion {
+  tipo: TipoMencion
+  // Solo en `USUARIO`.
+  usuarioId: number | null
+  nombre: string
+}
+
+export interface CitaMensaje {
+  id: number
+  autor: string
+  texto: string
+  // El original se borró: se muestra "Mensaje eliminado".
+  eliminado: boolean
 }
 
 // Emoji con el que reaccionaron; `mia`: el usuario actual reaccionó con él.
@@ -60,6 +88,8 @@ export interface Reaccion {
   emoji: string
   total: number
   mia: boolean
+  // Quiénes reaccionaron (tooltip); "Tú" representa al usuario actual.
+  personas?: string[]
 }
 
 export type FormatoArchivo = AdjuntoMensaje["formato"]
@@ -165,6 +195,8 @@ export interface Persona {
   id: number
   nombre: string
   correo: string
+  // Perfil para la política de mensajes directos (`lib/politica-chat.ts`).
+  perfil?: PerfilChat
 }
 
 // Evaluación en línea. SI_NO se muestra como Verdadero / Falso.
@@ -245,6 +277,7 @@ export interface Miembro {
   id: number
   nombre: string
   rol: string
+  perfil?: PerfilChat
   enLinea: boolean
   bloqueado: boolean
 }
@@ -266,17 +299,6 @@ export interface VotacionRapida {
   opciones: OpcionVotacionRapida[]
   // Opción que eligió el usuario actual; null si aún no vota.
   miVoto: number | null
-}
-
-// Aviso de la campana: hoy, invitaciones a votar en una elección.
-export interface NotificacionChat {
-  id: number
-  conversacionId: number
-  categoria: CategoriaCanal
-  titulo: string
-  texto: string
-  fecha: string
-  pendientes: number
 }
 
 // Personas habilitadas para votar en una elección, filtradas por grado o tipo de funcionario.

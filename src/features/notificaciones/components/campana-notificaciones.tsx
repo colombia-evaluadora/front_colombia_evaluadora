@@ -1,5 +1,6 @@
-import { useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,8 @@ import { useContadorQuery } from "@/features/notificaciones/api/query/use-contad
 import { useNotificacionesInfiniteQuery } from "@/features/notificaciones/api/query/use-notificaciones-query"
 import { NotificacionItem } from "@/features/notificaciones/components/notificacion-item"
 import { useAbrirNotificacion } from "@/features/notificaciones/hooks/use-abrir-notificacion"
-import { formatContador } from "@/features/notificaciones/lib/deep-link"
+import { formatContador, safeDeepLink } from "@/features/notificaciones/lib/deep-link"
+import { onSwPushMessage, SW_PUSH_MESSAGES } from "@/features/notificaciones/push/lib/push-client"
 
 /** La campana muestra las 10 más recientes (spec "Campana y página"). */
 const RECIENTES = 10
@@ -25,10 +27,24 @@ const RECIENTES = 10
  * con `/app/notificaciones`; sin conexión muestra lo cacheado y deshabilita
  * "Marcar todas como leídas" (D-2.7).
  */
-// TODO(push, PR #702): suscribirse a los mensajes del SW `PUSH_RECEIVED` / `PUSH_CLICKED` con
-// `onSwPushMessage` (de `@/features/notificaciones/push`) e invalidar `["notificaciones"]` al recibirlos.
 export function CampanaNotificaciones() {
   const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  // Mensajes del SW de push: un push recibido refresca bandeja y contador; un
+  // clic en la notificación del sistema además lleva a su deep link.
+  useEffect(
+    () =>
+      onSwPushMessage((message) => {
+        if (message.type !== SW_PUSH_MESSAGES.received && message.type !== SW_PUSH_MESSAGES.clicked) return
+        void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+        if (message.type === SW_PUSH_MESSAGES.clicked && message.url) {
+          void navigate({ href: safeDeepLink(message.url) })
+        }
+      }),
+    [queryClient, navigate],
+  )
   const { status } = useConnectivity()
   const onlineOnly = useOnlineOnly()
   const contador = useContadorQuery()

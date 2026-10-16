@@ -21,5 +21,5 @@
 - [x] 3.3 Botón "Activar en este dispositivo", guía de instalación iOS e instrucciones si está denegado
 - [x] 3.4 Lista de dispositivos suscritos en preferencias
 - [x] 3.5 Desuscribir en logout y cambio de usuario
-- [ ] 3.6 Cerrar notificaciones del sistema al recibir `notification.read` (SW y `closeSystemNotification` listos; falta que el centro de notificaciones lo llame al recibir el evento)
+- [ ] 3.6 Cerrar notificaciones del sistema al recibir `notification.read` (parcial: `useMarcarLeida` ya llama `closeSystemNotification` y la campana escucha `PUSH_RECEIVED`/`PUSH_CLICKED` con `onSwPushMessage`; falta el evento `notification.read` de otras sesiones, que depende de la tarea 3.6 de `add-notificaciones-centro`)
 - [x] 3.7 `pnpm exec tsc -b --noEmit` y `pnpm lint` en verde

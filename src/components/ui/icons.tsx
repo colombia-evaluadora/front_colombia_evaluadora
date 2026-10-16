@@ -170,6 +170,7 @@ import {
   MdOutlineRule,
   MdArrowDropUp,
   MdUndo,
+  MdReply,
   MdRedo,
   MdFormatColorText,
   MdFormatAlignLeft,
@@ -405,6 +406,7 @@ export const TextAlignLeftIcon = makeIcon(MdNotes)
 export const YesNoIcon = makeIcon(MdOutlineRule)
 export const CaretUpFillIcon = makeIcon(MdArrowDropUp)
 export const ArrowUUpLeftIcon = makeIcon(MdUndo)
+export const ArrowBendUpLeftIcon = makeIcon(MdReply)
 export const ArrowUUpRightIcon = makeIcon(MdRedo)
 export const TextColorIcon = makeIcon(MdFormatColorText)
 export const TextAlignLeftFillIcon = makeIcon(MdFormatAlignLeft)
