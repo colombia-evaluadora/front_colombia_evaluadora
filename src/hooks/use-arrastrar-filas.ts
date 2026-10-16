@@ -12,23 +12,29 @@ interface Arrastre {
 
 const TRANSICION = "transform 180ms cubic-bezier(0.2, 0, 0, 1)"
 
-/**
- * Arrastre de filas de una tabla con eventos de puntero: la fila sigue al cursor y
- * las demás se corren animadas. Se mueven con `transform` directo en el DOM (sin
- * render por cada movimiento); React solo reordena al soltar. Índices = filas del tbody.
- */
-export function useArrastrarFilas(onSoltar: (desde: number, hasta: number) => void) {
+interface Opciones {
+  unidad?: (asa: HTMLElement) => HTMLElement | null
+  hermanas?: (unidad: HTMLElement) => HTMLElement[]
+}
+
+export function useArrastrarFilas(
+  onSoltar: (desde: number, hasta: number, unidad: HTMLElement) => void,
+  {
+    unidad = (asa) => asa.closest("tr"),
+    hermanas = (fila) => Array.from(fila.parentElement?.children ?? []) as HTMLElement[],
+  }: Opciones = {},
+) {
   const arrastre = useRef<Arrastre | null>(null)
 
   function onPointerDown(e: React.PointerEvent<HTMLElement>) {
     if (e.button !== 0) return
-    const fila = e.currentTarget.closest("tr")
-    const tbody = fila?.parentElement
-    if (!fila || !tbody) return
+    const fila = unidad(e.currentTarget)
+    if (!fila) return
+    const filas = hermanas(fila)
+    const desde = filas.indexOf(fila)
+    if (desde < 0) return
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
-    const filas = Array.from(tbody.children) as HTMLElement[]
-    const desde = filas.indexOf(fila)
     arrastre.current = {
       fila,
       filas,
@@ -69,7 +75,7 @@ export function useArrastrarFilas(onSoltar: (desde: number, hasta: number) => vo
     if (!a) return
     arrastre.current = null
     // Reordena en el mismo frame en que se quitan los transform: sin parpadeo.
-    if (a.desde !== a.hasta) flushSync(() => onSoltar(a.desde, a.hasta))
+    if (a.desde !== a.hasta) flushSync(() => onSoltar(a.desde, a.hasta, a.fila))
     for (const f of a.filas) {
       f.style.transition = ""
       f.style.transform = ""
