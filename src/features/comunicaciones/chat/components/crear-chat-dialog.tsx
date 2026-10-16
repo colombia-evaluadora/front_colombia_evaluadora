@@ -13,10 +13,11 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
-import type { Persona } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion, Persona } from "@/features/comunicaciones/chat/api/types"
 import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
+import { useCrearForo } from "@/features/comunicaciones/foros/api/mutations/use-acciones-foro"
 
 const AYUDA =
   "Los canales son el lugar donde se producen las conversaciones sobre un tema. Usa un nombre que sea fácil de encontrar y comprender."
@@ -24,21 +25,26 @@ const AYUDA =
 // Nombres estilo canal: minúsculas y guiones en lugar de espacios.
 const aNombreCanal = (v: string) => v.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "")
 
-// Crear un chat: primero el nombre y luego, opcional, las personas.
+// Crear un canal (o un foro, `tipo="FORO"`): primero el nombre y luego, opcional, las personas.
 export function CrearChatDialog({
   open,
   onClose,
   onCreado,
+  tipo = "CANAL",
 }: {
   open: boolean
   onClose: () => void
   onCreado: (id: number) => void
+  tipo?: "CANAL" | "FORO"
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [nombre, setNombre] = useState("")
   const [miembros, setMiembros] = useState<Persona[]>([])
-  const crear = useCrearCanal()
+  const crearCanal = useCrearCanal()
+  const crearForo = useCrearForo()
+  const esForo = tipo === "FORO"
+  const crear = esForo ? crearForo : crearCanal
   const [consulta, setConsulta] = useState("")
   const personas = usePersonasQuery(open && paso === 2, consulta)
   const limpio = nombre.trim().replace(/-+$/, "")
@@ -53,24 +59,24 @@ export function CrearChatDialog({
     onClose()
   }
 
-  const crearChat = (conMiembros: Persona[]) =>
-    crear.mutate(
-      { nombre: limpio, categoria: "GENERAL", miembros: conMiembros.map((p) => p.id) },
-      {
-        onSuccess: (canal) => {
-          notify(`Se creó #${canal.nombre}.`)
-          cerrar()
-          onCreado(canal.id)
-        },
-      },
-    )
+  const creado = (canal: Conversacion) => {
+    notify(esForo ? `Se creó el foro ${canal.nombre}.` : `Se creó #${canal.nombre}.`)
+    cerrar()
+    onCreado(canal.id)
+  }
+
+  const crearChat = (conMiembros: Persona[]) => {
+    const ids = conMiembros.map((p) => p.id)
+    if (esForo) crearForo.mutate({ nombre: limpio, miembros: ids }, { onSuccess: creado })
+    else crearCanal.mutate({ nombre: limpio, categoria: "GENERAL", miembros: ids }, { onSuccess: creado })
+  }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="truncate">
-            {paso === 1 ? "Crear un Foro" : `Añadir personas a ${limpio}`}
+            {paso === 1 ? (esForo ? "Crear un foro" : "Crear un canal") : `Añadir personas a ${limpio}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -113,7 +119,9 @@ export function CrearChatDialog({
               onChange={setMiembros}
             />
             <p className="text-xs text-muted-foreground">
-              Las personas que añadas verán el historial del canal y podrán escribir en él.
+              {esForo
+                ? "Las personas que añadas verán las publicaciones del foro y podrán participar según la política de la institución."
+                : "Las personas que añadas verán el historial del canal y podrán escribir en él."}
             </p>
           </div>
         )}
