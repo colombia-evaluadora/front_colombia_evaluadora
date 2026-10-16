@@ -42,6 +42,14 @@ export const SUCCESS_MESSAGES = {
     activated: "Área oficial activada.",
     deactivated: "Área oficial inactivada.",
   },
+  // "Criterio guardado." es el texto del requerimiento (Sección 5).
+  criterioPrioridad: {
+    created: "Criterio guardado.",
+    updated: "Criterio guardado.",
+    deleted: "Criterio eliminado.",
+    activated: "Criterio activado.",
+    deactivated: "Criterio desactivado.",
+  },
   listaValor: {
     created: "El valor se creó correctamente.",
     updated: "El valor se actualizó correctamente.",

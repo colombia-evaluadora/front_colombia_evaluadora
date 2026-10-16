@@ -57,6 +57,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
+import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { forosSearchSchema } from "@/features/comunicaciones/foros/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
@@ -159,6 +160,10 @@ const ListasValorPage = lazyRouteComponent(
 const AreasOficialesPage = lazyRouteComponent(
   () => import("@/features/administration/areas-oficiales/pages/areas-oficiales-page"),
   "AreasOficialesPage"
+)
+const CriteriosPrioridadPage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
+  "CriteriosPrioridadPage"
 )
 const ParametrosEdadPage = lazyRouteComponent(
   () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
@@ -641,6 +646,16 @@ export const areasOficialesRoute = createRoute({
   component: AreasOficialesPage,
 })
 
+export const criteriosPrioridadRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criteriosPrioridad.path,
+  validateSearch: criteriosPrioridadSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Criterios de prioridad" }],
+  },
+  component: CriteriosPrioridadPage,
+})
+
 export const parametrosEdadRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.parametrosEdad.path,
@@ -1079,6 +1094,7 @@ const routeTree = rootRoute.addChildren([
     rolesMenusRoute,
     listasValorRoute,
     areasOficialesRoute,
+    criteriosPrioridadRoute,
     parametrosEdadRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,

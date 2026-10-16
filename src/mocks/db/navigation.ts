@@ -95,6 +95,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V321: solo el Superadministrador. Código CRITERIOS_PRIORIDAD, derivado del nombre.
+  {
+    id: 44,
+    name: "Criterios de prioridad",
+    icon: "",
+    path: "/app/administracion/criterios-prioridad",
+    menuOrder: 5,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   {
     id: 5,
     name: "Usuarios",

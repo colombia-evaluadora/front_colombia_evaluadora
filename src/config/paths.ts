@@ -114,6 +114,10 @@ export const paths = {
       path: "administracion/areas-oficiales",
       getHref: () => "/app/administracion/areas-oficiales",
     },
+    criteriosPrioridad: {
+      path: "administracion/criterios-prioridad",
+      getHref: () => "/app/administracion/criterios-prioridad",
+    },
     parametrosEdad: {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
