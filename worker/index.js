@@ -21,6 +21,9 @@
  * ruta fuera de ese prefijo (`api-client.ts` monta todo sobre `env.API_URL`).
  */
 
+/** Única ruta `/api` que acepta upgrade a WebSocket. */
+const WS_PATH = "/api/comms/ws"
+
 export default {
   /**
    * @param {Request} request
@@ -38,6 +41,17 @@ export default {
     const target = new URL(env.API_PROXY_TARGET)
     target.pathname = url.pathname
     target.search = url.search
+
+    // Tiempo real (comms-service, PR SSO #692): `GET /api/comms/ws?ticket=…`
+    // con `Upgrade: websocket`. `run_worker_first: ["/api/*"]` ya lo trae
+    // acá; el upgrade se reenvía tal cual y se devuelve la respuesta 101 SIN
+    // reconstruirla (`new Response` no admite 101 ni conserva `webSocket`).
+    // Cloudflare hace el puente wss (navegador) ↔ ws/wss (gateway). El socket
+    // lo autentica el ticket de un solo uso; el JWT no viaja en la URL.
+    if (request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+      if (url.pathname !== WS_PATH) return new Response("Not Found", { status: 404 })
+      return fetch(new Request(target, request))
+    }
 
     // `redirect: "manual"` para que un 3xx del gateway llegue tal cual al
     // navegador; si el Worker lo siguiera, el cliente nunca vería la redirección

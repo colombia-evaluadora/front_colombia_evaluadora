@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 
 // Mientras la votación está abierta se refresca sola para ver el conteo en vivo.
 const REFRESCO_MS = 10_000
@@ -20,7 +21,7 @@ export function useEleccionQuery(conversacionId: number | undefined) {
     queryKey: chatKeys.eleccion(conversacionId ?? "none"),
     // `enabled` garantiza que hay id.
     queryFn: () => fetchEleccion(conversacionId as number),
-    enabled: Boolean(conversacionId),
+    enabled: CHAT_FUNCIONES.elecciones && Boolean(conversacionId),
     refetchInterval: (query) =>
       query.state.data && estadoEleccion(query.state.data) === "ACTIVA" ? REFRESCO_MS : false,
   })

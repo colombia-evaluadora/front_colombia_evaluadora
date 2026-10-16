@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 
 // Contenido HTML de un documento editable de Archivos.
 export async function fetchDocumento(archivoId: number) {
@@ -15,7 +16,7 @@ export function useDocumentoQuery(archivoId: number | undefined) {
   return useQuery({
     queryKey: chatKeys.documento(archivoId ?? "none"),
     queryFn: () => fetchDocumento(archivoId as number),
-    enabled: Boolean(archivoId),
+    enabled: CHAT_FUNCIONES.archivos && Boolean(archivoId),
     staleTime: 0,
   })
 }

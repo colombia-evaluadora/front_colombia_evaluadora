@@ -13,14 +13,21 @@ export interface EnviarMensajeInput {
   archivo?: File | null
   // Mensaje al que responde (respuesta citada).
   respuestaA?: number | null
+  /**
+   * UUID del intento (`CLIENT_MESSAGE_ID`): comms-service lo usa para que un
+   * reintento del mismo mensaje no lo duplique. Quien reintenta debe reusar el
+   * mismo valor; si falta se genera uno nuevo.
+   */
+  clientMessageId?: string
 }
 
 // TODO: con el backend real el archivo irá por `postMultipart` (lib/files.ts);
 // hoy solo se manda su nombre y formato al mock.
-async function enviarMensaje({ conversacionId, texto, archivo, respuestaA }: EnviarMensajeInput) {
+async function enviarMensaje({ conversacionId, texto, archivo, respuestaA, clientMessageId }: EnviarMensajeInput) {
   return evalCol.postRow<Mensaje>(`/comunicaciones/conversaciones/${conversacionId}/mensajes`, {
     // Las menciones viajan dentro del texto como `<@id>`; el servidor las valida.
     TEXTO: texto,
+    CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
     ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
     ...(archivo && { ADJUNTO_NOMBRE: archivo.name, ADJUNTO_FORMATO: formatoDeArchivo(archivo) }),
   })

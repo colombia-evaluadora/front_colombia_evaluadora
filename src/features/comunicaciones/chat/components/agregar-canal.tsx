@@ -11,6 +11,7 @@ import {
 import { PlusIcon } from "@/components/ui/icons"
 import type { CategoriaCanal } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA, TIPOS_CANAL } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
 import { CrearComunicadoDialog } from "@/features/comunicaciones/chat/components/crear-comunicado-dialog"
 import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/crear-eleccion-dialog"
@@ -19,6 +20,15 @@ import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components
 
 const ITEM =
   "gap-3 border-b py-2.5 text-sm font-normal tracking-normal normal-case last:border-b-0 [&_svg]:size-5!"
+
+// Los foros (GENERAL) existen en comms-service; el resto solo en el mock.
+const CATEGORIA_DISPONIBLE: Record<CategoriaCanal, boolean> = {
+  GENERAL: true,
+  VOTACION: CHAT_FUNCIONES.elecciones,
+  ENCUESTA: CHAT_FUNCIONES.encuestas,
+  EXAMEN: CHAT_FUNCIONES.evaluaciones,
+  ANUNCIO: CHAT_FUNCIONES.comunicados,
+}
 
 // "Agregar canales": cada tipo de canal abre su propio asistente.
 export function AgregarCanal({
@@ -46,10 +56,17 @@ export function AgregarCanal({
             </DropdownMenuLabel>
             {TIPOS_CANAL.map((t) => {
               const Icono = ICONO_CATEGORIA[t.categoria]
+              const disponible = CATEGORIA_DISPONIBLE[t.categoria]
               return (
-                <DropdownMenuItem key={t.categoria} className={ITEM} onClick={() => setAbierto(t.categoria)}>
+                <DropdownMenuItem
+                  key={t.categoria}
+                  className={ITEM}
+                  disabled={!disponible}
+                  onClick={() => setAbierto(t.categoria)}
+                >
                   <Icono className="text-muted-foreground" />
-                  {t.etiqueta}
+                  <span className="flex-1">{t.etiqueta}</span>
+                  {!disponible && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
                 </DropdownMenuItem>
               )
             })}

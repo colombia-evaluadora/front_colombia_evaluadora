@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNotificacionesTiempoReal } from "@/features/notificaciones/hooks/use-notificaciones-tiempo-real"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 
@@ -28,6 +29,8 @@ const RECIENTES = 10
  * "Marcar todas como leídas" (D-2.7).
  */
 export function CampanaNotificaciones() {
+  // La campana vive en el layout de /app: suscribe la bandeja al tópico personal.
+  useNotificacionesTiempoReal()
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const navigate = useNavigate()

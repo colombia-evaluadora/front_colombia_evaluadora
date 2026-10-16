@@ -12,6 +12,7 @@ import {
   emitirNotificacionesChat,
   notificacionesDeMensaje,
 } from "@/mocks/db/comunicaciones-notificaciones"
+import { notificacionesDb } from "@/mocks/db/notificaciones"
 import { onConnect, publish, publishEphemeral } from "@/mocks/realtime/server"
 // Registra el sink que lleva las notificaciones del chat a la bandeja del mock.
 import "@/mocks/db/comunicaciones-notificaciones-puente"
@@ -22,7 +23,8 @@ import "@/mocks/db/comunicaciones-notificaciones-puente"
  *
  * Tópicos (los mismos que usaría `comms-service`):
  * - `canal:<id>`: `mensaje.creado|actualizado|eliminado` y el efímero `escribiendo`.
- * - `user:<sub>`: `conversacion.actualizada` (no leídos/menciones) y `notificacion.creada`.
+ * - `user:<sub>`: `conversacion.actualizada` (no leídos/menciones) y `notification.created`
+ *   (la fila de la bandeja, como notification-service).
  * - `presencia`: efímero `presencia.actualizada`.
  */
 
@@ -63,6 +65,21 @@ export function participantes(conv: Conversacion) {
   ]
 }
 
+/**
+ * Forma difundida por el socket, igual para todos como en comms-service:
+ * `esPropio`, `meMenciona` y `reacciones[].mia` en `false`. El cliente los
+ * calcula con `autor.id`, `menciones` y `reacciones[].usuarios`
+ * (`features/comunicaciones/chat/lib/personalizar-mensaje.ts`).
+ */
+export function mensajeNeutro(m: Mensaje): Mensaje {
+  return {
+    ...m,
+    esPropio: false,
+    meMenciona: false,
+    reacciones: m.reacciones?.map((r) => ({ ...r, mia: false })),
+  }
+}
+
 export function publicarConversacion(conv: Conversacion) {
   publish(topicUsuario(USUARIO_ACTUAL.id), "conversacion.actualizada", conv)
 }
@@ -70,7 +87,7 @@ export function publicarConversacion(conv: Conversacion) {
 export function publicarMensajeCreado(m: Mensaje, autorRespuestaId?: number | null) {
   const conv = conversaciones.find((c) => c.id === m.conversacionId)
   if (!conv) return
-  publish(topicCanal(conv.id), "mensaje.creado", m)
+  publish(topicCanal(conv.id), "mensaje.creado", mensajeNeutro(m))
   if (!m.esPropio) {
     conv.noLeidos += 1
     if (m.meMenciona) conv.menciones = (conv.menciones ?? 0) + 1
@@ -79,11 +96,15 @@ export function publicarMensajeCreado(m: Mensaje, autorRespuestaId?: number | nu
   const emitidas = emitirNotificacionesChat(
     notificacionesDeMensaje(m, { conversacion: conv, miembros: participantes(conv), autorRespuestaId }),
   )
-  for (const n of emitidas) publish(topicUsuario(n.destinatarioId), "notificacion.creada", n)
+  for (const n of emitidas) {
+    // El puente ya la insertó en la bandeja del mock (solo si es del usuario actual).
+    const fila = notificacionesDb.find((x) => x.id === `chat-${n.id}`)
+    if (fila) publish(topicUsuario(n.destinatarioId), "notification.created", fila)
+  }
 }
 
 export function publicarMensajeActualizado(m: Mensaje) {
-  publish(topicCanal(m.conversacionId), "mensaje.actualizado", m)
+  publish(topicCanal(m.conversacionId), "mensaje.actualizado", mensajeNeutro(m))
 }
 
 export function publicarMensajeEliminado(m: Mensaje) {

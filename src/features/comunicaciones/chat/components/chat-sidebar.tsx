@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import type { IconType } from "react-icons"
 
@@ -99,6 +100,7 @@ export function ChatSidebar({
               icono={PaperPlaneTiltIcon}
               activo={vista === "borradores"}
               onClick={() => onVista("borradores")}
+              proximamente={!CHAT_FUNCIONES.borradores}
               extra={
                 totalBorradores > 0 && (
                   <span className="flex items-center gap-0.5 text-xs tabular-nums opacity-80">
@@ -115,6 +117,7 @@ export function ChatSidebar({
               icono={StackIcon}
               activo={vista === "archivos"}
               onClick={() => onVista("archivos")}
+              proximamente={!CHAT_FUNCIONES.archivos}
             >
               Archivos
             </AccesoVista>
@@ -168,12 +171,15 @@ function AccesoVista({
   activo,
   onClick,
   extra,
+  proximamente,
   children,
 }: {
   icono: IconType
   activo: boolean
   onClick: () => void
   extra?: ReactNode
+  // La función aún no existe en el backend real: se ve pero no se abre.
+  proximamente?: boolean
   children: ReactNode
 }) {
   return (
@@ -181,15 +187,18 @@ function AccesoVista({
       <button
         type="button"
         onClick={onClick}
+        disabled={proximamente}
+        title={proximamente ? `${PROXIMAMENTE}: aún no disponible` : undefined}
         aria-current={activo ? "page" : undefined}
         className={cn(
           "flex h-9 w-full items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
           activo ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted/50",
+          proximamente && "cursor-not-allowed opacity-60 hover:bg-transparent",
         )}
       >
         <Icono aria-hidden className={cn("size-5 shrink-0", !activo && "text-muted-foreground")} />
         <span className="min-w-0 flex-1 truncate">{children}</span>
-        {extra}
+        {proximamente ? <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span> : extra}
       </button>
     </li>
   )

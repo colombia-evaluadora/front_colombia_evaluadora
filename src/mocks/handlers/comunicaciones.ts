@@ -44,6 +44,9 @@ import {
 // `*` delante: también matchea con `msw/node` en los tests (URL absoluta).
 const URL = (path: string) => `*/api/eval-col/comunicaciones/${path}`
 
+/** `CLIENT_MESSAGE_ID` → id del mensaje creado (reintentos idempotentes). */
+const enviadosPorCliente = new Map<string, number>()
+
 function buscar(id: string | readonly string[] | undefined) {
   return conversaciones.find((c) => c.id === Number(id))
 }
@@ -225,13 +228,19 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: [directo] })
   }),
 
-  http.get(URL("conversaciones/:id/mensajes"), async ({ params }) => {
+  // Igual que comms-service: sin parámetros, los últimos 200 en orden
+  // ascendente; `?antes=<id>&limite=<n>` (máx. 500) trae el tramo anterior.
+  http.get(URL("conversaciones/:id/mensajes"), async ({ params, request }) => {
     await delay(300)
     const conv = buscar(params.id)
     if (!conv) return noEncontrada()
+    const url = new globalThis.URL(request.url)
+    const antes = Number(url.searchParams.get("antes")) || null
+    const limite = Math.min(Number(url.searchParams.get("limite")) || 200, 500)
     const rows = mensajes
-      .filter((m) => m.conversacionId === conv.id)
+      .filter((m) => m.conversacionId === conv.id && (antes == null || m.id < antes))
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .slice(-limite)
     return HttpResponse.json({ rows })
   }),
 
@@ -244,7 +253,12 @@ export const comunicacionesHandlers = [
       ADJUNTO_NOMBRE?: string
       ADJUNTO_FORMATO?: AdjuntoMensaje["formato"]
       FK_MENSAJE_RESPUESTA?: number | null
+      CLIENT_MESSAGE_ID?: string
     }
+    // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
+    const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
+    const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
+    if (previo) return HttpResponse.json({ rows: [previo] })
     const texto = body.TEXTO?.trim() ?? ""
     const adjunto = body.ADJUNTO_NOMBRE
       ? { nombre: body.ADJUNTO_NOMBRE, formato: body.ADJUNTO_FORMATO ?? "OTRO", eliminadoEn: null }
@@ -262,6 +276,7 @@ export const comunicacionesHandlers = [
       respuestaA: original ? citaDe(original) : null,
       menciones: mencionesDe(texto, conv.id, request),
     })
+    if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
     publicarMensajeCreado(m, original?.autor.id)
     simularRespuesta(conv, m)
     return HttpResponse.json({ rows: [m] })
@@ -471,10 +486,13 @@ export const comunicacionesMensajesHandlers = [
     // Alterna la reacción del usuario; el emoji desaparece al quedar en cero.
     const lista = m.reacciones ?? []
     const r = lista.find((x) => x.emoji === emoji)
-    if (!r) lista.push({ emoji, total: 1, mia: true, personas: ["Tú"] })
+    // `usuarios` (ids) como en comms-service: el cliente calcula `mia` con él.
+    if (!r) lista.push({ emoji, total: 1, mia: true, personas: ["Tú"], usuarios: [USUARIO_ACTUAL.id] })
     else {
       r.total += r.mia ? -1 : 1
       r.personas = r.mia ? (r.personas ?? []).filter((p) => p !== "Tú") : [...(r.personas ?? []), "Tú"]
+      const otros = (r.usuarios ?? []).filter((u) => u !== USUARIO_ACTUAL.id)
+      r.usuarios = r.mia ? otros : [...otros, USUARIO_ACTUAL.id]
       r.mia = !r.mia
     }
     m.reacciones = lista.filter((x) => x.total > 0)
