@@ -16,7 +16,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useDeleteStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
@@ -30,14 +31,15 @@ interface DeleteStatementDialogProps {
 export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: DeleteStatementDialogProps) {
   const [open, setOpen] = useState(false)
   // Sin red no se puede eliminar (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
+  const soloEnLinea = useOfflineWritable()
   const { notify } = useNotify()
 
   const deleteMutation = useDeleteStatement({
     mutationConfig: {
-      onSuccess: () => {
+      onSuccess: (result) => {
         setOpen(false)
-        notify(`${levelLabel} eliminado correctamente.`)
+        notify(result?.queued ? QUEUED_MESSAGE : `${levelLabel} eliminado correctamente.`)
         onDeleted?.()
       },
       onError: (error) => {

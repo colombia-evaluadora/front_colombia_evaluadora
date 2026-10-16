@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { informeGrupoQueryKeyPrefix } from "@/features/academic-management/reports/api/query/use-informe-grupo-query"
@@ -73,7 +75,7 @@ export interface GuardarObservacionInput {
 
 /** `POST /informes/observacion/guardar`. El estado sale de comparar el texto
  *  contra `OBSERVACION_IA`: iguales → `APROBADA`, distintos → `MODIFICADA`. */
-async function guardarObservacion(input: GuardarObservacionInput): Promise<void> {
+async function enviarGuardarObservacion(input: GuardarObservacionInput): Promise<void> {
   if (input.periodoId === null) {
     await evalCol.postRows("/informes/observacion/final/guardar", {
       FK_TMATRICULA: input.matriculaId,
@@ -105,7 +107,7 @@ export interface EliminarObservacionInput {
 /** `POST /informes/observacion/eliminar`. Borrado físico: el índice único es
  *  total sobre (matrícula, período) y una fila inactiva impediría guardar
  *  una nueva. Llamarlo dos veces responde 404. */
-async function eliminarObservacion(input: EliminarObservacionInput): Promise<void> {
+async function enviarEliminarObservacion(input: EliminarObservacionInput): Promise<void> {
   if (input.periodoId === null) {
     await evalCol.postRows("/informes/observacion/final/eliminar", {
       FK_TMATRICULA: input.matriculaId,
@@ -116,6 +118,53 @@ async function eliminarObservacion(input: EliminarObservacionInput): Promise<voi
     FK_TMATRICULA: input.matriculaId,
     FK_TPERIODO_EVALUACION: input.periodoId,
   })
+}
+
+/**
+ * Fase 4 offline (`add-offline-rest`): guardar y eliminar la observación
+ * cualitativa a mano se encolan en la outbox con un solo `kind` por
+ * (matrícula, período), así un "guardar" seguido de "eliminar" sin red se
+ * fusiona en la última intención en vez de mandar dos requests. Generar con
+ * IA sigue siendo solo en línea: necesita el modelo del servidor.
+ */
+type ObservacionPayload =
+  | ({ accion: "guardar" } & GuardarObservacionInput)
+  | ({ accion: "eliminar" } & EliminarObservacionInput)
+
+export const OBSERVACION_INFORME_KIND = "informe.observacion"
+
+export function observacionEntityKey(matriculaId: number, periodoId: number | null) {
+  return `informe:observacion:${matriculaId}:${periodoId ?? "final"}`
+}
+
+registerOutboxHandler<ObservacionPayload>({
+  kind: OBSERVACION_INFORME_KIND,
+  version: 1,
+  entityKey: (p) => observacionEntityKey(p.matriculaId, p.periodoId),
+  // Solo cuenta la última intención del docente sobre esa observación.
+  coalesce: (_prev, next) => next,
+  send: (p) => (p.accion === "guardar" ? enviarGuardarObservacion(p) : enviarEliminarObservacion(p)),
+  invalidates: () => [informeGrupoQueryKeyPrefix()],
+  describe: (p) => ({
+    titulo: p.accion === "guardar" ? "Observación del informe" : "Eliminar observación del informe",
+    detalle: `Matrícula ${p.matriculaId} · ${p.periodoId === null ? "Final" : `período ${p.periodoId}`}`,
+    ruta: "/app/gestion-academica/informes",
+  }),
+})
+
+export interface ObservacionResultado {
+  /** Quedó en la outbox (sin red): el llamador muestra `QUEUED_MESSAGE`. */
+  queued: boolean
+}
+
+async function guardarObservacion(input: GuardarObservacionInput): Promise<ObservacionResultado> {
+  const outcome = await runOrQueue<ObservacionPayload>(OBSERVACION_INFORME_KIND, { accion: "guardar", ...input })
+  return { queued: outcome.queued }
+}
+
+async function eliminarObservacion(input: EliminarObservacionInput): Promise<ObservacionResultado> {
+  const outcome = await runOrQueue<ObservacionPayload>(OBSERVACION_INFORME_KIND, { accion: "eliminar", ...input })
+  return { queued: outcome.queued }
 }
 
 export function useGenerarObservacionMutation({
@@ -145,6 +194,7 @@ export function useGuardarObservacionMutation({
 
   return useMutation({
     mutationFn: guardarObservacion,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: informeGrupoQueryKeyPrefix() })
       onSuccess?.(result, variables, ...rest)
@@ -161,6 +211,7 @@ export function useEliminarObservacionMutation({
 
   return useMutation({
     mutationFn: eliminarObservacion,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: informeGrupoQueryKeyPrefix() })
       onSuccess?.(result, variables, ...rest)

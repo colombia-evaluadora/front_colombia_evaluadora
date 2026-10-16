@@ -1,4 +1,5 @@
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -77,7 +78,8 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
 export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
   const { notify } = useNotify()
   const [open, setOpen] = React.useState(false)
-  const soloEnLinea = useOnlineOnly()
+  // Fase 2: la edición se encola sin red (piloto + equipo personal).
+  const soloEnLinea = useOfflineWritable()
   const [tipo, setTipo] = React.useState(row.tipo_asistencia_valor.toString())
   const [observacion, setObservacion] = React.useState(row.observacion ?? "")
   const [soporteNuevo, setSoporteNuevo] = React.useState<File | null>(null)
@@ -140,7 +142,12 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
         },
       },
       {
-        onSuccess: (solicitudes) => {
+        onSuccess: ({ pendientes: solicitudes, queued }) => {
+          if (queued && solicitudes.length === 0) {
+            notify(QUEUED_MESSAGE, { variant: "info" })
+            setOpen(false)
+            return
+          }
           const pendiente = solicitudes.length > 0
           notify(
             pendiente

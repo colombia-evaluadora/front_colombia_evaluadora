@@ -90,6 +90,7 @@ import {
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { DatosDelBadge } from "@/components/offline/datos-del-badge"
 import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
@@ -680,21 +681,21 @@ function ReportsPageContent() {
     try {
       if (limpio === "") {
         if (fila.observacion) {
-          await eliminarObservacion.mutateAsync({
+          const r = await eliminarObservacion.mutateAsync({
             matriculaId: fila.matriculaId,
             periodoId,
           })
-          notify("Observación eliminada.")
+          notify(r.queued ? QUEUED_MESSAGE : "Observación eliminada.")
         }
       } else {
-        await guardarObservacion.mutateAsync({
+        const r = await guardarObservacion.mutateAsync({
           matriculaId: fila.matriculaId,
           periodoId,
           observacion: limpio,
           observacionIa: borrador?.texto,
           observacionesOrigen: borrador?.observacionesOrigen,
         })
-        notify("Observación guardada.")
+        notify(r.queued ? QUEUED_MESSAGE : "Observación guardada.")
       }
       setObservacionAbierta(null)
     } catch (error) {
@@ -731,7 +732,7 @@ function ReportsPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle description="Consulta, sincroniza y genera boletines del período">
-          Informes y consolidación de calificaciones
+          Informe y consolidados
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

@@ -29,7 +29,9 @@ import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
-import { useUpdateUnidad } from "@/features/planeador/api/mutations/update-unidad"
+import { useEditarUnidadSaga } from "@/features/planeador/offline/use-unidad-saga"
+import { SAGA_QUEUED_MESSAGE } from "@/features/planeador/offline/saga-messages"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import {
   UnidadInfoGeneralFields,
@@ -171,35 +173,40 @@ function EditarUnidadPageContent({
     sinPeso: UnidadActividad[]
   } | null>(null)
 
-  const updateMutation = useUpdateUnidad({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message ?? `No se pudo actualizar ${articuloDefinido(instrumento)} ${instrumentoLower}.`, {
-            variant: "error",
-          })
-          return
-        }
-        // `onClose` navega de vuelta al listado de unidades — un `notify()`
-        // acá se perdería con el `NoticeProvider` de esta pantalla al
-        // desmontarse.
-        // Regla 28: si el criterio de cálculo cambió con actividades ya
-        // vinculadas, el backend ya convirtió su peso/puntaje — se avisa
-        // cuáles, en vez de que el docente lo descubra reabriéndolas una
-        // por una. Un solo aviso por pantalla (`queueNotice`), así que se
-        // agrega al mismo mensaje de éxito en vez de perderlo.
-        const avisoConversion =
-          result.actividadesAfectadas.length > 0
-            ? ` Se convirtió el peso/puntaje de: ${result.actividadesAfectadas.map((a) => a.titulo).join(", ")}.`
-            : ""
-        queueNotice(`${mensajeUnidadGuardada("actualizado", instrumento)}${avisoConversion}`)
-        onClose(instrumento)
-      },
-      // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
-      // `error` de la mutación y mostraba siempre este texto quemado.
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
+  // Saga de un paso (Fase 3 offline): sin red queda en la outbox y al
+  // sincronizar verifica que la unidad no haya cambiado (D-F3-4).
+  const escritura = useOfflineWritable("Necesitas conexión para editar unidades en este equipo.")
+  const updateMutation = useEditarUnidadSaga(unidad, {
+    onQueued: () => {
+      queueNotice(SAGA_QUEUED_MESSAGE)
+      onClose(instrumento)
+    },
+    onSuccess: (result) => {
+      if (result.status === "error") {
+        notify(result.message ?? `No se pudo actualizar ${articuloDefinido(instrumento)} ${instrumentoLower}.`, {
+          variant: "error",
+        })
+        return
+      }
+      // `onClose` navega de vuelta al listado de unidades — un `notify()`
+      // acá se perdería con el `NoticeProvider` de esta pantalla al
+      // desmontarse.
+      // Regla 28: si el criterio de cálculo cambió con actividades ya
+      // vinculadas, el backend ya convirtió su peso/puntaje — se avisa
+      // cuáles, en vez de que el docente lo descubra reabriéndolas una
+      // por una. Un solo aviso por pantalla (`queueNotice`), así que se
+      // agrega al mismo mensaje de éxito en vez de perderlo.
+      const avisoConversion =
+        result.actividadesAfectadas.length > 0
+          ? ` Se convirtió el peso/puntaje de: ${result.actividadesAfectadas.map((a) => a.titulo).join(", ")}.`
+          : ""
+      queueNotice(`${mensajeUnidadGuardada("actualizado", instrumento)}${avisoConversion}`)
+      onClose(instrumento)
+    },
+    // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
+    // `error` de la mutación y mostraba siempre este texto quemado.
+    onError: (mensaje: string) => {
+      notify(mensaje, { variant: "error" })
     },
   })
 
@@ -292,6 +299,7 @@ function EditarUnidadPageContent({
                 <UnidadInfoGeneralFields
                   draft={current}
                   onChange={(patch) => setDraft({ ...current, ...patch })}
+                  unidadId={unidad.id}
                   rotuloUnidad={instrumento}
                 />
               }
@@ -310,7 +318,8 @@ function EditarUnidadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!current?.nombre.trim() || updateMutation.isPending || actividadesPending}
+              disabled={!current?.nombre.trim() || updateMutation.isPending || actividadesPending || escritura.disabled}
+              title={escritura.tooltip ?? undefined}
             >
               {updateMutation.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />

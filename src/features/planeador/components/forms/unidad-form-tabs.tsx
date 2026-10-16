@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Rubricas, Actividades } from "@/features/planeador/components/unidad-detalle-panel"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
+import { plegarTexto } from "@/features/assistant/lib/campos-ui"
 
 type UnidadFormTab = "general" | "rubricas" | "actividades"
 
@@ -60,6 +62,29 @@ export function UnidadFormTabs({
   // en vez de quedar en un `Tabs` sin trigger visible para ese value. Ajuste
   // de estado durante el render, no un efecto: la condición se vuelve falsa
   // apenas se aplica, así que no hay loop.
+  // UI asistida: `ABRIR_PESTANA` por nombre visible. Solo las pestañas que
+  // la persona también podría abrir (Rúbricas/Actividades piden la unidad
+  // ya guardada; Rúbricas no existe con referente formativo).
+  const rotuloActividadVisible = unidad?.rotuloEjecucion ?? rotuloActividad ?? ROTULO_ACTIVIDAD_FALLBACK
+  usePestanasAsistente({
+    abrir: (pestana) => {
+      const nombre = plegarTexto(pestana)
+      if (nombre === plegarTexto("Información general") || nombre === "general") {
+        setTab("general")
+        return true
+      }
+      if (puedeEditarListas && !esFormativo && (nombre === "rubricas" || nombre === "rubrica")) {
+        setTab("rubricas")
+        return true
+      }
+      if (puedeEditarListas && (nombre === plegarTexto(rotuloActividadVisible) || nombre === "actividades")) {
+        setTab("actividades")
+        return true
+      }
+      return false
+    },
+  })
+
   if (esFormativo && tab === "rubricas") {
     setTab("general")
   }

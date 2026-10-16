@@ -13,10 +13,11 @@ import {
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { getErrorMessage } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
-import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
+import { useCrearUnidadSaga } from "@/features/planeador/offline/use-unidad-saga"
+import { SAGA_QUEUED_MESSAGE } from "@/features/planeador/offline/saga-messages"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useRotuloActividadQuery } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import {
@@ -110,23 +111,27 @@ function PlaneadorCrearUnidadPageContent() {
   // `planeador-editar-actividad-page.tsx` (`isDirty`).
   const isDirty = JSON.stringify(draft) !== JSON.stringify(UNIDAD_DRAFT_VACIO)
 
-  const createMutation = useCreateUnidad({
-    mutationConfig: {
-      onSuccess: () => {
-        // `navigate` deja esta pantalla — un `notify()` acá se perdería con
-        // el `NoticeProvider` de esta pantalla al desmontarse.
-        queueNotice(mensajeUnidadGuardada("creado", instrumento))
-        // `?instrumento=`: vuelve a la misma pestaña (y su miga de pan).
-        navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
-      },
-      // Antes esto ignoraba el `error` de la mutación y siempre mostraba
-      // este mismo texto quemado, así que un 409 por nombre duplicado o un
-      // 400 de validación real se leían igual que un fallo de red genérico
-      // — sin pista de qué corregir. `getErrorMessage` ya trae su propio
-      // fallback genérico si el backend no manda `message`.
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
+  // Saga de un paso (Fase 3 offline): sin red queda en la outbox.
+  const escritura = useOfflineWritable("Necesitas conexión para crear unidades en este equipo.")
+  const createMutation = useCrearUnidadSaga({
+    onQueued: () => {
+      queueNotice(SAGA_QUEUED_MESSAGE)
+      navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
+    },
+    onSuccess: () => {
+      // `navigate` deja esta pantalla — un `notify()` acá se perdería con
+      // el `NoticeProvider` de esta pantalla al desmontarse.
+      queueNotice(mensajeUnidadGuardada("creado", instrumento))
+      // `?instrumento=`: vuelve a la misma pestaña (y su miga de pan).
+      navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
+    },
+    // Antes esto ignoraba el `error` de la mutación y siempre mostraba
+    // este mismo texto quemado, así que un 409 por nombre duplicado o un
+    // 400 de validación real se leían igual que un fallo de red genérico
+    // — sin pista de qué corregir. `getErrorMessage` ya trae su propio
+    // fallback genérico si el backend no manda `message`.
+    onError: (mensaje: string) => {
+      notify(mensaje, { variant: "error" })
     },
   })
 
@@ -190,7 +195,8 @@ function PlaneadorCrearUnidadPageContent() {
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!draft.nombre.trim() || createMutation.isPending}
+              disabled={!draft.nombre.trim() || createMutation.isPending || escritura.disabled}
+              title={escritura.tooltip ?? undefined}
             >
               {createMutation.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />

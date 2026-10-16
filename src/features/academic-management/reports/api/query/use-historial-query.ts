@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 import type {
   HistorialCambio,
@@ -83,6 +84,9 @@ export const historialQueryKey = (params: HistorialParams) =>
  *  algo, así que no hay entradas repetidas sin cambios. */
 export function useHistorialQuery(params: HistorialParams, enabled = true) {
   return useQuery({
+    // Fase 4 offline: el historial del informe consolidado se consulta sin red
+    // (solo lectura); se minimizan los datos de estudiantes al persistir.
+    meta: estudiantesMeta(),
     queryKey: historialQueryKey(params),
     queryFn: async () => {
       const rows = await evalCol.postRows<HistorialRow>("/informes/historial", {

@@ -5,7 +5,8 @@ import { es } from "date-fns/locale"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
+import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
 import { CheckCircleFillIcon, ClipboardTextIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -255,10 +256,20 @@ interface ItemAsistenciaDiaProps {
 function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: ItemAsistenciaDiaProps) {
   const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
   const puedeMarcar = item.puedeEditar && !esFechaFutura(item.fecha)
-  const soloEnLinea = useOnlineOnly()
+  // "Marcar todos" se encola sin red (P17: sin optimista por estudiante).
+  const soloEnLinea = useOfflineWritable()
+  // Punto "Pendiente" del día: cualquier op de la sesión (grupo + fecha) en cola.
+  const ops = useOutboxOps()
+  const prefijo = `asistencia:sesion:${item.fkGrupo}:`
+  const pendiente = pendingStatusOf(ops, (k) => k.startsWith(prefijo) && k.includes(`:${item.fecha}:`))
 
   return (
     <li className="flex flex-col gap-1">
+      {pendiente && (
+        <span className="flex items-center gap-1 text-xs">
+          <PendingStatusBadge status={pendiente} />
+        </span>
+      )}
       <span className="text-xs font-semibold text-muted-foreground">
         {item.grado}{item.grupo} ({item.jornada})
       </span>

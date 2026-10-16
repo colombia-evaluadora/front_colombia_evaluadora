@@ -4,6 +4,7 @@ import { coberturaMatriculaRoute } from "@/router"
 
 import type { MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
 import type { MatriculaQueryRequest } from "@/features/coverage/api/types/matricula"
+import { useFiltrosDeListado } from "@/features/assistant/lib/registro-ui"
 
 export interface MatriculaFilters {
   filters: MatriculaFiltersFormInput
@@ -75,15 +76,19 @@ export function useMatriculaFilters(): MatriculaFilters {
     return count
   }, [search.search, search.statuses, search.campus, search.shift, search.grade, search.group])
 
+  const filtrosForm = {
+    search: search.search ?? "",
+    statuses: search.statuses ?? [],
+    campus: search.campus ?? "",
+    shift: search.shift ?? "",
+    grade: search.grade != null ? String(search.grade) : "",
+    group: search.group ?? "",
+  }
+  // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
+  useFiltrosDeListado(filtrosForm, applyFilters)
+
   return {
-    filters: {
-      search: search.search ?? "",
-      statuses: search.statuses ?? [],
-      campus: search.campus ?? "",
-      shift: search.shift ?? "",
-      grade: search.grade != null ? String(search.grade) : "",
-      group: search.group ?? "",
-    },
+    filters: filtrosForm,
     queryFilters,
     applyFilters,
     clearAllFilters,

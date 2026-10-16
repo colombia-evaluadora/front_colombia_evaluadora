@@ -69,6 +69,7 @@ import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-e
 import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { useAsistenteActividad } from "@/features/planeador/hooks/use-asistente-actividad"
 import {
   useInstrumentoEvaluacionCatalogQuery,
   instrumentoPermitidoLabel,
@@ -508,6 +509,24 @@ export function EditarActividadForm({
   const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
   const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
   camposEfectivosRef.current = { camposEfectivos, esFormativa, grupoTieneEstudiantes: matriculas.length > 0 }
+
+  // UI asistida (`planeador.actividad`): el agente rellena/limpia/señala
+  // campos del modelo; el envío sigue siendo el botón Guardar.
+  const { data: tiposActividadAsistente = [] } = useTipoActividadCatalogQuery()
+  const { data: instrumentosAsistente = [] } = useInstrumentoEvaluacionCatalogQuery()
+  const instrumentosPermitidosAsistente = camposEfectivos?.evaluacion.instrumentosPermitidos?.map(instrumentoPermitidoLabel)
+  useAsistenteActividad({
+    form,
+    actividadId: esNueva ? null : actividad.id,
+    readOnly,
+    esFormativa,
+    seccionVisible: (seccion) => camposEfectivos?.[seccion]?.visible !== false,
+    tiposActividad: tiposActividadAsistente,
+    instrumentos:
+      instrumentosPermitidosAsistente && instrumentosPermitidosAsistente.length > 0
+        ? instrumentosAsistente.filter((i) => instrumentosPermitidosAsistente.includes(i))
+        : instrumentosAsistente,
+  })
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
   // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
   // `DialogAgregarActividad`, `unidadId` de la URL en

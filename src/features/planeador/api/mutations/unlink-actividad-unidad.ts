@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -6,8 +7,8 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 // `PATCH`, no `DELETE` — mismo motor que el resto de soft-deletes del
 // Planeador. Sin body: el `:actividadId` en el path alcanza.
-function unlinkActividadUnidad(actividadId: number): Promise<void> {
-  return api.patch(`/eval-col/planeador/unidades/actividades/${actividadId}`)
+export function unlinkActividadUnidad(actividadId: number, req?: WriteRequest): Promise<void> {
+  return api.patch(`/eval-col/planeador/unidades/actividades/${actividadId}`, undefined, writeConfig(req))
 }
 
 interface UseUnlinkActividadUnidadOptions {
@@ -30,7 +31,7 @@ export function useUnlinkActividadUnidad({
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: unlinkActividadUnidad,
+    mutationFn: (actividadId: number) => unlinkActividadUnidad(actividadId),
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
       onSuccess?.(...args)

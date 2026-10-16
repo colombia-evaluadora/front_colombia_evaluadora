@@ -19,11 +19,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUser, useLogout } from "@/lib/auth"
+import { outboxStore } from "@/lib/offline/outbox/store"
+import { LogoutPendingDialog } from "@/features/offline/components/logout-pending-dialog"
 
 export function NavUser() {
   const navigate = useNavigate()
   const { data: user, isPending } = useUser()
   const [prepareOpen, setPrepareOpen] = useState(false)
+  const [logoutPendingOpen, setLogoutPendingOpen] = useState(false)
   const logoutMutation = useLogout({
     mutationConfig: {
       onSuccess: () => {
@@ -106,7 +109,11 @@ export function NavUser() {
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={logoutMutation.isPending}
-            onClick={() => logoutMutation.mutate(undefined)}
+            onClick={() => {
+              // Con cambios sin sincronizar se pregunta antes (plan §7.8).
+              if (outboxStore.getSummary().total > 0) setLogoutPendingOpen(true)
+              else logoutMutation.mutate(undefined)
+            }}
           >
             <SignOutIcon data-icon="inline-start" />
             Cerrar sesión
@@ -114,6 +121,14 @@ export function NavUser() {
         </DropdownMenuGroup>
       </DropdownMenuContent>
       <PrepareOfflineDialog open={prepareOpen} onOpenChange={setPrepareOpen} />
+      <LogoutPendingDialog
+        open={logoutPendingOpen}
+        onOpenChange={setLogoutPendingOpen}
+        onLogout={() => {
+          setLogoutPendingOpen(false)
+          logoutMutation.mutate(undefined)
+        }}
+      />
     </DropdownMenu>
   )
 }

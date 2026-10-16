@@ -7,6 +7,9 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
+import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
+import { isOutboxEnabled, OutboxRejectedError, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -249,9 +252,20 @@ function SesionTabContent({
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
   const registrar = useAsistenciaRegistrarMutation()
-  // Registrar asistencia va al servidor: sin red, deshabilitado hasta la
-  // outbox de la Fase 2 (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 2: registrar/corregir se encola sin red (piloto + equipo personal);
+  // fuera del piloto sigue siendo solo en línea.
+  const soloEnLinea = useOfflineWritable()
+  // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
+  const outboxOps = useOutboxOps()
+  const pksSesion = new Set(
+    [...rosterOficial.values()].flatMap((rows) => rows.map((r) => r.pk_tasistencia).filter((pk) => pk != null)),
+  )
+  const pendienteSesion = pendingStatusOf(
+    outboxOps,
+    (k) =>
+      (k.startsWith(`asistencia:sesion:${sesion.fkGrupo}:`) && k.includes(`:${fecha}:`)) ||
+      (k.startsWith("asistencia:registro:") && pksSesion.has(Number(k.split(":")[2]))),
+  )
   const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
   const tipoOptions = React.useMemo(
     () => tipoOptionsCompleto.filter((opt) => TIPOS_ALTA_NUEVA.includes(opt.value)),
@@ -449,37 +463,57 @@ function SesionTabContent({
         }
       }
     }
+    const encolados: number[] = []
+    // CAS por estudiante (BE-5): solo con la outbox habilitada (piloto), para
+    // que el conflicto de un cambio hecho sin red no pise en silencio.
+    const conVersiones = isOutboxEnabled()
+    const versionDePk = (pk: number) =>
+      [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ?? null
     try {
       const [altas, solicitudes] = await Promise.all([
         Promise.all(
           [...nuevos.entries()].map(async ([bloque, registros]) => {
             // Captura tardía en período cerrado: también queda pendiente (Regla 75).
-            const { pendientes } = await registrar.mutateAsync({
+            const { pendientes, queued } = await registrar.mutateAsync({
               GRUPO: sesion.fkGrupo,
               FECHA: fecha,
               REGISTROS: registros,
+              ...(conVersiones && {
+                versiones: Object.fromEntries(
+                  registros.map((r) => [
+                    r.fkMatricula,
+                    // "NONE" = el docente vio la sesión sin registro de este estudiante.
+                    rosterPorBloque.get(bloque)?.find((x) => x.fk_tmatricula === r.fkMatricula)?.version_registro ??
+                      "NONE",
+                  ]),
+                ),
+              }),
               ...(sesion.esFormativa
                 ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
                 : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
             })
+            if (queued) encolados.push(...registros.map((r) => r.fkMatricula))
             return pendientes.length > 0 ? registros.map((r) => r.fkMatricula) : []
           }),
         ),
         Promise.all(
           correcciones.map(async ({ fkMatricula, pk, registro }) => {
-            const pendientes = await editar.mutateAsync({
+            const { pendientes, queued } = await editar.mutateAsync({
               pks: [pk],
+              ...(conVersiones && { versiones: { [pk]: versionDePk(pk) } }),
               body: {
                 TIPO_ASISTENCIA: registro.tipoAsistencia,
                 ...(registro.fkArchivo instanceof File && { SOPORTE_ARCHIVO: registro.fkArchivo }),
                 ...(soporteEliminado[fkMatricula] && { LIMPIAR_ARCHIVO: true }),
               },
             })
+            if (queued) encolados.push(fkMatricula)
             return pendientes.length > 0 ? fkMatricula : null
           }),
         ),
       ])
       const quedaronPendientes = [...altas.flat(), ...solicitudes.filter((fk): fk is number => fk !== null)]
+      if (encolados.length > 0) notify(QUEUED_MESSAGE, { variant: "info" })
       if (quedaronPendientes.length > 0) {
         setPendientesLocales((prev) => new Set([...prev, ...quedaronPendientes]))
         notify("El período ya no es calificable: los cambios quedaron pendientes de aprobación del coordinador.", {
@@ -504,8 +538,11 @@ function SesionTabContent({
         return next
       })
       return true
-    } catch {
-      notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
+    } catch (error) {
+      // Sin espacio o fuera de la ventana de 14 días: el mensaje es del encolado.
+      notify(error instanceof OutboxRejectedError ? error.message : "Ocurrió un error al guardar la asistencia.", {
+        variant: "error",
+      })
       return false
     } finally {
       setGuardando(false)
@@ -534,6 +571,7 @@ function SesionTabContent({
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="font-medium">{nombreSesion(sesion)}</span>
+          <PendingStatusBadge status={pendienteSesion} />
         </div>
         <Button
           type="button"

@@ -65,6 +65,8 @@ export interface PlanillaCelda {
   notaHomologada: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  /** Versión de la nota (sso V469.3/V496.7, `NONE` sin nota): CAS de la escritura offline. */
+  version?: string | null
   /** `esFormativa`/`es_formativa` — si la unidad de esta actividad es
    *  formativa: decide si la celda abre calificación o solo observación.
    *  No confundir con `PlanillaColumna.esEvaluativa`, que es un flag manual

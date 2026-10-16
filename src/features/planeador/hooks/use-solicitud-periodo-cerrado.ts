@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useCalificarCeldaMutation } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
@@ -40,10 +41,14 @@ export function useSolicitudPeriodoCerrado({ onEnviado }: { onEnviado?: () => vo
     setEnviando(true)
     const pendientes = new Map(cambios)
     let solicitudes = 0
+    let encoladas = 0
     let error: unknown = null
     for (const [pk, cambio] of cambios) {
       try {
+        // Sin red, cada nota pasa a la outbox (persistente): la cola en memoria
+        // de la pantalla ya no se pierde al recargar (tarea 2.5).
         const result = await calificar.mutateAsync(cambio.input)
+        if (result?.queued) encoladas++
         solicitudes += result?.solicitudes_pendientes?.length ?? 0
         pendientes.delete(pk)
       } catch (e) {
@@ -55,6 +60,10 @@ export function useSolicitudPeriodoCerrado({ onEnviado }: { onEnviado?: () => vo
     setConfirmando(false)
     if (pendientes.size < cambios.size) onEnviado?.()
     if (error) notify(getErrorMessage(error), { variant: "error" })
+    if (encoladas > 0) {
+      notify(`${QUEUED_MESSAGE} Al sincronizar quedarán como solicitud al coordinador.`, { variant: "info" })
+      return
+    }
     // Una primera nota (sin nota previa) se aplica directo, sin solicitud.
     if (solicitudes > 0) setEnviada(true)
     else if (pendientes.size < cambios.size) notify("Notas guardadas.")

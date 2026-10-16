@@ -1,9 +1,11 @@
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useState } from "react"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SpinnerIcon } from "@/components/ui/icons"
 
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { plegarTexto } from "@/features/assistant/lib/campos-ui"
+import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
 import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
 
 const TabEvaluationPeriods = lazy(() =>
@@ -68,9 +70,21 @@ export function EvaluationPeriodsSection({
   academicPeriodId,
 }: EvaluationPeriodsSectionProps) {
   const panel = PANEL_BASE
+  // Controlada (antes `defaultValue`) para que el asistente pueda abrir una
+  // pestaña por su nombre visible (`ABRIR_PESTANA`).
+  const [tabActiva, setTabActiva] = useState("evaluacion")
+  usePestanasAsistente({
+    abrir: (pestana) => {
+      const nombre = plegarTexto(pestana)
+      const tab = TABS.find((t) => plegarTexto(t.label) === nombre || t.value === nombre)
+      if (!tab) return false
+      setTabActiva(tab.value)
+      return true
+    },
+  })
 
   return (
-    <Tabs defaultValue="evaluacion">
+    <Tabs value={tabActiva} onValueChange={(value) => setTabActiva(String(value))}>
       <TabsList variant="folder">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>

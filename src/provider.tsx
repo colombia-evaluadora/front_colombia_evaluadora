@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { startOfflineSupport } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { router } from "@/router"
+// Handlers de la outbox (Fase 2 offline) y toast de resumen de cada lote.
+import "@/features/offline/register-handlers"
 
 // Persister de queries, snapshot de menú/permisos y reautenticación al volver
 // la red (`lib/offline`). La restauración del cache del usuario la espera el

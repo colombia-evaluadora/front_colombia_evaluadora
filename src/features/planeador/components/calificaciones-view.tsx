@@ -24,7 +24,8 @@ import {
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 
@@ -73,9 +74,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   // que en la Planilla, las notas se acumulan y se envían como solicitud.
   const periodoCerrado = usePeriodoCerrado(actividad.fechaCierre || actividad.fechaInicio)
   const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
-  // Calificar, asistencia de la actividad y "No presentó" van al servidor:
-  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // "Guardar" de la solicitud de periodo cerrado: se encola sin red (Fase 2).
+  const soloEnLinea = useOfflineWritable()
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la
    *  Vista Asistencias. La excusa se adjunta allá; acá solo se refleja. */
@@ -223,7 +223,8 @@ function CalificacionRow({
   cambio,
   onCambio,
 }: CalificacionRowProps) {
-  const soloEnLinea = useOnlineOnly()
+  // Asistencia de la actividad: se encola sin red (Fase 2).
+  const soloEnLinea = useOfflineWritable()
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const sinNota = estudiante.notaHomologada == null && porcentaje === null
@@ -383,13 +384,19 @@ function NoPresentoCheckbox({
   const { notify } = useNotify()
   const mutation = useEstadoResultadoMutation({
     mutationConfig: {
-      onSuccess: (_, input) =>
-        notify(input.estado === "NO_PRESENTO" ? "Marcado como No presentó." : "Queda pendiente de calificar."),
+      onSuccess: (result, input) =>
+        notify(
+          result.queued
+            ? QUEUED_MESSAGE
+            : input.estado === "NO_PRESENTO"
+              ? "Marcado como No presentó."
+              : "Queda pendiente de calificar.",
+        ),
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
-  // Marcado se puede quitar siempre (salvo sin red); sin marcar aplica el motivo.
-  const soloEnLinea = useOnlineOnly()
+  // Marcado se puede quitar siempre; sin marcar aplica el motivo. Sin red se encola (Fase 2).
+  const soloEnLinea = useOfflineWritable()
   const disabled = soloEnLinea.disabled || (!checked && motivoDeshabilitado != null)
 
   return (
