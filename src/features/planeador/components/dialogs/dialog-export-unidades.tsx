@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import {
   useExportUnidades,
@@ -48,6 +49,8 @@ export function DialogExportUnidades({
   rotulos,
   disabled,
 }: DialogExportUnidadesProps) {
+  // El archivo lo genera el servidor: sin red no hay export.
+  const soloEnLinea = useOnlineOnly()
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -81,7 +84,7 @@ export function DialogExportUnidades({
                   variant="outline"
                   color="muted"
                   size="icon-sm"
-                  disabled={disabled}
+                  disabled={disabled || soloEnLinea.disabled}
                   aria-label={label}
                 />
               }
@@ -90,7 +93,7 @@ export function DialogExportUnidades({
         >
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? label}</TooltipContent>
       </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
