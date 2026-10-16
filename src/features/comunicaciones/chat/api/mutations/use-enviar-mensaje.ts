@@ -4,7 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
-import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { postMultipart } from "@/lib/files"
 import { upsertMensaje } from "@/features/comunicaciones/chat/api/use-chat-tiempo-real"
 
 export interface EnviarMensajeInput {
@@ -21,16 +21,29 @@ export interface EnviarMensajeInput {
   clientMessageId?: string
 }
 
-// TODO: con el backend real el archivo irá por `postMultipart` (lib/files.ts);
-// hoy solo se manda su nombre y formato al mock.
+/**
+ * Con archivo, el mismo POST viaja como multipart por file-service
+ * (`/files/eval-col/...`): sube el binario, lo registra en TARCHIVO y reenvía
+ * el JSON a comms-service con `ADJUNTO` = su `pk_tarchivo`. Nombre, formato y
+ * peso los toma el servidor del archivo, no del cliente.
+ */
 async function enviarMensaje({ conversacionId, texto, archivo, respuestaA, clientMessageId }: EnviarMensajeInput) {
-  return evalCol.postRow<Mensaje>(`/comunicaciones/conversaciones/${conversacionId}/mensajes`, {
+  const ruta = `/comunicaciones/conversaciones/${conversacionId}/mensajes`
+  const campos = {
     // Las menciones viajan dentro del texto como `<@id>`; el servidor las valida.
     TEXTO: texto,
     CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
     ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
-    ...(archivo && { ADJUNTO_NOMBRE: archivo.name, ADJUNTO_FORMATO: formatoDeArchivo(archivo) }),
+  }
+  if (!archivo) return evalCol.postRow<Mensaje>(ruta, campos)
+  const crudo = await postMultipart<string | { rows: Mensaje[] } | Mensaje[]>(`/eval-col${ruta}`, campos, {
+    ADJUNTO: archivo,
   })
+  // file-service reenvía el cuerpo de comms-service tal cual; por si llega como texto.
+  const body = typeof crudo === "string" ? (JSON.parse(crudo) as { rows: Mensaje[] }) : crudo
+  const [mensaje] = Array.isArray(body) ? body : (body?.rows ?? [])
+  if (!mensaje) throw new Error("La respuesta del envío no trajo el mensaje.")
+  return mensaje
 }
 
 export function useEnviarMensaje({

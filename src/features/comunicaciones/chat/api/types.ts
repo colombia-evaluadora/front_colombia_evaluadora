@@ -40,6 +40,11 @@ export interface AdjuntoMensaje {
   formato: "WORD" | "PDF" | "IMAGEN" | "VIDEO" | "OTRO"
   // El autor quitó el archivo; el mensaje conserva el aviso.
   eliminadoEn: string | null
+  // `pk_tarchivo` en file-service: se ve y descarga con un token de vista. Null en
+  // adjuntos del mock o anteriores al file-service (solo nombre).
+  archivoId?: number | null
+  // Bytes.
+  peso?: number | null
 }
 
 export interface Mensaje {
@@ -110,6 +115,11 @@ export interface ArchivoCompartido {
   enMiCanal: boolean
   // Documento de texto que se puede abrir en el editor.
   editable?: boolean
+  // Backend real: `pk_tarchivo` (para verlo con token), mensaje donde se
+  // compartió y peso en bytes.
+  archivoId?: number | null
+  mensajeId?: number
+  peso?: number | null
 }
 
 export interface Candidato {
