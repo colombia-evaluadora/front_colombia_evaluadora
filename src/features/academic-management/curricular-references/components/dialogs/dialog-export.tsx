@@ -25,6 +25,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useExport } from "@/features/academic-management/curricular-references/api/mutations/export"
 import type { CurricularReferencesQueryRequest } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface ExportCurricularReferencesDialogProps {
   filters: CurricularReferencesQueryRequest["filters"]
@@ -35,6 +36,7 @@ interface ExportCurricularReferencesDialogProps {
 }
 
 export function ExportCurricularReferencesDialog({ filters, sorting, columns }: ExportCurricularReferencesDialogProps) {
+  const soloEnLinea = useOnlineOnly()
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -74,6 +76,7 @@ export function ExportCurricularReferencesDialog({ filters, sorting, columns }: 
                   color="muted"
                   size="icon-sm"
                   aria-label="Exportar referentes curriculares filtrados"
+                  disabled={soloEnLinea.disabled}
                   className="[&_svg:not([class*='size-'])]:size-4"
                 />
               }
@@ -82,7 +85,7 @@ export function ExportCurricularReferencesDialog({ filters, sorting, columns }: 
         >
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>Exportar referentes curriculares filtrados</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? "Exportar referentes curriculares filtrados"}</TooltipContent>
       </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>

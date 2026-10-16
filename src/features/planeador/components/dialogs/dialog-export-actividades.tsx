@@ -31,6 +31,7 @@ import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 interface DialogExportActividadesProps {
   /** Filas que se ven en el rail — solo para resolver el rótulo del texto. El export no se limita a ellas. */
@@ -53,6 +54,7 @@ interface DialogExportActividadesProps {
  * duplicar el botón si la página lo quiere posicionar a mano—.
  */
 export function DialogExportActividades({ rows, filters, rotulos }: DialogExportActividadesProps) {
+  const soloEnLinea = useOnlineOnly()
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -97,6 +99,7 @@ export function DialogExportActividades({ rows, filters, rotulos }: DialogExport
                   color="muted"
                   size="icon-sm"
                   aria-label={`Exportar filtro de ${rotuloLower}`}
+                  disabled={soloEnLinea.disabled}
                 />
               }
             />
@@ -107,7 +110,7 @@ export function DialogExportActividades({ rows, filters, rotulos }: DialogExport
               a que se reconozca como "exportar" sin necesidad de label. */}
           <FileDownloadOutlinedIcon />
         </TooltipTrigger>
-        <TooltipContent>Exportar filtro de {rotuloLower}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Exportar filtro de ${rotuloLower}`}</TooltipContent>
       </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>

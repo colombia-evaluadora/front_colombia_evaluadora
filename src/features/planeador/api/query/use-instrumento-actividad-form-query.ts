@@ -11,6 +11,7 @@ import type {
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/actividades/:id/instrumento` — el MISMO endpoint que ya
@@ -299,6 +300,7 @@ async function fetchInstrumentoActividadParaForm(actividadId: number): Promise<I
  */
 export function useInstrumentoActividadFormQuery(actividadId: number | undefined, enabled: boolean) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey:
       actividadId != null
         ? planeadorKeys.actividad.instrumentoForm(actividadId)

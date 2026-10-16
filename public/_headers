@@ -1,0 +1,16 @@
+# Cabeceras de Cloudflare Workers Static Assets (se copian a dist/_headers).
+# Ver docs/offline/KILL-SWITCH.md.
+#
+# Todo lo que no es un asset con hash (index.html, el fallback SPA, /sw.js, el
+# manifest) se revalida siempre: así un deploy (o el SW de emergencia) llega a
+# los clientes en la próxima carga en vez de quedar pegado en la cache HTTP.
+/*
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Assets con hash de contenido: inmutables.
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable

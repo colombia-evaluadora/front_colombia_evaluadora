@@ -9,6 +9,11 @@ export interface AuthUser extends User {
   initials: string
   /** `true` si el token trae el claim de rol `CEVAL-SUPER_ADMINISTRADOR`. */
   isSuperAdmin: boolean
+  /**
+   * `true` si el usuario sale de la sesión persistida (modo "autenticado sin
+   * conexión", `lib/offline/session.ts`): no hay token en memoria.
+   */
+  offline?: boolean
 }
 
 export function toAuthUser(user: User): AuthUser {

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { recuperacionValorDesdePk } from "@/features/planeador/api/mutations/recuperacion-body"
 import { env } from "@/config/env"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
@@ -18,6 +20,8 @@ import {
   type RecursoTipo,
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
+import { MENSAJE_ACTIVIDAD_NO_EDITABLE } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -126,6 +130,9 @@ interface ActividadDetalleRow {
    *  columnas no rompe nada, solo no se muestra el docente. */
   fk_tfuncionario_docente?: number | null
   docente_nombre?: string | null
+  /** Regla 37 (sso V553): `editable` 'S'/'N' y el motivo cuando es 'N'. */
+  editable?: "S" | "N" | null
+  motivo_no_editable?: string | null
 }
 
 interface EvidenciaRelacionadaRow {
@@ -170,12 +177,14 @@ interface EstudianteAsignadoRow {
  */
 interface RecuperacionGuardadaRow {
   pk: number
-  destino?: string | null
+  /** `pk_lista_valor` (sso V452: `r.FK_TLV_DESTINO_RECUPERACION`), igual
+   *  que `tipoAplicacion`/`tipoCalculo` — ver `resolverRecuperacionValores`. */
+  destino?: number | string | null
   destinoValor?: string | null
   fkActividadRecuperar: number | null
-  tipoAplicacion?: string | null
+  tipoAplicacion?: number | string | null
   tipoAplicacionValor?: string | null
-  tipoCalculo?: string | null
+  tipoCalculo?: number | string | null
   tipoCalculoValor?: string | null
   valorPonderacion: number | null
 }
@@ -481,11 +490,12 @@ function toActividadDetalle(
     descripcion: row.descripcion ?? "",
     tipo: row.tipo_actividad ?? "Otro",
     esRecuperacion: row.es_recuperacion === "S",
-    recuperacionDestino: row.recuperacion?.destino ?? row.recuperacion?.destinoValor ?? "",
+    // Los códigos (`ACTIVIDAD`, `REEMPLAZAR`…) los completa
+    // `resolverRecuperacionValores`: el detalle trae pk, no `valor`.
+    recuperacionDestino: "",
     recuperacionActividadId: row.recuperacion?.fkActividadRecuperar ?? undefined,
-    recuperacionTipoAplicacion:
-      row.recuperacion?.tipoAplicacion ?? row.recuperacion?.tipoAplicacionValor ?? "",
-    recuperacionTipoCalculo: row.recuperacion?.tipoCalculo ?? row.recuperacion?.tipoCalculoValor ?? "",
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
     recuperacionValorPonderacion: row.recuperacion?.valorPonderacion ?? undefined,
     // `unidad`/`fk_tunidad` vienen `null` (no un objeto) cuando la
     // actividad es huérfana — `{id: 0, nombre: ""}` es el sentinel que ya
@@ -575,6 +585,9 @@ function toActividadDetalle(
     // alcance de la URL.
     docenteId: row.fk_tfuncionario_docente ?? undefined,
     docenteNombre: row.docente_nombre?.trim() || undefined,
+    motivoNoEditable:
+      row.motivo_no_editable?.trim() ||
+      (row.editable === "N" ? MENSAJE_ACTIVIDAD_NO_EDITABLE : undefined),
   }
 }
 
@@ -600,21 +613,62 @@ function actividadDetalleUrl(id: number): string {
 function fetchCatalogosDetalle(queryClient: QueryClient) {
   return Promise.all([
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "tipo-recurso"] as const,
       queryFn: fetchTipoRecursoOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "tipo-adaptacion"] as const,
       queryFn: fetchTipoAdaptacionOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
+      meta: catalogoMeta(),
       queryKey: ["planeador-detalle-catalogo", "aplica-a"] as const,
       queryFn: fetchAplicaAOptions,
       staleTime: Infinity,
     }),
   ])
+}
+
+/**
+ * `recuperacion.destino`/`tipoAplicacion`/`tipoCalculo` del detalle son
+ * `pk_lista_valor`; el form (y `toRecuperacionBody`) trabaja con el código
+ * `valor`. Sin esta traducción, al editar una recuperación "¿Esta
+ * recuperación aplica para?" quedaba en un pk que no calzaba con ninguna
+ * opción y se ocultaba "¿Qué actividad deseas recuperar?" (QA 54). Usa los
+ * catálogos que ya trae `campos_disponibles.recuperacion`; si no vienen,
+ * los pide a `/select/:CATEGORIA`.
+ */
+async function resolverRecuperacionValores(
+  row: ActividadDetalleRow,
+): Promise<Pick<Actividad, "recuperacionDestino" | "recuperacionTipoAplicacion" | "recuperacionTipoCalculo">> {
+  const r = row.recuperacion
+  if (!r) return { recuperacionDestino: "", recuperacionTipoAplicacion: "", recuperacionTipoCalculo: "" }
+  const catalogos = row.campos_disponibles?.recuperacion?.catalogos
+  async function catalogo(propio: ListaValorOption[] | undefined, categoria: string) {
+    if (propio?.length) return propio
+    const filas = await fetchSelectCategory(categoria)
+    return filas.map((fila) => ({ pk: fila.pk_lista_valor, valor: fila.valor, nombre: fila.nombre }))
+  }
+  const [destinos, aplicaciones, calculos] = await Promise.all([
+    catalogo(catalogos?.destino, "DESTINO_RECUPERACION"),
+    catalogo(catalogos?.tipoAplicacion, "TIPO_APLICACION_RECUPERACION"),
+    catalogo(catalogos?.tipoCalculo, "TIPO_CALCULO_RECUPERACION"),
+  ])
+  const tipoAplicacion = r.tipoAplicacionValor || recuperacionValorDesdePk(aplicaciones, r.tipoAplicacion)
+  return {
+    recuperacionDestino: r.destinoValor || recuperacionValorDesdePk(destinos, r.destino),
+    recuperacionTipoAplicacion: tipoAplicacion,
+    // Con REEMPLAZAR el backend guarda PROMEDIADO igual (columna NOT NULL),
+    // pero el form lo oculta y no lo manda: se deja vacío.
+    recuperacionTipoCalculo:
+      tipoAplicacion === "REEMPLAZAR"
+        ? ""
+        : r.tipoCalculoValor || recuperacionValorDesdePk(calculos, r.tipoCalculo),
+  }
 }
 
 async function fetchActividadDetalle(id: number, queryClient: QueryClient): Promise<Actividad> {
@@ -651,6 +705,7 @@ async function fetchActividadDetalle(id: number, queryClient: QueryClient): Prom
     tipoAdaptacionOptions,
     aplicaAOptions,
   )
+  Object.assign(actividad, await resolverRecuperacionValores(first as ActividadDetalleRow))
   // El nombre del archivo llena `fuente` y `titulo`, que es de donde la lista
   // saca la etiqueta y la vista previa la extensión. Sin esto, un material
   // guardado se ve como una fila en blanco.
@@ -668,6 +723,7 @@ async function fetchActividadDetalle(id: number, queryClient: QueryClient): Prom
 /** Opciones del detalle, compartidas por el hook y el prefetch. */
 function actividadDetalleQueryOptions(id: number, queryClient: QueryClient) {
   return {
+    meta: estudiantesMeta(),
     queryKey: planeadorKeys.actividad.detalle(id),
     queryFn: () => fetchActividadDetalle(id, queryClient),
     staleTime: 1000 * 60,
@@ -686,6 +742,7 @@ export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
 export function useActividadDetalleQuery(id: number | undefined) {
   const queryClient = useQueryClient()
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey: id !== undefined ? planeadorKeys.actividad.detalle(id) : planeadorKeys.actividad.detalle("none"),
     queryFn: () => fetchActividadDetalle(id!, queryClient),
     enabled: id !== undefined,

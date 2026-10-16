@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface SubjectRow {
   id: number
@@ -34,6 +35,7 @@ async function fetchSubjectRows(academicPeriodId?: number): Promise<SubjectRow[]
 
 export function useSubjectsQuery(academicPeriodId?: number) {
   const { data: rows = [], ...rest } = useQuery({
+    meta: proveedorMeta(),
     queryKey: academicPeriodKeys.subjects.byPeriod(academicPeriodId),
     queryFn: () => fetchSubjectRows(academicPeriodId),
   })

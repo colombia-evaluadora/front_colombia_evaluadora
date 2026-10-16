@@ -107,7 +107,7 @@ export function CalificacionesAprobacionView({
 
   // Periodo cerrado: el backend convierte en solicitud la nota de quien ya
   // tenía resultado (Regla 55); la primera nota se aplica directo.
-  const periodoCerrado = usePeriodoCerrado(actividad.fechaInicio);
+  const periodoCerrado = usePeriodoCerrado(actividad.fechaCierre || actividad.fechaInicio);
   const [confirmando, setConfirmando] = useState(false);
   const [enviada, setEnviada] = useState(false);
 

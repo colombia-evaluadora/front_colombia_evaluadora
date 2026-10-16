@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from "axios"
+
 import { api } from "@/lib/api-client"
 
 /**
@@ -71,6 +73,12 @@ export function toMultipart(
 }
 
 /**
+ * Las subidas toleran 120 s (un multipart de 10 MB en 3G tarda ~90 s); el
+ * default de `api` es 20 s. Se puede pisar por llamada con `config.timeout`.
+ */
+export const MULTIPART_TIMEOUT_MS = 120_000
+
+/**
  * No se fija `Content-Type` a mano: el navegador lo arma con el `boundary`
  * del multipart, y ponerlo explícito lo rompe.
  */
@@ -78,16 +86,24 @@ export function postMultipart<T>(
   path: string,
   data: unknown,
   files: Record<string, File | File[] | null | undefined>,
+  config?: AxiosRequestConfig,
 ): Promise<T> {
-  return api.post(`/files${path}`, toMultipart(data, files)) as Promise<T>
+  return api.post(`/files${path}`, toMultipart(data, files), {
+    timeout: MULTIPART_TIMEOUT_MS,
+    ...config,
+  }) as Promise<T>
 }
 
 export function patchMultipart<T>(
   path: string,
   data: unknown,
   files: Record<string, File | File[] | null | undefined>,
+  config?: AxiosRequestConfig,
 ): Promise<T> {
-  return api.patch(`/files${path}`, toMultipart(data, files)) as Promise<T>
+  return api.patch(`/files${path}`, toMultipart(data, files), {
+    timeout: MULTIPART_TIMEOUT_MS,
+    ...config,
+  }) as Promise<T>
 }
 
 /** Lo que devuelve `POST /files/view-token/{id}`. */

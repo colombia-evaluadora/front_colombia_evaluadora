@@ -12,6 +12,7 @@ import {
   MdArrowDownward,
   MdArrowForward,
   MdArrowUpward,
+  MdSwapVert,
   MdAssignment,
   MdAssignmentAdd,
   MdAssignmentTurnedIn,
@@ -27,6 +28,10 @@ import {
   MdBrush,
   MdBubbleChart,
   MdCalendarMonth,
+  MdCloudDone,
+  MdCloudOff,
+  MdCloudQueue,
+  MdCloudSync,
   MdCalendarToday,
   MdCancel,
   MdCancelPresentation,
@@ -207,6 +212,7 @@ export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
+export const ArrowsDownUpIcon = makeIcon(MdSwapVert)
 export const AudioIcon = makeIcon(MdAudiotrack)
 export const BankIcon = makeIcon(MdOutlineAccountBalance)
 export const BellIcon = makeIcon(MdOutlineNotifications)
@@ -218,6 +224,12 @@ export const BuildingsIcon = makeIcon(MdApartment)
 export const CalendarBlankIcon = makeIcon(MdCalendarToday)
 export const CalendarDotsIcon = makeIcon(MdEvent)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
+// Conectividad (banner offline). Material no tiene "cloud alert": se usa
+// `MdCloudQueue` para el estado degradado.
+export const CloudAlertIcon = makeIcon(MdCloudQueue)
+export const CloudCheckIcon = makeIcon(MdCloudDone)
+export const CloudOffIcon = makeIcon(MdCloudOff)
+export const CloudSyncIcon = makeIcon(MdCloudSync)
 export const ChalkboardTeacherIcon = makeIcon(MdCoPresent)
 export const ChartBarIcon = makeIcon(MdBarChart)
 export const ChartLineUpIcon = makeIcon(MdTrendingUp)

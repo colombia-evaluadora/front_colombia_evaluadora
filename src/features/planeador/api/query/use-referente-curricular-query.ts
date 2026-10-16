@@ -3,6 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/referente-curricular?grado=&asignatura=` (confirmado
@@ -155,6 +156,7 @@ async function fetchReferenteCurricular(
  *  referente formativo). Mismo patrón que `actividadesRecuperablesQueryOptions`. */
 export function referenteCurricularQueryOptions(gradoId: number, asignaturaId: number | undefined) {
   return queryOptions({
+    meta: catalogoMeta(),
     queryKey: planeadorKeys.referenteCurricular(gradoId, asignaturaId),
     queryFn: () => fetchReferenteCurricular(gradoId, asignaturaId),
     staleTime: 1000 * 60,
@@ -168,6 +170,7 @@ export function referenteCurricularQueryOptions(gradoId: number, asignaturaId: n
  */
 export function useReferenteCurricularQuery(gradoId: number | undefined, asignaturaId: number | undefined) {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey:
       gradoId != null
         ? planeadorKeys.referenteCurricular(gradoId, asignaturaId)

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 /**
  * `POST /eval-col/grados/:gradoId/grupos/query` — catálogo de grupos de un
@@ -46,6 +47,7 @@ async function fetchGradoGrupos(gradoId: number): Promise<GradoGrupo[]> {
 
 export function useGradoGruposQuery(gradoId: number | undefined) {
   return useQuery({
+    meta: proveedorMeta(),
     queryKey: planeadorKeys.gradoGrupos(gradoId),
     queryFn: () => fetchGradoGrupos(gradoId as number),
     enabled: gradoId != null,

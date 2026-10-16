@@ -5,6 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { CeldaEvidencia, InstrumentoTipo } from "@/features/planeador/api/types/planilla"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 
 /** `GET /planeador/actividades/estudiantes/:id/nota` (confirmado real, ver
  *  colección Postman `planeador-planilla-flujo-completo`, paso 5.1). Se usa
@@ -139,6 +140,7 @@ async function fetchNotaEstudiante(pkTactividadEstudiante: number): Promise<Nota
 
 export function useNotaEstudianteQuery(pkTactividadEstudiante: number | undefined) {
   return useQuery({
+    meta: estudiantesMeta(),
     queryKey:
       pkTactividadEstudiante != null
         ? planeadorKeys.actividadEstudiante.nota(pkTactividadEstudiante)

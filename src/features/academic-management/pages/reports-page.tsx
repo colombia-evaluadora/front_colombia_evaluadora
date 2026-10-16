@@ -88,6 +88,13 @@ import {
 } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
+import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
+import { TTL_OFFLINE } from "@/lib/offline/query-meta"
+import { isOfflineWithoutData } from "@/lib/offline/query-status"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 
@@ -133,7 +140,7 @@ function guardarGruposAbiertos(filtros: FiltrosInforme, estado: GruposAbiertosSt
 function coincide(fila: FilaInforme, busqueda: string): boolean {
   const texto = busqueda.trim().toLowerCase()
   if (!texto) return true
-  return fila.nombreCompleto.toLowerCase().includes(texto) || fila.documento.includes(texto)
+  return fila.nombreCompleto.toLowerCase().includes(texto) || (fila.documento ?? "").includes(texto)
 }
 
 interface GrupoTabContentProps {
@@ -198,7 +205,10 @@ function GrupoTabContent({
   marcas,
   onToggleMarca,
 }: GrupoTabContentProps) {
+  const soloEnLinea = useOnlineOnly()
   const informe = useInformeGrupoQuery(periodos.length > 0 ? { grupoId, periodos } : null)
+  const { status: conectividad } = useConnectivity()
+  const informeSinDatosOffline = periodos.length > 0 && isOfflineWithoutData(informe, conectividad)
 
   const filas = React.useMemo(
     () => (informe.data ?? []).filter((fila) => coincide(fila, busqueda)),
@@ -253,17 +263,21 @@ function GrupoTabContent({
           </InputGroup>
         </Field>
         {puedeEscribir && !esCualitativo && hayPorConsolidar && (
-          <Button type="button" color="primary" size="sm" disabled={guardando} onClick={onGuardar}>
-            <CheckIcon data-icon="inline-start" />
-            Guardar notas seleccionadas
-          </Button>
+          <OnlineOnlyTooltip tooltip={soloEnLinea.tooltip}>
+            <Button type="button" color="primary" size="sm" disabled={guardando || soloEnLinea.disabled} onClick={onGuardar}>
+              <CheckIcon data-icon="inline-start" />
+              Guardar notas seleccionadas
+            </Button>
+          </OnlineOnlyTooltip>
         )}
       </div>
 
-      {informe.isPending && (
+      <DatosDelBadge updatedAt={informe.dataUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mt-2" />
+      {informeSinDatosOffline && <OfflineEmptyState kind="sinDatosGuardados" onRetry={() => informe.refetch()} />}
+      {informe.isPending && !informeSinDatosOffline && (
         <p className="py-8 text-center text-sm text-muted-foreground">Cargando informe…</p>
       )}
-      {informe.isError && (
+      {informe.isError && !informeSinDatosOffline && (
         <p className="py-8 text-center text-sm text-red">{getErrorMessage(informe.error)}</p>
       )}
       {!informe.isPending &&

@@ -7,6 +7,7 @@ import type {
   JornadaInforme,
   SedeInforme,
 } from "@/features/academic-management/reports/api/types"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 interface SedeRow {
   fk_tsede: number
@@ -35,6 +36,7 @@ interface JornadaRow {
  *  segundo select nunca queda vacío. */
 export function useSedesInformeQuery() {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: ["informes", "sedes"] as const,
     queryFn: async (): Promise<SedeInforme[]> => {
       const rows = await evalCol.postRows<SedeRow>("/informes/sedes", {})
@@ -53,6 +55,7 @@ export function useSedesInformeQuery() {
  *  están creados para 2027-2029 son configuración adelantada. */
 export function useAniosInformeQuery(sedeId: number | null) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: ["informes", "anos", sedeId] as const,
     queryFn: async (): Promise<AnioInforme[]> => {
       const rows = await evalCol.postRows<AnioRow>("/informes/anos", { FK_TSEDE: sedeId })
@@ -66,6 +69,7 @@ export function useAniosInformeQuery(sedeId: number | null) {
 /** `POST /informes/jornadas`. */
 export function useJornadasInformeQuery(sedeId: number | null, anio: number | null) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: ["informes", "jornadas", sedeId, anio] as const,
     queryFn: async (): Promise<JornadaInforme[]> => {
       const rows = await evalCol.postRows<JornadaRow>("/informes/jornadas", {

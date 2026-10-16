@@ -4,6 +4,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { InstrumentoPermitido } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 // Catálogo global `INSTRUMENTO_EVALUACION` de `TLISTA_VALOR`
 // (`GET /eval-col/select/INSTRUMENTO_EVALUACION`) — resuelve
@@ -32,6 +33,7 @@ async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
 
 export function useInstrumentoEvaluacionCatalogQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: planeadorKeys.catalogos.instrumentoEvaluacion(),
     queryFn: fetchInstrumentoEvaluacionCatalog,
     staleTime: Infinity,
@@ -122,6 +124,7 @@ export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<nu
  */
 export function useInstrumentoFiltroOptions() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: [...planeadorKeys.catalogos.instrumentoEvaluacion(), "filtro"] as const,
     queryFn: async () => {
       const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")

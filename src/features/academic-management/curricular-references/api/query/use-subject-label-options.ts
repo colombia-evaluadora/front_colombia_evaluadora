@@ -5,6 +5,7 @@ import { apiPath } from "@/lib/api-routes"
 import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
 
 import type { SubjectLabelOption } from "@/features/academic-management/curricular-references/api/types/subject-label"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 interface SubjectLabelOptionRow {
   pk_lista_valor: number
@@ -37,6 +38,7 @@ export const subjectLabelOptionsQueryKey = () => ["curricular-reference-subject-
 
 export function useSubjectLabelOptionsQuery() {
   return useQuery({
+    meta: catalogoMeta(),
     queryKey: subjectLabelOptionsQueryKey(),
     queryFn: fetchSubjectLabelOptions,
   })

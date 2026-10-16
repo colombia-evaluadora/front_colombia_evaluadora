@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/unidades/:id/referente` (confirmado real, colección
@@ -178,6 +179,7 @@ async function fetchUnidadReferente(unidadId: number): Promise<UnidadReferente> 
 
 export function useUnidadReferenteQuery(unidadId: number | undefined) {
   return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey:
       unidadId != null ? planeadorKeys.unidad.referente(unidadId) : planeadorKeys.unidad.referente("none"),
     queryFn: () => fetchUnidadReferente(unidadId!),

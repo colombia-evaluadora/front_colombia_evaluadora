@@ -18,6 +18,10 @@ export const loginFormSchema = loginInputSchema.extend({
   // Marcada: el backend devuelve un token de larga duración — la sesión
   // sobrevive a cerrar y reabrir el navegador.
   rememberMe: z.boolean(),
+  // "Este es un equipo compartido": marcado por defecto mientras la política
+  // de datos de menores (P6) siga pendiente. No viaja al backend: decide si
+  // este navegador persiste algo (`lib/offline/query-persister.ts`).
+  sharedDevice: z.boolean(),
 })
 export type LoginFormValues = z.infer<typeof loginFormSchema>
 
