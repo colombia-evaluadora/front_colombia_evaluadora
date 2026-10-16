@@ -224,7 +224,7 @@ function unidadDetalleUrl(id: number): string {
  * paridad con el resto del microservicio; si no existe se lanza para que el
  * panel muestre su estado de error.
  */
-async function fetchUnidadDetalle(id: number): Promise<UnidadTematica> {
+export async function fetchUnidadDetalle(id: number): Promise<UnidadTematica> {
   const rows = await evalCol.getRows<UnidadTematica | UnidadRealRow>(unidadDetalleUrl(id))
   const first = rows[0]
   if (!first) {
