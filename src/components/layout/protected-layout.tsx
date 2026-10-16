@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { CampanaNotificaciones } from "@/features/notificaciones/components/campana-notificaciones"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { OfflineBanner } from "@/components/layout/offline-banner"
+import { HeaderSyncIndicator } from "@/features/offline/components/header-sync-indicator"
 import { OnlineOnlyRouteGate } from "@/components/offline/online-only-route-gate"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -38,6 +39,7 @@ export function ProtectedLayout() {
             <ColorThemeToggle />
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
+            <HeaderSyncIndicator />
             <CampanaNotificaciones />
             <NavUser />
           </div>

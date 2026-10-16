@@ -7,7 +7,8 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
-import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
+import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
 import { OutboxRejectedError, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -254,6 +255,17 @@ function SesionTabContent({
   // Fase 2: registrar/corregir se encola sin red (piloto + equipo personal);
   // fuera del piloto sigue siendo solo en línea.
   const soloEnLinea = useOfflineWritable()
+  // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
+  const outboxOps = useOutboxOps()
+  const pksSesion = new Set(
+    [...rosterOficial.values()].flatMap((rows) => rows.map((r) => r.pk_tasistencia).filter((pk) => pk != null)),
+  )
+  const pendienteSesion = pendingStatusOf(
+    outboxOps,
+    (k) =>
+      (k.startsWith(`asistencia:sesion:${sesion.fkGrupo}:`) && k.includes(`:${fecha}:`)) ||
+      (k.startsWith("asistencia:registro:") && pksSesion.has(Number(k.split(":")[2]))),
+  )
   const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
   const tipoOptions = React.useMemo(
     () => tipoOptionsCompleto.filter((opt) => TIPOS_ALTA_NUEVA.includes(opt.value)),
@@ -543,6 +555,7 @@ function SesionTabContent({
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="font-medium">{nombreSesion(sesion)}</span>
+          <PendingStatusBadge status={pendienteSesion} />
         </div>
         <Button
           type="button"

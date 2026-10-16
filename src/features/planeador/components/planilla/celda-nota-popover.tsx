@@ -7,6 +7,8 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
+import { PendingBadge } from "@/features/offline/components/pending-badge"
+import { celdaEntityKey } from "@/features/planeador/api/mutations/use-calificar-celda"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { IoMdCheckboxOutline } from "react-icons/io"
 import {
@@ -215,6 +217,10 @@ export function CeldaNotaPopover({
   }
 
   return (
+    <>
+    {/* Estado en la outbox (Pendiente / Conflicto / No guardado). La definitiva
+        no se recalcula en el front (D9): se refresca al sincronizar. */}
+    <PendingBadge entityKey={celdaEntityKey(pkTactividadEstudiante)} />
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger
@@ -269,5 +275,6 @@ export function CeldaNotaPopover({
         </div>
       </PopoverContent>
     </Popover>
+    </>
   )
 }
