@@ -385,7 +385,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
           <form.Field name="minimumSubjectPercentage">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel className="flex-1">Porcentaje mínimo de Área/Asignatura*</FieldLabel>
+                <FieldLabel className="flex-1">Porcentaje mínimo de Área/{subjectLabel}*</FieldLabel>
 
                 <PercentInput
                   value={field.state.value}
@@ -442,8 +442,7 @@ interface RequiredSubjectsFieldProps {
   field: AnyFieldApi
   options: SubjectOption[] | AreaOption[]
   subjectLabelPlural: string
-  /** Singular/plural del nodo curricular actualmente elegido ("área"/"áreas"
-   *  o la palabra dinámica del referente) — rotula el modal, no el campo. */
+  /** "área"/"áreas" o el rótulo del referente; rotula el modal, no el campo. */
   noun: string
   nounPlural: string
 }

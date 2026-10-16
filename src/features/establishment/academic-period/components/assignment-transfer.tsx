@@ -54,7 +54,7 @@ function matches(subject: AssignmentSubject, query: string) {
   )
 }
 
-const SEARCH_PLACEHOLDER = "Asignatura, grado, grupo o jornada"
+const SEARCH_PLACEHOLDER = "Nombre, grado, grupo o jornada"
 
 interface AssignmentTransferProps {
   available: AssignmentSubject[]
@@ -81,10 +81,9 @@ export function AssignmentTransfer({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* Disponibles */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <HeadingTag className="text-sm font-semibold">Asignatura(s) disponible(s)</HeadingTag>
+          <HeadingTag className="text-sm font-semibold">Disponibles</HeadingTag>
           {available.length > 0 && (
             <Button
               type="button"
@@ -98,8 +97,7 @@ export function AssignmentTransfer({
             </Button>
           )}
         </div>
-        {/* Buscador + lista encerrados en una sola caja con borde redondeado.
-            Altura fija para que ambos lados midan lo mismo. */}
+        {/* Altura fija: los dos lados miden lo mismo. */}
         <div className="flex h-96 min-h-0 flex-col gap-2 rounded-md border p-3">
           {available.length === 0 ? (
             <EmptyState />
@@ -149,10 +147,9 @@ export function AssignmentTransfer({
         </div>
       </div>
 
-      {/* Actuales */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <HeadingTag className="text-sm font-semibold">Asignaturas actuales</HeadingTag>
+          <HeadingTag className="text-sm font-semibold">Asignadas</HeadingTag>
           {assigned.length > 0 && (
             <Button
               type="button"
