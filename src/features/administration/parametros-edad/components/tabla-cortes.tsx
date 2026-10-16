@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "@/components/ui/icons"
@@ -17,6 +16,7 @@ import {
 import {
   AccionesFila,
   ErrorCampo,
+  SelectFila,
   TablaParametros,
 } from "@/features/administration/parametros-edad/components/tabla-parametros"
 
@@ -34,12 +34,16 @@ export function TablaCortes({
   puedeEditar,
   guardando,
   onGuardar,
+  puedeEliminar,
+  onEliminar,
 }: {
   filas: CorteCalendario[]
   opciones: ListaValor[]
   puedeEditar: boolean
   guardando: boolean
   onGuardar: (calendario: string, mes: number, dia: number) => Promise<unknown>
+  puedeEliminar: boolean
+  onEliminar: (codigo: string) => Promise<boolean>
 }) {
   const [edicion, setEdicion] = useState<Edicion | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +64,10 @@ export function TablaCortes({
     const calendario = edicion.calendario ?? edicion.nuevoCalendario
     const mes = Number(edicion.mes)
     const dia = Number(edicion.dia)
+    // Sin cambios no se guarda: no hay nada que confirmar.
+    if (filas.some((f) => f.calendario === edicion.calendario && f.mes === mes && f.dia === dia)) {
+      return cancelar()
+    }
     if (!calendario) return setError("Seleccione el calendario.")
     if (edicion.calendario == null && filas.some((f) => f.calendario === calendario)) {
       return setError("El calendario ya tiene una fecha de corte.")
@@ -85,24 +93,21 @@ export function TablaCortes({
           autoFocus={edicion?.calendario != null}
           aria-label="Día"
           aria-invalid={Boolean(error)}
-          className="h-9 w-12 text-right tabular-nums"
+          variant="outlined"
+          size="sm"
+          className="h-8 w-14 text-right tabular-nums"
           value={edicion?.dia ?? ""}
           onChange={(e) => setEdicion((p) => p && { ...p, dia: toDigitsOnly(e.target.value, 2) })}
         />
         <span className="text-muted-foreground">de</span>
-        <NativeSelect
-          size="sm"
-          aria-label="Mes"
+        <SelectFila
+          label="Mes"
+          placeholder="Mes"
+          className="w-36"
+          opciones={MESES.map((m, i) => ({ value: String(i + 1), label: m }))}
           value={edicion?.mes ?? ""}
-          onChange={(e) => setEdicion((p) => p && { ...p, mes: e.target.value })}
-        >
-          <NativeSelectOption value="">Mes</NativeSelectOption>
-          {MESES.map((m, i) => (
-            <NativeSelectOption key={m} value={String(i + 1)}>
-              {m}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          onChange={(v) => setEdicion((p) => p && { ...p, mes: v })}
+        />
       </div>
       <ErrorCampo mensaje={error} />
     </div>
@@ -143,20 +148,13 @@ export function TablaCortes({
       {edicion?.calendario === null && (
         <TableRow>
           <TableCell>
-            <NativeSelect
-              size="sm"
-              autoFocus
-              aria-label="Calendario"
+            <SelectFila
+              label="Calendario"
+              placeholder="Seleccione el calendario"
+              opciones={libres.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
               value={edicion.nuevoCalendario}
-              onChange={(e) => setEdicion((p) => p && { ...p, nuevoCalendario: e.target.value })}
-            >
-              <NativeSelectOption value="">Seleccione</NativeSelectOption>
-              {libres.map((o) => (
-                <NativeSelectOption key={String(o.pkListaValor)} value={String(o.pkListaValor)}>
-                  {o.nombre}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              onChange={(v) => setEdicion((p) => p && { ...p, nuevoCalendario: v })}
+            />
           </TableCell>
           <TableCell>{campoFecha}</TableCell>
           <TableCell>
@@ -192,6 +190,11 @@ export function TablaCortes({
                   })
                 }
                 onCancelar={cancelar}
+                eliminar={{
+                  puede: puedeEliminar && !edicion,
+                  descripcion: `Se quitará la fecha de corte del calendario ${f.nombre} y su situación de edad quedará Sin calcular.`,
+                  onConfirm: () => onEliminar(f.calendario),
+                }}
               />
             </TableCell>
           </TableRow>

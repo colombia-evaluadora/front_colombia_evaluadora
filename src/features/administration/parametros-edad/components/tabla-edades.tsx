@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { toDigitsOnly } from "@/lib/text-input"
 
@@ -14,6 +13,7 @@ import {
 import {
   AccionesFila,
   ErrorCampo,
+  SelectFila,
   TablaParametros,
 } from "@/features/administration/parametros-edad/components/tabla-parametros"
 
@@ -30,12 +30,16 @@ export function TablaEdades({
   puedeEditar,
   guardando,
   onGuardar,
+  puedeEliminar,
+  onEliminar,
 }: {
   filas: EdadGrado[]
   opciones: ListaValor[]
   puedeEditar: boolean
   guardando: boolean
   onGuardar: (grado: string, edad: number) => Promise<unknown>
+  puedeEliminar: boolean
+  onEliminar: (codigo: string) => Promise<boolean>
 }) {
   const [edicion, setEdicion] = useState<Edicion | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +63,8 @@ export function TablaEdades({
     if (!edicion) return
     const grado = edicion.grado ?? edicion.nuevoGrado
     const edad = Number(edicion.edad)
+    // Sin cambios no se guarda: no hay nada que confirmar.
+    if (filas.some((f) => f.grado === edicion.grado && f.edad === edad)) return cancelar()
     if (!grado) return setError("Seleccione el grado.")
     if (edicion.grado == null && filas.some((f) => f.grado === grado)) {
       return setError("El grado ya tiene una edad recomendada.")
@@ -82,7 +88,9 @@ export function TablaEdades({
           autoFocus={edicion?.grado != null}
           aria-label="Edad recomendada"
           aria-invalid={Boolean(error)}
-          className="h-9 w-16 text-right tabular-nums"
+          variant="outlined"
+          size="sm"
+          className="h-8 w-16 text-right tabular-nums"
           value={edicion?.edad ?? ""}
           onChange={(e) => setEdicion((p) => p && { ...p, edad: toDigitsOnly(e.target.value, 2) })}
         />
@@ -114,20 +122,13 @@ export function TablaEdades({
       {edicion?.grado === null && (
         <TableRow>
           <TableCell>
-            <NativeSelect
-              size="sm"
-              autoFocus
-              aria-label="Grado"
+            <SelectFila
+              label="Grado"
+              placeholder="Seleccione el grado"
+              opciones={libres.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
               value={edicion.nuevoGrado}
-              onChange={(e) => setEdicion((p) => p && { ...p, nuevoGrado: e.target.value })}
-            >
-              <NativeSelectOption value="">Seleccione el grado</NativeSelectOption>
-              {libres.map((o) => (
-                <NativeSelectOption key={String(o.pkListaValor)} value={String(o.pkListaValor)}>
-                  {o.nombre}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              onChange={(v) => setEdicion((p) => p && { ...p, nuevoGrado: v })}
+            />
           </TableCell>
           <TableCell>{campoEdad}</TableCell>
           <TableCell>
@@ -160,6 +161,11 @@ export function TablaEdades({
                   setEdicion({ grado: f.grado, nuevoGrado: "", edad: String(f.edad) })
                 }
                 onCancelar={cancelar}
+                eliminar={{
+                  puede: puedeEliminar && !edicion,
+                  descripcion: `Se quitará la edad recomendada de ${f.nombre} y su situación de edad quedará Sin calcular.`,
+                  onConfirm: () => onEliminar(f.grado),
+                }}
               />
             </TableCell>
           </TableRow>

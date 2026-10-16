@@ -7,16 +7,16 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { InfoIcon, XIcon } from "@/components/ui/icons"
+import { InfoIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
+import { useDeleteParametro } from "@/features/administration/parametros-edad/api/mutations/delete-parametro"
 import { useSaveParametro } from "@/features/administration/parametros-edad/api/mutations/save-parametro"
 import { useParametrosEdadQuery } from "@/features/administration/parametros-edad/api/query/use-parametros-edad-query"
 import { TablaCortes } from "@/features/administration/parametros-edad/components/tabla-cortes"
@@ -28,6 +28,12 @@ export function ParametrosEdadPage() {
       <ParametrosEdadContent />
     </NoticeProvider>
   )
+}
+
+const AVISO = {
+  id: 0,
+  message:
+    "La situación de edad no se guarda: cualquier cambio en estos parámetros se reflejará en todas las inscripciones y matrículas.",
 }
 
 const SITUACIONES = [
@@ -43,7 +49,7 @@ const SITUACIONES = [
 
 function ParametrosEdadContent() {
   const { notify } = useNotify()
-  const { puedeEditar } = useMenuPermission("PARAMETROS_EDAD")
+  const { puedeEditar, puedeEliminar } = useMenuPermission("PARAMETROS_EDAD")
   const [avisoVisible, setAvisoVisible] = useState(true)
   const { data, isPending, isError, error } = useParametrosEdadQuery()
   const grados = useValoresQuery("GRADOS")
@@ -56,6 +62,20 @@ function ParametrosEdadContent() {
     },
   })
 
+  const remove = useDeleteParametro()
+
+  // `false` deja abierto el diálogo de confirmación si el backend rechaza.
+  async function eliminar(tipo: "grado" | "calendario", codigo: string) {
+    try {
+      await remove.mutateAsync({ tipo, codigo })
+      notify("Parámetro eliminado.")
+      return true
+    } catch (e) {
+      notify(getErrorMessage(e), { variant: "error" })
+      return false
+    }
+  }
+
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -64,23 +84,11 @@ function ParametrosEdadContent() {
       <TableScreenBody>
         <div className="flex flex-col gap-6">
           <NoticeOutlet />
-          {avisoVisible && (
-            <Alert className="flex items-center gap-2 pr-2">
-              <InfoIcon className="size-4 shrink-0 text-primary" />
-              <AlertDescription className="flex-1">
-                La situación de edad no se guarda: cualquier cambio en estos parámetros se reflejará
-                en todas las inscripciones y matrículas.
-              </AlertDescription>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Cerrar aviso"
-                onClick={() => setAvisoVisible(false)}
-              >
-                <XIcon />
-              </Button>
-            </Alert>
-          )}
+          <NoticeBanner
+            variant="info"
+            notice={avisoVisible ? AVISO : null}
+            onClose={() => setAvisoVisible(false)}
+          />
 
           {isError ? (
             <p role="alert" className="text-sm text-red">
@@ -99,6 +107,8 @@ function ParametrosEdadContent() {
                 puedeEditar={puedeEditar}
                 guardando={save.isPending}
                 onGuardar={(codigo, edad) => save.mutateAsync({ tipo: "grado", codigo, edad })}
+                puedeEliminar={puedeEliminar && !remove.isPending}
+                onEliminar={(codigo) => eliminar("grado", codigo)}
               />
               <div className="flex flex-col gap-6">
                 <TablaCortes
@@ -109,6 +119,8 @@ function ParametrosEdadContent() {
                   onGuardar={(codigo, mes, dia) =>
                     save.mutateAsync({ tipo: "calendario", codigo, mes, dia })
                   }
+                  puedeEliminar={puedeEliminar && !remove.isPending}
+                  onEliminar={(codigo) => eliminar("calendario", codigo)}
                 />
                 <section aria-labelledby="situacion-edad" className="rounded-md border p-4">
                   <h3

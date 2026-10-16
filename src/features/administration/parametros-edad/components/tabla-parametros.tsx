@@ -1,7 +1,16 @@
 import type { ReactNode } from "react"
 
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { Button } from "@/components/ui/button"
 import { CheckIcon, PencilIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import {
   Table,
   TableBody,
@@ -78,6 +87,7 @@ export function AccionesFila({
   etiqueta,
   onModificar,
   onCancelar,
+  eliminar,
 }: {
   editando: boolean
   puedeEditar: boolean
@@ -85,11 +95,16 @@ export function AccionesFila({
   etiqueta: string
   onModificar: () => void
   onCancelar: () => void
+  /** Solo en filas ya guardadas; sin él no se muestra el botón. */
+  eliminar?: { puede: boolean; descripcion: string; onConfirm: () => Promise<boolean> }
 }) {
+  // Keys distintas: si React reusara el botón de Modificar como submit, el mismo
+  // clic que abre la edición enviaría el formulario.
   if (editando) {
     return (
-      <div className="flex justify-end gap-1">
+      <div key="editando" className="flex justify-end gap-1">
         <Button
+          key="guardar"
           type="submit"
           variant="ghost"
           size="icon-sm"
@@ -112,8 +127,9 @@ export function AccionesFila({
     )
   }
   return (
-    <div className="flex justify-end">
+    <div key="leyendo" className="flex justify-end">
       <Button
+        key="modificar"
         type="button"
         variant="ghost"
         size="icon-sm"
@@ -123,7 +139,57 @@ export function AccionesFila({
       >
         <PencilIcon />
       </Button>
+      {eliminar && (
+        <ConfirmRemoveButton
+          key="eliminar"
+          label={`Eliminar ${etiqueta}`}
+          description={eliminar.descripcion}
+          disabled={!eliminar.puede}
+          onConfirm={eliminar.onConfirm}
+        />
+      )}
     </div>
+  )
+}
+
+/** Selector de la fila en edición, con el mismo estilo que los de otras tablas. */
+export function SelectFila({
+  label,
+  placeholder,
+  opciones,
+  value,
+  onChange,
+  className,
+}: {
+  label: string
+  placeholder: string
+  opciones: { value: string; label: string }[]
+  value: string
+  onChange: (value: string) => void
+  className?: string
+}) {
+  return (
+    <Select
+      items={Object.fromEntries(opciones.map((o) => [o.value, o.label]))}
+      value={value}
+      onValueChange={(next) => onChange(String(next ?? ""))}
+    >
+      <SelectTrigger
+        variant="outlined"
+        size="sm"
+        aria-label={label}
+        className={cn("h-8 w-full max-w-56", className)}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {opciones.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
