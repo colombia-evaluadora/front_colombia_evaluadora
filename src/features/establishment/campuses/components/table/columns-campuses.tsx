@@ -16,7 +16,7 @@ interface CampusColumnsOptions {
 }
 
 function ActionsCell({ campus, onEdit }: { campus: Campus; onEdit: (id: number) => void }) {
-  const { puedeEditar } = useMenuPermission("SEDES_EDUCATIVAS")
+  const { puedeEditar } = useMenuPermission("SEDES_EDUCATIVAS", { onlineOnlyWrites: true })
 
   return (
     <div className="flex items-center justify-end gap-1">

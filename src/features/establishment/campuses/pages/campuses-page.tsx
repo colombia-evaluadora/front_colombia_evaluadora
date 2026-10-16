@@ -10,7 +10,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 export function CampusesPage() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingCampusId, setEditingCampusId] = useState<number | null>(null)
-  const { puedeCrear } = useMenuPermission("SEDES_EDUCATIVAS")
+  const { puedeCrear } = useMenuPermission("SEDES_EDUCATIVAS", { onlineOnlyWrites: true })
 
   function openCreateDialog() {
     setEditingCampusId(null)

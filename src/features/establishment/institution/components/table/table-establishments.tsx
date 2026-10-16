@@ -46,7 +46,7 @@ interface EstablishmentsDataTableProps {
 
 export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTableProps) {
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =

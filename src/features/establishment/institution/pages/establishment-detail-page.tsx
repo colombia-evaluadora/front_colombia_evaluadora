@@ -40,7 +40,7 @@ const accordionCardClassName = "py-5"
 export function EstablishmentDetailPage() {
   const { establishmentId } = establishmentDetailRoute.useParams()
   const id = Number(establishmentId)
-  const { puedeEditar } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeEditar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
   const { data, isPending, isError, error } = useEstablishmentQuery(id, !Number.isNaN(id))
 
   const { data: ownershipTypes = [] } = useOwnershipTypesQuery()
