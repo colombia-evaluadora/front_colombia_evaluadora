@@ -15,6 +15,10 @@ declare module "axios" {
     // Marca una lectura por POST (`api.query`, `evalCol.postRows`): no lleva
     // `Idempotency-Key` porque no muta nada.
     readOnly?: boolean
+    // Request enviada por la outbox (Fase 2 offline): sin toast global y sin
+    // redirigir a /login ante un 401 — la cola se pausa, conserva las ops y el
+    // banner pide iniciar sesión (`lib/offline/outbox/processor.ts`).
+    background?: boolean
   }
   export interface AxiosInstance {
     // El response interceptor de abajo desenvuelve `response.data` en runtime
@@ -304,6 +308,10 @@ api.interceptors.response.use(
     // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
     // ya lo captura y devuelve null. Lo mismo vale para los endpoints de
     // recuperación, que corren sin sesión.
+    // La outbox clasifica sus propios errores (§6.4): nada de toasts,
+    // revalidaciones ni redirecciones por cada op que falla.
+    if (error.config?.background) return Promise.reject(error)
+
     const requestUrl = error.config?.url ?? ""
     const isPublicEndpoint = PUBLIC_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
     const isUnauthorized = error.response?.status === 401
