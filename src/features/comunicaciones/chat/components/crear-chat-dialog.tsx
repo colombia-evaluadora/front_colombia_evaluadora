@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import type { Persona } from "@/features/comunicaciones/chat/api/types"
 import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
-import { usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
+import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 
 const AYUDA =
@@ -39,7 +39,8 @@ export function CrearChatDialog({
   const [nombre, setNombre] = useState("")
   const [miembros, setMiembros] = useState<Persona[]>([])
   const crear = useCrearCanal()
-  const personas = usePersonasQuery(open && paso === 2)
+  const [consulta, setConsulta] = useState("")
+  const personas = usePersonasQuery(open && paso === 2, consulta)
   const limpio = nombre.trim().replace(/-+$/, "")
 
   const cerrar = () => {
@@ -47,6 +48,7 @@ export function CrearChatDialog({
     setPaso(1)
     setNombre("")
     setMiembros([])
+    setConsulta("")
     crear.reset()
     onClose()
   }
@@ -105,6 +107,8 @@ export function CrearChatDialog({
             <SelectorPersonas
               personas={personas.data ?? []}
               cargando={personas.isPending}
+              delServidor={!personas.isPlaceholderData && consulta.trim().length >= 2}
+              onConsulta={setConsulta}
               value={miembros}
               onChange={setMiembros}
             />
@@ -154,11 +158,15 @@ export function CrearChatDialog({
 function SelectorPersonas({
   personas,
   cargando,
+  delServidor,
+  onConsulta,
   value,
   onChange,
 }: {
   personas: Persona[]
   cargando: boolean
+  delServidor: boolean
+  onConsulta: (consulta: string) => void
   value: Persona[]
   onChange: (v: Persona[]) => void
 }) {
@@ -169,7 +177,8 @@ function SelectorPersonas({
       onChange={onChange}
       getId={(p) => p.id}
       getLabel={(p) => p.nombre}
-      filtrar={(p, t) => p.nombre.toLowerCase().includes(t) || p.correo.toLowerCase().includes(t)}
+      filtrar={(p, t) => coincidePersona(p, t, delServidor)}
+      onConsulta={onConsulta}
       cargando={cargando}
       autoFocus
       ariaLabel="Buscar personas"
