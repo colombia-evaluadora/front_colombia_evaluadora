@@ -161,36 +161,19 @@ import {
 import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
 
 /**
- * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
- * que la hereda del contexto `Field`): siempre sale con la línea inferior.
- * Acá la aplicamos a mano para que matchee el resto del form cuando está
- * dentro de un `<Field variant="outlined">`. Las clases están copiadas de
- * `inputVariants({variant: "outlined"})` para que ambos controles se vean
- * idénticos.
+ * `<Textarea>` no hereda la variante `outlined` del `Field`: se aplica a mano
+ * con las mismas clases de `inputVariants({variant: "outlined"})`.
  */
 const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
-// Labels de los `<Select>` cuyo `value` no coincide con el texto que muestra
-// la opción (ids, abreviaturas). El `<SelectValue>` de cada uno resuelve acá
-// en vez de mostrar el `value` crudo —mismo patrón que el resto de la app
-// (ver `dialog-save-menu.tsx`, `form-academic-period.tsx`).
+// Labels de los `<Select>` cuyo `value` (id, abreviatura) no es el texto visible.
 
-/**
- * Presentación visual de cada `RecursoTipo`. Centraliza icono, label y color
- * (el mismo para el cuadrado de la cabecera y el badge de la derecha, así
- * siempre combinan) para que el `RecursoItem` y cualquier otro consumidor
- * (filtros, exports, …) saquen todo de un mismo mapper y no terminen con
- * versiones distintas.
- */
+/** Presentación (ícono, label, color) de cada `RecursoTipo`, única fuente para todos los consumidores. */
 type RecursoPresentacion = {
-  /** Label legible del tipo. */
   label: string
-  /** Ícono que se muestra en el cuadrado de la cabecera y en el badge. */
   Icon: React.ComponentType<{ className?: string }>
-  /** `bg-*` compartido por el cuadrado de la cabecera y el badge. */
   bg: string
-  /** `text-*` compartido por el ícono del header y el texto + ícono del badge. */
   text: string
 }
 
@@ -236,11 +219,8 @@ const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {
 }
 
 /**
- * Checkbox de "Opciones de entrega" que se marca por defecto al elegir cada
- * "Tipo de evidencia esperada" (pedido explícito de QA). Solo prende el que
- * corresponde — nunca apaga el otro — porque ambos checkboxes siguen siendo
- * independientes entre sí: el docente puede además habilitar el que falta si
- * lo desea.
+ * Opción de entrega que se marca por defecto según el tipo de evidencia (pedido de QA).
+ * Solo prende la suya, nunca apaga la otra: siguen siendo independientes.
  */
 const TIPO_EVIDENCIA_CHECKBOX_DEFAULT: Record<string, "archivo" | "texto"> = {
   Archivo: "archivo",
@@ -250,12 +230,8 @@ const TIPO_EVIDENCIA_CHECKBOX_DEFAULT: Record<string, "archivo" | "texto"> = {
 }
 
 /**
- * Catálogos de respaldo de `InstrumentoPersonalizadoSection` — solo se usan
- * mientras `campos_disponibles.evaluacion.instrumentosPermitidos[valor=OTRO]
- * .campos` no resolvió todavía (foto vieja, endpoint viejo): el backend real
- * ya manda ese catálogo acotado al referente (ver el comentario de
- * `InstrumentoPersonalizadoSection`), este es solo el piso para no dejar los
- * selects sin opciones mientras carga.
+ * Respaldo de los catálogos de "Otro" mientras `instrumentosPermitidos[OTRO].campos`
+ * no resuelve; el backend real los manda acotados al referente.
  */
 const TIPO_EVIDENCIA_ESPERADA_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: string }[] = [
   { pk: -1, valor: "ARCHIVO", nombre: "Archivo" },
@@ -272,54 +248,30 @@ const METODO_VALORACION_CATALOGO_DEFAULT: { pk: number; valor: string; nombre: s
 
 interface EditarActividadFormProps {
   actividad: Actividad
-  /** Llamado cada vez que el form pasa de limpio a sucio o viceversa. */
   onDirtyChange?: (isDirty: boolean) => void
-  /** Id del `<form>` para que el footer pueda dispararlo desde fuera. */
   formId: string
-  /**
-   * Llamado con los valores completos al confirmar el submit (botón
-   * "Guardar" del footer, vía `form={formId}`). Opcional: la edición
-   * todavía no tiene `useUpdateActividad` (el submit no hace nada si no se
-   * pasa), pero el alta sí lo usa para mandar la actividad a
-   * `useCreateActividad` — mismo form, un solo lugar donde vive el submit
-   * real en vez de bifurcar el componente entero por "crear" vs "editar".
-   */
+  /** Submit real. Opcional: sin él el submit no hace nada. */
   onSubmit?: (values: Actividad) => void
   /**
-   * `true` en el alta (`crearActividadVacia`), donde `actividad.id` es un
-   * id de BORRADOR (`draftId()`, un número aleatorio) que nunca existió en
-   * el backend — no un `PK_TACTIVIDAD` real todavía. Sin esta bandera, el
-   * form disparaba igual `GET /actividades/:id/calificaciones` con ese id
-   * inventado (confirmado en vivo: 403, porque esa actividad no existe),
-   * para una lista de estudiantes que en el alta ni siquiera tiene sentido
-   * pedir todavía. Default `false`: la edición confía en que `actividad`
-   * viene de `useActividadDetalleQuery`, con un id real.
+   * `true` en el alta: `actividad.id` es un `draftId()` inexistente en el backend,
+   * así que no se piden calificaciones con él.
    */
   esNueva?: boolean
   /**
-   * Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
-   * (`?rotulo=`, `planeador-crear-actividad-page.tsx`) — acota las opciones
-   * de Grado/Asignatura de `AsignaturaGradoSection` a esa pestaña en vez de
-   * todo el catálogo del docente. `undefined` en edición (no hay restricción
-   * de catálogo al editar una actividad ya creada) y cuando el docente tiene
-   * un solo Rótulo de Ejecución (nada que acotar).
+   * Pestaña de Rótulo de Ejecución (`?rotulo=`) que acota Grado/Asignatura.
+   * `undefined` en edición o con un solo rótulo.
    */
   tab?: ActividadTab
   /**
-   * Solo lectura: el usuario puede VER el planeador pero no editarlo (p. ej.
-   * el Coordinador, con el menú PLANEADOR en "Solo lectura"). Deshabilita
-   * todas las secciones con el mismo `disabled` explícito de siempre (Base
-   * UI ignora `<fieldset disabled>`) y el submit no hace nada.
+   * Solo lectura: deshabilita cada sección con `disabled` explícito (Base UI ignora
+   * `<fieldset disabled>`) y el submit no hace nada.
    */
   readOnly?: boolean
 }
 
 /**
- * Form de una actividad — se reusa tal cual para editar (`actividad` ya
- * existente) y para crear (`actividad` en blanco, ver `crearActividadVacia`
- * en `lib/empty-actividad.ts`). Carga los datos como `defaultValues`, deja
- * los inputs editables y reporta el estado "dirty" hacia arriba para que el
- * `<TableScreenFooter>` decida si mostrar el aviso de cambios.
+ * Form de una actividad, compartido por edición y alta (`crearActividadVacia`).
+ * Reporta el estado "dirty" hacia arriba.
  */
 export function EditarActividadForm({
   actividad,
@@ -333,41 +285,22 @@ export function EditarActividadForm({
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
 
-  // Unidades creadas al vuelo desde `CrearUnidadPopover`. `useCreateUnidad`
-  // ya las persiste de verdad (`POST /planeador/unidades`), pero invalidar
-  // el query e esperar el refetch dejaría al `<Select>` sin la unidad nueva
-  // por un instante — se guarda también acá, con el id REAL que devolvió el
-  // backend, para que aparezca en la lista de opciones de inmediato.
+  // Unidades creadas al vuelo (ya persistidas, con id real): se guardan acá para
+  // que aparezcan en el `<Select>` sin esperar el refetch.
   const [unidadesCreadas, setUnidadesCreadas] = useState<UnidadTematica[]>([])
-  // Dedupe por `id`: si `unidadesQuery` ya refrescó y trae una unidad que
-  // también sigue en `unidadesCreadas` (creada un momento antes en esta
-  // misma sesión de formulario), se descarta la copia local -- sin esto
-  // la misma unidad aparecía dos veces en el `<Select>` apenas el query
-  // real se ponía al día.
+  // Dedupe por `id`: si el query ya trae la unidad creada, se descarta la copia local.
   const unidadesCreadasPendientes = unidadesCreadas.filter(
     (creada) => !unidadesQuery.some((real) => real.id === creada.id),
   )
   const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
-  // El alta usa el sentinel "nueva" en vez de `actividad.id`: ese id es un
-  // `draftId()` aleatorio que cambia en cada montaje (ver `esNueva` más
-  // arriba), así que no sirve para encontrar el borrador guardado antes de
-  // navegar a "Ver recurso" — la edición sí puede usar su id real, estable
-  // entre navegaciones (`key={actividadParaForm.id}` en la página).
+  // El alta usa el sentinel "nueva": `actividad.id` es un `draftId()` que cambia en cada montaje.
   const draftKey: ActividadFormDraftKey = esNueva ? "nueva" : actividad.id
-  // Lazy initializer: corre una sola vez al montar. `defaultValues` SIEMPRE
-  // es la actividad original del servidor (nunca el borrador): es la base
-  // contra la que `isDefaultValue`/`isDirty` compara más abajo. Si acá
-  // metiéramos el borrador como default (como antes), al volver de "Ver
-  // recurso" el form se remonta, el borrador se restaura como si fuera el
-  // valor "de fábrica" y el form vuelve a verse limpio (`isDirty = false`)
-  // aunque el docente siga con cambios reales sin guardar — el aviso y el
-  // "Guardar" del `<TableScreenFooter>` desaparecían justo ahí.
+  // `defaultValues` SIEMPRE es la actividad del servidor, nunca el borrador: si no,
+  // al volver de "Ver recurso" el form se vería limpio con cambios sin guardar.
   const [actividadOriginal] = useState(() => actividad)
-  // El borrador (si venimos de "Ver recurso"; `consumeActividadFormDraft`
-  // ya lo borró para que no se reuse) se aplica aparte, como VALORES
-  // actuales del form, sin tocar los defaults de arriba.
+  // El borrador se aplica aparte como valores actuales, sin tocar los defaults.
   const [draftInicial] = useState(() => consumeActividadFormDraft(draftKey))
 
   const { notify } = useNotify()
@@ -376,19 +309,14 @@ export function EditarActividadForm({
     onSubmit: ({ value }) => {
       if (readOnly) return
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
-      // El instrumento se guarda en un PUT APARTE, después de crear/
-      // actualizar la actividad (ver `instrumento-faltantes.ts`): si se
-      // dejara pasar incompleto, la actividad quedaría guardada y el
-      // instrumento rechazado (o, con una escala vacía, ni siquiera
-      // enviado). Se frena acá, antes de mandar nada.
+      // El instrumento se guarda en un PUT aparte tras la actividad: se frena acá si
+      // está incompleto para no dejar la actividad guardada sin él.
       if (faltantesDelInstrumento(value).length > 0) return
       return onSubmit?.(value)
     },
   })
 
-  // `keepDefaultValues: true` es la clave: pisa los valores actuales con el
-  // borrador pero deja `actividadOriginal` como default, así `isDirty` sigue
-  // comparando contra la actividad real del servidor.
+  // `keepDefaultValues: true`: `isDirty` sigue comparando contra la actividad del servidor.
   useEffect(() => {
     if (draftInicial) {
       form.reset(draftInicial, { keepDefaultValues: true })
@@ -396,21 +324,13 @@ export function EditarActividadForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // `isDefaultValue` es lo que usa el form académico para detectar cambios:
-  // es `false` apenas el usuario toca cualquier campo. Se re-emite hacia
-  // arriba para que el `<TableScreenFooter>` muestre el aviso + el Guardar
-  // solo cuando hace falta.
   const isDirty = useSelector(form.store, (state) => !state.isDefaultValue)
   useEffect(() => {
     onDirtyChange?.(isDirty)
   }, [isDirty, onDirtyChange])
 
-  // Crea la unidad de verdad (`POST /planeador/unidades`, `useCreateUnidad`)
-  // con lo que capturó el popover, la agrega a `unidadesCreadas` con el id
-  // REAL que devolvió el backend y la devuelve para que quien la pidió (el
-  // `<Select>` de "Unidad temática asociada") la asigne de una. El resto de
-  // la ficha (fechas derivadas, criterios, actividades) se completa después,
-  // editando la unidad ya creada — acá solo va "Información general".
+  // Crea la unidad en el backend y la devuelve con su id real para asignarla de una.
+  // Acá solo va "Información general"; el resto se completa editando la unidad.
   async function crearUnidad(data: {
     nombre: string
     contenidos: string[]
@@ -432,10 +352,7 @@ export function EditarActividadForm({
       fechaFin: "",
       descripcion: data.descripcion,
       objetivos: data.objetivos,
-      // El popover de alta rápida no ofrece título por sección (ver
-      // `ListaAgregableField` más abajo, variante compacta sin ese campo)
-      // — se guardan sin título, igual que cualquier unidad de antes de
-      // V492; el docente puede agregarlos después editando la unidad.
+      // El popover no ofrece título por sección: se guardan sin título.
       contenidos: data.contenidos.map((descripcion) => ({ descripcion })),
       metodoCalculo: data.metodoCalculo,
       grado: data.grado,
@@ -455,18 +372,15 @@ export function EditarActividadForm({
     actividad.camposDisponibles,
     actividad.unidad.id,
   )
-  // `grupoTieneEstudiantes` se completa más abajo, cuando ya está el padrón
-  // del grupo (`matriculas`): lo lee la regla de "Estudiantes" de
-  // `camposObligatoriosFaltantes`.
-  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa, grupoTieneEstudiantes: false })
+  // `grupoTieneEstudiantes` se completa más abajo, con el padrón del grupo.
+  const camposEfectivosRef = useRef({ camposEfectivos, esFormativa, grupoTieneEstudiantes: false, subjectLabel: "Asignatura" })
   const unidadesRef = useRef(unidades)
   unidadesRef.current = unidades
 
-  /** Faltantes del instrumento de evaluación (Bloque 5). El puntaje es
-   *  obligatorio con el mismo criterio que `puntajeObligatorio` de
-   *  `RubricasSection`/`ListaCotejoSection`: la unidad vinculada calcula
-   *  por Ponderado o Suma de puntos. En un referente formativo no hay
-   *  instrumento que validar (Bloque 5 ni se muestra). */
+  /**
+   * Faltantes del instrumento (Bloque 5). El puntaje es obligatorio si la unidad calcula
+   * por Ponderado o Suma de puntos; un referente formativo no tiene instrumento.
+   */
   function faltantesDelInstrumento(values: Actividad): string[] {
     if (camposEfectivosRef.current.esFormativa) return []
     const unidad = unidadesRef.current.find((u) => u.id === values.unidad.id)
@@ -475,43 +389,23 @@ export function EditarActividadForm({
     })
   }
 
-  // Grado + Asignatura son el punto de partida de toda la actividad: el
-  // resto de los campos (nombre, tipo, unidad asociada, materiales,
-  // recursos, programación, evaluación, adaptaciones, seguimiento) no tiene
-  // sentido completarlo antes de saber a qué grado/asignatura pertenece la
-  // actividad, así que quedan deshabilitados hasta elegir los dos. Se pasa
-  // como prop explícita a cada sección (no un `<fieldset disabled>`
-  // envolvente): los controles de Base UI (`<Select>`, `<Checkbox>`,
-  // `<Switch>`, `<DatePicker>`, …) leen su propio prop `disabled`, no el
-  // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
-  // con el `<fieldset>` puesto todo seguía respondiendo al click.
+  // Todo depende de Grado + Asignatura: hasta elegirlos las secciones quedan deshabilitadas.
+  // Se pasa `disabled` explícito: Base UI ignora `<fieldset disabled>`.
   const sinGradoAsignatura = !useHasGradoAsignatura(form)
   const disabled = readOnly || sinGradoAsignatura
-  // Padrón de matrículas del grupo de la actividad — mismo query que
-  // alimenta "Estudiantes de la {rótulo}" en `AsignaturaGradoSection`
-  // (`useActividadMatriculasGrupoQuery`, misma `queryKey` por `grupoId`:
-  // react-query dedupea, no duplica el pedido al backend). Se usa acá para
-  // el checklist "Seleccionar estudiantes (múltiple)" de cada adaptación
-  // (ver `AdaptacionItem`). ANTES este checklist salía de
-  // `useCalificacionesQuery(actividad.id)` (`GET
-  // /planeador/actividades/:id/calificaciones`), que (a) viene `undefined`
-  // en el alta —`esNueva`— porque esa actividad todavía no existe en el
-  // backend, dejando el checklist vacío al crear, y (b) devuelve
-  // `pk_tactividad_estudiante` como `id` (ver `Estudiante`/`CalificacionRow`
-  // en `use-calificaciones-query.ts`), NO `pk_tmatricula` — el validador
-  // `fn_actividad_validar_adaptacion_estudiantes` (V496.1) espera
-  // `pk_tmatricula` en `estudiantesIds`, así que marcar casillas con el id
-  // viejo siempre terminaba rechazado por el backend ("Uno de los
-  // estudiantes de la adaptación no está entre los estudiantes de..."),
-  // sin importar cuáles/cuántas se marcaran. `matriculas` no depende de la
-  // actividad ya guardada (solo de `grupoId`), así que está disponible
-  // desde el alta.
+  // Padrón del grupo para el checklist de cada adaptación: sus ids son `pk_tmatricula`
+  // (lo que espera el backend) y está disponible desde el alta.
   const grupoIdActual = useSelector(form.store, (state) => state.values.grupoId)
+  const gradoIdActual = useSelector(form.store, (state) => state.values.gradoId)
+  const subjectLabel = useStudyPlanSubjectLabel(gradoIdActual ?? undefined, false)
   const { data: matriculas = [] } = useActividadMatriculasGrupoQuery(disabled ? undefined : grupoIdActual)
-  camposEfectivosRef.current = { camposEfectivos, esFormativa, grupoTieneEstudiantes: matriculas.length > 0 }
+  camposEfectivosRef.current = {
+    camposEfectivos,
+    esFormativa,
+    grupoTieneEstudiantes: matriculas.length > 0,
+    subjectLabel,
+  }
 
-  // UI asistida (`planeador.actividad`): el agente rellena/limpia/señala
-  // campos del modelo; el envío sigue siendo el botón Guardar.
   const { data: tiposActividadAsistente = [] } = useTipoActividadCatalogQuery()
   const { data: instrumentosAsistente = [] } = useInstrumentoEvaluacionCatalogQuery()
   const instrumentosPermitidosAsistente = camposEfectivos?.evaluacion.instrumentosPermitidos?.map(instrumentoPermitidoLabel)
@@ -528,29 +422,13 @@ export function EditarActividadForm({
         : instrumentosAsistente,
   })
   const bloqueadoPorRecuperacion = useRecuperacionBloqueaCampos(form)
-  // Alta de actividad DESDE una Unidad ya elegida ("Agregar actividad" en
-  // `DialogAgregarActividad`, `unidadId` de la URL en
-  // `planeador-crear-actividad-page.tsx`): esa unidad determina Grado,
-  // Asignatura y ella misma sin ambigüedad — no hace falta que Grado/
-  // Asignatura/Unidad queden como selects a elegir de nuevo. Se detecta por
-  // la unidad YA presente en `actividadOriginal` (capturada al montar, no
-  // cambia aunque el docente la borre después) para no afectar el alta
-  // genérica ("Nueva actividad" del listado, sin unidad de entrada) ni la
-  // edición de una actividad existente (ahí SÍ tiene sentido poder mover
-  // grado/asignatura/unidad).
+  // Alta desde una Unidad ya elegida: esa unidad fija Grado, Asignatura y Unidad.
+  // Se detecta con `actividadOriginal` (capturada al montar).
   const unidadBloqueada = esNueva && actividadOriginal.unidad.id !== 0
-  // A diferencia de `bloqueadoPorRecuperacion` (que exige `destino =
-  // ACTIVIDAD` + origen elegido, porque ahí es cuando hay un valor real que
-  // heredar), esto es la regla de negocio simple de la guía: "una actividad
-  // de recuperación siempre es sumativa" — aplica apenas se marca "Es una
-  // recuperación", sea cual sea el destino. Unidad, en cambio, sí usa
-  // `bloqueadoPorRecuperacion`: mismo criterio que Grado/Asignatura/Nombre,
-  // que solo se heredan (y bloquean) una vez elegida la actividad origen.
+  // Regla: una recuperación siempre es sumativa, sea cual sea el destino.
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   useRecuperacionAutoFill(form)
 
-  // Rótulo del selector de unidad según el grado (mismo que `UnidadAsociadaSection`).
-  const gradoIdActual = useSelector(form.store, (state) => state.values.gradoId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const rotuloUnidad = resolveInstrumentoLabel(gradoIdActual, unidadTabs, UNIDAD_TAB_FALLBACK)
 
@@ -562,59 +440,38 @@ export function EditarActividadForm({
       onSubmit={(e) => {
         e.preventDefault()
         if (readOnly) return
-        // Se captura ACÁ, no dentro del `.then()`: con React 17+ el evento
-        // sintético no se "poolea", pero `e` igual puede no sobrevivir el
-        // ciclo de vida del handler en algún entorno — el nodo del form sí.
+        // Se captura antes del `.then()`: el evento puede no sobrevivir al handler, el nodo sí.
         const formEl = e.currentTarget
         const values = form.state.values
-        // Un solo aviso por pantalla (el nuevo reemplaza al anterior): los
-        // campos generales y lo que le falta al instrumento van en el MISMO
-        // mensaje (ver `avisoCamposObligatorios`) en vez de que uno pise al
-        // otro.
+        // Un solo aviso: campos generales y faltantes del instrumento van en el mismo mensaje.
         const aviso = avisoCamposObligatorios(camposObligatoriosFaltantes(values, camposEfectivosRef.current), {
           nombre: values.instrumento,
           faltantes: faltantesDelInstrumento(values),
         })
         if (aviso) notify(aviso, { variant: "error" })
-        // `handleSubmit()` es quien sube `submissionAttempts` (el valor que
-        // leen TODOS los `isInvalid`/`data-invalid` de este form, tanto los
-        // de campos con `validators` de TanStack como los de
-        // `useErrorObligatorio`) — si falló, se espera a que termine para
-        // recién ahí llevar la vista al primer campo marcado en rojo. Con un
-        // form de ~5000 líneas el aviso de arriba con la lista de nombres no
-        // alcanza para encontrar DÓNDE está el problema.
+        // Se espera a `handleSubmit()` (sube `submissionAttempts`) antes de llevar la vista
+        // al primer campo inválido.
         void form.handleSubmit().then(() => scrollToFirstInvalidField(formEl))
       }}
     >
-      {/* Va primero, antes de "Identificación": es la única pregunta que
-          reclasifica la actividad entera ("esto no es la evaluación
-          normal, es su recuperación"), así que se responde antes de
-          completar cualquier otro campo. */}
+      {/* Va primero: reclasifica la actividad entera, así que se responde antes que el resto. */}
       <RecuperacionSection
-        // NO el `disabled` de Grado/Asignatura: acá es al revés. Con
-        // `destino = ACTIVIDAD` elegir la actividad de origen es lo que
-        // TERMINA llenando Grado/Asignatura (`useRecuperacionAutoFill`),
-        // así que exigirlos antes sería un candado sin salida.
+        // No usa el `disabled` de Grado/Asignatura: con `destino = ACTIVIDAD` elegir el origen
+        // es lo que llena Grado/Asignatura, exigirlos antes sería un candado sin salida.
         form={form}
         disabled={readOnly}
-        // Una recuperación YA guardada no deja cambiar si es recuperación
-        // ni de qué: apagarla revierte las notas que aplicó sobre la
-        // original (`fn_actividad_recuperacion_revertir`) y cambiar el
-        // origen rompe la herencia de grupo/unidad/título/estudiantes. Para
-        // eso se crea otra actividad. El resto (cómo se aplica/calcula)
-        // sigue editable.
+        // Una recuperación ya guardada no deja cambiar si lo es ni el origen: revertirla deshace
+        // las notas aplicadas y cambiar el origen rompe la herencia. El resto sigue editable.
         recuperacionFijada={!esNueva && actividadOriginal.esRecuperacion}
         camposEfectivos={camposEfectivos}
         actividadId={actividad.id}
       />
-      {/* Bloque "Contexto Académico y Estudiantes": la unidad va entre el área y los estudiantes. */}
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Contexto Académico y Estudiantes</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <AsignaturaGradoSection
             form={form}
-            // En solo lectura se reusa el mismo candado que deja fijos
-            // Grado/Grupo, Asignatura y Estudiantes en una recuperación.
+            // En solo lectura se reusa el candado de la recuperación.
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion || readOnly}
             unidadBloqueada={unidadBloqueada}
             tab={tab}
@@ -630,7 +487,6 @@ export function EditarActividadForm({
         </div>
       </Card>
       <Card className="gap-4 p-4">
-        {/* Rótulo del selector de unidad del Bloque 1 ("Unidad temática" / "Proyecto pedagógico"). */}
         <h3 className="text-base font-semibold">Identificación y Estructura de Datos de la {rotuloUnidad}</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <IdentificacionSection
@@ -662,15 +518,8 @@ export function EditarActividadForm({
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />
-      {/* Adaptaciones (Bloque 6) es SIEMPRE visible, sin importar el Enfoque
-          (Regla 49): el Decreto 1421/PIAR exige documentar ajustes
-          razonables para estudiantes con discapacidad sin importar si la
-          actividad es evaluativa o formativa — ocultarlo en referentes
-          Formativos (los más comunes en Preescolar) dejaría sin
-          trazabilidad legal justo a la población que más lo necesita.
-          Seguimiento sigue atado a `esFormativa` como antes: existe para
-          hacerle ajustes a una evaluación sumativa, y su propio gate
-          interno (`hasAdaptaciones`) ya decide si se muestra. */}
+      {/* Adaptaciones siempre visible (Regla 49): el Decreto 1421/PIAR exige documentar ajustes
+      razonables también en referentes formativos. */}
       <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />
       {!esFormativa && <SeguimientoSection form={form} disabled={disabled} />}
     </form>
@@ -679,26 +528,8 @@ export function EditarActividadForm({
 }
 
 /**
- * Tras un intento de guardar fallido, lleva la vista (y el foco) al primer
- * campo marcado inválido DENTRO de este form — nunca a otro elemento
- * `data-invalid`/`aria-invalid` que pueda haber en el resto de la pantalla
- * (un diálogo abierto, por ejemplo). Con un form de ~5000 líneas, el aviso
- * de arriba con la lista de nombres de campos (`camposObligatoriosFaltantes`)
- * no alcanza para encontrar DÓNDE está el problema.
- *
- * `submissionAttempts` es el valor que leen TODOS los `isInvalid` de este
- * form (tanto los campos con `validators` de TanStack —rúbrica, lista de
- * cotejo, instrumento personalizado…— como los que usan
- * `useErrorObligatorio` —nombre, tipo, fechas…—) para decidir si pintan
- * `data-invalid`/`aria-invalid`, y lo sube `form.handleSubmit()` de forma
- * asíncrona. Buscar en el DOM apenas se llama a `handleSubmit()` (sin
- * esperar) encuentra el estado ANTERIOR (nada marcado todavía, o lo
- * marcado en un intento previo) — hay que esperar a que la promesa
- * resuelva y, encima, a que React haya pintado el re-render que ese
- * cambio de estado dispara. Un solo `requestAnimationFrame` alcanzaría casi
- * siempre, pero se usa uno doble (uno para que React procese el commit,
- * otro para que el navegador ya haya hecho el layout) para no depender de
- * en qué punto exacto del ciclo de eventos cae el cambio de estado.
+ * Tras un guardado fallido lleva la vista y el foco al primer campo inválido de este form.
+ * Doble `requestAnimationFrame`: `submissionAttempts` se actualiza async y hay que esperar el re-render.
  */
 function scrollToFirstInvalidField(formEl: HTMLFormElement) {
   requestAnimationFrame(() => {
@@ -706,10 +537,7 @@ function scrollToFirstInvalidField(formEl: HTMLFormElement) {
       const invalido = formEl.querySelector<HTMLElement>('[data-invalid="true"], [aria-invalid="true"]')
       if (!invalido) return
       invalido.scrollIntoView({ behavior: "smooth", block: "center" })
-      // Si el elemento marcado no es en sí mismo enfocable (ej. el `<Field>`
-      // contenedor, que es donde vive `data-invalid`, no el `<input>`/
-      // `<Select>` de adentro), se enfoca el primer control enfocable que
-      // tenga dentro.
+      // Si lo marcado no es enfocable (el `<Field>`), se enfoca el primer control de adentro.
       const foco = invalido.matches("input, select, textarea, button, [tabindex]")
         ? invalido
         : invalido.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]")
@@ -718,7 +546,6 @@ function scrollToFirstInvalidField(formEl: HTMLFormElement) {
   })
 }
 
-/** Error inline de "obligatorio" tras un intento de guardar. */
 function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   return submissionAttempts > 0 && vacio
@@ -726,10 +553,6 @@ function useErrorObligatorio(form: FormActividad, vacio: boolean): boolean {
 
 const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
 
-/**
- * Error inline de un campo de la recuperación tras un intento de guardar
- * (`erroresRecuperacion`, espejo de sso `fn_actividad_validar_recuperacion_config`).
- */
 function useErrorRecuperacion(form: FormActividad, campo: CampoRecuperacion): string | undefined {
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const rotuloLower = useSelector(form.store, (state) =>
@@ -740,11 +563,8 @@ function useErrorRecuperacion(form: FormActividad, campo: CampoRecuperacion): st
 }
 
 /**
- * Solo lectura del form (`EditarActividadForm.readOnly`). Los campos de datos
- * siguen visibles y deshabilitados (por el `disabled` de cada sección) para
- * poder leer la actividad; los botones cuyo único fin es modificar (crear
- * unidad, agregar/quitar ítems, criterios, niveles, adaptaciones, recursos…)
- * directamente no se renderizan: van envueltos en `<SoloEdicion>`.
+ * Solo lectura: los campos se ven deshabilitados y los botones que solo modifican
+ * van envueltos en `<SoloEdicion>`.
  */
 const SoloLecturaActividadContext = createContext(false)
 
@@ -756,13 +576,7 @@ function SoloEdicion({ children }: { children: ReactNode }) {
   return useSoloLecturaActividad() ? null : <>{children}</>
 }
 
-/**
- * Grado + Asignatura elegidos (los DOS ids, no los nombres): el resto del
- * form los necesita para saber si ya puede habilitarse. Centralizado acá
- * (mismo `form.store`, ningún selector nuevo pega una query aparte) para que
- * el componente raíz no calcule el mismo booleano de formas distintas en
- * cada sección.
- */
+/** Grado + Asignatura elegidos (por id): habilita el resto del form. */
 function useHasGradoAsignatura(form: FormActividad): boolean {
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
@@ -770,16 +584,8 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
 }
 
 /**
- * `true` cuando la actividad NUEVA toma su identidad de OTRA actividad que
- * está recuperando (`destino = ACTIVIDAD`, con la actividad ya elegida) —
- * Grado/Grupo, Asignatura, Nombre y Estudiantes se llenan solos desde esa
- * actividad original (ver `useRecuperacionAutoFill`) y quedan bloqueados
- * mientras esto sea `true`: no tiene sentido que el docente los reescriba a
- * mano si la actividad de recuperación DEBE coincidir con la que recupera.
- * Con `destino = NOTA_FINAL` (no hay una actividad puntual de origen) o sin
- * actividad elegida todavía, no aplica — el resto del form sigue su regla
- * normal (bloqueado solo por Grado/Asignatura sin elegir, como cualquier
- * actividad nueva).
+ * `true` cuando la recuperación hereda de otra actividad (`destino = ACTIVIDAD` con origen
+ * elegido): Grado/Grupo, Asignatura, Nombre y Estudiantes quedan bloqueados.
  */
 function useRecuperacionBloqueaCampos(form: FormActividad): boolean {
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
@@ -789,20 +595,8 @@ function useRecuperacionBloqueaCampos(form: FormActividad): boolean {
 }
 
 /**
- * Cuando se elige QUÉ actividad se está recuperando, trae su detalle real
- * (`GET /planeador/actividades/:id`, ya con `matriculasIds` reales desde
- * V452) y copia Grado/Grupo, Asignatura, Nombre (con el sufijo `" (R)"`, la
- * marca visual de que es una recuperación) y la selección de estudiantes —
- * la actividad de recuperación hereda ese contexto de la actividad
- * original, no se vuelve a elegir a mano (ver `useRecuperacionBloqueaCampos`,
- * que bloquea esos mismos campos mientras esto aplica).
- *
- * `aplicadoRef` evita repetir la copia en cada render mientras se sigue
- * mirando la MISMA actividad de origen — sin esto, cualquier render (p. ej.
- * al tipear en otro campo del form) volvería a pisar "Nombre" con el valor
- * recién copiado, incluso si el campo no estuviera bloqueado por algún otro
- * motivo. Sí se vuelve a copiar si el docente cambia a OTRA actividad de
- * origen (`recuperacionActividadId` distinto).
+ * Al elegir la actividad a recuperar copia Grado/Grupo, Asignatura, Nombre (+ " (R)") y
+ * estudiantes. `aplicadoRef` evita volver a pisarlos en cada render con el mismo origen.
  */
 function useRecuperacionAutoFill(form: FormActividad) {
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
@@ -810,9 +604,7 @@ function useRecuperacionAutoFill(form: FormActividad) {
   const recuperacionActividadId = useSelector(form.store, (state) => state.values.recuperacionActividadId)
   const activo = esRecuperacion && destino === "ACTIVIDAD" && recuperacionActividadId != null
   const { data: original } = useActividadDetalleQuery(activo ? recuperacionActividadId : undefined)
-  // Arranca con el origen YA guardado (edición de una recuperación): esos
-  // datos ya están en el form tal como el docente los dejó; volver a
-  // copiarlos al abrir pisaría nombre/estudiantes y marcaría el form sucio.
+  // Con el origen ya guardado no se copia al abrir: pisaría lo editado y ensuciaría el form.
   const aplicadoRef = useRef<number | undefined>(form.options.defaultValues?.recuperacionActividadId)
 
   useEffect(() => {
@@ -826,49 +618,19 @@ function useRecuperacionAutoFill(form: FormActividad) {
     form.setFieldValue("asignaturaId", original.asignaturaId)
     form.setFieldValue("asignatura", original.asignatura)
     form.setFieldValue("nombre", `${original.nombre} (R)`)
-    // Solo quedan marcados los estudiantes que YA tenían la actividad
-    // original — el resto del grupo no participó de lo que se está
-    // recuperando, así que no arranca marcado (y queda inactivo mientras
-    // el bloqueo siga activo, ver `useRecuperacionBloqueaCampos`).
+    // Solo quedan marcados los estudiantes que ya tenía la actividad original.
     form.setFieldValue("matriculasIds", original.matriculasIds)
     form.setFieldValue("asignarTodoElGrupo", false)
   }, [activo, recuperacionActividadId, original, form])
 }
 
 /**
- * Toggle "Es una recuperación" + su configuración, arriba de todo el form.
- * Solo tiene sentido para una actividad sumativa —una formativa no pondera
- * nota, así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
- * del store (mismo flag que gobierna la ponderación en `EvaluacionSection`
- * y `InstrumentoEvaluacionSection`) y el control desaparece por completo
- * cuando es `false`, en vez de deshabilitarse: no es que falte
- * completar algo, es que la pregunta no aplica.
- *
- * Si el usuario tenía el toggle en `true` y después cambia la actividad
- * a no-sumativa, el valor sigue guardado en el form (no se resetea a
- * `false`): si vuelve a marcar sumativa, reaparece en el estado que
- * dejó. Forzar un reset ahí sería más sorpresa que ayuda.
- *
- * La configuración (destino/actividad a recuperar/tipo de aplicación/tipo
- * de cálculo/% de ponderación) sale de `camposEfectivos.recuperacion` —
- * MISMA fuente de verdad que ya usa `EvaluacionSection`, con sus catálogos
- * `{pk, valor, nombre}` (se decide por `valor`) y las reglas que valida
- * `fn_actividad_recuperacion_configurar` (actividad obligatoria sii
- * `destino = ACTIVIDAD`, % obligatorio y 0-100 sii `tipoCalculo =
- * PONDERADO`) para no descubrirlas a base de 400.
+ * Toggle "Es una recuperación" + su configuración. Solo aplica a actividades sumativas
+ * (desaparece, no se deshabilita); el valor no se resetea al dejar de serlo.
  */
 /**
- * Catálogo por default de "¿Esta recuperación aplica para?" — mismos
- * `valor`/`nombre` que ya devuelve el backend real (confirmado contra
- * `campos_disponibles.recuperacion.catalogos.destino`), para cuando
- * TODAVÍA no se puede pedir esa fila (sin Grado/Asignatura ni Unidad, ver
- * `catalogosDisponibles` en `RecuperacionSection`). El texto real del
- * backend termina reemplazando este placeholder apenas
- * `useConfiguracionContextoActividadQuery`/`useConfiguracionActividadQuery`
- * resuelven — no antes de eso el docente ya pudo elegir "Una actividad" y
- * arrancar `useRecuperacionAutoFill`, así que el `valor` (lo único que
- * de verdad importa para la lógica) tiene que coincidir con el real desde
- * el primer render.
+ * Catálogo de respaldo de "¿Esta recuperación aplica para?" mientras no hay
+ * `campos_disponibles`: su `valor` debe coincidir con el real desde el primer render.
  */
 const DESTINO_RECUPERACION_FALLBACK = [
   { valor: "ACTIVIDAD", nombre: "Recuperar una actividad" },
@@ -892,28 +654,19 @@ function RecuperacionSection({
 }: {
   form: FormActividad
   disabled: boolean
-  /** Edición de una actividad que ya se guardó como recuperación: el
-   *  toggle, el destino y la actividad de origen quedan de solo lectura. */
   recuperacionFijada?: boolean
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
-  // Todos obligatorios: una recuperación se tiene que completar entera
-  // (`erroresRecuperacion`). Cada error solo se ve si su campo está visible.
+  // Todos obligatorios; cada error solo se ve si su campo está visible.
   const errorDestino = useErrorRecuperacion(form, "recuperacionDestino")
   const errorActividad = useErrorRecuperacion(form, "recuperacionActividadId")
   const errorAplicacion = useErrorRecuperacion(form, "recuperacionTipoAplicacion")
   const errorCalculo = useErrorRecuperacion(form, "recuperacionTipoCalculo")
   const errorPonderacion = useErrorRecuperacion(form, "recuperacionValorPonderacion")
-  // "¿Esta recuperación aplica para?" tiene que aparecer SIEMPRE primero,
-  // apenas se prende el toggle — sin esperar a Grado/Asignatura/Unidad
-  // (`campos_disponibles.recuperacion.catalogos` no se puede pedir sin
-  // eso, ver `useCamposEvaluacionEfectivos`). Mientras el catálogo real no
-  // llegue, se usa el de respaldo (mismos `valor` que el real, así que la
-  // lógica — `destino === "ACTIVIDAD"`, etc. — no distingue uno de otro);
-  // el real lo reemplaza solo apenas resuelve, sin que el docente note el
-  // cambio salvo por el asterisco de "obligatorio" si aplica.
+  // Aparece apenas se prende el toggle, sin esperar Grado/Asignatura/Unidad: mientras
+  // tanto usa el catálogo de respaldo (mismos `valor` que el real).
   const destinoOpciones = recuperacion?.catalogos.destino.length
     ? recuperacion.catalogos.destino
     : DESTINO_RECUPERACION_FALLBACK
@@ -966,14 +719,8 @@ function RecuperacionSection({
                             value={field.state.value || "__none__"}
                             onValueChange={(v) => {
                               field.handleChange(!v || v === "__none__" ? "" : v)
-                              // Cambiar "¿Esta recuperación aplica para?"
-                              // invalida TODO lo que dependía del valor
-                              // anterior (la actividad puntual elegida,
-                              // cómo se aplica, cómo se calcula, el %) —
-                              // sin este reset quedaban valores viejos
-                              // guardados pero ocultos, que podían
-                              // reaparecer con datos de otra combinación al
-                              // volver a elegir la misma opción de antes.
+                              // Cambiar el destino invalida todo lo que dependía de él:
+                              // sin reset quedaban valores ocultos que podían reaparecer.
                               form.setFieldValue("recuperacionActividadId", undefined)
                               form.setFieldValue("recuperacionTipoAplicacion", "")
                               form.setFieldValue("recuperacionTipoCalculo", "")
@@ -1004,10 +751,7 @@ function RecuperacionSection({
                       )}
                     </form.Field>
 
-                    {/* Actividad a recuperar: solo tiene sentido con
-                        `destino = ACTIVIDAD` (recuperar la NOTA FINAL no
-                        apunta a ninguna actividad puntual) — regla
-                        `actividadRecuperarRequeridaSi` de `reglas`. */}
+                    {/* Solo con `destino = ACTIVIDAD`. */}
                     <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
                       {(destino) =>
                         destino !== "ACTIVIDAD" ? null : (
@@ -1019,10 +763,7 @@ function RecuperacionSection({
                                   value={field.state.value}
                                   onChange={(v) => {
                                     field.handleChange(v)
-                                    // Mismo motivo que el reset de
-                                    // "¿Esta recuperación aplica para?":
-                                    // cambiar LA actividad a recuperar
-                                    // invalida cómo se aplica/calcula.
+                                    // Cambiar la actividad a recuperar invalida cómo se aplica/calcula.
                                     form.setFieldValue("recuperacionTipoAplicacion", "")
                                     form.setFieldValue("recuperacionTipoCalculo", "")
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
@@ -1038,16 +779,7 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* Igual que "Valor de ponderación" (gateada por
-                        `tipoCalculo`): sin elegir "¿Esta recuperación aplica
-                        para?" todavía no hay nada que aplicar/calcular, así
-                        que el resto de la cascada se oculta en vez de
-                        mostrarse vacío. Con `destino = ACTIVIDAD` además hay
-                        que esperar a que se elija LA actividad puntual
-                        (`recuperacionActividadId`) — mismo criterio que
-                        "Actividad a recuperar" arriba: hasta no saber sobre
-                        qué actividad se está recuperando, tampoco hay nada
-                        que aplicar/calcular todavía. */}
+                    {/* Oculto hasta elegir destino (y, con `ACTIVIDAD`, la actividad puntual). */}
                     <form.Subscribe
                       selector={(state) => ({
                         destino: state.values.recuperacionDestino,
@@ -1066,12 +798,7 @@ function RecuperacionSection({
                                   disabled={disabled}
                                   onValueChange={(v) => {
                                     field.handleChange(v)
-                                    // "Reemplazar" no calcula nada (la nota
-                                    // anterior se descarta entera) — si
-                                    // había un "Promediado"/"Ponderado" +
-                                    // % elegidos con "Computar", quedan sin
-                                    // sentido y tienen que limpiarse, no
-                                    // solo ocultarse.
+                                    // "Reemplazar" no calcula nada: hay que limpiar cálculo y %, no solo ocultarlos.
                                     form.setFieldValue("recuperacionTipoCalculo", "")
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
@@ -1091,10 +818,6 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* "Reemplazar" es lo único que necesita aclaración: la
-                        nota anterior se pierde por completo. "Computar con
-                        la nota anterior" no lleva banner — su propio nombre
-                        ya dice qué hace. */}
                     <form.Subscribe selector={(state) => state.values.recuperacionTipoAplicacion}>
                       {(tipoAplicacion) =>
                         tipoAplicacion !== "REEMPLAZAR" ? null : (
@@ -1106,18 +829,8 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* Mismo gate que "¿Cómo se aplicará la nota de
-                        recuperación?" arriba, más esperar a que se elija esa
-                        opción — y oculto con `tipoAplicacion = REEMPLAZAR`
-                        (regla `tipoCalculoOcultoSi` de `campos_disponibles.
-                        recuperacion.reglas`, confirmada real): "Reemplazar"
-                        no calcula nada, la nota anterior se descarta entera.
-                        `fn_actividad_recuperacion_configurar` (V224) tolera
-                        el campo ausente con REEMPLAZAR — si no viene, guarda
-                        PROMEDIADO por default (la columna es NOT NULL), no
-                        lo exige. El reset a `""` en el `onValueChange` de
-                        arriba ya limpiaba el valor al cambiar a REEMPLAZAR;
-                        acá faltaba ocultar el control. */}
+                    {/* Oculto con `tipoAplicacion = REEMPLAZAR` (regla `tipoCalculoOcultoSi`):
+                    el backend tolera el campo ausente y guarda PROMEDIADO por default. */}
                     <form.Subscribe
                       selector={(state) => ({
                         destino: state.values.recuperacionDestino,
@@ -1143,10 +856,7 @@ function RecuperacionSection({
                                   disabled={disabled}
                                   onValueChange={(v) => {
                                     field.handleChange(v)
-                                    // Un % de ponderación de otro modo (o
-                                    // de "Promediado", que ni lo pide) no
-                                    // aplica al elegir de nuevo — mismo
-                                    // criterio que los resets de arriba.
+                                    // Un % previo no aplica al cambiar el tipo de cálculo.
                                     form.setFieldValue("recuperacionValorPonderacion", undefined)
                                   }}
                                 >
@@ -1165,9 +875,7 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
-                        — regla `valorPonderacionRequeridoSi`, rango de
-                        `valorPonderacionRango` (0-100 por defecto). */}
+                    {/* Solo con `tipoCalculo = PONDERADO` (rango `valorPonderacionRango`). */}
                     <form.Subscribe selector={(state) => state.values.recuperacionTipoCalculo}>
                       {(tipoCalculo) =>
                         tipoCalculo !== "PONDERADO" ? null : (
@@ -1198,10 +906,6 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* Explica el efecto de la opción elegida arriba —
-                        "Ponderado" reparte el % entre recuperación y nota
-                        actual, "Promediado" (cualquier valor que no sea
-                        PONDERADO) promedia las dos notas sin pedir %. */}
                     <form.Subscribe
                       selector={(state) => ({
                         tipoCalculo: state.values.recuperacionTipoCalculo,
@@ -1238,16 +942,9 @@ function RecuperacionSection({
 
 // ────────────────────────────────────────────────────────────────────────────
 // Secciones
-//
-// Cada sección recibe `form` con el tipo genérico del `useForm` de
-// `@tanstack/react-form`. Como la firma de `useForm` es muy sobrecargada,
-// declarar el tipo a mano como alias evita arrastrar todos los
-// `TOn…/TSubmitMeta` por las props.
 // ────────────────────────────────────────────────────────────────────────────
 
-// `useForm` tiene una firma sobrecargada: queremos el alias con `Actividad`
-// como `TFormData`, así los `field.state.value` salen tipados. Los `TOn…`
-// genéricos no nos importan en este form, así que los dejamos en `any`.
+// Alias de `useForm` con `Actividad` como `TFormData`; los `TOn…` quedan en `any`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormActividad = ReturnType<typeof useForm<Actividad, any, any, any, any, any, any, any, any, any, any, any>>
 
@@ -1259,21 +956,14 @@ function IdentificacionSection({
 }: {
   form: FormActividad
   disabled: boolean
-  /** Ver `useRecuperacionBloqueaCampos` — "Nombre" queda bloqueado (ya lo
-   *  llenó `useRecuperacionAutoFill` con el de la actividad original + el
-   *  sufijo " (R)") mientras esto sea `true`. */
+  /** Ver `useRecuperacionBloqueaCampos`: "Nombre" queda bloqueado mientras sea `true`. */
   bloqueadoPorRecuperacion: boolean
-  /** Pestaña de Rótulo de Ejecución activa — ver el mismo prop en
-   *  `EditarActividadFormProps`. */
   tab?: ActividadTab
 }) {
-  // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
   const nombreInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.nombre?.trim()))
   const tipoInvalido = useErrorObligatorio(form, !useSelector(form.store, (state) => state.values.tipo))
-  // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
-  // `EditarActividadForm` (incluido el fallback a `tab?.rotulo` antes de
-  // elegir Grado).
+  // Rótulo real (Regla 13): nunca "actividad" fijo.
   const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdSel, asignaturaIdSel)
@@ -1306,12 +996,7 @@ function IdentificacionSection({
             <Field variant="outlined" data-invalid={tipoInvalido}>
               <FieldLabel htmlFor={field.name}>Tipo de {rotuloLower} *</FieldLabel>
               <Select
-                // `__none__` es el sentinel de "sin elegir" — mismo criterio
-                // que el resto de los `<Select>` del form (Asignatura,
-                // Unidad temática asociada, Modalidad, …): antes "Tipo de
-                // actividad" arrancaba en el primer valor del catálogo
-                // (`crearActividadVacia`) porque no tenía dónde representar
-                // "todavía sin elegir".
+                // `__none__` es el sentinel de "sin elegir".
                 value={field.state.value || "__none__"}
                 onValueChange={(value) =>
                   field.handleChange(!value || value === "__none__" ? "" : (value as Actividad["tipo"]))
@@ -1357,11 +1042,8 @@ function IdentificacionSection({
           )}
         </form.Field>
 
-        {/* Antes vivía en "Seguimiento", que solo se muestra con
-            adaptaciones y referente no formativo: así casi nunca se veía.
-            Es una propiedad de la actividad entera (el Coordinador de la
-            sede valida su planeación, sso V531.x), por eso va acá. Se sigue
-            guardando igual: `REQUIERE_VALIDACION_COORDINADOR`. */}
+        {/* "Requiere validación del coordinador" es de la actividad entera, por eso va acá
+        y no en "Seguimiento". */}
         <form.Field name="requiereValidacion">
           {(field) => (
             <Field variant="outlined">
@@ -1386,12 +1068,7 @@ function IdentificacionSection({
   )
 }
 
-/**
- * "Unidad temática asociada" / "Proyecto pedagógico" — depende de Grado +
- * Asignatura (`AsignaturaGradoSection`), así que se renderiza DESPUÉS en el
- * grid: mostrarlo antes de esos dos invertía la dependencia real (el select
- * arranca deshabilitado hasta elegir ambos).
- */
+/** "Unidad temática asociada" depende de Grado + Asignatura: va después en el grid. */
 function UnidadAsociadaSection({
   form,
   unidades,
@@ -1415,25 +1092,11 @@ function UnidadAsociadaSection({
   }) => Promise<UnidadTematica>
 }) {
   const soloLectura = useSoloLecturaActividad()
-  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
-  // instrumento real depende del nivel educativo del Grado elegido — mismo
-  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
-  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
-  // Preescolar editando una actividad de Proyecto Pedagógico veía el
-  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
-  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
-  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
-  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
+  // El rótulo depende del nivel educativo del Grado elegido ("Proyecto pedagógico" en
+  // Preescolar); con Grado elegido hay a lo sumo un instrumento en `unidadTabs`.
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  // "¿Es formativa?" de la unidad la decide el referente curricular de
-  // GRADO + ASIGNATURA, no `UnidadTematica.enfoquePedagogico`: ese campo
-  // SIEMPRE llega "Evaluativo" desde `useUnidadesQuery` (el backend real no
-  // guarda un enfoque propio por unidad — ver el comentario de
-  // `toUnidadTematica` en `use-unidades-query.ts`), así que comparar contra
-  // ese campo (versión anterior de este handler) nunca detectaba una unidad
-  // Formativa. Todas las unidades de `unidadesDelGrado` comparten el MISMO
-  // grado+asignatura, así que comparten el mismo enfoque — un solo query acá
-  // alcanza, no hace falta uno por unidad.
+  // El enfoque formativo lo decide el referente de Grado + Asignatura, no
+  // `UnidadTematica.enfoquePedagogico` (siempre llega "Evaluativo").
   const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
   const { data: referenteActual } = useReferenteCurricularQuery(gradoIdSel, asignaturaIdSel)
@@ -1444,52 +1107,28 @@ function UnidadAsociadaSection({
           selector={(state) => `${state.values.grado}/${state.values.asignatura}/${state.values.gradoId}`}
         >
           {() => {
-            // "Unidad temática asociada" depende de Grado + Asignatura, no
-            // de Grado + Grupo: una unidad se identifica por (asignatura,
-            // grado) —igual que el backend real (`FK_TASIGNATURA`/
-            // `FK_TGRADO` en `POST /unidades`)—, el grupo no participa de su
-            // identidad. Antes exigía `grupo` acá, así que elegir Asignatura
-            // sin volver a tocar "Grado / Grupo" (p.ej. al editar una
-            // actividad existente, donde `grado` se resuelve recién cuando
-            // `AsignaturaGradoSection` cruza `grupoId` contra el catálogo
-            // del docente) dejaba este select deshabilitado sin motivo.
+            // Depende de Grado + Asignatura, no del grupo: una unidad se identifica por (asignatura, grado).
             const grado = form.getFieldValue("grado")
             const asignatura = form.getFieldValue("asignatura")
-            // Misma condición que `CrearUnidadPopover` (gradoId != null &&
-            // asignaturaId != null), no `Boolean(grado && asignatura)`. Los
-            // labels pueden llegar solos desde el detalle real (que no
-            // siempre trae los ids, ver el comentario del `useEffect` en
-            // `AsignaturaGradoSection`); chequear con strings habilitaba el
-            // select de unidad y dejaba el `+` del popover bloqueado — o al
-            // revés, según el orden de la query de catálogos.
+            // Se chequean los ids (como `CrearUnidadPopover`), no los labels: el detalle real
+            // puede traer labels sin ids.
             const gradoId = form.getFieldValue("gradoId")
             const asignaturaId = form.getFieldValue("asignaturaId")
             const hasGradoAsignatura = gradoId != null && asignaturaId != null
-            // `grado`/`asignatura` y `UnidadTematica.grado`/`.asignatura`
-            // salen ahora del mismo origen real (`docentes/grupos`/
-            // `docentes/grado-asignatura`), así que se comparan directo —
-            // ya no hace falta traducir contra el catálogo genérico.
             const unidadesDelGrado = hasGradoAsignatura
               ? unidades.filter((u) => u.grado === grado && u.asignatura === asignatura)
               : []
 
-            // Instrumento (rótulo real) del Grado ya elegido — ver el
-            // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
-            // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
             const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
 
             return (
               <form.Field name="unidad">
                 {(field) => (
-                  // `gap-0` + redondeado y borde derechos del `SelectTrigger`
-                  // anulados (vía descendiente del `Field`) + redondeado y
-                  // borde izquierdos del botón del popover anulados → los dos
-                  // controles se leen como un único split-button.
+                  // `gap-0` y bordes/redondeados anulados: select + botón se leen como un split-button.
                   <div className="flex items-end gap-0">
                     <Field
                       variant="outlined"
-                      // Pegado al "+" de crear unidad; en solo lectura ese botón
-                      // no se renderiza y el select vuelve a sus esquinas.
+                      // En solo lectura el "+" no se renderiza y el select recupera sus esquinas.
                       className={cn(
                         "min-w-0 flex-1",
                         !soloLectura && "[&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0",
@@ -1499,25 +1138,14 @@ function UnidadAsociadaSection({
                         {instrumentoLabel}
                       </FieldLabel>
                       <Select
-                        // `Select` siempre trabaja con `value` string — el id real
-                        // es numérico, así que se convierte acá. `0` es el
-                        // sentinel de "sin unidad" (ningún PK real es 0).
+                        // `0` es el sentinel de "sin unidad" (ningún PK real es 0).
                         value={field.state.value.id === 0 ? "__none__" : String(field.state.value.id)}
                         disabled={disabled || !hasGradoAsignatura}
                         onValueChange={(value) => {
-                          // `__none__` es el placeholder "Seleccione": antes el
-                          // `find` no lo encontraba en `unidades` y el `if (!next)
-                          // return` cortaba en seco, dejando la unidad anterior
-                          // pegada —clickear "Seleccione" no hacía nada. Se
-                          // maneja aparte para poder vaciar el campo de una.
-                          // Guardamos el id como `0` (sentinel de "sin unidad")
-                          // para que el value de arriba lo vuelva a mostrar como
-                          // "__none__" — mismo patrón que el `Select` de
-                          // "Modalidad".
+                          // `__none__` ("Seleccione") se maneja aparte para poder vaciar el campo;
+                          // se guarda `0` como "sin unidad".
                           if (value === "__none__") {
                             field.handleChange({ id: 0, nombre: "" })
-                            // Sin unidad no hay `metodoCalculo` que decida
-                            // ponderación/puntaje — mismo criterio de abajo.
                             form.setFieldValue("ponderacion", 0)
                             form.setFieldValue("notaMaxima", undefined)
                             return
@@ -1525,25 +1153,13 @@ function UnidadAsociadaSection({
                           const next = unidadesDelGrado.find((u) => String(u.id) === value)
                           if (!next) return
                           field.handleChange({ id: next.id, nombre: next.nombre })
-                          // Regla de negocio: una unidad de enfoque formativo no
-                          // admite actividades sumativas. Si el usuario cambia a
-                          // una unidad así, la actividad deja de ser sumativa acá
-                          // mismo —no queda esperando a que la reabra— para que
-                          // el resto del form (ponderación, lista de cotejo/
-                          // rúbrica, "Es una recuperación") reaccione de una.
-                          // `referenteActual` (no `next.enfoquePedagogico`, ver
-                          // el comentario de arriba) es el enfoque real del
-                          // grado+asignatura compartido por toda `unidadesDelGrado`.
+                          // Regla: una unidad de enfoque formativo no admite actividades sumativas, así que se
+                          // apaga `esEvaluativa` de inmediato. Usa `referenteActual`, no `next.enfoquePedagogico`.
                           if (referenteActual?.esFormativo) {
                             form.setFieldValue("esEvaluativa", false)
                           }
-                          // `ponderacion`/`notaMaxima` son alternativos y
-                          // dependen del `metodoCalculo` de la unidad elegida
-                          // (ver `EvaluacionSection` más abajo) — sin
-                          // limpiarlos acá, un valor tipeado con la unidad
-                          // ANTERIOR (p. ej. un % de "Ponderado") queda pegado
-                          // y se manda igual al guardar aunque la unidad
-                          // NUEVA no lo pida (o pida el otro campo).
+                          // `ponderacion`/`notaMaxima` dependen del `metodoCalculo` de la unidad: se limpian
+                          // para no mandar un valor de la unidad anterior.
                           if (next.metodoCalculo !== "Ponderado") form.setFieldValue("ponderacion", 0)
                           if (next.metodoCalculo !== "Suma de puntos") form.setFieldValue("notaMaxima", undefined)
                         }}
@@ -1575,13 +1191,7 @@ function UnidadAsociadaSection({
                       asignaturaId={form.getFieldValue("asignaturaId")}
                       disabled={disabled || !hasGradoAsignatura}
                       onCreate={async (data) => {
-                        // `onCrearUnidad` crea la unidad DE VERDAD (`POST
-                        // /planeador/unidades`) y la devuelve con su id real:
-                        // recién ahí queda en la lista que consume este
-                        // `<Select>`, así que el campo se puede asignar por
-                        // id sin quedar "huérfano". Grado/Asignatura de la
-                        // nueva unidad son los mismos que ya eligió esta
-                        // actividad — el popover no vuelve a pedirlos.
+                        // La unidad ya existe con id real cuando se asigna; hereda Grado/Asignatura de la actividad.
                         const nueva = await onCrearUnidad({
                           ...data,
                           gradoId: form.getFieldValue("gradoId"),
@@ -1604,26 +1214,8 @@ function UnidadAsociadaSection({
 }
 
 /**
- * Ficha de la unidad elegida arriba en "Unidad temática asociada" + la
- * sección de checkboxes de evidencias (nivel 2) de sus enunciados ya
- * relacionados (`useUnidadReferenteQuery`). Se arma en vivo: lee el `id`
- * actual del field `unidad` vía `form.Subscribe` (no un prop estático) para
- * que cambiar la unidad en el select la actualice de una. Sin unidad
- * elegida no hay nada que mostrar.
- *
- * La descripción/objetivos/contenidos de la ficha salen de
- * `useUnidadDetalleQuery`, NO de `unidades` (la lista que ya trae el form
- * para el `<Select>`): el listado real (`GET /planeador/unidades`) solo
- * confirma `area`/`descripcion`/fechas/`total_actividades` (ver el
- * comentario de `UnidadRealRow` en `use-unidades-query.ts`) — `objetivos`/
- * `contenidos` pueden faltar ahí aunque la unidad sí los tenga, y solo el
- * detalle por `:id` los trae de forma confiable.
- *
- * La selección de evidencias y de criterios de la unidad viaja en el propio
- * form (`values.evidenciasIds`/`values.criteriosUnidadIds`) y se guarda
- * junto con el resto al submit, como cualquier otro campo — al editar,
- * `PUT /actividades/:id` reemplaza la lista completa (`update-actividad.ts`),
- * así que tildar o destildar acá funciona igual creando que editando.
+ * Ficha de la unidad elegida + checkboxes de evidencias de sus enunciados. Lee la unidad
+ * vía `form.Subscribe`; objetivos/contenidos salen del detalle (el listado puede no traerlos).
  */
 function UnidadSection({
   form,
@@ -1632,7 +1224,6 @@ function UnidadSection({
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
-  /** Solo lectura: las evidencias y criterios se ven pero no se marcan. */
   readOnly?: boolean
 }) {
   return (
@@ -1680,10 +1271,7 @@ function UnidadSection({
   )
 }
 
-/** Separado de `UnidadSection` solo para poder llamar
- *  `useUnidadDetalleQuery`/`useUnidadReferenteQuery` de forma incondicional
- *  (reglas de hooks) — `UnidadSection` decide arriba si hay unidad elegida
- *  antes de montar esto. */
+/** Separado de `UnidadSection` para llamar sus hooks de forma incondicional. */
 function UnidadFichaYEvidencias({
   unidadId,
   nombreFallback,
@@ -1702,25 +1290,12 @@ function UnidadFichaYEvidencias({
   onToggleCriterio: (criterioId: number) => void
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // `unidad.criterios` queda siempre vacío contra el backend real —viven en
-  // `GET /unidades/:id/criterios`, aparte del detalle— mismo motivo que
-  // `useUnidadCriteriosQuery` en `unidad-detalle-panel.tsx`.
+  // `unidad.criterios` llega vacío del backend real: se piden aparte.
   const { data: criterios = [] } = useUnidadCriteriosQuery(unidadId)
-  // El árbol de nivel 1 (enunciados) + nivel 2 (evidencias), YA acotado a
-  // los enunciados que esta UNIDAD relacionó (`relacionadoConUnidad`,
-  // resuelto del lado del backend), sale directo de `GET /planeador/
-  // unidades/:id/referente` — confirmado contra una respuesta real: cada
-  // fila trae sus propias `evidencias` anidadas y los rótulos
-  // `nivel_1_etiqueta`/`nivel_2_etiqueta`. Antes se pedía el referente por
-  // GRADO + ASIGNATURA (`useReferenteCurricularQuery`) y se cruzaba a mano
-  // contra `unidad.enunciadosDba` — dos queries y un filtro cliente para
-  // llegar al mismo árbol que esta ruta ya entrega filtrado.
+  // Árbol de enunciados + evidencias ya acotado a los relacionados con esta unidad.
   const { data: referente } = useUnidadReferenteQuery(unidadId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  // Por `referente.id` (`pk_referente_curricular`), no por `gradoId` a
-  // secas: evita que el título diga un instrumento distinto del que en
-  // verdad tienen `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente
-  // — ver el comentario de `instrumentoLabelFromReferente`.
+  // Por `referente.id`, no por `gradoId`: el título debe coincidir con las etiquetas de este referente.
   const instrumentoLabel = instrumentoLabelFromReferente(referente?.id ?? undefined, unidadTabs, UNIDAD_TAB_FALLBACK)
 
   return (
@@ -1756,24 +1331,10 @@ function UnidadFichaYEvidencias({
 }
 
 /**
- * "Grado / Grupo" es UN SOLO `<Select>` (no dos campos separados): cada
- * opción ya es una combinación real "grado/grupo" del DOCENTE autenticado
- * (`useDocenteGruposQuery` — mismo endpoint real que ya usa el filtro de la
- * Planilla, `GET /planeador/docentes/grupos`), no el catálogo genérico de
- * Establecimiento (que ofrecía grados/grupos que ni siquiera le
- * correspondían a este docente). Elegir un combo escribe `grado`/`grado Id`
- * y `grupo`/`grupoId` en el form y habilita Asignatura y "Unidad temática
- * asociada" (`IdentificacionSection`), que dependen de él y se filtran/
- * limpian cuando cambia.
- *
- * Asignatura sale de `useDocenteGradoAsignaturaQuery` (mismo endpoint real,
- * `GET /planeador/docentes/grado-asignatura`), filtrada por el `gradoId`
- * ya elegido — reemplaza la lista `ASIGNATURA_OPTIONS` hardcodeada, que
- * ofrecía asignaturas sin relación con lo que el docente realmente dicta.
+ * "Grado / Grupo" es un solo `<Select>` con los combos reales del docente; Asignatura
+ * sale del mismo catálogo filtrada por `gradoId`.
  */
-/** `grupo_codigo` viene `null` en los datos reales — `grupo_nombre` ("01",
- *  "302", …) es el que sí trae valor, así que se prioriza acá. Mismo
- *  criterio que `grupoLabel` en `filtro-planilla-cascada.tsx`. */
+/** `grupo_codigo` viene `null` en los datos reales: se prioriza `grupo_nombre`. */
 function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string {
   return grupo.grupoCodigo || grupo.grupoNombre
 }
@@ -1786,50 +1347,25 @@ function AsignaturaGradoSection({
   tab,
 }: {
   form: FormActividad
-  /** Ver `useRecuperacionBloqueaCampos` — Grado/Grupo, Asignatura y
-   *  Estudiantes quedan bloqueados (ya los llenó `useRecuperacionAutoFill`
-   *  con los de la actividad original) mientras esto sea `true`. */
+  /** Ver `useRecuperacionBloqueaCampos`. */
   bloqueadoPorRecuperacion: boolean
-  /** `true` en el alta de una actividad DESDE una Unidad ya elegida
-   *  ("Agregar actividad" dentro de una Unidad temática — ver
-   *  `planeador-crear-actividad-page.tsx`): esa unidad YA determina grado y
-   *  asignatura sin ambigüedad, así que no tiene sentido dejarlos como
-   *  selects editables esperando que el docente los vuelva a elegir. Con
-   *  esto en `true`, "Grado / Grupo" y "Asignatura / materia" quedan
-   *  DESHABILITADOS del todo (ya vienen resueltos) — pedido explícito: antes
-   *  "Grado / Grupo" solo filtraba sus opciones al grado ya conocido pero
-   *  seguía viéndose editable (flecha, clickeable), lo que confundía sobre
-   *  si en verdad estaba fijo. El grupo elegido es el PRIMERO del grado
-   *  (ver el cruce por nombre más abajo); si el docente dicta más de un
-   *  grupo en ese grado y necesita otro, tiene que editarlo desde la
-   *  actividad ya creada. */
+  /**
+   * `true` en el alta desde una Unidad: Grado/Grupo y Asignatura quedan deshabilitados
+   * (se toma el primer grupo del grado; otro grupo se cambia editando la actividad).
+   */
   unidadBloqueada?: boolean
-  /** Selector de unidad, entre el área y "Estudiantes". */
   unidadSlot?: ReactNode
-  /** Pestaña de Rótulo de Ejecución activa (`?rotulo=`, ver
-   *  `EditarActividadFormProps.tab`) — acota "Grado / Grupo" y "Asignatura /
-   *  materia" a `tab.pares` en vez de todo el catálogo del docente.
-   *  Independiente de `unidadBloqueada`: si la actividad ya viene de una
-   *  Unidad elegida, `unidadBloqueada` sigue ganando (deshabilita los campos
-   *  por completo); `tab` solo tiene efecto visible cuando NO hay unidad
-   *  preseleccionada. El filtro es por PAR (grado, asignatura), no por grado
-   *  solo: un grado puede tener asignaturas repartidas en dos pestañas
-   *  distintas (ver `fn_planeador_actividad_tabs_listar`, sso V525). */
+  /**
+   * Pestaña activa (`?rotulo=`): acota Grado/Grupo y Asignatura a `tab.pares`.
+   * `unidadBloqueada` sigue ganando; el filtro es por par (grado, asignatura).
+   */
   tab?: ActividadTab
 }) {
   const { data: docenteGrupos = [], isPending: isPendingDocenteGrupos } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
 
-  // Con `destino = NOTA_FINAL` no hay actividad de origen de la que heredar
-  // Grado/Asignatura (a diferencia de `destino = ACTIVIDAD`, donde
-  // `useRecuperacionAutoFill` ya los llena y `bloqueadoPorRecuperacion` los
-  // bloquea) — el docente los elige a mano acá mismo, así que hace falta
-  // achicar las opciones a solo referentes EVALUATIVOS: una recuperación
-  // nunca puede caer en un referente formativo (mismo motivo que bloquea
-  // "¿Es evaluación sumativa?" en `EvaluacionSection`). No hay un endpoint
-  // que devuelva "qué grado/asignatura son evaluativos" de una, así que se
-  // sondea cada par (grado, asignatura) del docente EN PARALELO con
-  // `useQueries` — mismo patrón que `ActividadRecuperarCascada`.
+  // Con `destino = NOTA_FINAL` Grado/Asignatura se eligen a mano y deben ser de un referente
+  // EVALUATIVO: se sondea cada par en paralelo (no hay endpoint que lo diga de una).
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
   const recuperacionDestino = useSelector(form.store, (state) => state.values.recuperacionDestino)
   const filtrarSoloEvaluativas = esRecuperacion && recuperacionDestino === "NOTA_FINAL"
@@ -1841,9 +1377,7 @@ function AsignaturaGradoSection({
     })),
   })
 
-  // Mientras la sonda de un par no resuelve, se trata como "todavía no se
-  // sabe" (no evaluativo) en vez de asumir que sí — la opción aparece apenas
-  // se confirma, no antes.
+  // Mientras la sonda no resuelve, el par se trata como no evaluativo.
   const paresEvaluativos = useMemo(() => {
     const ids = new Set<number>()
     docenteGradoAsignatura.forEach((par, i) => {
@@ -1863,91 +1397,42 @@ function AsignaturaGradoSection({
 
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
-  // El backend real de una actividad no siempre trae `fk_tgrado`/el id no
-  // siempre está en el catálogo del docente autenticado (una actividad
-  // puede pertenecer a un grado/grupo/asignatura que este docente ya no
-  // dicta, o a otro docente) — sin esto el `<SelectValue>` no encuentra con
-  // qué opción matchear el id guardado y termina mostrando el número
-  // crudo. `grado`/`grupo`/`asignatura` son los labels que el mapper real
-  // (`toActividadDetalle`) SÍ preserva siempre; se usan como respaldo.
+  // El id guardado puede no estar en el catálogo del docente: los labels del detalle
+  // sirven de respaldo para el `<SelectValue>`.
   const grado = useSelector(form.store, (state) => state.values.grado)
   const grupo = useSelector(form.store, (state) => state.values.grupo)
   const asignatura = useSelector(form.store, (state) => state.values.asignatura)
   const hasGradoGrupo = gradoId != null && grupoId != null
 
-  // `docentes/grupos` solo trae los grupos donde ESTE docente dicta algo —
-  // pero el listado de unidades del Planeador puede mostrar unidades de
-  // grados fuera de ese alcance (un coordinador, o una unidad de otro
-  // docente/área). Ahí `gradoId` sí llega bien desde la unidad (siempre
-  // presente, confirmado contra la API real) pero ningún combo de
-  // `docentes/grupos` matchea ese grado — "Grado / Grupo" se quedaba en
-  // "Seleccione" para siempre, bloqueado (`unidadBloqueada`), sin forma de
-  // corregirlo (reportado en vivo). Se espera a que `docentes/grupos`
-  // termine de cargar (`isPendingDocenteGrupos`) antes de decidir que "no
-  // hay match": si no, la ausencia transitoria durante la carga dispararía
-  // el fallback de más abajo por las dudas, incluso cuando el combo real
-  // SÍ iba a aparecer un instante después.
+  // La unidad puede ser de un grado fuera de `docentes/grupos`; se espera a que cargue
+  // antes de decidir que no hay match y caer al fallback.
   const necesitaFallbackGrupo =
     gradoId != null && grupoId == null && !isPendingDocenteGrupos && !docenteGrupos.some((g) => g.gradoId === gradoId)
   const { data: gradoGrupos = [] } = useGradoGruposQuery(necesitaFallbackGrupo ? gradoId : undefined)
 
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
-  // Rótulo real (Regla 13) — nunca "actividad" fijo, ver el mismo cálculo en
-  // `EditarActividadForm`.
+  // Rótulo real (Regla 13): nunca "actividad" fijo.
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoId, asignaturaId)
   const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
   )
-  // Misma regla que el aviso de "Complete los campos obligatorios"
-  // (`faltanEstudiantes`): "Ningún estudiante" con un grupo que sí tiene a
-  // quién asignar.
+  // Misma regla que `faltanEstudiantes`: "Ningún estudiante" con un grupo que sí tiene estudiantes.
   const estudiantesInvalido = useErrorObligatorio(
     form,
     useSelector(form.store, (state) => faltanEstudiantes(state.values, matriculas.length > 0)),
   )
 
-  // El detalle real de la actividad (`toActividadDetalle`) NO trae
-  // `fk_tgrado` —solo `fk_tgrupo`—, así que al abrir el form de EDITAR
-  // `gradoId` llega vacío aunque `grupoId` sí esté, y eso dejaba "Asignatura
-  // / materia" deshabilitado de entrada (además de encadenarse a "Unidad
-  // temática asociada" en `IdentificacionSection`, que depende de `grado`).
-  // Acá se resuelve el `gradoId`/`grado` que falta cruzando `grupoId` contra
-  // el catálogo `docentes/grupos` del propio docente, que sí trae el grado
-  // de cada uno de sus grupos.
-  //
-  // Ese cruce por GRUPO solo resuelve si el grupo de la actividad es uno
-  // que ESTE docente dicta — para una actividad de un grupo ajeno (dato de
-  // otro docente/de prueba, el caso que rompía "¿es formativo?" en
-  // `CrearUnidadPopover` acá abajo: sin `gradoId` nunca puede derivarlo ni
-  // crear la unidad nueva), `combo` nunca aparece y `gradoId` se queda
-  // `undefined` para siempre, aunque el detalle sí traiga `fk_tasignatura`
-  // (`asignaturaId`, éste sí siempre presente — ver `toActividadDetalle`).
-  // Ahí se intenta un segundo cruce, por ASIGNATURA en vez de por grupo,
-  // contra `docentes/grado-asignatura`: mismo catálogo del propio docente,
-  // pero una asignatura suele repetirse en más grados que un grupo puntual,
-  // así que tiene más chance de matchear.
-  // Comparación tolerante (trim + sin distinguir mayúsculas): el nombre que
-  // guarda la unidad y el que trae `docentes/grado-asignatura` deberían ser
-  // el mismo texto, pero un espacio de más o una mayúscula distinta bastaba
-  // para que el cruce por nombre de abajo nunca encontrara par — dejando
-  // `gradoId` sin resolver "a veces" (reportado en vivo) aunque la unidad sí
-  // supiera a qué grado/asignatura pertenecía.
+  // El detalle real no trae `fk_tgrado`: se resuelve cruzando `grupoId` con `docentes/grupos`,
+  // o si no, por asignatura con `docentes/grado-asignatura`. Comparación tolerante (trim + mayúsculas).
   function mismoNombre(a: string, b: string): boolean {
     return a.trim().toLowerCase() === b.trim().toLowerCase()
   }
 
   useEffect(() => {
-    // `gradoId` ya resuelto (seedeado directo desde `UnidadTematica.gradoId`
-    // cuando la unidad lo trae, ver `planeador-crear-actividad-page.tsx`, o
-    // ya elegido por el docente) — solo falta completar `grupoId` si sigue
-    // vacío: se toma el PRIMER grupo de ese grado del catálogo del docente,
-    // mismo criterio que el cruce por nombre de más abajo. Antes esta rama
-    // ni se evaluaba cuando `gradoId` venía resuelto de entrada, así que una
-    // unidad con `gradoId` real dejaba "Grado / Grupo" sin grupo para
-    // siempre.
+    // `gradoId` ya resuelto: solo falta `grupoId`, se toma el primer grupo de ese grado.
     if (gradoId != null) {
       if (grupoId == null) {
         const combo = docenteGrupos.find((g) => g.gradoId === gradoId)
@@ -1955,10 +1440,7 @@ function AsignaturaGradoSection({
           form.setFieldValue("grupoId", combo.grupoId)
           form.setFieldValue("grupo", grupoLabel(combo))
         } else if (gradoGrupos.length > 0) {
-          // `docentes/grupos` no tiene nada para este grado — se toma el
-          // PRIMER grupo del catálogo del establecimiento (`useGradoGruposQuery`,
-          // ver su comentario), mismo criterio "primero disponible" que la
-          // rama de arriba.
+          // Sin grupos del docente en este grado: se toma el primero del establecimiento.
           const [fallback] = gradoGrupos
           form.setFieldValue("grupoId", fallback.grupoId)
           form.setFieldValue("grupo", fallback.grupoCodigo)
@@ -1982,18 +1464,8 @@ function AsignaturaGradoSection({
         return
       }
     }
-    // Alta de actividad DESDE una Unidad (`CrearActividadForm` en
-    // `planeador-crear-actividad-page.tsx`, `unidadId` de la URL) cuando la
-    // unidad NO trae `gradoId`/`asignaturaId` reales (no siempre los trae,
-    // ver el comentario de `UnidadTematica.gradoId`) — ahí solo hay
-    // `grado`/`asignatura` (los NOMBRES) precargados. Se cruzan los DOS
-    // nombres juntos contra `docentes/grado-asignatura` (un solo match,
-    // a diferencia de los cruces de arriba que solo tienen UN dato) y,
-    // encontrado el par, se elige de una el PRIMER grupo de ese grado
-    // (`docentes/grupos`) para que "Asignatura / materia" quede habilitado
-    // (depende de Grado+Grupo, no solo de Grado) — el docente sigue
-    // pudiendo cambiar el grupo después, "Unidad temática asociada" no se
-    // toca (ya viene elegida) porque esa sí depende solo de grado/asignatura.
+    // Alta desde una Unidad sin ids reales: se cruzan los nombres de grado y asignatura y se
+    // elige el primer grupo del grado, para habilitar Asignatura.
     if (grado && asignatura) {
       const par = docenteGradoAsignatura.find(
         (p) => mismoNombre(p.gradoNombre, grado) && mismoNombre(p.asignaturaNombre, asignatura),
@@ -2018,19 +1490,11 @@ function AsignaturaGradoSection({
     useSelector(form.store, (state) => state.values.asignaturaId == null),
   )
 
-  // `tab.pares` es la fuente correcta para filtrar por asignatura: un grado
-  // puede tener asignaturas repartidas en dos pestañas distintas (ver el
-  // comentario de `tab` más arriba), así que no alcanza con mirar `gradoId`
-  // suelto para la asignatura.
+  // Se filtra por `tab.pares`: un grado puede repartir asignaturas en dos pestañas.
   const tienePar = (gradoId: number | undefined, asignaturaId: number | undefined) =>
     !tab || tab.pares.some((p) => p.gradoId === gradoId && (p.asignaturaId == null || p.asignaturaId === asignaturaId))
 
-  // Ver el comentario de `filtrarSoloEvaluativas` más arriba: sin filtro
-  // (el caso normal) estas dos son las mismas listas de siempre.
-  // `unidadBloqueada` acota además a los grupos DEL GRADO que ya trajo la
-  // unidad — así el docente elige grupo, no grado, desde este mismo select.
-  // `tab` acota a la pestaña de Rótulo de Ejecución activa (ver su
-  // comentario) — compone con `unidadBloqueada` en vez de reemplazarlo.
+  // `unidadBloqueada` acota a los grupos del grado de la unidad; `tab` compone con él.
   const gruposVisibles = (
     filtrarSoloEvaluativas ? docenteGrupos.filter((g) => gradosEvaluativosIds.has(g.gradoId)) : docenteGrupos
   )
@@ -2044,17 +1508,11 @@ function AsignaturaGradoSection({
 
   return (
     <>
-        {/* Grado/Grupo primero: Asignatura (y "Unidad temática asociada" en
-            `UnidadAsociadaSection`) dependen de él y están deshabilitados
-            hasta elegirlo — mostrarlo después invertía la relación de
-            dependencia y confundía sobre qué elegir primero. */}
+        {/* Grado/Grupo primero: Asignatura y Unidad dependen de él. */}
         <Field variant="outlined" data-invalid={grupoInvalido}>
           <FieldLabel htmlFor="grado-grupo">Grado / Grupo *</FieldLabel>
           <Select
-            // `__none__` es el sentinel de "sin elegir" — mismo criterio
-            // que Asignatura arriba (y que "Unidad temática asociada"):
-            // permite volver a "sin grado/grupo" en vez de quedar pegado a
-            // la primera combinación elegida.
+            // `__none__` permite volver a "sin grado/grupo".
             value={grupoId != null ? String(grupoId) : "__none__"}
             onValueChange={(v) => {
               if (!v) return
@@ -2066,10 +1524,7 @@ function AsignaturaGradoSection({
                 form.setFieldValue("asignaturaId", undefined)
                 form.setFieldValue("asignatura", "")
                 form.setFieldValue("unidad", { id: 0, nombre: "" })
-                // "Estudiantes" depende del padrón de ESTE grupo+asignatura
-                // (`useActividadMatriculasGrupoQuery`) — sin grupo no hay
-                // padrón contra el cual siquiera validar los ids ya
-                // elegidos, así que se limpian junto con el resto.
+                // Sin grupo no hay padrón: los estudiantes se limpian.
                 form.setFieldValue("matriculasIds", [])
                 form.setFieldValue("asignarTodoElGrupo", true)
                 return
@@ -2080,11 +1535,7 @@ function AsignaturaGradoSection({
               form.setFieldValue("grado", combo.gradoNombre)
               form.setFieldValue("grupoId", combo.grupoId)
               form.setFieldValue("grupo", grupoLabel(combo))
-              // Asignatura, unidad y "Estudiantes" dependen de "Grado /
-              // Grupo": cambiarlo invalida lo que había elegido en las tres
-              // (los `matriculaIds` seleccionados son PKs del padrón del
-              // grupo ANTERIOR — dejarlos pegados los manda al nuevo grupo
-              // sin que el docente haya elegido a esos estudiantes ahí).
+              // Cambiar Grado/Grupo invalida asignatura, unidad y estudiantes (las matrículas son del grupo anterior).
               form.setFieldValue("asignaturaId", undefined)
               form.setFieldValue("asignatura", "")
               form.setFieldValue("unidad", { id: 0, nombre: "" })
@@ -2120,24 +1571,14 @@ function AsignaturaGradoSection({
             <Field variant="outlined" data-invalid={asignaturaInvalida}>
               <FieldLabel htmlFor={field.name}>{subjectLabel} *</FieldLabel>
               <Select
-                // `__none__` es el sentinel de "sin elegir" — mismo criterio
-                // que Grado/Grupo arriba (y que "Unidad temática asociada").
-                // Sin un valor propio para ese estado, no había forma de
-                // VOLVER a "sin asignatura" una vez elegida una: y sin
-                // asignatura (ni grado) el enfoque no se puede derivar, así
-                // que "¿Es evaluación sumativa?" queda libre (ver
-                // `EvaluacionSection`) en vez de bloqueado por una unidad/
-                // referente que ya no aplica.
+                // `__none__` permite volver a "sin asignatura" (y desbloquear "¿Es evaluación sumativa?").
                 value={field.state.value != null ? String(field.state.value) : "__none__"}
                 onValueChange={(v) => {
                   if (!v) return
                   if (v === "__none__") {
                     field.handleChange(undefined)
                     form.setFieldValue("asignatura", "")
-                    // "Estudiantes" depende de Grado/Grupo Y Asignatura —
-                    // sin asignatura no hay padrón contra el que validar los
-                    // `matriculaIds` ya elegidos (mismo criterio que al
-                    // limpiar "Grado / Grupo").
+                    // Sin asignatura no hay padrón: se limpian los estudiantes.
                     form.setFieldValue("matriculasIds", [])
                     form.setFieldValue("asignarTodoElGrupo", true)
                     return
@@ -2146,11 +1587,7 @@ function AsignaturaGradoSection({
                   if (!par) return
                   field.handleChange(par.asignaturaId)
                   form.setFieldValue("asignatura", par.asignaturaNombre)
-                  // Cambiar de Asignatura cambia el padrón que ofrece
-                  // "Estudiantes" (`useActividadMatriculasGrupoQuery` depende
-                  // de grupo+asignatura) — los `matriculaIds` ya elegidos
-                  // eran de la asignatura ANTERIOR, así que quedan sin
-                  // sentido acá y se limpian junto con el resto.
+                  // El padrón depende de grupo + asignatura: las matrículas elegidas se limpian.
                   form.setFieldValue("matriculasIds", [])
                   form.setFieldValue("asignarTodoElGrupo", true)
                 }}
@@ -2189,12 +1626,7 @@ function AsignaturaGradoSection({
 
         {unidadSlot}
 
-        {/* "Estudiantes": deshabilitado hasta elegir Grado/Grupo Y
-            Asignatura — mismo criterio de dependencia que Asignatura arriba
-            (depende de Grado/Grupo) y que "Unidad temática asociada" (que
-            además depende de Asignatura). Sin elegir nadie a mano queda en
-            "todo el grupo", el comportamiento de siempre (ver el comentario
-            de `Actividad.matriculasIds`). */}
+        {/* "Estudiantes" depende de Grado/Grupo y Asignatura. Sin elegir a nadie queda en "todo el grupo". */}
         <form.Field name="matriculasIds">
           {(field) => (
             <Field variant="outlined" data-invalid={estudiantesInvalido}>
@@ -2210,13 +1642,7 @@ function AsignaturaGradoSection({
                   form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
                 disabled={!hasGradoAsignatura || bloqueadoPorRecuperacion}
-                // `isPending` de una query DESHABILITADA (`enabled: false`)
-                // queda en `true` para siempre —react-query nunca la corre,
-                // así que nunca sale de "pending"—, así que solo cuenta como
-                // "cargando" cuando además está habilitada: si no, el
-                // trigger mostraba "Cargando…" en vez del placeholder de
-                // "elegí grado/asignatura primero" mientras el campo seguía
-                // deshabilitado.
+                // `isPending` de una query deshabilitada queda `true` para siempre: solo cuenta si está habilitada.
                 isPending={hasGradoAsignatura && isPendingMatriculas}
                 placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}
               />
@@ -2228,13 +1654,7 @@ function AsignaturaGradoSection({
   )
 }
 
-/**
- * "Materiales requeridos" — mitad del Bloque 3 ("Recursos y Materiales");
- * la otra mitad es `RecursosSection` ("Materiales de apoyo"), que va justo
- * después en el render. Antes esta sección no tenía título propio: sin un
- * `<h3>` que la separe, un `Card` en blanco pegado a "Identificación" se
- * leía como si siguiera siendo parte de ese bloque (pedido de QA).
- */
+/** "Materiales requeridos": primera mitad del Bloque 3 (la otra es `RecursosSection`). */
 function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <div className="flex flex-col gap-4">
@@ -2263,16 +1683,8 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
 }
 
 /**
- * Draft de un recurso todavía no agregado a la lista. Vive en estado local
- * del componente —no en el form field— hasta que el usuario confirma con
- * "Agregar a la lista", recién ahí se commitea al `form.field.recursos`.
- *
- * Antes cada item agregado se renderizaba como un `RecursoItem` editable
- * inline, igual que el form de alta: el resultado era N copias del mismo
- * formulario apiladas, con su propio botón "Quitar" cada una. El mockup
- * pide una sola pieza de alta + una lista compacta debajo —un form arriba,
- * ítems display-only abajo con acciones al hover—. Eso es lo que modela
- * `draft` + commit.
+ * Borrador del recurso en estado local: recién se commitea a `recursos` con
+ * "Agregar a la lista".
  */
 type RecursoDraft = Omit<Recurso, "id">
 
@@ -2284,16 +1696,11 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
-/** Regla 82: tope de "Materiales de apoyo" por actividad. */
 const RECURSO_MAX_ITEMS = 10
 
 /**
- * Formatos permitidos en "Archivo en PC" (Regla 82) — los ejecutables
- * (.exe/.bat/.sh) quedan prohibidos por no estar en esta lista, no por un
- * chequeo aparte. A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía del
- * picker, pensada solo para lo que `recurso-preview.tsx` sabe mostrar:
- * imagen/audio/video/pdf), acá SÍ se valida en el cliente: pedido explícito
- * de QA, mismo criterio que el archivo de plantilla de Adaptaciones.
+ * Formatos permitidos en "Archivo en PC" (Regla 82): los ejecutables quedan fuera por
+ * no estar en la lista. Se valida en el cliente (pedido de QA).
  */
 const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
   "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
@@ -2302,8 +1709,6 @@ const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
 const RECURSO_ARCHIVO_ACCEPT_VALIDADO = RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS.map((ext) => `.${ext}`).join(",")
 const RECURSO_ARCHIVO_MAX_BYTES = 20 * 1024 * 1024
 
-/** `javascript:`/`data:` no son un dominio a rechazar por lista blanca —son
- *  un ESQUEMA a rechazar siempre, antes de siquiera mirar el host. */
 const ESQUEMAS_URL_PELIGROSOS = ["javascript:", "data:"]
 
 function extensionDe(nombre: string): string {
@@ -2317,9 +1722,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** indice).toFixed(indice === 0 ? 0 : 1)} ${unidades[indice]}`
 }
 
-/** `esquemaPeligroso` se chequea ANTES: `new URL("javascript:...")` no tira
- *  (es sintácticamente válida), así que sin este chequeo explícito pasaba
- *  derecho el resto de la validación. */
+/** `esquemaPeligroso` va primero: `new URL("javascript:...")` no tira. */
 function esUrlDeRecursoValida(value: string): boolean {
   const lower = value.trim().toLowerCase()
   if (ESQUEMAS_URL_PELIGROSOS.some((esquema) => lower.startsWith(esquema))) return false
@@ -2340,27 +1743,19 @@ function RecursosSection({
   form: FormActividad
   draftKey: ActividadFormDraftKey
   disabled: boolean
-  /** 0 mientras la actividad no se guardo: la biblioteca no se puede
-   *  consultar sin una actividad existente (ver el boton mas abajo). */
+  /** 0 mientras la actividad no se guardó: la biblioteca exige una actividad existente. */
   actividadId: number
 }) {
-  // El grupo elegido en el formulario. Es lo que le permite a la biblioteca
-  // resolver el alcance del usuario mientras la actividad no existe (al
-  // crear); editando manda la actividad y esto queda de respaldo.
+  // Grupo del form: ancla de la biblioteca al crear, cuando la actividad aún no existe.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
-  // Regla 82: máximo 10 materiales de apoyo por actividad — tope del
-  // backend (`fn_actividad_validar_materiales`), repetido acá para avisar
-  // antes de llegar al guardado.
+  // Regla 82: máximo 10 materiales por actividad (tope del backend).
   const recursosCount = useSelector(
     form.store,
     (state) => (state.values.recursos as Recurso[]).length,
   )
   const limiteAlcanzado = recursosCount >= RECURSO_MAX_ITEMS
 
-  // Mismo catálogo que valida `fn_actividad_validar_url_dominio` al
-  // guardar (Regla 82) — se consulta acá para avisar en el cliente apenas
-  // se tipea el enlace. `undefined` mientras no resuelve: no bloquea (el
-  // guardado real sigue cayendo en la validación del backend).
+  // Mismo catálogo de dominios del backend (Regla 82). `undefined` mientras carga: no bloquea.
   const { data: dominiosUrl } = useDominioMaterialCatalog("DOMINIO_MATERIAL_URL")
   const { data: dominiosRepositorio } = useDominioMaterialCatalog("DOMINIO_MATERIAL_REPOSITORIO")
 
@@ -2372,18 +1767,9 @@ function RecursosSection({
     return !esDominioPermitido(d.url, dominios)
   }
 
-  // Colapsa/expande el cuerpo del card. El título + los botones del header
-  // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
-  // muestra u oculta el form de alta + la lista.
   const [collapsed, setCollapsed] = useState(false)
-  // Abre/cierra el modal de biblioteca: galería con buscador + paginación
-  // de todos los recursos que el docente ha subido en otras actividades,
-  // para reutilizarlos acá sin tener que volver a cargarlos.
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false)
-  // Borrador del recurso que el usuario está cargando ahora mismo. Vive
-  // afuera del form field: hasta que no se commitea con "Agregar a la
-  // lista", los cambios NO se reflejan en el form state ni disparan
-  // `isDirty` — así editar el borrador no ensucia el form antes de tiempo.
+  // Fuera del form field para que editar el borrador no ensucie el form.
   const [draft, setDraft] = useState<RecursoDraft>(RECURSO_DRAFT_VACIO)
 
   function updateDraft(patch: Partial<RecursoDraft>) {
@@ -2391,9 +1777,7 @@ function RecursosSection({
   }
 
   function handleAddDraft() {
-    // El commit pide al menos una URL/fuente: un item sin referencia no
-    // aporta nada en la lista de "Recursos agregados" (se vería como
-    // una línea vacía con un tag).
+    // Un item sin URL/fuente no aporta nada.
     if (!draft.url.trim() && !draft.fuente.trim()) return
     if (draftUrlInvalida(draft)) return
     const list = form.getFieldValue("recursos") as Recurso[]
@@ -2405,12 +1789,7 @@ function RecursosSection({
     setDraft(RECURSO_DRAFT_VACIO)
   }
 
-  // Cuando el docente elige un recurso de la biblioteca, se inserta
-  // directo en la lista de "Recursos agregados" (mismo flujo que
-  // `handleAddDraft`, pero sin pasar por el draft). El id nuevo se
-  // genera acá: el `Recurso` que viene del modal ya trae un id del
-  // recurso original en otra actividad, y si lo reusáramos dos
-  // recursos podrían colisionar en el `<ul>` (la key es el id).
+  // Id nuevo: reusar el del recurso original podría colisionar en la key del `<ul>`.
   const soloLectura = useSoloLecturaActividad()
   function handlePickFromBiblioteca(recurso: Omit<Recurso, "id">) {
     const list = form.getFieldValue("recursos") as Recurso[]
@@ -2423,14 +1802,6 @@ function RecursosSection({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Materiales de apoyo (agrega varios recursos)</h4>
         <div className="flex gap-2">
-          {/* Biblioteca: abre el modal de "galería de recursos del docente"
-              — todos los recursos que el usuario ha subido en sus
-              actividades previas, con buscador y paginación. El ícono es
-              `RemoveCircleOutlineIcon` (que en este contexto representa
-              "abrir el repositorio" — es el mismo ícono que usan los
-              otros repositorios de la app). `outline` + `primary` para
-              que sea un botón secundario de la cabecera (el primario es
-              el toggle de colapsar, que es la acción más usada). */}
           <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
@@ -2442,10 +1813,7 @@ function RecursosSection({
                   type="button"
                   onClick={() => setBibliotecaOpen(true)}
                   aria-label="Adjuntar desde biblioteca"
-                  // La biblioteca necesita un ancla para resolver el alcance:
-                  // la actividad al editar, el grupo al crear (V429). Sin
-                  // ninguna de las dos el backend responde 400, así que el
-                  // botón espera a que se elija el grupo.
+                  // La biblioteca necesita la actividad (edición) o el grupo (alta); sin ninguno el backend da 400.
                   disabled={disabled || limiteAlcanzado || (actividadId <= 0 && !grupoId)}
                 />
               }
@@ -2459,13 +1827,6 @@ function RecursosSection({
             </TooltipContent>
           </Tooltip>
           </SoloEdicion>
-          {/* Toggle colapsar/expandir. El ícono cambia entre los dos
-              estados: `+` outline (expandir) cuando está colapsado, `-`
-              fill (colapsar) cuando está expandido. Mismo idioma visual
-              que otros accordions del DS, con el `+`/`-` mapeado al
-              estado del colapso. Este queda como `fill` + `primary` —
-              es la acción primaria de la cabecera, la biblioteca es
-              secundaria. */}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -2493,21 +1854,8 @@ function RecursosSection({
 
       {collapsed ? null : (
         <div className="flex flex-col gap-4">
-          {/* Form de alta: SIEMPRE uno solo, vive afuera del `.map()` de la
-              lista. Antes había uno por item agregado, lo que duplicaba el
-              form N veces y rompía la lectura visual de "estoy agregando
-              un nuevo recurso". */}
-          {/* `onBlur` en el contenedor (no en cada input): si el foco se
-              va de TODO este bloque —no solo entre sus propios campos,
-              gracias al chequeo de `relatedTarget`— se agrega el
-              borrador solo, igual que ya hace `ListaAgregableField`
-              (Objetivos/Contenidos) con `onBlur={agregar}`. Cubre el
-              caso de saltar directo al "Guardar" real del form sin
-              pasar por "Agregar a la lista": sin esto, ese recurso
-              tipeado se perdía en silencio. `handleAddDraft` ya no hace
-              nada si el borrador está vacío, así que no agrega filas
-              fantasma solo por tabular de un campo a otro. */}
-          {/* En solo lectura no hay alta de recursos: solo la lista. */}
+          {/* `onBlur` del contenedor: si el foco sale del bloque se agrega el borrador solo, para no
+          perderlo al ir directo al "Guardar" del form. */}
           {soloLectura ? null : limiteAlcanzado ? (
             <p className="text-muted-foreground text-sm">
               Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
@@ -2532,9 +1880,6 @@ function RecursosSection({
           <form.Field name="recursos">
             {(field) => {
               const recursos = field.state.value as Recurso[]
-              // Lista compacta display-only. Vacío = no se muestra la sección
-              // (la propia "(agrega varios recursos)" + el form de arriba ya
-              // invitan a cargar el primero).
               if (recursos.length === 0) return null
               return (
                 <div className="flex flex-col gap-3">
@@ -2551,11 +1896,7 @@ function RecursosSection({
                           list.splice(index, 1)
                           field.handleChange(list)
                         }}
-                        // "Ver recurso" navega a una ruta aparte, que
-                        // desmonta este form entero — se guarda un borrador
-                        // con lo que el docente ya tipeó para que "Cerrar"
-                        // en la vista previa no lo mande de vuelta a un
-                        // form vacío (ver `actividad-form-draft.ts`).
+                        // "Ver recurso" desmonta el form: se guarda un borrador para restaurarlo al volver.
                         onVerRecurso={() =>
                           saveActividadFormDraft(draftKey, form.state.values as Actividad)
                         }
@@ -2570,12 +1911,7 @@ function RecursosSection({
         </div>
       )}
 
-      {/* Modal de biblioteca: galería con buscador + paginación. Se monta
-          siempre (no depende de `collapsed`) — el padre controla la
-          apertura con `bibliotecaOpen` y el `onOpenChange` resetea el
-          buscador + página al cerrar (lo hace el componente mismo).
-          Le pasamos la lista actual de recursos para que excluya los que
-          ya están en el form y no aparezcan como duplicados. */}
+      {/* Se le pasan los recursos actuales para excluir duplicados. */}
       <form.Subscribe selector={(state) => state.values.recursos}>
         {(recursos) => (
           <DialogBibliotecaRecursos
@@ -2592,16 +1928,7 @@ function RecursosSection({
   )
 }
 
-/**
- * Form de alta de un recurso. Recibe el `draft` desde `RecursosSection` y
- * emite cambios vía `onChange`. El botón "Agregar a la lista" es el que
- * dispara el commit en el padre.
- *
- * El campo "Fuente" cambia su placeholder según el tipo seleccionado: la
- * URL pide una URL, la unidad virtual pide el nombre del repositorio, el
- * archivo pide el nombre del archivo. Misma idea detrás del cambio de
- * ícono/icono que ya tenía el campo.
- */
+/** Form de alta de un recurso; "Agregar a la lista" dispara el commit en el padre. */
 function RecursoForm({
   draft,
   onChange,
@@ -2612,19 +1939,13 @@ function RecursoForm({
   draft: RecursoDraft
   onChange: (patch: Partial<RecursoDraft>) => void
   onAdd: () => void
-  /** Calculado por el padre (`RecursosSection`): formato de URL + dominio
-   *  permitido, según `draft.tipo` (ver `draftUrlInvalida`). `false`
-   *  mientras `draft.url` está vacío — recién se marca inválido con algo
-   *  tipeado que no pasa la validación. */
+  /** Calculado por `RecursosSection` (formato + dominio permitido); `false` con la URL vacía. */
   urlInvalida: boolean
   disabled: boolean
 }) {
-  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
-  // `draft`, así que no alcanza con derivarlo de ahí.
+  // Rechazado en el picker (formato/tamaño): no llega al `draft`.
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
-  // Tamaño del archivo recién elegido, solo para el preview "nombre · peso"
-  // de abajo — `Recurso`/`RecursoDraft` no guardan el tamaño (no viaja al
-  // backend), así que vive aparte, nunca en el draft commiteado.
+  // Tamaño solo para el preview: no viaja al backend.
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<{ nombre: string; size: number } | null>(
     null,
   )
@@ -2636,13 +1957,7 @@ function RecursoForm({
         ? FileUploadOutlinedIcon
         : null
 
-  // Placeholder contextual del campo "Fuente" según el tipo. La idea es
-  // que el ejemplo que ve el usuario matchee lo que va a tipear —si es
-  // URL, una URL de ejemplo; si es archivo, el nombre de un archivo, etc.
-  // REV: el de "Unidad virtual" pedía un NOMBRE, pero el campo es
-  // `type="url"` y lo que escribe va a `draft.url` — el mismo lugar que el
-  // tipo "URL". Un ejemplo de enlace de repositorio dice qué se espera de
-  // verdad, y de paso es la forma que la vista previa sabe embeber.
+  // "Unidad virtual" escribe en `draft.url` (`type="url"`): su ejemplo es un enlace.
   const fuentePlaceholder =
     draft.tipo === "Unidad virtual"
       ? "https://drive.google.com/file/d/..."
@@ -2678,22 +1993,13 @@ function RecursoForm({
               setArchivoSeleccionado(null)
               onChange({
                 tipo: (v ?? "URL") as Recurso["tipo"],
-                // Al pasar a "Archivo" la URL previa pierde sentido (el
-                // browser rechaza cualquier string en `<input type="file">`
-                // que no sea ""). En los demás cambios (URL ↔ Unidad
-                // virtual) se preserva para no borrar lo que el usuario
-                // ya tipeó.
+                // Al pasar a "Archivo" la URL se limpia (`<input type="file">` solo acepta "").
                 url: v === "Archivo" ? "" : draft.url,
               })
             }}
             disabled={disabled}
           >
             <SelectTrigger>
-              {/* El trigger pinta ícono + label del tipo seleccionado,
-                  sacando ambos del mapper. Si no hay valor todavía, cae
-                  al placeholder "URL / Sitio web" con el ícono de ese
-                  tipo (es el primero del mapper y el que la app usa
-                  como default en el draft vacío). */}
               <SelectValue placeholder="URL / Sitio web">
                 {(value) => {
                   const pres = RECURSO_PRESENTACION[value as Recurso["tipo"]]
@@ -2709,10 +2015,6 @@ function RecursoForm({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {/* Iteramos sobre el mapper (no sobre un array hardcodeado)
-                  para que agregar un tipo nuevo sea un cambio de una sola
-                  línea en `RECURSO_PRESENTACION`. Mismo patrón que el
-                  `<DualList>` de roles-menus que mapea `MenuNode[]`. */}
               {(Object.entries(RECURSO_PRESENTACION) as [Recurso["tipo"], RecursoPresentacion][]).map(
                 ([value, { label, Icon }]) => (
                   <SelectItem key={value} value={value}>
@@ -2735,32 +2037,17 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
-              // A diferencia de `RECURSO_ARCHIVO_ACCEPT` (la guía de
-              // "Adjuntar desde biblioteca"/preview, que no valida nada),
-              // acá el `accept` SÍ va acompañado del chequeo real en
-              // `onChange` — pedido explícito de QA (Regla 82).
+              // Acá el `accept` sí va con chequeo real en `onChange` (Regla 82).
               {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT_VALIDADO } : {})}
               placeholder={fuentePlaceholder}
               maxLength={500}
-              // `<input type="file">` no acepta `value` programático (el
-              // browser solo permite setearlo a `""` por seguridad —
-              // cualquier otro valor tira `InvalidStateError` y revienta
-              // el árbol). El archivo se controla vía `e.target.files`
-              // dentro de `onChange`, no hace falta pasarle `value`.
+              // `<input type="file">` no acepta `value` programático (tira `InvalidStateError`).
               {...(draft.tipo === "Archivo" ? {} : { value: draft.url })}
               onChange={(e) => {
-                // `<input type="file">` expone el archivo en
-                // `e.target.files[0]`, pero `e.target.value` es el fake
-                // path (`C:\fakepath\...`) que el browser pone por
-                // seguridad — no sirve para reproducir nada. Hay que
-                // armar un blob URL a partir del `File` real para que el
-                // preview tenga bytes que mostrarle al `<audio>` /
-                // `<video>` / visor de PDF.
+                // `e.target.value` es un fakepath: el preview necesita un blob URL del `File`.
                 if (draft.tipo === "Archivo") {
                   const file = e.target.files?.[0]
-                  // Liberar el blob anterior antes de pisarlo — si el
-                  // usuario cambia de archivo no queremos dos blobs
-                  // vivos del mismo slot.
+                  // Se libera el blob anterior antes de pisarlo.
                   if (draft.url.startsWith("blob:")) {
                     URL.revokeObjectURL(draft.url)
                   }
@@ -2790,11 +2077,7 @@ function RecursoForm({
                   setErrorArchivo(null)
                   setArchivoSeleccionado({ nombre: file.name, size: file.size })
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se
-                  // lo pasa al resolver, que lo usa como fallback para
-                  // detectar la extensión — los blob URLs no tienen
-                  // extensión en el path y no queríamos meterla en el
-                  // hash (algunos parsers se confunden con el `#`).
+                  // `fuente` guarda el nombre: el resolver lo usa para la extensión (los blob URLs no la tienen).
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -2808,9 +2091,7 @@ function RecursoForm({
               disabled={disabled}
             />
           </div>
-          {/* Preview "nombre · peso" + ícono de estado antes de confirmar
-              la carga (pedido explícito de QA) — éxito en verde si pasó
-              las validaciones de arriba, error en rojo si no. */}
+          {/* Preview "nombre · peso" con estado de validación (pedido de QA). */}
           {draft.tipo === "Archivo" && archivoSeleccionado && !errorArchivo && (
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <CheckCircleFillIcon className="text-green size-3.5 shrink-0" />
@@ -2849,11 +2130,7 @@ function RecursoForm({
         />
       </Field>
 
-      {/* Se oculta (no se deshabilita) mientras el draft no tenga URL ni
-          fuente: un item sin referencia no aporta nada en la lista de
-          "Recursos agregados", y un botón deshabilitado invita a completar
-          el resto de los campos primero cuando en realidad ya alcanza con
-          la URL/fuente. */}
+      {/* Se oculta (no se deshabilita) sin URL ni fuente. */}
       {(draft.url.trim() || draft.fuente.trim()) && (
         <div className="mt-3 flex justify-end">
           <Button
@@ -2865,14 +2142,7 @@ function RecursoForm({
             disabled={disabled || Boolean(errorArchivo) || urlInvalida}
           >
             <PlusIcon data-icon="inline-start" />
-            {/* NO "Guardar" — este botón no guarda la actividad, solo
-                agrega el borrador a "Recursos agregados" (ver el
-                comentario de `RecursoDraft` más arriba). Con el mismo
-                texto que el "Guardar" real del form, el docente lo
-                confundía con haber guardado de verdad: llenaba este
-                recurso, apretaba el "Guardar" de ABAJO del form entero
-                (creyendo que ya había guardado este) y el borrador se
-                perdía en silencio — nunca llegó a `form.recursos`. */}
+            {/* No dice "Guardar": solo agrega el borrador a la lista y se confundía con guardar la actividad. */}
             Agregar a la lista
           </Button>
         </div>
@@ -2881,14 +2151,7 @@ function RecursoForm({
   )
 }
 
-/**
- * Display-only de un recurso ya agregado. A diferencia del antiguo
- * `RecursoItem` (que era el mismo form de alta repetido por item), acá
- * el item es de lectura: muestra URL + descripción + tag del tipo, y
- * las acciones (ver, descargar, eliminar) aparecen SOLO al hover/foco
- * de la fila. Mismo idioma visual que la `DataTable` (overlay sticky
- * sobre la celda de acciones).
- */
+/** Recurso ya agregado, de solo lectura; las acciones aparecen al hover/foco. */
 function RecursoItem({
   recurso,
   onRemove,
@@ -2900,27 +2163,11 @@ function RecursoItem({
   onVerRecurso: () => void
   disabled: boolean
 }) {
-  // Toda la presentación (ícono, color, label) sale del mapper: si mañana
-  // se agrega un tipo nuevo o se cambia el color de "URL", se toca un solo
-  // lugar y todos los call sites se actualizan.
   const { label, Icon, bg, text } = RECURSO_PRESENTACION[recurso.tipo]
 
   return (
-    // `relative` en el `<li>` ancla el overlay de acciones a la tarjeta.
-    // Sin él, el `absolute` del overlay se posiciona contra el ancestro
-    // posicionado más cercano (que puede ser muy arriba en el árbol) y
-    // los botones terminan flotando fuera del card al hacer scroll.
-    // Mismo idioma que la celda `actions` de `DataTable`.
-    // `hover:bg-muted-22` en la tarjeta — mismo hover que las filas de
-    // `DataTable` (`bg-muted-22` ≈ muted al 28%, ver el comentario del
-    // `overlayClass` en `data-table.tsx`). Mantiene la consistencia con
-    // el resto de los listados de la app: lo que se "ilumina" al pasar
-    // el cursor es siempre el mismo tono.
+    // `relative` ancla el overlay de acciones; mismo hover que las filas de `DataTable`.
     <li className="group/recuro relative flex items-center gap-3 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted-22">
-      {/* Cuadrado de la cabecera: tipo-específico (color + ícono del
-          mapper). Cambia del círculo genérico anterior a un cuadrado
-          redondeado, igual al del mockup, y crece a `size-10` para
-          que el ícono interno a `size-6` se lea con peso. */}
       <span
         aria-hidden
         className={cn("flex size-10 shrink-0 items-center justify-center rounded-md", bg, text)}
@@ -2928,19 +2175,13 @@ function RecursoItem({
         <Icon className="size-6" />
       </span>
 
-      {/* Cuerpo: URL arriba (truncada con tooltip), descripción abajo.
-          `min-w-0` + `truncate` para que un enlace largo no rompa el
-          flex y empuje el contenido. `pr-*` reserva el ancho del
-          overlay de acciones a la derecha, así el título y la
-          descripción no quedan tapados cuando se hace hover. */}
+      {/* `pr-*` reserva el ancho del overlay de acciones. */}
       <div className="min-w-0 flex-1 pr-24">
         <p
           className="truncate text-sm font-semibold"
           title={recurso.fuente || recurso.url}
         >
-          {/* Para un archivo manda el nombre; para un enlace, la URL. Antes
-              la URL iba primero siempre, y un material de archivo guardado
-              —que no tiene URL de este lado— se veía como "(sin URL)". */}
+          {/* Archivo: muestra el nombre (no tiene URL de este lado); enlace: la URL. */}
           {recurso.fuente || recurso.url || "(sin URL)"}
         </p>
         {recurso.descripcion && (
@@ -2950,31 +2191,13 @@ function RecursoItem({
         )}
       </div>
 
-      {/* Badge del tipo — mismo componente `Badge` que usan las columnas de
-          las tablas del resto de la app, con el color del mapper. Acá el
-          texto sube a `text-xs` (el default del Badge es `text-[0.625rem]`,
-          pensado para columnas angostas): en esta fila comparte espacio con
-          la URL en `text-sm`, y a la talla default se leía perdido.
-          Sigue en el flex (no es absolute) porque siempre debe verse; las
-          acciones son las que se overlay-an, no el badge. */}
       <Badge variant="soft" className={cn("shrink-0 text-xs", bg, text)}>
         <Icon data-icon="inline-start" />
         {label}
       </Badge>
 
-      {/* Acciones: overlay ABSOLUTO anclado al borde derecho de la
-          tarjeta. No ocupa lugar en el flex del cuerpo —el `pr-24` del
-          div de arriba reserva el espacio visual— así el título y la
-          descripción NO se mueven al hacer hover (antes, con las
-          acciones en el flujo, el badge se desplazaba hacia la
-          izquierda). Por defecto `opacity-0`; al hover de la fila o
-          cuando cualquier hijo recibe foco visible, se pinta.
-
-          Mismo color que el hover del `<li>`, pero pre-mezclado con
-          `color-mix` (igual que en DataTable) en vez de `bg-muted-22`:
-          `muted-22` lleva alfa, así que apilado sobre el badge se veía
-          transparente/lavado; el color-mix da un sólido opaco que tapa
-          bien lo que hay debajo y solo los botones destacan. */}
+      {/* Overlay absoluto (no mueve el contenido al hover). Fondo con `color-mix` opaco:
+      `muted-22` lleva alfa y se transparentaba sobre el badge. */}
       <div
         className={cn(
           "absolute inset-y-0 right-0 flex items-center gap-1 rounded-r-md bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))] pl-2 pr-3 opacity-0 transition-opacity",
@@ -2991,10 +2214,7 @@ function RecursoItem({
                 type="button"
                 aria-label="Ver recurso"
                 render={
-                  // Un material ya guardado no tiene `url` de este lado — su
-                  // binario vive en el servidor y se pide por `archivoId`.
-                  // Sin esta segunda condición el ojito quedaba apagado justo
-                  // para los archivos que sí se pueden previsualizar.
+                  // Un material guardado no tiene `url`: se previsualiza por `archivoId`.
                   recurso.url || recurso.archivoId !== undefined
                     ? (
                       <Link
@@ -3005,8 +2225,6 @@ function RecursoItem({
                           fuente: recurso.fuente,
                           titulo: recurso.titulo,
                           descripcion: recurso.descripcion,
-                          // Un material ya guardado no tiene bytes de este
-                          // lado: la vista previa los pide con este id.
                           archivoId: recurso.archivoId,
                         }}
                         onClick={onVerRecurso}
@@ -3046,10 +2264,7 @@ function RecursoItem({
   )
 }
 
-/** "Entre 1 y 76", "Al menos 1" o "Hasta 76" según qué extremos trajo el
- *  backend (`ProgramacionActividad.duracionEstimada`/`.semanaCronograma`
- *  pueden traer un solo lado, ver `use-programacion-actividad-query.ts`) —
- *  evita que la descripción del campo asuma que siempre llegan los dos. */
+/** "Entre/Al menos/Hasta" según los extremos que trajo el backend. */
 function rangoLabel(min: number | null, max: number | null): string {
   if (min != null && max != null) return `Entre ${min} y ${max}`
   if (min != null) return `Al menos ${min}`
@@ -3057,11 +2272,7 @@ function rangoLabel(min: number | null, max: number | null): string {
   return ""
 }
 
-/** Ajusta `value` (ya sanitizado a dígitos por `toPositiveDigitsInput`) al
- *  rango `[min, max]` del backend — se llama en `onBlur`, no en cada tecla,
- *  para no trabar al usuario a mitad de tipeo (ver el comentario en el
- *  campo "Duración estimada"). Cadena vacía o límites ausentes: no hay nada
- *  que ajustar. */
+/** Ajusta `value` al rango `[min, max]`; se usa en `onBlur` para no trabar el tipeo. */
 function clampDigits(value: string, min: number | undefined | null, max: number | undefined | null): string {
   if (!value) return value
   const n = Number(value)
@@ -3070,9 +2281,7 @@ function clampDigits(value: string, min: number | undefined | null, max: number 
   return value
 }
 
-/** Mismo criterio que `clampDigits`, pero para el campo "Semana del
- *  cronograma", que además del número simple admite un rango ("10-12") —
- *  cada extremo del rango se ajusta por separado. */
+/** Como `clampDigits`, pero admite un rango ("10-12") y ajusta cada extremo. */
 function clampDigitsOrRange(value: string, min: number | undefined | null, max: number | undefined | null): string {
   if (!value) return value
   const partes = value.split("-").map((parte) => clampDigits(parte, min, max))
@@ -3080,20 +2289,12 @@ function clampDigitsOrRange(value: string, min: number | undefined | null, max: 
 }
 
 function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
-  // Topes reales de esta sección (ventana del periodo académico, días
-  // hábiles del horario, duración y semana admitidas) — sin esto, el único
-  // aviso de una fecha/duración fuera de rango era el 22023 de
-  // `fn_actividad_crear`/`_actualizar` al guardar (`fn_actividad_
-  // programacion_assert`, V422). `grupoId`/`asignaturaId` ya viven en el
-  // form (ver `AsignaturaGradoSection`), de ahí sale la ventana.
+  // Topes reales de la sección (ventana del periodo, días hábiles, duración, semana).
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
   const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
-  // Periodos de evaluación CERRADOS (NO Calificable y ya vencidos) del periodo
-  // académico del contexto: el backend rechaza crear o mover una actividad
-  // ahí (23514, `fn_actividad_validar_periodo_abierto`), así que esos días se
-  // deshabilitan en ambos calendarios y se explica por qué.
+  // Periodos de evaluación cerrados: el backend rechaza actividades ahí, se deshabilitan esos días.
   const { data: periodosEvaluacion = [] } = usePlaneadorPeriodosEvaluacionQuery()
   const periodoAcademicoId = programacion?.periodoAcademico?.id
   const cerrados =
@@ -3107,19 +2308,11 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
           .map((p) => `${p.nombre} (${formatDiaCorto(p.startDate)} – ${formatDiaCorto(p.endDate)})`)
           .join(", ")}. No se pueden programar actividades en esas fechas.`
       : null
-  // Mismo criterio que "Inicio/Fin del período académico" en
-  // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
-  // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
-  // estado nativo de TanStack Form) — no apenas se monta el form, que sería
-  // mostrar "obligatorio" en un campo que el docente ni llegó a mirar
-  // todavía.
+  // El error solo se muestra tras tocar el campo o tras un intento de guardar.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const requerido = (value: string) => (value ? undefined : "Este campo es obligatorio.")
 
-  // Contexto informativo de la ventana de arriba — el backend ya lo manda
-  // (`periodoAcademico`/`intensidadHoraria`) pero antes se descartaba sin
-  // mostrarlo: el docente veía los topes de fecha aplicados sin saber DE
-  // DÓNDE salían ("¿por qué no me deja elegir un martes?").
+  // Contexto de la ventana de fechas, para que el docente sepa de dónde salen los topes.
   const periodoLabel = programacion?.periodoAcademico
     ? `${programacion.periodoAcademico.nombre} (${programacion.periodoAcademico.fechaInicio?.toLocaleDateString("es-CO") ?? "…"} – ${programacion.periodoAcademico.fechaFin?.toLocaleDateString("es-CO") ?? "…"})`
     : null
@@ -3127,10 +2320,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
     ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
     : null
 
-  // Cuántos dígitos hacen falta para poder tipear el `max` real de
-  // "Duración estimada" (p. ej. 1200 → 4), no un "hasta 999" fijo. Sin
-  // `max` todavía resuelto, 3 dígitos como piso conservador (no corta de
-  // más mientras carga, y es el mínimo razonable para minutos).
+  // Dígitos necesarios para tipear el `max` real (3 como piso mientras carga).
   const duracionEstimadaMaxDigitos = Math.max(
     String(programacion?.duracionEstimada.max ?? 999).length,
     3,
@@ -3183,12 +2373,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
             <form.Field
               name="fechaCierre"
               validators={{
-                // `onChangeListenTo` revalida este campo cuando cambia
-                // "Fecha inicio" aunque "Fecha cierre" no se toque de nuevo:
-                // sin esto, elegir primero el cierre y DESPUÉS mover el
-                // inicio a una fecha posterior dejaba el combo inválido sin
-                // avisar (el `minDate` del picker de cierre solo protege
-                // mientras se elige el cierre, no ya elegido).
+                // `onChangeListenTo` revalida el cierre cuando cambia el inicio.
                 onChangeListenTo: ["fechaInicio"],
                 onChange: ({ value, fieldApi }) => {
                   const faltante = requerido(value)
@@ -3215,9 +2400,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                         field.handleChange(formatDateValue(date))
                         field.handleBlur()
                       }}
-                      // La fecha ya elegida en "Fecha inicio" manda sobre el
-                      // mínimo del backend: no tiene sentido ofrecer un cierre
-                      // anterior a un inicio que el propio docente ya puso.
+                      // La fecha de inicio elegida manda sobre el mínimo del backend.
                       minDate={
                         parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
                       }
@@ -3241,23 +2424,10 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
         <form.Field name="duracionEstimada">
           {(field) => (
             <Field variant="outlined">
-              {/* Pedido explícito: el campo se captura y se lee en MINUTOS,
-                  aunque `programacion.duracionEstimada.unidad`/`.motivo`
-                  (`FieldDescription` de abajo) venga en "bloques" — esos son
-                  los topes de validación que expone ese otro endpoint, no la
-                  unidad en la que el docente carga el dato acá. */}
+              {/* Se captura en MINUTOS aunque la descripción de abajo hable de "bloques" (pedido explícito). */}
               <FieldLabel htmlFor={field.name}>Duración estimada (minutos)</FieldLabel>
-              {/* `type="text"` + `inputMode="numeric"` y no `type="number"`:
-                  mismo criterio que el resto de la app (ver `text-input.ts`)
-                  — un `number` acepta notación como `1e5` y no sirve para
-                  un conteo simple. Solo dígitos, sin la unidad mezclada en
-                  el valor, y sin `0` (`toPositiveDigitsInput`): "0 minutos"
-                  no es una duración válida.
-                  El tope de dígitos sale del `max` real que manda el
-                  backend (`programacion.duracionEstimada.max`), no de un
-                  "hasta 999" fijo: antes el `3` hardcodeado le ganaba al
-                  `max` de verdad (p. ej. 1200, 4 dígitos) y el docente no
-                  podía ni terminar de tipear un valor válido. */}
+              {/* `type="text"` + `inputMode="numeric"` (no `number`, acepta `1e5`), sin `0`.
+              El tope de dígitos sale del `max` real del backend. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
@@ -3267,13 +2437,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 onChange={(e) =>
                   field.handleChange(toPositiveDigitsInput(e.target.value, duracionEstimadaMaxDigitos))
                 }
-                // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
-                // picker), acá no hay forma de impedir tipear un número fuera
-                // de rango mientras se escribe sin trabar al usuario a mitad
-                // de tipeo (escribir "3" cuando el mínimo es "30" clampearía
-                // antes de poder completar "35"). Se ajusta recién al perder
-                // el foco, mismo criterio no intrusivo que el resto de la
-                // app usa para validar rangos numéricos libres.
+                // Se ajusta al rango en `onBlur`: clampear al tipear impediría completar "35" con mínimo 30.
                 onBlur={(e) => {
                   field.handleBlur()
                   field.handleChange(
@@ -3304,9 +2468,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Semana del cronograma</FieldLabel>
-              {/* Solo un número o un rango simple ("10-12") — ver
-                  `toDigitsOrRangeInput` en `text-input.ts`. Ya no admite
-                  letras ("Semana ") ni listas separadas por coma. */}
+              {/* Solo un número o un rango simple ("10-12"). */}
               <Input
                 id={field.name}
                 inputMode="numeric"
@@ -3314,9 +2476,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 maxLength={5}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
-                // Mismo criterio que "Duración estimada": clampea cada
-                // extremo del rango recién al perder el foco, no en cada
-                // tecla.
+                // Clampea cada extremo al perder el foco.
                 onBlur={(e) => {
                   field.handleBlur()
                   field.handleChange(
@@ -3354,11 +2514,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
-                  {/* Sin esta función, seleccionar "Seleccione" (value
-                      "__none__") dejaba ese id crudo pintado en el trigger
-                      en vez de caer al placeholder — mismo arreglo que el
-                      resto de los `Select` con opción "Seleccione" del
-                      form (ver "¿A quién se aplica esta adaptación?"). */}
+                  {/* Sin esta función "__none__" se pintaba crudo en el trigger. */}
                   <SelectValue placeholder="Seleccione">
                     {(value) => (value === "__none__" ? "Seleccione" : (value as string))}
                   </SelectValue>
@@ -3379,23 +2535,8 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
 }
 
 /**
- * `campos_disponibles.evaluacion` (mismo bloque que `GET .../configuracion`,
- * carpeta 5) es la respuesta YA RESUELTA por el backend con TODAS sus
- * reglas de negocio (huérfana, unidad sin referente, referente FORMATIVO,
- * grado de preescolar, …) — manda sobre cualquier re-derivación en el
- * cliente, CON o SIN unidad: antes esta foto solo se usaba para actividades
- * huérfanas y, con unidad, se re-derivaba en vivo con
- * `useUnidadReferenteQuery(unidadId)` (`GET /unidades/:id/referente`, que
- * solo trae "¿es formativa?", no obligatoriedad) — pero para una actividad
- * cuya propia unidad SÍ tiene un referente FORMATIVO confirmado
- * (`campos_disponibles.evaluacion.visible: false`), esa re-derivación podía
- * no coincidir y dejaba "¿Es evaluación sumativa?" sin bloquear pese a que
- * el backend ya lo tenía resuelto.
- *
- * Se calcula UNA sola vez en `EditarActividadForm` (en vez de adentro de
- * `EvaluacionSection`) porque `esFormativa` también apaga Adaptaciones y
- * Seguimiento — regla de negocio confirmada: una unidad formativa nunca
- * lleva instrumentos, ponderación, adaptaciones ni seguimiento.
+ * `campos_disponibles.evaluacion` ya viene resuelto por el backend y manda sobre cualquier
+ * derivación en el cliente. Se calcula una vez porque `esFormativa` también apaga Adaptaciones y Seguimiento.
  */
 function useCamposEvaluacionEfectivos(
   form: FormActividad,
@@ -3409,91 +2550,45 @@ function useCamposEvaluacionEfectivos(
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const esEvaluativaValue = useSelector(form.store, (state) => state.values.esEvaluativa)
 
-  // Sigue aplicando solo mientras la unidad elegida en el form sea la MISMA
-  // con la que se tomó la foto (`unidadId === actividadUnidadId`, sentinel
-  // `undefined`/`0` incluido para el caso huérfano): si el usuario cambia
-  // de unidad —o le agrega una a una huérfana— la foto quedó vieja y hace
-  // falta resolver en vivo contra la unidad nueva.
+  // La foto solo aplica mientras la unidad sea la misma con la que se tomó.
   const camposDisponiblesAplica = camposDisponibles != null && (unidadId ?? 0) === actividadUnidadId
 
-  // Grado/Asignatura ahora se pueden volver a dejar en "Seleccione" (ver
-  // `AsignaturaGradoSection`) — pero `camposDisponibles` es una foto FIJA
-  // del detalle con el que se abrió el form, tomada cuando SÍ tenían un
-  // grado/asignatura. Sin este chequeo, limpiar los dos de vuelta a
-  // "Seleccione" seguía bloqueando "¿Es evaluación sumativa?" con esa foto
-  // vieja, como si el grado/asignatura que ya no está siguiera aplicando.
+  // Con Grado/Asignatura vaciados la foto ya no aplica.
   const sinGradoNiAsignatura = gradoId == null && asignaturaId == null
-  // SIN unidad Y sin foto vigente hay dos casos: editando una huérfana cuya
-  // foto quedó vieja (grado/asignatura recién cambiados en el form), o
-  // dando de alta una actividad nueva (`crearActividadVacia`, todavía sin
-  // detalle real) — en ambos se resuelve en vivo por grado/asignatura, que
-  // en el alta siempre resuelve porque el docente elige de su propio
-  // catálogo (ver `AsignaturaGradoSection`).
+  // Sin unidad ni foto vigente se resuelve en vivo por grado/asignatura.
   const sinUnidadNiDetalle = unidadId == null && !camposDisponiblesAplica
-  // Con unidad elegida (alta de actividad, o huérfana recién vinculada) se
-  // resuelve en vivo contra `GET /unidades/:id/configuracion-actividad`
-  // (`useConfiguracionActividadQuery`) — la MISMA fuente `campos_disponibles`
-  // que ya usa el detalle real, en vez de la vieja `useUnidadReferenteQuery`
-  // que solo traía "¿es formativa?" sin decir qué es obligatorio.
+  // Con unidad se resuelve en vivo por `useConfiguracionActividadQuery`.
   const { data: configuracionEnVivo } = useConfiguracionActividadQuery(
     !camposDisponiblesAplica && unidadId != null ? unidadId : undefined,
     esEvaluativaValue,
   )
-  // Señal PURA de "¿el referente de la unidad es Evaluativo?", sin mezclar
-  // el `esEvaluativa` que el usuario tenga elegido AHORA en el toggle: se
-  // pide siempre con `ES_EVALUATIVA=S`, que en la fórmula del backend
-  // (`visible = referente_evaluativo AND ES_EVALUATIVA <> 'N'`) deja
-  // `visible` igual a "es evaluativo". Sin esto, una actividad que arranca
-  // (o quedó guardada) con `esEvaluativa: false` bloqueaba su propio
-  // selector "¿Es evaluación sumativa?" — nunca se podía poner en "Sí" —
-  // aunque el referente de la unidad fuera Evaluativo: `camposEfectivos`
-  // abajo ya viene calculado CON ese `false`, así que usarlo también para
-  // decidir si el referente es formativo era un candado, no una detección.
+  // Se pide siempre con `ES_EVALUATIVA=S` para obtener "¿el referente es evaluativo?" puro:
+  // con el `false` actual del toggle, nunca se podría volver a "Sí".
   const { data: configuracionReferente } = useConfiguracionActividadQuery(unidadId, true)
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
-  // `campos_disponibles` (con `recuperacion`, el bloque que `RecuperacionSection`
-  // necesita para ofrecer destino/tipoAplicación/tipoCalculo) para una
-  // actividad SIN unidad — `useConfiguracionActividadQuery` de arriba exige
-  // `unidadId` y acá no hay. Sin esto, una actividad huérfana (o una
-  // recuperación recién autocompletada por `useRecuperacionAutoFill`, que
-  // no toca "Unidad temática asociada") se quedaba sin `camposEfectivos`
-  // para siempre, así que el bloque de recuperación nunca terminaba de
-  // aparecer aunque Grado/Grupo/Asignatura ya estuvieran resueltos.
+  // `campos_disponibles` para una actividad sin unidad (huérfana o recuperación autocompletada).
   const { data: configuracionContexto } = useConfiguracionContextoActividadQuery(
     sinUnidadNiDetalle ? grupoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
     esEvaluativaValue,
   )
 
-  // `TIPO_EVALUACION` del referente (CUANTITATIVA / CUALITATIVA /
-  // CUANTITATIVA_CUALITATIVA) — con unidad elegida sale de su referente
-  // (`useUnidadReferenteQuery`, mismo dato que ya trae `esFormativo`);
-  // huérfana o de alta, del referente en vivo por grado/asignatura, igual
-  // que `esFormativa` arriba. Determina qué tipos de "Escala de
-  // valoración" puede elegir el docente (ver `EscalaValoracionSection`).
+  // `TIPO_EVALUACION` del referente: decide qué tipos de escala admite `EscalaValoracionSection`.
   const { data: unidadReferente } = useUnidadReferenteQuery(unidadId)
   const tipoEvaluacion =
     unidadId != null ? (unidadReferente?.tipoEvaluacion ?? null) : (referenteDeGradoAsignatura?.tipoEvaluacion ?? null)
 
-  // Fuente de verdad efectiva para "qué mostrar/exigir": la foto fija del
-  // detalle si sigue aplicando, si no la configuración en vivo por unidad
-  // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
-  // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
+  // Fuente efectiva: la foto si sigue aplicando, si no la configuración en vivo.
   const camposEfectivos = camposDisponiblesAplica
     ? camposDisponibles
     : unidadId != null
       ? configuracionEnVivo
       : configuracionContexto
 
-  // Con unidad, `esFormativa` sale de `configuracionReferente` (fijo en
-  // `ES_EVALUATIVA=S`, ver arriba) — NUNCA de `camposEfectivos`, que sí
-  // varía con el `esEvaluativa` actual del form y por eso no sirve para
-  // decidir si el referente ADMITE ponerlo en "Sí". Sin unidad (huérfana o
-  // alta sin unidad todavía), `referenteDeGradoAsignatura?.esFormativo` ya
-  // es independiente del toggle.
+  // `esFormativa` nunca sale de `camposEfectivos`: varía con el toggle actual.
   const esFormativa =
     unidadId != null
       ? configuracionReferente != null && configuracionReferente.evaluacion.visible === false
@@ -3513,44 +2608,24 @@ function EvaluacionSection({
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
-  /** Ver `useCamposEvaluacionEfectivos`, calculado una sola vez en
-   *  `EditarActividadForm`. */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   esFormativa: boolean
-  /** Regla de la guía de recuperación: una actividad de recuperación
-   *  siempre es sumativa — bloquea el select y fuerza el valor a "Sí",
-   *  igual que `esFormativa` hace lo opuesto. */
+  /** Una recuperación siempre es sumativa: bloquea el select en "Sí". */
   esRecuperacion: boolean
-  /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
   tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
   disabled: boolean
 }) {
-  // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
-  // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
-  // abrir el form (o cuya unidad recién se supo formativa cuando terminó de
-  // resolver la query en vivo, que es asíncrona) se quedaba marcada como
-  // sumativa aunque el select apareciera bloqueado en "Sí" — y ese valor
-  // viajaba igual al guardar. La regla es "formativa nunca sumativa"
-  // siempre, no solo mientras el usuario toca el select.
+  // `disabled` no corrige el valor: se fuerza `esEvaluativa: false` con referente formativo.
   useEffect(() => {
     if (esFormativa) form.setFieldValue("esEvaluativa", false)
   }, [esFormativa, form])
 
-  // Mismo criterio, regla inversa: "recuperación siempre sumativa". No
-  // compiten entre sí — `RecuperacionSection` ya oculta "Es una
-  // recuperación" cuando el referente es formativo (mismo `campos_
-  // disponibles.recuperacion.visible` de la guía), así que las dos nunca
-  // están en `true` a la vez.
+  // Regla inversa: recuperación siempre sumativa. Nunca chocan con la de arriba.
   useEffect(() => {
     if (esRecuperacion) form.setFieldValue("esEvaluativa", true)
   }, [esRecuperacion, form])
 
-  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
-  // acá mismo. Filtrado por `camposEfectivos.evaluacion.instrumentosPermitidos`
-  // (regla confirmada: un referente EVALUATIVO solo permite ciertos
-  // instrumentos, no el catálogo completo) — sin foto/config resuelta
-  // todavía, o con la lista vacía, se muestra el catálogo completo en vez
-  // de dejar el select sin opciones.
+  // Filtrado por `instrumentosPermitidos`; sin config o lista vacía se muestra el catálogo completo.
   const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
   const instrumentosPermitidos = camposEfectivos?.evaluacion.instrumentosPermitidos
   const instrumentosPermitidosLabels = instrumentosPermitidos?.map(instrumentoPermitidoLabel)
@@ -3559,16 +2634,8 @@ function EvaluacionSection({
       ? instrumentos.filter((instrumento) => instrumentosPermitidosLabels.includes(instrumento))
       : instrumentos
 
-  // Con referente FORMATIVO la tarjeta entera no tiene nada que mostrar: el
-  // `useEffect` de arriba ya fuerza `esEvaluativa: false` (la actividad
-  // nunca es sumativa), instrumento/definición/ponderación ya se ocultaban
-  // más abajo, y "Adaptaciones"/"Seguimiento" (mismo `esFormativa`, ver
-  // `EditarActividadForm`) también desaparecen enteras. Antes solo se
-  // ocultaba el instrumento en adelante y quedaba un "¿Es evaluación
-  // sumativa?" bloqueado en "No" sin nada más en la tarjeta — un campo sin
-  // decisión real que tomar. El `return null` va DESPUÉS de los hooks de
-  // arriba (`useEffect`, `useInstrumentoEvaluacionCatalogQuery`) para no
-  // romper las reglas de hooks.
+  // Con referente formativo la tarjeta entera no tiene nada que mostrar.
+  // El `return null` va después de los hooks.
   if (esFormativa) return null
 
   return (
@@ -3596,13 +2663,7 @@ function EvaluacionSection({
           )}
         </form.Field>
 
-        {/* El instrumento (y su definición, más abajo) solo aplican con un
-            referente EVALUATIVO — regla de negocio confirmada: "referente
-            formativo: la actividad nunca tendrá instrumentos de
-            evaluación". Antes se mostraban siempre (para no tapar una
-            Rúbrica/Lista de cotejo ya guardada si el referente cambiaba
-            después de crearla), pero esa excepción quedó descartada: una
-            unidad formativa no lleva instrumento, punto. */}
+        {/* Regla: un referente formativo nunca tiene instrumento de evaluación. */}
         {!esFormativa && (
           <form.Field name="instrumento">
             {(field) => (
@@ -3639,10 +2700,6 @@ function EvaluacionSection({
 
       {esFormativa ? null : (
         <>
-          {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
-              adentro del mismo card de "Evaluación", entre el `instrumento`
-              elegido arriba y la `Ponderación (%)` de abajo — antes era un
-              `Card` hermano y suelto, separado de este. */}
           <InstrumentoEvaluacionSection
             form={form}
             unidades={unidades}
@@ -3651,21 +2708,8 @@ function EvaluacionSection({
             disabled={disabled}
           />
 
-          {/* Ponderación/Puntaje va AL FINAL, después de la definición del
-              instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
-                1. ¿Es sumativa?  →  2. ¿Con qué instrumento?  →
-                3. definición del instrumento  →  4. ¿Cuánto pesa?
-              Si la respuesta a (1) es "No", (4) desaparece (no aplica).
-
-              (4) sale de `camposEfectivos.ponderacion` — la MISMA fuente de
-              verdad que ya resuelve el backend (`visible`/`modo`/`motivo`),
-              no de re-derivar el `metodoCalculo` de la unidad en el cliente
-              (versión anterior de esta sección): `modo` ya viene resuelto
-              como "PORCENTAJE" (→ `ponderacion`, unidad "Ponderado") o
-              "PUNTAJE" (→ `notaMaxima`, unidad "Suma de puntos"); sin
-              `visible` (p. ej. "Promedio simple", donde nada de esto
-              aplica) se muestra el `motivo` que ya trae la respuesta, en
-              vez de un texto fijo adivinando por qué. */}
+          {/* Orden: ¿sumativa? → instrumento → definición → ponderación. La ponderación sale de
+          `camposEfectivos.ponderacion` (`modo`/`motivo` del backend), sin re-derivar el método de la unidad. */}
           <form.Subscribe selector={(state) => state.values.esEvaluativa}>
             {(esEvaluativa) => {
               if (!esEvaluativa) return null
@@ -3718,8 +2762,7 @@ function EvaluacionSection({
                   </div>
                 )
               }
-              // `modo === "PORCENTAJE"`, o `visible` sin `modo` todavía
-              // resuelto: cae al campo de siempre en vez de no mostrar nada.
+              // Con `visible` sin `modo` todavía cae al campo de porcentaje.
               return (
                 <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
                   <form.Field
@@ -3767,15 +2810,8 @@ function EvaluacionSection({
 }
 
 /**
- * El instrumento de evaluación decide qué editor mostrar: "Lista de
- * cotejo" → `ListaCotejoSection`, "Escala de valoración" →
- * `EscalaValoracionSection`, cualquier otro valor (Rúbrica, Rúbrica
- * analítica, Prueba escrita, Autoevaluación, "—", …) cae en
- * `RubricasSection`. Los tres comparten estructura de datos
- * independiente (`rubrica`, `listaCotejo` y `escalaValoracion` son
- * fields separados del `Actividad`), así que cambiar de instrumento no
- * pierde lo cargado en los otros: si el usuario prueba "Lista de
- * cotejo" y vuelve a "Rúbrica", sus criterios siguen ahí.
+ * El instrumento decide el editor (cotejo, escala o rúbrica por defecto). Cada uno tiene
+ * su propio field, así que cambiar de instrumento no pierde lo cargado.
  */
 function InstrumentoEvaluacionSection({
   form,
@@ -3787,19 +2823,13 @@ function InstrumentoEvaluacionSection({
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
-  /** Ver `useCamposEvaluacionEfectivos` — solo se usa acá para llegarle a
-   *  `InstrumentoPersonalizadoSection` la ficha dinámica de "Otro"
-   *  (`evaluacion.instrumentosPermitidos[].campos`). */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   disabled: boolean
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
       {(instrumento) =>
-        // Sin instrumento elegido no hay nada que definir todavía — antes
-        // caía al mismo `else` que "Rúbrica" y mostraba de arranque la
-        // sección de Criterios sin que el docente hubiera elegido nada en
-        // "Instrumento de evaluación".
+        // Sin instrumento elegido no hay nada que definir.
         !instrumento ? null : instrumento === "Lista de cotejo" ? (
           <ListaCotejoSection form={form} unidades={unidades} disabled={disabled} />
         ) : instrumento === "Escala de valoración" ? (
@@ -3828,14 +2858,7 @@ function InstrumentoEvaluacionSection({
   )
 }
 
-/**
- * Editor de la lista de cotejo: grilla de 2 columnas de ítems, cada uno
- * con su descripción y —cuando la actividad es sumativa— un campo de
- * ponderación al lado (mockup: "Ítem 1" / "Ítem 2" con "Descripción del
- * ítem" debajo del título; el % aparece junto a la descripción solo si
- * `esEvaluativa`). Estructura paralela a `RubricasSection`: mismo header
- * con botón "+" para agregar, mismo empty state.
- */
+/** Editor de la lista de cotejo; el puntaje de cada ítem solo aparece si es sumativa. */
 function ListaCotejoSection({
   form,
   unidades,
@@ -3845,18 +2868,10 @@ function ListaCotejoSection({
   unidades: UnidadTematica[]
   disabled: boolean
 }) {
-  // Mismo fallback que `RubricasSection`: tras un intento de guardar, los
-  // ítems marcan en rojo sus campos obligatorios aunque el usuario nunca
-  // los haya tocado (`fn_actividad_validar_cotejo_definicion`, sso V496.5).
+  // Tras un intento de guardar, los ítems marcan sus obligatorios aunque no se hayan tocado.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
-  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
-  // elemento solo es obligatorio si la Unidad vinculada en el Bloque 1
-  // calcula su definitiva por Ponderado o Suma de puntos. Promedio simple,
-  // o la actividad sin unidad (`unidad.id === 0`, no matchea ningún id real
-  // de `unidades`), lo dejan opcional — mismo patrón de `unidadActual` que
-  // `EscalaValoracionSection`. Esto es independiente de `esEvaluativa`: ese
-  // flag decide si el campo de puntaje SE MUESTRA, este decide si además,
-  // mostrándose, es obligatorio.
+  // El puntaje es obligatorio solo si la unidad calcula por Ponderado o Suma de puntos.
+  // `esEvaluativa` decide si se muestra; esto, si además es obligatorio.
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
   const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
@@ -3892,8 +2907,6 @@ function ListaCotejoSection({
         </SoloEdicion>
       </div>
 
-      {/* Mismo flag que gobierna la ponderación de la rúbrica: un ítem
-          de lista de cotejo solo pondera si la actividad es sumativa. */}
       <form.Subscribe selector={(state) => state.values.esEvaluativa}>
         {(esEvaluativa) => (
           <form.Field
@@ -3962,13 +2975,7 @@ function ListaCotejoSection({
                       </Field>
                     </div>
                   )}
-                  {/* Mismo botón del header, repetido al pie de la grilla:
-                      con varios ítems largos cargados, el botón de arriba
-                      queda fuera de la vista y hay que scrollear hasta el
-                      inicio de la sección para agregar uno más (QA Bloque 5,
-                      criterio de aceptación #3). Mismo patrón que "Agregar
-                      nivel" dentro de cada criterio de rúbrica, que ya vive
-                      al final de su propio bloque. */}
+                  {/* Botón repetido al pie para no tener que volver arriba (QA Bloque 5, criterio #3). */}
                   <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
@@ -3999,13 +3006,6 @@ function ListaCotejoSection({
   )
 }
 
-/**
- * Card de un ítem de la lista de cotejo. `esEvaluativa` decide si se
- * muestra el campo "Puntaje" al lado de la descripción — mismo
- * patrón que el input por-nivel de `CriterioItem` en la rúbrica: el
- * campo aparece/desaparece según el flag, no se deshabilita (no aplica,
- * no es que falte llenar algo).
- */
 function ListaCotejoItemCard({
   item,
   index,
@@ -4020,23 +3020,11 @@ function ListaCotejoItemCard({
   index: number
   esEvaluativa: boolean
   /**
-   * `fn_actividad_validar_cotejo_definicion` (sso V496.5) exige una
-   * descripción no vacía por elemento. El puntaje es obligatorio SOLO si la
-   * Unidad vinculada a la actividad calcula su definitiva por Ponderado o
-   * Suma de puntos (`puntajeObligatorio`, resuelto por `ListaCotejoSection`
-   * con el mismo `unidadActual` que `EscalaValoracionSection`); con
-   * Promedio simple, o sin unidad vinculada, un elemento sin puntaje pesa 1
-   * (`buildListaCotejoDefinicion`/el comentario de la función SQL) y solo
-   * se valida su rango si se carga. En ambos casos, si hay valor, debe
-   * quedar entre 0 y 100.
+   * Descripción obligatoria siempre; puntaje solo si `puntajeObligatorio` (si no, pesa 1).
+   * Con valor, entre 0 y 100.
    */
   puntajeObligatorio: boolean
   disabled: boolean
-  /**
-   * Mismo mecanismo de "tocado" local + fallback por intento de guardar que
-   * `CriterioItem`, pasado desde `ListaCotejoSection` (este componente
-   * tampoco recibe el `form`).
-   */
   submissionAttempts: number
   onChange: (next: ListaCotejoItem) => void
   onRemove: () => void
@@ -4077,13 +3065,7 @@ function ListaCotejoItemCard({
         </SoloEdicion>
       </div>
 
-      {/* Descripción + ponderación en la misma fila: `flex-1` en la
-          descripción para que absorba el ancho sobrante, `w-36 shrink-0`
-          en la ponderación —ancho subido de `w-24`: a 96px el label
-          "Puntaje del elemento" quedaba apretado contra el borde del campo—
-          para que no se comprima con textos largos. Sin `esEvaluativa`
-          el campo de ponderación no se monta —no queda un hueco vacío
-          al lado del textarea. */}
+      {/* Sin `esEvaluativa` el campo de puntaje no se monta. */}
       <div className="mt-3 flex items-start gap-3">
         <Field variant="outlined" className="min-w-0 flex-1" data-invalid={descripcionInvalida}>
           <FieldLabel htmlFor={`${item.id}-descripcion`}>Descripción del elemento</FieldLabel>
@@ -4112,8 +3094,7 @@ function ListaCotejoItemCard({
               value={item.ponderacion ?? ""}
               onChange={(e) => {
                 const raw = e.target.value
-                // string vacío → `undefined`, no `0`: evita un valor
-                // "fantasma" mientras el usuario borra para reescribir.
+                // Vacío → `undefined`, no `0`.
                 onChange({ ...item, ponderacion: raw === "" ? undefined : Number(raw) })
               }}
               onBlur={() => setTocoPonderacion(true)}
@@ -4133,39 +3114,12 @@ function ListaCotejoItemCard({
 }
 
 /**
- * Editor de la escala de valoración. Arranca con "Criterios generales":
- * qué se evalúa (texto libre) y con qué TIPO de escala —Numérica o
- * Cualitativa, radio group de shadcn (`RadioGroup`/`RadioGroupItem`),
- * mismo patrón que "¿Aplica la aprobación por promedio?" en
- * `tab-promotion-criteria.tsx`—. El resto del editor se ramifica según
- * esa elección:
- * - "Numérica": rango `valorMinimo`/`valorMaximo` + un textarea de
- *   "Interpretación de rangos" (texto libre — qué significa cada tramo).
- * - "Cualitativa": "Definiciones cualitativas" — la lista de niveles
- *   nombrados (Bajo/Medio/Alto/…). El `nombre` es un input editable
- *   (a diferencia del nivel de un criterio de rúbrica, donde queda fijo
- *   al crearlo): el docente puede renombrar la escala por defecto a la
- *   que use su institución. Cuando la actividad es sumativa, cada nivel
- *   pondera individualmente al lado de su descripción — mismo patrón
- *   que los niveles intermedios de `CriterioItem`.
- * Al cambiar "Escala" a Cualitativa por primera vez (`niveles` vacío),
- * se siembran los 3 niveles por defecto —Bajo/Medio/Alto— de una: el
- * usuario ve algo que completar en vez de una lista vacía + un paso
- * extra para crear cada nivel. El botón "+" del header agrega más
- * niveles después de esos tres, tomando el primero de
- * `NIVELES_CUALITATIVOS_DEFAULT` que todavía no esté en uso, o cayendo a
- * "Nivel N".
+ * Editor de la escala de valoración: Numérica (rango + interpretación) o Cualitativa
+ * (niveles editables). Al pasar a Cualitativa sin niveles se siembran los por defecto.
  */
 const NIVELES_CUALITATIVOS_DEFAULT = ["Bajo", "Medio", "Alto"]
 
-/**
- * Elige el default por NOMBRE YA USADO, no por posición/cantidad: antes
- * indexaba `NIVELES_CUALITATIVOS_DEFAULT` por `niveles.length`, así que
- * borrar un nivel de en medio (p. ej. "Medio", `removeNivel`) y agregar
- * uno nuevo volvía a calcular el mismo índice que un nivel YA presente
- * ("Alto") — quedaban dos niveles con el mismo nombre en vez de avanzar
- * al siguiente default disponible.
- */
+/** Elige el default por nombre ya usado, no por posición: evita nombres repetidos al borrar. */
 function nextNivelCualitativoNombre(nivelesActuales: { nombre: string }[]): string {
   const nombresUsados = new Set(nivelesActuales.map((nivel) => nivel.nombre))
   const siguienteDefault = NIVELES_CUALITATIVOS_DEFAULT.find((nombre) => !nombresUsados.has(nombre))
@@ -4173,20 +3127,8 @@ function nextNivelCualitativoNombre(nivelesActuales: { nombre: string }[]): stri
 }
 
 /**
- * Punto de partida de la Escala Cualitativa: si la actividad está vinculada
- * a una unidad que YA tiene su propia Rúbrica definida (pestaña "Rúbricas"
- * de la unidad, `unidad.criterios` — cada uno con un nivel de desempeño por
- * columna, ver `CriterioUnidad`), se reusan esos MISMOS nombres de nivel
- * ("Bajo"/"Básico"/"Alto"/"Superior" o los que traiga la escala de
- * valoración configurada para el nivel educativo de la unidad) y, como
- * descripción, lo que el docente ya escribió ahí para cada nivel —juntando
- * las de todos los criterios cuando hay más de uno, así no arranca en
- * blanco algo que ya se definió a nivel unidad. Es solo un DRAFT: son
- * niveles independientes de los de la unidad, así que el docente puede
- * editarlos o borrarlos sin que eso toque la Rúbrica de la unidad.
- *
- * Sin unidad, o con una unidad que todavía no tiene criterios cargados, cae
- * al default fijo `NIVELES_CUALITATIVOS_DEFAULT`.
+ * Niveles iniciales de la escala cualitativa: los de la rúbrica de la unidad (con sus
+ * descripciones) como borrador independiente; sin ellos, `NIVELES_CUALITATIVOS_DEFAULT`.
  */
 function nivelesCualitativosDesdeUnidad(
   unidad: UnidadTematica | undefined,
@@ -4209,34 +3151,20 @@ function EscalaValoracionSection({
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
-  /** `TIPO_EVALUACION` del referente de la unidad/grado-asignatura
-   *  ("CUANTITATIVA" | "CUALITATIVA" | "CUANTITATIVA_CUALITATIVA"). `null`
-   *  (todavía sin resolver, o referente sin este dato) se trata como
-   *  "ambas": no restringe nada, mismo comportamiento que antes de este
-   *  campo existir. */
+  /** `TIPO_EVALUACION` del referente; `null` no restringe. */
   tipoEvaluacion: string | null
   disabled: boolean
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
-  // Errores inline tras un intento de guardar — mismas reglas que
-  // `faltantesEscala` (`lib/instrumento-faltantes.ts`), que es la que de
-  // verdad frena el guardado; acá solo se marca en rojo QUÉ campo falta
-  // (y `scrollToFirstInvalidField` lleva la vista hasta él).
+  // Errores inline; quien frena el guardado es `faltantesEscala`.
   const intentoGuardar = useSelector(form.store, (state) => state.submissionAttempts) > 0
 
-  // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
-  // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
-  // todavía) admite las dos, igual que siempre.
+  // CUANTITATIVA solo admite Numérica, CUALITATIVA solo Cualitativa; mixto o sin dato, ambas.
   const permiteNumerica = tipoEvaluacion !== "CUALITATIVA"
   const permiteCualitativa = tipoEvaluacion !== "CUANTITATIVA"
 
-  // Si el docente ya tenía elegida la escala que el referente acaba de
-  // dejar de admitir (cambió de unidad/grado a una con TIPO_EVALUACION más
-  // restrictivo), se corrige acá al único tipo que queda permitido — el
-  // radio de esa opción ya ni se muestra (ver abajo), así que sin esto el
-  // VALOR guardado quedaría en un tipo que el usuario no puede ni ver para
-  // volver a elegir (mismo criterio que `esFormativa` más arriba).
+  // Si la escala elegida dejó de estar permitida se corrige al único tipo admitido.
   const escalaTipoActual = useSelector(form.store, (state) => state.values.escalaValoracion.tipo)
   useEffect(() => {
     if (escalaTipoActual === "Numérica" && !permiteNumerica) {
@@ -4308,10 +3236,7 @@ function EscalaValoracionSection({
                           disabled={disabled}
                           onValueChange={(value) => {
                             const tipo = value as EscalaValoracionTipo
-                            // Solo siembra si todavía no hay niveles cargados:
-                            // si el usuario ya armó su propia lista (o volvió
-                            // de Numérica a Cualitativa con niveles previos),
-                            // no se pisa nada.
+                            // Solo siembra si no hay niveles cargados.
                             const niveles =
                               tipo === "Cualitativa" && escala.niveles.length === 0
                                 ? (
@@ -4325,11 +3250,7 @@ function EscalaValoracionSection({
                             updateEscala({ tipo, niveles })
                           }}
                         >
-                          {/* El referente puede restringir a un solo tipo
-                              (TIPO_EVALUACION CUANTITATIVA/CUALITATIVA): la
-                              opción que no admite ni se muestra, no solo se
-                              deshabilita — no tiene sentido ofrecer una
-                              escala que el referente no permite. */}
+                          {/* La opción que el referente no admite ni se muestra. */}
                           {permiteNumerica && (
                             <label className="flex items-center gap-2">
                               <RadioGroupItem value="Numérica" className="data-checked:bg-primary" />
@@ -4433,12 +3354,7 @@ function EscalaValoracionSection({
                                 aria-label="Agregar definición cualitativa"
                                 disabled={disabled}
                                 onClick={() => {
-                              // Lista vacía (p. ej. una actividad que ya
-                              // traía `tipo: "Cualitativa"` guardado, sin
-                              // pasar por el `RadioGroup` de arriba): el "+"
-                              // siembra todo el set por defecto de una, no
-                              // un único nivel — mismo criterio que cambiar
-                              // "Escala" a Cualitativa por primera vez.
+                              // Lista vacía: el "+" siembra todo el set por defecto.
                               if (escala.niveles.length === 0) {
                                 const niveles = (
                                   nivelesCualitativosDesdeUnidad(unidadActual) ??
@@ -4485,9 +3401,7 @@ function EscalaValoracionSection({
                           <ul className="flex flex-col gap-3">
                             {escala.niveles.map((nivel, nIndex) => {
                               const descripcionInvalida = intentoGuardar && !nivel.descripcion.trim()
-                              // El backend exige SIEMPRE el puntaje de cada
-                              // nivel de la escala (0-100), sin importar el
-                              // cálculo de la unidad.
+                              // El backend exige siempre el puntaje de cada nivel (0-100).
                               const puntajeInvalido =
                                 intentoGuardar &&
                                 (nivel.ponderacion == null || nivel.ponderacion < 0 || nivel.ponderacion > 100)
@@ -4501,13 +3415,7 @@ function EscalaValoracionSection({
                                     : "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]",
                                 )}
                               >
-                                {/* A diferencia del nivel de un criterio de
-                                    rúbrica (`CriterioItem`, donde el nombre
-                                    es texto estático fijado al crear el
-                                    nivel), acá "Bajo"/"Medio"/"Alto" son un
-                                    punto de partida editable: el docente
-                                    puede renombrarlos a la escala que use
-                                    su institución. */}
+                                {/* El nombre del nivel es editable (a diferencia de la rúbrica). */}
                                 <Input
                                   variant="outlined"
                                   maxLength={50}
@@ -4529,11 +3437,6 @@ function EscalaValoracionSection({
                                   />
                                   {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
                                 </Field>
-                                {/* Ponderación por nivel — solo si la
-                                    actividad es sumativa. Mismo patrón que
-                                    los niveles intermedios de un criterio
-                                    de rúbrica: cada definición pesa lo
-                                    suyo, no la escala como un bloque único. */}
                                 {esEvaluativa && (
                                   <Field variant="outlined" data-invalid={puntajeInvalido}>
                                     <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
@@ -4604,25 +3507,8 @@ function EscalaValoracionSection({
 }
 
 /**
- * Definición de un instrumento personalizado — alternativa a `RubricasSection`
- * / `ListaCotejoSection` / `EscalaValoracionSection` cuando el docente elige
- * "Otro (personalizado)" en "Instrumento de evaluación". A diferencia de esos
- * tres (listas editables de criterios/ítems/niveles), acá es una ficha fija
- * de 5 campos: qué es el instrumento, qué evidencia se espera, cómo se
- * valora, y si exige adjuntar archivo y/o escribir una respuesta —los dos
- * checkboxes son independientes entre sí y del select de arriba.
- *
- * Mismo idioma visual que el resto del form: `Field variant="outlined"`
- * (label flotando sobre el borde) con placeholder adentro del control.
- *
- * "Método de valoración" reusa las mismas 3 opciones que el `instrumento`
- * de arriba (Rúbrica / Lista de cotejo / Escala de valoración) a propósito:
- * un instrumento personalizado igual necesita valorarse con la lógica de
- * uno de esos tres, así que elegir uno acá monta la MISMA sección de
- * definición (`RubricasSection` / `ListaCotejoSection` /
- * `EscalaValoracionSection`) que se vería si ese fuera el `instrumento`
- * elegido directamente — mismos campos, mismas reglas de negocio, el
- * mismo `rubrica`/`listaCotejo`/`escalaValoracion` del form.
+ * Instrumento "Otro (personalizado)": ficha fija con evidencia, método y opciones de entrega.
+ * El método monta la misma sección de definición que ese instrumento elegido directamente.
  */
 function InstrumentoPersonalizadoSection({
   form,
@@ -4634,23 +3520,15 @@ function InstrumentoPersonalizadoSection({
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
-  /** Ficha dinámica de "Otro (personalizado)" (`campos_disponibles.
-   *  evaluacion.instrumentosPermitidos[valor=OTRO].campos`, confirmado
-   *  real) — trae los catálogos de "Tipo de evidencia esperada"/"Método de
-   *  valoración" que admite el referente puntual, en vez de las mismas 4/3
-   *  opciones fijas para cualquier grado/asignatura/tipo de evaluación.
-   *  `null` mientras no resuelve (foto vieja, endpoint viejo): cae a un
-   *  catálogo fijo para no dejar el form sin nada que elegir. */
+  /**
+   * Ficha dinámica de "Otro" (`instrumentosPermitidos[OTRO].campos`). `null` mientras no
+   * resuelve: cae a un catálogo fijo.
+   */
   camposOtro: InstrumentoPermitidoCampos | null
   disabled: boolean
 }) {
-  // Mismo fallback que `RubricasSection`/`ListaCotejoSection`: tras un
-  // intento de guardar, "Tipo de evidencia esperada"/"Método de valoración"
-  // marcan en rojo aunque el docente nunca los haya tocado
-  // (`fn_actividad_validar_otro_definicion`, sso V496.5 — ambos son los
-  // únicos dos campos que ese validador exige para "Otro (personalizado)",
-  // antes de delegar en el validador del método elegido). Sin esto se podía
-  // guardar la actividad con el instrumento "Otro" completamente vacío.
+  // Tras un intento de guardar, tipo de evidencia y método marcan en rojo aunque no se hayan
+  // tocado: son los obligatorios de "Otro".
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const tipoEvidenciaCatalogo =
     camposOtro?.tipoEvidencia.catalogo && camposOtro.tipoEvidencia.catalogo.length > 0
@@ -4660,8 +3538,7 @@ function InstrumentoPersonalizadoSection({
     camposOtro?.metodoValoracion.catalogo && camposOtro.metodoValoracion.catalogo.length > 0
       ? camposOtro.metodoValoracion.catalogo
       : METODO_VALORACION_CATALOGO_DEFAULT
-  // Regla 41: tope de 200. El endpoint de campos permitidos reporta 4000
-  // para este campo, así que se acota con `min` en vez de confiar en él.
+  // Regla 41: tope de 200 (el endpoint reporta 4000), se acota con `min`.
   const descripcionMaxLength = Math.min(camposOtro?.descripcionInstrumento.maxLength ?? 200, 200)
 
   return (
@@ -4673,8 +3550,7 @@ function InstrumentoPersonalizadoSection({
         validators={{
           onChange: ({ value }) => {
             const v = value as InstrumentoPersonalizado
-            // Mismo orden que el validador real: primero exige tipo de
-            // evidencia, después método de valoración.
+            // Mismo orden que el validador real.
             if (!v.tipoEvidenciaEsperada) {
               return { message: "Indique el tipo de evidencia esperada." }
             }
@@ -4687,23 +3563,12 @@ function InstrumentoPersonalizadoSection({
       >
         {(field) => {
           const value = field.state.value as InstrumentoPersonalizado
-          // Opción de entrega que dicta el tipo de evidencia: ESA casilla
-          // queda siempre marcada y deshabilitada (Regla 41 — "la casilla
-          // activada queda siempre marcada"); la OTRA queda libre para que
-          // el docente la sume además si lo desea.
+          // Regla 41: la opción de entrega que dicta el tipo queda marcada y deshabilitada; la otra libre.
           const entregaPorTipo = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[value.tipoEvidenciaEsperada]
           function patch(next: Partial<InstrumentoPersonalizado>) {
             field.handleChange({ ...value, ...next })
           }
-          // El validador de arriba es uno solo para todo el objeto (no hay
-          // forma de atar un error de TanStack Form a un sub-campo
-          // puntual), así que acá se recalcula cuál de los dos selects está
-          // vacío para marcar solo ESE en rojo — igual que
-          // `tipoEvidenciaEsperada`/`metodoValoracion` son los únicos dos
-          // campos obligatorios de "Otro" (los tres builders que cuelgan de
-          // `metodoValoracion`, Rúbrica/Lista de cotejo/Escala, ya traen su
-          // propia validación al reusar los campos `rubrica`/`listaCotejo`/
-          // `escalaValoracion`).
+          // El validador es uno solo para el objeto: se recalcula qué select falta para marcar solo ese.
           const tocado = field.state.meta.isTouched || submissionAttempts > 0
           const tipoEvidenciaInvalido = tocado && !value.tipoEvidenciaEsperada
           const metodoValoracionInvalido = tocado && !value.metodoValoracion
@@ -4736,8 +3601,6 @@ function InstrumentoPersonalizadoSection({
                     onValueChange={(v) => {
                       if (!v) return
                       const defecto = TIPO_EVIDENCIA_CHECKBOX_DEFAULT[v]
-                      // Reinicia ambos: cada tipo habilita una sola opción de
-                      // entrega y la otra queda apagada y deshabilitada.
                       patch({
                         tipoEvidenciaEsperada: v,
                         ...(defecto
@@ -4753,9 +3616,7 @@ function InstrumentoPersonalizadoSection({
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia" aria-invalid={tipoEvidenciaInvalido}>
                       <SelectValue placeholder="Seleccione">
                         {(v) =>
-                          // `??` no sirve acá: sin selección `v` llega como
-                          // `""` (falsy pero no nulo), así que el `??`
-                          // nunca cae a "Seleccione" y se veía en blanco.
+                          // `??` no sirve: sin selección `v` llega como `""`.
                           v ? (TIPO_EVIDENCIA_ESPERADA_LABELS[v as string] ?? (v as string)) : "Seleccione"
                         }
                       </SelectValue>
@@ -4803,10 +3664,7 @@ function InstrumentoPersonalizadoSection({
                 </Field>
               </div>
 
-              {/* Va entre "Método de valoración" y los checkboxes: el
-                  método elegido monta acá mismo su definición completa
-                  (misma sección/mismos datos que si fuera el `instrumento`
-                  de arriba), antes de las preguntas de entrega. */}
+              {/* El método elegido monta acá su definición, antes de las opciones de entrega. */}
               {value.metodoValoracion === "Rúbrica" ? (
                 <RubricasSection form={form} unidades={unidades} disabled={disabled} />
               ) : value.metodoValoracion === "Lista de cotejo" ? (
@@ -4858,20 +3716,9 @@ function RubricasSection({
   unidades: UnidadTematica[]
   disabled: boolean
 }) {
-  // Se llega a esta sección solo cuando el instrumento elegido exige una
-  // rúbrica (ver `InstrumentoEvaluacionSection`: cualquier valor que no sea
-  // "Lista de cotejo"/"Escala de valoración"/"Otro" cae acá), así que al
-  // menos un criterio siempre es obligatorio — antes se podía guardar la
-  // actividad con la rúbrica completamente vacía (reportado en vivo: "se
-  // creó una actividad con rúbrica y quedaron vacíos todos sus datos").
-  // Mismo patrón que `fechaInicio`/`fechaCierre` más arriba: el error solo
-  // se marca tras tocar el campo o tras un intento de guardar.
+  // Rúbrica: al menos un criterio es obligatorio.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
-  // Regla de negocio (fila 24 de la especificación): el puntaje de cada
-  // nivel solo es obligatorio si la Unidad vinculada en el Bloque 1 calcula
-  // su definitiva por Ponderado o Suma de puntos. Promedio simple, o la
-  // actividad sin unidad, lo dejan opcional (pesa 1) — mismo `unidadActual`
-  // que `EscalaValoracionSection`/`ListaCotejoSection`.
+  // El puntaje es obligatorio solo si la unidad calcula por Ponderado o Suma de puntos (si no, pesa 1).
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
   const puntajeObligatorio = unidadActual != null && unidadActual.metodoCalculo !== "Promedio simple"
@@ -4913,10 +3760,6 @@ function RubricasSection({
         </SoloEdicion>
       </div>
 
-      {/* Leemos `esEvaluativa` del store del form para decidir si los
-          criterios muestran el input de ponderación por nivel. Es la
-          misma fuente que usa `EvaluacionSection` para mostrar/ocultar
-          "Puntaje" — un solo flag gobierna toda la rúbrica. */}
       <form.Subscribe selector={(state) => state.values.esEvaluativa}>
         {(esEvaluativa) => (
           <form.Field
@@ -4973,13 +3816,7 @@ function RubricasSection({
                       />
                     ))}
                   </ul>
-                  {/* Mismo botón del header, repetido al pie de la lista:
-                      con varios criterios largos cargados, el botón de
-                      arriba queda fuera de la vista y hay que scrollear
-                      hasta el inicio de la sección para agregar uno más
-                      (QA Bloque 5, criterio de aceptación #3). Mismo patrón
-                      que "Agregar nivel" dentro de cada criterio, que ya
-                      vive al final de su propio bloque. */}
+                  {/* Botón repetido al pie para no tener que volver arriba (QA Bloque 5, criterio #3). */}
                   <SoloEdicion>
                   <div className="flex justify-end">
                     <Button
@@ -5025,52 +3862,26 @@ function CriterioItem({
 }: {
   criterio: Criterio
   index: number
-  /**
-   * Si la actividad es sumativa, cada nivel intermedio renderiza un
-   * input numérico de ponderación al lado del textarea de descripción
-   * (mockup: "al lado de las descripciones de los subniveles parecera
-   * un input para ponderacion"). Para una actividad formativa el input
-   * no se muestra — el peso del nivel no aplica si no pondera nota.
-   */
+  /** Con actividad sumativa cada nivel lleva su campo de puntaje. */
   esEvaluativa: boolean
   /**
-   * `fn_actividad_validar_rubrica_definicion` (sso V496.5) exige nombre de
-   * criterio y, por cada nivel —"Excelente" incluido, que viaja como el
-   * primer nivel del array (`criterioABody`, `update-instrumento-actividad.ts`)—
-   * una descripción/juicio de valor no vacía siempre. El puntaje de cada
-   * nivel es obligatorio SOLO si la Unidad vinculada a la actividad calcula
-   * su definitiva por Ponderado o Suma de puntos (`puntajeObligatorio`,
-   * resuelto por `RubricasSection` con el mismo `unidadActual` que
-   * `EscalaValoracionSection`/`ListaCotejoSection`); con Promedio simple, o
-   * sin unidad vinculada, un nivel sin puntaje pesa 1 y no se marca en rojo.
-   * En ambos casos, si hay valor, debe quedar entre 0 y 100 (ver el `Input`
-   * de cada nivel, que ya acota con `min`/`max`).
+   * Nombre y descripción de cada nivel (incluido "Excelente") obligatorios; puntaje solo si
+   * `puntajeObligatorio` (si no, pesa 1). Con valor, entre 0 y 100.
    */
   puntajeObligatorio: boolean
   disabled: boolean
-  /**
-   * Este componente no recibe el `form` (solo `criterio`/`onChange`
-   * planos, como `AdaptacionItem`), así que la validación de "obligatorio"
-   * es local por `blur` de cada campo, con `submissionAttempts` —pasado
-   * desde `RubricasSection`, que sí tiene el `form`— como fallback para
-   * marcar todo en rojo tras un intento de guardar aunque el campo nunca se
-   * haya tocado.
-   */
+  /** Sin `form`: validación local por `blur`, con `submissionAttempts` como fallback. */
   submissionAttempts: number
   onChange: (next: Criterio) => void
   onRemove: () => void
 }) {
-  // Buffer local para el input "Agregar" de niveles: el valor que escribe
-  // el usuario no es parte del criterio hasta que confirma con el botón
-  // "Agregar nivel". Tenerlo en estado local evita que cada tecleo toque
-  // el `onChange` del criterio padre y dispare `dirty` antes de confirmar.
+  // Buffer local: no toca el criterio ni ensucia el form hasta "Agregar nivel".
   const [nivelInput, setNivelInput] = useState("")
 
   const [tocoNombre, setTocoNombre] = useState(false)
   const [tocoExcelenteDescripcion, setTocoExcelenteDescripcion] = useState(false)
   const [tocoExcelentePonderacion, setTocoExcelentePonderacion] = useState(false)
-  // Los niveles son una lista dinámica (agregar/quitar), así que el "tocado"
-  // no puede ser un solo booleano: se guarda por `nivel.id` en un Set.
+  // "Tocado" por `nivel.id`: la lista es dinámica.
   const [tocadosNivelDescripcion, setTocadosNivelDescripcion] = useState<Set<number>>(new Set())
   const [tocadosNivelPonderacion, setTocadosNivelPonderacion] = useState<Set<number>>(new Set())
   const marcarNivelDescripcionTocado = (id: number) =>
@@ -5083,10 +3894,7 @@ function CriterioItem({
     (tocoExcelenteDescripcion || submissionAttempts > 0) && !criterio.excelente.trim()
   const excelentePonderacionInvalida =
     puntajeObligatorio && (tocoExcelentePonderacion || submissionAttempts > 0) && criterio.excelentePonderacion == null
-  // `fn_actividad_validar_rubrica_definicion` exige al menos un nivel por
-  // criterio ("Excelente" cuenta como nivel si tiene contenido, ver
-  // `criterioABody`); antes un criterio sin niveles no marcaba nada en
-  // rojo y el guardado seguía hasta que el backend lo rechazaba.
+  // Al menos un nivel por criterio ("Excelente" cuenta si tiene contenido).
   const sinNiveles =
     submissionAttempts > 0 &&
     criterio.niveles.length === 0 &&
@@ -5119,10 +3927,6 @@ function CriterioItem({
         </SoloEdicion>
       </div>
 
-      {/* Cada control usa `Field variant="outlined"` con `FieldLabel`
-          adentro: el label queda flotando sobre el borde (estilo MUI
-          TextField). `text-sm font-semibold` del `Criterio N` y de
-          `Excelente` son títulos estáticos, no labels de campo. */}
       <Field variant="outlined" className="mt-3" data-invalid={nombreInvalido}>
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
@@ -5137,10 +3941,7 @@ function CriterioItem({
         {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
       </Field>
 
-      {/* Distinta de la `descripcion` de cada nivel (el indicador de logro
-          por nivel, más abajo): esta es la del criterio en sí
-          (`TACTIVIDAD_RUBRICA_CRITERIO.DESCRIPCION`) — no tenía campo acá,
-          así que nunca viajaba ni al guardar ni al leer. */}
+      {/* Descripción del criterio en sí, distinta de la de cada nivel. */}
       <Field variant="outlined" className="mt-3">
         <FieldLabel>Descripción o Juicio de valor</FieldLabel>
         <Textarea
@@ -5155,29 +3956,8 @@ function CriterioItem({
         <CharacterCounter value={criterio.descripcion} max={4000} />
       </Field>
 
-      {/* `Excelente` va como label estático a la izquierda del textarea:
-          la captura lo muestra pegado al borde izquierdo, no flotando
-          dentro del outline del textarea. La columna del label va con
-          `min-w-28` para que todas las filas del criterio (Excelente +
-          niveles) compartan el mismo ancho de label y los textareas
-          queden alineados a la derecha.
-
-          "Excelente" es, en los hechos, el nivel más alto del criterio
-          —solo que vive como field propio (`criterio.excelente`) y no
-          dentro de `niveles[]`— así que cuando la actividad es sumativa
-          recibe el mismo campo de ponderación que cada nivel intermedio,
-          en la misma 4ª columna. Mismo `cn` condicional que la lista de
-          niveles de abajo, para que los dos bloques usen exactamente el
-          mismo grid template y las columnas queden alineadas entre sí.
-
-          Solo se muestra con contenido: antes el tachito de la derecha
-          solo vaciaba el texto (`excelente: ""`) pero la fila —label +
-          textarea vacío + tachito— seguía ahí, así que "eliminar" no se
-          sentía como eliminar nada. Un criterio recién creado tampoco
-          arranca con este bloque a la vista; para agregar un nivel
-          "Excelente" alcanza con escribirlo en "Agregar nivel" de abajo,
-          que ya es exactamente la misma fila (label + descripción +
-          puntaje + tachito que si borra de verdad). */}
+      {/* "Excelente" es el nivel más alto pero vive en su propio field; usa el mismo grid que
+      los niveles y solo se muestra con contenido. */}
       {(criterio.excelente !== "" || criterio.excelentePonderacion != null) && (
         <div
           className={cn(
@@ -5202,9 +3982,7 @@ function CriterioItem({
             />
             {excelenteDescripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
           </Field>
-          {/* Input de ponderación de "Excelente" — mismo campo y mismo
-              manejo del `undefined` que el de cada nivel intermedio (ver
-              más abajo): string vacío no se guarda como `0`. */}
+          {/* Vacío no se guarda como `0`. */}
           {esEvaluativa && (
             <Field variant="outlined" data-invalid={excelentePonderacionInvalida}>
               <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
@@ -5218,9 +3996,7 @@ function CriterioItem({
                 value={criterio.excelentePonderacion ?? ""}
                 onChange={(e) => {
                   const raw = e.target.value
-                  // Regla 42: "Excelente" cuenta para el Puntaje de solo
-                  // lectura del criterio igual que cualquier otro nivel
-                  // (`maxPonderacionCriterio`, más abajo).
+                  // Regla 42: "Excelente" cuenta para el puntaje del criterio.
                   if (raw === "") {
                     const next = { ...criterio, excelentePonderacion: undefined }
                     onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
@@ -5240,8 +4016,7 @@ function CriterioItem({
               {excelentePonderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
           )}
-          {/* Tachito a la derecha del textarea — quita el bloque entero
-              (texto Y puntaje), no solo el texto. */}
+          {/* Quita el bloque entero (texto y puntaje). */}
           <SoloEdicion>
           <Tooltip>
             <TooltipTrigger
@@ -5268,19 +4043,7 @@ function CriterioItem({
         </div>
       )}
 
-      {/* Lista de niveles ya creados. Cada nivel sigue el mismo patrón que
-          el bloque "Excelente" de arriba: el `nombre` (la etiqueta que el
-          usuario tipeó al confirmar con "Agregar nivel") va como label
-          estático a la izquierda —estilo "Bueno", "Aceptable"—, y la
-          `descripcion` se edita en un `Textarea` al medio. El tachito va
-          a la derecha, igual que en el bloque de "Excelente".
-
-          Si la actividad es sumativa, se agrega una 4ª columna entre el
-          textarea y el tachito con un input numérico de ponderación
-          (mockup: input al lado de las descripciones de los subniveles).
-          El grid se construye con `cn` para que el template cambie según
-          el flag —así el textarea y el input quedan alineados a la
-          derecha con un `gap` consistente. */}
+      {/* Niveles: nombre como label, descripción y, si es sumativa, columna de puntaje. */}
       <ul className="mt-4 flex flex-col gap-3">
         {criterio.niveles.map((nivel, nIndex) => {
           const descripcionInvalida =
@@ -5318,12 +4081,6 @@ function CriterioItem({
               />
               {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
-            {/* Input de ponderación por nivel — solo cuando la actividad es
-                sumativa. Mismo idioma visual que la ponderación del
-                criterio de arriba (size="sm" h-10, número con `min={0}`
-                `max={100}`, sufijo "%"). El valor es `nivel.ponderacion`
-                (opcional), así que al renderizarlo convertimos `undefined`
-                a "" para que el input no muestre "NaN". */}
             {esEvaluativa && (
               <Field variant="outlined" data-invalid={ponderacionInvalida}>
                 <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
@@ -5338,11 +4095,7 @@ function CriterioItem({
                   onChange={(e) => {
                     const raw = e.target.value
                     const next = criterio.niveles.slice()
-                    // string vacío → `undefined` para mantener el campo
-                    // opcional sin valores "fantasma" (0 cuando el
-                    // usuario apenas está editando). Clamp real (no solo
-                    // el `min`/`max` decorativo del `<input>`), mismo
-                    // criterio que `dialog-agregar-actividad.tsx`.
+                    // Vacío → `undefined`; clamp real, no solo el `min`/`max` del `<input>`.
                     if (raw === "") {
                       next[nIndex] = { ...nivel, ponderacion: undefined }
                     } else {
@@ -5352,9 +4105,7 @@ function CriterioItem({
                         ponderacion: Number.isNaN(num) ? undefined : Math.min(100, Math.max(0, num)),
                       }
                     }
-                    // Regla 42: el Puntaje del criterio no se captura aparte
-                    // — es de solo lectura, el máximo entre los puntajes de
-                    // sus niveles (`maxPonderacionCriterio`, más abajo).
+                    // Regla 42: el puntaje del criterio es de solo lectura, el máximo de sus niveles.
                     onChange({
                       ...criterio,
                       niveles: next,
@@ -5401,19 +4152,8 @@ function CriterioItem({
         })}
       </ul>
 
-      {/* Split-button con Input + botón al borde derecho (la captura los
-          muestra dentro del mismo rectángulo con borde). `gap-0` + borde/redondeado
-          derechos del `Input` anulados (vía descendiente del `Field`) +
-          borde/redondeado izquierdos del `Button` anulados → se leen como
-          un único control. `size="default"` (h-11) en el `Button` para que
-          calce con la altura del `Input`.
-
-          `mt-6` y no el `mt-2` del variant: el `FieldLabel` outlined se
-          posiciona en `top-0 -translate-y-[calc(100%-0.625rem)]`, o sea
-          que "asoma" por encima del borde superior del `Field`. Con `mt-2`
-          ese asomo se come el `mb` de la lista de niveles de arriba y el
-          label termina pisando la última fila (visible en la captura).
-          24px es lo mínimo para que el label quede libre. */}
+      {/* Split-button: bordes anulados para leerse como un solo control. `mt-6` deja libre el
+      label outlined, que asoma por encima del `Field`. */}
       <SoloEdicion>
       <Field
         variant="outlined"
@@ -5439,10 +4179,7 @@ function CriterioItem({
             onClick={() => {
               const value = nivelInput.trim()
               if (!value) return
-              // El texto tipeado pasa a ser el `nombre` (label que aparece a
-              // la izquierda, igual que "Excelente"). La `descripcion` arranca
-              // vacía para que el usuario la complete en el textarea que se
-              // renderiza al confirmar.
+              // El texto tipeado es el `nombre`; la descripción arranca vacía.
               onChange({
                 ...criterio,
                 niveles: [
@@ -5461,11 +4198,7 @@ function CriterioItem({
       </Field>
       </SoloEdicion>
 
-      {/* Regla 42: el Puntaje del criterio es de SOLO LECTURA — se calcula
-          como el máximo entre los puntajes de sus niveles (de facto, el
-          peso relativo de este criterio frente a los demás de la Rúbrica).
-          No se captura aparte para no duplicar esa información en un campo
-          independiente. */}
+      {/* Regla 42: puntaje del criterio de solo lectura, máximo de sus niveles. */}
       <Field variant="outlined" className="mt-4 max-w-48">
         <FieldLabel>Puntaje</FieldLabel>
         <Input type="number" value={criterio.ponderacion} disabled readOnly />
@@ -5474,12 +4207,7 @@ function CriterioItem({
   )
 }
 
-/** Regla 42: el Puntaje de un criterio de Rúbrica no se captura — es el
- *  máximo entre los puntajes de sus niveles, incluido "Excelente"
- *  (`excelentePonderacion`), que es en los hechos el nivel más alto del
- *  criterio aunque viva como campo propio y no dentro de `niveles[]` —
- *  ver el comentario de ese bloque, más arriba. 0 sin niveles o si ninguno
- *  tiene puntaje cargado todavía. */
+/** Regla 42: máximo de los puntajes de los niveles, incluido "Excelente". 0 si no hay ninguno. */
 function maxPonderacionCriterio(criterio: {
   niveles: { ponderacion?: number }[]
   excelentePonderacion?: number
@@ -5502,14 +4230,9 @@ function AdaptacionesSection({
   actividadId: number
 }) {
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
-  // Mismo criterio que `CriterioItem`/`ListaCotejoItemCard` (arrays de
-  // sub-items sin `form.Field` propio por fila): el error de "obligatorio"
-  // de cada adaptación combina el `useState` local "tocado" de ESE item con
-  // un intento de guardar a nivel del form entero.
+  // Error de "obligatorio" = "tocado" local del item o intento de guardar del form.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
-  // Regla 47: la adaptación solo puede elegir entre los estudiantes DE LA
-  // ACTIVIDAD ("Estudiantes de la {rótulo}"), no entre todo el grupo — el
-  // backend rechaza el resto (ver `esEstudianteDeLaActividad`).
+  // Regla 47: solo estudiantes de la actividad, no todo el grupo (el backend rechaza el resto).
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const matriculasIds = useSelector(form.store, (state) => state.values.matriculasIds)
   const estudiantesActividad = matriculas.filter((m) =>
@@ -5537,14 +4260,7 @@ function AdaptacionesSection({
                 archivos: [],
               },
             ])
-          // Header persistente: el botón "+" vive SIEMPRE acá, mismo lugar
-          // y mismo estilo, tenga la actividad cero adaptaciones o diez.
-          // Antes había dos botones distintos —uno icon-only arriba cuando
-          // la lista estaba vacía, otro de texto "Agregar otra adaptación"
-          // al pie una vez que había al menos una— y el primero
-          // desaparecía apenas se agregaba la primera adaptación: el
-          // control se corría de lugar justo cuando el usuario acababa de
-          // tocarlo. Un solo botón, una sola posición.
+          // El "+" vive siempre en el header, haya o no adaptaciones.
           return (
             <>
               <div className="flex items-center justify-between rounded-md border bg-card p-3">
@@ -5610,15 +4326,8 @@ function AdaptacionesSection({
 }
 
 /**
- * Enlace para abrir en pestaña nueva la plantilla YA subida de una
- * adaptación (`adaptacion.archivoId`). No usa `RecursoPreview` —esa vista
- * necesita el nombre del archivo para adivinar el tipo (imagen, PDF…) y acá
- * no hay de dónde sacarlo: a diferencia de los materiales de apoyo
- * (`fetchMaterialArchivos`, V427), no existe un endpoint que devuelva el
- * nombre de los archivos de adaptaciones. Abrir la URL firmada tal cual —el
- * mismo `AbrirAparte` de `recurso-preview.tsx`— alcanza: el navegador
- * decide cómo mostrarla por el `Content-Type` real que manda el servidor,
- * sin que el front tenga que adivinar nada.
+ * Abre la plantilla ya subida en pestaña nueva. No usa `RecursoPreview`: no hay nombre
+ * de archivo para adivinar el tipo, el navegador decide por el `Content-Type`.
  */
 function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
   const { data: url, isPending } = useArchivoViewUrl(archivoId)
@@ -5638,26 +4347,8 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
 }
 
 /**
- * "Seleccionar desde biblioteca institucional" — combobox con lo que el
- * PROPIO docente ya registró como versión modificada en OTRAS actividades
- * (Regla 50; ya no es la biblioteca de todo el establecimiento),
- * `fn_actividad_adaptaciones_reutilizables_listar` (V471/V496.1-2),
- * archivos Y enlaces. Reemplaza el combo de dos opciones fijas
- * ("Biblioteca - Plantilla A/B") que no tenía datos reales detrás.
- *
- * Filtrada por defecto al mismo Tipo de adaptación ya elegido en el campo 1
- * (Regla 50) — sin eso, el docente vería mezcladas plantillas de tipos que
- * no tienen nada que ver con la adaptación que está armando.
- *
- * Mismo backend/idea que la "Biblioteca de recursos" de materiales
- * (`DialogBibliotecaRecursos`), pero como COMBOBOX en vez de modal —así lo
- * pidió el docente para este campo puntual— y con una sola página de hasta
- * 100 resultados: el filtrado por texto lo hace el propio `ComboboxField`
- * del lado del cliente (mismo patrón que el resto de los combobox de la
- * app), así que no hace falta ida y vuelta al servidor por cada letra
- * tecleada. Una biblioteca personal de plantillas no espera miles de
- * archivos; si algún día lo necesita, ahí sí vale la pena paginar en
- * servidor como hace el modal de materiales.
+ * Regla 50: combobox con las versiones modificadas que el propio docente registró en otras
+ * actividades, filtradas por el tipo elegido. Una sola página de 100, filtrado en el cliente.
  */
 function AdaptacionBibliotecaField({
   actividadId,
@@ -5680,8 +4371,7 @@ function AdaptacionBibliotecaField({
     tieneAncla,
   )
   const items = data?.items ?? []
-  // Identifica la plantilla por la fila de ORIGEN (`pkTactividadAdaptacion`),
-  // no por `archivoId`: una plantilla de solo enlace no tiene archivo.
+  // Se identifica por la fila de origen: una plantilla de solo enlace no tiene archivo.
   const seleccionado = items.find((item) =>
     item.archivoId != null
       ? item.archivoId === adaptacion.archivoId
@@ -5695,9 +4385,7 @@ function AdaptacionBibliotecaField({
       ...adaptacion,
       archivoId: item?.archivoId,
       archivoNombre: item?.nombreArchivo,
-      // Sin blob: el recurso ya está guardado del lado del servidor, igual
-      // que al reusar un material desde su biblioteca. Si la plantilla
-      // elegida es de solo enlace, acá es donde viaja la URL.
+      // Sin blob: el recurso ya está en el servidor; si es de solo enlace viaja la URL.
       versionModificadaRef: item?.archivoId == null ? (item?.url ?? "") : "",
     })
   }
@@ -5737,12 +4425,8 @@ function AdaptacionBibliotecaField({
   )
 }
 
-// Formatos definidos para la plantilla de una adaptación (pedido explícito,
-// distinto del `RECURSO_ARCHIVO_ACCEPT` de "Recursos" — ese acepta
-// imagen/audio/video/pdf a secas; acá son documentos de adaptación
-// curricular, no multimedia). A diferencia de "Recursos" (`accept` ahí es
-// guía, no validación — decide `file-service`), acá SÍ se valida en el
-// cliente: pedido explícito de QA.
+// Formatos de la plantilla de adaptación (documentos, no multimedia). Se valida en el
+// cliente (pedido de QA).
 const ADAPTACION_ARCHIVO_ACCEPT = ".pdf,.doc,.docx,.jpg,.jpeg,.png"
 const ADAPTACION_ARCHIVO_MIME_ACCEPT = [
   "application/pdf",
@@ -5753,8 +4437,7 @@ const ADAPTACION_ARCHIVO_MIME_ACCEPT = [
 ]
 const ADAPTACION_ARCHIVO_MAX_BYTES = 10 * 1024 * 1024
 
-/** `new URL` tira con cualquier string que no sea una URL absoluta — sin
- *  protocolo (`http`/`https`) no sirve como enlace de plantilla. */
+/** Sin protocolo (`http`/`https`) no sirve como enlace. */
 function esUrlValida(value: string): boolean {
   try {
     const url = new URL(value)
@@ -5765,27 +4448,8 @@ function esUrlValida(value: string): boolean {
 }
 
 /**
- * Bloque de una adaptación curricular. Mismo patrón que `CriterioItem`:
- * título con índice y tachito, luego los campos del mockup.
- *
- * El campo `descripcion` lleva `maxLength={500}` para hacer cumplir el
- * tope del contador. Los selects usan `Field variant="outlined"` con
- * `FieldLabel` adentro —mismo patrón que el resto del form— y arrancan
- * con `Seleccione` como placeholder hasta que se elija un valor real.
- *
- * `especificacionTipo`/`nombrePlantilla` ya viajan al backend (sso V496.1,
- * ver `update-adaptaciones-actividad.ts`) pero no tenían campo acá — este
- * componente no recibe `form` (solo `adaptacion`/`onChange`), así que la
- * validación de "obligatorio" de esos dos campos es local por `blur`, sin
- * combinarse con un intento de guardar. El checklist de estudiantes SÍ
- * recibe `submissionAttempts` desde `AdaptacionesSection` (que sí tiene
- * `form`) y lo combina con su propio "tocado" local, igual que
- * `CriterioItem`/`ListaCotejoItemCard`: a diferencia de
- * especificacionTipo/nombrePlantilla, acá el backend (`fn_actividad_
- * validar_adaptacion_estudiantes`, V496.1) rechaza directamente el guardado
- * completo de la actividad si la lista queda vacía — sin aviso en el
- * intento de guardar, el docente solo se enteraba al ver el error genérico
- * del toast tras el submit.
+ * Bloque de una adaptación curricular. `especificacionTipo`/`nombrePlantilla` validan por
+ * `blur`; el checklist de estudiantes además con `submissionAttempts` (el backend rechaza la lista vacía).
  */
 function AdaptacionItem({
   index,
@@ -5810,8 +4474,7 @@ function AdaptacionItem({
 }) {
   const [tocoEspecificacionTipo, setTocoEspecificacionTipo] = useState(false)
   const [tocoNombrePlantilla, setTocoNombrePlantilla] = useState(false)
-  // Rechazado en el picker mismo (formato/tamaño): no llega a tocar
-  // `adaptacion`, así que no alcanza con derivarlo de ahí.
+  // Rechazado en el picker (formato/tamaño): no llega a `adaptacion`.
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
   const [tocoEnlace, setTocoEnlace] = useState(false)
   const [tocoEstudiantes, setTocoEstudiantes] = useState(false)
@@ -5825,10 +4488,7 @@ function AdaptacionItem({
   const enlaceInvalido =
     tocoEnlace && adaptacion.versionModificada === "enlace" && adaptacion.versionModificadaRef !== "" &&
     !esUrlValida(adaptacion.versionModificadaRef)
-  // Solo cuentan los que siguen siendo estudiantes de la actividad: si el
-  // docente sacó a alguien en "Estudiantes de la {rótulo}" después de
-  // marcarlo acá, deja de verse marcado (y al guardar se poda, ver
-  // `adaptacionesConEstudiantesDeLaActividad`).
+  // Solo cuentan los que siguen siendo estudiantes de la actividad.
   const estudiantesSeleccionados = adaptacion.estudiantesIds.filter((id) => matriculas.some((m) => m.id === id))
   const todosSeleccionados = matriculas.length > 0 && estudiantesSeleccionados.length === matriculas.length
   const estudiantesInvalido =
@@ -5902,8 +4562,7 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Solo "Otro" la exige (fn_actividad_validar_adaptaciones, V496.1) —
-          el resto del catálogo no tiene dónde usarla. */}
+      {/* Solo "Otro" la exige. */}
       {adaptacion.tipo === "Otro" && (
         <Field variant="outlined" className="mt-4" data-invalid={especificacionTipoInvalida}>
           <FieldLabel>Especifique el tipo de adaptación *</FieldLabel>
@@ -5945,9 +4604,7 @@ function AdaptacionItem({
             onChange({
               ...adaptacion,
               versionModificada: (value ?? "") as Adaptacion["versionModificada"],
-              // Al cambiar de modo se limpia el auxiliar para no arrastrar
-              // una URL de un archivo anterior, un id de la biblioteca, o
-              // viceversa.
+              // Al cambiar de modo se limpia el auxiliar.
               versionModificadaRef: "",
               archivoNombre: undefined,
               archivoId: undefined,
@@ -5971,9 +4628,6 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Campos condicionales según el modo de `versionModificada`. El `No`
-          no muestra nada; los tres modos "Sí…" muestran cada uno su propio
-          control (file picker, input URL o select de plantillas). */}
       {adaptacion.versionModificada === "archivo" && (
         <>
           <Field variant="outlined" className="mt-4" data-invalid={Boolean(errorArchivo)}>
@@ -5982,9 +4636,7 @@ function AdaptacionItem({
               <ul className="mb-2 flex flex-col gap-1">
                 {adaptacion.archivos.map((archivo, archivoIndex) => (
                   <li
-                    // El id de uno ya guardado es estable; uno recién
-                    // elegido todavía no lo tiene, así que cae al `blobUrl`
-                    // (único por archivo, igual de estable mientras vive).
+                    // Un archivo recién elegido aún no tiene id: cae al `blobUrl`.
                     key={archivo.fkTarchivo ?? archivo.blobUrl}
                     className="flex items-center justify-between gap-2 rounded-sm border px-2 py-1 text-sm"
                   >
@@ -6029,18 +4681,8 @@ function AdaptacionItem({
                 <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <Input
                   type="file"
-                  // `<input type="file">` no acepta `value` programático (el
-                  // browser tira `InvalidStateError` con cualquier valor que
-                  // no sea `""`) — el archivo se lee de `e.target.files`, no
-                  // de un `value` controlado. Mismo criterio que el file
-                  // picker de "Recursos" (`RecursosSection`, más arriba en
-                  // este archivo). A diferencia de ese, acá SÍ se valida
-                  // tipo/tamaño — ver `ADAPTACION_ARCHIVO_ACCEPT`. Se limpia
-                  // el propio input tras cada elección (`e.target.value =
-                  // ""`) para poder elegir el mismo archivo otra vez después
-                  // de quitarlo, y para que cada selección agregue un item en
-                  // vez de reemplazar el único archivo de antes del límite
-                  // de 3.
+                  // `<input type="file">` no acepta `value` programático. Se valida tipo/tamaño y se limpia
+                  // el input tras cada elección para poder repetir archivo y sumar items.
                   accept={ADAPTACION_ARCHIVO_ACCEPT}
                   onChange={(e) => {
                     const file = e.target.files?.[0]
@@ -6151,10 +4793,7 @@ function AdaptacionItem({
             onChange({
               ...adaptacion,
               aplicaA: next,
-              // Al salir de "Estudiantes específicos" la selección deja
-              // de tener sentido —"A todo el grupo" no distingue a
-              // nadie— así que se limpia para no arrastrar un subconjunto
-              // viejo si el usuario vuelve a elegir "específicos" después.
+              // Fuera de "Estudiantes específicos" la selección se limpia.
               estudiantesIds: next === "Estudiantes específicos" ? adaptacion.estudiantesIds : [],
             })
           }}
@@ -6173,26 +4812,8 @@ function AdaptacionItem({
         </Select>
       </Field>
 
-      {/* Estudiantes de la adaptación — solo con "Estudiantes específicos".
-          Mismo control que "Estudiantes de la {rótulo}" del Bloque 1
-          (`EstudiantesMultiSelect`: trigger con resumen + menú de checkboxes
-          con "Seleccionar todos"), en vez de la lista de checkboxes suelta
-          de antes, que con un grupo de 40 estudiantes estiraba la tarjeta.
-
-          Opciones: solo los estudiantes DE LA ACTIVIDAD (`matriculas` ya
-          viene filtrado en `AdaptacionesSection`, Regla 47 —
-          `fn_actividad_validar_adaptacion_estudiantes`, V496.1, rechaza
-          cualquier otro). Ids `pk_tmatricula`, los mismos que guarda y
-          devuelve el backend (ver `adaptacionFromRaw`).
-
-          A diferencia del Bloque 1, "todos" acá NO es un estado aparte: la
-          adaptación siempre guarda la lista explícita (el backend exige un
-          array no vacío con "Estudiantes específicos"), así que
-          `allSelected` se deriva de la selección y "Seleccionar todos"
-          escribe todos los ids.
-
-          "Tocado" al cerrar el menú (no hay `blur` útil en un trigger que
-          abre un popup). */}
+      {/* Solo con "Estudiantes específicos"; opciones = estudiantes de la actividad (Regla 47).
+      Siempre guarda la lista explícita: "todos" se deriva de la selección. */}
       {adaptacion.aplicaA === "Estudiantes específicos" && (
         <Field variant="outlined" className="mt-4" data-invalid={estudiantesInvalido}>
           <FieldLabel htmlFor={`adaptacion-${index}-estudiantes`}>Estudiantes de la adaptación</FieldLabel>
@@ -6223,19 +4844,9 @@ function AdaptacionItem({
   )
 }
 
-/**
- * Seguimiento solo tiene sentido cuando la actividad ya tiene alguna
- * adaptación curricular registrada —"generar evidencias" y "validación del
- * coordinador" son parte del seguimiento DE esas adaptaciones—, así que la
- * sección entera desaparece (no se deshabilita) mientras `adaptaciones` esté
- * vacío, igual que "Ponderación" desaparece cuando la actividad no es
- * sumativa. "¿Requiere validación del coordinador?" ya no vive acá: pasó a
- * "Identificación" (`IdentificacionSection`).
- */
+/** Seguimiento solo aparece con alguna adaptación registrada. */
 function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
-  // Solo se monta con referente no Formativo (`!esFormativa` en el padre),
-  // por eso `false`; `faltaTipoEvidencia` igual exige que haya
-  // adaptaciones (la sección se oculta sin ellas, y oculta no valida).
+  // Solo se monta con referente no formativo, por eso `false`.
   const tipoEvidenciaInvalido = useErrorObligatorio(
     form,
     useSelector(form.store, (state) => faltaTipoEvidencia(state.values, false)),
@@ -6268,11 +4879,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                 </Select>
               </Field>
 
-              {/* Deshabilitado (no oculto) cuando no genera evidencias: a
-                  diferencia de "Ponderación" (que no aplica y desaparece),
-                  acá el campo sigue siendo parte de la ficha —solo no hay
-                  nada que elegir todavía—, así que se ve pero no se puede
-                  tocar. */}
+              {/* Deshabilitado (no oculto) cuando no genera evidencias. */}
               <form.Field name="tipoEvidencia">
                 {(tipoField) => (
                   <Field variant="outlined" data-invalid={tipoEvidenciaInvalido}>
@@ -6285,12 +4892,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
                       <SelectTrigger id={tipoField.name} aria-invalid={tipoEvidenciaInvalido}>
                         <SelectValue />
                       </SelectTrigger>
-                      {/* Valores = `nombre` real de la categoría `TLISTA_VALOR`
-                          `TIPO_EVIDENCIA` (confirmado, V224: Archivo/Enlace/
-                          Imagen/Video/Observación) — antes decía "Link"/
-                          "Texto", que no existen en ese catálogo y por eso
-                          `resolveTipoEvidenciaId` nunca podía resolverlos
-                          (ver `use-tipo-evidencia-catalog.ts`). */}
+                      {/* Valores = `nombre` real de `TIPO_EVIDENCIA` en `TLISTA_VALOR`. */}
                       <SelectContent>
                         <SelectItem value="Archivo">Archivo</SelectItem>
                         <SelectItem value="Enlace">Enlace</SelectItem>
@@ -6334,18 +4936,12 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-/** Id numérico aleatorio para items nuevos (recursos/criterios/niveles) que
- *  todavía no pasaron por el backend — que es quien asigna el PK real. */
+/** Id aleatorio para items nuevos; el PK real lo asigna el backend. */
 function cryptoId(): number {
   return Math.floor(Math.random() * 1_000_000_000)
 }
 
-/**
- * Botón "+" pegado al `Select` de unidad temática. Abre un Popover con el
- * mini-form para crear una unidad en el momento — mismo flujo que la
- * captura del mockup. El Popover (no Dialog) mantiene la referencia visual
- * con el botón que lo abrió.
- */
+/** Botón "+" junto al `Select` de unidad: popover para crear una unidad en el momento. */
 function CrearUnidadPopover({
   onCreate,
   className,
@@ -6362,26 +4958,14 @@ function CrearUnidadPopover({
     enunciadosDba: { id: number; text: string }[]
     metodoCalculo: MetodoCalculo
   }) => Promise<void>
-  /** Se aplica al `Button` del trigger para encadenarlo visualmente con
-   * un control adyacente (split-button): típico `rounded-l-none border-l-0`
-   * para pegarse a un `Select`/`Input` por la izquierda. */
+  /** Clases para encadenarlo con un control adyacente (split-button). */
   className?: string
-  /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar,
-   *  "Unidad temática" en el resto) — mismo dato que ya resuelve
-   *  `UnidadAsociadaSection` para el `<Select>` de al lado. Sin esto el
-   *  título/tooltip/botón de este popover decían "unidad temática" fijo
-   *  incluso creando un proyecto pedagógico. */
+  /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar). */
   instrumentoLabel?: string
-  /** Grado/Asignatura de la actividad que abre este popover — la unidad
-   *  nueva nace con los mismos (una unidad se identifica por esos dos, ver
-   *  `IdentificacionSection`), así que acá no se vuelven a pedir. También
-   *  gobiernan "Derechos" (`useEnunciadosDbaQuery`) y si se puede guardar:
-   *  sin ellos no hay contra qué resolver el referente de la unidad. */
+  /** Grado/Asignatura de la actividad: la unidad nueva nace con ellos. */
   gradoId: number | undefined
   asignaturaId: number | undefined
-  /** `true` mientras Grado/Asignatura de la actividad (no del popover, que no
-   *  pide ninguno de los dos) todavía no se eligieron — ver `disabled` en
-   *  `EditarActividadForm`. */
+  /** `true` mientras la actividad no tenga Grado/Asignatura. */
   disabled?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
@@ -6393,9 +4977,7 @@ function CrearUnidadPopover({
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
   const { notify } = useNotify()
-  // Sin "nuevo/nueva": el rótulo del instrumento lo define el referente
-  // curricular y concordar el artículo con él obligaba a una regla de género
-  // que ya venía dando "Crear nuevoa unidad temática".
+  // Sin "nuevo/nueva": el rótulo varía y no se concuerda el género.
   const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
 
   const {
@@ -6406,10 +4988,7 @@ function CrearUnidadPopover({
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
-  // Mismo criterio que `UnidadInfoGeneralFields`: una unidad de enfoque
-  // Formativo no tiene "Método de cálculo" (esa unidad no admite actividades
-  // sumativas, ver el comentario de `UnidadAsociadaSection` más arriba), así
-  // que el campo no tiene sentido mostrarlo acá tampoco.
+  // Una unidad formativa no tiene "Método de cálculo".
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(gradoId, asignaturaId)
   const esFormativa = referenteDeGradoAsignatura?.esFormativo ?? false
 
@@ -6424,11 +5003,7 @@ function CrearUnidadPopover({
     setMetodoCalculo("Ponderado")
   }
 
-  // Async: `onCreate` pega contra el backend real (`POST /planeador/unidades`).
-  // Si falla, se avisa con `notify` acá mismo (no hay interceptor global que
-  // lo haga por este camino) y el popover se queda abierto con lo tipeado —
-  // cerrarlo/limpiarlo igual habría hecho parecer que la unidad se creó
-  // cuando no, dejando al usuario sin saber por qué "Guardar" no hizo nada.
+  // Si falla se avisa acá y el popover queda abierto con lo tipeado.
   const guardar = async () => {
     if (!nombre.trim() || !hasGradoAsignatura || isSaving) return
     setIsSaving(true)
@@ -6458,18 +5033,9 @@ function CrearUnidadPopover({
                   color="primary"
                   size="icon-sm"
                   aria-label={crearLabel}
-                  // Sin Grado/Asignatura elegidos, adentro no se puede
-                  // guardar nada (`guardar` corta en seco sin
-                  // `hasGradoAsignatura`) — antes el botón abría igual el
-                  // popover, y adentro aparecía un banner azul explicando
-                  // por qué no se podía usar. Deshabilitarlo acá evita
-                  // abrir un popover que no sirve para nada todavía.
+                  // Deshabilitado sin Grado/Asignatura: adentro no se podría guardar nada.
                   disabled={disabled || !hasGradoAsignatura}
-                  // `size-11` para igualar la altura del `SelectTrigger` (h-11);
-                  // `shrink-0` para que el flex del call site no lo aplaste.
-                  // Si el call site pasa `className` (típico `rounded-l-none
-                  // border-l-0` para split-button), gana sobre el `rounded-md`
-                  // base porque va al final.
+                  // `size-11` iguala la altura del `SelectTrigger`; `className` va al final para ganar.
                   className={cn("size-11 shrink-0 rounded-md", className)}
                 />
               }
@@ -6486,26 +5052,13 @@ function CrearUnidadPopover({
         align="end"
         side="bottom"
         sideOffset={8}
-        // `gap-0` anula el `gap-4` parejo que trae `PopoverContent` por
-        // default: acá el espaciado lo maneja cada bloque a mano (título,
-        // scroll, footer), no una grilla uniforme de hijos sueltos —así
-        // el título y el botón "Guardar" quedan fijos y solo el cuerpo
-        // largo (contenidos/objetivos/DBA) scrollea por dentro en vez de
-        // estirar el popover fuera de la pantalla.
+        // `gap-0`: título y footer fijos, solo el cuerpo scrollea.
         className="w-96 gap-0 p-0"
       >
-        {/* `line-clamp-2` + `title`: el rótulo sale del referente curricular y
-          admite 400 caracteres, que dentro de un popover de ancho fijo se
-          convertían en un título de quince líneas empujando el formulario. */}
+        {/* `line-clamp-2`: el rótulo admite 400 caracteres. */}
         <h3 className="line-clamp-2 border-b px-4 py-3 text-base font-semibold" title={crearLabel}>
           {crearLabel}
         </h3>
-
-        {/* El banner de "Elegí Grado/Grupo y Asignatura primero" que vivía
-            acá ya no hace falta: el trigger de este popover está
-            deshabilitado (con tooltip que explica por qué) mientras falten,
-            así que no hay forma de llegar a ver este contenido sin
-            `hasGradoAsignatura`. */}
 
         <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
           <Field variant="outlined">
@@ -6530,10 +5083,6 @@ function CrearUnidadPopover({
             />
           </Field>
 
-          {/* Objetivos/Contenidos agrupados en una sola sección con
-              separador: son las dos listas "libres" de la unidad, antes de
-              DBA (que sí depende de un catálogo) y del método de cálculo
-              (que es una decisión aparte, de negocio). */}
           <div className="flex flex-col gap-4 border-t pt-4">
             <ListaAgregableField
               label="Objetivos específicos relacionados"
@@ -6552,9 +5101,7 @@ function CrearUnidadPopover({
             <ListaAgregableCajaSelect
               title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
               description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
-              // Mismo motivo que en `UnidadInfoGeneralFields`: nunca el
-              // literal fijo "Enunciados" — este popover también crea
-              // unidades de Preescolar, donde el nivel 1 real es "Propósito".
+              // Nunca "Enunciados" fijo: en Preescolar el nivel 1 es "Propósito".
               columnLabel={`${nivel1Etiqueta}s`}
               items={enunciadosDba}
               options={enunciadosDisponibles}
@@ -6604,7 +5151,6 @@ function CrearUnidadPopover({
   )
 }
 
-/** `yyyy-MM-dd` → `dd/MM` para el aviso de periodos cerrados. */
 function formatDiaCorto(value: string): string {
   const [, m, d] = value.split("-")
   return `${d}/${m}`

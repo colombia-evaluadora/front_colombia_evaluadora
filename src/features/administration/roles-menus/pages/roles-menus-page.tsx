@@ -46,6 +46,9 @@ export function RolesMenusPage() {
   )
 }
 
+const PANEL_CLASS =
+  "rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+
 function RolesMenusPageContent() {
   const { notify } = useNotify()
   const { puedeCrear } = useMenuPermission("CONFIG_ROLES_MENUS")
@@ -163,23 +166,22 @@ function RolesMenusPageContent() {
 
       <TableScreenBody>
         <div className="flex flex-col gap-4">
-          <div className="sticky top-2 z-20 rounded-md bg-card shadow-md empty:hidden">
-            <NoticeOutlet />
-          </div>
           {isLoading ? (
             <Skeleton className="h-96" />
           ) : (
             <Tabs defaultValue="vistas-base">
-              <TabsList variant="line">
+              <TabsList variant="folder">
                 <TabsTrigger value="modulos" disabled={viewsDirty}>
                   Módulos y submódulos
                 </TabsTrigger>
                 <TabsTrigger value="vistas-base">Vistas base por rol</TabsTrigger>
               </TabsList>
-              <TabsContent value="modulos" className="pt-4">
+              <TabsContent value="modulos" className={PANEL_CLASS}>
+                <TabNotice />
                 <MenuCatalog />
               </TabsContent>
-              <TabsContent value="vistas-base" className="pt-4">
+              <TabsContent value="vistas-base" className={PANEL_CLASS}>
+                <TabNotice />
                 {roleId != null ? (
                   <RoleViewsEditor
                     key={roleId}
@@ -198,4 +200,9 @@ function RolesMenusPageContent() {
       </TableScreenBody>
     </TableScreen>
   )
+}
+
+/** El aviso va dentro de la pestaña, encima de su tabla. */
+function TabNotice() {
+  return <NoticeOutlet className="mb-4" />
 }

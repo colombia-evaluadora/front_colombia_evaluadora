@@ -1,3 +1,4 @@
+import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -38,6 +39,7 @@ async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
 export function useOwnershipTypesQuery() {
   return useQuery({
     queryKey: ["catalogs", "ownership-types"],
+    meta: catalogoMeta(),
     queryFn: fetchOwnershipTypes,
   })
 }

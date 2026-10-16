@@ -32,7 +32,7 @@ import type {
   Categoria,
   ListaValor,
 } from "@/features/administration/listas-valor/api/types/lista-valor"
-import { useArrastrarFilas } from "@/features/administration/listas-valor/hooks/use-arrastrar-filas"
+import { useArrastrarFilas } from "@/hooks/use-arrastrar-filas"
 import { createValoresColumns } from "@/features/administration/listas-valor/components/columns-valores"
 import { DialogModificarCategoria } from "@/features/administration/listas-valor/components/dialog-modificar-categoria"
 import { DialogCreateCategoria } from "@/features/administration/listas-valor/components/dialog-create-categoria"

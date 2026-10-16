@@ -1,3 +1,4 @@
+import { proveedorMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
@@ -99,6 +100,7 @@ export const campusesQueryKey = (params: UseCampusesQueryParams) => [
 export function useCampusesQuery(params: UseCampusesQueryParams) {
   return useQuery({
     queryKey: campusesQueryKey(params),
+    meta: proveedorMeta(),
     queryFn: () => fetchCampuses(params),
     placeholderData: (previous) => previous,
   })

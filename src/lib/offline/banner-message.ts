@@ -1,29 +1,24 @@
 import type { ConnectivityState } from "@/lib/offline/connectivity"
+import { isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
 
 /** El banner espera esto antes de aparecer (histéresis: no parpadea). */
 export const BANNER_DELAY_MS = 1_500
 
 /**
- * Vistas que siguen funcionando sin conexión (`docs/offline/PLAN-offline.md`
- * §2): Planeador (incluye Planilla), Asistencia, Pendientes y Referentes
- * curriculares (lectura, §8.7). El resto es "solo en línea" y el banner lo dice.
+ * Una vista de `/app` funciona sin conexión salvo que esté en la lista de solo
+ * en línea (`online-only-paths.ts`). Antes había una segunda lista "positiva"
+ * que se desincronizó: Informes, Periodos, Comunicaciones o `/app` mostraban
+ * "Esta sección necesita conexión" aunque sus datos estaban guardados.
+ * Auditoría completa: `docs/offline/AUDITORIA-RUTAS.md`.
  */
-const OFFLINE_CAPABLE_PREFIXES = [
-  "/app/planeador",
-  "/app/notificaciones",
-  "/app/asistencia",
-  "/app/pendientes",
-  "/app/gestion-academica/referentes-curriculares",
-]
-
 export function isOfflineCapablePath(pathname: string): boolean {
-  return OFFLINE_CAPABLE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  return pathname.startsWith("/app") && !isOnlineOnlyPath(pathname)
 }
 
 export const OFFLINE_MESSAGE =
   "Estás sin conexión. Puedes seguir consultando y registrando asistencia y calificaciones; se enviarán cuando vuelva la conexión."
 export const OFFLINE_ONLINE_ONLY_MESSAGE =
-  "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador y Asistencia."
+  "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador, Planilla, Asistencia, Informes y Referentes."
 export const DEGRADED_MESSAGE = "La conexión está lenta o inestable. Lo que guardes se enviará apenas se estabilice."
 export const SERVER_DOWN_MESSAGE = "No pudimos comunicarnos con el servidor"
 export const CAPTIVE_PORTAL_HINT = "Puede que la red Wi-Fi requiera iniciar sesión."
