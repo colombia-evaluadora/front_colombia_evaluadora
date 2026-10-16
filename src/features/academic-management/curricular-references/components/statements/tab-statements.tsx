@@ -34,7 +34,7 @@ import { DeleteEvidenceDialog } from "@/features/academic-management/curricular-
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CurricularEvidence, CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 interface TabStatementsProps {
   reference: CurricularReference
@@ -44,7 +44,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
   // Enunciados y evidencias son parte del referente: agregar y editar piden Guardar.
   const { puedeEditar, puedeEliminar } = useMenuPermission("REFERENTES_CURRICULARES")
   // Enunciados y evidencias no se crean ni editan sin red (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
+  const soloEnLinea = useOfflineWritable()
   const level1Label = toSentenceCase(reference.level1 || "Enunciado")
   const level2Label = toSentenceCase(reference.level2 || "Evidencia")
   const [areaId, setAreaId] = useState<number | null | undefined>(

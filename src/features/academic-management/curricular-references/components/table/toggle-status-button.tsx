@@ -5,7 +5,8 @@ import { CheckCircleIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 import { useToggleStatus } from "@/features/academic-management/curricular-references/api/mutations/use-toggle-status"
 import { fetchCurricularReferenceImpact } from "@/features/academic-management/curricular-references/api/query/fetch-impact"
@@ -27,7 +28,13 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
   const nextActive = !curricularReference.active
   const label = nextActive ? "Activar" : "Inactivar"
   // Sin red no se puede activar/inactivar (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 4 offline: activar se encola; inactivar exige consultar el impacto en
+  // el servidor, así que sin red queda deshabilitado.
+  const escritura = useOfflineWritable()
+  const soloEnLinea =
+    escritura.queues && !nextActive
+      ? { disabled: true, tooltip: "Inactivar necesita conexión para revisar el impacto." }
+      : escritura
 
   // Inactivar con unidades/actividades pasa por el modal (Regla 5).
   const [impactAlerts, setImpactAlerts] = useState<HighImpactAlert[]>([])
@@ -53,6 +60,10 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
           return
         }
         setImpactAlerts([])
+        if (result?.queued) {
+          notify(QUEUED_MESSAGE)
+          return
+        }
         notify(nextActive ? "El referente curricular se activó." : "El referente curricular se inactivó.")
       },
       onError: (error) => void handleError(getErrorMessage(error)),
