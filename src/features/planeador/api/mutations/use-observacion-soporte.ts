@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -74,7 +75,7 @@ registerOutboxHandler<QuitarSoporteInput>({
     evalCol.putRow<SoporteRow>(
       `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}`,
       { FECHA: input.fecha },
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     ),
   invalidates: (p) => soporteKeys(p.pkTactividadEstudiante),
   describe: () => ({ titulo: "Quitar evidencia de observación", detalle: "", ruta: "/app/planeador/planilla" }),
@@ -89,7 +90,7 @@ registerOutboxHandler<MarcarFavoritoSoporteInput>({
     evalCol.putRow<SoporteRow>(
       `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}/favorito`,
       { ES_FAVORITO: input.esFavorito },
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     ),
   invalidates: (p) => [planeadorKeys.actividadEstudiante.soportes(p.pkTactividadEstudiante)],
   describe: (p) => ({

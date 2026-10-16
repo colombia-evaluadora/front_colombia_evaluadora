@@ -1,0 +1,109 @@
+# Design: Offline de meses (PWA)
+
+Todas las decisiones son **defaults revisables**. Las que tocan datos de
+menores dependen de **P6** (política institucional sobre datos de estudiantes
+en equipos personales), que sigue pendiente con el usuario.
+
+## D-0. Bug de testv2 (resuelto en #730)
+`/app` redirigía al primer ítem del menú (Cobertura/Establecimiento, solo en
+línea); el login marcaba "equipo compartido" por defecto (nada se persistía);
+y el banner usaba una lista positiva desincronizada. Ver
+`docs/offline/AUDITORIA-RUTAS.md`.
+
+## D-1. Almacenamiento persistente e instalación (implementado)
+- Al preparar se llama `navigator.storage.persist()` y se muestra el estado
+  (`StorageStatusCard`): persistente / NO persistente, uso y cuota
+  (`navigator.storage.estimate()`), días máximos offline.
+- Riesgos en rojo (`storageRisks`): iOS sin instalar, no persistido, uso ≥ 80%.
+- Instalación: botón con `beforeinstallprompt` (Chromium); en iOS, instrucciones
+  ("Compartir" y "Agregar a inicio").
+- Riesgos de evicción documentados:
+  - **Safari/iOS**: ITP borra todo el almacenamiento de script de un sitio tras
+    7 días de uso del navegador sin interacción con ese sitio, **salvo que la
+    PWA esté instalada** en la pantalla de inicio (la app instalada tiene su
+    propio contenedor y no aplica el contador). Recomendación fuerte: instalar
+    y abrir siempre desde el ícono.
+  - **Chromium/Firefox**: sin `persist()` concedido, el almacenamiento es
+    "best-effort" y se desaloja por LRU bajo presión de disco. Chromium concede
+    `persist()` de forma heurística (instalada, marcada, con engagement alto);
+    Firefox pregunta al usuario.
+  - Borrar datos de navegación / modo privado siempre borra todo.
+- Follow-up: aviso periódico (al abrir la app) si el estado empeora, no solo
+  en el diálogo de preparar.
+
+## D-2. Duración máxima offline (implementado)
+`VITE_APP_OFFLINE_MAX_DAYS` (default **180**, rango 1-400) en `lib/offline/limits.ts`:
+- sesión offline (`OFFLINE_SESSION_MAX_AGE_MS`), snapshot del menú,
+  ventana de la outbox (`OUTBOX_WINDOW_MS`, aviso 14 días antes) y retención
+  de queries persistidas usan el mismo número.
+- El `ttl` por clase de dato (catálogo 30 d, roster 7 d, detalle 3 d) **ya no
+  borra**: solo marca el dato como antiguo (`freshness.ts`). Se borra recién
+  pasada la duración máxima.
+
+## D-3. Sesión larga y credencial del equipo
+Hoy: la cookie `sso_refresh` dura 30 días (`REFRESH_COOKIE_MAX_AGE`,
+`sso.refresh-token.ttl-seconds`); el modo offline no la necesita (el usuario se
+deriva del JWT guardado y la sesión offline vive en IndexedDB).
+Decisión (revisable): **no** se emite un refresh de 180 días. El día de
+sincronización el usuario vuelve a ingresar su contraseña en línea; la outbox
+pausa en estado "auth" y **no descarta nada** hasta que hay sesión. Motivo: un
+token de meses en un equipo rural robable es peor que pedir la contraseña una
+vez con internet.
+Alternativa diseñada (follow-up si el usuario la pide): `device_token`
+(registro del equipo online, `POST /auth/devices`, hash en BD, TTL =
+`OFFLINE_MAX_DAYS`, rotación en cada uso, revocable) aceptado por
+`/auth/refresh` como segunda vía. Requiere tabla nueva → **cambio de esquema
+que necesita OK explícito** (regla del repo sso).
+
+## D-4. Desbloqueo local (diseñado, follow-up)
+Al pasar a "equipo personal" se pide un PIN (≥ 6 dígitos) o se reutiliza la
+contraseña. Se guarda `salt` + `PBKDF2-SHA256(pin, salt, 310 000)` en
+`meta.unlock`. Al abrir sin red se pide el PIN; 10 intentos fallidos borran los
+datos no pendientes (los pendientes se conservan cifrados, ver D-8).
+
+## D-5. Outbox (implementado en parte)
+Ventana = duración máxima. Pasada la ventana la outbox deja de **aceptar** y
+**nunca borra** lo que ya tiene. Cada envío lleva `X-Client-Captured-At`
+(instante de captura, `op.createdAt`).
+
+## D-6. "Preparar todo" (follow-up)
+Extiende `prepare-offline-plan.ts`: todos los grupos × asignaturas × **todos**
+los periodos del año, unidades/actividades/instrumentos/referentes, calendario
+y roster de asistencia, catálogos, menú y permisos. Plan persistido en
+`meta.preparePlan` con estado por tarea → reanudable tras cortes. Adjuntos
+opcionales con tamaño estimado (`Content-Length` vía `HEAD`). "Última
+preparación" con indicador verde < 7 d, amarillo < 30 d, rojo después.
+
+## D-7. Reglas del backend para meses offline (follow-up, sso)
+- El gateway propaga `X-Client-Captured-At` como `:HEADER.CAPTURED_AT` al motor
+  de queries; las funciones de calificación/asistencia (`fn_*` del planeador)
+  aceptan la escritura si el periodo estaba **abierto en la fecha de captura**
+  (aunque hoy esté cerrado) y la captura no es futura (tolerancia 10 min).
+- Si no: `PERIODO_CERRADO` → el front crea una **solicitud al coordinador**
+  (flujo existente de reapertura) con el lote rechazado adjunto.
+- Se editan las migraciones/funciones dueñas (no migraciones nuevas para
+  objetos existentes). SQL se verifica contra el esquema real de testv2.
+- Compatibilidad: sin header, el comportamiento es el actual. El gateway
+  responde `X-Min-Client-Version`; si el cliente (`X-Client-Version`, SHA del
+  build) es menor, tras sincronizar se muestra "Actualiza la app".
+
+## D-8. Cifrado en reposo y borrado remoto (follow-up)
+Clave AES-GCM 256 derivada del PIN (PBKDF2) envolviendo una DEK aleatoria; la
+DEK cifra `data` de `queries`, `payload` de `outbox` y blobs. Sin PIN no se
+abre nada. Revocación: `GET /auth/devices/me` en cada sync; si `revoked`, se
+borra IndexedDB **después** de intentar subir lo pendiente.
+
+## D-9. Respaldo USB (follow-up)
+Exportar: JSON de ops pendientes + blobs, cifrado AES-GCM con la DEK,
+firmado (ECDSA P-256, par generado al registrar el equipo; pública en el
+backend). Importar en otro equipo con internet: el backend valida firma y
+equipo, y procesa las ops con su `Idempotency-Key` (re-importar no duplica).
+
+## D-10. Pantallas (implementado en #730 + follow-up)
+Matriz en `docs/offline/AUDITORIA-RUTAS.md`. Admin y Cobertura siguen solo en
+línea con mensaje claro (Cobertura: datos de menores, P6).
+
+## D-11. Día de sincronización (follow-up)
+`/app/sincronizar`: barra de progreso por lotes (concurrencia 3, ya existe en
+el motor), reanudable; reporte final de subidos / conflictos / rechazados con
+motivo; luego "Preparar todo" en modo refresco.

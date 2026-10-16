@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -28,7 +29,7 @@ registerOutboxHandler<EstadoResultadoInput>({
     evalCol.putRow(
       `/planeador/actividades/estudiantes/${input.pkTactividadEstudiante}/estado-resultado`,
       { ESTADO: input.estado },
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     ),
   invalidates: (p) => [planeadorKeys.actividad.calificaciones(p.actividadId), planeadorKeys.planilla.calificaciones.all],
   describe: (p) => ({
