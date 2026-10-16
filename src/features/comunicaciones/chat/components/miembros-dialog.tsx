@@ -19,7 +19,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Conversacion, Miembro, Persona } from "@/features/comunicaciones/chat/api/types"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
-import { usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
+import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import {
   useAgregarMiembros,
   useBloquearMiembro,
@@ -47,7 +47,10 @@ export function MiembrosDialog({
   const [porEliminar, setPorEliminar] = useState<Miembro | null>(null)
   const [pagina, setPagina] = useState(0)
   const miembros = useMiembrosQuery(open ? c.id : undefined)
-  const personas = usePersonasQuery(open)
+  const [consulta, setConsulta] = useState("")
+  const personas = usePersonasQuery(open, consulta)
+  const delServidor = !personas.isPlaceholderData && consulta.trim().length >= 2
+  const deBusqueda = new Set(delServidor ? (personas.data ?? []).map((p) => p.id) : [])
   const agregar = useAgregarMiembros(c.id)
   const bloquear = useBloquearMiembro(c.id)
   const eliminar = useEliminarMiembro(c.id)
@@ -69,6 +72,7 @@ export function MiembrosDialog({
 
   const cerrar = () => {
     setSeleccion([])
+    setConsulta("")
     setPagina(0)
     onClose()
   }
@@ -92,7 +96,8 @@ export function MiembrosDialog({
               onChange={setSeleccion}
               getId={(p) => p.id}
               getLabel={(p) => p.nombre}
-              filtrar={(p, t) => p.nombre.toLowerCase().includes(t) || p.correo.toLowerCase().includes(t)}
+              filtrar={(p, t) => coincidePersona(p, t, deBusqueda.has(p.id))}
+              onConsulta={setConsulta}
               cargando={personas.isPending}
               autoFocus
               ariaLabel="Buscar personas para añadir"

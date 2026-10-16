@@ -16,6 +16,8 @@ import { MensajeAcciones } from "@/features/comunicaciones/chat/components/mensa
 import { cn } from "@/lib/utils"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { descargarAdjunto, pesoLegible } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
 import {
   BotonReaccionar,
@@ -294,7 +296,6 @@ function MensajeItem({
   )
 }
 
-// TODO: descargar con el file-service cuando el backend entregue el id del archivo.
 function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: boolean }) {
   const { notify } = useNotify()
   const eliminar = useEliminarAdjunto()
@@ -313,18 +314,24 @@ function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: bo
 
   const { Icono, color } = ICONO_ARCHIVO[adjunto.formato]
   return (
-    <div className="mt-3 flex w-full max-w-sm items-center gap-3 rounded-lg border bg-card px-3 py-3 shadow-xs">
+    <div className="mt-3 w-full max-w-sm">
+    {adjunto.formato === "IMAGEN" && adjunto.archivoId != null && (
+      <ArchivoImage
+        archivoId={adjunto.archivoId}
+        alt={adjunto.nombre}
+        className="mb-2 max-h-64 w-full rounded-lg border bg-muted/30"
+        fallback={<span />}
+      />
+    )}
+    <div className="flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 shadow-xs">
       <Icono aria-hidden className={cn("size-8 shrink-0", color)} />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{adjunto.nombre}</span>
-      <button
-        type="button"
-        disabled
-        aria-label={`Descargar ${adjunto.nombre}`}
-        title="La descarga estará disponible cuando se conecte el servicio de archivos"
-        className="grid size-8 shrink-0 place-items-center rounded-full text-foreground disabled:opacity-60"
-      >
-        <FileDownloadOutlinedIcon className="size-5" />
-      </button>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">{adjunto.nombre}</span>
+        {adjunto.peso != null && (
+          <span className="block text-xs text-muted-foreground">{pesoLegible(adjunto.peso)}</span>
+        )}
+      </span>
+      <DescargarAdjunto archivoId={adjunto.archivoId} nombre={adjunto.nombre} />
       {propio && (
         <button
           type="button"
@@ -342,5 +349,29 @@ function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: bo
         </button>
       )}
     </div>
+    </div>
+  )
+}
+
+// Descarga con un token de vista de file-service, pedido al hacer clic. Sin
+// `archivoId` (adjuntos viejos o del mock sin binario) no hay nada que bajar.
+function DescargarAdjunto({ archivoId, nombre }: { archivoId: number | null | undefined; nombre: string }) {
+  const { notify } = useNotify()
+  const sinArchivo = archivoId == null
+  return (
+    <button
+      type="button"
+      disabled={sinArchivo}
+      aria-label={`Descargar ${nombre}`}
+      title={sinArchivo ? "Archivo sin copia en el servidor" : "Descargar"}
+      onClick={() =>
+        void descargarAdjunto(archivoId as number, nombre).catch((error) =>
+          notify(getErrorMessage(error), { variant: "error" }),
+        )
+      }
+      className="grid size-8 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
+    >
+      <FileDownloadOutlinedIcon className="size-5" />
+    </button>
   )
 }

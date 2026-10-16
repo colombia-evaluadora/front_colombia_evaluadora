@@ -22,6 +22,8 @@ import {
   politicaChat,
   USUARIO_ACTUAL,
 } from "@/mocks/db/comunicaciones"
+import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { registrarArchivoMaterial } from "@/mocks/db/planeador"
 import {
   extraerMenciones,
 } from "@/features/comunicaciones/chat/lib/menciones"
@@ -73,6 +75,51 @@ function hastaSilencio(duracion: SilencioDuracion) {
   if (duracion === "8H") d.setHours(d.getHours() + 8)
   else d.setDate(d.getDate() + 7)
   return d.toISOString()
+}
+
+interface CuerpoMensaje {
+  TEXTO?: string
+  FK_MENSAJE_RESPUESTA?: number | null
+  CLIENT_MESSAGE_ID?: string
+}
+
+function enviarMensajeMock(
+  id: string | readonly string[] | undefined,
+  body: CuerpoMensaje,
+  request: Request,
+  adjunto: AdjuntoMensaje | null = null,
+) {
+  const conv = buscar(id)
+  if (!conv) return noEncontrada()
+  // comms-service: en un foro se escribe dentro de una publicación.
+  if (conv.tipo === "FORO") {
+    return HttpResponse.json({ message: "En un foro se escribe dentro de una publicacion." }, { status: 400 })
+  }
+  // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
+  const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
+  const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
+  if (previo) return HttpResponse.json({ rows: [previo] })
+  const texto = body.TEXTO?.trim() ?? ""
+  if (!texto && !adjunto) {
+    return HttpResponse.json({ message: "Escribe un mensaje o adjunta un archivo." }, { status: 400 })
+  }
+  const original = body.FK_MENSAJE_RESPUESTA
+    ? mensajes.find((m) => m.id === body.FK_MENSAJE_RESPUESTA && m.conversacionId === conv.id)
+    : undefined
+  if (body.FK_MENSAJE_RESPUESTA && !original) {
+    return HttpResponse.json({ message: "El mensaje al que respondes ya no existe." }, { status: 404 })
+  }
+  const m = nuevoMensaje(conv.id, texto, adjunto, {
+    respuestaA: original ? citaDe(original) : null,
+    menciones: mencionesDe(texto, conv.id, request),
+  })
+  if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
+  // Como comms-service: el borrador del canal pasa a "Enviados".
+  const borrador = borradores.find((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
+  if (borrador) Object.assign(borrador, { estado: "ENVIADO", texto, fecha: m.fecha })
+  publicarMensajeCreado(m, original?.autor.id)
+  simularRespuesta(conv, m)
+  return HttpResponse.json({ rows: [m] })
 }
 
 export const comunicacionesHandlers = [
@@ -248,44 +295,84 @@ export const comunicacionesHandlers = [
 
   http.post(URL("conversaciones/:id/mensajes"), async ({ params, request }) => {
     await delay(200)
+    return enviarMensajeMock(params.id, (await request.json()) as CuerpoMensaje, request)
+  }),
+
+  // Con adjunto el front manda el mismo POST como multipart por file-service,
+  // que lo reenvía con `ADJUNTO` = pk_tarchivo. Acá el binario queda como object
+  // URL (mismo registro que los materiales del planeador) para que la vista
+  // previa y la descarga funcionen con el mock.
+  http.post(`*/api/files/eval-col/comunicaciones/conversaciones/:id/mensajes`, async ({ params, request }) => {
+    await delay(400)
+    const form = await request.formData()
+    const archivo = form.get("ADJUNTO")
+    const texto = form.get("TEXTO")
+    const respuesta = form.get("FK_MENSAJE_RESPUESTA")
+    const clientId = form.get("CLIENT_MESSAGE_ID")
+    const adjunto =
+      archivo instanceof File
+        ? {
+            nombre: archivo.name,
+            formato: formatoDeArchivo(archivo),
+            eliminadoEn: null,
+            archivoId: registrarArchivoMaterial(archivo),
+            peso: archivo.size,
+          }
+        : null
+    const res = enviarMensajeMock(
+      params.id,
+      {
+        TEXTO: typeof texto === "string" ? texto : "",
+        FK_MENSAJE_RESPUESTA: typeof respuesta === "string" ? Number(respuesta) : null,
+        CLIENT_MESSAGE_ID: typeof clientId === "string" ? clientId : undefined,
+      },
+      request,
+      adjunto,
+    )
+    const conv = buscar(params.id)
+    if (res.status === 200 && adjunto && conv) {
+      archivos.unshift({
+        id: adjunto.archivoId,
+        archivoId: adjunto.archivoId,
+        nombre: adjunto.nombre,
+        formato: adjunto.formato,
+        peso: adjunto.peso,
+        compartidoPor: "Tú",
+        esPropio: true,
+        fecha: new Date().toISOString(),
+        conversacionId: conv.id,
+        conversacionNombre: conv.nombre,
+        enMiCanal: true,
+      })
+    }
+    return res
+  }),
+
+  http.put(URL("conversaciones/:id/borrador"), async ({ params, request }) => {
+    await delay(150)
     const conv = buscar(params.id)
     if (!conv) return noEncontrada()
-    // comms-service: en un foro se escribe dentro de una publicación.
-    if (conv.tipo === "FORO") {
-      return HttpResponse.json({ message: "En un foro se escribe dentro de una publicacion." }, { status: 400 })
+    const texto = ((await request.json()) as { TEXTO?: string }).TEXTO?.trim() ?? ""
+    const idx = borradores.findIndex((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
+    if (!texto) {
+      if (idx !== -1) borradores.splice(idx, 1)
+      return HttpResponse.json({ rows: [] })
     }
-    const body = (await request.json()) as {
-      TEXTO?: string
-      ADJUNTO_NOMBRE?: string
-      ADJUNTO_FORMATO?: AdjuntoMensaje["formato"]
-      FK_MENSAJE_RESPUESTA?: number | null
-      CLIENT_MESSAGE_ID?: string
+    const fecha = new Date().toISOString()
+    if (idx !== -1) {
+      Object.assign(borradores[idx], { texto, fecha })
+      return HttpResponse.json({ rows: [borradores[idx]] })
     }
-    // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
-    const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
-    const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
-    if (previo) return HttpResponse.json({ rows: [previo] })
-    const texto = body.TEXTO?.trim() ?? ""
-    const adjunto = body.ADJUNTO_NOMBRE
-      ? { nombre: body.ADJUNTO_NOMBRE, formato: body.ADJUNTO_FORMATO ?? "OTRO", eliminadoEn: null }
-      : null
-    if (!texto && !adjunto) {
-      return HttpResponse.json({ message: "Escribe un mensaje o adjunta un archivo." }, { status: 400 })
+    const b = {
+      id: Math.max(0, ...borradores.map((x) => x.id)) + 1,
+      conversacionId: conv.id,
+      conversacionNombre: conv.nombre,
+      texto,
+      estado: "BORRADOR" as const,
+      fecha,
     }
-    const original = body.FK_MENSAJE_RESPUESTA
-      ? mensajes.find((m) => m.id === body.FK_MENSAJE_RESPUESTA && m.conversacionId === conv.id)
-      : undefined
-    if (body.FK_MENSAJE_RESPUESTA && !original) {
-      return HttpResponse.json({ message: "El mensaje al que respondes ya no existe." }, { status: 404 })
-    }
-    const m = nuevoMensaje(conv.id, texto, adjunto, {
-      respuestaA: original ? citaDe(original) : null,
-      menciones: mencionesDe(texto, conv.id, request),
-    })
-    if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
-    publicarMensajeCreado(m, original?.autor.id)
-    simularRespuesta(conv, m)
-    return HttpResponse.json({ rows: [m] })
+    borradores.push(b)
+    return HttpResponse.json({ rows: [b] })
   }),
 
   http.patch(URL("conversaciones/:id/silenciar"), async ({ params, request }) => {

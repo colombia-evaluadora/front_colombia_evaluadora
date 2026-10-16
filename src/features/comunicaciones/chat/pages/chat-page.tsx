@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { ChatCircleTextIcon } from "@/components/ui/icons"
@@ -6,6 +7,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { chatRoute } from "@/router"
 import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
+import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import {
   hayMensajesAnteriores,
   useCargarMensajesAnteriores,
@@ -43,7 +45,8 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { ArchivosView } from "@/features/comunicaciones/chat/components/archivos-view"
 import { BorradoresView } from "@/features/comunicaciones/chat/components/borradores-view"
-import { useEliminarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
+import { useGuardarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
+import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { Borrador, CategoriaCanal, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import {
@@ -86,7 +89,15 @@ function ChatContent() {
   const conversacionesQuery = useConversacionesQuery()
   // Los foros tienen su pantalla (`/app/comunicaciones/foros`): el chat no los lista.
   const conversaciones = (conversacionesQuery.data ?? []).filter((c) => c.tipo !== "FORO")
+  const queryClient = useQueryClient()
+  const { data: borradores = [] } = useBorradoresQuery()
   const activa = vista ? undefined : conversaciones.find((c) => c.id === canal)
+  // Borrador del canal abierto: el elegido en "Borradores" o el que quedó guardado.
+  const borradorActivo = activa
+    ? borrador?.conversacionId === activa.id
+      ? borrador
+      : borradores.find((b) => b.conversacionId === activa.id && b.estado === "BORRADOR")
+    : undefined
   const panelAbierto = !!activa || !!vista
   const mensajesQuery = useMensajesQuery(activa?.id)
   const esEleccion = activa?.categoria === "VOTACION"
@@ -136,7 +147,7 @@ function ChatContent() {
   // Canales cuyo historial anterior ya se agotó.
   const [agotados, setAgotados] = useState<Set<number>>(() => new Set())
   const marcarLeido = useMarcarLeido()
-  const eliminarBorrador = useEliminarBorrador()
+  const guardarBorrador = useGuardarBorrador()
 
   const seleccionar = (id: number | undefined) => {
     setBusqueda("")
@@ -312,8 +323,9 @@ function ChatContent() {
                 </p>
               ) : (
               <ChatComposer
-                key={`${activa.id}-${borrador?.id ?? "nuevo"}`}
-                textoInicial={borrador?.conversacionId === activa.id ? borrador.texto : ""}
+                key={`${activa.id}-${borradorActivo?.id ?? "nuevo"}`}
+                textoInicial={borradorActivo?.texto ?? ""}
+                onGuardarBorrador={(texto) => guardarBorrador.mutate({ conversacionId: activa.id, texto })}
                 destino={activa.tipo === "CANAL" ? `#${activa.nombre}` : activa.nombre}
                 enviando={enviar.isPending}
                 miembros={miembrosQuery.data ?? []}
@@ -338,9 +350,10 @@ function ChatContent() {
                     .then(() => {
                       intento.current = null
                       setRespondiendo(null)
-                      if (borrador?.conversacionId === activa.id) {
-                        eliminarBorrador.mutate(borrador.id)
+                      // El servidor pasa el borrador del canal a "Enviados".
+                      if (borradorActivo) {
                         setBorrador(null)
+                        void queryClient.invalidateQueries({ queryKey: chatKeys.borradores })
                       }
                     })
                     .catch((error) => {
@@ -373,8 +386,9 @@ function ChatContent() {
 
 const ESTADO_CONEXION: Record<RealtimeStatus, { texto: string; color: string } | null> = {
   idle: null,
-  open: { texto: "En vivo", color: "bg-green" },
-  connecting: { texto: "Conectando…", color: "bg-yellow" },
+  // Conectado (o conectando por primera vez) no se muestra nada: solo se avisa cuando algo falla.
+  open: null,
+  connecting: null,
   reconnecting: { texto: "Reconectando…", color: "bg-yellow" },
   offline: { texto: "Sin conexión: se actualizará al volver la red", color: "bg-muted-foreground" },
   forbidden: { texto: "Actualización en vivo no disponible", color: "bg-red" },

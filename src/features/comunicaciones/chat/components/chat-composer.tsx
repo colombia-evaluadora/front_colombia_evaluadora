@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react"
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react"
 
 import {
   CheckIcon,
@@ -20,6 +20,7 @@ import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
   formatoDeArchivo,
+  validarAdjunto,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { cn } from "@/lib/utils"
 import {
@@ -78,6 +79,9 @@ interface ChatComposerProps {
   onCancelarRespuesta?: () => void
   // Señal "escribiendo" (con throttle en quien la recibe).
   onEscribiendo?: () => void
+  // Al desmontar (cambiar de canal o de vista) recibe lo que quedó escrito si
+  // cambió respecto de `textoInicial`: el borrador del canal. Vacío lo descarta.
+  onGuardarBorrador?: (texto: string) => void
 }
 
 export function ChatComposer({
@@ -94,11 +98,30 @@ export function ChatComposer({
   respondiendoA,
   onCancelarRespuesta,
   onEscribiendo,
+  onGuardarBorrador,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
   const [texto, setTexto] = useState(textoInicial)
   const [archivo, setArchivo] = useState<File | null>(null)
+  const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
+  const elegirArchivo = (f: File) => {
+    const error = validarAdjunto(f)
+    setErrorArchivo(error)
+    setArchivo(error ? null : f)
+  }
+  // Último texto y callback, para guardarlos como borrador al desmontar.
+  const borradorRef = useRef({ texto, onGuardarBorrador })
+  useEffect(() => {
+    borradorRef.current = { texto, onGuardarBorrador }
+  })
+  useEffect(
+    () => () => {
+      const { texto: final, onGuardarBorrador: guardar } = borradorRef.current
+      if (guardar && final.trim() !== textoInicial.trim()) guardar(final.trim())
+    },
+    [textoInicial],
+  )
   const docRef = useRef<HTMLInputElement>(null)
   const mediaRef = useRef<HTMLInputElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
@@ -302,6 +325,11 @@ export function ChatComposer({
           {edicion ? "Editar mensaje" : `Mensaje para ${destino}`}
         </label>
         {archivo && <ArchivoPendiente archivo={archivo} onQuitar={() => setArchivo(null)} />}
+        {errorArchivo && (
+          <p role="alert" className="mx-3 mt-2 text-xs text-red">
+            {errorArchivo}
+          </p>
+        )}
         <textarea
           id={id}
           autoFocus={autoFocus}
@@ -361,8 +389,8 @@ export function ChatComposer({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivo={setArchivo} />
-          <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivo={setArchivo} />
+          <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivo={elegirArchivo} />
+          <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivo={elegirArchivo} />
           <Herramienta etiqueta="Formato de texto" pendiente>
             <TextAaIcon className="size-5" />
           </Herramienta>
