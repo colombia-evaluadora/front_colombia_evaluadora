@@ -103,7 +103,7 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await openAccountMenu(page)
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar" }).click()
+  await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
   await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 60_000 })
   await shot(page, "f1-a-preparado")
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
@@ -288,7 +288,7 @@ test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el 
     await grupos.getByRole("checkbox").first().click()
   }
   await dialog.getByRole("checkbox", { name: "Incluir archivos" }).click()
-  await dialog.getByRole("button", { name: "Preparar" }).click()
+  await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
   await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 90_000 })
   await shot(page, "f1-k-preparar-seleccion")
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()

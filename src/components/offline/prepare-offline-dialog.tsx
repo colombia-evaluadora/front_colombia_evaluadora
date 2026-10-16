@@ -18,6 +18,11 @@ import { Progress } from "@/components/ui/progress"
 import {
   buildPlanillaTargets,
   defaultPeriodos,
+  fullYearSelection,
+  isCheckpointUsable,
+  prepareFreshness,
+  type PrepareCheckpoint,
+  type PrepareFreshness,
   uniqueAsignaturas,
   type PlanillaTarget,
   type PrepareAsignatura,
@@ -41,6 +46,10 @@ import { fetchTipoAdaptacionOptions } from "@/features/planeador/api/query/use-t
 import { fetchSedesOpciones } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { fetchTipoAsistenciaOptions } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { cacheArchivo } from "@/lib/offline/file-cache"
+import { formatBytes } from "@/lib/offline/storage-status"
+import { fetchTodasLasActividadesMias } from "@/features/planeador/api/query/use-actividades-mias-query"
+import { actividadDetalleQueryOptions } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { fetchUnidadDetalle, fetchUnidades } from "@/features/planeador/api/query/use-unidades-query"
 import { getDeviceMode } from "@/lib/offline/query-persister"
 import {
   TTL_OFFLINE,
@@ -54,6 +63,12 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 const LAST_PREPARE_KEY = "ce-offline-last-prepare"
 
+const FRESHNESS_CLASS: Record<PrepareFreshness, string> = {
+  fresca: "text-green",
+  envejeciendo: "text-yellow",
+  vieja: "text-red",
+}
+
 const SHARED_DEVICE_COPY =
   'Este equipo está en modo compartido: no se guardan datos para usar sin conexión. Si es tu equipo personal y estás en el piloto, desmarca "Este es un equipo compartido" al iniciar sesión.'
 
@@ -64,7 +79,65 @@ const SHARED_DEVICE_COPY =
  */
 interface PrepareTask {
   queryKey: QueryKey
-  run: (queryClient: QueryClient) => Promise<PrepareTask[] | void>
+  run: (queryClient: QueryClient, stats: PrepareStats) => Promise<PrepareTask[] | void>
+}
+
+/** Bytes de archivos guardados en la corrida (se muestran al terminar). */
+interface PrepareStats {
+  archivoBytes: number
+}
+
+const CHECKPOINT_KEY = "ce-offline-prepare-checkpoint"
+
+function readCheckpoint(): PrepareCheckpoint | null {
+  try {
+    const raw = localStorage.getItem(CHECKPOINT_KEY)
+    return raw ? (JSON.parse(raw) as PrepareCheckpoint) : null
+  } catch {
+    return null
+  }
+}
+
+function writeCheckpoint(cp: PrepareCheckpoint | null) {
+  try {
+    if (cp) localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(cp))
+    else localStorage.removeItem(CHECKPOINT_KEY)
+  } catch {
+    // Sin storage: la preparación no se puede reanudar, solo repetir.
+  }
+}
+
+/**
+ * Todo el planeador del docente (D-6): el detalle de cada actividad (con
+ * instrumento, recursos y estudiantes) y de cada unidad, para abrirlos sin red
+ * aunque nunca se hayan visitado en esta sesión.
+ */
+function planeadorTasks(): PrepareTask[] {
+  return [
+    {
+      queryKey: ["offline", "prepare", "actividades"],
+      run: async () => {
+        const actividades = await fetchTodasLasActividadesMias()
+        return actividades.map(
+          (actividad): PrepareTask => ({
+            queryKey: planeadorKeys.actividad.detalle(actividad.id),
+            run: async (client) => {
+              await client.fetchQuery({ ...actividadDetalleQueryOptions(actividad.id, client), staleTime: 0 })
+            },
+          }),
+        )
+      },
+    },
+    {
+      queryKey: ["offline", "prepare", "unidades"],
+      run: async () => {
+        const { rows } = await fetchUnidades({})
+        return rows.map((unidad) =>
+          seed(planeadorKeys.unidad.detalle(unidad.id), () => fetchUnidadDetalle(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
+        )
+      },
+    },
+  ]
 }
 
 function seed(queryKey: QueryKey, queryFn: () => Promise<unknown>, meta: AppQueryMeta): PrepareTask {
@@ -113,8 +186,8 @@ function archivoTasks(pkTactividadEstudiante: number, archivoIds: number[]): Pre
     ...archivoIds.map(
       (archivoId): PrepareTask => ({
         queryKey: ["archivo", archivoId],
-        run: async () => {
-          await cacheArchivo(archivoId)
+        run: async (_client, stats) => {
+          stats.archivoBytes += await cacheArchivo(archivoId)
         },
       }),
     ),
@@ -309,6 +382,7 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
   const [total, setTotal] = useState(0)
   const [failed, setFailed] = useState<PrepareTask[]>([])
   const [espacio, setEspacio] = useState<string | null>(null)
+  const [archivoBytes, setArchivoBytes] = useState<number | null>(null)
   const [lastPrepare, setLastPrepare] = useState<number | null>(readLastPrepare)
   const [incluirArchivos, setIncluirArchivos] = useState(false)
   // `null` = sin tocar todavía: rigen los defaults de las opciones cargadas.
@@ -329,29 +403,49 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
   const periodosSel =
     periodos ?? new Set(defaultPeriodos(opciones.periodos, format(new Date(), "yyyy-MM-dd")))
 
-  async function runTasks(initial: PrepareTask[]) {
+  async function runTasks(initial: PrepareTask[], { resume = false }: { resume?: boolean } = {}) {
     setPhase("running")
     setDone(0)
     setTotal(initial.length)
     setFailed([])
+    setArchivoBytes(null)
     setEspacio(await requestPersistentStorage())
     const errores: PrepareTask[] = []
     const queue = [...initial]
+    const stats: PrepareStats = { archivoBytes: 0 }
+    // Punto de control (D-6): lo ya descargado no se repite al reanudar.
+    const previo = readCheckpoint()
+    const checkpoint: PrepareCheckpoint =
+      resume && isCheckpointUsable(previo) ? previo : { startedAt: Date.now(), done: [] }
+    const hechas = new Set(checkpoint.done)
+    writeCheckpoint(checkpoint)
     // Secuencial: no saturar una red escolar lenta y dar progreso real.
     for (let i = 0; i < queue.length; i++) {
+      const hash = hashKey(queue[i].queryKey)
+      // Las tareas que expanden a otras (listas "offline") se repiten siempre:
+      // sus hijas sí se saltan si ya estaban.
+      if (hechas.has(hash) && queue[i].queryKey[0] !== "offline") {
+        setDone(i + 1)
+        continue
+      }
       try {
-        const extra = await queue[i].run(queryClient)
+        const extra = await queue[i].run(queryClient, stats)
         if (extra?.length) {
           queue.push(...extra)
           setTotal(queue.length)
         }
+        hechas.add(hash)
+        if (i % 10 === 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
       } catch {
         errores.push(queue[i])
       }
       setDone(i + 1)
     }
     setFailed(errores)
+    if (stats.archivoBytes > 0) setArchivoBytes(stats.archivoBytes)
+    if (errores.length > 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
     if (errores.length === 0) {
+      writeCheckpoint(null)
       const now = Date.now()
       setLastPrepare(now)
       try {
@@ -363,20 +457,27 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
     setPhase("done")
   }
 
-  function start() {
-    const targets = buildPlanillaTargets(opciones.grupos, opciones.asignaturas, {
-      grupos: gruposSel,
-      asignaturas: asignaturasSel,
-      periodos: periodosSel,
-    })
+  function start({ todoElAnio = false, resume = false }: { todoElAnio?: boolean; resume?: boolean } = {}) {
+    const selection = todoElAnio
+      ? fullYearSelection(opciones.grupos, asignaturasUnicas, opciones.periodos)
+      : { grupos: gruposSel, asignaturas: asignaturasSel, periodos: periodosSel }
+    if (todoElAnio) {
+      setGrupos(selection.grupos)
+      setAsignaturas(selection.asignaturas)
+      setPeriodos(selection.periodos)
+    }
+    const targets = buildPlanillaTargets(opciones.grupos, opciones.asignaturas, selection)
     const elegidas = [
       ...seedTasks(),
-      ...grupoTasks([...gruposSel]),
+      ...grupoTasks([...selection.grupos]),
+      ...planeadorTasks(),
       ...planillaTasks(targets, incluirArchivos),
     ]
     const seeded = new Set(elegidas.map((task) => hashKey(task.queryKey)))
-    void runTasks([...elegidas, ...cachedOfflineTasks(queryClient, seeded)])
+    void runTasks([...elegidas, ...cachedOfflineTasks(queryClient, seeded)], { resume })
   }
+
+  const reanudable = phase === "idle" && isCheckpointUsable(readCheckpoint())
 
   const running = phase === "running"
   const disabled = shared || onlineOnly.disabled || running
@@ -469,7 +570,13 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
             <p className="text-red">No se pudieron descargar {failed.length} elementos.</p>
           )}
           {phase === "idle" && lastPrepare && (
-            <p className="text-muted-foreground">Última preparación: {formatPreparacion(lastPrepare)}.</p>
+            <p className={FRESHNESS_CLASS[prepareFreshness(lastPrepare)]}>
+              Última preparación: {formatPreparacion(lastPrepare)}
+              {prepareFreshness(lastPrepare) === "vieja" ? ". Hace más de un mes: conviene volver a preparar." : "."}
+            </p>
+          )}
+          {archivoBytes != null && (
+            <p className="text-muted-foreground">Archivos guardados en este equipo: {formatBytes(archivoBytes)}.</p>
           )}
           {espacio && <p className="text-muted-foreground">Espacio disponible en este equipo: {espacio}.</p>}
         </div>
@@ -483,9 +590,24 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
               Reintentar
             </Button>
           ) : (
-            <Button disabled={selectionDisabled} onClick={start}>
-              {running ? "Descargando…" : "Preparar"}
-            </Button>
+            <>
+              {reanudable && (
+                <Button variant="outline" color="primary" disabled={selectionDisabled} onClick={() => start({ resume: true })}>
+                  Continuar preparación
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                color="primary"
+                disabled={selectionDisabled}
+                onClick={() => start({ todoElAnio: true })}
+              >
+                Preparar todo el año
+              </Button>
+              <Button disabled={selectionDisabled} onClick={() => start()}>
+                {running ? "Descargando…" : "Preparar"}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>

@@ -74,3 +74,46 @@ export function defaultPeriodos(periodos: PreparePeriodo[], today: string): numb
   const empezados = periodos.filter((p) => p.startDate <= today)
   return [(empezados.at(-1) ?? periodos[0]).id]
 }
+
+// ---- Offline de meses (`add-offline-meses-pwa` D-6) -------------------------
+
+const DAY_MS = 864e5
+
+/** Antigüedad de la última preparación: verde < 7 días, amarillo < 30, rojo después. */
+export type PrepareFreshness = "fresca" | "envejeciendo" | "vieja"
+
+export function prepareFreshness(lastPrepare: number, now = Date.now()): PrepareFreshness {
+  const age = now - lastPrepare
+  if (age < 7 * DAY_MS) return "fresca"
+  if (age < 30 * DAY_MS) return "envejeciendo"
+  return "vieja"
+}
+
+/**
+ * Punto de control de una preparación en curso: qué tareas (por `hashKey` de
+ * su queryKey) ya terminaron. Si la red se cae a mitad, "Continuar" salta lo
+ * hecho. Vence a las 24 h: después conviene volver a bajar todo.
+ */
+export interface PrepareCheckpoint {
+  startedAt: number
+  done: string[]
+}
+
+export const CHECKPOINT_MAX_AGE_MS = DAY_MS
+
+export function isCheckpointUsable(cp: PrepareCheckpoint | null, now = Date.now()): cp is PrepareCheckpoint {
+  return cp != null && Array.isArray(cp.done) && now - cp.startedAt < CHECKPOINT_MAX_AGE_MS
+}
+
+/** Selección "todo el año": todos los grupos, asignaturas y periodos. */
+export function fullYearSelection(
+  grupos: PrepareGrupo[],
+  asignaturas: PrepareAsignatura[],
+  periodos: PreparePeriodo[],
+): PrepareSelection {
+  return {
+    grupos: new Set(grupos.map((g) => g.grupoId)),
+    asignaturas: new Set(asignaturas.map((a) => a.asignaturaId)),
+    periodos: new Set(periodos.map((p) => p.id)),
+  }
+}
