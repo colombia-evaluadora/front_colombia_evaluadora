@@ -93,6 +93,8 @@ export interface RosterEstudiante {
   /** Regla 75, pedido al backend: solicitud pendiente sobre este registro. */
   pk_tsolicitud_aprobacion?: number | null
   cambio_tipo_asistencia_valor?: TipoAsistencia | null
+  /** Versión del registro (`fn_asistencia_version`, sso V137) para el CAS de la escritura offline. */
+  version_registro?: string | null
   total_estudiantes: number
   registrados: number
 }

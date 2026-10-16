@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
 import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
-import { OutboxRejectedError, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
+import { isOutboxEnabled, OutboxRejectedError, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -464,6 +464,11 @@ function SesionTabContent({
       }
     }
     const encolados: number[] = []
+    // CAS por estudiante (BE-5): solo con la outbox habilitada (piloto), para
+    // que el conflicto de un cambio hecho sin red no pise en silencio.
+    const conVersiones = isOutboxEnabled()
+    const versionDePk = (pk: number) =>
+      [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ?? null
     try {
       const [altas, solicitudes] = await Promise.all([
         Promise.all(
@@ -473,6 +478,16 @@ function SesionTabContent({
               GRUPO: sesion.fkGrupo,
               FECHA: fecha,
               REGISTROS: registros,
+              ...(conVersiones && {
+                versiones: Object.fromEntries(
+                  registros.map((r) => [
+                    r.fkMatricula,
+                    // "NONE" = el docente vio la sesión sin registro de este estudiante.
+                    rosterPorBloque.get(bloque)?.find((x) => x.fk_tmatricula === r.fkMatricula)?.version_registro ??
+                      "NONE",
+                  ]),
+                ),
+              }),
               ...(sesion.esFormativa
                 ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
                 : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
@@ -485,6 +500,7 @@ function SesionTabContent({
           correcciones.map(async ({ fkMatricula, pk, registro }) => {
             const { pendientes, queued } = await editar.mutateAsync({
               pks: [pk],
+              ...(conVersiones && { versiones: { [pk]: versionDePk(pk) } }),
               body: {
                 TIPO_ASISTENCIA: registro.tipoAsistencia,
                 ...(registro.fkArchivo instanceof File && { SOPORTE_ARCHIVO: registro.fkArchivo }),
