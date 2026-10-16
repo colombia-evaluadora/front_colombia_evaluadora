@@ -4,7 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { upsertMensaje } from "@/features/comunicaciones/chat/api/use-chat-tiempo-real"
-import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { postMultipart } from "@/lib/files"
 import { forosKeys } from "@/features/comunicaciones/foros/api/query-keys"
 import type { ColorEtiqueta, EtiquetaForo, Publicacion } from "@/features/comunicaciones/foros/api/types"
 import { fusionarPublicacion } from "@/features/comunicaciones/foros/lib/foros"
@@ -127,19 +127,38 @@ export interface PublicarInput {
   clientMessageId?: string
 }
 
-// TODO: igual que el chat, el archivo irá por `postMultipart` cuando file-service
-// reciba adjuntos de comunicaciones; hoy viajan nombre y formato.
+/**
+ * Con archivo, el mismo POST viaja como multipart por file-service
+ * (`/files/eval-col/...`), igual que el chat: sube el binario, lo registra en
+ * TARCHIVO y reenvía el cuerpo a comms-service con `ADJUNTO` = su `pk_tarchivo`.
+ * Nombre, formato y peso los toma el servidor del archivo, no del cliente.
+ */
+async function postConAdjunto<T>(ruta: string, campos: Record<string, unknown>, archivo: File | null | undefined) {
+  if (!archivo) return evalCol.postRow<T>(ruta, campos)
+  const crudo = await postMultipart<string | { rows: T[] } | T[]>(`/eval-col${ruta}`, campos, { ADJUNTO: archivo })
+  // file-service reenvía el cuerpo de comms-service tal cual; por si llega como texto.
+  const body = typeof crudo === "string" ? (JSON.parse(crudo) as { rows: T[] }) : crudo
+  const [fila] = Array.isArray(body) ? body : (body?.rows ?? [])
+  if (!fila) throw new Error("La respuesta del envío no trajo el resultado.")
+  return fila
+}
+
 export function usePublicar() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ foroId, titulo, texto, etiquetas, archivo, clientMessageId }: PublicarInput) =>
-      evalCol.postRow<Publicacion>(`/comunicaciones/foros/${foroId}/publicaciones`, {
-        TITULO: titulo,
-        TEXTO: texto,
-        ETIQUETAS: etiquetas,
-        CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
-        ...(archivo && { ADJUNTO_NOMBRE: archivo.name, ADJUNTO_FORMATO: formatoDeArchivo(archivo) }),
-      }),
+      postConAdjunto<Publicacion>(
+        `/comunicaciones/foros/${foroId}/publicaciones`,
+        {
+          TITULO: titulo,
+          TEXTO: texto,
+          // En el multipart file-service reenvía cada campo como texto (sin
+          // arreglos): las etiquetas viajan como "3,7" y el servidor acepta ambas.
+          ETIQUETAS: archivo ? etiquetas.join(",") : etiquetas,
+          CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
+        },
+        archivo,
+      ),
     onSuccess: (p) => {
       queryClient.setQueryData(forosKeys.publicacion(p.id), p)
       void queryClient.invalidateQueries({ queryKey: forosKeys.publicacionesDe(p.foroId) })
@@ -218,12 +237,15 @@ export function useResponder() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ publicacionId, texto, archivo, respuestaA, clientMessageId }: ResponderInput) =>
-      evalCol.postRow<Mensaje>(`${pub(publicacionId)}/respuestas`, {
-        TEXTO: texto,
-        CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
-        ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
-        ...(archivo && { ADJUNTO_NOMBRE: archivo.name, ADJUNTO_FORMATO: formatoDeArchivo(archivo) }),
-      }),
+      postConAdjunto<Mensaje>(
+        `${pub(publicacionId)}/respuestas`,
+        {
+          TEXTO: texto,
+          CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
+          ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
+        },
+        archivo,
+      ),
     onSuccess: (m, { publicacionId }) => {
       // `upsert`: el evento `respuesta.creada` pudo llegar antes que la respuesta.
       queryClient.setQueryData<Mensaje[]>(forosKeys.respuestas(publicacionId), (prev) =>
@@ -256,6 +278,18 @@ export function useEliminarRespuesta() {
       )
       void queryClient.invalidateQueries({ queryKey: forosKeys.publicacion(publicacionId) })
     },
+  })
+}
+
+/**
+ * Quitar el archivo del cuerpo o de una respuesta: su autor o la moderación
+ * (las mismas reglas que eliminar el mensaje). Deja de verse en file-service.
+ */
+export function useQuitarAdjuntoForo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => evalCol.patchRow<Mensaje>(`/comunicaciones/foros/mensajes/${id}/adjunto/eliminar`),
+    onSuccess: (m) => actualizarMensajeEnCache(queryClient, m),
   })
 }
 

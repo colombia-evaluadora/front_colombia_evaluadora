@@ -165,7 +165,15 @@ function VistaPrevia({ archivo: a, onClose }: { archivo: ArchivoCompartido; onCl
 
 // Imagen, PDF y video se ven en el navegador con un token de vista; el resto
 // (Word, Excel…) solo se descarga.
-function VistaBinario({ archivo: a, icono, tipo }: { archivo: ArchivoCompartido; icono: ReactNode; tipo: string }) {
+export function VistaBinario({
+  archivo: a,
+  icono,
+  tipo,
+}: {
+  archivo: Pick<ArchivoCompartido, "formato" | "nombre"> & { archivoId?: number | null }
+  icono: ReactNode
+  tipo: string
+}) {
   const visible = a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
   const { data: url, isPending, isError } = useArchivoViewUrl(visible ? a.archivoId : null)
   if (visible && isPending) return <Skeleton className="h-80 w-full" />

@@ -11,7 +11,6 @@ import {
   BellIcon,
   BellSlashIcon,
   CheckCircleIcon,
-  FileIcon,
   HashIcon,
   LockIcon,
   PencilIcon,
@@ -24,6 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 import type { Mensaje, Miembro } from "@/features/comunicaciones/chat/api/types"
+import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import { fechaCorta, iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
@@ -34,6 +34,7 @@ import {
   useEditarRespuesta,
   useEliminarPublicacion,
   useEliminarRespuesta,
+  useQuitarAdjuntoForo,
   useResponder,
 } from "@/features/comunicaciones/foros/api/mutations/use-acciones-foro"
 import { usePublicacionQuery, useRespuestasQuery } from "@/features/comunicaciones/foros/api/query/use-foros-query"
@@ -181,7 +182,7 @@ function Detalle({
           {p.mensaje && (
             <div className="space-y-3">
               <TextoFormateado texto={p.mensaje.texto} menciones={p.mensaje.menciones} />
-              <Adjunto mensaje={p.mensaje} />
+              <Adjunto mensaje={p.mensaje} puedeModerar={foro.puedeModerar} />
               <ReaccionesForo mensaje={p.mensaje} disabled={so.disabled} />
             </div>
           )}
@@ -372,16 +373,6 @@ function Detalle({
   )
 }
 
-function Adjunto({ mensaje: m }: { mensaje: Mensaje }) {
-  if (!m.adjunto) return null
-  return (
-    <p className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-      <FileIcon aria-hidden className="size-4 text-muted-foreground" />
-      {m.adjunto.eliminadoEn ? <span className="text-muted-foreground">Archivo eliminado</span> : m.adjunto.nombre}
-    </p>
-  )
-}
-
 function RespuestaItem({
   nodo,
   profundidad,
@@ -469,7 +460,7 @@ function RespuestaItem({
         ) : (
           <div className="mt-1.5 space-y-2">
             <TextoFormateado texto={m.texto} menciones={m.menciones} />
-            <Adjunto mensaje={m} />
+            <Adjunto mensaje={m} puedeModerar={foro.puedeModerar} />
           </div>
         )}
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -662,5 +653,29 @@ function MoverEtiquetasDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** El archivo lo quita su autor o la moderación del foro (como eliminar el mensaje). */
+function Adjunto({ mensaje: m, puedeModerar }: { mensaje: Mensaje; puedeModerar: boolean }) {
+  const { notify } = useNotify()
+  const so = useOnlineOnly()
+  const quitar = useQuitarAdjuntoForo()
+  if (!m.adjunto) return null
+  return (
+    <AdjuntoMensaje
+      mensaje={m}
+      className="mt-0"
+      eliminando={quitar.isPending || so.disabled}
+      onEliminar={
+        m.esPropio || puedeModerar
+          ? () =>
+              quitar.mutate(m.id, {
+                onSuccess: () => notify("Se quitó el archivo."),
+                onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+              })
+          : undefined
+      }
+    />
   )
 }
