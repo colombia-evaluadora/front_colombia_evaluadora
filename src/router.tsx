@@ -966,7 +966,7 @@ export const chatRoute = createRoute({
 
 const ForosPage = lazyRouteComponent(() => import("@/features/comunicaciones/foros/pages/foros-page"), "ForosPage")
 
-// Foros (publicaciones con hilos) sobre canales FORO de comms-service. Menú FOROS (sso V564).
+// Foros (publicaciones con hilos) sobre canales FORO de comms-service. Menú FOROS (sso V586).
 export const forosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.comunicacionesForos.path,

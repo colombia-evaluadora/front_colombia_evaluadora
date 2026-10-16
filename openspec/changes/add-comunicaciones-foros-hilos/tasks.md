@@ -2,8 +2,8 @@
 
 ## 1. Backend (repo `sso`)
 - [x] 1.1 V560 editada: `tcanal.tipo` admite `FORO` e índice de nombre único para `CANAL` y `FORO`
-- [x] 1.2 V563: `tforo_etiqueta`, `thilo` (FTS español, GIN), `thilo_etiqueta`, `thilo_mensaje`, `thilo_seguidor`, auditoría CDC
-- [x] 1.3 V564: menú `FOROS` (`/app/comunicaciones/foros`) para los roles que tienen `COMUNICACIONES`
+- [x] 1.2 V585: `tforo_etiqueta`, `thilo` (FTS español, GIN), `thilo_etiqueta`, `thilo_mensaje`, `thilo_seguidor`, auditoría CDC
+- [x] 1.3 V586: menú `FOROS` (`/app/comunicaciones/foros`) para los roles que tienen `COMUNICACIONES`
 - [x] 1.4 `comms-service`: `foro/*` (REST, reglas, notificaciones, tópico `foro:`), política `comms.politica.foros`
 - [x] 1.5 `notification-service`: tipos `FORO_MENCION` y `FORO_RESPUESTA` en el catálogo
 - [x] 1.6 Test de integración (Testcontainers) del flujo completo y checks de Flyway
