@@ -63,6 +63,14 @@ export function setAuthToken(token: string | null) {
 }
 
 /**
+ * Para clientes que no pasan por axios (el streaming SSE del asistente usa
+ * `fetch`: axios en el navegador no expone el cuerpo como stream).
+ */
+export function getAuthToken(): string | null {
+  return authToken
+}
+
+/**
  * Endpoints que NO deben llevar `Authorization`.
  *
  * El gateway valida el Bearer en un filtro, antes de mirar qué endpoint es: si
@@ -422,7 +430,8 @@ function mensajeDelCuerpo(data: unknown): string {
 
   const cuerpo = data as Record<string, unknown>
 
-  for (const clave of ["message", "detail", "error_description"]) {
+  // `mensaje`: cuerpo de error del agente de ai-control-service (`ErrorDto`).
+  for (const clave of ["message", "mensaje", "detail", "error_description"]) {
     const valor = cuerpo[clave]
     if (typeof valor === "string" && valor.trim() !== "") return valor.trim()
   }

@@ -53,9 +53,11 @@ import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicacio
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
 import { pushHandlers } from "@/mocks/handlers/notificaciones/push"
 import { realtimeHandlers } from "@/mocks/handlers/realtime"
+import { agenteHandlers } from "@/mocks/handlers/agente"
 
 export const handlers = [
   ...authHandlers,
+  ...agenteHandlers,
   ...healthHandlers,
   ...verificacionBoletinHandlers,
   ...reportesHandlers,
