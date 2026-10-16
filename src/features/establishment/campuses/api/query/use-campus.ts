@@ -1,3 +1,4 @@
+import { proveedorMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -65,6 +66,7 @@ async function fetchCampus(id: number): Promise<CampusQueryResult> {
 export function useCampusQuery(id: number | null, enabled = true) {
   return useQuery({
     queryKey: ["campuses", id],
+    meta: proveedorMeta(),
     queryFn: () => fetchCampus(id as number),
     enabled: enabled && Boolean(id),
   })

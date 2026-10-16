@@ -1,3 +1,4 @@
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -36,5 +37,5 @@ async function fetchPreferencias(): Promise<Preferencias> {
 }
 
 export function usePreferenciasQuery() {
-  return useQuery({ queryKey: preferenciasQueryKey, queryFn: fetchPreferencias })
+  return useQuery({ queryKey: preferenciasQueryKey, queryFn: fetchPreferencias, meta: offlineMeta(TTL_OFFLINE.detalle) })
 }

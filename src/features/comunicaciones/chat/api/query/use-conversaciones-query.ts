@@ -1,3 +1,4 @@
+import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -13,6 +14,7 @@ async function fetchConversaciones() {
 export function useConversacionesQuery() {
   return useQuery({
     queryKey: chatKeys.conversaciones,
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     queryFn: fetchConversaciones,
     // Sin gateway de tiempo real (`VITE_APP_REALTIME_URL` vacío) se vuelve al polling.
     refetchInterval: realtimeEnabled ? false : 30_000,

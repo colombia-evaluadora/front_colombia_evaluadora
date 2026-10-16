@@ -6,7 +6,7 @@ import { ArrowCounterClockwiseIcon, CloudOffIcon } from "@/components/ui/icons"
 const OFFLINE_EMPTY_COPY = {
   soloEnLinea: {
     title: "Esta sección necesita conexión",
-    description: "Vuelve a intentarlo cuando tengas internet. Mientras tanto puedes usar Planeador, Planilla y Asistencia.",
+    description: "Vuelve a intentarlo cuando tengas internet. Es una pantalla de administración. Mientras tanto puedes seguir en Planeador, Planilla, Asistencia, Informes, Referentes y Comunicaciones.",
   },
   sinDatosGuardados: {
     title: "Sin datos guardados",

@@ -1,3 +1,4 @@
+import { proveedorMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -30,6 +31,7 @@ export function fetchEstablishmentsOptions(): Promise<EstablishmentsOptionsResul
 export function useEstablishmentsOptionsQuery(enabled = true) {
   return useQuery({
     queryKey: ["establishments", "options"],
+    meta: proveedorMeta(),
     queryFn: fetchEstablishmentsOptions,
     select: (result) => result.rows,
     enabled,

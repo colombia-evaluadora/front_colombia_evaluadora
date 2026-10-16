@@ -178,7 +178,7 @@ describe("getOfflineBannerMessage", () => {
   })
   it("offline en vista solo en línea", () => {
     expect(getOfflineBannerMessage({ status: "offline", since }, "/app/cobertura/matricula")).toBe(
-      "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador y Asistencia.",
+      "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador, Planilla, Asistencia, Informes y Referentes.",
     )
   })
   it("degradado", () => {
