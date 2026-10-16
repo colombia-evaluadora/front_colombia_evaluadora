@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { isOutboxFileRef, resolveUploadFile, writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { postMultipart } from "@/lib/files"
@@ -10,7 +11,7 @@ import { resolveAplicaAId } from "@/features/planeador/api/query/use-aplica-a-ca
 import type { Adaptacion } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
-interface UpdateAdaptacionesInput {
+export interface UpdateAdaptacionesInput {
   actividadId: number
   adaptaciones: Adaptacion[]
 }
@@ -56,18 +57,23 @@ interface UpdateAdaptacionesInput {
 async function subirArchivoAdaptacion(
   actividadId: number,
   archivo: { blobUrl: string; nombre: string },
+  req?: WriteRequest,
 ): Promise<number> {
-  const blob = await fetch(archivo.blobUrl).then((r) => r.blob())
   const nombre = archivo.nombre || "plantilla"
+  const file = await resolveUploadFile(archivo.blobUrl, nombre, req)
   const respuesta = await postMultipart<RowsEnvelope<{ fk_tarchivo: number }> | { fk_tarchivo: number }>(
     `/eval-col/planeador/actividades/${actividadId}/adaptaciones/archivo`,
     {},
-    { ARCHIVO: new File([blob], nombre, { type: blob.type }) },
+    { ARCHIVO: file },
+    { background: req?.background },
   )
   return unwrapRow<{ fk_tarchivo: number }>(respuesta).fk_tarchivo
 }
 
-async function updateAdaptacionesActividad({ actividadId, adaptaciones }: UpdateAdaptacionesInput): Promise<void> {
+export async function updateAdaptacionesActividad(
+  { actividadId, adaptaciones }: UpdateAdaptacionesInput,
+  req?: WriteRequest,
+): Promise<void> {
   const cuerpo = await Promise.all(
     adaptaciones.map(async (adaptacion) => {
       const usaVersionModificada = adaptacion.versionModificada && adaptacion.versionModificada !== "no" ? "S" : "N"
@@ -133,7 +139,11 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
         adaptacion.archivos.map((archivo) =>
           archivo.fkTarchivo !== undefined
             ? archivo.fkTarchivo
-            : subirArchivoAdaptacion(actividadId, { blobUrl: archivo.blobUrl ?? "", nombre: archivo.nombre }),
+            : isOutboxFileRef(archivo.blobUrl) && req?.files
+              ? req.files.memo(archivo.blobUrl, () =>
+                  subirArchivoAdaptacion(actividadId, { blobUrl: archivo.blobUrl ?? "", nombre: archivo.nombre }, req),
+                )
+              : subirArchivoAdaptacion(actividadId, { blobUrl: archivo.blobUrl ?? "", nombre: archivo.nombre }, req),
         ),
       )
       return { ...base, formatoAdaptacion, archivos, nombrePlantilla: adaptacion.nombrePlantilla }
@@ -141,7 +151,7 @@ async function updateAdaptacionesActividad({ actividadId, adaptaciones }: Update
   )
   await api.put(`/eval-col/planeador/actividades/${actividadId}/adaptaciones`, {
     ADAPTACIONES: JSON.stringify(cuerpo),
-  })
+  }, writeConfig(req))
 }
 
 interface UseUpdateAdaptacionesActividadOptions {
@@ -160,7 +170,7 @@ export function useUpdateAdaptacionesActividad({
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: updateAdaptacionesActividad,
+    mutationFn: (input: UpdateAdaptacionesInput) => updateAdaptacionesActividad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)

@@ -18,6 +18,8 @@ import { handlers } from "@/mocks/handlers"
  * - `"conflict"`: las escrituras de asistencia y planilla responden 409
  *   `OFFLINE_CONFLICT` (CAS de la Fase 2 offline, sso V137/V138), con el
  *   valor actual en `detail`; el resto sigue normal.
+ * - `"planeador-writes"`: las escrituras de actividades y unidades del
+ *   planeador (sagas de la Fase 3) fallan como `Network Error`.
  * Sin la clave no hacen nada (`return` → sigue el handler real).
  */
 function currentFault(): string | null {
@@ -41,6 +43,10 @@ function conflictFault() {
   )
 }
 
+function planeadorWritesFault() {
+  if (currentFault() === "planeador-writes") return HttpResponse.error()
+}
+
 const faultHandlers = [
   http.all("/api/*", () => {
     const fault = currentFault()
@@ -57,6 +63,10 @@ const faultHandlers = [
     sessionStorage.setItem("msw:calificar-count", JSON.stringify(counts))
     return HttpResponse.json({ rows: [{ calificacion: 100, solicitudes_pendientes: [] }] })
   }),
+  http.post("/api/eval-col/planeador/unidades", () => planeadorWritesFault()),
+  http.put("/api/eval-col/planeador/unidades/:id", () => planeadorWritesFault()),
+  http.post("/api/eval-col/planeador/actividades", () => planeadorWritesFault()),
+  http.put("/api/eval-col/planeador/actividades/:id", () => planeadorWritesFault()),
 ]
 
 export const worker = setupWorker(...faultHandlers, ...handlers)

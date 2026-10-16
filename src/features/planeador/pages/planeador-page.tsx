@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
@@ -512,6 +513,7 @@ function PlaneadorPageContent() {
         </TableScreenToolbar>
       </TableScreenHeader>
 
+      <PendingCreations tipo="actividad" />
       <TableScreenBody>
           <>
             <PlaneadorLecturaBanner className="mb-4" />

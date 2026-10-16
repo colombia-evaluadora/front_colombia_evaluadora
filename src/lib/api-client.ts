@@ -6,6 +6,7 @@ import { paths } from "@/config/paths"
 import { isNetworkError } from "@/lib/network-error"
 import { noteServerTime } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { assertNoTmpIds } from "@/lib/offline/outbox/tmp-id"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
 
@@ -298,6 +299,12 @@ export function idempotencyKeyInterceptor(config: InternalAxiosRequestConfig) {
 
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.request.use(idempotencyKeyInterceptor)
+// Fase 3: un id temporal `tmp:<uuid>` de una saga offline nunca llega al
+// backend; si se escapara (bug de remapeo) la request falla acá, antes de salir.
+api.interceptors.request.use((config) => {
+  assertNoTmpIds(config)
+  return config
+})
 api.interceptors.response.use(
   // El response interceptor desenvuelve `response.data` — todas las llamadas
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.

@@ -15,32 +15,30 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
-import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
-import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
-import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
-import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
-import {
-  useSetEstudiantesActividad,
-  type SetEstudiantesResult,
-} from "@/features/planeador/api/mutations/set-estudiantes-actividad"
-import {
-  tieneDefinicionInstrumento,
-  useUpdateInstrumentoActividad,
-} from "@/features/planeador/api/mutations/update-instrumento-actividad"
-import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
+import type { SetEstudiantesResult } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import {
   ValidacionCoordinadorAprobar,
   ValidacionCoordinadorEstado,
 } from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { buildEditarActividadSaga } from "@/features/planeador/offline/build-sagas"
+import { runSaga } from "@/features/planeador/offline/run-saga"
+import { SAGA_KINDS } from "@/features/planeador/offline/saga-handlers"
+import {
+  fallosDeSaga,
+  mensajeErrorSaga,
+  recursosOmitidosDe,
+  SAGA_PARTIAL_QUEUED_MESSAGE,
+  SAGA_QUEUED_MESSAGE,
+} from "@/features/planeador/offline/saga-messages"
 
 const FORM_ID = "editar-actividad-form"
 
@@ -149,8 +147,6 @@ function EditarActividadPageContent({
 
   // Para resolver si la unidad NUEVA (si el docente la cambió en el
   // select) calcula por "Ponderado" — ver el comentario de `handleSubmit`.
-  const { data: unidadesResult } = useUnidadesQuery()
-  const unidades = unidadesResult?.rows ?? []
 
   // Precarga la rúbrica/lista de cotejo/escala/personalizado YA GUARDADA
   // (el detalle real no la trae, ver `use-instrumento-actividad-form-query.ts`)
@@ -189,203 +185,70 @@ function EditarActividadPageContent({
         }
       : undefined
 
-  // El "éxito"/navegación ya NO vive en `onSuccess` de esta mutación en
-  // particular — ver el comentario grande en `handleSubmit`, que explica
-  // por qué: antes navegaba apenas ESTA PUT terminaba, sin esperar a que
-  // las demás (instrumento, materiales, adaptaciones, estudiantes) hubieran
-  // siquiera terminado de mandarse, así que un error ahí quedaba mudo (la
-  // pantalla ya se había ido) y el docente veía "actividad actualizada"
-  // aunque la definición del instrumento no se hubiera guardado.
-  const updateMutation = useUpdateActividad()
-
-  // `update-actividad.ts` (`PUT /actividades/:id`) nunca manda `FK_TUNIDAD`:
-  // reasignar la unidad de una actividad ya vinculada se delega acá, en las
-  // rutas dedicadas de la carpeta 2 (`PUT .../unidades/:id/actividades/:act`
-  // para vincular/mover, `PATCH .../unidades/actividades/:act` para
-  // desvincular) — antes el `<Select>` de "Unidad temática asociada" del
-  // form dejaba elegir otra unidad sin que el guardado hiciera nada con
-  // eso, y encima el PUT seguía mandando `PONDERACION` calculado contra la
-  // unidad NUEVA (todavía no aplicada) mientras el backend seguía
-  // validándola contra la unidad VIEJA (la única que de verdad seguía
-  // vinculada) — de ahí el 400 al cambiar de unidad en una actividad que
-  // ya tenía una.
-  const linkActividad = useLinkActividadUnidad()
-  const unlinkActividad = useUnlinkActividadUnidad({ unidadId: actividad?.unidad.id ?? 0 })
-  // Reemplazo completo (`PUT .../materiales`) — se llama solo cuando la
-  // lista de recursos cambió (ver `handleSubmit`), no en cada guardado.
-  const updateMateriales = useUpdateMaterialesActividad({
-    mutationConfig: {
-      // Éxito PARCIAL, no un error — `recursosOmitidos` no aborta el resto
-      // de `handleSubmit`, así que se avisa acá mismo en vez de por la
-      // excepción del try/catch grande.
-      onSuccess: ({ recursosOmitidos }) => {
-        if (recursosOmitidos.length > 0) {
-          notify(
-            `No se guardaron estos materiales de tipo "Archivo" (sin un archivo cargado): ${recursosOmitidos.join(", ")}.`,
-            { variant: "error" },
-          )
-        }
-      },
-    },
-  })
-  // Igual que `updateMateriales`: se llama solo cuando HAY algo que definir
-  // (ver `tieneDefinicionInstrumento` — el detalle real no precarga la
-  // rúbrica/lista de cotejo/escala ya guardada, así que "vacío" acá
-  // significa "el docente no tocó esta sección", no "la borró a propósito").
-  const updateInstrumento = useUpdateInstrumentoActividad()
-  // Reemplazo completo (`PUT .../adaptaciones`) — mismo criterio que
-  // `updateMateriales`: solo se llama si la lista cambió.
-  const updateAdaptaciones = useUpdateAdaptacionesActividad()
-  // `PUT .../estudiantes` — endpoint suelto de "Estudiantes", igual que
-  // materiales/adaptaciones (ver `set-estudiantes-actividad.ts`). Se llama
-  // solo si la selección de verdad cambió frente a lo que ya traía el
-  // detalle (`matriculasIds` arranca con la selección REAL, V452 — ver
-  // `use-actividad-detalle-query.ts`), mismo criterio de "solo si cambió"
-  // que `updateMateriales`/`updateAdaptaciones` más abajo.
-  const setEstudiantes = useSetEstudiantesActividad()
-  const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
+  // Guardado como saga (Fase 3 offline, `features/planeador/offline`): el
+  // orden real de siempre —unidad (vincular/desvincular) → PUT de la
+  // actividad (con evidencias y criterios) → materiales → instrumento →
+  // estudiantes → adaptaciones—, cada paso solo si cambió y con su
+  // `Idempotency-Key` fija. Con red se envían desde acá y se detiene en el
+  // primer error (nada de "actividad actualizada" con un paso mudo, ver la
+  // historia en git de este archivo); sin red, o si la red se cae a mitad, lo
+  // que falta queda en la outbox. La edición encolada verifica al sincronizar
+  // la regla 37 y que nadie haya cambiado la actividad mientras tanto.
+  const { data: unidadesResult } = useUnidadesQuery()
+  const unidades = unidadesResult?.rows ?? []
+  const [guardando, setGuardando] = useState(false)
+  const escritura = useOfflineWritable("Necesitas conexión para editar actividades en este equipo.")
 
   async function handleSubmit(values: Actividad) {
+    // Regla 37: la actividad ya no se edita (el form ya está en solo lectura;
+    // esto es solo una red de seguridad por si llega a dispararse el submit).
     if (motivoNoEditable(actividad)) return
-    if (!actividad) return
-    const unidadAnteriorId = actividad.unidad.id
-    const unidadNuevaId = values.unidad.id
-
-    if (unidadNuevaId !== unidadAnteriorId) {
-      try {
-        if (unidadNuevaId === 0) {
-          await unlinkActividad.mutateAsync(actividad.id)
-        } else {
-          const unidadNueva = unidades.find((u) => u.id === unidadNuevaId)
-          const esPonderado = unidadNueva?.metodoCalculo === "Ponderado"
-          await linkActividad.mutateAsync({
-            unidadId: unidadNuevaId,
-            actividadId: actividad.id,
-            // Mismo criterio que `DialogAgregarActividad.handleVincular`:
-            // solo se manda la ponderación tipeada si la unidad NUEVA
-            // calcula por "Ponderado" — con Promedio simple/Suma de puntos
-            // el backend rechaza que se mande `PONDERACION` (ni siquiera en
-            // `0`), por eso `omitirPonderacion` la saca del body entero.
-            ponderacion: esPonderado ? values.ponderacion : 0,
-            omitirPonderacion: !esPonderado,
-            // Obligatorio en `true` cuando la actividad YA estaba en OTRA
-            // unidad (no una huérfana que recién se vincula).
-            permitirMoverDeUnidad: unidadAnteriorId !== 0,
-          })
-        }
-      } catch (error) {
-        notify(getErrorMessage(error), { variant: "error" })
-        return
-      }
-    }
-
-    // De acá para abajo, TODO se encadena con `await` dentro de un único
-    // try/catch — antes cada mutación se disparaba con `.mutate()` (sin
-    // esperar) e `onSuccess`/`onClose` de `updateMutation` navegaba de
-    // vuelta al Planeador apenas ESA PUT terminaba, sin importar si las
-    // demás (instrumento, materiales, adaptaciones, estudiantes) habían
-    // siquiera empezado. Eso rompía de dos formas confirmadas en producción:
-    //
-    // 1. `PUT .../instrumento` exige que `TACTIVIDAD.FK_TLV_INSTRUMENTO_
-    //    EVALUACION` YA esté fijado al instrumento que se está definiendo
-    //    (ver `update-instrumento-actividad.ts`) — y quien fija ese campo
-    //    es justamente `updateMutation`, EN LA MISMA PUT que antes no se
-    //    esperaba. Cambiar de instrumento al editar (ej. a "Escala de
-    //    valoración") disparaba las dos PUT casi a la vez y la de
-    //    instrumento le ganaba la carrera a la del campo que necesitaba:
-    //    el backend la rechazaba con el error del instrumento VIEJO
-    //    ("p_items debe ser...", "p_criterios debe ser..." — los nombres
-    //    de parámetro de rúbrica/lista de cotejo, no de escala).
-    // 2. El error de CUALQUIERA de las otras mutaciones (`notify()`, no
-    //    `queueNotice()`) se perdía: `onClose()` ya había desmontado esta
-    //    pantalla (y su `NoticeProvider`) para cuando esa mutación
-    //    resolvía, así que el docente veía "Actividad actualizada
-    //    correctamente" y volvía al Planeador aunque, por ejemplo, el
-    //    instrumento hubiera fallado con "valorMin debe ser menor que
-    //    valorMax" y NUNCA se hubiera guardado.
-    //
-    // Ahora nada de esto navega ni avisa éxito hasta que TODO lo que tenía
-    // algo que guardar terminó bien; el primer error frena el resto y se
-    // avisa con la pantalla todavía montada.
-    // Qué paso se estaba guardando cuando falló: pasado el PUT de la
-    // actividad, sus datos YA quedaron guardados aunque falle lo que sigue
-    // (instrumento, materiales…), y el aviso tiene que decirlo — si no, el
-    // docente no sabe qué quedó guardado y qué no.
-    let pasoEnCurso: string | null = null
+    if (!actividad || guardando) return
+    setGuardando(true)
+    let run: Awaited<ReturnType<typeof runSaga>>
     try {
-      // `EVIDENCIAS`/`CRITERIOS` viajan DENTRO de este mismo PUT como
-      // reemplazo completo (ver `update-actividad.ts`) — ya no hace falta
-      // un request aparte por cada evidencia/criterio nuevo.
-      await updateMutation.mutateAsync({ actividadId: actividad.id, data: values })
+      const saga = await buildEditarActividadSaga(values, {
+        actividad,
+        unidades,
+        instrumentosPermitidos: actividad.camposDisponibles?.evaluacion.instrumentosPermitidos,
+      })
+      run = await runSaga(saga, { continueOnError: false })
+    } catch (error) {
+      notify(mensajeErrorSaga(error), { variant: "error" })
+      setGuardando(false)
+      return
+    }
+    setGuardando(false)
 
-      // `PUT .../materiales` reemplaza TODA la lista — solo se llama si de
-      // verdad cambió, para no pegarle al backend en cada guardado cuando el
-      // docente tocó otro campo (ej. fechas) y dejó los recursos intactos.
-      if (JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)) {
-        pasoEnCurso = "los materiales de apoyo"
-        await updateMateriales.mutateAsync({ actividadId: actividad.id, recursos: values.recursos })
-      }
-
-      if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
-        pasoEnCurso = "la definición del instrumento de evaluación"
-        await updateInstrumento.mutateAsync({ actividadId: actividad.id, actividad: values })
-      }
-
-      // "Estudiantes" va ANTES que las adaptaciones (mismo orden que
-      // `fn_actividad_crear_interno`, V496.2: "estudiantes antes que
-      // adaptaciones"): `fn_actividad_validar_adaptacion_estudiantes` exige
-      // que cada estudiante de la adaptación ya esté en la actividad, así
-      // que sumar a alguien en "Estudiantes de la {rótulo}" y marcarlo en
-      // una adaptación en el MISMO guardado se rechazaba si las
-      // adaptaciones salían primero.
-      // "Estudiantes": solo si de verdad cambió (ver el comentario de
-      // `setEstudiantes` arriba) — cubre tanto puntualizar a un subconjunto
-      // como volver a "Todo el grupo" (`asignarTodoElGrupo` pasa de `false` a
-      // `true`, que antes nunca se mandaba porque `matriculasIds` quedaba
-      // vacío en ese caso).
-      const estudiantesCambiaron =
-        values.asignarTodoElGrupo !== actividad.asignarTodoElGrupo ||
-        (!values.asignarTodoElGrupo &&
-          JSON.stringify([...values.matriculasIds].sort((a, b) => a - b)) !==
-            JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
-      let avisoEstudiantes = ""
-      if (estudiantesCambiaron) {
-        pasoEnCurso = "los estudiantes de la actividad"
-        const resultado = await setEstudiantes.mutateAsync({
-          actividadId: actividad.id,
-          matriculasIds: values.matriculasIds,
-          asignarTodoElGrupo: values.asignarTodoElGrupo,
-        })
-        avisoEstudiantes = construirAvisoEstudiantes(resultado)
-      }
-
-      // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
-      // "solo si cambió" que `updateMateriales`. Sin los estudiantes que el
-      // docente sacó de la actividad (ver `adaptacionesConEstudiantesDeLaActividad`).
-      const adaptaciones = adaptacionesConEstudiantesDeLaActividad(values)
-      if (JSON.stringify(adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
-        pasoEnCurso = "las adaptaciones curriculares"
-        await updateAdaptaciones.mutateAsync({ actividadId: actividad.id, adaptaciones })
-      }
-
-      // `queueNotice`, no `notify`: recién ahora se navega, así que el
-      // aviso lo tiene que mostrar el `NoticeProvider` del Planeador, no el
-      // de esta pantalla (que está a punto de desmontarse). Un solo aviso
-      // por pantalla (reemplaza al anterior) — si hubo estudiantes
-      // afectados por salir de adaptaciones (Regla 46) o con PIAR que
-      // quedaron fuera (Regla 48), se agrega al mismo mensaje en vez de
-      // perderlo.
-      queueNotice(`Actividad actualizada correctamente.${avisoEstudiantes}`)
+    if (run.queued) {
+      queueNotice(run.queuedFrom === 0 ? SAGA_QUEUED_MESSAGE : SAGA_PARTIAL_QUEUED_MESSAGE)
       setIsDirty(false)
       onClose()
-    } catch (error) {
+      return
+    }
+
+    const fallido = run.outcomes.find((o) => !o.ok)
+    if (fallido) {
+      const datosGuardados = run.outcomes.some((o) => o.ok && o.kind === SAGA_KINDS.actividadEditar)
       notify(
-        pasoEnCurso
-          ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${pasoEnCurso}: ${getErrorMessage(error)}`
-          : getErrorMessage(error),
+        datosGuardados
+          ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${fallosDeSaga([fallido])[0]}`
+          : getErrorMessage(fallido.error),
         { variant: "error" },
       )
+      return
     }
+
+    const recursosOmitidos = recursosOmitidosDe(run.outcomes)
+    const estudiantes = run.outcomes.find((o) => o.kind === SAGA_KINDS.actividadEstudiantes)
+    const avisoEstudiantes = estudiantes ? construirAvisoEstudiantes(estudiantes.result as SetEstudiantesResult) : ""
+    const avisoRecursos =
+      recursosOmitidos.length > 0
+        ? ` No se guardaron estos materiales de tipo "Archivo" (sin un archivo cargado): ${recursosOmitidos.join(", ")}.`
+        : ""
+    queueNotice(`Actividad actualizada correctamente.${avisoEstudiantes}${avisoRecursos}`)
+    setIsDirty(false)
+    onClose()
   }
 
   // Misma condición que tenía la card de validación (se mostraba con el form
@@ -482,14 +345,15 @@ function EditarActividadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={updateMutation.isPending || isSavingUnidad}
+              disabled={guardando || escritura.disabled}
+              title={escritura.tooltip ?? undefined}
             >
-              {updateMutation.isPending || isSavingUnidad ? (
+              {guardando ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
                 <CheckIcon data-icon="inline-start" />
               )}
-              {updateMutation.isPending || isSavingUnidad ? "Guardando..." : "Guardar"}
+              {guardando ? "Guardando..." : "Guardar"}
             </Button>
           )}
         </div>

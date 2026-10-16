@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
-interface LinkActividadInput {
+export interface LinkActividadInput {
   unidadId: number
   actividadId: number
   /** `null` no toca el peso actual (semántica real de `PONDERACION` NULL) —
@@ -30,18 +31,21 @@ interface LinkActividadResponse {
   message?: string
 }
 
-function linkActividadUnidad({
+export function linkActividadUnidad(
+  {
   unidadId,
   actividadId,
   ponderacion,
   omitirPonderacion,
   permitirMoverDeUnidad,
-}: LinkActividadInput): Promise<LinkActividadResponse> {
+}: LinkActividadInput,
+  req?: WriteRequest,
+): Promise<LinkActividadResponse> {
   const body: Record<string, unknown> = {
     PERMITIR_MOVER_DE_UNIDAD: permitirMoverDeUnidad ?? false,
   }
   if (!omitirPonderacion) body.PONDERACION = ponderacion
-  return api.put(`/eval-col/planeador/unidades/${unidadId}/actividades/${actividadId}`, body)
+  return api.put(`/eval-col/planeador/unidades/${unidadId}/actividades/${actividadId}`, body, writeConfig(req))
 }
 
 interface UseLinkActividadUnidadOptions {
@@ -60,7 +64,7 @@ export function useLinkActividadUnidad({ mutationConfig }: UseLinkActividadUnida
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: linkActividadUnidad,
+    mutationFn: (input: LinkActividadInput) => linkActividadUnidad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
       onSuccess?.(data, variables, ...rest)

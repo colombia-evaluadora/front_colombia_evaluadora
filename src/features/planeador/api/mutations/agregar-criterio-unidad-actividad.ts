@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -26,13 +27,13 @@ interface AgregarCriterioInput {
  * (`update-actividad.ts`, sso V492), así que tildar y destildar funciona
  * igual que al crear.
  */
-function agregarCriterioUnidadActividad({
-  actividadId,
-  criterioUnidadId,
-}: AgregarCriterioInput): Promise<unknown> {
+export function agregarCriterioUnidadActividad(
+  { actividadId, criterioUnidadId }: AgregarCriterioInput,
+  req?: WriteRequest,
+): Promise<unknown> {
   return api.post(`/eval-col/planeador/actividades/${actividadId}/criterios`, {
     FK_TCRITERIO_UNIDAD: criterioUnidadId,
-  })
+  }, writeConfig(req))
 }
 
 interface UseAgregarCriterioUnidadActividadOptions {
@@ -46,7 +47,7 @@ export function useAgregarCriterioUnidadActividad({
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: agregarCriterioUnidadActividad,
+    mutationFn: (input: AgregarCriterioInput) => agregarCriterioUnidadActividad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
@@ -44,9 +45,9 @@ interface CreateActividadResponse {
   id: number
 }
 
-async function createActividad(actividad: Actividad): Promise<CreateActividadResponse> {
+export async function createActividad(actividad: Actividad, req?: WriteRequest): Promise<CreateActividadResponse> {
   if (env.ENABLE_API_MOCKING) {
-    const created = await api.post<Actividad>("/eval-col/planeador/actividades", actividad)
+    const created = await api.post<Actividad>("/eval-col/planeador/actividades", actividad, writeConfig(req))
     return { id: created.id }
   }
   if (actividad.gradoId == null || actividad.grupoId == null || actividad.asignaturaId == null) {
@@ -160,7 +161,7 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
   // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
   // primer (y único) campo de la fila (mismo contrato que `POST /unidades`,
   // confirmado en la colección Postman `planeador-flujo-unidad-actividad`).
-  const row = await evalCol.postRow<Record<string, number>>("/planeador/actividades", body)
+  const row = await evalCol.postRow<Record<string, number>>("/planeador/actividades", body, writeConfig(req))
   const [pk] = Object.values(row)
   if (pk == null) throw new Error("La creación de la actividad no devolvió su identificador.")
   return { id: pk }
@@ -175,7 +176,7 @@ export function useCreateActividad({ mutationConfig }: UseCreateActividadOptions
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: createActividad,
+    mutationFn: (actividad: Actividad) => createActividad(actividad),
     onSuccess: (...args) => {
       // Refresca rail, calendario y cards de resumen para que la nueva
       // actividad aparezca al volver al Planeador — no solo el listado

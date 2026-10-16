@@ -20,6 +20,7 @@ import { discardOp, retryAll, retryOp, syncNow } from "@/lib/offline/outbox/engi
 import { useOutboxOps, useOutboxSummary } from "@/lib/offline/outbox/hooks"
 import { dependentsOf } from "@/lib/offline/outbox/policy"
 import { getOutboxHandler } from "@/lib/offline/outbox/registry"
+import { groupSagas, sagaOf, type SagaView } from "@/lib/offline/outbox/saga"
 import { getOutboxUser, readLog } from "@/lib/offline/outbox/store"
 import type { OutboxOp } from "@/lib/offline/outbox/types"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils"
 
 import { ConflictDialog, legible } from "@/features/offline/components/conflict-dialog"
 import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
+import { SagaList } from "@/features/offline/components/saga-list"
 import type { PendientesSearch } from "@/features/offline/schema"
 import { pendientesRoute } from "@/router"
 
@@ -50,6 +52,22 @@ function filtrar(ops: OutboxOp[], estado: PendientesSearch["estado"]): OutboxOp[
       return ops.filter((o) => o.status === "done")
     default:
       return ops.filter((o) => o.status !== "done")
+  }
+}
+
+/** Sagas (guardados multi-paso, Fase 3) con el mismo filtro que las ops sueltas. */
+function filtrarSagas(sagas: SagaView[], estado: PendientesSearch["estado"]): SagaView[] {
+  switch (estado) {
+    case "pendientes":
+      return sagas.filter((s) => s.status === "pending" || s.status === "syncing")
+    case "error":
+      return sagas.filter((s) => s.status === "partial" || s.status === "rejected")
+    case "conflictos":
+      return sagas.filter((s) => s.status === "conflict")
+    case "sincronizados":
+      return sagas.filter((s) => s.status === "done")
+    default:
+      return sagas.filter((s) => s.status !== "done")
   }
 }
 
@@ -79,7 +97,12 @@ export function PendientesPage() {
   const { status } = useConnectivity()
   const [conflicto, setConflicto] = useState<OutboxOp | null>(null)
   const [detalle, setDetalle] = useState<string | null>(null)
-  const visibles = filtrar(ops, estado)
+  // Los pasos de una saga se muestran agrupados (SagaList), no como filas sueltas.
+  const visibles = filtrar(
+    ops.filter((o) => !sagaOf(o)),
+    estado,
+  )
+  const sagas = filtrarSagas(groupSagas(ops), estado)
   const offline = status === "offline"
 
   return (
@@ -136,7 +159,8 @@ export function PendientesPage() {
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
-        {visibles.length === 0 ? (
+        <SagaList sagas={sagas} />
+        {visibles.length === 0 && sagas.length > 0 ? null : visibles.length === 0 ? (
           <p className="text-muted-foreground px-4 py-10 text-center text-sm" data-slot="pendientes-vacio">
             No tienes cambios pendientes. Todo está sincronizado.
           </p>

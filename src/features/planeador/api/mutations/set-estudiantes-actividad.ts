@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
@@ -58,11 +59,10 @@ export interface SetEstudiantesResult {
  * Se llama aparte del `PUT` general, mismo criterio que
  * `useUpdateMaterialesActividad`/`useUpdateAdaptacionesActividad`.
  */
-async function setEstudiantesActividad({
-  actividadId,
-  matriculasIds,
-  asignarTodoElGrupo,
-}: SetEstudiantesInput): Promise<SetEstudiantesResult> {
+export async function setEstudiantesActividad(
+  { actividadId, matriculasIds, asignarTodoElGrupo }: SetEstudiantesInput,
+  req?: WriteRequest,
+): Promise<SetEstudiantesResult> {
   const body: Record<string, unknown> = {}
   if (asignarTodoElGrupo) {
     body.ASIGNAR_TODO_EL_GRUPO = true
@@ -72,6 +72,7 @@ async function setEstudiantesActividad({
   const respuesta = await api.put<RowsEnvelope<SetEstudiantesRow> | SetEstudiantesRow>(
     `/eval-col/planeador/actividades/${actividadId}/estudiantes`,
     body,
+    writeConfig(req),
   )
   const row = unwrapRow<SetEstudiantesRow>(respuesta)
   return {
@@ -90,7 +91,7 @@ export function useSetEstudiantesActividad({ mutationConfig }: UseSetEstudiantes
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: setEstudiantesActividad,
+    mutationFn: (input: SetEstudiantesInput) => setEstudiantesActividad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)

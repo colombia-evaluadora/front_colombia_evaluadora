@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -181,11 +182,10 @@ interface UpdateInstrumentoInput {
   instrumentosPermitidos?: InstrumentoPermitido[]
 }
 
-async function updateInstrumentoActividad({
-  actividadId,
-  actividad,
-  instrumentosPermitidos,
-}: UpdateInstrumentoInput): Promise<void> {
+export async function updateInstrumentoActividad(
+  { actividadId, actividad, instrumentosPermitidos }: UpdateInstrumentoInput,
+  req?: WriteRequest,
+): Promise<void> {
   let definicion: unknown
 
   if (actividad.instrumento === "Lista de cotejo") {
@@ -217,7 +217,7 @@ async function updateInstrumentoActividad({
 
   await api.put(`/eval-col/planeador/actividades/${actividadId}/instrumento`, {
     DEFINICION: JSON.stringify(definicion),
-  })
+  }, writeConfig(req))
 }
 
 interface UseUpdateInstrumentoActividadOptions {
