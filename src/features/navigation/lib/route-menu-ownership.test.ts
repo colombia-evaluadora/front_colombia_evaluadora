@@ -14,6 +14,7 @@ const MENU = {
   registroActividad: "/app/registro-de-actividad/sesiones",
   rolesMenus: "/app/administracion/roles-menus",
   listasValor: "/app/administracion/listas-valor",
+  areasOficiales: "/app/administracion/areas-oficiales",
   establecimiento: "/app/establecimiento-educativo/general",
   sedes: "/app/establecimiento-educativo/sedes",
   funcionarios: "/app/establecimiento-educativo/funcionarios",
@@ -60,6 +61,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/registro-de-actividad/tablas/$tableSlug": MENU.registroActividad,
   "/app/administracion/roles-menus": MENU.rolesMenus,
   "/app/administracion/listas-valor": MENU.listasValor,
+  "/app/administracion/areas-oficiales": MENU.areasOficiales,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
   "/app/establecimiento-educativo/agregar": MENU.establecimiento,

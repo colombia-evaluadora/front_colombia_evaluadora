@@ -56,6 +56,7 @@ import {
   asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
+import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
@@ -152,6 +153,10 @@ const RolesMenusPage = lazyRouteComponent(
 const ListasValorPage = lazyRouteComponent(
   () => import("@/features/administration/listas-valor/pages/listas-valor-page"),
   "ListasValorPage"
+)
+const AreasOficialesPage = lazyRouteComponent(
+  () => import("@/features/administration/areas-oficiales/pages/areas-oficiales-page"),
+  "AreasOficialesPage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -613,6 +618,16 @@ export const listasValorRoute = createRoute({
   component: ListasValorPage,
 })
 
+export const areasOficialesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.areasOficiales.path,
+  validateSearch: areasOficialesSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Áreas oficiales" }],
+  },
+  component: AreasOficialesPage,
+})
+
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
 // volver al listado.
 const establishmentLayoutRoute = createRoute({
@@ -1025,6 +1040,7 @@ const routeTree = rootRoute.addChildren([
     ]),
     rolesMenusRoute,
     listasValorRoute,
+    areasOficialesRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
