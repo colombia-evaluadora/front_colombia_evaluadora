@@ -1030,6 +1030,16 @@ export const pendientesRoute = createRoute({
   component: PendientesPage,
 })
 
+const SincronizarPage = lazyRouteComponent(() => import("@/features/offline/pages/sincronizar-page"), "SincronizarPage")
+
+// "Sincronizar ahora" (offline de meses). Fuera del menú, como pendientes.
+export const sincronizarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.sincronizar.path,
+  staticData: { breadcrumb: [{ label: "Sincronizar ahora", to: paths.app.sincronizar.getHref() }] },
+  component: SincronizarPage,
+})
+
 const NotificacionesPage = lazyRouteComponent(
   () => import("@/features/notificaciones/pages/notificaciones-page"),
   "NotificacionesPage",
@@ -1126,6 +1136,7 @@ const routeTree = rootRoute.addChildren([
     forosRoute,
     notificacionesRoute,
     pendientesRoute,
+    sincronizarRoute,
     notificacionesPreferenciasRoute,
   ]),
 ])
