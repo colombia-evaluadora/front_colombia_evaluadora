@@ -266,6 +266,12 @@ export async function runOrQueue<P, R = unknown>(
 // ---- Procesador --------------------------------------------------------------
 
 let running = false
+/** Ops que esta pestaña está enviando ahora. */
+const processing = new Set<string>()
+
+function hasLocks(): boolean {
+  return typeof navigator !== "undefined" && Boolean((navigator as Navigator & { locks?: LockManager }).locks?.request)
+}
 let timer: ReturnType<typeof setTimeout> | undefined
 let paused = false
 
@@ -305,6 +311,20 @@ async function processOp(op: OutboxOp, report: BatchReport, invalidate: Map<stri
     return
   }
   await patchOp(op.id, { status: "inflight" })
+  processing.add(op.id)
+  try {
+    await sendOp(op, handler, report, invalidate)
+  } finally {
+    processing.delete(op.id)
+  }
+}
+
+async function sendOp(
+  op: OutboxOp,
+  handler: NonNullable<ReturnType<typeof getOutboxHandler>>,
+  report: BatchReport,
+  invalidate: Map<string, readonly unknown[]>,
+) {
   const blobs = await getBlobs(op.id)
   const ctx: SendCtx = {
     idempotencyKey: op.idempotencyKey,
@@ -389,8 +409,12 @@ async function runBatch(): Promise<void> {
   running = true
   try {
     await withLeaderLock(async () => {
-      // Pestaña cerrada a mitad: `inflight` viejas vuelven a `retry`.
-      for (const op of outboxStore.getOps().filter((o) => isStaleInflight(o, now))) {
+      // Con el lock, ninguna otra pestaña está enviando: toda `inflight` que no
+      // procesa esta pestaña quedó huérfana (pestaña cerrada o recargada a mitad,
+      // §6.2) y vuelve a `retry`. Sin Web Locks se espera el umbral de 60 s.
+      const orphan = (o: OutboxOp) =>
+        o.status === "inflight" && !processing.has(o.id) && (hasLocks() || isStaleInflight(o, now))
+      for (const op of outboxStore.getOps().filter(orphan)) {
         await patchOp(op.id, { status: "retry", nextAttemptAt: now })
       }
       if (selectReady(outboxStore.getOps(), now).length === 0) return
