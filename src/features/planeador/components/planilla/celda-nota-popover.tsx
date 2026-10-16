@@ -5,6 +5,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { IoMdCheckboxOutline } from "react-icons/io"
 import {
@@ -166,8 +168,8 @@ export function CeldaNotaPopover({
 
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
-      onSuccess: () => {
-        notify("Nota guardada.")
+      onSuccess: (result) => {
+        notify(result.queued ? QUEUED_MESSAGE : "Nota guardada.", result.queued ? { variant: "info" } : undefined)
         setOpen(false)
         onGuardado?.()
       },
@@ -181,8 +183,12 @@ export function CeldaNotaPopover({
 
   const previsualizar = usePrevisualizarNotaMutation()
   // Calificar y la vista previa de la nota (periodo cerrado) van al servidor:
-  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 2: calificar se encola sin red; la vista previa (periodo cerrado) sigue solo en línea.
+  // Fase 2: calificar se encola sin red (piloto). La vista previa de nota de
+  // periodo cerrado (`onCambio`) necesita al servidor: sigue solo en línea.
+  const soloEnLineaPrevia = useOnlineOnly()
+  const escribible = useOfflineWritable()
+  const soloEnLinea = onCambio ? soloEnLineaPrevia : escribible
   const completitud = instrumentoCompletitud(instrumento, draft)
 
   function guardar() {

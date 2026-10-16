@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 
@@ -223,7 +225,8 @@ function CalificacionRow({
   cambio,
   onCambio,
 }: CalificacionRowProps) {
-  const soloEnLinea = useOnlineOnly()
+  // Asistencia de la actividad: se encola sin red (Fase 2).
+  const soloEnLinea = useOfflineWritable()
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const sinNota = estudiante.notaHomologada == null && porcentaje === null
@@ -383,13 +386,19 @@ function NoPresentoCheckbox({
   const { notify } = useNotify()
   const mutation = useEstadoResultadoMutation({
     mutationConfig: {
-      onSuccess: (_, input) =>
-        notify(input.estado === "NO_PRESENTO" ? "Marcado como No presentó." : "Queda pendiente de calificar."),
+      onSuccess: (result, input) =>
+        notify(
+          result.queued
+            ? QUEUED_MESSAGE
+            : input.estado === "NO_PRESENTO"
+              ? "Marcado como No presentó."
+              : "Queda pendiente de calificar.",
+        ),
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
-  // Marcado se puede quitar siempre (salvo sin red); sin marcar aplica el motivo.
-  const soloEnLinea = useOnlineOnly()
+  // Marcado se puede quitar siempre; sin marcar aplica el motivo. Sin red se encola (Fase 2).
+  const soloEnLinea = useOfflineWritable()
   const disabled = soloEnLinea.disabled || (!checked && motivoDeshabilitado != null)
 
   return (

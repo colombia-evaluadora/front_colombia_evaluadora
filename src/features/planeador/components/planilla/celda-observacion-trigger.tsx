@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
@@ -68,15 +69,17 @@ export function CeldaObservacionTrigger({
 }: CeldaObservacionTriggerProps) {
   const [abierto, setAbierto] = useState(false)
   // Observaciones y evidencias se guardan en el servidor (plan offline §7.5).
-  const soloEnLinea = useOnlineOnly()
+  // Fase 2: el texto de la observación se encola sin red; las evidencias
+  // (archivos) siguen solo en línea (D-F2-12) y fallan visibles en el sheet.
+  const soloEnLinea = useOfflineWritable()
   const { notify } = useNotify()
 
   const { data: notaActual } = useNotaEstudianteQuery(abierto ? pkTactividadEstudiante : undefined)
 
   const observar = useObservarEstudianteMutation({
     mutationConfig: {
-      onSuccess: () => {
-        notify("Observación guardada.")
+      onSuccess: (result) => {
+        notify(result.queued ? QUEUED_MESSAGE : "Observación guardada.", result.queued ? { variant: "info" } : undefined)
         setAbierto(false)
         onGuardado?.()
       },

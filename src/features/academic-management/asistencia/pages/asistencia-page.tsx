@@ -1,4 +1,5 @@
 import * as React from "react"
+import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
@@ -205,6 +206,15 @@ function AsistenciaPageContent() {
         ),
       )
       const sesionLabel = `${entry.grupo} · ${nombreSesion(entry)}`
+      if (solicitudes.some((s) => s.queued)) {
+        // P17: no se pinta a nadie; se resuelve con el estado del servidor al sincronizar.
+        notify(
+          `${QUEUED_MESSAGE} Se marcará Asistió a quienes no tengan registro en ${sesionLabel} cuando se sincronice.`,
+          { variant: "info" },
+        )
+        setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
+        return
+      }
       // En período cerrado no se escribe nada (afectados 0): todo queda como solicitud.
       const escribioDirecto = solicitudes.some((s) => s.afectados > 0)
       if (escribioDirecto && !solicitudes.some((s) => s.pendientes.length > 0)) {

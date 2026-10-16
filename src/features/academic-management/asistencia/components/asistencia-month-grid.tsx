@@ -5,7 +5,7 @@ import { es } from "date-fns/locale"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { CheckCircleFillIcon, ClipboardTextIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -255,7 +255,8 @@ interface ItemAsistenciaDiaProps {
 function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: ItemAsistenciaDiaProps) {
   const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
   const puedeMarcar = item.puedeEditar && !esFechaFutura(item.fecha)
-  const soloEnLinea = useOnlineOnly()
+  // "Marcar todos" se encola sin red (P17: sin optimista por estudiante).
+  const soloEnLinea = useOfflineWritable()
 
   return (
     <li className="flex flex-col gap-1">
