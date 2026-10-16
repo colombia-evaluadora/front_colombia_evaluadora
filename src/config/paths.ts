@@ -239,6 +239,10 @@ export const paths = {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",
     },
+    comunicacionesForos: {
+      path: "comunicaciones/foros",
+      getHref: () => "/app/comunicaciones/foros",
+    },
     comunicacionesChat: {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",

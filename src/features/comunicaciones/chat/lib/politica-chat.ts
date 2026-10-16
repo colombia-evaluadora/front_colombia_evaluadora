@@ -21,11 +21,22 @@ export type PerfilChat = "DIRECTIVO" | "DOCENTE" | "ACUDIENTE" | "ESTUDIANTE"
  */
 export type ReglaDirecto = "PERMITIDO" | "CON_COPIA" | "PROHIBIDO"
 
+export interface PoliticaForos {
+  publicar: PerfilChat[]
+  responder: PerfilChat[]
+  moderar: PerfilChat[]
+}
+
 export interface PoliticaChat {
   /** `directos[origen][destino]`: quién puede abrir un DM con quién. */
   directos: Record<PerfilChat, Record<PerfilChat, ReglaDirecto>>
   /** Perfiles que pueden usar `@canal` / `@todos` y notificar a todo el canal. */
   mencionesMasivas: PerfilChat[]
+  /**
+   * Foros: perfiles que abren publicaciones, que responden y que moderan (además
+   * del administrador del canal). Opcional: un backend sin foros no lo manda.
+   */
+  foros?: PoliticaForos
   /** `true` mientras la institución no haya confirmado la política. */
   pendienteDeAprobacion: boolean
 }
@@ -46,6 +57,12 @@ export const POLITICA_CHAT_SUGERIDA: PoliticaChat = {
     ESTUDIANTE: todos("PROHIBIDO"),
   },
   mencionesMasivas: ["DIRECTIVO", "DOCENTE"],
+  // Mismos defaults que comms-service (`comms.politica.foros`): todos participan y modera dirección.
+  foros: {
+    publicar: ["DIRECTIVO", "DOCENTE", "ACUDIENTE", "ESTUDIANTE"],
+    responder: ["DIRECTIVO", "DOCENTE", "ACUDIENTE", "ESTUDIANTE"],
+    moderar: ["DIRECTIVO"],
+  },
   pendienteDeAprobacion: true,
 }
 

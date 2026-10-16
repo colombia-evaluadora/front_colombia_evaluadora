@@ -48,6 +48,7 @@ import {
   comunicacionesMensajesHandlers,
 } from "@/mocks/handlers/comunicaciones"
 import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicaciones-elecciones"
+import { forosHandlers } from "@/mocks/handlers/comunicaciones-foros"
 import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
@@ -108,6 +109,7 @@ export const handlers = [
   ...comunicacionesComunicadosHandlers,
   ...pushHandlers,
   ...realtimeHandlers,
+  ...forosHandlers,
   ...comunicacionesMensajesHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,

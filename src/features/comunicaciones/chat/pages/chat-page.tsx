@@ -87,7 +87,8 @@ function ChatContent() {
   const [marca, setMarca] = useState<{ conversacionId: number; noLeidos: number; id?: number | null }>()
 
   const conversacionesQuery = useConversacionesQuery()
-  const conversaciones = conversacionesQuery.data ?? []
+  // Los foros tienen su pantalla (`/app/comunicaciones/foros`): el chat no los lista.
+  const conversaciones = (conversacionesQuery.data ?? []).filter((c) => c.tipo !== "FORO")
   const queryClient = useQueryClient()
   const { data: borradores = [] } = useBorradoresQuery()
   const activa = vista ? undefined : conversaciones.find((c) => c.id === canal)

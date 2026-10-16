@@ -91,6 +91,10 @@ function enviarMensajeMock(
 ) {
   const conv = buscar(id)
   if (!conv) return noEncontrada()
+  // comms-service: en un foro se escribe dentro de una publicación.
+  if (conv.tipo === "FORO") {
+    return HttpResponse.json({ message: "En un foro se escribe dentro de una publicacion." }, { status: 400 })
+  }
   // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
   const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
   const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
@@ -124,7 +128,7 @@ export const comunicacionesHandlers = [
     // El estudiante solo ve el bot y los canales de elección, encuesta y evaluación a los que lo invitan.
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       const rows = conversaciones
-        .filter((c) => c.esBot || c.categoria === "VOTACION" || c.categoria === "EXAMEN" || c.categoria === "ENCUESTA")
+        .filter((c) => c.esBot || c.tipo === "FORO" || c.categoria === "VOTACION" || c.categoria === "EXAMEN" || c.categoria === "ENCUESTA")
         .map((c) => ({ ...c, esCreador: false }))
       return HttpResponse.json({ rows })
     }
@@ -147,6 +151,7 @@ export const comunicacionesHandlers = [
     const body = (await request.json()) as {
       NOMBRE?: string
       CATEGORIA?: CategoriaCanal
+      TIPO?: "CANAL" | "FORO"
       MIEMBROS?: number[]
     }
     const nombre = body.NOMBRE?.trim()
@@ -159,7 +164,8 @@ export const comunicacionesHandlers = [
     const canal = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
       nombre,
-      tipo: "CANAL" as const,
+      // Un foro (TIPO "FORO") es un canal más: sus publicaciones las sirve `comunicaciones-foros.ts`.
+      tipo: body.TIPO === "FORO" ? ("FORO" as const) : ("CANAL" as const),
       categoria: body.CATEGORIA ?? "GENERAL",
       noLeidos: 0,
       actividadAbierta: body.CATEGORIA !== undefined && body.CATEGORIA !== "GENERAL" && body.CATEGORIA !== "ANUNCIO",
