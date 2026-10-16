@@ -45,7 +45,9 @@ export function CategoriaPadreSelect({
   return (
     <ComboboxField value={value} onValueChange={(next) => next && onChange(String(next))}>
       <ComboboxFieldTrigger id={id} disabled={disabled}>
-        <ComboboxFieldValue>{(current) => (current === NONE ? "Ninguna" : current)}</ComboboxFieldValue>
+        <ComboboxFieldValue>
+          {(current) => (current === NONE ? "Ninguna" : current)}
+        </ComboboxFieldValue>
       </ComboboxFieldTrigger>
       <ComboboxFieldContent>
         <ComboboxFieldItem value={NONE}>Ninguna</ComboboxFieldItem>
@@ -68,6 +70,8 @@ interface ValorPadreSelectProps {
   onChange: (pk: string) => void
   disabled?: boolean
   "aria-label"?: string
+  /** Si la lista tiene lista padre el valor padre es obligatorio: sin la opción "Sin padre". */
+  required?: boolean
 }
 
 /** Valor padre dentro de la categoría padre. `NONE` = sin padre. */
@@ -78,6 +82,7 @@ export function ValorPadreSelect({
   onChange,
   disabled,
   "aria-label": ariaLabel,
+  required,
 }: ValorPadreSelectProps) {
   const { data: valores = [], isPending } = useValoresQuery(categoria)
   const sinCategoria = !categoria
@@ -90,20 +95,28 @@ export function ValorPadreSelect({
       <SelectTrigger id={id} variant="outlined" aria-label={ariaLabel}>
         <SelectValue>
           {(current) => {
-            if (current === NONE) return sinCategoria ? "Elija la lista padre" : "Sin padre"
+            if (current === NONE)
+              return sinCategoria ? "Elija la lista padre" : required ? "Seleccione" : "Sin padre"
             const valor = valores.find((v) => String(v.pkListaValor) === current)
-            return valor ? `${valor.nombre} (${valor.valor})` : isPending ? "Cargando…" : "Seleccione"
+            return valor
+              ? `${valor.nombre} (${valor.valor})`
+              : isPending
+                ? "Cargando…"
+                : "Seleccione"
           }}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectItem value={NONE}>Sin padre</SelectItem>
-          {valores.map((v) => (
-            <SelectItem key={v.pkListaValor} value={String(v.pkListaValor)}>
-              {v.nombre} ({v.valor})
-            </SelectItem>
-          ))}
+          {!required && <SelectItem value={NONE}>Sin padre</SelectItem>}
+          {/* Solo habilitados: un inactivo no puede ser padre (V101). */}
+          {valores
+            .filter((v) => v.habilitado)
+            .map((v) => (
+              <SelectItem key={v.pkListaValor} value={String(v.pkListaValor)}>
+                {v.nombre} ({v.valor})
+              </SelectItem>
+            ))}
         </SelectGroup>
       </SelectContent>
     </Select>

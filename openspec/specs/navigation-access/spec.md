@@ -40,3 +40,29 @@ La ruta `/app/` SHALL redirigir al primer ítem navegable del menú (`getFirstNa
 #### Scenario: Permisos cargando
 - **WHEN** la pantalla monta antes de que lleguen los permisos
 - **THEN** las acciones de crear, editar y eliminar quedan denegadas
+
+### Requirement: Menú y permisos disponibles sin conexión
+El sistema SHALL persistir `["navigation","menu"]` y los permisos por pantalla con TTL de 30 días y MUST hidratarlos desde IndexedDB antes de que corra el `beforeLoad` de `/app`; si offline no hay menú persistido, MUST mostrar "Esta sección necesita conexión" en lugar del `ErrorPage` genérico.
+
+#### Scenario: Recarga offline con menú persistido
+- **WHEN** el docente recarga una ruta de su menú sin red
+- **THEN** el guard la permite usando el menú hidratado
+
+#### Scenario: Permisos no persistidos
+- **WHEN** no hay permisos en cache y no hay red
+- **THEN** todas las acciones de crear, editar y eliminar quedan deshabilitadas
+
+#### Scenario: Menú persistido viejo
+- **WHEN** el guard manda a `/app/sin-acceso` estando offline
+- **THEN** se agrega "Tu menú se actualizó por última vez el {fecha}. Si te asignaron este módulo hace poco, conéctate para actualizarlo."
+
+### Requirement: Vistas solo en línea
+Las vistas y acciones fuera del alcance offline SHALL deshabilitarse sin red con el tooltip "Necesitas conexión para esta acción." y, sin datos en cache, MUST mostrar el título "Esta sección necesita conexión", el texto "Vuelve a intentarlo cuando tengas internet. Mientras tanto puedes usar Planeador, Planilla y Asistencia." y el botón "Reintentar".
+
+#### Scenario: Matrícula sin red
+- **WHEN** el usuario abre la lista de matrícula sin red
+- **THEN** ve el empty state de sección solo en línea
+
+#### Scenario: Escrituras de las vistas legibles offline
+- **WHEN** no hay red en Referentes curriculares, Planeador, Planilla o Asistencia
+- **THEN** quedan deshabilitadas (con `useOnlineOnly`) las escrituras hasta la Fase 2: activar/inactivar y eliminar referentes; crear, editar y eliminar enunciados y evidencias; calificar celda, en bloque y la vista previa de nota de periodo cerrado; "Guardar" de la solicitud de periodo cerrado; observaciones, evidencias y favorita; "No presentó" y asistencia de la actividad; aprobar/declinar (coordinador); eliminar, vincular y desvincular actividades; ponderación y puntaje; criterios de unidad; exportar/importar actividades; y registrar/editar/marcar todos en Asistencia

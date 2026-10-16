@@ -16,6 +16,7 @@ import { toDigitsOnly } from "@/lib/text-input"
 import { cn } from "@/lib/utils"
 import { verificarBoletinRoute } from "@/router"
 import {
+  isOfflineVerificationError,
   pdfErrorMessage,
   useBoletinPdf,
   useBoletinVerificacion,
@@ -216,7 +217,9 @@ export function VerificarBoletinPage() {
         {query.isError && (
           <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
             <p className="text-sm">
-              No pudimos verificar el boletín en este momento. Intenta de nuevo en unos minutos.
+              {isOfflineVerificationError(query.error)
+                ? "No pudimos verificar el boletín porque no hay conexión. Intenta de nuevo cuando tengas internet."
+                : "No pudimos verificar el boletín en este momento. Intenta de nuevo en unos minutos."}
             </p>
             <Button variant="outline" onClick={() => query.refetch()}>
               Reintentar

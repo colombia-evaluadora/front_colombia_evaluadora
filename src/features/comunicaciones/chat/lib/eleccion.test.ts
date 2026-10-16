@@ -15,7 +15,6 @@ const base: Eleccion = {
   fechaCierre: null,
   jornadaId: 1,
   verResultadosEnVivo: true,
-  permitirComentarios: false,
   candidatos: [
     { id: 1, nombre: "A", numero: "1", lema: "", fotoUrl: null, votos: 10 },
     { id: 2, nombre: "B", numero: "2", lema: "", fotoUrl: null, votos: 30 },

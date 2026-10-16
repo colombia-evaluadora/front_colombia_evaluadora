@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -260,7 +261,9 @@ export function CalificarActividadBulk({
     }
   }
 
-  const deshabilitado = efectivos.length === 0 || !completitud.completo || escalaSinBulk
+  // Sin red no se califica en bloque (plan offline §7.5; outbox en Fase 2).
+  const soloEnLinea = useOnlineOnly()
+  const deshabilitado = efectivos.length === 0 || !completitud.completo || escalaSinBulk || soloEnLinea.disabled
 
   // Informa a la página si mostrar "Guardar" (solo con cambios).
   guardarRef.current = periodoCerrado ? () => setConfirmando(true) : guardar

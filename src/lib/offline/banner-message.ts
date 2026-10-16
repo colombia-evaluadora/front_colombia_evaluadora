@@ -5,10 +5,16 @@ export const BANNER_DELAY_MS = 1_500
 
 /**
  * Vistas que siguen funcionando sin conexión (`docs/offline/PLAN-offline.md`
- * §2): Planeador (incluye Planilla), Asistencia y Pendientes. El resto es
- * "solo en línea" y el banner lo dice.
+ * §2): Planeador (incluye Planilla), Asistencia, Pendientes y Referentes
+ * curriculares (lectura, §8.7). El resto es "solo en línea" y el banner lo dice.
  */
-const OFFLINE_CAPABLE_PREFIXES = ["/app/planeador", "/app/asistencia", "/app/pendientes"]
+const OFFLINE_CAPABLE_PREFIXES = [
+  "/app/planeador",
+  "/app/notificaciones",
+  "/app/asistencia",
+  "/app/pendientes",
+  "/app/gestion-academica/referentes-curriculares",
+]
 
 export function isOfflineCapablePath(pathname: string): boolean {
   return OFFLINE_CAPABLE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))

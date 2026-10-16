@@ -39,10 +39,21 @@ import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { ArchivosView } from "@/features/comunicaciones/chat/components/archivos-view"
 import { BorradoresView } from "@/features/comunicaciones/chat/components/borradores-view"
 import { useEliminarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
-import type { Borrador, CategoriaCanal } from "@/features/comunicaciones/chat/api/types"
+import type { Borrador, CategoriaCanal, Mensaje } from "@/features/comunicaciones/chat/api/types"
+import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
+import {
+  textoEscribiendo,
+  useAvisarEscribiendo,
+  useChatTiempoRealCanal,
+  useChatTiempoRealUsuario,
+} from "@/features/comunicaciones/chat/api/use-chat-tiempo-real"
+import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
+import { realtimeEnabled } from "@/lib/realtime"
+import { useRealtimeStatus } from "@/lib/realtime/use-realtime"
+import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 
-const CANALES_DE_ACTIVIDAD: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN", "ANUNCIO"]
+const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
 export function ChatPage() {
   return (
@@ -53,7 +64,7 @@ export function ChatPage() {
 }
 
 function ChatContent() {
-  const { canal, vista } = chatRoute.useSearch()
+  const { canal, vista, mensaje: mensajeEnlazado } = chatRoute.useSearch()
   const navigate = chatRoute.useNavigate()
   const { notify } = useNotify()
   const [busqueda, setBusqueda] = useState("")
@@ -61,6 +72,11 @@ function ChatContent() {
   const [destacado, setDestacado] = useState<{ id: number; vez: number }>()
   // Borrador abierto desde "Borradores y enviados"; al enviarlo se elimina.
   const [borrador, setBorrador] = useState<Borrador | null>(null)
+  // Mensaje al que se está respondiendo desde el compositor.
+  const [respondiendo, setRespondiendo] = useState<Mensaje | null>(null)
+  // Foto de los no leídos al abrir el canal: fija el divisor "Nuevos" aunque
+  // luego se marque como leído o lleguen mensajes en vivo.
+  const [marca, setMarca] = useState<{ conversacionId: number; noLeidos: number; id?: number | null }>()
 
   const conversacionesQuery = useConversacionesQuery()
   const conversaciones = conversacionesQuery.data ?? []
@@ -70,7 +86,7 @@ function ChatContent() {
   const esEleccion = activa?.categoria === "VOTACION"
   const eleccionQuery = useEleccionQuery(esEleccion ? activa.id : undefined)
   const eleccion = eleccionQuery.data
-  const { esEstudiante } = useChatAccess()
+  const { esEstudiante, puedeMencionarMasivo } = useChatAccess()
   // El estudiante vota mientras la elección sigue abierta; al cerrar ve los resultados.
   const votaEstudiante = esEstudiante && (!eleccion || estadoEleccion(eleccion) !== "FINALIZADA")
   const esEncuesta = activa?.categoria === "ENCUESTA"
@@ -81,10 +97,26 @@ function ChatContent() {
   const evaluacion = evaluacionQuery.data
   const esComunicado = activa?.categoria === "ANUNCIO"
   const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
-  // Sin comentarios habilitados el canal de la elección es solo lectura.
-  const sinComentarios = esEleccion && eleccion && !eleccion.permitirComentarios
-  // En los canales de actividad (elección, encuesta, evaluación, comunicado) el estudiante solo participa; no escribe.
-  const soloLectura = esEstudiante && !!activa && CANALES_DE_ACTIVIDAD.includes(activa.categoria)
+  // Elecciones, encuestas y exámenes son canales sin comentarios para todos.
+  // En el comunicado el estudiante solo lee; no escribe.
+  const soloLectura =
+    !!activa &&
+    (CANALES_SIN_COMENTARIOS.includes(activa.categoria) ||
+      (esEstudiante && activa.categoria === "ANUNCIO"))
+
+  // Tiempo real: bandeja personal, presencia y eventos del canal abierto.
+  useChatTiempoRealUsuario()
+  const escribiendo = useChatTiempoRealCanal(activa?.id)
+  const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
+  const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)
+
+  if (activa && marca?.conversacionId !== activa.id) {
+    setMarca({ conversacionId: activa.id, noLeidos: activa.noLeidos })
+  } else if (activa && marca && marca.id === undefined && mensajesQuery.data) {
+    const ajenos = mensajesQuery.data.filter((m) => !m.esPropio && !m.sistema)
+    const id = marca.noLeidos > 0 ? (ajenos.at(-marca.noLeidos) ?? ajenos[0])?.id ?? null : null
+    setMarca({ ...marca, id })
+  }
 
   const enviar = useEnviarMensaje()
   const marcarLeido = useMarcarLeido()
@@ -94,7 +126,8 @@ function ChatContent() {
     setBusqueda("")
     setDestacado(undefined)
     setBorrador(null)
-    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined }) })
+    setRespondiendo(null)
+    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined, mensaje: undefined }) })
   }
 
   const abrirVista = (v: VistaChat) => {
@@ -114,12 +147,23 @@ function ChatContent() {
     if (activa?.id && pendientes > 0) leer(activa.id)
   }, [activa?.id, pendientes, leer])
 
+  // Deep link de una notificación: saltar al mensaje cuando el historial cargó.
+  const historialListo = !!mensajesQuery.data
+  useEffect(() => {
+    if (!mensajeEnlazado || !historialListo) return
+    setDestacado((d) => ({ id: mensajeEnlazado, vez: (d?.vez ?? 0) + 1 }))
+    navigate({ search: (prev) => ({ ...prev, mensaje: undefined }), replace: true })
+  }, [mensajeEnlazado, historialListo, navigate])
+
+  const irAMensaje = (id: number) => setDestacado((d) => ({ id, vez: (d?.vez ?? 0) + 1 }))
+
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
 
   return (
     <div className="flex h-[calc(100dvh-4.5rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border bg-card">
       <div className="flex h-16 shrink-0 items-center border-b bg-chat-panel px-5">
         <h1 className="text-2xl font-bold">Chat</h1>
+        {realtimeEnabled && <EstadoConexion />}
       </div>
       <NoticeOutlet className="mx-4 my-3 md:mx-5" />
 
@@ -148,7 +192,7 @@ function ChatContent() {
                 mensajes={mensajesQuery.data ?? []}
                 busqueda={busqueda}
                 onBusqueda={setBusqueda}
-                onIrAMensaje={(id) => setDestacado((d) => ({ id, vez: (d?.vez ?? 0) + 1 }))}
+                onIrAMensaje={irAMensaje}
                 onVolver={() => seleccionar(undefined)}
               />
               {eleccion && <EleccionEstado eleccion={eleccion} />}
@@ -170,6 +214,9 @@ function ChatContent() {
                 onRetry={() => void mensajesQuery.refetch()}
                 destacado={destacado}
                 nombreConversacion={activa.nombre}
+                primerNoLeidoId={marca?.conversacionId === activa.id ? (marca.id ?? undefined) : undefined}
+                onResponder={soloLectura ? undefined : setRespondiendo}
+                onIrAMensaje={irAMensaje}
                 antes={
                   activa.categoria === "GENERAL" && activa.creadoPor ? (
                     <CanalBienvenida
@@ -218,13 +265,12 @@ function ChatContent() {
                   )
                 }
               />
+              <p aria-live="polite" className="h-5 shrink-0 truncate px-5 text-xs text-muted-foreground">
+                {textoEscribiendo(escribiendo)}
+              </p>
               {soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   En este canal no se pueden enviar mensajes.
-                </p>
-              ) : sinComentarios ? (
-                <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  Los comentarios están desactivados en esta elección.
                 </p>
               ) : (
               <ChatComposer
@@ -232,10 +278,21 @@ function ChatContent() {
                 textoInicial={borrador?.conversacionId === activa.id ? borrador.texto : ""}
                 destino={activa.tipo === "CANAL" ? `#${activa.nombre}` : activa.nombre}
                 enviando={enviar.isPending}
+                miembros={miembrosQuery.data ?? []}
+                permitirMasivas={puedeMencionarMasivo && activa.tipo === "CANAL"}
+                respondiendoA={
+                  respondiendo && {
+                    autor: respondiendo.esPropio ? "ti" : respondiendo.autor.nombre,
+                    texto: textoPlano(respondiendo.texto, respondiendo.menciones).slice(0, 120),
+                  }
+                }
+                onCancelarRespuesta={() => setRespondiendo(null)}
+                onEscribiendo={avisarEscribiendo}
                 onEnviar={(texto, archivo) =>
                   enviar
-                    .mutateAsync({ conversacionId: activa.id, texto, archivo })
+                    .mutateAsync({ conversacionId: activa.id, texto, archivo, respuestaA: respondiendo?.id })
                     .then(() => {
+                      setRespondiendo(null)
                       if (borrador?.conversacionId === activa.id) {
                         eliminarBorrador.mutate(borrador.id)
                         setBorrador(null)
@@ -266,5 +323,26 @@ function ChatContent() {
         </main>
       </div>
     </div>
+  )
+}
+
+const ESTADO_CONEXION: Record<RealtimeStatus, { texto: string; color: string } | null> = {
+  idle: null,
+  open: { texto: "En vivo", color: "bg-green" },
+  connecting: { texto: "Conectando…", color: "bg-yellow" },
+  reconnecting: { texto: "Reconectando…", color: "bg-yellow" },
+  offline: { texto: "Sin conexión: se actualizará al volver la red", color: "bg-muted-foreground" },
+  forbidden: { texto: "Actualización en vivo no disponible", color: "bg-red" },
+}
+
+// Indicador discreto del socket de tiempo real junto al título.
+function EstadoConexion() {
+  const estado = ESTADO_CONEXION[useRealtimeStatus()]
+  if (!estado) return null
+  return (
+    <span role="status" className="ml-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span aria-hidden className={cn("size-2 rounded-full", estado.color)} />
+      {estado.texto}
+    </span>
   )
 }

@@ -21,14 +21,20 @@ import {
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { TEXTAREA_OUTLINED, Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
 import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCreateCategoria } from "@/features/administration/listas-valor/api/mutations/create-categoria"
-import type { Categoria } from "@/features/administration/listas-valor/api/types/lista-valor"
+import {
+  CODIGO_VALOR,
+  toCodigo,
+  type Categoria,
+} from "@/features/administration/listas-valor/api/types/lista-valor"
 import {
   CategoriaPadreSelect,
   NONE,
@@ -44,19 +50,16 @@ interface Fila {
 
 const filaVacia = (key: number): Fila => ({ key, nombre: "", valor: "", padre: NONE })
 
-// Mismo formato que valida el backend (V103): mayúsculas sin tildes, dígitos y `_`.
-const CATEGORIA_FORMATO = /^[A-Z][A-Z0-9_]*$/
+// Mismo formato que valida el backend (V101): letra inicial, mayúsculas sin tildes, dígitos y `_`.
+const CATEGORIA_FORMATO = /^[A-Z][A-Z0-9_]{0,29}$/
 
-/** Normaliza lo que se escribe al formato de código de la lista. */
-function toCodigoCategoria(text: string) {
-  return text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toUpperCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^A-Z0-9_]/g, "")
-    .slice(0, 30)
+/** La descripción es opcional, pero si va tiene de 10 a 300 caracteres (V101). */
+function descripcionError(descripcion: string) {
+  const largo = descripcion.trim().length
+  return largo > 0 && (largo < 10 || largo > 300) ? "Entre 10 y 300 caracteres" : undefined
 }
+
+const esFilaVacia = (f: Fila) => !f.nombre.trim() && !f.valor && f.padre === NONE
 
 interface DialogCreateCategoriaProps {
   categorias: Categoria[]
@@ -69,32 +72,50 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
   const [open, setOpen] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
   const [nombre, setNombre] = useState("")
+  const [nombreVisible, setNombreVisible] = useState("")
+  const [descripcion, setDescripcion] = useState("")
   const [categoriaPadre, setCategoriaPadre] = useState(NONE)
+  const [ordinal, setOrdinal] = useState(false)
   const [filas, setFilas] = useState<Fila[]>([filaVacia(0)])
   const [submitted, setSubmitted] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   const listaRef = useRef<HTMLUListElement>(null)
 
   const dirty =
-    nombre !== "" || categoriaPadre !== NONE || filas.some((f) => f.nombre || f.valor)
+    nombre !== "" ||
+    nombreVisible !== "" ||
+    descripcion !== "" ||
+    categoriaPadre !== NONE ||
+    ordinal ||
+    filas.some((f) => !esFilaVacia(f))
 
   const nombreError = !submitted
     ? undefined
     : !nombre
-      ? "El nombre de la lista es obligatorio"
+      ? "El código de la lista es obligatorio"
       : !CATEGORIA_FORMATO.test(nombre)
         ? "Debe empezar con una letra"
         : categorias.some((c) => c.categoria === nombre)
-          ? "Ya existe una lista con este nombre"
+          ? "Ya existe una lista con este código"
           : undefined
 
-  const codigos = filas.map((f) => f.valor.trim())
-  const filaError = (fila: Fila, index: number) => {
-    if (!submitted) return undefined
-    if (!fila.nombre.trim() || !fila.valor.trim()) return "Nombre y código son obligatorios"
-    if (codigos.indexOf(fila.valor.trim()) !== index) return "Código repetido"
+  const descError = submitted ? descripcionError(descripcion) : undefined
+  const padre = categoriaPadre === NONE ? null : categoriaPadre
+
+  // La lista se puede crear sin valores: las filas vacías se ignoran.
+  const codigos = filas.map((f) => f.valor)
+  const nombres = filas.map((f) => f.nombre.trim().toLowerCase())
+  function validarFila(fila: Fila, index: number) {
+    if (esFilaVacia(fila)) return undefined
+    if (!fila.nombre.trim()) return "El nombre es obligatorio"
+    if (!CODIGO_VALOR.test(fila.valor)) return "Código: de 2 a 20 mayúsculas, números o guion bajo"
+    if (codigos.indexOf(fila.valor) !== index) return "Código repetido"
+    if (nombres.indexOf(fila.nombre.trim().toLowerCase()) !== index) return "Nombre repetido"
+    if (padre && fila.padre === NONE) return "Elija el valor padre"
     return undefined
   }
+  const filaError = (fila: Fila, index: number) =>
+    submitted ? validarFila(fila, index) : undefined
 
   const create = useCreateCategoria({
     mutationConfig: {
@@ -109,7 +130,10 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
 
   function reset() {
     setNombre("")
+    setNombreVisible("")
+    setDescripcion("")
     setCategoriaPadre(NONE)
+    setOrdinal(false)
     setFilas([filaVacia(0)])
     setSubmitted(false)
     setNotice(null)
@@ -139,29 +163,36 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
     const invalid =
       !CATEGORIA_FORMATO.test(nombre) ||
       categorias.some((c) => c.categoria === nombre) ||
-      filas.some((f, i) => !f.nombre.trim() || !f.valor.trim() || codigos.indexOf(f.valor.trim()) !== i)
+      descripcionError(descripcion) != null ||
+      filas.some((f, i) => validarFila(f, i) != null)
     if (invalid) {
       setNotice({ id: Date.now(), message: INCOMPLETE_FORM })
       return
     }
     create.mutate({
       categoria: nombre,
-      valores: filas.map((f) => ({
-        nombre: f.nombre.trim(),
-        valor: f.valor.trim(),
-        padre: f.padre === NONE ? null : Number(f.padre),
-      })),
+      nombre: nombreVisible.trim() || null,
+      descripcion: descripcion.trim() || null,
+      padre,
+      ordinal,
+      valores: filas
+        .filter((f) => !esFilaVacia(f))
+        .map((f) => ({
+          nombre: f.nombre.trim(),
+          valor: f.valor,
+          padre: f.padre === NONE ? null : Number(f.padre),
+        })),
     })
   }
-
-  const padre = categoriaPadre === NONE ? null : categoriaPadre
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? handleOpenChange(true) : requestClose())}>
       {/* Vive junto al buscador del índice: el primary de la pantalla es "Agregar valor". */}
       <Tooltip>
         <TooltipTrigger
-          render={<DialogTrigger render={<Button variant="outline" color="neutral" size="icon" />} />}
+          render={
+            <DialogTrigger render={<Button variant="outline" color="neutral" size="icon" />} />
+          }
         >
           <span className="sr-only">Agregar lista</span>
           <ControlPointIcon />
@@ -173,19 +204,15 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
           <DialogTitle>Agregar lista</DialogTitle>
         </DialogHeader>
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
-        <form
-          id="categoria-form"
-          onSubmit={handleSubmit}
-          className="flex min-h-0 flex-col gap-4"
-        >
+        <form id="categoria-form" onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field variant="outlined" data-invalid={nombreError ? "true" : undefined}>
-              <FieldLabel htmlFor="categoria-nombre">Nombre de la lista*</FieldLabel>
+              <FieldLabel htmlFor="categoria-nombre">Código de la lista*</FieldLabel>
               <Input
                 id="categoria-nombre"
                 placeholder="Ej. MUNICIPIO"
                 value={nombre}
-                onChange={(e) => setNombre(toCodigoCategoria(e.target.value))}
+                onChange={(e) => setNombre(toCodigo(e.target.value, 30))}
                 aria-invalid={Boolean(nombreError)}
                 className="font-mono"
               />
@@ -196,6 +223,17 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
               )}
             </Field>
             <Field variant="outlined">
+              <FieldLabel htmlFor="categoria-nombre-visible">Nombre</FieldLabel>
+              <Input
+                id="categoria-nombre-visible"
+                placeholder="Ej. Municipio"
+                maxLength={100}
+                value={nombreVisible}
+                onChange={(e) => setNombreVisible(e.target.value)}
+              />
+              <FieldDescription>Opcional. Si no se escribe, sale del código.</FieldDescription>
+            </Field>
+            <Field variant="outlined" className="sm:col-span-2">
               <FieldLabel htmlFor="categoria-padre">Depende de</FieldLabel>
               <CategoriaPadreSelect
                 id="categoria-padre"
@@ -209,11 +247,45 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
               />
               <FieldDescription>Opcional. Ej. MUNICIPIO depende de DEPARTAMENTO.</FieldDescription>
             </Field>
+            <Field
+              variant="outlined"
+              className="sm:col-span-2"
+              data-invalid={descError ? "true" : undefined}
+            >
+              <FieldLabel htmlFor="categoria-descripcion">Descripción</FieldLabel>
+              <Textarea
+                className={TEXTAREA_OUTLINED}
+                id="categoria-descripcion"
+                placeholder="Para qué se usa la lista"
+                maxLength={300}
+                rows={2}
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                aria-invalid={Boolean(descError)}
+              />
+              {descError ? (
+                <FieldError>{descError}</FieldError>
+              ) : (
+                <FieldDescription>Opcional. Entre 10 y 300 caracteres.</FieldDescription>
+              )}
+            </Field>
+            <label className="flex items-start gap-2 text-sm sm:col-span-2">
+              <Checkbox checked={ordinal} onCheckedChange={(next) => setOrdinal(next === true)} />
+              <span>
+                Lista ordinal
+                <span className="block text-xs text-muted-foreground">
+                  Sus valores tienen un orden con significado, como Bajo, Básico, Alto y Superior.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">Valores ({filas.length})</h3>
+              <h3 className="text-sm font-medium">
+                Valores{" "}
+                <span className="font-normal text-muted-foreground">(opcional, en este orden)</span>
+              </h3>
               <Button
                 type="button"
                 size="xs"
@@ -232,7 +304,10 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
               </Button>
             </div>
             {/* Alto de 5 filas (2.75rem + gap); con más, scroll interno. El padding deja ver el ring de foco. */}
-            <ul ref={listaRef} className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1">
+            <ul
+              ref={listaRef}
+              className="-m-1 flex max-h-[16.75rem] flex-col gap-2 overflow-x-hidden overflow-y-auto p-1"
+            >
               {filas.map((fila, index) => {
                 const error = filaError(fila, index)
                 return (
@@ -248,20 +323,23 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
                         variant="outlined"
                         aria-label={`Nombre del valor ${index + 1}`}
                         placeholder="Nombre"
-                        maxLength={120}
+                        maxLength={100}
                         value={fila.nombre}
-                        aria-invalid={Boolean(error) && !fila.nombre.trim()}
+                        aria-invalid={
+                          Boolean(error) && (!fila.nombre.trim() || error === "Nombre repetido")
+                        }
                         onChange={(e) => updateFila(fila.key, { nombre: e.target.value })}
                       />
                       <Input
                         variant="outlined"
                         aria-label={`Código del valor ${index + 1}`}
                         placeholder="Código"
-                        maxLength={130}
                         value={fila.valor}
-                        aria-invalid={Boolean(error) && (error === "Código repetido" || !fila.valor.trim())}
+                        aria-invalid={error?.startsWith("Código") ?? false}
                         className="font-mono"
-                        onChange={(e) => updateFila(fila.key, { valor: e.target.value })}
+                        onChange={(e) =>
+                          updateFila(fila.key, { valor: toCodigo(e.target.value, 20) })
+                        }
                       />
                       {padre && (
                         <ValorPadreSelect
@@ -269,6 +347,7 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
                           aria-label={`Valor padre del valor ${index + 1}`}
                           categoria={padre}
                           value={fila.padre}
+                          required
                           onChange={(next) => updateFila(fila.key, { padre: next })}
                         />
                       )}
@@ -277,8 +356,14 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
                         variant="ghost"
                         color="neutral"
                         size="icon-sm"
-                        disabled={filas.length === 1}
-                        onClick={() => setFilas((prev) => prev.filter((f) => f.key !== fila.key))}
+                        disabled={filas.length === 1 && esFilaVacia(fila)}
+                        onClick={() =>
+                          setFilas((prev) =>
+                            prev.length === 1
+                              ? [filaVacia(fila.key + 1)]
+                              : prev.filter((f) => f.key !== fila.key),
+                          )
+                        }
                       >
                         <span className="sr-only">Quitar fila {index + 1}</span>
                         <TrashIcon />

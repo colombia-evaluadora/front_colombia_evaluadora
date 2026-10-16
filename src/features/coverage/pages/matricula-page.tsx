@@ -8,12 +8,13 @@ import { MatriculaDataTable } from "@/features/coverage/components/table/table-m
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 export function MatriculaPage() {
-  const { puedeCrear } = useMenuPermission("MATRICULA")
+  const { puedeCrear, puedeEditar } = useMenuPermission("MATRICULA")
 
   return (
     <MatriculaDataTable
       title="Matrícula"
       titleAction={
+        puedeEditar ? (
         <Tooltip>
           <TooltipTrigger
             render={
@@ -31,6 +32,7 @@ export function MatriculaPage() {
           </TooltipTrigger>
           <TooltipContent>Configuración de parámetros requeridos</TooltipContent>
         </Tooltip>
+        ) : null
       }
       action={
         puedeCrear ? (

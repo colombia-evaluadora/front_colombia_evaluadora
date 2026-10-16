@@ -6,7 +6,7 @@ import { AssistantSheet } from "@/features/assistant/components/assistant-sheet"
 import { getInitialSidebarOpen } from "@/features/navigation/lib/sidebar-cookie"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { NotificacionesChat } from "@/features/comunicaciones/chat/components/notificaciones-chat"
+import { CampanaNotificaciones } from "@/features/notificaciones/components/campana-notificaciones"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { OfflineBanner } from "@/components/layout/offline-banner"
 import { OnlineOnlyRouteGate } from "@/components/offline/online-only-route-gate"
@@ -38,7 +38,7 @@ export function ProtectedLayout() {
             <ColorThemeToggle />
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
-            <NotificacionesChat />
+            <CampanaNotificaciones />
             <NavUser />
           </div>
         </header>

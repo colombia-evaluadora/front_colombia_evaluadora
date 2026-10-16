@@ -1,3 +1,5 @@
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Link } from "@tanstack/react-router"
@@ -54,6 +56,8 @@ function ActionsCell({
   onEdit: (curricularReference: CurricularReference) => void
 }) {
   const label = curricularReference.name || "referente"
+  const soloEnLinea = useOnlineOnly()
+  const { puedeEditar, puedeEliminar } = useMenuPermission("REFERENTES_CURRICULARES")
 
   return (
     <div className="flex items-center justify-end gap-1">
@@ -80,6 +84,7 @@ function ActionsCell({
         </TooltipTrigger>
         <TooltipContent>{`Ver ${label}`}</TooltipContent>
       </Tooltip>
+      {puedeEditar ? (
       <Tooltip>
         <TooltipTrigger
           render={
@@ -89,16 +94,18 @@ function ActionsCell({
               color="neutral"
               size="icon-sm"
               aria-label={`Editar ${label}`}
+              disabled={soloEnLinea.disabled}
               onClick={() => onEdit(curricularReference)}
             />
           }
         >
           <PencilIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Editar ${label}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Editar ${label}`}</TooltipContent>
       </Tooltip>
-      <ToggleStatusButton curricularReference={curricularReference} />
-      <DeleteCurricularReferenceDialog curricularReference={curricularReference} />
+      ) : null}
+      {puedeEditar ? <ToggleStatusButton curricularReference={curricularReference} /> : null}
+      {puedeEliminar ? <DeleteCurricularReferenceDialog curricularReference={curricularReference} /> : null}
     </div>
   )
 }

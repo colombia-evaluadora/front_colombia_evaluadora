@@ -36,6 +36,7 @@ import {
 import type { SeguimientoFiltersValues, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 import type { AsistenciaSeguimientoSearch } from "@/features/academic-management/asistencia/api/schema"
 import { toPageCount } from "@/lib/pagination"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 function SeguimientoSinSede() {
   return (
@@ -111,14 +112,15 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
   const [search, setSearch] = React.useState("")
   const [filters, setFilters] = React.useState<SeguimientoFiltersValues>(() => initialFilters(initial))
 
-  // Los combos salen de las sesiones de los meses del rango aplicado (o del mes
-  // de la fecha recibida, o el actual). Sin MIAS: el calendario ya acota por el
-  // alcance del usuario en la sede y jornada de cada grupo (V542/V136), cosa que
-  // los roles del token no saben.
+  // Sin MIAS: el calendario ya acota por el alcance del usuario, que los roles del token no saben.
   const meses = mesesDelRango(filters.fechaDesde, filters.fechaHasta, initial.fecha)
   const { isDocente } = useAsistenciaAccess()
   const sesionesDelRango = useAsistenciaCalendarioMesesQuery({ SEDE: sede }, meses)
-  const columnsSeguimiento = React.useMemo(() => buildColumnsSeguimiento(isDocente), [isDocente])
+  const { puedeEditar } = useMenuPermission("ASISTENCIAS")
+  const columnsSeguimiento = React.useMemo(
+    () => buildColumnsSeguimiento(isDocente && puedeEditar),
+    [isDocente, puedeEditar],
+  )
   const {
     grupos: grupoCatalog,
     asignaturas: asignaturaCatalog,
@@ -146,9 +148,7 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
   )
 
   const [primary] = sorting
-  // Mismo objeto para el listado paginado y para el reporte (dialog-export-seguimiento):
-  // el reporte lo genera reporting-service con la MISMA fn_asistencia_listar_seguimiento
-  // sin paginar, así que tiene que ver exactamente lo que ve la tabla.
+  // El reporte usa la misma función sin paginar: tiene que ver lo mismo que la tabla.
   const queryFilters = {
     SEDE: sede,
     FECHA_DESDE: filters.fechaDesde || null,
@@ -170,15 +170,11 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
     hasFilter,
   )
 
-  // Al quitar los filtros la query queda deshabilitada pero `placeholderData` conserva
-  // la respuesta anterior: sin filtros la pantalla tiene que vaciarse igual.
+  // `placeholderData` conserva la respuesta anterior: sin filtros hay que vaciar igual.
   const resultado = hasFilter ? data : undefined
   const rows = resultado?.rows ?? []
   const totalCount = rows[0]?.total_count ?? 0
-  // El esqueleto es solo para la espera real de la query; sin filtros o con respuesta
-  // vacía los contadores son ceros de verdad, no un "cargando" permanente.
-  // Las 4 llegan como ventanas sobre el set filtrado completo: calcularlas acá
-  // las dejaría midiendo solo la página visible.
+  // Los contadores vienen del set filtrado completo, no de la página visible.
   const cargando = hasFilter && !resultado
   const totalEstudiantes = cargando ? undefined : (rows[0]?.total_estudiantes ?? 0)
   const asistieron = cargando ? undefined : (rows[0]?.asistieron ?? 0)
@@ -231,8 +227,6 @@ function SeguimientoTable({ sede, initial }: { sede: number; initial: Asistencia
         </div>
       </div>
 
-      {/* Sin filtros la pantalla conserva la misma estructura (tarjetas + tabla) en estado
-          vacío: se ve qué se va a obtener y, en la tabla, qué falta hacer para obtenerlo. */}
       <div className="mb-4">
         <SeguimientoSummaryCards
           totalEstudiantes={totalEstudiantes}

@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
+import { notificarEleccionAbierta } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { conversaciones } from "@/mocks/db/comunicaciones"
@@ -28,7 +29,6 @@ interface CrearEleccionBody {
   FECHA_CIERRE?: string | null
   FK_JORNADA?: number
   VER_RESULTADOS?: "S" | "N"
-  COMENTARIOS?: "S" | "N"
   VOTANTES?: number[]
   CANDIDATOS?: Array<{ NOMBRE: string; NUMERO: string; LEMA: string; FOTO_URL: string | null }>
 }
@@ -68,25 +68,6 @@ export const comunicacionesEleccionesHandlers = [
     lista.add(correo)
     votantes.set(e.conversacionId, lista)
     return HttpResponse.json({ rows: [{ ...e, yaVoto: true }] })
-  }),
-
-  // Avisos de la campana: elecciones abiertas en las que el estudiante aún no vota.
-  http.get(URL("notificaciones"), async ({ request }) => {
-    await delay(150)
-    const user = usuarioDe(request)
-    if (!user?.roles.includes("CEVAL-ESTUDIANTE")) return HttpResponse.json({ rows: [] })
-    const rows = elecciones
-      .filter((e) => !eleccionCerrada(e) && !yaVoto(e.conversacionId, user.email))
-      .map((e) => ({
-        id: e.conversacionId,
-        conversacionId: e.conversacionId,
-        categoria: "VOTACION",
-        titulo: e.nombre,
-        texto: `Te damos la bienvenida a ${e.nombre}. Entra para votar.`,
-        fecha: e.fechaInicio ?? new Date(Date.now() - 20 * 60_000).toISOString(),
-        pendientes: 1,
-      }))
-    return HttpResponse.json({ rows })
   }),
 
   http.patch(URL("conversaciones/:id/eleccion/cerrar"), async ({ params }) => {
@@ -142,6 +123,8 @@ export const comunicacionesEleccionesHandlers = [
       archivada: false,
     }
     conversaciones.push(canal)
+    // Campana única: el aviso "entra a votar" va a la bandeja general.
+    notificarEleccionAbierta(canal.id, nombre)
     elecciones.push({
       conversacionId: canal.id,
       nombre,
@@ -150,7 +133,6 @@ export const comunicacionesEleccionesHandlers = [
       fechaCierre: body.FECHA_CIERRE ?? null,
       jornadaId: body.FK_JORNADA,
       verResultadosEnVivo: body.VER_RESULTADOS === "S",
-      permitirComentarios: body.COMENTARIOS === "S",
       candidatos: candidatos.map((c, i) => ({
         id: i + 1,
         nombre: c.NOMBRE,

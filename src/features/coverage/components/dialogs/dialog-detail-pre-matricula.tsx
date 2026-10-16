@@ -39,6 +39,7 @@ import { useUpdatePreMatricula } from "@/features/coverage/api/mutations/update-
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { DeletePreMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-pre-matricula"
 import type { PreMatricula } from "@/features/coverage/api/types/pre-matricula"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { Shift, EducationLevel } from "@/features/coverage/api/types/reservation"
 
 interface DetailPreMatriculaDialogProps {
@@ -64,10 +65,7 @@ function optionsToItems(options: string[]): Record<string, string> {
   return Object.fromEntries(options.map((option) => [option, option]))
 }
 
-/**
- * Items de un combobox que siempre incluyen el valor actual, aunque no venga
- * en el catálogo: así el campo muestra el dato real en vez de un placeholder.
- */
+/** Incluye el valor actual aunque no esté en el catálogo, para mostrar el dato real. */
 function itemsWithValue(items: Record<string, string>, value?: string | null) {
   if (!value || value in items) return items
   return { ...items, [value]: value }
@@ -170,6 +168,7 @@ export function DetailPreMatriculaDialog({
   preMatricula,
   variant = "eye",
 }: DetailPreMatriculaDialogProps) {
+  const { puedeEditar, puedeEliminar } = useMenuPermission("PRE_MATRICULA")
   const [open, setOpen] = useState(false)
   /** Borrador en edición; `null` = modo lectura. */
   const [draft, setDraft] = useState<PreMatricula | null>(null)
@@ -198,8 +197,6 @@ export function DetailPreMatriculaDialog({
   const levelLabel =
     EDUCATION_LEVEL_LABELS[current.educationLevel as EducationLevel] ?? current.educationLevel
 
-  // Catálogos compartidos con el formulario de reserva: instituciones, sedes
-  // y grupos disponibles para los combobox del modo edición.
   const { data: catalogs } = useReservationCatalogsQuery()
   const institutionItems = itemsWithValue(
     optionsToItems(catalogs?.institutions ?? []),
@@ -231,7 +228,7 @@ export function DetailPreMatriculaDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next && variant === "pencil") setDraft(preMatricula)
+        if (next && variant === "pencil" && puedeEditar) setDraft(preMatricula)
         if (!next) setDraft(null)
       }}
     >
@@ -292,26 +289,25 @@ export function DetailPreMatriculaDialog({
               </>
             ) : (
               <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label="Editar"
-                  onClick={handleEdit}
-                >
-                  <PencilIcon />
-                </Button>
-                <DeletePreMatriculaDialog preMatricula={preMatricula} />
+                {puedeEditar ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label="Editar"
+                    onClick={handleEdit}
+                  >
+                    <PencilIcon />
+                  </Button>
+                ) : null}
+                {puedeEliminar ? <DeletePreMatriculaDialog preMatricula={preMatricula} /> : null}
               </>
             )}
           </div>
         </DialogHeader>
 
-        {/* Único bloque con scroll: header y footer quedan fijos afuera —
-            antes `overflow-y-auto` vivía en el `DialogContent` entero, así
-            que scrollear el detalle se llevaba el título y los botones con
-            él. */}
+        {/* Único bloque con scroll: header y footer quedan fijos afuera. */}
         <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex flex-col gap-4">
           {/* ── Datos del estudiante ─────────────────────────────────────────── */}
           <Section title="Datos del estudiante">

@@ -31,8 +31,8 @@
 
 ## 6. Pruebas
 - [x] 6.1 Unit: persister selectivo, buster, limpieza por usuario
-- [ ] 6.2 E2E: preparar → modo avión → recargar → navegar planeador/planilla/asistencia/referentes
-- [ ] 6.3 E2E: `/verificar/b` nunca muestra datos cacheados (C-80)
+- [x] 6.2 E2E: preparar → modo avión → recargar → navegar planeador/planilla/asistencia/referentes
+- [x] 6.3 E2E: `/verificar/b` nunca muestra datos cacheados (C-80)
 - [ ] 6.4 Manual en Chrome Android, Safari iOS, Chrome Windows, Firefox
 
 ## 7. PIGSE

@@ -43,8 +43,10 @@ import { getErrorMessage } from "@/lib/api-client"
 import { columnsPreMatricula } from "@/features/coverage/components/table/columns-pre-matricula"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 export function PreMatriculaPage() {
+  const { puedeCrear, puedeEditar } = useMenuPermission("PRE_MATRICULA")
   const [hasPreMatricula, setHasPreMatricula] = useState(false)
   const [open, setOpen] = useState(false)
   const [openAsignar, setOpenAsignar] = useState(false)
@@ -76,10 +78,7 @@ export function PreMatriculaPage() {
     columnVisibilityStorageKey: "pre-matricula-column-visibility",
   })
 
-  /**
-   * Grado sugerido para el dialog: si todos los seleccionados tienen el mismo
-   * targetGrade se usa ese; si difieren (o no hay selección) se pasa null.
-   */
+  /** Grado común de los seleccionados, o null si difieren. */
   const suggestedTargetGrade = useMemo(() => {
     if (!data?.rows.length || !selectedIds.length) return null
     const selected = data.rows.filter((r) => selectedIds.includes(r.id))
@@ -87,10 +86,6 @@ export function PreMatriculaPage() {
     return grades.length === 1 ? grades[0] : null
   }, [data?.rows, selectedIds])
 
-  /**
-   * Grupo sugerido: primero del conjunto seleccionado (si hay uno solo).
-   * Si hay varios, se deja vacío para que el usuario lo complete.
-   */
   const suggestedGroup = useMemo(() => {
     if (!data?.rows.length || selectedIds.length !== 1) return ""
     const row = data.rows.find((r) => r.id === selectedIds[0])
@@ -98,10 +93,7 @@ export function PreMatriculaPage() {
     return row?.targetGrade != null ? `${row.targetGrade}01` : ""
   }, [data?.rows, selectedIds])
 
-  /**
-   * Estudiantes seleccionados reprobados: repiten su grado actual y el admin
-   * debe confirmarlo explícitamente en el dialog de asignar cupo.
-   */
+  /** Reprobados: repiten grado y el admin debe confirmarlo en el dialog. */
   const selectedReprobados = useMemo(() => {
     if (!data?.rows.length || !selectedIds.length) return []
     return data.rows.filter((r) => selectedIds.includes(r.id) && r.failed)
@@ -123,7 +115,7 @@ export function PreMatriculaPage() {
             activeFilterCount={activeFilterCount}
           />
           <TableScreenActions>
-            {hasSelection ? (
+            {hasSelection && puedeEditar ? (
               <>
                 <Button size="sm" color="primary" onClick={() => setOpenAsignar(true)}>
                   <UserGroupAddIcon data-icon="inline-start" />
@@ -143,7 +135,7 @@ export function PreMatriculaPage() {
                   }}
                 />
               </>
-            ) : (
+            ) : !hasSelection && puedeCrear ? (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger render={<Button size="sm" color="primary" />}>
                   <ClipboardAddIcon data-icon="inline-start" />
@@ -180,7 +172,7 @@ export function PreMatriculaPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            )}
+            ) : null}
 
             {hasPreMatricula &&
               (hasSelection ? (

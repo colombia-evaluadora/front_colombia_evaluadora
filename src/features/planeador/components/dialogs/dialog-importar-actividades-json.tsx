@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { FileUpload, FileUploadDropzone } from "@/components/ui/file-upload"
 
 import { useImportarActividadesJson } from "@/features/planeador/api/mutations/importar-actividades-json"
@@ -60,6 +61,7 @@ export function DialogImportarActividadesJson({
   const [informe, setInforme] = useState<InformeImportacion | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
   const { notify } = useNotify()
+  const soloEnLinea = useOnlineOnly()
 
   const validar = useImportarActividadesJson({
     mutationConfig: {
@@ -215,7 +217,7 @@ export function DialogImportarActividadesJson({
               size="sm"
               type="button"
               color="primary"
-              disabled={!puedeAplicar || aplicar.isPending}
+              disabled={!puedeAplicar || aplicar.isPending || soloEnLinea.disabled}
               aria-busy={aplicar.isPending}
               onClick={handleAplicar}
             >

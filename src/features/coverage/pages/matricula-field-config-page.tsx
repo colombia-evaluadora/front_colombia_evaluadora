@@ -18,6 +18,7 @@ import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/componen
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
@@ -126,6 +127,13 @@ function MatriculaFieldConfigPageContent() {
   const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
   const { notify } = useNotify()
   const navigate = useNavigate()
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
+  // Sin Guardar, entrar por URL vuelve a la lista.
+  useEffect(() => {
+    if (!permisoCargando && !puedeEditar) {
+      navigate({ to: paths.app.coberturaMatricula.getHref(), replace: true })
+    }
+  }, [permisoCargando, puedeEditar, navigate])
 
   useEffect(() => {
     if (data && secciones === null) {

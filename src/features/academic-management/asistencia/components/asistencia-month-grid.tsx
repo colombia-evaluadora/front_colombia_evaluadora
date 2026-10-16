@@ -5,6 +5,7 @@ import { es } from "date-fns/locale"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { CheckCircleFillIcon, ClipboardTextIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -254,6 +255,7 @@ interface ItemAsistenciaDiaProps {
 function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: ItemAsistenciaDiaProps) {
   const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
   const puedeMarcar = item.puedeEditar && !esFechaFutura(item.fecha)
+  const soloEnLinea = useOnlineOnly()
 
   return (
     <li className="flex flex-col gap-1">
@@ -267,7 +269,8 @@ function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: 
       {puedeMarcar ? (
         <button
           type="button"
-          disabled={markingEntryId !== null}
+          disabled={markingEntryId !== null || soloEnLinea.disabled}
+          title={soloEnLinea.tooltip ?? undefined}
           onClick={() => onMarkAllPresent(item)}
           className={cn(
             "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",

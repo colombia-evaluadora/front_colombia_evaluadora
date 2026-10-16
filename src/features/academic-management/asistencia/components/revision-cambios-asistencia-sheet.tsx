@@ -1,3 +1,4 @@
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -160,6 +161,8 @@ export function RevisionCambiosAsistenciaSheet({ sesion, onOpenChange }: Revisio
   // Por defecto se seleccionan todos, como en la planilla de Informes.
   const [excluidos, setExcluidos] = React.useState<Set<string>>(new Set())
   const [motivo, setMotivo] = React.useState("")
+  // Aprobar/rechazar cambios no se encola en la Fase 1: necesita red.
+  const soloEnLinea = useOnlineOnly()
   const seleccionados = cambios.filter((c) => !excluidos.has(c.clave))
 
   function nombreTipo(tipo: TipoAsistencia | null): string {
@@ -265,7 +268,8 @@ export function RevisionCambiosAsistenciaSheet({ sesion, onOpenChange }: Revisio
             variant="outline"
             color="destructive"
             size="sm"
-            disabled={seleccionados.length === 0 || sinMotivo || decidir.isPending}
+            title={soloEnLinea.tooltip ?? undefined}
+            disabled={seleccionados.length === 0 || sinMotivo || decidir.isPending || soloEnLinea.disabled}
             onClick={() => handleDecidir("rechazar")}
           >
             <XIcon data-icon="inline-start" />
@@ -274,7 +278,8 @@ export function RevisionCambiosAsistenciaSheet({ sesion, onOpenChange }: Revisio
           <Button
             color="primary"
             size="sm"
-            disabled={seleccionados.length === 0 || decidir.isPending}
+            title={soloEnLinea.tooltip ?? undefined}
+            disabled={seleccionados.length === 0 || decidir.isPending || soloEnLinea.disabled}
             onClick={() => handleDecidir("aprobar")}
           >
             {decidir.isPending ? (

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
+import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -69,6 +70,7 @@ import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { isOfflineWithoutData } from "@/lib/offline/query-status"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
@@ -104,6 +106,8 @@ export function PlaneadorPlanillaPage() {
   // Periodo cerrado (estado distinto de "1" Calificable): las notas se
   // acumulan y se envían juntas; el backend abre la solicitud (Regla 55).
   const periodoCerrado = filtro != null && filtro.periodoEvaluacion.estado !== "1"
+  // "Guardar" (bulk o solicitud de periodo cerrado) va al servidor (§7.5).
+  const soloEnLinea = useOnlineOnly()
   const solicitud = useSolicitudPeriodoCerrado()
   const { cambios, agregarCambio } = solicitud
 
@@ -202,7 +206,8 @@ export function PlaneadorPlanillaPage() {
                     color="primary"
                     size="sm"
                     variant="fill"
-                    disabled={estadoGuardarBulk.disabled || estadoGuardarBulk.guardando}
+                    disabled={estadoGuardarBulk.disabled || estadoGuardarBulk.guardando || soloEnLinea.disabled}
+                    title={soloEnLinea.tooltip ?? undefined}
                     onClick={() => guardarBulkRef.current?.()}
                   >
                     {estadoGuardarBulk.guardando && (
@@ -213,8 +218,16 @@ export function PlaneadorPlanillaPage() {
                 )
               ) : (
               <div className="flex gap-2">
+                <PrepareOfflineButton />
                 {puedeEditar && cambios.size > 0 && (
-                  <Button color="primary" size="sm" variant="fill" onClick={solicitud.pedirConfirmacion}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="fill"
+                    disabled={soloEnLinea.disabled}
+                    title={soloEnLinea.tooltip ?? undefined}
+                    onClick={solicitud.pedirConfirmacion}
+                  >
                     Guardar
                   </Button>
                 )}

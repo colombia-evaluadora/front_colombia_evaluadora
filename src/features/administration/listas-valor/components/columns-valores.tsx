@@ -2,10 +2,15 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { LockIcon } from "@/components/ui/icons"
+import { Button } from "@/components/ui/button"
+import {
+  CheckCircleFillIcon,
+  CheckCircleIcon,
+  DotsSixVerticalIcon,
+  LockIcon,
+} from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type {
@@ -16,42 +21,109 @@ import { DialogSaveValor } from "@/features/administration/listas-valor/componen
 
 interface CreateColumnsOptions {
   categoria: Categoria
-  categorias: Categoria[]
   puedeEditar: boolean
-  puedeEliminar: boolean
+  /** pk del valor cuya acción (estado o predeterminado) está en curso. */
+  pendiente: number | null
   onIrALista: (categoria: string) => void
-  onEliminar: (valor: ListaValor) => Promise<void>
+  onPredeterminado: (valor: ListaValor) => void
+  /** Se arrastra solo sin búsqueda ni otro orden: así la tabla es la lista real. */
+  ordenable: boolean
+  /** Posición del primer valor de la página, para numerar mientras se arrastra. */
+  offset: number
+  /** Handlers de puntero del asa (useArrastrarFilas). */
+  asa: Pick<
+    React.HTMLAttributes<HTMLElement>,
+    "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel"
+  >
+  onMover: (valor: ListaValor, delta: number) => void
+  onSoltar: () => void
 }
 
 export function createValoresColumns({
   categoria,
-  categorias,
   puedeEditar,
-  puedeEliminar,
+  pendiente,
   onIrALista,
-  onEliminar,
+  onPredeterminado,
+  ordenable,
+  offset,
+  asa,
+  onMover,
+  onSoltar,
 }: CreateColumnsOptions): ColumnDef<ListaValor>[] {
   const columns: ColumnDef<ListaValor>[] = [
+    {
+      id: "orden",
+      accessorKey: "orden",
+      meta: { label: "Orden" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="#" />,
+      cell: ({ row }) => {
+        const v = row.original
+        if (!ordenable)
+          return <span className="pl-7 text-muted-foreground tabular-nums">{v.orden}</span>
+        const posicion = offset + row.index + 1
+        return (
+          <span className="flex items-center gap-1">
+            <button
+              type="button"
+              data-orden-asa={v.pkListaValor}
+              aria-label={`Mover ${v.nombre}, posición ${posicion}. Usa las flechas arriba y abajo`}
+              {...asa}
+              onKeyDown={(e) => {
+                const delta = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0
+                if (!delta) return
+                e.preventDefault()
+                onMover(v, delta)
+              }}
+              // Con teclado se guarda al salir del asa: no un PUT por cada flecha.
+              onBlur={onSoltar}
+              className="cursor-grab touch-none rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 active:cursor-grabbing"
+            >
+              <DotsSixVerticalIcon className="size-5" />
+            </button>
+            <span className="text-muted-foreground tabular-nums">{posicion}</span>
+          </span>
+        )
+      },
+      size: 72,
+    },
     {
       id: "nombre",
       accessorKey: "nombre",
       meta: { label: "Nombre" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
+      cell: ({ row }) => {
+        const v = row.original
+        return (
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className={v.habilitado ? undefined : "text-muted-foreground"}>{v.nombre}</span>
+            {v.esSistema && (
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex text-muted-foreground" />}>
+                  <LockIcon className="size-3.5" />
+                  <span className="sr-only">Valor del sistema</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Valor del sistema: se puede renombrar y reordenar, pero no inactivar.
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {v.predeterminado && (
+              <Badge variant="soft" color="primary">
+                Predeterminado
+              </Badge>
+            )}
+          </span>
+        )
+      },
+    },
+    {
+      id: "etiqueta",
+      accessorKey: "etiqueta",
+      meta: { label: "Etiqueta" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Etiqueta" />,
       cell: ({ row }) => (
-        <span className="flex items-center gap-1.5 font-medium">
-          {row.original.nombre}
-          {row.original.esSistema && (
-            <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex text-muted-foreground" />}>
-                <LockIcon className="size-3.5" />
-                <span className="sr-only">Valor del sistema</span>
-              </TooltipTrigger>
-              <TooltipContent>
-                Valor del sistema: solo el super administrador lo elimina o renombra.
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </span>
+        <span className="text-muted-foreground">{row.original.etiqueta ?? "—"}</span>
       ),
     },
     {
@@ -61,16 +133,10 @@ export function createValoresColumns({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
       cell: ({ row }) => <span className="font-mono text-[0.8125rem]">{row.original.valor}</span>,
     },
-    {
-      id: "accion",
-      accessorKey: "accion",
-      meta: { label: "Acción" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Acción" />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.accion ?? "—"}</span>
-      ),
-    },
-    {
+  ]
+
+  if (categoria.categoriaPadre) {
+    columns.push({
       id: "padre",
       accessorFn: (row) => row.padre?.nombre ?? "",
       meta: { label: "Depende de" },
@@ -94,38 +160,68 @@ export function createValoresColumns({
           </Badge>
         )
       },
-    },
-  ]
+    })
+  }
 
-  if (puedeEditar || puedeEliminar) {
+  columns.push({
+    id: "habilitado",
+    accessorFn: (row) => (row.habilitado ? "Activo" : "Inactivo"),
+    meta: { label: "Estado" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+    // Se cambia desde "Editar valor".
+    cell: ({ row }) =>
+      row.original.habilitado ? (
+        <Badge variant="soft" color="success">
+          Activo
+        </Badge>
+      ) : (
+        <Badge variant="outline" color="neutral">
+          Inactivo
+        </Badge>
+      ),
+  })
+
+  if (puedeEditar) {
     columns.push({
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-1">
-          {puedeEditar && (
+      cell: ({ row }) => {
+        const v = row.original
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {/* Inactivo no puede ser predeterminado (V101). */}
+            {v.habilitado && !v.predeterminado && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      color="neutral"
+                      size="icon-sm"
+                      disabled={pendiente === v.pkListaValor}
+                      onClick={() => onPredeterminado(v)}
+                    />
+                  }
+                >
+                  <span className="sr-only">Marcar {v.nombre} como predeterminado</span>
+                  <CheckCircleIcon />
+                </TooltipTrigger>
+                <TooltipContent>Marcar como predeterminado</TooltipContent>
+              </Tooltip>
+            )}
+            {v.predeterminado && (
+              <span className="inline-flex size-8 items-center justify-center text-primary">
+                <CheckCircleFillIcon className="size-4" aria-hidden />
+              </span>
+            )}
             <DialogSaveValor
-              key={`${row.original.pkListaValor}-${row.original.nombre}-${row.original.padre?.pkListaValor}`}
+              key={`${v.pkListaValor}-${v.nombre}-${v.etiqueta}-${v.padre?.pkListaValor}`}
               categoria={categoria}
-              categorias={categorias}
-              valor={row.original}
+              valor={v}
             />
-          )}
-          {puedeEliminar && (
-            <ConfirmRemoveButton
-              label="Eliminar valor"
-              title="Eliminar valor"
-              description={
-                <>
-                  Se eliminará «{row.original.nombre}» de {categoria.categoria}. No se puede si
-                  está en uso o tiene valores que dependen de él.
-                </>
-              }
-              onConfirm={() => onEliminar(row.original)}
-            />
-          )}
-        </div>
-      ),
+          </div>
+        )
+      },
       enableSorting: false,
       enableHiding: false,
       size: 96,

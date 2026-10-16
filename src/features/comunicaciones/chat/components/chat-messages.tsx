@@ -1,8 +1,9 @@
-import { useEffect, useRef, type ReactNode } from "react"
+import { Fragment, useEffect, useRef, type ReactNode } from "react"
 
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  ArrowBendUpLeftIcon,
   CheckCircleIcon,
   FileDownloadOutlinedIcon,
   PushPinFillIcon,
@@ -16,6 +17,10 @@ import { cn } from "@/lib/utils"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
+import {
+  BotonReaccionar,
+  ReaccionesMensaje,
+} from "@/features/comunicaciones/chat/components/reacciones-mensaje"
 import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
 import {
   agruparPorDia,
@@ -33,6 +38,11 @@ interface ChatMessagesProps {
   nombreConversacion: string
   // Contenido fijo al inicio del historial (p. ej. resultados de una elección).
   antes?: ReactNode
+  // Primer mensaje sin leer al abrir el canal: lleva el divisor "Mensajes nuevos".
+  primerNoLeidoId?: number
+  onResponder?: (mensaje: Mensaje) => void
+  // Clic en una cita: llevar al mensaje original.
+  onIrAMensaje?: (id: number) => void
 }
 
 export function ChatMessages({
@@ -43,6 +53,9 @@ export function ChatMessages({
   destacado,
   nombreConversacion,
   antes,
+  primerNoLeidoId,
+  onResponder,
+  onIrAMensaje,
 }: ChatMessagesProps) {
   const finRef = useRef<HTMLDivElement>(null)
   const contenedorRef = useRef<HTMLDivElement>(null)
@@ -114,13 +127,19 @@ export function ChatMessages({
           </div>
           <ul className="space-y-4">
             {grupo.mensajes.map((m) => (
-              <li
-                key={m.id}
-                data-mensaje-id={m.id}
-                className="-mx-2 rounded-xl px-2 transition-colors duration-700 data-destacado:bg-primary/15 motion-reduce:transition-none"
-              >
-                <MensajeItem mensaje={m} />
-              </li>
+              <Fragment key={m.id}>
+                {m.id === primerNoLeidoId && <DivisorNoLeidos />}
+                <li
+                  data-mensaje-id={m.id}
+                  className={cn(
+                    "-mx-2 rounded-xl px-2 transition-colors duration-700 data-destacado:bg-primary/15 motion-reduce:transition-none",
+                    // Me mencionaron: franja amarilla como en Discord.
+                    m.meMenciona && !m.esPropio && "border-l-3 border-yellow bg-yellow-22/60",
+                  )}
+                >
+                  <MensajeItem mensaje={m} onResponder={onResponder} onIrAMensaje={onIrAMensaje} />
+                </li>
+              </Fragment>
             ))}
           </ul>
         </section>
@@ -130,7 +149,65 @@ export function ChatMessages({
   )
 }
 
-function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
+function DivisorNoLeidos() {
+  return (
+    <li role="separator" aria-label="Mensajes nuevos" className="relative flex items-center justify-end py-1">
+      <span aria-hidden className="absolute inset-x-0 top-1/2 h-px bg-red" />
+      <span className="relative rounded-sm bg-red px-1.5 text-[10px] font-bold tracking-wide text-red-foreground uppercase">
+        Nuevos
+      </span>
+    </li>
+  )
+}
+
+// Cita del mensaje respondido; clic = ir al original.
+function Cita({ mensaje: m, onIrAMensaje }: { mensaje: Mensaje; onIrAMensaje?: (id: number) => void }) {
+  const cita = m.respuestaA
+  if (!cita) return null
+  return (
+    <button
+      type="button"
+      disabled={cita.eliminado}
+      onClick={() => onIrAMensaje?.(cita.id)}
+      className="mb-1.5 flex w-full min-w-0 items-center gap-1.5 rounded-md border-l-3 border-primary/50 bg-card/60 px-2 py-1 text-left text-xs hover:bg-card focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-default"
+    >
+      <ArrowBendUpLeftIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+      {cita.eliminado ? (
+        <span className="text-muted-foreground italic">Mensaje eliminado</span>
+      ) : (
+        <span className="min-w-0 truncate">
+          <span className="font-semibold">{cita.autor}</span>{" "}
+          <span className="text-muted-foreground">{cita.texto}</span>
+        </span>
+      )}
+    </button>
+  )
+}
+
+function BotonResponder({ mensaje, onResponder }: { mensaje: Mensaje; onResponder?: (m: Mensaje) => void }) {
+  if (!onResponder) return null
+  return (
+    <button
+      type="button"
+      aria-label="Responder"
+      title="Responder"
+      onClick={() => onResponder(mensaje)}
+      className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+    >
+      <ArrowBendUpLeftIcon className="size-4.5" />
+    </button>
+  )
+}
+
+function MensajeItem({
+  mensaje: m,
+  onResponder,
+  onIrAMensaje,
+}: {
+  mensaje: Mensaje
+  onResponder?: (m: Mensaje) => void
+  onIrAMensaje?: (id: number) => void
+}) {
   if (m.sistema) {
     return (
       <p className="text-center text-xs text-muted-foreground">
@@ -162,15 +239,19 @@ function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
 
   if (m.esPropio) {
     return (
-      <article className="group/mensaje relative ml-auto w-fit max-w-[85%] min-w-40 rounded-xl bg-primary/10 px-4 py-3 md:max-w-[70%]">
-        <MensajeAcciones mensaje={m} />
-        <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="sr-only">Tú, </span>
-          {meta}
-        </header>
-        {m.texto && <TextoFormateado texto={m.texto} />}
-        {m.adjunto && <Adjunto mensaje={m} propio />}
-      </article>
+      <div className="ml-auto w-fit max-w-[85%] min-w-40 md:max-w-[70%]">
+        <article className="group/mensaje relative rounded-xl bg-primary/10 px-4 py-3">
+          <MensajeAcciones mensaje={m} extra={<BotonResponder mensaje={m} onResponder={onResponder} />} />
+          <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="sr-only">Tú, </span>
+            {meta}
+          </header>
+          <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
+          {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
+          {m.adjunto && <Adjunto mensaje={m} propio />}
+        </article>
+        <ReaccionesMensaje mensaje={m} />
+      </div>
     )
   }
 
@@ -186,13 +267,22 @@ function MensajeItem({ mensaje: m }: { mensaje: Mensaje }) {
           </AvatarBadge>
         )}
       </Avatar>
-      <div className="min-w-0 rounded-xl bg-muted/40 px-4 py-3">
-        <header className="mb-1 flex items-baseline gap-2 text-xs">
-          <span className="font-medium">{m.autor.nombre}</span>
-          <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
-        </header>
-        {m.texto && <TextoFormateado texto={m.texto} />}
-        {m.adjunto && <Adjunto mensaje={m} />}
+      <div className="min-w-0">
+        <div className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3">
+          {/* Los mensajes ajenos solo se pueden reaccionar y responder. */}
+          <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
+            <BotonReaccionar mensaje={m} />
+            <BotonResponder mensaje={m} onResponder={onResponder} />
+          </div>
+          <header className="mb-1 flex items-baseline gap-2 text-xs">
+            <span className="font-medium">{m.autor.nombre}</span>
+            <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
+          </header>
+          <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
+          {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
+          {m.adjunto && <Adjunto mensaje={m} />}
+        </div>
+        <ReaccionesMensaje mensaje={m} />
       </div>
     </article>
   )

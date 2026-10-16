@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import { useDeleteStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
@@ -28,6 +29,8 @@ interface DeleteStatementDialogProps {
 
 export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: DeleteStatementDialogProps) {
   const [open, setOpen] = useState(false)
+  // Sin red no se puede eliminar (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
   const { notify } = useNotify()
 
   const deleteMutation = useDeleteStatement({
@@ -56,6 +59,7 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
+                  disabled={soloEnLinea.disabled}
                   aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
                   onClick={(event) => event.stopPropagation()}
                 />
@@ -65,7 +69,7 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
         >
           <TrashIcon />
         </TooltipTrigger>
-        <TooltipContent>{`Eliminar ${levelLabel.toLowerCase()}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${levelLabel.toLowerCase()}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
@@ -78,7 +82,7 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
         <AlertDialogFooter>
           <AlertDialogAction
             color="destructive"
-            disabled={deleteMutation.isPending}
+            disabled={deleteMutation.isPending || soloEnLinea.disabled}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(statement.id)}
           >

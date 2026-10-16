@@ -49,6 +49,7 @@ import { SelectCampusDialog } from "@/features/coverage/components/dialogs/dialo
 import { DOCUMENT_REGEX, EMAIL_REGEX } from "@/features/coverage/utils/matricula-form-defaults"
 import type { CampusOption } from "@/features/coverage/utils/campus-options"
 import type { Enrollment } from "@/features/coverage/api/types/enrollment"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { Shift, EducationLevel } from "@/features/coverage/api/types/reservation"
 
 interface DetailEnrollmentDialogProps {
@@ -79,10 +80,7 @@ function shiftKeyFromLabel(label: string): string {
   return Object.entries(SHIFT_LABELS).find(([, value]) => value === label)?.[0] ?? label
 }
 
-/**
- * Items de un combobox que siempre incluyen el valor actual, aunque no venga
- * en el catálogo: así el campo muestra el dato real en vez de un placeholder.
- */
+/** Incluye el valor actual aunque no esté en el catálogo, para mostrar el dato real. */
 function itemsWithValue(items: Record<string, string>, value?: string | null) {
   if (!value || value in items) return items
   return { ...items, [value]: value }
@@ -179,10 +177,7 @@ function DetailField({
   )
 }
 
-// Mismas reglas que la validación de matrícula (`validateMatricula`) y que el
-// alta de inscripción (`dialog-add-enrollment`): formato de documento (3-15
-// dígitos), formato de correo, fecha de nacimiento no futura y campos
-// obligatorios de estudiante/acudiente.
+// Mismas reglas que `validateMatricula` y el alta de inscripción.
 function enrollmentErrors(enrollment: Enrollment): Partial<Record<string, string>> {
   const errors: Partial<Record<string, string>> = {}
 
@@ -233,11 +228,7 @@ function Section({ title, children }: SectionProps) {
   )
 }
 
-/**
- * "Sede educativa": en vez de un combobox, abre el mismo dialog de selección
- * de establecimiento que el alta de inscripción -- la jornada viaja con la
- * sede elegida, así que no hay un campo "Jornada" aparte para editar.
- */
+/** Abre el selector de establecimiento del alta: la jornada viaja con la sede, sin campo aparte. */
 function SedeEducativaField({
   value,
   shiftLabel,
@@ -292,12 +283,11 @@ export function DetailEnrollmentDialog({
   enrollment,
   variant = "eye",
 }: DetailEnrollmentDialogProps) {
+  const { puedeEditar, puedeEliminar } = useMenuPermission("INSCRITOS")
   const [open, setOpen] = useState(false)
   /** Borrador en edición; `null` = modo lectura. */
   const [draft, setDraft] = useState<Enrollment | null>(null)
-  // Los errores solo se muestran después del primer intento de guardar --
-  // igual que `hasSubmitted` en el alta de matrícula y `attemptedStudentStep`
-  // en el alta de inscripción.
+  // Los errores solo se muestran tras el primer intento de guardar.
   const [attemptedSave, setAttemptedSave] = useState(false)
   const { notify } = useNotify()
 
@@ -327,8 +317,6 @@ export function DetailEnrollmentDialog({
     EDUCATION_LEVEL_LABELS[current.originEducationLevel as EducationLevel] ??
     current.originEducationLevel
 
-  // Catálogo compartido con el formulario de reserva: instituciones
-  // disponibles para el combobox de institución de origen en modo edición.
   const { data: catalogs } = useReservationCatalogsQuery()
   const institutionItems = itemsWithValue(
     optionsToItems(catalogs?.institutions ?? []),
@@ -365,7 +353,7 @@ export function DetailEnrollmentDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next && variant === "pencil") setDraft(enrollment)
+        if (next && variant === "pencil" && puedeEditar) setDraft(enrollment)
         if (!next) {
           setDraft(null)
           setAttemptedSave(false)
@@ -430,17 +418,19 @@ export function DetailEnrollmentDialog({
               </>
             ) : (
               <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label="Editar"
-                  onClick={handleEdit}
-                >
-                  <PencilIcon />
-                </Button>
-                <DeleteEnrollmentDialog enrollment={enrollment} />
+                {puedeEditar ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label="Editar"
+                    onClick={handleEdit}
+                  >
+                    <PencilIcon />
+                  </Button>
+                ) : null}
+                {puedeEliminar ? <DeleteEnrollmentDialog enrollment={enrollment} /> : null}
               </>
             )}
           </div>

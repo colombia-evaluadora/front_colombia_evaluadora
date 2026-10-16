@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 
@@ -72,6 +73,9 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   // que en la Planilla, las notas se acumulan y se envían como solicitud.
   const periodoCerrado = usePeriodoCerrado(actividad.fechaCierre || actividad.fechaInicio)
   const solicitud = useSolicitudPeriodoCerrado({ onEnviado: invalidarCalificaciones })
+  // Calificar, asistencia de la actividad y "No presentó" van al servidor:
+  // sin red, deshabilitados hasta la outbox de la Fase 2 (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
 
   /** Asistencia de UN estudiante en esta actividad (Regla 73): no toca la
    *  Vista Asistencias. La excusa se adjunta allá; acá solo se refleja. */
@@ -129,7 +133,14 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
             Periodo cerrado
           </div>
           {solicitud.cambios.size > 0 && (
-            <Button color="primary" size="sm" variant="fill" onClick={solicitud.pedirConfirmacion}>
+            <Button
+              color="primary"
+              size="sm"
+              variant="fill"
+              disabled={soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
+              onClick={solicitud.pedirConfirmacion}
+            >
               Guardar
             </Button>
           )}
@@ -212,6 +223,7 @@ function CalificacionRow({
   cambio,
   onCambio,
 }: CalificacionRowProps) {
+  const soloEnLinea = useOnlineOnly()
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const sinNota = estudiante.notaHomologada == null && porcentaje === null
@@ -252,7 +264,7 @@ function CalificacionRow({
             actividadSinComenzar={actividadSinComenzar}
             congelada={!asistenciaEditable}
             onChange={
-              !actividadSinComenzar && asistenciaEditable
+              !actividadSinComenzar && asistenciaEditable && !soloEnLinea.disabled
                 ? (tipo) => onGuardarAsistencia(estudiante.id, tipo)
                 : undefined
             }
@@ -269,7 +281,9 @@ function CalificacionRow({
               pkTactividadEstudiante={estudiante.id}
               checked={noPresento}
               motivoDeshabilitado={
-                actividadSinComenzar
+                soloEnLinea.disabled
+                  ? soloEnLinea.tooltip
+                  : actividadSinComenzar
                   ? "Esta actividad todavía no comienza."
                   : estudiante.asistencia.estado === "sin-registrar"
                     ? "Disponible cuando la asistencia esté registrada."
@@ -374,13 +388,14 @@ function NoPresentoCheckbox({
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
-  // Marcado se puede quitar siempre; sin marcar aplica el motivo.
-  const disabled = !checked && motivoDeshabilitado != null
+  // Marcado se puede quitar siempre (salvo sin red); sin marcar aplica el motivo.
+  const soloEnLinea = useOnlineOnly()
+  const disabled = soloEnLinea.disabled || (!checked && motivoDeshabilitado != null)
 
   return (
     <label
       htmlFor={id}
-      title={disabled ? (motivoDeshabilitado ?? undefined) : undefined}
+      title={disabled ? (soloEnLinea.tooltip ?? motivoDeshabilitado ?? undefined) : undefined}
       className={cn(
         "flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs",
         disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",

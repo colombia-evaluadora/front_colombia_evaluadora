@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import {
   Dialog,
   DialogClose,
@@ -79,6 +80,8 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
   const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidadId)
   const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(valoraciones))
   const addCriterio = useAddCriterioUnidad()
+  // Sin red no se vinculan criterios (plan offline §7.5).
+  const soloEnLinea = useOnlineOnly()
 
   // Si `valoraciones` cambia (la query terminó de cargar, o el docente
   // reabrió el modal para OTRA unidad con otra escala) mientras el modal
@@ -171,7 +174,8 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
                 color="primary"
                 size="sm"
                 type="button"
-                disabled={!completo || addCriterio.isPending}
+                disabled={!completo || addCriterio.isPending || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
                 onClick={() => vincular(() => setDraft(draftVacio(valoraciones)))}
               >
                 <PlusCircleIcon data-icon="inline-start" />
@@ -182,7 +186,8 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
                 color="primary"
                 size="sm"
                 type="button"
-                disabled={!completo || addCriterio.isPending}
+                disabled={!completo || addCriterio.isPending || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
                 onClick={() => vincular(() => handleOpenChange(false))}
               >
                 <CheckIcon data-icon="inline-start" />

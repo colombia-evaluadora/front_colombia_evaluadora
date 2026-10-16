@@ -280,7 +280,12 @@ function ItemConversacion({
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />
         )}
-        {conPendientes && (
+        {conPendientes && (c.menciones ?? 0) > 0 && (
+          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-red px-1.5 text-xs font-bold text-red-foreground">
+            <span className="sr-only">Menciones sin leer: </span>@{c.menciones}
+          </span>
+        )}
+        {conPendientes && !c.menciones && (
           <span className="grid h-5 min-w-5 place-items-center rounded-full border px-1.5 text-xs font-medium">
             <span className="sr-only">Mensajes sin leer: </span>
             {c.noLeidos}

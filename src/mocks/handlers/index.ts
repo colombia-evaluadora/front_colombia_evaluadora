@@ -1,4 +1,5 @@
 import { authHandlers } from "@/mocks/handlers/auth"
+import { notificacionesHandlers } from "@/mocks/handlers/notificaciones"
 import { healthHandlers } from "@/mocks/handlers/health"
 import { auditsHandlers } from "@/mocks/handlers/audits"
 import { auditTablesHandlers } from "@/mocks/handlers/audit-tables"
@@ -50,6 +51,8 @@ import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicacione
 import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
+import { pushHandlers } from "@/mocks/handlers/notificaciones/push"
+import { realtimeHandlers } from "@/mocks/handlers/realtime"
 
 export const handlers = [
   ...authHandlers,
@@ -101,6 +104,9 @@ export const handlers = [
   ...comunicacionesEncuestasHandlers,
   ...comunicacionesEvaluacionesHandlers,
   ...comunicacionesComunicadosHandlers,
+  ...pushHandlers,
+  ...realtimeHandlers,
   ...comunicacionesMensajesHandlers,
   ...comunicacionesHandlers,
+  ...notificacionesHandlers,
 ]

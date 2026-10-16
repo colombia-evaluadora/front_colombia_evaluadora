@@ -15,6 +15,7 @@ import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/di
 import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-retirar-matricula"
 import { ReingresarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-reingresar-matricula"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 function formatEnrollmentDate(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" })
@@ -157,7 +158,19 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
+    cell: ({ row }) => <ActionsCell matricula={row.original} />,
+    enableSorting: false,
+    enableHiding: false,
+    size: 160,
+  },
+]
+
+/** Ver documentos es de solo lectura acá: va con Acceso. */
+function ActionsCell({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar, puedeEliminar } = useMenuPermission("MATRICULA")
+  const row = { original: matricula }
+
+  return (
       <div className="flex items-center justify-end gap-1">
         <Tooltip>
           <TooltipTrigger
@@ -177,7 +190,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
           </TooltipTrigger>
           <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
         </Tooltip>
-        {!NOT_EDITABLE_STATUSES.includes(row.original.status) && (
+        {puedeEditar && !NOT_EDITABLE_STATUSES.includes(row.original.status) && (
           <Tooltip>
             <TooltipTrigger
               render={
@@ -198,13 +211,9 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
           </Tooltip>
         )}
         <FilesMatriculaDialog matricula={row.original} />
-        <RetirarMatriculaDialog matricula={row.original} />
-        <ReingresarMatriculaDialog matricula={row.original} />
-        <DeleteMatriculaDialog matricula={row.original} />
+        {puedeEditar ? <RetirarMatriculaDialog matricula={row.original} /> : null}
+        {puedeEditar ? <ReingresarMatriculaDialog matricula={row.original} /> : null}
+        {puedeEliminar ? <DeleteMatriculaDialog matricula={row.original} /> : null}
       </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 160,
-  },
-]
+  )
+}
