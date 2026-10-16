@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
+import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
@@ -67,23 +70,80 @@ export function buildCalificacion(input: CalificarCeldaInput): unknown {
   }
 }
 
-interface CalificarCeldaResult {
+export interface CalificarCeldaResult {
   calificacion: number | null
   /** Regla 55: corrección en periodo no calificable → solicitud de
    *  aprobación (la nota no cambia). Vacío = se aplicó. */
   solicitudes_pendientes?: number[] | null
+  /** `true` = quedó en la outbox (sin conexión); se enviará al reconectar. */
+  queued?: boolean
 }
 
-function calificarCelda(input: CalificarCeldaInput): Promise<CalificarCeldaResult> {
+/** Op de la outbox: el body ya armado (`CALIFICACION` serializado). */
+export interface CalificarPayload {
+  pkTactividadEstudiante: number
+  actividadId?: number
+  CALIFICACION: string
+  FECHA: string
+  /** `updated_at` de la celda que vio el docente (CAS, BE-2). */
+  baseVersion?: string | null
+  /** Para reabrir el popover con lo encolado. */
+  input: CalificarCeldaInput
+}
+
+/** Todas las escrituras de una celda comparten entidad: FIFO entre calificar/observar/estado. */
+export const celdaEntityKey = (pk: number) => `planilla:act-est:${pk}`
+
+export const PLANILLA_SOLICITUD_NOTE =
+  "El periodo se cerró antes de sincronizar: tus cambios quedaron como solicitud al coordinador."
+
+function sendCalificar(p: CalificarPayload, ctx: SendCtx): Promise<CalificarCeldaResult> {
   return evalCol.putRow(
-    `/planeador/actividades/estudiantes/${input.pkTactividadEstudiante}/calificar`,
+    `/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/calificar`,
     // `CALIFICACION` está declarado JSONB del lado del backend y espera un
     // STRING ya serializado, no un objeto anidado nativo — mandarlo como
     // objeto lo aplana en "placeholders sin tipo declarado" (400). Mismo bug
-    // de binder que `DEFINICION` en `PUT .../instrumento`, confirmado con
-    // pruebas reales contra el backend.
-    { CALIFICACION: JSON.stringify(buildCalificacion(input)), FECHA: input.fecha },
+    // de binder que `DEFINICION` en `PUT .../instrumento`.
+    // `BASE_VERSION` solo si se conoce: sin él, el backend escribe como siempre.
+    { CALIFICACION: p.CALIFICACION, FECHA: p.FECHA, ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}) },
+    { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
   )
+}
+
+registerOutboxHandler<CalificarPayload>({
+  kind: "planilla.calificar",
+  version: 1,
+  entityKey: (p) => celdaEntityKey(p.pkTactividadEstudiante),
+  // Dos ediciones de la misma celda: gana la última, con la BASE de la primera (§6.7).
+  coalesce: (prev, next) => ({ ...next, baseVersion: prev.baseVersion ?? next.baseVersion }),
+  send: sendCalificar,
+  noteOf: (r) => ((r as CalificarCeldaResult)?.solicitudes_pendientes?.length ? PLANILLA_SOLICITUD_NOTE : null),
+  invalidates: (p) => [
+    planeadorKeys.planilla.calificaciones.all,
+    ["informes"],
+    planeadorKeys.actividadEstudiante.nota(p.pkTactividadEstudiante),
+    p.actividadId != null ? planeadorKeys.actividad.calificaciones(p.actividadId) : ["planeador", "actividad"],
+  ],
+  rebase: (p, conflict) => ({ ...p, baseVersion: conflict.serverVersion ?? null }),
+  describe: (p) => ({
+    titulo: "Calificación",
+    detalle: `Actividad ${p.actividadId ?? "—"}, fecha ${p.FECHA}`,
+    ruta: "/app/planeador/planilla",
+  }),
+})
+
+type CalificarCeldaVars = CalificarCeldaInput & { baseVersion?: string | null }
+
+async function calificarCelda({ baseVersion, ...input }: CalificarCeldaVars): Promise<CalificarCeldaResult> {
+  const outcome = await runOrQueue<CalificarPayload, CalificarCeldaResult>("planilla.calificar", {
+    pkTactividadEstudiante: input.pkTactividadEstudiante,
+    actividadId: input.actividadId,
+    CALIFICACION: JSON.stringify(buildCalificacion(input)),
+    FECHA: input.fecha,
+    baseVersion: baseVersion ?? null,
+    input,
+  })
+  return outcome.queued ? { calificacion: null, queued: true } : outcome.result
 }
 
 interface UseCalificarCeldaOptions {
@@ -96,14 +156,19 @@ export function useCalificarCeldaMutation({ mutationConfig }: UseCalificarCeldaO
 
   return useMutation({
     mutationFn: calificarCelda,
+    // La outbox decide si hay red: la mutación no debe quedar pausada.
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
-      // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
-      queryClient.invalidateQueries({ queryKey: ["informes"] })
-      queryClient.invalidateQueries({
-        queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
-      })
-      invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      // Encolada: se invalida al sincronizar (invalidación agrupada del lote).
+      if (!result.queued) {
+        queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+        // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
+        queryClient.invalidateQueries({ queryKey: ["informes"] })
+        queryClient.invalidateQueries({
+          queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
+        })
+        invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      }
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,

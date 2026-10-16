@@ -243,6 +243,11 @@ export const paths = {
       path: "notificaciones/preferencias",
       getHref: () => "/app/notificaciones/preferencias",
     },
+    // Cambios guardados sin conexión (outbox, Fase 2 offline). Fuera del menú del backend.
+    pendientes: {
+      path: "pendientes",
+      getHref: () => "/app/pendientes",
+    },
     // Destino del guard de `/app`; lleva `?desde=<ruta pedida>`.
     sinAcceso: {
       path: "sin-acceso",

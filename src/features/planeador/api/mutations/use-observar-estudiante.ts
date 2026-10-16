@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
+import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
@@ -36,11 +39,53 @@ function buildObservarBody(input: {
   return body
 }
 
-function observarEstudiante(input: ObservarEstudianteInput): Promise<void> {
-  return evalCol.put(
-    `/planeador/actividades/estudiantes/${input.pkTactividadEstudiante}/observar`,
-    buildObservarBody(input),
-  )
+interface ObservarPayload {
+  pkTactividadEstudiante: number
+  actividadId?: number
+  body: Record<string, unknown>
+  /** `updated_at` de la celda que vio el docente (CAS, BE-2). */
+  baseVersion?: string | null
+}
+
+registerOutboxHandler<ObservarPayload>({
+  kind: "planilla.observacion",
+  version: 1,
+  entityKey: (p) => `planilla:act-est:${p.pkTactividadEstudiante}`,
+  coalesce: (prev, next) => ({
+    ...next,
+    body: { ...prev.body, ...next.body },
+    baseVersion: prev.baseVersion ?? next.baseVersion,
+  }),
+  send: (p: ObservarPayload, ctx: SendCtx) =>
+    evalCol.put(
+      `/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/observar`,
+      { ...p.body, ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}) },
+      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    ),
+  invalidates: (p) => [
+    planeadorKeys.planilla.calificaciones.all,
+    planeadorKeys.actividadEstudiante.nota(p.pkTactividadEstudiante),
+    p.actividadId != null ? planeadorKeys.actividad.calificaciones(p.actividadId) : ["planeador", "actividad"],
+  ],
+  rebase: (p, conflict) => ({ ...p, baseVersion: conflict.serverVersion ?? null }),
+  describe: (p) => ({
+    titulo: "Observación",
+    detalle: String(p.body.OBSERVACION ?? "").slice(0, 80),
+    ruta: "/app/planeador/planilla",
+  }),
+})
+
+async function observarEstudiante(
+  input: ObservarEstudianteInput & { baseVersion?: string | null },
+): Promise<{ queued: boolean }> {
+  const payload: ObservarPayload = {
+    pkTactividadEstudiante: input.pkTactividadEstudiante,
+    actividadId: input.actividadId,
+    body: buildObservarBody(input),
+    baseVersion: input.baseVersion ?? null,
+  }
+  const outcome = await runOrQueue("planilla.observacion", payload)
+  return { queued: outcome.queued }
 }
 
 interface UseObservarEstudianteOptions {
@@ -55,7 +100,12 @@ export function useObservarEstudianteMutation({
 
   return useMutation({
     mutationFn: observarEstudiante,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
+      if (result.queued) {
+        onSuccess?.(result, variables, ...rest)
+        return
+      }
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),

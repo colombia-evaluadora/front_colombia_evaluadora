@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { isNetworkError } from "@/lib/network-error"
+import { noteServerTime } from "@/lib/offline/clock"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
@@ -15,6 +16,10 @@ declare module "axios" {
     // Marca una lectura por POST (`api.query`, `evalCol.postRows`): no lleva
     // `Idempotency-Key` porque no muta nada.
     readOnly?: boolean
+    // Request enviada por la outbox (Fase 2 offline): sin toast global y sin
+    // redirigir a /login ante un 401 — la cola se pausa, conserva las ops y el
+    // banner pide iniciar sesión (`lib/offline/outbox/processor.ts`).
+    background?: boolean
   }
   export interface AxiosInstance {
     // El response interceptor de abajo desenvuelve `response.data` en runtime
@@ -57,6 +62,11 @@ declare module "axios" {
  * usuario.
  */
 let authToken: string | null = null
+
+/** ¿Hay access token en memoria? (la outbox lo asegura antes de enviar). */
+export function hasAuthToken(): boolean {
+  return authToken != null
+}
 
 export function setAuthToken(token: string | null) {
   authToken = token
@@ -293,6 +303,8 @@ api.interceptors.response.use(
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
   (response) => {
     connectivityStore.reportSuccess()
+    // BE-7: hora del servidor para corregir un reloj del equipo mal puesto.
+    noteServerTime(response.headers?.["x-server-time"] as string | undefined)
     return response.data
   },
   async (error) => {
@@ -312,6 +324,10 @@ api.interceptors.response.use(
     // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
     // ya lo captura y devuelve null. Lo mismo vale para los endpoints de
     // recuperación, que corren sin sesión.
+    // La outbox clasifica sus propios errores (§6.4): nada de toasts,
+    // revalidaciones ni redirecciones por cada op que falla.
+    if (error.config?.background) return Promise.reject(error)
+
     const requestUrl = error.config?.url ?? ""
     const isPublicEndpoint = PUBLIC_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
     const isUnauthorized = error.response?.status === 401

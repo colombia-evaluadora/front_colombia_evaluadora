@@ -58,6 +58,7 @@ import {
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
+import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -949,6 +950,18 @@ export const chatRoute = createRoute({
   component: ChatPage,
 })
 
+const PendientesPage = lazyRouteComponent(() => import("@/features/offline/pages/pendientes-page"), "PendientesPage")
+
+// Cambios guardados sin conexión (Fase 2 offline). Fuera del menú del backend:
+// `isAlwaysAllowedPath` la deja pasar y se llega desde el header y el banner.
+export const pendientesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.pendientes.path,
+  validateSearch: pendientesSearchSchema,
+  staticData: { breadcrumb: [{ label: "Cambios pendientes", to: paths.app.pendientes.getHref() }] },
+  component: PendientesPage,
+})
+
 const NotificacionesPage = lazyRouteComponent(
   () => import("@/features/notificaciones/pages/notificaciones-page"),
   "NotificacionesPage",
@@ -1040,6 +1053,7 @@ const routeTree = rootRoute.addChildren([
     asistenciaManualRoute,
     chatRoute,
     notificacionesRoute,
+    pendientesRoute,
     notificacionesPreferenciasRoute,
   ]),
 ])

@@ -4,6 +4,9 @@ import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
+import { runOrQueue } from "@/lib/offline/outbox/engine"
+import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
+import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
@@ -30,13 +33,80 @@ interface SoporteRow {
  * pk antes de reenviar — un solo paso, mismo patrón que los materiales de
  * apoyo (V426).
  */
-async function agregarObservacionSoporte(input: AgregarSoporteInput): Promise<number> {
-  const respuesta = await postMultipart<RowsEnvelope<SoporteRow> | SoporteRow>(
-    `/eval-col/planeador/actividades/estudiantes/${input.pkTactividadEstudiante}/soportes`,
-    { FECHA: input.fecha },
-    { FK_TARCHIVO: input.archivo },
+/** Op de la outbox: el archivo viaja como blob (clave `archivo`, §6.8). */
+interface AgregarSoportePayload {
+  pkTactividadEstudiante: number
+  fecha: string
+  nombre: string
+}
+
+const soporteKeys = (pk: number) => [
+  planeadorKeys.planilla.calificaciones.all,
+  planeadorKeys.actividadEstudiante.nota(pk),
+  planeadorKeys.actividadEstudiante.soportes(pk),
+]
+
+registerOutboxHandler<AgregarSoportePayload>({
+  kind: "planilla.soporte",
+  version: 1,
+  // Misma entidad que calificar/observar: FIFO por celda.
+  entityKey: (p) => `planilla:act-est:${p.pkTactividadEstudiante}`,
+  async send(p: AgregarSoportePayload, ctx: SendCtx) {
+    // Multipart: el gateway no aplica Idempotency-Key (una respuesta perdida
+    // puede duplicar el adjunto; se quita a mano desde la observación).
+    const respuesta = await postMultipart<RowsEnvelope<SoporteRow> | SoporteRow>(
+      `/eval-col/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/soportes`,
+      { FECHA: p.fecha },
+      { FK_TARCHIVO: await ctx.getFile("archivo") },
+      { background: ctx.background },
+    )
+    return unwrapRow<SoporteRow>(respuesta).pk_tactividad_soporte
+  },
+  invalidates: (p) => soporteKeys(p.pkTactividadEstudiante),
+  describe: (p) => ({ titulo: "Evidencia de observación", detalle: p.nombre, ruta: "/app/planeador/planilla" }),
+})
+
+registerOutboxHandler<QuitarSoporteInput>({
+  kind: "planilla.soporte-quitar",
+  version: 1,
+  entityKey: (p) => `planilla:act-est:${p.pkTactividadEstudiante}`,
+  send: (input: QuitarSoporteInput, ctx: SendCtx) =>
+    evalCol.putRow<SoporteRow>(
+      `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}`,
+      { FECHA: input.fecha },
+      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    ),
+  invalidates: (p) => soporteKeys(p.pkTactividadEstudiante),
+  describe: () => ({ titulo: "Quitar evidencia de observación", detalle: "", ruta: "/app/planeador/planilla" }),
+})
+
+registerOutboxHandler<MarcarFavoritoSoporteInput>({
+  kind: "planilla.soporte-favorito",
+  version: 1,
+  entityKey: (p) => `planilla:act-est:${p.pkTactividadEstudiante}`,
+  coalesce: (_prev, next) => next,
+  send: (input: MarcarFavoritoSoporteInput, ctx: SendCtx) =>
+    evalCol.putRow<SoporteRow>(
+      `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}/favorito`,
+      { ES_FAVORITO: input.esFavorito },
+      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    ),
+  invalidates: (p) => [planeadorKeys.actividadEstudiante.soportes(p.pkTactividadEstudiante)],
+  describe: (p) => ({
+    titulo: p.esFavorito ? "Marcar evidencia favorita" : "Quitar evidencia favorita",
+    detalle: "",
+    ruta: "/app/planeador/planilla",
+  }),
+})
+
+/** `pk_tactividad_soporte`, o `null` si quedó en la outbox (sin conexión). */
+async function agregarObservacionSoporte(input: AgregarSoporteInput): Promise<number | null> {
+  const outcome = await runOrQueue<AgregarSoportePayload, number>(
+    "planilla.soporte",
+    { pkTactividadEstudiante: input.pkTactividadEstudiante, fecha: input.fecha, nombre: input.archivo.name },
+    { files: { archivo: input.archivo } },
   )
-  return unwrapRow<SoporteRow>(respuesta).pk_tactividad_soporte
+  return outcome.queued ? null : outcome.result
 }
 
 interface UseAgregarObservacionSoporteOptions {
@@ -51,6 +121,7 @@ export function useAgregarObservacionSoporteMutation({
 
   return useMutation({
     mutationFn: agregarObservacionSoporte,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
@@ -74,11 +145,9 @@ export interface QuitarSoporteInput {
   fecha: string
 }
 
-function quitarObservacionSoporte(input: QuitarSoporteInput): Promise<SoporteRow> {
-  return evalCol.putRow<SoporteRow>(
-    `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}`,
-    { FECHA: input.fecha },
-  )
+async function quitarObservacionSoporte(input: QuitarSoporteInput): Promise<{ queued: boolean }> {
+  const outcome = await runOrQueue("planilla.soporte-quitar", input)
+  return { queued: outcome.queued }
 }
 
 interface UseQuitarObservacionSoporteOptions {
@@ -93,6 +162,7 @@ export function useQuitarObservacionSoporteMutation({
 
   return useMutation({
     mutationFn: quitarObservacionSoporte,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       queryClient.invalidateQueries({
@@ -116,11 +186,9 @@ export interface MarcarFavoritoSoporteInput {
 }
 
 /** No exige asistencia: solo cambia cuál evidencia se destaca. */
-function marcarFavoritoSoporte(input: MarcarFavoritoSoporteInput): Promise<SoporteRow> {
-  return evalCol.putRow<SoporteRow>(
-    `/planeador/actividades/estudiantes/soportes/${input.pkTactividadSoporte}/favorito`,
-    { ES_FAVORITO: input.esFavorito },
-  )
+async function marcarFavoritoSoporte(input: MarcarFavoritoSoporteInput): Promise<{ queued: boolean }> {
+  const outcome = await runOrQueue("planilla.soporte-favorito", input)
+  return { queued: outcome.queued }
 }
 
 interface UseMarcarFavoritoSoporteOptions {
@@ -135,6 +203,7 @@ export function useMarcarFavoritoSoporteMutation({
 
   return useMutation({
     mutationFn: marcarFavoritoSoporte,
+    networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.soportes(variables.pkTactividadEstudiante),
