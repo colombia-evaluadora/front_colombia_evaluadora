@@ -13,12 +13,12 @@
  */
 import type { QueryClient } from "@tanstack/react-query"
 
+import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
 import { getDb, isIndexedDbAvailable, type PersistedSession } from "@/lib/offline/db"
 import { getDeviceMode, getLastUserSub } from "@/lib/offline/query-persister"
 
-const DAY_MS = 864e5
-export const OFFLINE_SESSION_MAX_AGE_MS = 14 * DAY_MS
-export const MENU_SNAPSHOT_TTL_MS = 30 * DAY_MS
+export const OFFLINE_SESSION_MAX_AGE_MS = OFFLINE_MAX_MS
+export const MENU_SNAPSHOT_TTL_MS = OFFLINE_MAX_MS
 
 // Claves de las queries de navegación (features/navigation). Se repiten acá
 // para que `lib/offline` no dependa de features (task 7.1).

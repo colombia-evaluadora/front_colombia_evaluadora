@@ -1,3 +1,4 @@
+import { OFFLINE_MAX_DAYS } from "@/lib/offline/limits"
 import type { ConnectivityState } from "@/lib/offline/connectivity"
 import { isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
 
@@ -91,7 +92,7 @@ export function getQueueBanner(q: QueueBannerInput): { high: QueueBanner | null;
   } else if (q.windowExpired) {
     low = {
       tone: "yellow",
-      text: "Llevas 14 días sin conectarte. Conéctate para seguir registrando sin conexión; lo que ya guardaste está a salvo.",
+      text: `Llevas ${OFFLINE_MAX_DAYS} días sin conectarte. Conéctate para seguir registrando sin conexión; lo que ya guardaste está a salvo.`,
     }
   } else if (q.windowWarnDeadline) {
     low = { tone: "yellow", text: `Conéctate antes del ${q.windowWarnDeadline} para seguir trabajando sin conexión.` }

@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -60,7 +61,7 @@ registerOutboxHandler<EditarPayload>({
         ...(SOPORTE_ARCHIVO !== undefined ? { SOPORTE_ARCHIVO } : {}),
         ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}),
       },
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     )
     return (Array.isArray(raw) ? raw[0] : raw)?.solicitudes_pendientes ?? []
   },

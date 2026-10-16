@@ -10,6 +10,7 @@
  * metadatos del paso dentro del payload, mapa de ids temporales, estado
  * agregado de la saga y las acciones de la UI ("Omitir paso", "Descartar").
  */
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { getMeta, isIndexedDbAvailable, setMeta } from "@/lib/offline/db"
 import { enqueue, scheduleSync } from "@/lib/offline/outbox/engine"
 import { isOpen } from "@/lib/offline/outbox/policy"
@@ -116,7 +117,7 @@ export function stepRequest(ctx: SendCtx): WriteRequest {
       return id
     },
   }
-  return { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background, files }
+  return { headers: outboxHeaders(ctx), background: ctx.background, files }
 }
 
 // ---- Encolado --------------------------------------------------------------------

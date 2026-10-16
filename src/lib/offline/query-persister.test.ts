@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto"
 
+import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
 import { QueryClient } from "@tanstack/react-query"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -188,13 +189,13 @@ describe("restauración y buster", () => {
     expect(await rows(A)).toHaveLength(0)
   })
 
-  it("descarta filas vencidas por TTL", async () => {
+  it("conserva filas pasado su TTL y las descarta pasada la duración máxima offline", async () => {
     await setDeviceMode("personal")
     const client = newClient()
     await activatePersistUser(client, A)
     await fetchAndFlush(client, ["planeador", "x"], { ok: 1 }, offlineMeta)
-    const fresh = new QueryClient()
-    expect(await restoreUserQueries(fresh, A, Date.now() + OFFLINE_TTL.roster + 1)).toBe(0)
+    expect(await restoreUserQueries(new QueryClient(), A, Date.now() + OFFLINE_TTL.roster + 1)).toBe(1)
+    expect(await restoreUserQueries(new QueryClient(), A, Date.now() + OFFLINE_MAX_MS + 1)).toBe(0)
   })
 })
 

@@ -36,6 +36,11 @@ const createEnv = () => {
     // (`docente@x.edu.co,CEVAL-DOCENTE_PILOTO`); `*` = todos. Vacío (default)
     // = nadie: todo equipo queda en modo compartido. Ver `lib/offline/pilot.ts`.
     OFFLINE_PILOT: z.string().optional().default(""),
+    // Offline de meses (`openspec/changes/add-offline-meses-pwa`): días máximos
+    // que un equipo personal puede trabajar sin volver a autenticarse en línea.
+    // Alinea la sesión offline, la ventana de la outbox y la retención de datos
+    // guardados. Default 180 (un semestre largo); revisable.
+    OFFLINE_MAX_DAYS: z.coerce.number().int().min(1).max(400).optional().default(180),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(
