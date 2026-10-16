@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
-import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
+import type { AdjuntoMensaje, Mensaje } from "@/features/comunicaciones/chat/api/types"
+import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { extraerMenciones } from "@/features/comunicaciones/chat/lib/menciones"
 import { perfilDeRoles, puedeMencionarMasivo } from "@/features/comunicaciones/chat/lib/politica-chat"
 import type { ColorEtiqueta, Foro, OrdenForo } from "@/features/comunicaciones/foros/api/types"
@@ -19,6 +20,7 @@ import {
   responderHilo,
   type HiloMock,
 } from "@/mocks/db/comunicaciones-foros"
+import { registrarArchivoMaterial } from "@/mocks/db/planeador"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { mensajeNeutro, participantes } from "@/mocks/realtime/chat"
 import { publish } from "@/mocks/realtime/server"
@@ -29,6 +31,13 @@ import { publish } from "@/mocks/realtime/server"
  * errores `{ message }` y eventos en `foro:<id>`.
  */
 const RUTA = (path: string) => `*/api/eval-col/comunicaciones/foros/${path}`
+
+const RUTA_ARCHIVO = (path: string) => `*/api/files/eval-col/comunicaciones/foros/${path}`
+
+/** El mismo POST por JSON directo y por multipart vía file-service. */
+function dosRutas(path: string, resolver: Parameters<typeof http.post>[1]) {
+  return [http.post(RUTA(path), resolver), http.post(RUTA_ARCHIVO(path), resolver)]
+}
 
 const MAX_ETIQUETAS = 5
 const enviadosPorCliente = new Map<string, number>()
@@ -117,35 +126,28 @@ export const forosHandlers = [
     return HttpResponse.json({ rows })
   }),
 
-  http.post(RUTA(":canal/publicaciones"), async ({ params, request }) => {
+  // Con adjunto el front manda el mismo POST como multipart por file-service
+  // (como el chat): `leerCuerpo` acepta las dos formas.
+  ...dosRutas(":canal/publicaciones", async ({ params, request }) => {
     await delay(250)
     const foro = foroDe(params.canal)
     if (!foro) return error(404, "El foro no existe.")
     const p = permisos(request, foro.id)
     if (!p.puedePublicar) return error(403, "Tu perfil no puede abrir publicaciones en los foros.")
-    const body = (await request.json()) as {
-      TITULO?: string
-      TEXTO?: string
-      ETIQUETAS?: number[]
-      ADJUNTO_NOMBRE?: string
-      ADJUNTO_FORMATO?: string
-      CLIENT_MESSAGE_ID?: string
-    }
+    const { body, adjunto } = await leerCuerpo(request)
     const previo = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
     const h0 = previo ? hiloVivo(previo) : undefined
     if (h0) return fila(aPublicacion(h0, USUARIO_ACTUAL.id, true))
     const titulo = body.TITULO?.trim() ?? ""
     if (!titulo) return error(400, "Escribe un titulo para la publicacion.")
     if (titulo.length > 150) return error(400, "El titulo es demasiado largo.")
-    const t = textoValido(body.TEXTO, body.ADJUNTO_NOMBRE)
+    const t = textoValido(body.TEXTO, adjunto?.nombre)
     if (t.error) return error(400, t.error)
     const tags = etiquetasValidas(foro.id, body.ETIQUETAS, p.puedeModerar)
     if (tags.error) return error(tags.status, tags.error)
     const texto = t.texto ?? ""
     const h = crearHilo(foro.id, titulo, texto, USUARIO_ACTUAL, tags.ids ?? [], {
-      adjunto: body.ADJUNTO_NOMBRE
-        ? { nombre: body.ADJUNTO_NOMBRE, formato: formatoValido(body.ADJUNTO_FORMATO), eliminadoEn: null }
-        : null,
+      adjunto,
       menciones: menciones(texto, foro.id, request),
     })
     if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, h.id)
@@ -191,24 +193,18 @@ export const forosHandlers = [
     return HttpResponse.json({ rows: respuestasDe(h) })
   }),
 
-  http.post(RUTA("publicaciones/:id/respuestas"), async ({ params, request }) => {
+  ...dosRutas("publicaciones/:id/respuestas", async ({ params, request }) => {
     await delay(200)
     const h = hiloVivo(params.id)
     if (!h) return error(404, "La publicacion ya no existe.")
     const p = permisos(request, h.foroId)
     if (!p.puedeResponder) return error(403, "Tu perfil no puede responder en los foros.")
     if (h.cerrada && !p.puedeModerar) return error(409, "La publicacion esta cerrada.")
-    const body = (await request.json()) as {
-      TEXTO?: string
-      ADJUNTO_NOMBRE?: string
-      ADJUNTO_FORMATO?: string
-      FK_MENSAJE_RESPUESTA?: number
-      CLIENT_MESSAGE_ID?: string
-    }
+    const { body, adjunto } = await leerCuerpo(request)
     const previo = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(`r:${body.CLIENT_MESSAGE_ID}`) : undefined
     const m0 = previo ? mensajes.find((m) => m.id === previo) : undefined
     if (m0) return fila(m0)
-    const t = textoValido(body.TEXTO, body.ADJUNTO_NOMBRE)
+    const t = textoValido(body.TEXTO, adjunto?.nombre)
     if (t.error) return error(400, t.error)
     let original: Mensaje | null = null
     if (body.FK_MENSAJE_RESPUESTA) {
@@ -217,9 +213,7 @@ export const forosHandlers = [
     }
     const texto = t.texto ?? ""
     const m = responderHilo(h, texto, USUARIO_ACTUAL, original, {
-      adjunto: body.ADJUNTO_NOMBRE
-        ? { nombre: body.ADJUNTO_NOMBRE, formato: formatoValido(body.ADJUNTO_FORMATO), eliminadoEn: null }
-        : null,
+      adjunto,
       menciones: menciones(texto, h.foroId, request),
     })
     if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(`r:${body.CLIENT_MESSAGE_ID}`, m.id)
@@ -250,6 +244,22 @@ export const forosHandlers = [
     }
     publish(`foro:${h.foroId}`, "respuesta.eliminada", { id, publicacionId: h.id })
     publicarHilo(h, "publicacion.actualizada")
+    return fila(m)
+  }),
+
+  // Quitar el archivo del cuerpo o de una respuesta: su autor o la moderación.
+  http.patch(RUTA("mensajes/:id/adjunto/eliminar"), async ({ params, request }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id))
+    const h = m ? hiloDeMensaje(m.id) : undefined
+    if (!m || !h || h.eliminada) return error(404, "El mensaje ya no existe.")
+    if (!m.esPropio && !permisos(request, h.foroId).puedeModerar) {
+      return error(403, "Solo quien lo escribio o un moderador quita el archivo.")
+    }
+    if (!m.adjunto) return error(404, "El mensaje no tiene archivo.")
+    m.adjunto = { ...m.adjunto, eliminadoEn: new Date().toISOString() }
+    if (h.raizId === m.id) publicarHilo(h, "publicacion.actualizada")
+    else publish(`foro:${h.foroId}`, "respuesta.actualizada", { publicacionId: h.id, mensaje: mensajeNeutro(m) })
     return fila(m)
   }),
 
@@ -375,6 +385,49 @@ function actualizada(h: HiloMock) {
   return fila(aPublicacion(h, USUARIO_ACTUAL.id, true))
 }
 
-function formatoValido(f: string | undefined): NonNullable<Mensaje["adjunto"]>["formato"] {
-  return f === "WORD" || f === "PDF" || f === "IMAGEN" || f === "VIDEO" ? f : "OTRO"
+interface CuerpoForo {
+  TITULO?: string
+  TEXTO?: string
+  ETIQUETAS?: number[]
+  FK_MENSAJE_RESPUESTA?: number
+  CLIENT_MESSAGE_ID?: string
+}
+
+/**
+ * JSON sin archivo; con archivo, multipart como lo reenvía file-service (cada
+ * campo como texto, `ETIQUETAS` = "3,7"). El binario queda como object URL
+ * (mismo registro que el chat y el planeador) para que la vista previa y la
+ * descarga funcionen con el mock.
+ */
+async function leerCuerpo(request: Request): Promise<{ body: CuerpoForo; adjunto: AdjuntoMensaje | null }> {
+  if (!request.headers.get("content-type")?.includes("multipart/form-data")) {
+    return { body: (await request.json()) as CuerpoForo, adjunto: null }
+  }
+  const form = await request.formData()
+  const campo = (k: string) => {
+    const v = form.get(k)
+    return typeof v === "string" ? v : undefined
+  }
+  const etiquetas = campo("ETIQUETAS")
+  const respuesta = campo("FK_MENSAJE_RESPUESTA")
+  const archivo = form.get("ADJUNTO")
+  return {
+    body: {
+      TITULO: campo("TITULO"),
+      TEXTO: campo("TEXTO"),
+      ETIQUETAS: etiquetas ? etiquetas.split(",").filter(Boolean).map(Number) : undefined,
+      FK_MENSAJE_RESPUESTA: respuesta ? Number(respuesta) : undefined,
+      CLIENT_MESSAGE_ID: campo("CLIENT_MESSAGE_ID"),
+    },
+    adjunto:
+      archivo instanceof File
+        ? {
+            nombre: archivo.name,
+            formato: formatoDeArchivo(archivo),
+            eliminadoEn: null,
+            archivoId: registrarArchivoMaterial(archivo),
+            peso: archivo.size,
+          }
+        : null,
+  }
 }
