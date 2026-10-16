@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -84,7 +85,7 @@ registerOutboxHandler<CalificarBulkInput>({
     evalCol.putRow(
       `/planeador/actividades/${input.actividadId}/calificar-bulk/${BULK_PATH[input.tipo]}`,
       buildBulkBody(input),
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     ),
   invalidates: (p) => [
     planeadorKeys.planilla.calificaciones.all,

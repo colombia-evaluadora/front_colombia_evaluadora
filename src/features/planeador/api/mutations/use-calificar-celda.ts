@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -106,7 +107,7 @@ function sendCalificar(p: CalificarPayload, ctx: SendCtx): Promise<CalificarCeld
     // de binder que `DEFINICION` en `PUT .../instrumento`.
     // `BASE_VERSION` solo si se conoce: sin él, el backend escribe como siempre.
     { CALIFICACION: p.CALIFICACION, FECHA: p.FECHA, ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}) },
-    { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    { headers: outboxHeaders(ctx), background: ctx.background },
   )
 }
 

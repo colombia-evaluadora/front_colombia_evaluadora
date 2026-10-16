@@ -28,6 +28,7 @@
  */
 import { hydrate, type DehydratedState, type Query, type QueryClient } from "@tanstack/react-query"
 
+import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
 import {
   deleteMeta,
   getDb,
@@ -266,7 +267,11 @@ export async function restoreUserQueries(
   const rows = await db.getAllFromIndex("queries", "byUser", userSub)
   const buster = makeBuster(userSub)
   const stale = rows.filter(
-    (row) => row.userSub !== userSub || row.buster !== buster || now - row.dataUpdatedAt > row.ttl,
+    // El `ttl` de la fila solo marca el dato como viejo (`freshness.ts`); se
+    // BORRA recién pasada la duración máxima offline: un docente que lleva meses
+    // sin red sigue viendo su roster aunque esté marcado como antiguo.
+    (row) =>
+      row.userSub !== userSub || row.buster !== buster || now - row.dataUpdatedAt > Math.max(row.ttl, OFFLINE_MAX_MS),
   )
   const valid = rows.filter((row) => !stale.includes(row))
   if (stale.length > 0) {

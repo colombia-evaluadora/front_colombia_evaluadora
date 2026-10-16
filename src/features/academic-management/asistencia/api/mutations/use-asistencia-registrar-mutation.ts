@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -78,7 +79,7 @@ async function sendRegistrar(payload: RegistrarPayload, ctx: SendCtx): Promise<R
   const raw = await api.post<RegistrarResponse | RegistrarResponse[] | number>(
     "/eval-col/asistencias/registrar",
     { ...payload, REGISTROS },
-    { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+    { headers: outboxHeaders(ctx), background: ctx.background },
   )
   if (typeof raw === "number") return { afectados: raw, pendientes: [] }
   const fila = Array.isArray(raw) ? raw[0] : raw

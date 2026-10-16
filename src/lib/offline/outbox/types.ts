@@ -62,6 +62,13 @@ export interface OutboxOp<P = unknown> {
 
 export interface SendCtx {
   idempotencyKey: string
+  /**
+   * `Date.now()` del momento en que el usuario CAPTURÓ el cambio (`op.createdAt`).
+   * Viaja como `X-Client-Captured-At` para que el backend acepte notas o
+   * asistencia de un periodo que cerró DESPUÉS de la captura
+   * (`add-offline-meses-pwa` D-7). Ausente en flujos que no lo conocen.
+   */
+  capturedAt?: number
   /** `true` cuando la envía el procesador de la cola (sin toasts globales). */
   background: boolean
   /**

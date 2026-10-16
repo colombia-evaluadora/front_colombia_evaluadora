@@ -6,6 +6,7 @@
 import Axios from "axios"
 
 import { isNetworkError } from "@/lib/network-error"
+import { OFFLINE_MAX_MS, OFFLINE_WARN_MS } from "@/lib/offline/limits"
 import type {
   ClassifiedError,
   OutboxConflict,
@@ -16,8 +17,11 @@ import type {
 import { EMPTY_SUMMARY } from "@/lib/offline/outbox/types"
 
 const DAY_MS = 864e5
-export const OUTBOX_WINDOW_MS = 14 * DAY_MS
-export const OUTBOX_WARN_MS = 12 * DAY_MS
+// Ventana alineada a la duración máxima offline (`VITE_APP_OFFLINE_MAX_DAYS`).
+// Pasada la ventana la outbox deja de ACEPTAR cambios nuevos, pero nunca borra
+// los que ya tiene: se envían en la próxima sincronización.
+export const OUTBOX_WINDOW_MS = OFFLINE_MAX_MS
+export const OUTBOX_WARN_MS = OFFLINE_WARN_MS
 export const MAX_SERVER_ATTEMPTS = 8
 export const MAX_BACKOFF_MS = 5 * 60_000
 export const BASE_BACKOFF_MS = 2_000

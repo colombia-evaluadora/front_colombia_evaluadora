@@ -3,6 +3,7 @@
  * pestañas (§6.2, §6.10) y `runOrQueue`, el punto de entrada de las
  * mutaciones (decisión D-F2-7, online-first).
  */
+import { OFFLINE_MAX_DAYS } from "@/lib/offline/limits"
 import type { QueryClient } from "@tanstack/react-query"
 
 import { isNetworkError } from "@/lib/network-error"
@@ -52,7 +53,7 @@ export const FILE_LIMITS = {
 export const QUEUED_MESSAGE = "Guardado en este equipo. Se enviará cuando haya conexión."
 export const QUOTA_MESSAGE = "No hay espacio en este equipo para guardar el cambio sin conexión."
 export const WINDOW_EXPIRED_MESSAGE =
-  "Llevas 14 días sin conectarte. Conéctate para seguir registrando sin conexión; lo que ya guardaste está a salvo."
+  `Llevas ${OFFLINE_MAX_DAYS} días sin conectarte. Conéctate para seguir registrando sin conexión; lo que ya guardaste está a salvo.`
 export const FILE_TOO_BIG_MESSAGE = "Este archivo pesa más de 10 MB: adjúntalo cuando tengas conexión."
 export const FILE_QUOTA_MESSAGE =
   "Ya no hay espacio para más archivos sin conexión en este equipo. Sincroniza o adjunta este archivo cuando tengas conexión."
@@ -227,6 +228,7 @@ function directCtx(handler: OutboxHandler<never>, idempotencyKey: string, files:
   const cache = new Map<string, Promise<number>>()
   return {
     idempotencyKey,
+    capturedAt: Date.now(),
     background: false,
     resolveFile(fileKey) {
       if (!cache.has(fileKey)) {
@@ -341,6 +343,7 @@ async function sendOp(
   const blobs = await getBlobs(op.id)
   const ctx: SendCtx = {
     idempotencyKey: op.idempotencyKey,
+    capturedAt: op.createdAt,
     background: true,
     async resolveFile(fileKey) {
       const row = blobs.find((b) => b.fileKey === fileKey)

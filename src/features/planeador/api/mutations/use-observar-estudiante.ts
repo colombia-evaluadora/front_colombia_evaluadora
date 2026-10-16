@@ -1,3 +1,4 @@
+import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -60,7 +61,7 @@ registerOutboxHandler<ObservarPayload>({
     evalCol.put(
       `/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/observar`,
       { ...p.body, ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}) },
-      { headers: { "Idempotency-Key": ctx.idempotencyKey }, background: ctx.background },
+      { headers: outboxHeaders(ctx), background: ctx.background },
     ),
   invalidates: (p) => [
     planeadorKeys.planilla.calificaciones.all,
