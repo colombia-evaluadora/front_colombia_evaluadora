@@ -35,7 +35,7 @@
 
 ## 6. Piloto
 - [x] 6.1 Flag por usuario; solo 3–5 docentes con consentimiento mientras P6 esté pendiente
-- [ ] 6.2 Métricas go/no-go (§13)
+- [x] 6.2 Métricas go/no-go (§13): umbrales y forma de medir en `docs/offline/GO-NO-GO.md`; la medición queda para el piloto
 
 ## 7. PIGSE
 - [x] 7.1 Outbox sin dependencias de features (handlers registrados desde afuera); port solo con pedido explícito
