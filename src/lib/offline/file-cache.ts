@@ -25,19 +25,20 @@ function cachesAvailable(): boolean {
 
 /** Descarga y guarda un archivo. Devuelve `false` si no se guardó (sin
  *  Cache Storage, demasiado grande). Tira si falla la red. */
-export async function cacheArchivo(archivoId: number): Promise<boolean> {
-  if (!cachesAvailable()) return false
+/** Guarda el archivo; devuelve los bytes guardados (0 si no se guardó). */
+export async function cacheArchivo(archivoId: number): Promise<number> {
+  if (!cachesAvailable()) return 0
   const { url } = await fetchArchivoViewUrl(archivoId)
   const response = await fetch(url, { credentials: "same-origin" })
   if (!response.ok) throw new Error(`No se pudo descargar el archivo ${archivoId} (${response.status})`)
   const blob = await response.blob()
-  if (blob.size > MAX_ARCHIVO_BYTES) return false
+  if (blob.size > MAX_ARCHIVO_BYTES) return 0
   const cache = await caches.open(ARCHIVOS_CACHE)
   await cache.put(
     cacheKey(archivoId),
     new Response(blob, { headers: { "Content-Type": blob.type || "application/octet-stream" } }),
   )
-  return true
+  return blob.size
 }
 
 const objectUrls = new Map<number, string>()
