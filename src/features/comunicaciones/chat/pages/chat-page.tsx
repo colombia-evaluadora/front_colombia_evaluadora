@@ -372,8 +372,9 @@ function ChatContent() {
 
 const ESTADO_CONEXION: Record<RealtimeStatus, { texto: string; color: string } | null> = {
   idle: null,
-  open: { texto: "En vivo", color: "bg-green" },
-  connecting: { texto: "Conectando…", color: "bg-yellow" },
+  // Conectado (o conectando por primera vez) no se muestra nada: solo se avisa cuando algo falla.
+  open: null,
+  connecting: null,
   reconnecting: { texto: "Reconectando…", color: "bg-yellow" },
   offline: { texto: "Sin conexión: se actualizará al volver la red", color: "bg-muted-foreground" },
   forbidden: { texto: "Actualización en vivo no disponible", color: "bg-red" },
