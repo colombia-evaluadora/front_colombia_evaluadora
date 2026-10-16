@@ -283,6 +283,10 @@ export interface Comunicado {
   contenidoHtml: string
   publicadoPor: string
   esCreador: boolean
+  // Confirmación de lectura (solo para quien lo publicó): destinatarios que ya
+  // abrieron el canal / total. comms-service la envía; el mock no.
+  leidos?: number | null
+  totalDestinatarios?: number | null
 }
 
 // Miembro de un canal. Bloqueado = sigue en el canal pero no puede escribir.

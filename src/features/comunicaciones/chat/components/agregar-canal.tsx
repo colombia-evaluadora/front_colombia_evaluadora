@@ -21,7 +21,7 @@ import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components
 const ITEM =
   "gap-3 border-b py-2.5 text-sm font-normal tracking-normal normal-case last:border-b-0 [&_svg]:size-5!"
 
-// Los foros (GENERAL) existen en comms-service; el resto solo en el mock.
+// Todos existen en comms-service; `CHAT_FUNCIONES` apaga lo que aún es solo mock.
 const CATEGORIA_DISPONIBLE: Record<CategoriaCanal, boolean> = {
   GENERAL: true,
   VOTACION: CHAT_FUNCIONES.elecciones,

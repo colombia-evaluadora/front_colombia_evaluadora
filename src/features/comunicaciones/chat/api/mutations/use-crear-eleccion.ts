@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion, Eleccion } from "@/features/comunicaciones/chat/api/types"
+import { fotoComoDataUrl } from "@/features/comunicaciones/chat/lib/foto-candidato"
 
 export interface CandidatoNuevo {
   nombre: string
@@ -23,9 +24,10 @@ export interface CrearEleccionInput {
   candidatos: CandidatoNuevo[]
 }
 
-// TODO: con el backend real las fotos irán por `postMultipart` (lib/files.ts).
-// El mock recibe una URL local del navegador, válida solo en esta sesión.
+// Las fotos viajan como data URL reducida (`lib/foto-candidato.ts`): una URL
+// `blob:` solo existe en esta pestaña y comms-service la rechaza.
 async function crearEleccion(v: CrearEleccionInput) {
+  const fotos = await Promise.all(v.candidatos.map((c) => (c.foto ? fotoComoDataUrl(c.foto) : null)))
   return evalCol.postRow<Conversacion>("/comunicaciones/elecciones", {
     NOMBRE: v.nombre,
     DESCRIPCION: v.descripcion,
@@ -34,11 +36,11 @@ async function crearEleccion(v: CrearEleccionInput) {
     FK_JORNADA: v.jornadaId,
     VER_RESULTADOS: v.verResultadosEnVivo ? "S" : "N",
     VOTANTES: v.votantes,
-    CANDIDATOS: v.candidatos.map((c) => ({
+    CANDIDATOS: v.candidatos.map((c, i) => ({
       NOMBRE: c.nombre,
       NUMERO: c.numero,
       LEMA: c.lema,
-      FOTO_URL: c.foto ? URL.createObjectURL(c.foto) : null,
+      FOTO_URL: fotos[i],
     })),
   })
 }
