@@ -1,3 +1,4 @@
+import { StorageWarningBanner } from "@/components/offline/storage-warning-banner"
 import { Outlet } from "@tanstack/react-router"
 
 import { AppSidebar } from "@/features/navigation/components/app-sidebar"
@@ -45,6 +46,7 @@ export function ProtectedLayout() {
           </div>
         </header>
         <OfflineBanner />
+        <StorageWarningBanner />
         {/*
           `flex flex-col` para que la card de contenido de cada página pueda
           estirarse (`grow`) hasta el borde inferior cuando la tabla es corta.

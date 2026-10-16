@@ -16,7 +16,7 @@ import { DeleteEstablishmentDialog } from "@/features/establishment/institution/
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 function ActionsCell({ establishment }: { establishment: Establishment }) {
-  const { puedeVer, puedeEditar } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeVer, puedeEditar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
 
   return (
     <div className="flex items-center justify-end gap-1">

@@ -34,7 +34,7 @@ export function DeleteEstablishmentDialog({
   const [open, setOpen] = useState(false)
   const navigate = establishmentsRoute.useNavigate()
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
 
   const deleteMutation = useDelete({
     mutationConfig: {

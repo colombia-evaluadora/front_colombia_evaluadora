@@ -7,7 +7,7 @@ import { EstablishmentsDataTable } from "@/features/establishment/institution/co
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 export function EstablishmentsPage() {
-  const { puedeCrear } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeCrear } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
 
   return (
     <EstablishmentsDataTable
