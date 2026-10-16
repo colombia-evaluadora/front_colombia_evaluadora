@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { PencilIcon, WarningIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { SagaBadge } from "@/features/offline/components/saga-badge"
 
 import {
   statusAccentFor,
@@ -10,7 +11,7 @@ import {
 } from "@/features/planeador/api/ui-mappings"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
-import { useOnlineOnly } from "@/lib/offline/use-online-only"
+import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
@@ -60,7 +61,8 @@ export function UnidadCard({
   const StatusIcon = statusIconFor(unidad.status)
   const accent = statusAccentFor(unidad.status)
   const { puedeEditar } = usePlaneadorSoloLectura()
-  const soloEnLinea = useOnlineOnly()
+  // Fase 3: con la outbox habilitada, crear/editar unidades queda activo sin red.
+  const soloEnLinea = useOfflineWritable()
 
   return (
     <article
@@ -87,6 +89,7 @@ export function UnidadCard({
         <h3 className="min-w-0 text-xs leading-snug font-bold break-words">
           {unidad.nombre}
         </h3>
+        <SagaBadge target={`unidad:${unidad.id}`} />
         {/* `referenteVigente === false`: la unidad guarda un referente
             curricular que ya se desactivó — no puede ofrecer enunciados/
             evidencias (ver el comentario de `UnidadTematica.referenteVigente`).

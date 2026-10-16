@@ -1,5 +1,6 @@
 import { IoMdCheckboxOutline } from "react-icons/io"
 import * as React from "react"
+import { SagaBadge } from "@/features/offline/components/saga-badge"
 
 import { Button } from "@/components/ui/button"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -203,6 +204,7 @@ export function ActividadCard({
           <StatusIcon className="size-3.5" />
         </span>
         <h3 className="min-w-0 text-xs leading-snug font-bold break-words">{actividad.nombre}</h3>
+        <SagaBadge target={`actividad:${actividad.id}`} />
       </div>
 
       {/* `esRecuperacion` ahora llega en el propio resumen del listado
