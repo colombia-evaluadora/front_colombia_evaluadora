@@ -176,7 +176,13 @@ function rebaseCheck<P extends { check?: VersionCheck }>(payload: P, conflict: O
 
 // ---- Registro ------------------------------------------------------------------------
 
-const INVALIDA = [planeadorKeys.actividades.all, planeadorKeys.actividad.all, planeadorKeys.unidad.all, planeadorKeys.unidades.all]
+const INVALIDA = [
+  planeadorKeys.actividades.all,
+  planeadorKeys.actividad.all,
+  planeadorKeys.unidad.all,
+  planeadorKeys.unidades.all,
+  planeadorKeys.unidades.tabs(),
+]
 
 function step<P extends SagaPayload>(
   kind: string,

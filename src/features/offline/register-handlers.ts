@@ -15,6 +15,8 @@ import "@/features/planeador/api/mutations/use-observar-estudiante"
 import "@/features/planeador/api/mutations/use-estado-resultado"
 import "@/features/planeador/api/mutations/use-asistencia-actividad"
 import "@/features/planeador/api/mutations/use-observacion-soporte"
+// Fase 3: pasos de las sagas de actividad/unidad (se reanudan tras recargar).
+import "@/features/planeador/offline/saga-handlers"
 
 const SYNC_TOAST_ID = "outbox-sync"
 
