@@ -671,7 +671,7 @@ async function resolverRecuperacionValores(
   }
 }
 
-async function fetchActividadDetalle(id: number, queryClient: QueryClient): Promise<Actividad> {
+export async function fetchActividadDetalle(id: number, queryClient: QueryClient): Promise<Actividad> {
   // Todo en paralelo: antes los catálogos y los nombres de archivo se pedían
   // DESPUÉS de que volviera el detalle (cascada de dos idas y vueltas). Con
   // mocks los catálogos no hacen falta, así que no se piden.

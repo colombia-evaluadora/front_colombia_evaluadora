@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { isOutboxFileRef, resolveUploadFile, writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { postMultipart } from "@/lib/files"
@@ -8,7 +9,7 @@ import { resolveTipoRecursoId } from "@/features/planeador/api/query/use-tipo-re
 import type { Recurso } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
-interface UpdateMaterialesInput {
+export interface UpdateMaterialesInput {
   actividadId: number
   recursos: Recurso[]
 }
@@ -67,23 +68,25 @@ interface ArchivoSubidoRow {
 async function subirArchivoMaterial(
   actividadId: number,
   recurso: Recurso,
+  req?: WriteRequest,
 ): Promise<number> {
-  const blob = await fetch(recurso.url).then((r) => r.blob())
   const nombre = recurso.fuente || "archivo"
+  const file = await resolveUploadFile(recurso.url, nombre, req)
   // `postMultipart` antepone `/files`, que es lo que hace que la petición
   // pase por `file-service` en vez de ir directo al query-service.
   const respuesta = await postMultipart<RowsEnvelope<ArchivoSubidoRow> | ArchivoSubidoRow>(
     `/eval-col/planeador/actividades/${actividadId}/materiales/archivo`,
     {},
-    { ARCHIVO: new File([blob], nombre, { type: blob.type }) },
+    { ARCHIVO: file },
+    { background: req?.background },
   )
   return unwrapRow<ArchivoSubidoRow>(respuesta).fk_tarchivo
 }
 
-async function updateMaterialesActividad({
-  actividadId,
-  recursos,
-}: UpdateMaterialesInput): Promise<UpdateMaterialesResult> {
+export async function updateMaterialesActividad(
+  { actividadId, recursos }: UpdateMaterialesInput,
+  req?: WriteRequest,
+): Promise<UpdateMaterialesResult> {
   const materiales: Record<string, unknown>[] = []
   const recursosOmitidos: string[] = []
 
@@ -100,7 +103,7 @@ async function updateMaterialesActividad({
     // material que no vaya en la lista se borra. Sin esta rama, reabrir una
     // actividad y guardar cualquier otro campo se llevaba puestos sus
     // archivos.
-    if (recurso.archivoId !== undefined && !recurso.url.startsWith("blob:")) {
+    if (recurso.archivoId !== undefined && !recurso.url.startsWith("blob:") && !isOutboxFileRef(recurso.url)) {
       materiales.push({ tipoRecurso, fkTarchivo: recurso.archivoId, descripcion: recurso.descripcion })
       continue
     }
@@ -113,7 +116,11 @@ async function updateMaterialesActividad({
       continue
     }
 
-    const fkTarchivo = await subirArchivoMaterial(actividadId, recurso)
+    // Encolado (Fase 3): se sube UNA vez por clave aunque el paso se reintente.
+    const fkTarchivo =
+      isOutboxFileRef(recurso.url) && req?.files
+        ? await req.files.memo(recurso.url, () => subirArchivoMaterial(actividadId, recurso, req))
+        : await subirArchivoMaterial(actividadId, recurso, req)
     materiales.push({ tipoRecurso, fkTarchivo, descripcion: recurso.descripcion })
   }
 
@@ -122,7 +129,7 @@ async function updateMaterialesActividad({
   // instrumento o `ADAPTACIONES`.
   await api.put(`/eval-col/planeador/actividades/${actividadId}/materiales`, {
     MATERIALES: JSON.stringify(materiales),
-  })
+  }, writeConfig(req))
   return { recursosOmitidos }
 }
 
@@ -143,7 +150,7 @@ export function useUpdateMaterialesActividad({
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: updateMaterialesActividad,
+    mutationFn: (input: UpdateMaterialesInput) => updateMaterialesActividad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
       onSuccess?.(data, variables, ...rest)

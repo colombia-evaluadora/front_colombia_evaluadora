@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-request"
 
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
@@ -32,7 +33,7 @@ export function contenidosABody(
   return todosConTitulo ? { CONTENIDOS: descripciones, CONTENIDOS_TITULOS: titulos } : { CONTENIDOS: descripciones }
 }
 
-interface UpdateUnidadInput {
+export interface UpdateUnidadInput {
   unidadId: number
   data: UnidadInfoGeneral
 }
@@ -68,11 +69,12 @@ interface UpdateUnidadRealRow {
  * resueltos) — si no los tocó, se omiten y el backend conserva lo que la
  * unidad ya tenía, en vez de mandar un id viejo/adivinado.
  */
-async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<UpdateUnidadResponse> {
+export async function updateUnidad({ unidadId, data }: UpdateUnidadInput, req?: WriteRequest): Promise<UpdateUnidadResponse> {
   if (env.ENABLE_API_MOCKING) {
     const result = await api.put<Omit<UpdateUnidadResponse, "actividadesAfectadas">>(
       `/eval-col/planeador/unidades/${unidadId}`,
       data,
+      writeConfig(req),
     )
     return { ...result, actividadesAfectadas: [] }
   }
@@ -102,7 +104,7 @@ async function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<Upda
   // array (nunca `undefined`, ver `UNIDAD_DRAFT_VACIO`), así que se manda
   // tal cual: un array vacío es una desvinculación total válida.
   body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
-  const row = await api.put<UpdateUnidadRealRow>(`/eval-col/planeador/unidades/${unidadId}`, body)
+  const row = await api.put<UpdateUnidadRealRow>(`/eval-col/planeador/unidades/${unidadId}`, body, writeConfig(req))
   return { status: "ok", actividadesAfectadas: row.actividades_afectadas ?? [] }
 }
 
@@ -120,7 +122,7 @@ export function useUpdateUnidad({ mutationConfig }: UseUpdateUnidadOptions = {})
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: updateUnidad,
+    mutationFn: (input: UpdateUnidadInput) => updateUnidad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
