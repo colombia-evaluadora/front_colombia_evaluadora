@@ -164,3 +164,33 @@ test("Sincronizar ahora: progreso y resumen con conflictos", async ({ page }) =>
   await expect(resumen).toContainText(/Conflictos: 1|Subidos: 1/)
   await shot(page, "f5-sincronizar-resumen")
 })
+
+test("paquete USB: exportar sin red e importar en otro equipo", async ({ page, browser }) => {
+  test.setTimeout(200_000)
+  await login(page)
+  await page.goto(ASISTENCIA)
+  await page.waitForTimeout(2_000)
+  await setApiFault(page, "writes")
+  await marcarTodos(page)
+  await expect.poll(() => outboxStatuses(page)).toEqual([expect.stringMatching(/pending|retry|inflight/)])
+
+  await setApiFault(page, "network")
+  await page.goto("/app/sincronizar")
+  await page.getByLabel(/Frase del paquete/).fill("frase de prueba")
+  const descarga = page.waitForEvent("download")
+  await page.getByRole("button", { name: "Exportar paquete" }).click()
+  const archivo = await (await descarga).path()
+  await expect(page.getByText(/Paquete con 1 cambios descargado/)).toBeVisible()
+
+  // Otro equipo, con internet y la misma cuenta.
+  const otro = await browser.newContext()
+  const p2 = await otro.newPage()
+  await login(p2)
+  await p2.goto("/app/sincronizar")
+  await p2.getByLabel(/Frase del paquete/).fill("frase de prueba")
+  await p2.getByLabel("Archivo de paquete").setInputFiles(archivo)
+  await p2.getByRole("button", { name: "Importar paquete" }).click()
+  await expect(p2.getByText(/Se agregaron 1 cambios a la cola/)).toBeVisible({ timeout: 30_000 })
+  await expect.poll(() => outboxStatuses(p2), { timeout: 60_000 }).toEqual(["done"])
+  await otro.close()
+})

@@ -13,6 +13,7 @@ import { retryAll, syncNow } from "@/lib/offline/outbox/engine"
 import { useOutboxOps, useOutboxSummary } from "@/lib/offline/outbox/hooks"
 import { getOutboxHandler } from "@/lib/offline/outbox/registry"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
+import { UsbPackageCard } from "@/features/offline/components/usb-package-card"
 import { buildSyncReport, type SyncReportItem } from "@/features/offline/lib/sync-report"
 
 type Fase = "listo" | "sincronizando" | "refrescando" | "terminado"
@@ -128,6 +129,7 @@ export function SincronizarPage() {
           <p className="text-muted-foreground">Los datos guardados en este equipo ya están actualizados.</p>
         </section>
       )}
+      <UsbPackageCard />
       <PrepareOfflineDialog open={prepareOpen} onOpenChange={setPrepareOpen} />
     </div>
   )
