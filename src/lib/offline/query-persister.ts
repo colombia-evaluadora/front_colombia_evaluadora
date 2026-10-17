@@ -29,6 +29,7 @@
 import { hydrate, type DehydratedState, type Query, type QueryClient } from "@tanstack/react-query"
 
 import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
+import { isEncrypted, isVaultLocked, loadVault, openString, sealString } from "@/lib/offline/vault"
 import {
   deleteMeta,
   getDb,
@@ -187,10 +188,14 @@ export async function flushPersistQueue(now = Date.now()): Promise<void> {
   const queries = [...dirty.values()]
   dirty.clear()
   if (!canPersist() || !userSub || queries.length === 0) return
-  const rows = queries
+  // Con PIN y la bóveda cerrada no se escribe nada: ni en claro ni sin clave.
+  if (isVaultLocked()) return
+  const plain = queries
     .map((query) => toRow(query, userSub, now))
     .filter((row): row is PersistedQueryRow => row != null)
-  if (rows.length === 0) return
+  if (plain.length === 0) return
+  // Cifrado en reposo (D-8): con la bóveda abierta `data` va como `enc1:`.
+  const rows = await Promise.all(plain.map(async (row) => ({ ...row, data: await sealString(row.data) })))
   try {
     const db = await getDb()
     // El usuario pudo cambiar mientras se abría la base: no mezclar filas.
@@ -264,14 +269,28 @@ export async function restoreUserQueries(
 ): Promise<number> {
   if (!isIndexedDbAvailable() || deviceMode !== "personal") return 0
   const db = await getDb()
-  const rows = await db.getAllFromIndex("queries", "byUser", userSub)
+  const all = await db.getAllFromIndex("queries", "byUser", userSub)
+  // Filas cifradas con la bóveda cerrada: ni se restauran ni se borran; se
+  // leen al escribir el PIN (`restoreUserQueries` de nuevo).
+  const rows = isVaultLocked() ? all.filter((row) => !isEncrypted(row.data)) : all
   const buster = makeBuster(userSub)
+  const opened = new Map<PersistedQueryRow, string | null>()
+  for (const row of rows) {
+    try {
+      opened.set(row, await openString(row.data))
+    } catch {
+      opened.set(row, null) // clave distinta (PIN reiniciado): no se puede leer
+    }
+  }
   const stale = rows.filter(
     // El `ttl` de la fila solo marca el dato como viejo (`freshness.ts`); se
     // BORRA recién pasada la duración máxima offline: un docente que lleva meses
     // sin red sigue viendo su roster aunque esté marcado como antiguo.
     (row) =>
-      row.userSub !== userSub || row.buster !== buster || now - row.dataUpdatedAt > Math.max(row.ttl, OFFLINE_MAX_MS),
+      opened.get(row) == null ||
+      row.userSub !== userSub ||
+      row.buster !== buster ||
+      now - row.dataUpdatedAt > Math.max(row.ttl, OFFLINE_MAX_MS),
   )
   const valid = rows.filter((row) => !stale.includes(row))
   if (stale.length > 0) {
@@ -284,7 +303,7 @@ export async function restoreUserQueries(
       queryHash: row.queryHash,
       queryKey: row.queryKey,
       state: {
-        data: JSON.parse(row.data) as unknown,
+        data: JSON.parse(opened.get(row) as string) as unknown,
         dataUpdateCount: 1,
         dataUpdatedAt: row.dataUpdatedAt,
         error: null,
@@ -325,6 +344,7 @@ export async function activatePersistUser(
   }
   if (deviceMode !== "personal" || !isIndexedDbAvailable()) return
   try {
+    await loadVault(userSub)
     await setMeta(LAST_USER_KEY, userSub)
     await restoreUserQueries(queryClient, userSub)
   } catch (error) {
@@ -375,4 +395,20 @@ export function __resetPersisterForTests() {
   activeUser = null
   deviceMode = DEFAULT_DEVICE_MODE
   initPromise = null
+}
+
+/**
+ * Al crear el PIN, vuelve a escribir cifrado todo lo que estaba en claro
+ * (queries del usuario). La outbox se re-sella aparte (`resealOutbox`).
+ */
+export async function resealUserQueries(userSub: string): Promise<void> {
+  if (!isIndexedDbAvailable() || isVaultLocked()) return
+  const db = await getDb()
+  const rows = await db.getAllFromIndex("queries", "byUser", userSub)
+  const sealed = await Promise.all(
+    rows.filter((row) => !isEncrypted(row.data)).map(async (row) => ({ ...row, data: await sealString(row.data) })),
+  )
+  if (sealed.length === 0) return
+  const tx = db.transaction("queries", "readwrite")
+  await Promise.all([...sealed.map((row) => tx.store.put(row)), tx.done])
 }

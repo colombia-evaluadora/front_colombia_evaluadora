@@ -7,6 +7,7 @@
  * usuario (§5.5). Otras pestañas se enteran de cambios por
  * `BroadcastChannel("ce-offline")` y recargan desde IndexedDB.
  */
+import { isEncrypted, isVaultLocked, openString, sealString, vaultStore } from "@/lib/offline/vault"
 import { getDb, isIndexedDbAvailable, type BlobRowShape, type LogRowShape } from "@/lib/offline/db"
 import { DONE_RETENTION_MS, summarize } from "@/lib/offline/outbox/policy"
 import type { OutboxOp, OutboxSummary } from "@/lib/offline/outbox/types"
@@ -76,6 +77,26 @@ export function setRuntime(patch: Partial<OutboxSummary>) {
 
 const persistent = () => isIndexedDbAvailable()
 
+/** Cifrado en reposo del payload (D-8): solo con la bóveda abierta. */
+async function sealOp(op: OutboxOp): Promise<OutboxOp> {
+  if (vaultStore.get() !== "abierta") return op
+  return { ...op, payload: await sealString(JSON.stringify(op.payload ?? null)) }
+}
+
+async function openOp(op: OutboxOp): Promise<OutboxOp> {
+  if (!isEncrypted(op.payload)) return op
+  return { ...op, payload: JSON.parse(await openString(op.payload)) as unknown }
+}
+
+/** Re-escribe cifrada toda la cola del usuario (al crear el PIN). */
+export async function resealOutbox(): Promise<void> {
+  if (!persistent() || ops.length === 0) return
+  const db = await getDb()
+  const sealed = await Promise.all(ops.map(sealOp))
+  const tx = db.transaction("outbox", "readwrite")
+  await Promise.all([...sealed.map((op) => tx.store.put(op as never)), tx.done])
+}
+
 /** Fija el dueño de la outbox en memoria y carga sus ops. */
 export async function setOutboxUser(userSub: string | null): Promise<void> {
   if (currentUser === userSub) return
@@ -99,7 +120,16 @@ export async function reload(): Promise<void> {
   }
   try {
     const db = await getDb()
-    const rows = (await db.getAllFromIndex("outbox", "byUser", user)) as unknown as OutboxOp[]
+    const raw = (await db.getAllFromIndex("outbox", "byUser", user)) as unknown as OutboxOp[]
+    if (currentUser !== user) return
+    // Con PIN y la bóveda cerrada la cola no se carga: el motor no debe ver
+    // payloads cifrados. Se recarga al escribir el PIN.
+    if (isVaultLocked() && raw.some((op) => isEncrypted(op.payload))) {
+      ops = []
+      emit()
+      return
+    }
+    const rows = await Promise.all(raw.map(openOp))
     if (currentUser !== user) return
     ops = rows.sort((a, b) => a.seq - b.seq)
     lastSeq = Math.max(lastSeq, ...ops.map((o) => o.seq), 0)
@@ -119,9 +149,10 @@ export async function putOps(changed: OutboxOp[], blobs: BlobRowShape[] = []): P
   if (changed.length === 0 && blobs.length === 0) return
   if (persistent()) {
     const db = await getDb()
+    const sealed = await Promise.all(changed.map(sealOp))
     const tx = db.transaction(["outbox", "blobs"], "readwrite")
     await Promise.all([
-      ...changed.map((op) => tx.objectStore("outbox").put(op as never)),
+      ...sealed.map((op) => tx.objectStore("outbox").put(op as never)),
       ...blobs.map((b) => tx.objectStore("blobs").put(b)),
       tx.done,
     ])
