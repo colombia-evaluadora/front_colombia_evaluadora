@@ -8,7 +8,7 @@
 ## 1. Almacenamiento (D-1)
 - [x] 1.1 `persist()`, `estimate()`, riesgos y tarjeta de estado en Preparar
 - [x] 1.2 Botón de instalación (`beforeinstallprompt`) e instrucciones iOS
-- [ ] 1.3 Aviso global al abrir la app si el almacenamiento no es persistente
+- [x] 1.3 Aviso global al abrir la app si el almacenamiento no es persistente
 
 ## 2. Duración máxima (D-2, D-5)
 - [x] 2.1 `VITE_APP_OFFLINE_MAX_DAYS` alinea sesión, outbox, menú y retención
@@ -17,18 +17,22 @@
 - [x] 2.4 `VITE_APP_OFFLINE_MAX_DAYS` en `.env.example` (el `ENV_FILE` de test usa el default 180)
 
 ## 3. Sesión y equipos (D-3, D-4, D-8)
-- [ ] 3.1 PIN local (PBKDF2) y pantalla de desbloqueo
-- [ ] 3.2 Cifrado AES-GCM de queries/outbox/blobs
-- [ ] 3.3 Registro/revocación de equipos y borrado remoto (requiere OK de esquema en sso)
+- [x] 3.1 PIN local (PBKDF2) y pantalla de desbloqueo
+- [x] 3.2 Cifrado AES-GCM de queries y payloads de la outbox (pendiente: blobs de adjuntos y Cache API de archivos)
+- [ ] 3.3 (EN ESPERA de OK de esquema) Registro/revocación de equipos y borrado remoto (requiere OK de esquema en sso)
 
 ## 4. Preparar todo y sincronizar (D-6, D-11)
-- [ ] 4.1 Plan reanudable de todo el año + adjuntos con tamaño + antigüedad
-- [ ] 4.2 Pantalla "Sincronizar ahora" con reporte y refresco
+- [x] 4.1 Plan reanudable de todo el año + adjuntos con tamaño + antigüedad
+- [x] 4.2 Pantalla "Sincronizar ahora" con reporte y refresco
 
 ## 5. Backend (D-7)
-- [ ] 5.1 Gateway propaga `X-Client-Captured-At`; funciones de nota/asistencia validan periodo abierto en la captura
-- [ ] 5.2 Flujo de solicitud al coordinador para rechazos `PERIODO_CERRADO`
-- [ ] 5.3 `X-Min-Client-Version` y aviso de actualización
+- [x] 5.1 Gateway propaga `X-Client-Captured-At`; funciones de nota/asistencia validan periodo abierto en la captura
+- [x] 5.2 Lo capturado con el periodo cerrado sigue el flujo existente de solicitud al coordinador (Reglas 55/75); el periodo académico cerrado bloquea con CE422
+- [x] 5.3 `X-Min-Client-Version` y aviso de actualización
 
 ## 6. USB (D-9)
-- [ ] 6.1 Exportar/importar paquete firmado y cifrado
+- [x] 6.1 Exportar/importar paquete firmado y cifrado
+
+## 7. Extras
+- [x] 7.1 EE y Sedes: crear/editar/eliminar ocultos sin red
+- [x] 7.2 Paquete USB: la firma ECDSA prueba integridad; la identidad la da la sesión del que importa (sin registro de equipos hasta aprobar D-3)
