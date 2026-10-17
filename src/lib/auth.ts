@@ -1,3 +1,4 @@
+import { lockVault } from "@/lib/offline/vault"
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
@@ -167,6 +168,8 @@ export function useLogout({
       // vaciar la memoria (§5.5). Si IndexedDB falla, el logout sigue.
       const sub = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)?.id ?? getActivePersistUser()
       deactivatePersistUser()
+      // La DEK no sobrevive al logout: el próximo ingreso vuelve a pedir el PIN.
+      lockVault()
       lastAuthedUser = null
       // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
       // pendientes decide conservar o descartar antes de llamar al logout.

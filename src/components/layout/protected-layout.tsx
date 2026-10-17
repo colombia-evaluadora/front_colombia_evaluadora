@@ -1,3 +1,4 @@
+import { VaultGate } from "@/components/offline/vault-gate"
 import { UpdateRequiredBanner } from "@/components/offline/update-required-banner"
 import { StorageWarningBanner } from "@/components/offline/storage-warning-banner"
 import { Outlet } from "@tanstack/react-router"
@@ -62,9 +63,11 @@ export function ProtectedLayout() {
           `useIsMobile` (768px) para decidir el modo drawer.
         */}
         <div className="flex min-w-0 flex-1 flex-col pr-4 pb-4 max-md:pl-4 bg-sidebar">
-          <OnlineOnlyRouteGate>
-            <Outlet />
-          </OnlineOnlyRouteGate>
+          <VaultGate>
+            <OnlineOnlyRouteGate>
+              <Outlet />
+            </OnlineOnlyRouteGate>
+          </VaultGate>
         </div>
       </SidebarInset>
     </SidebarProvider>

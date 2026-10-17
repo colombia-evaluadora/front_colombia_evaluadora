@@ -293,3 +293,28 @@ describe("sesión offline", () => {
     expect(await getUsableOfflineSession()).toBeNull()
   })
 })
+
+describe("cifrado en reposo con PIN (D-8)", () => {
+  it("con PIN abierto guarda cifrado y restaura; cerrado no lee ni borra", async () => {
+    const vault = await import("@/lib/offline/vault")
+    vault.__resetVaultForTests()
+    await setDeviceMode("personal")
+    const client = newClient()
+    await activatePersistUser(client, A)
+    await vault.createVault(A, "123456")
+    await fetchAndFlush(client, ["planeador", "x"], { nota: 4.5 }, offlineMeta)
+    const [row] = await rows(A)
+    expect(vault.isEncrypted(row.data)).toBe(true)
+    expect(row.data).not.toContain("nota")
+
+    vault.lockVault()
+    expect(await restoreUserQueries(new QueryClient(), A)).toBe(0)
+    expect(await rows(A)).toHaveLength(1)
+
+    await vault.unlockVault(A, "123456", async () => undefined)
+    const fresh = new QueryClient()
+    expect(await restoreUserQueries(fresh, A)).toBe(1)
+    expect(fresh.getQueryData(["planeador", "x"])).toEqual({ nota: 4.5 })
+    vault.__resetVaultForTests()
+  }, 30_000)
+})
