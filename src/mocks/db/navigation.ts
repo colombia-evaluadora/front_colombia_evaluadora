@@ -106,6 +106,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
+  {
+    id: 45,
+    name: "Superadministradores",
+    icon: "",
+    path: "/app/administracion/superadministradores",
+    menuOrder: 6,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   {
     id: 5,
     name: "Usuarios",

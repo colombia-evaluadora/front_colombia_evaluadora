@@ -1,6 +1,6 @@
 /**
  * Prefijos de `/app` que son **solo en línea** (plan offline §8.3–8.6 y §8.11):
- * cobertura, auditoría, roles-menús, áreas oficiales, criterios de prioridad y establecimiento (general, sedes,
+ * cobertura, auditoría, roles-menús, áreas oficiales, criterios de prioridad, superadministradores y establecimiento (general, sedes,
  * funcionarios, alta/edición de EE, periodos). Nada de esto se persiste, así
  * que sin red no hay qué mostrar.
  */
@@ -10,6 +10,7 @@ export const ONLINE_ONLY_PREFIXES = [
   "/app/administracion/roles-menus",
   "/app/administracion/areas-oficiales",
   "/app/administracion/criterios-prioridad",
+  "/app/administracion/superadministradores",
   "/app/establecimiento-educativo",
 ] as const
 
