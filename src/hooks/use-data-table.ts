@@ -26,8 +26,7 @@ interface UseDataTableOptions<TData> extends DataTableFilters {
   data: TData[]
   pageCount: number
   getRowId: (row: TData) => string
-  // Si se define, la visibilidad de columnas se persiste en localStorage
-  // bajo esta clave, para recordarla entre sesiones.
+  // Si se define, persiste la visibilidad de columnas en localStorage.
   columnVisibilityStorageKey?: string
 }
 

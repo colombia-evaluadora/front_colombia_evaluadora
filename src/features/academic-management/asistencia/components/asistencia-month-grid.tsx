@@ -351,8 +351,7 @@ function DayCellPopover({
   const futura = Boolean(fecha) && esFechaFutura(fecha)
   const misClases = items.filter((item) => item.puedeEditar)
   const clasesDelGrupo = items.filter((item) => !item.puedeEditar)
-  // Solo separa en dos grupos cuando de verdad hay una mezcla (docente que
-  // ADEMÁS es director de grupo); un docente puro sigue viendo la lista plana.
+  // Solo separa en grupos si el docente además es director de grupo.
   const hayMezcla = misClases.length > 0 && clasesDelGrupo.length > 0
 
   return (

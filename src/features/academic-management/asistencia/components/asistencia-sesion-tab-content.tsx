@@ -92,8 +92,7 @@ export function AsistenciaSesionTabContent({
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
   const registrar = useAsistenciaRegistrarMutation()
-  // Fase 2: registrar/corregir se encola sin red (piloto + equipo personal);
-  // fuera del piloto sigue siendo solo en línea.
+  // Registrar/corregir se encola sin red solo en el piloto.
   const soloEnLinea = useOfflineWritable()
   // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
   const outboxOps = useOutboxOps()
@@ -134,8 +133,7 @@ export function AsistenciaSesionTabContent({
   const baseline = React.useRef<Record<number, TipoAsistencia>>({})
   const bloqueTardeBaseline = React.useRef<Record<number, number>>({})
   const precargado = React.useRef(false)
-  // Sin ediciones locales: si el padrón cambia (caché vieja que se refresca,
-  // aprobación, sync) se vuelve a precargar con lo del servidor.
+  // Sin ediciones locales: si el padrón cambia se precarga lo del servidor.
   const sinEdicionesLocales =
     Object.keys(soporte).length === 0 &&
     Object.keys(soporteEliminado).length === 0 &&
@@ -322,8 +320,7 @@ export function AsistenciaSesionTabContent({
       }
     }
     const encolados: number[] = []
-    // CAS por estudiante (BE-5): solo con la outbox habilitada (piloto), para
-    // que el conflicto de un cambio hecho sin red no pise en silencio.
+    // CAS por estudiante (BE-5), solo con la outbox habilitada.
     const conVersiones = isOutboxEnabled()
     const versionDePk = (pk: number) =>
       [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ?? null

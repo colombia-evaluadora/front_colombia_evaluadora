@@ -140,8 +140,7 @@ function applySorting(
 }
 
 export const establishmentHandlers = [
-  // Universo completo (sin paginar) para selects — ej. el selector de EE
-  // del alta de sedes. Ver `fn_est_listar_todos` (V61) en el backend real.
+  // Universo completo para selects (`fn_est_listar_todos`, V61).
   http.get("*/api/establishments/options", async () => {
     await delay(150)
 
@@ -326,9 +325,7 @@ export const establishmentHandlers = [
 
     const idParam = Array.isArray(params.id) ? params.id[0] : params.id
 
-    // La ruta `/establishments/bulk-delete` está registrada antes para que
-    // MSW no la confunda con `:id`, pero dejamos este guard por si el orden
-    // cambia en el futuro.
+    // Guard por si cambia el orden de rutas.
     if (!idParam || idParam === "bulk-delete") {
       return HttpResponse.json(
         {
