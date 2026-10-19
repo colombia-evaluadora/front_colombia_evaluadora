@@ -97,7 +97,8 @@ export class SagaStepConflict extends Error {
 }
 
 const PERIODO_CERRADO_RE = /periodo[^.]*(cerrad|no est[aá] abierto|ya no es calificable|fuera del periodo)/i
-const NO_EDITABLE_RE = /(calificaciones u observaciones registradas|ya tiene resultados|base de una recuperaci[oó]n|no (se )?puede(s)? editar esta actividad)/i
+const NO_EDITABLE_RE =
+  /(calificaciones u observaciones registradas|"No present[oó]" registrados|ya tiene resultados|base de una recuperaci[oó]n|no (se )?puede(s)? editar esta actividad)/i
 
 /**
  * Clasificación de los pasos: los rechazos de negocio que el docente debe
@@ -115,9 +116,16 @@ export function classifyPlaneadorStep(error: unknown): ClassifiedError | null {
   }
   if (Axios.isAxiosError(error) && error.response && error.response.status >= 400 && error.response.status < 500) {
     const status = error.response.status
-    if ([401, 404, 409, 429].includes(status)) return null
     const data = error.response.data as { code?: string } | undefined
     const message = getErrorMessage(error)
+    // La regla 37 llega como 409 (23503 → FK_NOT_FOUND en el query-service):
+    // se mira antes de devolverle el 409 a la clasificación por defecto, que
+    // lo dejaría con un código genérico. El 409 de CAS (OFFLINE_CONFLICT)
+    // sigue siendo conflicto.
+    if (status === 409 && data?.code !== PLANEADOR_ERROR_CODES.conflicto && NO_EDITABLE_RE.test(message)) {
+      return { kind: "rejected", error: { code: PLANEADOR_ERROR_CODES.noEditable, status, message } }
+    }
+    if ([401, 404, 409, 429].includes(status)) return null
     if (data?.code === PLANEADOR_ERROR_CODES.periodoCerrado || PERIODO_CERRADO_RE.test(message)) {
       return { kind: "rejected", error: { code: PLANEADOR_ERROR_CODES.periodoCerrado, status, message } }
     }
@@ -135,7 +143,8 @@ export function classifyPlaneadorStep(error: unknown): ClassifiedError | null {
 /**
  * Antes del primer paso de una edición ENCOLADA: refetch del detalle (el
  * reemplazo total de materiales/adaptaciones necesita la foto actual, §6.8) y
- * - regla 37 (con calificaciones u observaciones) → rechazado con el motivo;
+ * - regla 37 (con calificaciones, observaciones o "No presentó") → rechazado
+ *   con el motivo; los pasos que siguen dependen de este y no se envían;
  * - el detalle cambió desde que el docente lo abrió → conflicto.
  * Online (`background: false`) no se verifica: el docente acaba de ver la
  * versión vigente (mismo comportamiento que antes de la Fase 3).
