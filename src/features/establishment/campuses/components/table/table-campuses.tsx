@@ -39,8 +39,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 interface CampusesDataTableProps {
   onEditCampus: (campusId: number) => void
   title: ReactNode
-  // Acción principal de la página (ej. "Agregar"). Va en la barra de
-  // herramientas, junto al buscador, no en el encabezado.
+  // Acción principal, en la barra de herramientas.
   action?: ReactNode
 }
 
@@ -67,8 +66,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
-    // la fila es number, así que se convierte solo para la selección.
+    // `getRowId` devuelve string; el id real es number.
     getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
@@ -137,7 +135,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
                     buildDescription={(count, sample) => {
                       const list = sample.join(", ")
                       const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                      return `Se eliminarán permanentemente las sedes educativas ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                      return `Se eliminarán las sedes educativas ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
                     }}
                     onConfirm={async (ids) => {
                       await bulkDelete.mutateAsync(ids)

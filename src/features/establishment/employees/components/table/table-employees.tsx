@@ -43,8 +43,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: number) => void
   title: ReactNode
-  // Acción principal de la página (ej. "Agregar"). Va en la barra de
-  // herramientas, junto al buscador, no en el encabezado.
+  // Acción principal, en la barra de herramientas.
   action?: ReactNode
 }
 
@@ -59,9 +58,6 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
 
-  // `queryFilters.roles`/`workSchedules` ya traen el `id` (como texto, ver
-  // search-employees.tsx) — `useEmployeesQuery` solo necesita convertirlos a
-  // número, no resolverlos contra ningún catálogo.
   const { data, isPending, isError, error, refetch } = useEmployeesQuery({
     filters: queryFilters,
     sorting,
@@ -75,8 +71,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
-    // la fila es number, así que se convierte solo para la selección.
+    // `getRowId` devuelve string; el id real es number.
     getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
@@ -89,11 +84,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
 
   const rows = data?.rows ?? []
 
-  // Correos y estado de cuenta SSO de la página visible, para los botones de
-  // restablecer contraseña / reenviar activación. Si algo de esto falla la
-  // tabla sigue igual: solo esos botones quedan deshabilitados.
-  // El correo viene en el listado (`correo_electronico`); se normaliza a
-  // minúsculas para cruzarlo con la respuesta de estado-cuenta.
+  // Estado de cuenta SSO para restablecer/reenviar; si falla solo se deshabilitan.
   const emailById = new Map(
     rows.map((row) => [row.id, row.email ? row.email.trim().toLowerCase() : undefined]),
   )
@@ -174,7 +165,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
                     buildDescription={(count, sample) => {
                       const list = sample.join(", ")
                       const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                      return `Se eliminarán permanentemente los funcionarios ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                      return `Se eliminarán los funcionarios ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
                     }}
                     onConfirm={async (ids) => {
                       await bulkDelete.mutateAsync(ids)

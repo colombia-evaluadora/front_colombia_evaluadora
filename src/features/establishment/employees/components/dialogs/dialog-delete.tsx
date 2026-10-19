@@ -78,7 +78,7 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente al funcionario {employee.name}. Esta
+            Se eliminará al funcionario {employee.name}. Esta
             acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
