@@ -38,6 +38,11 @@ import {
   documentoTexto,
   type Superadministrador,
 } from "@/features/administration/superadministradores/api/types/superadministrador"
+import { SearchSuperadministradores } from "@/features/administration/superadministradores/components/search-superadministradores"
+import {
+  useSuperadministradoresFilters,
+  type SuperadministradoresFilters,
+} from "@/features/administration/superadministradores/hooks/use-superadministradores-filters"
 import { createSuperadministradoresColumns } from "@/features/administration/superadministradores/components/columns-superadministradores"
 import {
   DialogSuperadministrador,
@@ -53,6 +58,22 @@ export function SuperadministradoresPage() {
   )
 }
 
+const normalizar = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+
+/** Texto libre contra nombre, documento («CC 123» o solo el número) y correo. */
+function coincide(s: Superadministrador, { q, estado }: SuperadministradoresFilters) {
+  if (estado && s.activo !== (estado === "activo")) return false
+  const texto = normalizar(q.trim())
+  if (!texto) return true
+  return [s.nombre, documentoTexto(s), s.numeroDocumento ?? "", s.correo].some((v) =>
+    normalizar(v).includes(texto),
+  )
+}
+
 function valorOrdenable(s: Superadministrador, columna: string) {
   if (columna === "documento") return documentoTexto(s)
   if (columna === "correo") return s.correo
@@ -64,18 +85,21 @@ function SuperadministradoresPageContent() {
   const { notify } = useNotify()
   // Solo el Superadministrador tiene el menú (V325): acceso y guardado, sin Eliminar.
   const permisos = useMenuPermission("SUPERADMINISTRADORES")
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
+    useSuperadministradoresFilters()
   const paginacion = useTablePagination()
   const { data: lista = [], isPending, isError, error, refetch } = useSuperadministradoresQuery()
 
+  const filtrados = lista.filter((s) => coincide(s, filters))
   const [orden] = paginacion.sorting
   const ordenados = orden
-    ? [...lista].sort((a, b) => {
+    ? [...filtrados].sort((a, b) => {
         const r = valorOrdenable(a, orden.id).localeCompare(valorOrdenable(b, orden.id), "es", {
           numeric: true,
         })
         return orden.desc ? -r : r
       })
-    : lista
+    : filtrados
   const pageCount = toPageCount(ordenados.length, paginacion.pageSize)
   const pageIndex = Math.min(paginacion.pageIndex, Math.max(pageCount - 1, 0))
   const pagina = ordenados.slice(
@@ -145,8 +169,13 @@ function SuperadministradoresPageContent() {
         <TableScreenTitle description="Usuarios que administran la plataforma. Siempre hay al menos uno activo.">
           Superadministradores
         </TableScreenTitle>
-        <TableScreenToolbar className="py-3">
-          <span />
+        <TableScreenToolbar>
+          <SearchSuperadministradores
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+            activeFilterCount={activeFilterCount}
+          />
           {permisos.puedeCrear && (
             <TableScreenActions>
               <Button
@@ -163,13 +192,22 @@ function SuperadministradoresPageContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Sin estado vacío: siempre hay al menos uno (Sección 7). */}
+        {/* Sin estado vacío de catálogo: siempre hay al menos uno (Sección 7). Solo
+            el de una búsqueda sin coincidencias. */}
         <DataTable
           table={table}
           isPending={isPending}
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
+          emptyMessage={
+            <span className="flex flex-col items-center gap-3">
+              No hay Superadministradores que coincidan con la búsqueda y los filtros aplicados.
+              <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
+                Limpiar filtros
+              </Button>
+            </span>
+          }
         />
         <Pagination
           viewOptions={<DataTableViewOptions table={table} />}
@@ -178,7 +216,7 @@ function SuperadministradoresPageContent() {
           canPrev={pageIndex > 0}
           canNext={pageIndex < pageCount - 1}
           onPageChange={paginacion.goToPage}
-          totalCount={lista.length}
+          totalCount={filtrados.length}
           pageSize={paginacion.pageSize}
           onPageSizeChange={paginacion.setPageSize}
         />
@@ -188,6 +226,7 @@ function SuperadministradoresPageContent() {
         modo={dialogo?.modo ?? null}
         superadministrador={dialogo?.superadministrador ?? null}
         puedeEditar={permisos.puedeEditar}
+        existentes={lista}
         onClose={() => setDialogo(null)}
         onModificar={(s) => setDialogo({ modo: "modificar", superadministrador: s })}
       />

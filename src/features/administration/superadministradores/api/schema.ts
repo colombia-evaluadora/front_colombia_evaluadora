@@ -2,8 +2,14 @@ import { z } from "zod"
 
 import { invalidEmail, maxLength, minLength, required } from "@/lib/forms/messages"
 
-/** Search params de la pantalla: paginación y orden (la Sección 7 no pide búsqueda ni filtros). */
+/**
+ * Search params de la pantalla: búsqueda (nombre, documento o correo), estado,
+ * paginación y orden. La Sección 7 no pide buscador, pero la lista crece con
+ * cada Superadministrador y es la forma rápida de ubicar a uno.
+ */
 export const superadministradoresSearchSchema = z.object({
+  q: z.string().optional().catch(undefined),
+  estado: z.enum(["activo", "inactivo"]).optional().catch(undefined),
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
   sortBy: z.string().optional().catch(undefined),

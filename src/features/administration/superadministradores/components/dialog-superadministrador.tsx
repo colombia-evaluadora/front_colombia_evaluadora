@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useStore } from "@tanstack/react-form"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 
 import { useEstadoSuperadministrador } from "@/features/administration/superadministradores/api/mutations/estado-superadministrador"
 import { useSaveSuperadministrador } from "@/features/administration/superadministradores/api/mutations/save-superadministrador"
+import { usePersonaPorDocumentoQuery } from "@/features/administration/superadministradores/api/query/use-persona-por-documento"
 import { useTiposDocumentoXlQuery } from "@/features/administration/superadministradores/api/query/use-superadministradores-query"
 import {
   superadministradorFormSchema,
@@ -45,6 +46,8 @@ interface DialogSuperadministradorProps {
   modo: ModoSuperadministrador | null
   superadministrador: Superadministrador | null
   puedeEditar: boolean
+  /** El listado: para avisar en el alta si el documento ya es de un Superadministrador. */
+  existentes: Superadministrador[]
   onClose: () => void
   onModificar: (s: Superadministrador) => void
 }
@@ -116,6 +119,7 @@ function SuperadministradorForm({
   modo,
   superadministrador: actual,
   puedeEditar,
+  existentes,
   onClose,
   onModificar,
   tipos,
@@ -138,6 +142,54 @@ function SuperadministradorForm({
     onSubmit: ({ value }) => guardar(value),
   })
   const tipo = useStore(form.store, (s) => s.values.tipoDocumento)
+  const numeroDoc = useStore(form.store, (s) => s.values.numeroDocumento.trim().toUpperCase())
+
+  // Autocompletado del alta: con el documento de alguien que ya existe en la
+  // plataforma, el back le suma el rol a su cuenta (Regla 24) y no usa los
+  // nombres ni el correo del formulario; por eso se muestran los suyos y se bloquean.
+  const [numeroBuscado, setNumeroBuscado] = useState("")
+  useEffect(() => {
+    const t = setTimeout(() => setNumeroBuscado(numeroDoc), 400)
+    return () => clearTimeout(t)
+  }, [numeroDoc])
+  const yaEs =
+    modo === "nuevo" && numeroDoc
+      ? existentes.find(
+          (s) => s.tipoDocumento?.pk === tipo && s.numeroDocumento?.toUpperCase() === numeroDoc,
+        )
+      : undefined
+  const consulta = usePersonaPorDocumentoQuery(tipo, numeroBuscado, modo === "nuevo" && !yaEs)
+  const persona = consulta.data && numeroBuscado === numeroDoc && !yaEs ? consulta.data : null
+  const [aplicada, setAplicada] = useState<number | null>(null)
+  useEffect(() => {
+    const poner = (v: {
+      primerNombre: string
+      segundoNombre: string
+      primerApellido: string
+      segundoApellido: string
+      correo: string
+    }) => {
+      form.setFieldValue("primerNombre", v.primerNombre)
+      form.setFieldValue("segundoNombre", v.segundoNombre)
+      form.setFieldValue("primerApellido", v.primerApellido)
+      form.setFieldValue("segundoApellido", v.segundoApellido)
+      form.setFieldValue("correo", v.correo)
+    }
+    if (persona && persona.pkUsuario !== aplicada) {
+      poner(persona)
+      setAplicada(persona.pkUsuario)
+    } else if (!persona && aplicada != null) {
+      // Cambió el documento: los datos eran de otra persona.
+      poner({
+        primerNombre: "",
+        segundoNombre: "",
+        primerApellido: "",
+        segundoApellido: "",
+        correo: "",
+      })
+      setAplicada(null)
+    }
+  }, [persona, aplicada, form])
 
   // Datos y estado son dos endpoints: primero los datos, luego el estado.
   async function guardar(value: SuperadministradorFormValues) {
@@ -221,6 +273,19 @@ function SuperadministradorForm({
             una cuenta activa en la plataforma, conserva la suya.
           </p>
         )}
+        {yaEs && (
+          <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-sm text-yellow">
+            <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+            {yaEs.nombre} ya es Superadministrador.
+          </p>
+        )}
+        {persona && (
+          <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+            <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+            Esta persona ya existe en la plataforma: se le agregará el rol de Superadministrador con
+            su cuenta actual{persona.correo ? ` (${persona.correo})` : ""}, sin crear una nueva.
+          </p>
+        )}
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
 
         <form
@@ -265,69 +330,77 @@ function SuperadministradorForm({
                     numerico ? toDigitsOnly(v, 20) : v.replace(/[^A-Za-z0-9]/g, "").toUpperCase()
                   }
                   description={
-                    numerico
-                      ? "Solo dígitos, sin puntos ni espacios."
-                      : "Letras y dígitos, sin puntos ni espacios."
+                    consulta.isFetching
+                      ? "Buscando a la persona en la plataforma…"
+                      : numerico
+                        ? "Solo dígitos, sin puntos ni espacios."
+                        : "Letras y dígitos, sin puntos ni espacios."
                   }
                 />
               )}
             </form.AppField>
-            <form.AppField name="primerNombre">
-              {(f) => (
-                <f.TextField
-                  label="Primer nombre"
-                  required
-                  maxLength={40}
-                  transform={(v) => toLettersOnly(v, 40)}
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="segundoNombre">
-              {(f) => (
-                <f.TextField
-                  label="Segundo nombre"
-                  maxLength={40}
-                  transform={(v) => toLettersOnly(v, 40)}
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="primerApellido">
-              {(f) => (
-                <f.TextField
-                  label="Primer apellido"
-                  required
-                  maxLength={40}
-                  transform={(v) => toLettersOnly(v, 40)}
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="segundoApellido">
-              {(f) => (
-                <f.TextField
-                  label="Segundo apellido"
-                  maxLength={40}
-                  transform={(v) => toLettersOnly(v, 40)}
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="correo">
-              {(f) => (
-                <f.TextField
-                  label="Correo electrónico"
-                  required
-                  type="email"
-                  maxLength={254}
-                  autoComplete="off"
-                  transform={toEmailInput}
-                  className="sm:col-span-2"
-                  description={
-                    modo === "modificar"
-                      ? "Si lo cambia, la cuenta vuelve a pendiente y se envía el enlace al correo nuevo."
-                      : "Con este correo inicia sesión."
-                  }
-                />
-              )}
-            </form.AppField>
+            {/* Persona existente: nombres y correo son los suyos, no se editan aquí. */}
+            <FormDisabledProvider disabled={persona != null}>
+              <form.AppField name="primerNombre">
+                {(f) => (
+                  <f.TextField
+                    label="Primer nombre"
+                    required
+                    maxLength={40}
+                    transform={(v) => toLettersOnly(v, 40)}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="segundoNombre">
+                {(f) => (
+                  <f.TextField
+                    label="Segundo nombre"
+                    maxLength={40}
+                    transform={(v) => toLettersOnly(v, 40)}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="primerApellido">
+                {(f) => (
+                  <f.TextField
+                    label="Primer apellido"
+                    required
+                    maxLength={40}
+                    transform={(v) => toLettersOnly(v, 40)}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="segundoApellido">
+                {(f) => (
+                  <f.TextField
+                    label="Segundo apellido"
+                    maxLength={40}
+                    transform={(v) => toLettersOnly(v, 40)}
+                  />
+                )}
+              </form.AppField>
+            </FormDisabledProvider>
+            {/* Con su correo de ingreso: el alta exige que documento y correo sean de la misma persona. */}
+            <FormDisabledProvider disabled={Boolean(persona?.correo)}>
+              <form.AppField name="correo">
+                {(f) => (
+                  <f.TextField
+                    label="Correo electrónico"
+                    required
+                    type="email"
+                    maxLength={254}
+                    autoComplete="off"
+                    transform={toEmailInput}
+                    className="sm:col-span-2"
+                    description={
+                      modo === "modificar"
+                        ? "Si lo cambia, la cuenta vuelve a pendiente y se envía el enlace al correo nuevo."
+                        : "Con este correo inicia sesión."
+                    }
+                  />
+                )}
+              </form.AppField>
+            </FormDisabledProvider>
           </FormDisabledProvider>
           {modo !== "nuevo" && (
             <form.AppField name="activo">
