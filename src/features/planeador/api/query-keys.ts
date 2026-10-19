@@ -164,3 +164,13 @@ export function esCalificacionesDeActividad(queryKey: readonly unknown[]): boole
     queryKey[3] === "calificaciones"
   )
 }
+
+/** El detalle de UNA actividad (`actividad.detalle(id)`), no lo que cuelga de él. */
+export function esDetalleDeActividad(queryKey: readonly unknown[]): boolean {
+  return (
+    queryKey.length === 3 &&
+    queryKey[0] === all[0] &&
+    queryKey[1] === actividadAll[1] &&
+    typeof queryKey[2] === "number"
+  )
+}

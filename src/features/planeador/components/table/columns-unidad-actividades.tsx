@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
@@ -28,6 +28,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { planeadorRoute } from "@/router"
 import type { PlaneadorAlcanceSearch } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
@@ -41,6 +42,30 @@ import {
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinidoRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+
+/** Valor de una celda en línea que la Regla 37 ya no deja editar (la
+ *  actividad tiene calificaciones, observaciones o "No presentó", o es base
+ *  de una recuperación): se ve, no se edita, y el motivo va en el tooltip.
+ *  Un `<span>` enfocable y no un botón deshabilitado: el deshabilitado no
+ *  recibe hover y el motivo nunca se vería. */
+function ValorBloqueado({ valor, motivo }: { valor: ReactNode; motivo: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            tabIndex={0}
+            aria-disabled="true"
+            className="text-muted-foreground -mx-2 inline-flex cursor-not-allowed rounded px-2 py-1"
+          />
+        }
+      >
+        {valor}
+      </TooltipTrigger>
+      <TooltipContent>{motivo}</TooltipContent>
+    </Tooltip>
+  )
+}
 
 /** Celda "(%)" editable en línea — clic muestra el input, Enter/blur
  *  guarda, Escape descarta. Solo tiene sentido con cálculo "Ponderado": el
@@ -77,9 +102,16 @@ function CeldaPonderacion({
         notify("Ponderación actualizada.")
         setEditando(false)
       },
-      onError: () => notify("No se pudo actualizar la ponderación.", { variant: "error" }),
+      // El motivo del backend (p. ej. la Regla 37 si alguien calificó
+      // mientras la tabla estaba abierta), no un genérico.
+      onError: (error) =>
+        notify(`No se pudo actualizar la ponderación. ${getErrorMessage(error)}`, { variant: "error" }),
     },
   })
+
+  if (actividad.motivoNoEditable) {
+    return <ValorBloqueado valor={actividad.ponderacion} motivo={actividad.motivoNoEditable} />
+  }
 
   if (!editando) {
     return (
@@ -163,9 +195,14 @@ function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; uni
         notify("Puntaje actualizado.")
         setEditando(false)
       },
-      onError: () => notify("No se pudo actualizar el puntaje.", { variant: "error" }),
+      onError: (error) =>
+        notify(`No se pudo actualizar el puntaje. ${getErrorMessage(error)}`, { variant: "error" }),
     },
   })
+
+  if (actividad.motivoNoEditable) {
+    return <ValorBloqueado valor={actividad.notaMaxima ?? "—"} motivo={actividad.motivoNoEditable} />
+  }
 
   if (!editando) {
     return (
@@ -251,12 +288,37 @@ function BotonDesvincular({
         notify(`${rotuloActividad} desvinculad${genero}.`)
         setOpen(false)
       },
-      onError: () =>
-        notify(`No se pudo desvincular ${articuloDefinidoRotulo(rotuloActividad)} ${actividadLower}.`, {
-          variant: "error",
-        }),
+      onError: (error) =>
+        notify(
+          `No se pudo desvincular ${articuloDefinidoRotulo(rotuloActividad)} ${actividadLower}. ${getErrorMessage(error)}`,
+          { variant: "error" },
+        ),
     },
   })
+
+  // Regla 37: con resultados la actividad ya no sale de la unidad (el
+  // backend lo rechaza). Botón visible con el motivo, sin abrir el diálogo.
+  if (actividad.motivoNoEditable) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`${desvincularLabel}: ${actividad.motivoNoEditable}`}
+              aria-disabled="true"
+              className="cursor-not-allowed opacity-50"
+            />
+          }
+        >
+          <LinkBreakIcon />
+        </TooltipTrigger>
+        <TooltipContent>{actividad.motivoNoEditable}</TooltipContent>
+      </Tooltip>
+    )
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -467,7 +529,29 @@ export function createUnidadActividadesColumns(
             </TooltipTrigger>
             <TooltipContent>Ver {row.original.nombre}</TooltipContent>
           </Tooltip>
-          {puedeEditar && (
+          {/* Regla 37: con resultados el lápiz queda visible pero inerte y el
+              tooltip dice por qué (mismo criterio que `ActividadCard`); "Ver"
+              sigue abriendo la actividad. */}
+          {puedeEditar && row.original.motivoNoEditable && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={row.original.motivoNoEditable}
+                    aria-disabled="true"
+                    className="cursor-not-allowed opacity-50"
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>{row.original.motivoNoEditable}</TooltipContent>
+            </Tooltip>
+          )}
+          {puedeEditar && !row.original.motivoNoEditable && (
             <Tooltip>
               <TooltipTrigger
                 render={
