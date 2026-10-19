@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
+
 /** Personas activas con el rol, en cualquier sede (fn_rol_funcionarios_contar). */
 async function fetchRoleEmployeesCount(roleId: number): Promise<number> {
   const rows = await evalCol.getRows<{ total: number | string }>(
@@ -10,15 +12,9 @@ async function fetchRoleEmployeesCount(roleId: number): Promise<number> {
   return Number(rows[0]?.total ?? 0)
 }
 
-export const roleEmployeesCountQueryKey = (roleId: number | null) => [
-  "role-menus",
-  roleId,
-  "funcionarios-total",
-]
-
 export function useRoleEmployeesCountQuery(roleId: number | null, enabled = true) {
   return useQuery({
-    queryKey: roleEmployeesCountQueryKey(roleId),
+    queryKey: roleMenuKeys.roleMenus.funcionariosTotal(roleId),
     queryFn: () => fetchRoleEmployeesCount(roleId as number),
     enabled: roleId != null && enabled,
   })

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react"
+import { forwardRef, useEffect, useImperativeHandle } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm, useSelector } from "@tanstack/react-form"
@@ -16,7 +16,7 @@ import { useCurriculumNodesQuery } from "@/features/establishment/academic-perio
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SelectItemsDialog } from "@/components/select-items-dialog"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
-import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
 import {
   promotionApprovalSchema,
   type PromotionApprovalValues,
@@ -198,10 +198,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
     const isGradeScope = gradeId != null
     const { notify } = useNotify()
 
-    const curriculumNodeItems = useMemo<Record<string, string>>(
-      () => Object.fromEntries(curriculumNodes.map((o) => [o.key, o.label])),
-      [curriculumNodes],
-    )
+    const curriculumNodeItems: Record<string, string> = Object.fromEntries(curriculumNodes.map((o) => [o.key, o.label]))
 
     const updatePromotionCriteria = useUpdatePromotionCriteria({
       mutationConfig: {

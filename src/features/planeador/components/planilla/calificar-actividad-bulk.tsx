@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type RefObject } from "react"
+import { useEffect, useState, type RefObject } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -176,24 +176,24 @@ export function CalificarActividadBulk({
   // Sin asistencia, No asistido o No presentó no entran al lote: el backend
   // rechazaría el lote completo.
   const { data: calificaciones } = useCalificacionesQuery(actividadId)
-  const bloqueos = useMemo(() => {
+  const bloqueos = (() => {
     const porMatricula = new Map<number, string>()
     for (const c of calificaciones ?? []) {
       const motivo = bloqueoCalificar(c)
       if (motivo && c.matriculaId != null) porMatricula.set(c.matriculaId, motivo)
     }
     return porMatricula
-  }, [calificaciones])
+  })()
   const motivoBloqueo = (e: FilaEstudiante) =>
     e.matriculaId != null ? bloqueos.get(e.matriculaId) : undefined
   const bloqueados = new Set(estudiantes.filter((e) => motivoBloqueo(e)).map((e) => e.id))
   const efectivos = [...seleccionados].filter((id) => !bloqueados.has(id))
 
-  const filtrados = useMemo(() => {
+  const filtrados = (() => {
     const term = filtro.trim().toLowerCase()
     if (!term) return estudiantes
     return estudiantes.filter((e) => `${e.nombres} ${e.apellidos}`.toLowerCase().includes(term))
-  }, [estudiantes, filtro])
+  })()
 
   function toggle(id: number) {
     if (bloqueados.has(id)) return

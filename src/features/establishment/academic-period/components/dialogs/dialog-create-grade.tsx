@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState } from "react"
-import Axios from "axios"
+import { useRef, useState } from "react"
 import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { cleanErrorMessage } from "@/lib/api-client"
+import { cleanErrorMessage, getErrorMessage } from "@/lib/api-client"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 
@@ -52,12 +51,12 @@ import { TabStudyPlan } from "@/features/establishment/academic-period/component
 import {
   ScheduleBuilder,
   type ScheduleBuilderHandle,
-} from "@/features/establishment/academic-period/components/schedule-builder"
+} from "@/features/establishment/academic-period/components/fields/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,
   type ScheduleSubject,
-} from "@/features/establishment/academic-period/components/schedule-data"
+} from "@/features/establishment/academic-period/utils/schedule-data"
 
 const PANEL =
   "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
@@ -129,10 +128,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
-  // Solución temporal de front: en preescolar el plan de estudio se maneja
-  // por "dimensiones" en vez de "asignaturas" — mismo modelo de datos, solo
-  // cambia el rótulo. Comparación case-insensitive porque el nombre real
-  // viene del backend (catálogo `niveles-ensenanza`), no es un enum fijo.
+  // Preescolar usa "dimensiones" en vez de "asignaturas" (solo cambia el rótulo).
+  // El nombre viene del catálogo del backend, no de un enum: se compara sin mayúsculas.
   const isPreescolar = (
     teachingLevels.find((l) => l.id === teachingLevelId)?.nombre ??
     grade?.teachingLevelName ??
@@ -142,10 +139,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     .toLowerCase()
     .includes("preescolar")
 
-  // Acta 19-sep-2026: un nivel formativo (enfoque pedagógico "FORMATIVO" del
-  // referente curricular) no reprueba, así que Criterios de promoción no le
-  // aplica — el mismo flag que usa Planeador para decidir si una actividad
-  // se califica o se observa, leído acá por grado/asignatura.
+  // Un nivel con referente FORMATIVO no reprueba: no aplica Criterios de promoción.
   const { data: referenteCurricular } = useReferenteCurricularQuery(gradeId ?? undefined, undefined)
   const isFormativo = referenteCurricular?.esFormativo ?? false
 
@@ -229,10 +223,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         notify(SUCCESS_MESSAGES.grade.updated)
       }
     } catch (error) {
-      const message = Axios.isAxiosError(error)
-        ? cleanErrorMessage(error.response?.data?.message || error.message)
-        : "Ocurrió un error al guardar el grado."
-      notify(message, { variant: "error" })
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setSaving(false)
     }
@@ -263,18 +254,14 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     gradeId: gradeId ?? undefined,
     enabled: open,
   })
-  const gradeGroupOptions = useMemo(
-    () =>
-      (gradeGroupsData?.rows ?? []).map((g) => ({
+  const gradeGroupOptions = (gradeGroupsData?.rows ?? []).map((g) => ({
         id: g.id,
         label: [g.codigo, g.jornadaName ?? g.jornada]
           .filter(Boolean)
           .join(" - "),
-      })),
-    [gradeGroupsData],
-  )
+      }))
 
-  const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
+  const scheduleSubjects: ScheduleSubject[] = (() => {
     const abbreviationById = new Map<number, string>()
     const colorById = new Map<number, string>()
     for (const area of areaData?.rows ?? []) {
@@ -291,7 +278,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
       blocks: item.intensidadHoraria,
       color: colorById.get(item.asignaturaId) ?? DEFAULT_SUBJECT_COLOR,
     }))
-  }, [planData, areaData])
+  })()
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 

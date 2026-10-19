@@ -12,7 +12,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/academic-period"
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { DeleteAcademicPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-academic-period"
-import { EditAcademicPeriodButton } from "@/features/establishment/academic-period/components/edit-academic-period-button"
+import { EditAcademicPeriodButton } from "@/features/establishment/academic-period/components/table/edit-academic-period-button"
 import { DeactivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-deactivate-reservation"
 import { ActivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-activate-reservation"
 import { Authorization } from "@/lib/authorization"

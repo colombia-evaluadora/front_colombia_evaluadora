@@ -1,4 +1,3 @@
-import { useMemo } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 
@@ -79,7 +78,7 @@ const FIELDS = [
   },
 ] as const
 
-import { parseGradingRange } from "@/features/establishment/academic-period/components/grading-range"
+import { parseGradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 
 const DEFAULT_EMPTY_MESSAGE = "No hay opciones disponibles."
 const EMPTY_MESSAGES: Partial<Record<(typeof FIELDS)[number]["name"], string>> = {
@@ -171,7 +170,7 @@ function EvaluationCriteriaForm({
   // Son tres espacios de id distintos — `levelIdToBandaId`/`escalaIdToLevelId`
   // traducen entre ellos (ver V123 en postgres/migrations, que agregó
   // FK_TESCALA a fn_escala_listar para poder armar este mapeo).
-  const { gradingScaleOptions, levelIdToBandaId, escalaIdToLevelId } = useMemo(() => {
+  const { gradingScaleOptions, levelIdToBandaId, escalaIdToLevelId } = (() => {
     const levelNames = new Map<number, string>()
     const levelToBanda = new Map<number, number>()
     const escalaToLevel = new Map<number, number>()
@@ -198,7 +197,7 @@ function EvaluationCriteriaForm({
       levelIdToBandaId: levelToBanda,
       escalaIdToLevelId: escalaToLevel,
     }
-  }, [ratingScalesData])
+  })()
 
   const saveCriteria = useUpdateEvaluationCriteria({
     mutationConfig: {

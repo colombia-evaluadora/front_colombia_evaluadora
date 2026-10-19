@@ -38,6 +38,7 @@ async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
 
 export function useOwnershipTypesQuery() {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", "ownership-types"],
     meta: catalogoMeta(),
     queryFn: fetchOwnershipTypes,

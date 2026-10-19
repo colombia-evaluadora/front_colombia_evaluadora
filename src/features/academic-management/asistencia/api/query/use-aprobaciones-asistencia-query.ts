@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 
 import type { SolicitudAprobacionAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 /** Regla 75: solicitudes de corrección de asistencia que el coordinador puede resolver. */
 export function useAprobacionesAsistenciaQuery(enabled: boolean) {
   return useQuery({
-    queryKey: ["asistencia", "aprobaciones"],
+    queryKey: asistenciaKeys.aprobaciones(),
     queryFn: async () => {
       const raw = await api.get<{ rows: SolicitudAprobacionAsistencia[] } | SolicitudAprobacionAsistencia[]>(
         "/eval-col/aprobaciones/pendientes",

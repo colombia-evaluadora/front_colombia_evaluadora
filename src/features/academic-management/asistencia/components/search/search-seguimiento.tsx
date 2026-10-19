@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, textTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -67,39 +67,30 @@ export function SearchSeguimiento({
   const badgeCount = Object.values(filters).filter(Boolean).length
   const activeFilterCount = badgeCount + (search ? 1 : 0)
 
-  const jornadaItems = useMemo(() => [TODOS_ITEM, ...jornadaOptions], [jornadaOptions])
+  const jornadaItems = [TODOS_ITEM, ...jornadaOptions]
 
   // Ningún filtro es obligatorio, pero elegir uno acota las opciones del siguiente:
   // jornada -> grado -> grupo -> asignatura. Vacío arriba = sin acotar abajo.
   // gradosDeJornada deduplica por CODIGO, así que un grado presente en dos jornadas
   // aparece una sola vez cuando no hay jornada elegida.
-  const gradoItems = useMemo(
-    () => [TODOS_ITEM, ...gradosDeJornada(grupoCatalog, draft.jornada)],
-    [grupoCatalog, draft.jornada],
-  )
-  const grupoItems = useMemo(
-    () => [
+  const gradoItems = [TODOS_ITEM, ...gradosDeJornada(grupoCatalog, draft.jornada)]
+  const grupoItems = [
       TODOS_ITEM,
       ...gruposDeGradoJornada(grupoCatalog, draft.jornada, draft.grado).map((g) => ({
         value: String(g.value),
         label: g.label,
       })),
-    ],
-    [grupoCatalog, draft.jornada, draft.grado],
-  )
-  const asignaturaItems = useMemo(() => {
+    ]
+  const asignaturaItems = (() => {
     const asignaturas = draft.grupo
       ? (asignaturasPorGrupo.get(Number(draft.grupo)) ?? [])
       : asignaturaCatalog
     return [TODOS_ITEM, ...asignaturas.map((a) => ({ value: String(a.value), label: a.label }))]
-  }, [asignaturaCatalog, asignaturasPorGrupo, draft.grupo])
-  const tipoAsistenciaItems = useMemo(
-    () => [
+  })()
+  const tipoAsistenciaItems = [
       TODOS_ITEM,
       ...tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label })),
-    ],
-    [tipoAsistenciaOptions],
-  )
+    ]
 
   // Las opciones ya vienen acotadas al alcance del usuario (un docente solo
   // recibe sus grupos y asignaturas): un combo con una sola opción o ninguna no
@@ -127,8 +118,7 @@ export function SearchSeguimiento({
     setOpen(false)
   }
 
-  const syntax = useMemo<QuerySyntax<QueryFilters>>(
-    () => ({
+  const syntax: QuerySyntax<QueryFilters> = {
       empty: EMPTY_QUERY_FILTERS,
       freeText: { key: "texto", field: "search" },
       terms: [
@@ -152,11 +142,9 @@ export function SearchSeguimiento({
           tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label })),
         ),
       ],
-    }),
-    [jornadaOptions, grupoCatalog, asignaturaCatalog, tipoAsistenciaOptions],
-  )
+    }
 
-  const combinedFilters = useMemo<QueryFilters>(() => ({ ...filters, search }), [filters, search])
+  const combinedFilters: QueryFilters = { ...filters, search }
 
   const { search: queryText, setSearch: setQueryText } = useQuerySearch({
     syntax,

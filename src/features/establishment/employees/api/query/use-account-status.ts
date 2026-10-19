@@ -1,13 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
-/**
- * Estado de la cuenta SSO de un funcionario. Lo calcula el auth-center a
- * partir del usuario (no de TFUNCIONARIO): `PENDING_ACTIVATION` = la cuenta
- * existe pero nunca se activó, que es el único caso en el que tiene sentido
- * reenviar el correo de activación; `NOT_FOUND` permite invitar (el backend crea la cuenta pendiente).
- */
+/** Estado SSO calculado por auth-center: solo `PENDING_ACTIVATION` permite reenviar; `NOT_FOUND` permite invitar. */
 export type AccountStatus = "ACTIVE" | "PENDING_ACTIVATION" | "INACTIVE" | "NOT_FOUND"
 
 export interface AccountStatusRow {
@@ -16,17 +12,13 @@ export interface AccountStatusRow {
 }
 
 export const accountStatusQueryKey = (correos: string[]) =>
-  ["funcionarios-estado-cuenta", correos] as const
+  employeeKeys.estadoCuenta(correos)
 
 async function fetchAccountStatus(correos: string[]): Promise<AccountStatusRow[]> {
   return api.post<AccountStatusRow[]>("/auth/register/cval/funcionario/estado-cuenta", { correos })
 }
 
-/**
- * Consulta en un solo request el estado de las cuentas de la página visible.
- * Si falla, la tabla sigue funcionando: solo el botón de reenviar activación
- * queda deshabilitado (ver `ResendActivationDialog`).
- */
+// Si falla, la tabla sigue; solo se deshabilita reenviar activación.
 export function useAccountStatusQuery(correos: string[]) {
   return useQuery({
     queryKey: accountStatusQueryKey(correos),

@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
 
 function setMenuState({ id, activo }: { id: number; activo: boolean }): Promise<UpdateRoleMenusResult> {
   return evalCol.putRow<UpdateRoleMenusResult>(`/menus/${id}/estado`, { activo })
@@ -22,9 +23,9 @@ export function useSetMenuState({ mutationConfig }: UseSetMenuStateOptions = {})
     ...rest,
     onSuccess: (...args) => {
       // Un menú inactivo sale de las vistas base de los roles y del menú lateral.
-      queryClient.invalidateQueries({ queryKey: menusQueryKey() })
-      queryClient.invalidateQueries({ queryKey: ["role-menus"] })
-      queryClient.invalidateQueries({ queryKey: ["navigation", "menu"] })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.menus.all })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.roleMenus.all })
+      queryClient.invalidateQueries({ queryKey: navigationKeys.menu })
       onSuccess?.(...args)
     },
   })

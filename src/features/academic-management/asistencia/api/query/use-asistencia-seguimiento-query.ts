@@ -7,6 +7,7 @@ import type {
   AsistenciaQueryRow,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { estudiantesMeta } from "@/lib/offline/query-meta"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 interface AsistenciaSeguimientoRawResponse {
   rows: AsistenciaQueryRow[]
@@ -24,7 +25,7 @@ export async function fetchAsistenciaSeguimiento(
 export function useAsistenciaSeguimientoQuery(body: AsistenciaQueryRequest, enabled = true) {
   return useQuery({
     meta: estudiantesMeta(),
-    queryKey: ["asistencia", "seguimiento", body],
+    queryKey: asistenciaKeys.seguimiento(body),
     queryFn: () => fetchAsistenciaSeguimiento(body),
     placeholderData: (previous) => previous,
     enabled,

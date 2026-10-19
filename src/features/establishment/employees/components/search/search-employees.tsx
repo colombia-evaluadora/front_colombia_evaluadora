@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -48,8 +48,7 @@ export function SearchEmployees({
 
   // Los filtros se escriben dentro del input —`rol:(Docente)`— igual que en
   // el resto de los listados. Ver `@/components/search/query-syntax`.
-  const syntax = useMemo<QuerySyntax<EmployeeFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<EmployeeFiltersFormInput> = {
       empty: { search: "", roles: [], workSchedules: [], statuses: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
@@ -61,9 +60,7 @@ export function SearchEmployees({
           statuses.map((status) => ({ value: status.code, label: status.name })),
         ),
       ],
-    }),
-    [roles, workSchedules, statuses],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { planeadorRoute, planeadorUnidadesRoute } from "@/router"
 
 import type {
@@ -77,8 +75,7 @@ function useFiltersFor(
   resetAlCambiarAlcance: readonly string[],
 ): PlaneadorFilters {
 
-  const applyFilters = useCallback(
-    (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => {
+  const applyFilters = (values: PlaneadorFiltersFormValues, alcance?: PlaneadorAlcanceSeleccion) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -89,11 +86,9 @@ function useFiltersFor(
         }),
         replace: true,
       })
-    },
-    [navigate, resetAlCambiarAlcance],
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -104,9 +99,9 @@ function useFiltersFor(
       }),
       replace: true,
     })
-  }, [navigate, resetAlCambiarAlcance])
+  }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let n = 0
     if (search.buscar) n += 1
     if (search.filtro) n += 1
@@ -115,7 +110,7 @@ function useFiltersFor(
       if (v != null) n += 1
     }
     return n
-  }, [search.buscar, search.filtro, search.estado, search.sede, search.ano, search.jornada, search.docente])
+  })()
 
   const filtrosForm = {
     buscar: search.buscar ?? "",

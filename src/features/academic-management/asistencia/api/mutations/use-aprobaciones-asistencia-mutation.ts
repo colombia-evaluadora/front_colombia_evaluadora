@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 
 import { invalidarPlaneadorPorAsistencia } from "@/features/planeador/api/query/invalidar-por-asistencia"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 type Decision = "aprobar" | "rechazar"
 
@@ -25,10 +27,7 @@ function leerResultado(raw: RespuestaMasivo): ResultadoMasivo {
   return fila?.resultado ?? { resueltas: [], fallidas: [] }
 }
 
-/**
- * Regla 75: una sola llamada para todo el lote. El backend resuelve cada
- * solicitud por separado y devuelve las que fallaron con su motivo.
- */
+/** Regla 75: una llamada por lote; el backend devuelve las fallidas con su motivo. */
 async function decidir({ decision, ids, motivo }: DecidirInput): Promise<{ fallidas: number }> {
   const raw = await api.post<RespuestaMasivo>(`/eval-col/aprobaciones/${decision}-masivo`, {
     IDS: ids,
@@ -39,14 +38,19 @@ async function decidir({ decision, ids, motivo }: DecidirInput): Promise<{ falli
   return { fallidas: fallidas.length }
 }
 
-export function useAprobacionesAsistenciaMutation() {
+export function useAprobacionesAsistenciaMutation({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof decidir> } = {}) {
   const queryClient = useQueryClient()
+  const { onSettled, ...rest } = mutationConfig ?? {}
   return useMutation({
     mutationFn: decidir,
+    ...rest,
     // También cuando algunas fallaron: las que pasaron ya cambiaron.
-    onSettled: (_data, _error, { decision }) => {
-      queryClient.invalidateQueries({ queryKey: ["asistencia"] })
-      if (decision === "aprobar") invalidarPlaneadorPorAsistencia(queryClient)
+    onSettled: (...args) => {
+      queryClient.invalidateQueries({ queryKey: asistenciaKeys.all })
+      if (args[2].decision === "aprobar") invalidarPlaneadorPorAsistencia(queryClient)
+      onSettled?.(...args)
     },
   })
 }

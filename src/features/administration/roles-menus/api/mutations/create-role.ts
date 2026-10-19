@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { rolesQueryKey } from "@/features/administration/roles-menus/api/query/use-roles-query"
 import type { Role } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
 
 function createRole({ name }: { name: string }): Promise<Role> {
   return evalCol.postRow<Role>("/roles", { name })
@@ -20,7 +20,7 @@ export function useCreateRole({ mutationConfig }: UseCreateRoleOptions = {}) {
     mutationFn: createRole,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: rolesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.roles })
       mutationConfig?.onSuccess?.(...args)
     },
   })

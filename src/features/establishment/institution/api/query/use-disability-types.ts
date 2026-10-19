@@ -36,6 +36,7 @@ async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
 
 export function useDisabilityTypesQuery() {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", "disability-types"],
     meta: catalogoMeta(),
     queryFn: fetchDisabilityTypes,

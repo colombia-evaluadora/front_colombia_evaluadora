@@ -28,7 +28,7 @@ import { useAcademicPeriodQuery } from "@/features/establishment/academic-period
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useSaveTeacherAssignments } from "@/features/establishment/academic-period/api/mutations/save-teacher-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
-import { AssignmentTransfer } from "@/features/establishment/academic-period/components/assignment-transfer"
+import { AssignmentTransfer } from "@/features/establishment/academic-period/components/fields/assignment-transfer"
 
 interface TabAcademicAssignmentsProps {
   academicPeriodId?: number

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { addDays } from "date-fns"
-import { useForm, useSelector } from "@tanstack/react-form"
+import { useSelector } from "@tanstack/react-form"
+import { isFieldInvalid, useAppForm } from "@/lib/forms"
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input, inputVariants } from "@/components/ui/input"
@@ -23,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { BreaksField } from "@/features/establishment/academic-period/components/breaks-field"
+import { BreaksField } from "@/features/establishment/academic-period/components/fields/breaks-field"
 
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 
@@ -39,7 +40,7 @@ import {
   type AcademicPeriodFormValues,
 } from "../../api/schema"
 import { DatePicker } from "@/components/date-picker"
-import { formatDateValue, parseDateValue } from "@/lib/date-value"
+import { parseDateValue } from "@/lib/date-value"
 
 interface AcademicPeriodFormProps {
   id: string
@@ -89,7 +90,7 @@ export function AcademicPeriodForm({
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const isCreating = currentPeriodId == null
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: initialValues,
     validators: {
       onChange: academicPeriodFormSchema,
@@ -157,10 +158,10 @@ export function AcademicPeriodForm({
   const { data: missingPreviousPeriod } = useAcademicPeriodQuery(
     previousPeriodMissing ? selectedPreviousPeriodId : undefined,
   )
-  const previousPeriodOptionsWithSelected = useMemo(() => {
+  const previousPeriodOptionsWithSelected = (() => {
     if (!missingPreviousPeriod) return previousPeriodOptions
     return [...previousPeriodOptions, { id: missingPreviousPeriod.id, name: missingPreviousPeriod.name }]
-  }, [previousPeriodOptions, missingPreviousPeriod])
+  })()
 
   return (
     <form
@@ -172,101 +173,48 @@ export function AcademicPeriodForm({
     >
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Fila 1: fechas */}
-        <form.Field name="startDate">
-          {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-            return (
-              <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Inicio del período académico*</FieldLabel>
-                <DatePicker
-                  mode="date"
-                  id={field.name}
-                  value={parseDateValue(field.state.value)}
-                  onChange={(date) => {
-                    field.handleChange(formatDateValue(date))
-                    field.handleBlur()
-                  }}
-                  aria-invalid={isInvalid}
+        <form.AppField name="startDate">
+          {(field) => <field.DateField label="Inicio del período académico" required />}
+        </form.AppField>
+
+        <form.Subscribe selector={(state) => state.values.startDate}>
+          {(startDate) => (
+            <form.AppField name="endDate">
+              {(field) => (
+                <field.DateField
+                  label="Fin del período académico"
+                  required
+                  minDate={startDate ? addDays(parseDateValue(startDate) as Date, 1) : undefined}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+              )}
+            </form.AppField>
+          )}
+        </form.Subscribe>
 
-        <form.Field name="endDate">
-          {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-            return (
-              <form.Subscribe selector={(state) => state.values.startDate}>
-                {(startDate) => {
-                  const minEndDate = startDate
-                    ? addDays(parseDateValue(startDate) as Date, 1)
-                    : undefined
-                  return (
-                    <Field variant="outlined" data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
-                      <DatePicker
-                        mode="date"
-                        id={field.name}
-                        value={parseDateValue(field.state.value)}
-                        onChange={(date) => {
-                          field.handleChange(formatDateValue(date))
-                          field.handleBlur()
-                        }}
-                        minDate={minEndDate}
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  )
-                }}
-              </form.Subscribe>
-            )
-          }}
-        </form.Field>
-
-        <form.Field name="enrollmentDeadline">
-          {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-            return (
-              <form.Subscribe
-                selector={(state) => ({
-                  startDate: state.values.startDate,
-                  endDate: state.values.endDate,
-                })}
-              >
-                {({ startDate, endDate }) => {
-                  const start = parseDateValue(startDate)
-                  const end = parseDateValue(endDate)
-                  return (
-                    <Field variant="outlined" data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Fecha límite de matrícula*</FieldLabel>
-                      <DatePicker
-                        mode="date"
-                        id={field.name}
-                        value={parseDateValue(field.state.value)}
-                        onChange={(date) => {
-                          field.handleChange(formatDateValue(date))
-                          field.handleBlur()
-                        }}
-                        minDate={start}
-                        maxDate={end}
-                        aria-invalid={isInvalid}
-                      />
-                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    </Field>
-                  )
-                }}
-              </form.Subscribe>
-            )
-          }}
-        </form.Field>
+        <form.Subscribe
+          selector={(state) => ({
+            startDate: state.values.startDate,
+            endDate: state.values.endDate,
+          })}
+        >
+          {({ startDate, endDate }) => (
+            <form.AppField name="enrollmentDeadline">
+              {(field) => (
+                <field.DateField
+                  label="Fecha límite de matrícula"
+                  required
+                  minDate={parseDateValue(startDate)}
+                  maxDate={parseDateValue(endDate)}
+                />
+              )}
+            </form.AppField>
+          )}
+        </form.Subscribe>
 
         {/* Fila 2: sede, periodo anterior, estado */}
         <form.Field name="sedeId">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
@@ -300,8 +248,7 @@ export function AcademicPeriodForm({
         </form.Field>
         <form.Field name="previousPeriodId">
           {(field) => {
-            const isInvalid =
-              (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
@@ -342,7 +289,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="statusId">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
@@ -390,7 +337,7 @@ export function AcademicPeriodForm({
         {/* Fila 3: jornada, hora inicio, hora final */}
         <form.Field name="jornadaId">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
@@ -423,7 +370,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleStartTime">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <form.Subscribe selector={(state) => state.values.scheduleEndTime}>
                 {(scheduleEndTime) => {
@@ -471,7 +418,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleEndTime">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Hora final*</FieldLabel>
@@ -513,7 +460,7 @@ export function AcademicPeriodForm({
         {/* Fila 4: bloques, descansos, reserva */}
         <form.Field name="defaultBlocksCount">
           {(field) => {
-            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            const isInvalid = isFieldInvalid(field, submissionAttempts)
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Número de bloques de la jornada*</FieldLabel>
@@ -564,7 +511,7 @@ export function AcademicPeriodForm({
                     (scheduleStartTime && timeToMinutes(b.startTime) < timeToMinutes(scheduleStartTime)) ||
                     (scheduleEndTime && timeToMinutes(b.endTime) > timeToMinutes(scheduleEndTime)),
                 )
-                const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                const isInvalid = isFieldInvalid(field, submissionAttempts)
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel>Cantidad y horarios de descanso</FieldLabel>

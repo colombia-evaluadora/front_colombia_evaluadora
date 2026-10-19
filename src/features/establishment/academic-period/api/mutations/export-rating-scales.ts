@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -12,7 +9,7 @@ interface ExportRatingScalesInput {
   format: ExportFormat
 }
 
-function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResult> {
+export function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResult> {
   return downloadReport("escalas", {
     format: input.format,
     filters: {
@@ -20,16 +17,5 @@ function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResul
       FK_NIVEL: null,
       TIPO: null,
     },
-  })
-}
-
-interface UseExportRatingScalesOptions {
-  mutationConfig?: MutationConfig<typeof exportRatingScales>
-}
-
-export function useExportRatingScales({ mutationConfig }: UseExportRatingScalesOptions = {}) {
-  return useMutation({
-    mutationFn: exportRatingScales,
-    ...mutationConfig,
   })
 }

@@ -1,5 +1,4 @@
-import { useMemo } from "react"
-import { useForm } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -37,7 +36,7 @@ export function FilterAcademicPeriodsForm({
   onSubmit,
   hideSede = false,
 }: FilterAcademicPeriodsFormProps) {
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: academicPeriodsFiltersFormSchema,
@@ -48,16 +47,9 @@ export function FilterAcademicPeriodsForm({
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const { data: schoolYearOptions = [] } = useSchoolYearsQuery()
 
-  const statusItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(statusOptions.map((o) => [String(o.id), o.label])),
-    [statusOptions],
-  )
+  const statusItems: Record<string, string> = Object.fromEntries(statusOptions.map((o) => [String(o.id), o.label]))
 
-  const yearItems = useMemo<Record<string, string>>(
-    () =>
-      Object.fromEntries(schoolYearOptions.map((year) => [year.name, year.name])),
-    [schoolYearOptions],
-  )
+  const yearItems: Record<string, string> = Object.fromEntries(schoolYearOptions.map((year) => [year.name, year.name]))
 
   return (
     <form

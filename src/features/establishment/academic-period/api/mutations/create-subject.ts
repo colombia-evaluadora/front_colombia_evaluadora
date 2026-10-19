@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
-import { extractWriteResultId, type WriteResultResponse } from "./extract-write-result"
+import { extractWriteResultId, type WriteResultResponse } from "../utils/extract-write-result"
 
 interface CreateSubjectInput {
   areaId: number

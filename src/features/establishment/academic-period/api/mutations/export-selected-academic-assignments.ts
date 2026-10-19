@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 interface ExportSelectedAcademicAssignmentsInput {
@@ -35,24 +32,11 @@ interface ExportSelectedAcademicAssignmentsInput {
  * pantalla (`export-academic-assignment-report.ts`), así que ahora ambos
  * botones exportan el mismo tipo de documento.
  */
-function exportSelectedAcademicAssignments(
+export function exportSelectedAcademicAssignments(
   input: ExportSelectedAcademicAssignmentsInput,
 ): Promise<ExportResult> {
   return downloadReport("asignaciones", {
     format: input.format,
     filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
-  })
-}
-
-interface UseExportSelectedAcademicAssignmentsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedAcademicAssignments>
-}
-
-export function useExportSelectedAcademicAssignments({
-  mutationConfig,
-}: UseExportSelectedAcademicAssignmentsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedAcademicAssignments,
-    ...mutationConfig,
   })
 }

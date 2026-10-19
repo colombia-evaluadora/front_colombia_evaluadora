@@ -1,0 +1,12 @@
+// Secciones del formulario de matrícula, divididas en form-create-matricula/
+export { DeptMunicipioFields, MatriculaDateField, MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./form-create-matricula/fields"
+export type { DepartmentOption, MunicipalityOption } from "./form-create-matricula/fields"
+export { MatriculaAcademicSection } from "./form-create-matricula/academic-section"
+export { MatriculaStudentSection } from "./form-create-matricula/student-section"
+export { MatriculaContactSection, MatriculaResidenceSection } from "./form-create-matricula/residence-contact-sections"
+export { MatriculaConflictVictimSection, MatriculaOriginSectorSection, MatriculaPreviousYearSection } from "./form-create-matricula/history-sections"
+export { MatriculaBenefitsSection, MatriculaComplementarySection } from "./form-create-matricula/complementary-sections"
+export { MatriculaGuardianEmploymentSection, MatriculaGuardianSection } from "./form-create-matricula/guardian-sections"
+export { SUPPORT_FILE_FIELDS, groupExistingFilesByKey } from "./form-create-matricula/support-files"
+export type { MatriculaSupportFiles } from "./form-create-matricula/support-files"
+export { MatriculaSupportFilesSection, SupportFilesSheet } from "./form-create-matricula/support-files-sheet"

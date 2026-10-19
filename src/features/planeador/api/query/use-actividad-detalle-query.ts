@@ -23,26 +23,8 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
 import { MENSAJE_ACTIVIDAD_NO_EDITABLE } from "@/features/planeador/lib/actividad-editable"
 
-/**
- * `GET /planeador/actividades/:id` (confirmado real, colección Postman
- * `planeador-guia-completa`, 4.3). Fila COMPLETAMENTE distinta del mock:
- * escalares sueltos (no objetos anidados), `unidad`/`fk_tunidad` en `null`
- * cuando la actividad no tiene unidad (no un objeto `{id, nombre}` —
- * accederle `.nombre` directo, como hacía `detail-sections.tsx`, revienta
- * con "Cannot read properties of null"), y trae `campos_disponibles`/
- * `unidad_configuracion` (el mismo bloque de "pintado dinámico" de
- * `GET .../configuracion`, carpeta 5). `campos_disponibles` SÍ se mapea
- * (`Actividad.camposDisponibles`, ver `EvaluacionSection` en
- * `form-editar-actividad.tsx`, que lo usa para actividades huérfanas en vez
- * de re-derivar la regla con `referente-curricular`); `unidad_configuracion`
- * queda sin usar todavía.
- *
- * Ojo con lo que esta fila NO trae: ni rastro de `rubrica`/`listaCotejo`/
- * `escalaValoracion` — el instrumento de la actividad vive en
- * `GET .../actividades/:id/instrumento` (`use-instrumento-actividad-query.ts`,
- * ya real), no en el detalle. Acá quedan en placeholder vacío, igual que ya
- * hace `use-actividades-mias-query.ts` con el resumen del listado.
- */
+// Fila real del detalle: `unidad`/`fk_tunidad` vienen null si la actividad es huérfana.
+// No trae el instrumento: vive en `GET .../actividades/:id/instrumento`.
 interface ActividadDetalleRow {
   pk_tactividad: number
   titulo: string
@@ -53,12 +35,7 @@ interface ActividadDetalleRow {
   unidad: string | null
   fk_tgrupo: number | null
   grupo: string | null
-  /** Confirmado real (colección Postman `planeador-delta-cambios`, punto
-   *  3.3): antes el detalle NO traía el grado de la actividad (solo
-   *  `fk_tgrupo`) — `AsignaturaGradoSection` en `form-editar-actividad.tsx`
-   *  lo resolvía cruzando `grupoId` contra el catálogo del propio docente
-   *  como workaround. Ahora llega directo; ese cruce queda como respaldo
-   *  para una actividad de un grupo que el docente autenticado no dicta. */
+  /** Llega directo; el cruce por grupo de `AsignaturaGradoSection` queda de respaldo. */
   fk_tgrado: number | null
   grado: string | null
   grado_codigo: string | null
@@ -81,8 +58,7 @@ interface ActividadDetalleRow {
   ponderacion: number | null
   influencia: unknown
   nota_maxima: number | null
-  // Datetime ISO completo, no `yyyy-MM-dd` plano — mismo patrón confirmado
-  // en el resto del Planeador real.
+  // Datetime ISO completo, no `yyyy-MM-dd`.
   fecha_inicio: string
   fecha_cierre: string
   fecha_calificado: string | null
@@ -105,29 +81,17 @@ interface ActividadDetalleRow {
   estudiantes_evaluados: number
   materiales: unknown[]
   adaptaciones: unknown[]
-  /** Config de recuperación YA guardada de esta actividad — distinta de
-   *  `campos_disponibles.recuperacion`, que es el catálogo/reglas para
-   *  ARMAR el formulario. `null` cuando no es de recuperación. */
+  /** Config de recuperación guardada (no el catálogo de `campos_disponibles`); null si no aplica. */
   recuperacion: RecuperacionGuardadaRow | null
-  // `fn_actividad_buscar_por_pk` (V224/V440): evidencias/criterios YA
-  // relacionados con esta actividad, con el pk de la RELACIÓN (no el del
-  // enunciado/criterio) — es el mismo pk que exige
-  // `PATCH .../evidencias/:id` / `PATCH .../criterios/:id` para quitarlos.
+  // pk de la RELACIÓN (no del enunciado/criterio): el que exige el PATCH para quitarlos.
   evidencias: EvidenciaRelacionadaRow[] | null
   criterios: CriterioRelacionadoRow[] | null
-  // `fn_actividad_buscar_por_pk` (V452, confirmado real): las matrículas YA
-  // asignadas (`TACTIVIDAD_ESTUDIANTE` activas), con `pkTmatricula` — el
-  // mismo id que `matriculasIds`/`EstudiantesMultiSelect` manejan. Antes se
-  // asumía que no había forma de leer esto de vuelta y el form arrancaba
-  // siempre en "Todo el grupo" al editar (ver `toActividad` abajo).
+  // Matrículas ya asignadas (V452), mismo id que `matriculasIds`.
   estudiantes: EstudianteAsignadoRow[] | null
   campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
-  /** Docente dueño (sso V553, `fn_actividad_docente_dicta`): el que dicta el
-   *  grupo+asignatura o, sin grupo, el autor de la unidad — mismo criterio
-   *  que las filas de `/actividades/mias`. Opcionales: un backend sin esas
-   *  columnas no rompe nada, solo no se muestra el docente. */
+  /** Docente dueño (V553). Opcionales: sin esas columnas solo no se muestra. */
   fk_tfuncionario_docente?: number | null
   docente_nombre?: string | null
   /** Regla 37 (sso V553): `editable` 'S'/'N' y el motivo cuando es 'N'. */
@@ -151,10 +115,7 @@ interface CriterioRelacionadoRow {
   orden: number
 }
 
-/** Confirmado contra una respuesta real de test (actividad 23):
- *  `{estudiante, calificable, observacion, calificacion, pkTmatricula,
- *  fkTestudiante, pkTactividadEstudiante}` — acá solo hace falta
- *  `pkTmatricula`, el resto lo maneja la planilla de calificación. */
+/** Solo hace falta `pkTmatricula`; el resto lo usa la planilla. */
 interface EstudianteAsignadoRow {
   pkTactividadEstudiante: number
   pkTmatricula: number
@@ -165,20 +126,10 @@ interface EstudianteAsignadoRow {
   observacion: string | null
 }
 
-/**
- * `fn_actividad_buscar_por_pk` (V224): "objeto con destino/tipoAplicacion/
- * tipoCalculo/valorPonderacion + nombres resueltos, o NULL si no es de
- * recuperación" (documentado en el comentario de la función), pero sin un
- * ejemplo real capturado de los nombres EXACTOS de sus campos. Se asume el
- * mismo patrón `*Valor` (código estable de `TLISTA_VALOR`) que ya usa
- * `evaluacion.instrumentosPermitidos`/`ponderacion.modo` en este mismo
- * bloque — lectura tolerante (`??`) para no romper si el nombre real
- * difiere una vez se confirme contra una respuesta real.
- */
+/** Nombres de campos asumidos (patrón `*Valor`), sin ejemplo real: lectura tolerante. */
 interface RecuperacionGuardadaRow {
   pk: number
-  /** `pk_lista_valor` (sso V452: `r.FK_TLV_DESTINO_RECUPERACION`), igual
-   *  que `tipoAplicacion`/`tipoCalculo` — ver `resolverRecuperacionValores`. */
+  /** `pk_lista_valor`, no el código; ver `resolverRecuperacionValores`. */
   destino?: number | string | null
   destinoValor?: string | null
   fkActividadRecuperar: number | null
@@ -189,11 +140,7 @@ interface RecuperacionGuardadaRow {
   valorPonderacion: number | null
 }
 
-/** Confirmado contra una respuesta real (actividad huérfana, sin unidad):
- *  `evaluacion.visible: false` con motivo "La actividad no tiene unidad
- *  relacionada" — el backend ya resuelve ahí "¿corresponde mostrar/exigir
- *  esto?" con las reglas de negocio completas (huérfana, unidad con
- *  referente FORMATIVO, etc.), no solo un derivado de grado/asignatura. */
+/** El backend ya decide `visible` con las reglas completas (huérfana, referente formativo…). */
 interface CampoDisponibleRow {
   visible: boolean
   requerido: boolean
@@ -214,17 +161,13 @@ interface RecuperacionCampoDisponibleRow {
     valorPonderacionRequeridoSi: string
     valorPonderacionRango: { min: number; max: number }
   }
-  /** Este endpoint (detalle de una actividad existente) nunca manda
-   *  `?RECUPERAR=S` — no hay "¿qué desea recuperar?" que pintar acá,
-   *  siempre `null`/ausente. Ver `ActividadRecuperable` en
-   *  `use-configuracion-actividad-query.ts`, que sí lo trae. */
+  /** El detalle nunca manda `?RECUPERAR=S`: siempre null/ausente. */
   actividadesRecuperables?: ActividadRecuperable[] | null
 }
 
 interface CamposDisponiblesRow {
   criterio: CampoDisponibleRow
-  /** `instrumentosPermitidos` viene como `{pk, valor, etiqueta, nombre,
-   *  variantes, campos}[]`, no `string[]` — ver `normalizeInstrumentosPermitidos`. */
+  /** Viene como objetos, no `string[]`; ver `normalizeInstrumentosPermitidos`. */
   evaluacion: CampoDisponibleRow & {
     instrumentosPermitidos: Parameters<typeof normalizeInstrumentosPermitidos>[0]
   }
@@ -236,31 +179,15 @@ function toDateOnly(value: string | null): string {
   return value ? value.slice(0, 10) : ""
 }
 
-/**
- * Ids de las evidencias (nivel 2, `PK_REFERENTE_ENUNCIADO`) ya marcadas
- * para ESTA actividad — antes no había ejemplo real de qué campo lo
- * confirmaba y quedaba fijo en `[]`; ahora `fn_actividad_buscar_por_pk`
- * (V224/V440) trae la columna `evidencias` con el pk de la RELACIÓN
- * (`TACTIVIDAD_EVIDENCIA`) y `fkReferenteEnunciado` (el id real de la
- * evidencia, que es lo que compara el checklist).
- */
+/** Se compara `fkReferenteEnunciado` (id de la evidencia), no el pk de la relación. */
 function evidenciasIdsFromRow(raw: EvidenciaRelacionadaRow[] | null): number[] {
   return (raw ?? []).map((evidencia) => evidencia.fkReferenteEnunciado)
 }
 
-/**
- * Igual que `evidenciasIdsFromRow`, pero para los criterios de la rúbrica
- * de la unidad (`TACTIVIDAD_CRITERIO_UNIDAD`, columna `criterios` de
- * `fn_actividad_buscar_por_pk`).
- */
 function criteriosUnidadIdsFromRow(raw: CriterioRelacionadoRow[] | null): number[] {
   return (raw ?? []).map((criterio) => criterio.fkTcriterioUnidad)
 }
 
-/** Completa `recuperacion` con el placeholder oculto cuando la fila no lo
- *  trae (ver `defaultRecuperacionCampoDisponible`), y normaliza
- *  `instrumentosPermitidos` a la forma rica del form (ver
- *  `normalizeInstrumentosPermitidos`). */
 function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["camposDisponibles"] {
   if (!raw) return undefined
   return {
@@ -275,23 +202,7 @@ function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["campo
   }
 }
 
-/**
- * Cada material del detalle. La forma está confirmada contra
- * `fn_actividad_buscar_por_pk` en el servidor:
- *
- * ```
- * {pk, orden, tipoRecurso, url, fkTarchivo, descripcion}
- * ```
- *
- * Se sigue leyendo de forma tolerante (probando la variante `snake_case`)
- * porque es el criterio del resto de esta fila, pero ya no es a ciegas.
- *
- * Un material de tipo "Archivo" trae `fkTarchivo` en vez de `url`: el
- * backend exige exactamente uno de los dos. Ese id es lo que después
- * permite reenviarlo al guardar sin volver a subirlo y previsualizarlo con
- * un token de vista. El NOMBRE del archivo no viene acá — lo completa
- * `fetchMaterialArchivos` (V427), que es de donde sale la extensión.
- */
+/** Un material "Archivo" trae `fkTarchivo` en vez de `url` (exactamente uno); el nombre lo pone `fetchMaterialArchivos`. */
 function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOption[], index: number): Recurso {
   const item = (raw ?? {}) as Record<string, unknown>
   const tipoRaw = item.tipoRecurso ?? item.tipo_recurso
@@ -308,8 +219,7 @@ function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOpt
   const pk = item.pk ?? item.pk_tactividad_material
   const archivoId = item.fkTarchivo ?? item.fk_tarchivo
   return {
-    // El `pk` del material sirve de key estable; el índice queda de respaldo
-    // para un backend que no lo mande (el mock, por ejemplo).
+    // `pk` como key estable; el índice es respaldo para el mock.
     id: typeof pk === "number" ? pk : index,
     titulo: "",
     fuente: "",
@@ -329,18 +239,7 @@ interface MaterialArchivoRow {
   peso: number
 }
 
-/**
- * Nombre de cada archivo de los materiales, por `fk_tarchivo`.
- *
- * Va en una llamada aparte porque el detalle devuelve el id del archivo pero
- * no su nombre, y sin nombre no hay extensión: ni se puede rotular la fila
- * ni se puede decidir si la vista previa es una imagen, un audio, un video o
- * un PDF. Ver la cabecera de V427 para por qué se resolvió así y no
- * agregando la clave al detalle.
- *
- * Nunca hace fallar la carga de la actividad: si esta llamada se cae, los
- * materiales se muestran igual, solo que sin nombre.
- */
+/** Nombres de archivo de los materiales (el detalle no los trae). Si falla, no rompe la carga. */
 async function fetchMaterialArchivos(id: number): Promise<Map<number, string>> {
   try {
     const rows = await evalCol.getRows<MaterialArchivoRow>(
@@ -352,56 +251,15 @@ async function fetchMaterialArchivos(id: number): Promise<Map<number, string>> {
   }
 }
 
-/**
- * El nombre con el que se muestra y se clasifica el archivo.
- *
- * `TARCHIVO.NOMBRE` casi siempre trae la extensión (446.098 de 480.002 filas
- * activas), pero las históricas migradas no — y sin sufijo la vista previa no
- * puede saber si es un PDF o una foto. Para esas, el backend ya resolvió la
- * extensión desde la clave del objeto y la manda aparte: se la pegamos acá.
- *
- * Se pega al nombre en vez de viajar como un campo aparte porque el nombre es
- * justamente de donde el resolver saca el tipo, y porque mostrar
- * "guia2compsocioemo10°.pdf" en la lista dice más que el nombre pelado.
- */
+/** Los históricos migrados vienen sin extensión: se pega la que resolvió el backend para clasificar. */
 function nombreConExtension(row: MaterialArchivoRow): string {
   const yaTiene = /\.[A-Za-z0-9]{2,5}$/.test(row.nombre)
   if (yaTiene || !row.extension) return row.nombre
   return `${row.nombre}.${row.extension}`
 }
 
-/**
- * `row.adaptaciones` tiene el mismo problema que `row.materiales`: sin
- * ejemplo real con datos, pero el confirmado body de
- * `PUT .../adaptaciones` (`update-adaptaciones-actividad.ts`) da la mejor
- * pista de sus campos: `{tipoAdaptacion, descripcion, usaVersionModificada,
- * aplicaA}`. Se lee tolerando `snake_case` igual que los materiales.
- *
- * `estudiantes` (sso V452, `fn_actividad_buscar_por_pk`) es un array de
- * `FK_TMATRICULA` (vía `TACTIVIDAD_ADAPTACION_ESTUDIANTE` →
- * `TACTIVIDAD_ESTUDIANTE`): el MISMO espacio de ids que se guarda (la clave
- * `estudiantes` del `PUT .../adaptaciones`, que
- * `fn_actividad_adaptacion_reemplazar_interno` —V496.2— resuelve por
- * `FK_TMATRICULA`) y que maneja el checklist (`MatriculaGrupo.id` =
- * `pk_tmatricula`). ANTES esto quedaba fijo en `[]`: la selección SÍ se
- * guardaba, pero al reabrir la actividad salía vacía, y el siguiente
- * guardado que tocara las adaptaciones mandaba "Estudiantes específicos"
- * sin nadie (el backend lo rechaza) o pisaba la selección real.
- *
- * `especificacionTipo`/`nombrePlantilla` (sso V496.1) sí tienen campo
- * confirmado: `TACTIVIDAD_ADAPTACION.ESPECIFICACION_TIPO`/`.NOMBRE_PLANTILLA`,
- * expuestos tal cual en el JSONB de `fn_actividad_buscar_por_pk` — OJO: la
- * clave es `especificacionTipo`, no `tipoOtro` (ese nombre no existe en el
- * contrato, ni para leer ni para guardar).
- *
- * `archivos` (sso V496.1/.2, `TACTIVIDAD_ADAPTACION_ARCHIVO`) trae hasta 3
- * `{fkTarchivo, nombre, peso}` del modo "archivo" — confirmado contra
- * `fn_actividad_buscar_por_pk` (V452). `fkTarchivo`/`url` sueltos siguen
- * existiendo en la fila (el primero de `archivos` queda ahí también, por
- * compatibilidad), pero para el modo "archivo" se lee de `archivos`; para
- * "biblioteca" (una sola referencia, no hasta 3) se sigue leyendo de
- * `fkTarchivo` sin pasar por el array.
- */
+// `estudiantes` son FK_TMATRICULA (mismo id que guarda el PUT); dejarlo en `[]` pisaba la selección.
+// La clave es `especificacionTipo`, no `tipoOtro`. "archivo" lee `archivos` (hasta 3); "biblioteca", `fkTarchivo`.
 export function adaptacionFromRaw(
   raw: unknown,
   tipoAdaptacionOptions: TipoAdaptacionOption[],
@@ -423,15 +281,7 @@ export function adaptacionFromRaw(
       : typeof aplicaRaw === "string"
         ? aplicaRaw
         : ""
-  // Confirmado real (GET /planeador/actividades/14, producción):
-  // `{usaVersionModificada:"S", formatoAdaptacion:52013,
-  // formatoAdaptacionNombre:"Archivo", fkTarchivo:328, url:null}`. El
-  // nombre (no el id) es lo que se puede emparejar sin un catálogo aparte
-  // — mismo criterio que `tipo`/`aplicaA` de acá arriba cuando no hay
-  // catálogo a mano, y el mismo agujero que ya se tapó para escala/otro:
-  // antes esto se dejaba fijo en "no" porque no había un ejemplo real con
-  // datos, y una adaptación con archivo se veía "sin versión modificada"
-  // apenas se reabría la actividad.
+  // Se empareja por `formatoAdaptacionNombre`: no hay catálogo a mano.
   const usaVersionModificadaRaw = item.usaVersionModificada ?? item.usa_version_modificada
   const formatoNombreRaw = item.formatoAdaptacionNombre ?? item.formato_adaptacion_nombre
   const urlRaw = item.url ?? item.URL
@@ -470,8 +320,7 @@ export function adaptacionFromRaw(
       ? estudiantesRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id))
       : [],
     archivos: versionModificada === "archivo" ? archivos : [],
-    // "biblioteca" referencia un solo archivo ya existente, no hasta 3 — se
-    // sigue leyendo del `fkTarchivo` suelto, igual que antes de V496.1.
+    // "biblioteca" referencia un solo archivo: se lee del `fkTarchivo` suelto.
     ...(versionModificada === "biblioteca" && typeof fkTarchivoRaw === "number"
       ? { archivoId: fkTarchivoRaw }
       : {}),
@@ -497,9 +346,7 @@ function toActividadDetalle(
     recuperacionTipoAplicacion: "",
     recuperacionTipoCalculo: "",
     recuperacionValorPonderacion: row.recuperacion?.valorPonderacion ?? undefined,
-    // `unidad`/`fk_tunidad` vienen `null` (no un objeto) cuando la
-    // actividad es huérfana — `{id: 0, nombre: ""}` es el sentinel que ya
-    // usa el resto del front para "sin unidad".
+    // `unidad` viene null si es huérfana; `{id: 0, nombre: ""}` es el sentinel de "sin unidad".
     unidad:
       row.fk_tunidad != null
         ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
@@ -524,17 +371,7 @@ function toActividadDetalle(
     modalidad: (row.modalidad ?? "Presencial") as Actividad["modalidad"],
     esEvaluativa: row.es_evaluativa === "S",
     esFormativa: row.es_formativa === true,
-    // "Otro (personalizado)" se normaliza al código corto "Otro": el resto
-    // del form (InstrumentoEvaluacionSection, la propia SelectItem de este
-    // campo) compara `instrumento === "Otro"`, no el nombre completo que
-    // manda el backend (`instrumento_evaluacion`). Rúbrica/Lista de cotejo/
-    // Escala de valoración no necesitan este ajuste porque, a diferencia de
-    // "Otro", su nombre completo YA es igual al código corto interno — acá
-    // el desajuste hacía que una actividad con instrumento "Otro" recién
-    // abierta cayera siempre en la sección de Rúbrica genérica (el `else`
-    // por defecto), sin mostrar "Definición del instrumento personalizado"
-    // ni el método/definición ya guardados, aunque el detalle sí los
-    // trajera completos.
+    // El form compara `instrumento === "Otro"`, no el nombre completo del backend.
     instrumento: row.instrumento_evaluacion?.startsWith("Otro") ? "Otro" : (row.instrumento_evaluacion ?? ""),
     ponderacion: row.ponderacion ?? 0,
     notaMaxima: row.nota_maxima ?? undefined,
@@ -545,8 +382,6 @@ function toActividadDetalle(
     contenidos: [],
     objetivos: [],
     descripcionUnidad: [],
-    // El instrumento de la actividad vive aparte (`use-instrumento-actividad-query.ts`)
-    // — ver nota arriba.
     rubrica: { id: 0, criterios: [] },
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
@@ -566,23 +401,11 @@ function toActividadDetalle(
     adaptaciones: row.adaptaciones.map((raw) => adaptacionFromRaw(raw, tipoAdaptacionOptions, aplicaAOptions)),
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
-    // `row.estudiantes` (V452, confirmado real) trae de vuelta CUÁLES
-    // matrículas quedaron asignadas — antes se asumía que no había forma de
-    // leer esto y el form arrancaba siempre en "Todo el grupo" al editar,
-    // aunque la actividad tuviera una selección puntual guardada (se veía
-    // como si se hubiera perdido, aunque `update-actividad.ts` nunca la
-    // tocaba sin que el docente la volviera a elegir). No hay una bandera
-    // real de "todo el grupo" en la respuesta —`asignarTodoElGrupo` queda
-    // en `false` y la lista explícita, que es funcionalmente idéntica
-    // (misma gente asignada) aunque el grupo crezca después no se auto-
-    // incluye a los nuevos hasta que el docente vuelva a tocar "Estudiantes".
+    // No hay bandera "todo el grupo": se usa la lista explícita (los nuevos del grupo no se auto-incluyen).
     matriculasIds: (row.estudiantes ?? []).map((e) => e.pkTmatricula),
     asignarTodoElGrupo: false,
     camposDisponibles: toCamposDisponibles(row.campos_disponibles),
-    // `es_propia` también llega, pero no se mapea a `esPropia` a propósito:
-    // el detalle lo comparten el panel y la pantalla de edición, y la
-    // decisión de solo lectura ya la toma `usePlaneadorSoloLectura` con el
-    // alcance de la URL.
+    // `es_propia` no se mapea a propósito: la solo lectura la decide `usePlaneadorSoloLectura`.
     docenteId: row.fk_tfuncionario_docente ?? undefined,
     docenteNombre: row.docente_nombre?.trim() || undefined,
     motivoNoEditable:
@@ -595,53 +418,31 @@ function actividadDetalleUrl(id: number): string {
   return `/planeador/actividades/${id}`
 }
 
-/**
- * Detalle de una actividad. El sobre `{rows: [...]}` es igual en mock y
- * real; lo que cambia es la forma de la fila — el mock ya entrega
- * `Actividad` completa (`normalizeActividad` solo defiende `recursos`
- * ausente), el real entrega `ActividadDetalleRow` y hay que traducirla con
- * `toActividadDetalle`. Si no existe, se lanza un error para que el
- * `<ErrorBoundary>` / toast del interceptor se encargue.
- */
-/**
- * Catálogos que necesita el mapeo del detalle. Son `TLISTA_VALOR` fijos: se
- * cachean en React Query (`staleTime: Infinity`) en vez de pedirse en cada
- * apertura del panel — antes cada detalle hacía 3 `GET /select/:CATEGORIA`
- * idénticos, y en test cada request cuesta ~0,4–0,7 s de ida y vuelta por el
- * Worker aunque el SQL tarde 1–3 ms.
- */
+/** Catálogos `TLISTA_VALOR` fijos, cacheados con `staleTime: Infinity`. */
 function fetchCatalogosDetalle(queryClient: QueryClient) {
   return Promise.all([
     queryClient.ensureQueryData({
       meta: catalogoMeta(),
-      queryKey: ["planeador-detalle-catalogo", "tipo-recurso"] as const,
+      queryKey: planeadorKeys.catalogos.detalle("tipo-recurso"),
       queryFn: fetchTipoRecursoOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
       meta: catalogoMeta(),
-      queryKey: ["planeador-detalle-catalogo", "tipo-adaptacion"] as const,
+      queryKey: planeadorKeys.catalogos.detalle("tipo-adaptacion"),
       queryFn: fetchTipoAdaptacionOptions,
       staleTime: Infinity,
     }),
     queryClient.ensureQueryData({
       meta: catalogoMeta(),
-      queryKey: ["planeador-detalle-catalogo", "aplica-a"] as const,
+      queryKey: planeadorKeys.catalogos.detalle("aplica-a"),
       queryFn: fetchAplicaAOptions,
       staleTime: Infinity,
     }),
   ])
 }
 
-/**
- * `recuperacion.destino`/`tipoAplicacion`/`tipoCalculo` del detalle son
- * `pk_lista_valor`; el form (y `toRecuperacionBody`) trabaja con el código
- * `valor`. Sin esta traducción, al editar una recuperación "¿Esta
- * recuperación aplica para?" quedaba en un pk que no calzaba con ninguna
- * opción y se ocultaba "¿Qué actividad deseas recuperar?" (QA 54). Usa los
- * catálogos que ya trae `campos_disponibles.recuperacion`; si no vienen,
- * los pide a `/select/:CATEGORIA`.
- */
+/** El detalle trae `pk_lista_valor`; el form usa el código `valor`. */
 async function resolverRecuperacionValores(
   row: ActividadDetalleRow,
 ): Promise<Pick<Actividad, "recuperacionDestino" | "recuperacionTipoAplicacion" | "recuperacionTipoCalculo">> {
@@ -672,9 +473,7 @@ async function resolverRecuperacionValores(
 }
 
 export async function fetchActividadDetalle(id: number, queryClient: QueryClient): Promise<Actividad> {
-  // Todo en paralelo: antes los catálogos y los nombres de archivo se pedían
-  // DESPUÉS de que volviera el detalle (cascada de dos idas y vueltas). Con
-  // mocks los catálogos no hacen falta, así que no se piden.
+  // En paralelo; con mocks no se piden catálogos.
   const catalogosPromise = env.ENABLE_API_MOCKING ? undefined : fetchCatalogosDetalle(queryClient)
   const archivosPromise = env.ENABLE_API_MOCKING ? undefined : fetchMaterialArchivos(id)
   // Si el detalle falla, que el rechazo de los catálogos no quede sin manejar.
@@ -689,9 +488,7 @@ export async function fetchActividadDetalle(id: number, queryClient: QueryClient
     return {
       ...mock,
       recursos: mock.recursos ?? [],
-      // El mock no modela el referente curricular, que es lo que decide
-      // `es_formativa` en el real: se aproxima con lo que sí tiene, para que
-      // el camino de observación siga siendo alcanzable sin backend.
+      // El mock no modela el referente curricular: se aproxima `es_formativa`.
       esFormativa: Boolean(mock.unidad?.id) && !mock.esEvaluativa,
     }
   }
@@ -706,9 +503,7 @@ export async function fetchActividadDetalle(id: number, queryClient: QueryClient
     aplicaAOptions,
   )
   Object.assign(actividad, await resolverRecuperacionValores(first as ActividadDetalleRow))
-  // El nombre del archivo llena `fuente` y `titulo`, que es de donde la lista
-  // saca la etiqueta y la vista previa la extensión. Sin esto, un material
-  // guardado se ve como una fila en blanco.
+  // Sin el nombre, un material guardado se ve como fila en blanco.
   return {
     ...actividad,
     recursos: actividad.recursos.map((recurso) => {
@@ -730,11 +525,7 @@ export function actividadDetalleQueryOptions(id: number, queryClient: QueryClien
   }
 }
 
-/**
- * Precarga el detalle al pasar el puntero (o el foco) por una card del rail o
- * un evento del calendario: para cuando se hace clic, la mitad o todo el
- * viaje ya está hecho. No hace nada si ya está en caché y fresco.
- */
+/** Precarga el detalle al hover/foco; no hace nada si ya está fresco. */
 export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
   void queryClient.prefetchQuery(actividadDetalleQueryOptions(id, queryClient))
 }

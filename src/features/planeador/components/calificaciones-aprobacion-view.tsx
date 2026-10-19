@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -81,13 +81,13 @@ export function CalificacionesAprobacionView({
   const [dirty, setDirty] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
-  const filtrados = useMemo(() => {
+  const filtrados = (() => {
     const term = filtro.trim().toLowerCase();
     if (!term) return calificaciones;
     return calificaciones.filter((c) =>
       `${c.nombres} ${c.apellidos}`.toLowerCase().includes(term),
     );
-  }, [calificaciones, filtro]);
+  })();
 
   const toggle = (id: number) => {
     setDirty(true);

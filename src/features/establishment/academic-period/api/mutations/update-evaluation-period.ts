@@ -8,7 +8,7 @@ import type { UpdateEvaluationPeriodRequest } from "@/features/establishment/aca
 import {
   extractWriteResultId,
   type WriteResultResponse,
-} from "./extract-write-result"
+} from "../utils/extract-write-result"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface UpdateEvaluationPeriodInput {

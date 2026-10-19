@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { useForm } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   ComboboxField,
@@ -137,7 +137,7 @@ export function CreateGradeGroupDialog({
 
   const isSaving = createGradeGroup.isPending || updateGradeGroup.isPending
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: { onSubmit: gradeGroupFormSchema },
     onSubmit: ({ value }) => {
@@ -221,26 +221,9 @@ export function CreateGradeGroupDialog({
           }}
           className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
         >
-          <form.Field name="codigo">
-            {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Grupo*</FieldLabel>
-                  <Input
-                    id={field.name}
-                    maxLength={2}
-                    placeholder="Agregar"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <form.AppField name="codigo">
+            {(field) => <field.TextField label="Grupo" required maxLength={2} />}
+          </form.AppField>
 
           <Field variant="outlined">
             <FieldLabel htmlFor="grade-group-jornada">Jornada*</FieldLabel>

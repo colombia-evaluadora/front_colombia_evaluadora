@@ -2,12 +2,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
-import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
+import { etiquetaPeriodo } from "@/features/academic-management/reports/utils/agrupar-filas"
 import {
   filaMarcable,
   marcaKey,
   type MarcasPeriodo,
-} from "@/features/academic-management/reports/lib/periodos-marcados"
+} from "@/features/academic-management/reports/utils/periodos-marcados"
 
 interface EtiquetaPeriodoMarcableProps {
   fila: FilaInforme

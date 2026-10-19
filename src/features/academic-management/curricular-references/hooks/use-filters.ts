@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { gestionAcademicaReferentesCurricularesRoute } from "@/router"
 
 import type { CurricularReferenceFiltersFormInput } from "@/features/academic-management/curricular-references/api/schema"
@@ -18,8 +16,7 @@ export function useCurricularReferencesFilters(): CurricularReferencesFilters {
   const search = gestionAcademicaReferentesCurricularesRoute.useSearch()
   const navigate = gestionAcademicaReferentesCurricularesRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: CurricularReferenceFiltersFormInput) => {
+  const applyFilters = (values: CurricularReferenceFiltersFormInput) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -34,11 +31,9 @@ export function useCurricularReferencesFilters(): CurricularReferencesFilters {
         }),
         replace: true,
       })
-    },
-    [navigate],
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -51,26 +46,17 @@ export function useCurricularReferencesFilters(): CurricularReferencesFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters = useMemo(
-    () => ({
+  const queryFilters = {
       search: search.search,
       educationLevels: search.educationLevels,
       pedagogicalApproaches: search.pedagogicalApproaches,
       evaluationTypes: search.evaluationTypes,
       active: search.active,
-    }),
-    [
-      search.search,
-      search.educationLevels,
-      search.pedagogicalApproaches,
-      search.evaluationTypes,
-      search.active,
-    ],
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0
     if (search.search) count += 1
     count += search.educationLevels?.length ?? 0
@@ -78,13 +64,7 @@ export function useCurricularReferencesFilters(): CurricularReferencesFilters {
     count += search.evaluationTypes?.length ?? 0
     if (search.active) count += 1
     return count
-  }, [
-    search.search,
-    search.educationLevels,
-    search.pedagogicalApproaches,
-    search.evaluationTypes,
-    search.active,
-  ])
+  })()
 
   const filtrosForm = {
     search: search.search ?? "",

@@ -26,7 +26,7 @@ import {
   preMatriculaSearchSchema,
   enrollmentsSearchSchema,
   matriculaSearchSchema,
-} from "@/features/coverage/api/schema"
+} from "@/features/coverage/shared/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -118,7 +118,7 @@ const TableOperationsPage = lazyRouteComponent(
   "TableOperationsPage",
 )
 const ReservationsPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/reservations-page"),
+  () => import("@/features/coverage/reservations/pages/reservations-page"),
   "ReservationsPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
@@ -213,27 +213,27 @@ const PlaneadorPlanillaPage = lazyRouteComponent(
 )
 
 const MatriculaPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/matricula-page"),
+  () => import("@/features/coverage/matricula/pages/matricula-page"),
   "MatriculaPage",
 )
 
 const AddMatriculaPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/add-matricula-page"),
+  () => import("@/features/coverage/matricula/pages/add-matricula-page"),
   "AddMatriculaPage",
 )
 
 const MatriculaDetailPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/matricula-detail-page"),
+  () => import("@/features/coverage/matricula/pages/matricula-detail-page"),
   "MatriculaDetailPage",
 )
 
 const MatriculaEditPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/matricula-edit-page"),
+  () => import("@/features/coverage/matricula/pages/matricula-edit-page"),
   "MatriculaEditPage",
 )
 
 const MatriculaFieldConfigPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/matricula-field-config-page"),
+  () => import("@/features/coverage/matricula/pages/matricula-field-config-page"),
   "MatriculaFieldConfigPage",
 )
 
@@ -461,7 +461,7 @@ export const coberturaReservaCupoRoute = createRoute({
 })
 
 const PreMatriculaPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/pre-matricula-page"),
+  () => import("@/features/coverage/pre-matricula/pages/pre-matricula-page"),
   "PreMatriculaPage"
 )
 
@@ -474,7 +474,7 @@ export const coberturaPreMatriculaRoute = createRoute({
 })
 
 const EnrollmentsPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/enrollments-page"),
+  () => import("@/features/coverage/enrollments/pages/enrollments-page"),
   "EnrollmentsPage",
 )
 
@@ -487,7 +487,7 @@ export const coberturaInscritosRoute = createRoute({
 })
 
 const EnrollmentDetailPage = lazyRouteComponent(
-  () => import("@/features/coverage/pages/enrollment-detail-page"),
+  () => import("@/features/coverage/enrollments/pages/enrollment-detail-page"),
   "EnrollmentDetailPage",
 )
 
@@ -787,7 +787,7 @@ export const periodosAcademicosEditarRoute = createRoute({
 })
 
 const ReportsPage = lazyRouteComponent(
-  () => import("@/features/academic-management/pages/reports-page"),
+  () => import("@/features/academic-management/reports/pages/reports-page"),
   "ReportsPage",
 )
 const PlanillaInformePage = lazyRouteComponent(
@@ -795,7 +795,7 @@ const PlanillaInformePage = lazyRouteComponent(
   "PlanillaInformePage",
 )
 const CurricularReferencesPage = lazyRouteComponent(
-  () => import("@/features/academic-management/pages/curricular-references-page"),
+  () => import("@/features/academic-management/curricular-references/pages/curricular-references-page"),
   "CurricularReferencesPage",
 )
 const CurricularReferenceDetailPage = lazyRouteComponent(

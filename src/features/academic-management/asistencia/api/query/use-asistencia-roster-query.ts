@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query"
+import { useQueries } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
@@ -7,6 +7,7 @@ import type {
   RosterEstudiante,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { estudiantesMeta } from "@/lib/offline/query-meta"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 export async function fetchEstudiantesSesion(
   params: AsistenciaSesionEstudiantesParams,
@@ -18,15 +19,6 @@ export async function fetchEstudiantesSesion(
   return Array.isArray(raw) ? raw : (raw.rows ?? [])
 }
 
-export function useAsistenciaRosterQuery(params: AsistenciaSesionEstudiantesParams | null) {
-  return useQuery({
-    meta: estudiantesMeta(),
-    queryKey: ["asistencia", "sesion-estudiantes", params],
-    queryFn: () => fetchEstudiantesSesion(params!),
-    enabled: params !== null,
-  })
-}
-
 export function useAsistenciaRosterPorBloquesQuery(
   base: Omit<AsistenciaSesionEstudiantesParams, "BLOQUE">,
   bloques: (number | null)[],
@@ -36,7 +28,7 @@ export function useAsistenciaRosterPorBloquesQuery(
       const params: AsistenciaSesionEstudiantesParams = { ...base, ...(bloque !== null && { BLOQUE: bloque }) }
       return {
         meta: estudiantesMeta(),
-        queryKey: ["asistencia", "sesion-estudiantes", params],
+        queryKey: asistenciaKeys.sesionEstudiantes(params),
         queryFn: () => fetchEstudiantesSesion(params),
       }
     }),

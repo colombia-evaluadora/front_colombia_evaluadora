@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
 
 export interface MenuFormValues {
   name: string
@@ -37,8 +38,8 @@ export function useSaveMenu({ mutationConfig }: UseSaveMenuOptions = {}) {
     mutationFn: saveMenu,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: menusQueryKey() })
-      queryClient.invalidateQueries({ queryKey: ["navigation", "menu"] })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.menus.all })
+      queryClient.invalidateQueries({ queryKey: navigationKeys.menu })
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -18,6 +18,7 @@ import type {
 } from "@/features/administration/audits/api/types/audit"
 import type { OperationType } from "@/features/administration/audits/api/types/audit-table"
 import { toPaginated } from "@/lib/pagination"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseSessionOperationsQueryParams {
   sessionId: string
@@ -107,7 +108,7 @@ async function fetchSessionOperations(
 
 export function useSessionOperationsQuery(params: UseSessionOperationsQueryParams) {
   return useQuery({
-    queryKey: ["audits", "sessions", params.sessionId, "operations", params],
+    queryKey: auditKeys.sesiones.operaciones(params.sessionId, params),
     queryFn: () => fetchSessionOperations(params),
     placeholderData: (previous) => previous,
     // Mismo criterio que `useAuditsQuery`: revalidar en cada entrada a la

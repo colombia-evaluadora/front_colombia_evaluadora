@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -48,12 +48,11 @@ export function SearchCurricularReferences({
   const [draftEvaluationType, setDraftEvaluationType] = useState(filters.evaluationTypes[0] ?? "")
   const [draftActive, setDraftActive] = useState(filters.active)
 
-  const educationLevelOptions = useMemo(() => toOptions(educationLevels), [educationLevels])
-  const pedagogicalApproachOptions = useMemo(() => toOptions(pedagogicalApproaches), [pedagogicalApproaches])
-  const evaluationTypeOptions = useMemo(() => toOptions(evaluationTypes), [evaluationTypes])
+  const educationLevelOptions = toOptions(educationLevels)
+  const pedagogicalApproachOptions = toOptions(pedagogicalApproaches)
+  const evaluationTypeOptions = toOptions(evaluationTypes)
 
-  const syntax = useMemo<QuerySyntax<CurricularReferenceFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<CurricularReferenceFiltersFormInput> = {
       empty: { search: "", educationLevels: [], pedagogicalApproaches: [], evaluationTypes: [], active: "" },
       freeText: { key: "texto", field: "search" },
       terms: [
@@ -61,9 +60,7 @@ export function SearchCurricularReferences({
         optionsTerm("enfoque", "pedagogicalApproaches", pedagogicalApproachOptions),
         optionsTerm("evaluacion", "evaluationTypes", evaluationTypeOptions),
       ],
-    }),
-    [educationLevelOptions, pedagogicalApproachOptions, evaluationTypeOptions],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

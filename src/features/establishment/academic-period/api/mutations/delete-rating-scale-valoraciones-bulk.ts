@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 interface DeleteRatingScaleValoracionesBulkInput {

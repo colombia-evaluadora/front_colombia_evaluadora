@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -12,7 +9,7 @@ interface ExportSelectedAcademicPeriodsInput {
   format: ExportFormat
 }
 
-function exportSelectedAcademicPeriods(
+export function exportSelectedAcademicPeriods(
   input: ExportSelectedAcademicPeriodsInput,
 ): Promise<ExportResult> {
   // Exportar los seleccionados es el mismo reporte con el filtro `ids`.
@@ -21,18 +18,5 @@ function exportSelectedAcademicPeriods(
   return downloadReport("periodos-academicos", {
     format: input.format,
     filters: { ids: input.ids.map(Number) },
-  })
-}
-
-interface UseExportSelectedAcademicPeriodsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedAcademicPeriods>
-}
-
-export function useExportSelectedAcademicPeriods({
-  mutationConfig,
-}: UseExportSelectedAcademicPeriodsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedAcademicPeriods,
-    ...mutationConfig,
   })
 }

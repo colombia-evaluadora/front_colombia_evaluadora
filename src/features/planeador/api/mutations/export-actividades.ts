@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -41,7 +38,7 @@ interface ExportActividadesInput {
   rotulos?: RotulosExportActividades
 }
 
-function exportActividades({ filters, format, rotulos }: ExportActividadesInput): Promise<ExportResult> {
+export function exportActividades({ filters, format, rotulos }: ExportActividadesInput): Promise<ExportResult> {
   // Antes esto mandaba las FILAS ya filtradas en el cliente a
   // `/eval-col/planeador/actividades/export-all` (el endpoint de depuración
   // del query-service, que solo devuelve JSON crudo) en vez del objeto de
@@ -54,16 +51,5 @@ function exportActividades({ filters, format, rotulos }: ExportActividadesInput)
     // `titulo` y `unidad` son las claves de esas columnas en el reporte
     // (reporting-service application.yml, planeador-actividades).
     columnLabels: rotulos ? { titulo: rotulos.actividad, unidad: rotulos.unidad } : undefined,
-  })
-}
-
-interface UseExportActividadesOptions {
-  mutationConfig?: MutationConfig<typeof exportActividades>
-}
-
-export function useExportActividades({ mutationConfig }: UseExportActividadesOptions = {}) {
-  return useMutation({
-    mutationFn: exportActividades,
-    ...mutationConfig,
   })
 }

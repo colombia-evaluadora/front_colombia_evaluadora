@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { SessionStatusOption } from "@/features/administration/audits/api/types/audit"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 /**
  * Igual que los tipos de operación: no hay catálogo en el backend. El estado
@@ -20,11 +21,9 @@ function fetchAuditSessionStatuses(): Promise<SessionStatusOption[]> {
   return api.get("/audit-session-statuses")
 }
 
-export const auditSessionStatusesQueryKey = () => ["audit-session-statuses"]
-
 export function useAuditSessionStatusesQuery() {
   return useQuery({
-    queryKey: auditSessionStatusesQueryKey(),
+    queryKey: auditKeys.estadosSesion,
     queryFn: fetchAuditSessionStatuses,
     staleTime: Infinity,
   })

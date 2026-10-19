@@ -1,6 +1,5 @@
-import { IoMdCheckboxOutline } from "react-icons/io"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, ClipboardCheckIcon, EyeIcon, PencilIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ClipboardCheckIcon, EyeIcon, PencilIcon, CheckSquareOffsetIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
@@ -19,7 +18,7 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
 
 const ACCIONES = [
-  { id: "marcar", label: "Marcar", Icon: IoMdCheckboxOutline },
+  { id: "marcar", label: "Marcar", Icon: CheckSquareOffsetIcon },
   { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
 ] as const
 

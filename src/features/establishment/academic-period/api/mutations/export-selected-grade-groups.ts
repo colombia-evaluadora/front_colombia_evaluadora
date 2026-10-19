@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -14,7 +11,7 @@ interface ExportSelectedGradeGroupsInput {
   academicPeriodId?: number
 }
 
-function exportSelectedGradeGroups(
+export function exportSelectedGradeGroups(
   input: ExportSelectedGradeGroupsInput,
 ): Promise<ExportResult> {
   // Esta pantalla tilda GRUPOS, no grados, así que no puede reusar el filtro
@@ -28,18 +25,5 @@ function exportSelectedGradeGroups(
   return downloadReport("grados", {
     format: input.format,
     filters: { FK_PERIODO: input.academicPeriodId ?? null, GRUPO_IDS: input.ids },
-  })
-}
-
-interface UseExportSelectedGradeGroupsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedGradeGroups>
-}
-
-export function useExportSelectedGradeGroups({
-  mutationConfig,
-}: UseExportSelectedGradeGroupsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedGradeGroups,
-    ...mutationConfig,
   })
 }

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { create } from "@/features/establishment/institution/api/mutations/create"
 import type { MutationConfig } from "@/lib/react-query"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
 interface CreateEstablishmentInput {
   values: EstablishmentDetails
@@ -27,8 +28,7 @@ export function useCreate({ mutationConfig }: UseCreateOptions = {}) {
     mutationFn: createEstablishmentMutation,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["establishments"] })
-      queryClient.invalidateQueries({ queryKey: ["establishments", "query"] })
+      queryClient.invalidateQueries({ queryKey: establishmentKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

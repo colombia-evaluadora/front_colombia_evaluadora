@@ -15,7 +15,7 @@ import { DeleteSelectedGradesDialog } from "@/features/establishment/academic-pe
 import { ExportGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-grades"
 import { ExportSelectedGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-grades"
 import { NoticeOutlet } from "@/components/notice/notice-context"
-import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
+import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
 
 interface TabGradesProps {
   jornada: Jornada

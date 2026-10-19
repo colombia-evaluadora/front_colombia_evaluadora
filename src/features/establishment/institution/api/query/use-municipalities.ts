@@ -44,6 +44,7 @@ async function fetchMunicipalities(): Promise<Municipality[]> {
 
 export function useMunicipalitiesQuery() {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", "municipalities"],
     meta: catalogoMeta(),
     queryFn: fetchMunicipalities,

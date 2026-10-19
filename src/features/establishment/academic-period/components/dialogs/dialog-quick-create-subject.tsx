@@ -16,9 +16,9 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { SpinnerIcon } from "@/components/ui/icons"
 
-import { AreaSelect, type AreaSelection } from "@/features/establishment/academic-period/components/area-select"
-import { ColorPickerPopover } from "@/features/establishment/academic-period/components/color-picker"
-import { EspecialidadSelect } from "@/features/establishment/academic-period/components/especialidad-select"
+import { AreaSelect, type AreaSelection } from "@/features/establishment/academic-period/components/fields/area-select"
+import { ColorPickerPopover } from "@/features/establishment/academic-period/components/fields/color-picker"
+import { EspecialidadSelect } from "@/features/establishment/academic-period/components/fields/especialidad-select"
 import { SelectGeneralAreaDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-select-general-area"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
@@ -26,7 +26,7 @@ import { usePeriodAreasQuery } from "@/features/establishment/academic-period/ap
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { useCreateSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
-import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
+import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
 
 interface QuickCreateSubjectDialogProps {
   academicPeriodId?: number

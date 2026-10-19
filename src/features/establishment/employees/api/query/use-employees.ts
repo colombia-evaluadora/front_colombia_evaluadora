@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { toSingleSort } from "@/lib/query-request-mapping"
 import { unwrapPaginated } from "@/lib/response-envelope"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
 import type {
   EmployeeListItem,
@@ -12,23 +13,9 @@ import type {
   EmployeesQueryResponse,
 } from "@/features/establishment/employees/api/types/employee"
 
-/**
- * Normaliza los filtros de la UI a lo que espera el backend.
- *
- * Hoy no convierte tipos: `roles` y `workSchedules` viajan como CÓDIGOS
- * (texto) porque desde V116 el backend filtra por código (binds `VARCHAR[]`),
- * no por id. Lo único que hace es garantizar un array vacío en lugar de
- * `undefined`, para que el bind siempre reciba un array.
- *
- * Se exporta —y no queda embebido en el body de la consulta— porque la
- * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
- * misma normalización. Cuando esto vivía solo dentro del hook de listado, la
- * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
- */
+// Exportado: la exportación debe normalizar los filtros igual que el listado.
 export function toEmployeesQueryFilters(filters: EmployeesQueryRequest["filters"]) {
-  // Viajan tal cual: desde V116 el backend filtra por CÓDIGO de rol y de
-  // jornada, no por id, así que convertirlos a número rompería los binds
-  // (VARCHAR[]).
+  // Viajan como código (binds VARCHAR[]), no como id.
   return {
     ...filters,
     roles: filters.roles ?? [],
@@ -43,9 +30,7 @@ interface UseEmployeesQueryParams {
   pageSize: number
 }
 
-/** Fila cruda de `fn_usu_empleados_listar_paginado` (V51) — `roles`/`sedes`
- * son JSONB `[{id, nombre}]`; `estados_permisos` es JSONB `["ACTIVO", ...]`
- * (el dominio de `TLV_ESTADO`, no "ACTIVE"/"SUSPENDED"). */
+/** `roles`/`sedes` son JSONB `[{id, nombre}]`; `estados_permisos` usa el dominio de `TLV_ESTADO`. */
 interface RealEmployeeListRow {
   pk_empleado: number
   numero_documento: string
@@ -83,8 +68,7 @@ async function fetchEmployees(params: EmployeesQueryRequest): Promise<EmployeesQ
     return unwrapPaginated(response)
   }
 
-  // El mock espera `sorting` como array tal cual; el backend real espera un
-  // único objeto (o null) — ver `toSingleSort`.
+  // El mock espera `sorting` como array; el backend, un único objeto.
   const body = {
     filters: toEmployeesQueryFilters(params.filters),
     sorting: toSingleSort(params.sorting),
@@ -99,10 +83,7 @@ async function fetchEmployees(params: EmployeesQueryRequest): Promise<EmployeesQ
   return { ...result, rows: result.rows.map(toEmployeeListItem) }
 }
 
-export const employeesQueryKey = (params: UseEmployeesQueryParams) => [
-  "employees",
-  params,
-]
+export const employeesQueryKey = (params: UseEmployeesQueryParams) => employeeKeys.lista(params)
 
 export function useEmployeesQuery(params: UseEmployeesQueryParams) {
   return useQuery({

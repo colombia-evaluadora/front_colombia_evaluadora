@@ -1,32 +1,10 @@
-import { useState } from "react"
-
-import { useNotify } from "@/components/notice/notice-context"
+import { ExportDialog } from "@/components/export-dialog"
 import {
-  FileDownloadOutlinedIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
-
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-
-import {
-  useExportActividades,
+  exportActividades,
   type PlaneadorActividadesReportFilters,
   type RotulosExportActividades,
 } from "@/features/planeador/api/mutations/export-actividades"
-import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
+import type { Actividad } from "@/features/planeador/api/types/actividad"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
@@ -43,20 +21,10 @@ interface DialogExportActividadesProps {
   rotulos?: RotulosExportActividades
 }
 
-/**
- * Exportación masiva del Planeador. Mismo patrón que
- * `DialogExportMatricula`: dos botones con el formato (PDF / Excel) y el
- * toast lo emite el `onSuccess` leyendo el `message` que devuelve el
- * backend.
- *
- * El trigger (icon-only `outline muted`) lo inyecta la página en la
- * `TableScreenActions` del listado —acá no se renderiza solo, para no
- * duplicar el botón si la página lo quiere posicionar a mano—.
- */
+/** Exportación masiva del Planeador (PDF / Excel). La página lo pone en
+ *  la `TableScreenActions` del listado. */
 export function DialogExportActividades({ rows, filters, rotulos }: DialogExportActividadesProps) {
   const soloEnLinea = useOnlineOnly()
-  const [open, setOpen] = useState(false)
-  const { notify } = useNotify()
 
   // El de la pestaña si lo hay. Si no, rótulo real (Regla 13) solo si TODAS
   // las filas filtradas comparten el mismo — el filtro puede cruzar varios
@@ -68,96 +36,18 @@ export function DialogExportActividades({ rows, filters, rotulos }: DialogExport
     (rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK)
   const rotuloLower = rotuloEnMinuscula(rotuloLabel)
 
-  const exportAll = useExportActividades({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(result.message)
-        setOpen(false)
-      },
-    },
-  })
-
-  function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format, rotulos })
-  }
-
-  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  aria-label={`Exportar filtro de ${rotuloLower}`}
-                  disabled={soloEnLinea.disabled}
-                />
-              }
-            />
-          }
-        >
-          {/* El ícono `FileDownload` es el mismo que ya usa la card y el
-              botón grande del toolbar; mantener uno solo en la app ayuda
-              a que se reconozca como "exportar" sin necesidad de label. */}
-          <FileDownloadOutlinedIcon />
-        </TooltipTrigger>
-        <TooltipContent>{soloEnLinea.tooltip ?? `Exportar filtro de ${rotuloLower}`}</TooltipContent>
-      </Tooltip>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>
-            Elige un formato para exportar todos los registros de {rotuloLower} que coinciden
-            con la búsqueda y los filtros activos, de cualquier día.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              disabled={exportAll.isPending}
-              aria-busy={pendingFormat === "excel"}
-              onClick={() => handleExport("excel")}
-            >
-              {pendingFormat === "excel" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FileXlsIcon data-icon="inline-start" />
-              )}
-              Excel
-            </Button>
-            <Button
-              size="sm"
-              type="button"
-              color="primary"
-              disabled={exportAll.isPending}
-              aria-busy={pendingFormat === "pdf"}
-              onClick={() => handleExport("pdf")}
-            >
-              {pendingFormat === "pdf" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FilePdfIcon data-icon="inline-start" />
-              )}
-              PDF
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ExportDialog
+      label={`Exportar filtro de ${rotuloLower}`}
+      description={
+        <>
+          Elige un formato para exportar todos los registros de {rotuloLower} que coinciden
+          con la búsqueda y los filtros activos, de cualquier día.
+        </>
+      }
+      onExport={(format) => exportActividades({ filters, format, rotulos })}
+      disabled={soloEnLinea.disabled}
+      tooltip={soloEnLinea.tooltip}
+    />
   )
 }

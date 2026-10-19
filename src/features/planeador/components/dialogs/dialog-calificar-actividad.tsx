@@ -16,8 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
-import { IoMdCheckboxOutline } from "react-icons/io"
+import { CheckIcon, SpinnerIcon, XIcon, CheckSquareOffsetIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -185,7 +184,7 @@ export function DialogCalificarActividad({
             disabled
             aria-label={`Calificar a ${estudianteNombre}`}
           >
-            <IoMdCheckboxOutline className="size-5" />
+            <CheckSquareOffsetIcon className="size-5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{bloqueo}</TooltipContent>
@@ -210,7 +209,7 @@ export function DialogCalificarActividad({
             />
           }
         >
-          <IoMdCheckboxOutline className="size-5" />
+          <CheckSquareOffsetIcon className="size-5" />
         </TooltipTrigger>
         <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
       </Tooltip>

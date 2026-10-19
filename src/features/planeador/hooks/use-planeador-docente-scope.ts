@@ -2,7 +2,7 @@ import { useRouterState, useSearch } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
 import { useAuth } from "@/features/auth/hooks/use-auth"
-import { useEsCoordinador } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useEsCoordinador } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import {
   jornadaKey,
   usePlaneadorFiltroPeriodosQuery,

@@ -1,0 +1,220 @@
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { EyeIcon, ImageIcon, PlusIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
+
+import type { FilaInforme } from "@/features/academic-management/reports/api/types"
+import type { EstudianteFilas } from "@/features/academic-management/reports/utils/agrupar-filas"
+import type { MarcasPeriodo } from "@/features/academic-management/reports/utils/periodos-marcados"
+import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
+import {
+  CeldaUltimaActualizacion,
+  EncabezadoUltimaActualizacion,
+} from "@/features/academic-management/reports/components/ultima-actualizacion"
+
+const SUBFILA_CLASS = "flex h-12 items-center"
+
+interface ObservacionesTableProps {
+  estudiantes: EstudianteFilas[]
+  columnaLabel: string
+  seleccionados: Set<number>
+  onToggleEstudiante: (matriculaId: number) => void
+  onToggleTodos: () => void
+  onAbrirObservacion: (fila: FilaInforme) => void
+  /** Igual que en `GradesTable`: check por período de los seleccionados. */
+  mostrarMarcas: boolean
+  marcas: MarcasPeriodo
+  onToggleMarca: (matriculaId: number, periodoId: number) => void
+  /** Último guardado por (matrícula, período), ver `useUltimaActualizacionQuery`. */
+  fechas: Map<string, string> | undefined
+}
+
+export function ObservacionesTable({
+  estudiantes,
+  columnaLabel,
+  seleccionados,
+  onToggleEstudiante,
+  onToggleTodos,
+  onAbrirObservacion,
+  mostrarMarcas,
+  marcas,
+  onToggleMarca,
+  fechas,
+}: ObservacionesTableProps) {
+  const todosSeleccionados =
+    estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
+
+  if (estudiantes.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        No se encontraron estudiantes para lo seleccionado.
+      </p>
+    )
+  }
+
+  return (
+    <div className="overflow-auto rounded-md border border-input">
+      <table className="w-full min-w-max text-sm">
+        <thead className="border-b bg-muted/10">
+          <tr>
+            <th className="w-10 px-4 py-3 align-bottom">
+              <Checkbox
+                aria-label="Seleccionar todos"
+                checked={todosSeleccionados}
+                onCheckedChange={onToggleTodos}
+              />
+            </th>
+            <th className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+              Apellidos y nombres
+            </th>
+            <th className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase">
+              Pe
+            </th>
+            <EncabezadoUltimaActualizacion className="align-bottom" />
+            <th className="border-l border-border px-3 py-3 text-left font-semibold uppercase">
+              {columnaLabel}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {estudiantes.map((estudiante) => (
+            <tr key={estudiante.matriculaId}>
+              <td className="px-4 py-3 align-top">
+                <Checkbox
+                  aria-label={`Seleccionar ${estudiante.nombreCompleto}`}
+                  checked={seleccionados.has(estudiante.matriculaId)}
+                  onCheckedChange={() => onToggleEstudiante(estudiante.matriculaId)}
+                />
+              </td>
+              <td className="px-4 py-3 align-top font-medium whitespace-nowrap">
+                {estudiante.nombreCompleto}
+              </td>
+              <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <EtiquetaPeriodoMarcable
+                      key={fila.periodoId}
+                      fila={fila}
+                      // Alto fijo, igual al de la celda de observación: las dos
+                      // columnas apilan sus sub-filas por separado, así que si
+                      // una mide distinto la diferencia se acumula y la última
+                      // fila queda desalineada.
+                      className={cn(SUBFILA_CLASS, "px-2")}
+                      marcable={mostrarMarcas && seleccionados.has(estudiante.matriculaId)}
+                      marcas={marcas}
+                      onToggleMarca={onToggleMarca}
+                    />
+                  ))}
+                </div>
+              </td>
+              <td className="border-l border-border p-0 text-center align-top">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <CeldaUltimaActualizacion
+                      key={fila.periodoId}
+                      fila={fila}
+                      fechas={fechas}
+                      className={cn(SUBFILA_CLASS, "justify-center px-3")}
+                    />
+                  ))}
+                </div>
+              </td>
+              <td className="border-l border-border p-0 align-top">
+                <div className="flex flex-col divide-y divide-border">
+                  {estudiante.filas.map((fila) => (
+                    <div key={fila.periodoId} className={cn(SUBFILA_CLASS, "max-w-md gap-1.5 px-3")}>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              color={fila.observacion ? "primary" : "neutral"}
+                              size="icon-xs"
+                              className="shrink-0"
+                              aria-label={
+                                fila.observacion
+                                  ? `Ver observación de ${estudiante.nombreCompleto}`
+                                  : `Agregar observación de ${estudiante.nombreCompleto}`
+                              }
+                              onClick={() => onAbrirObservacion(fila)}
+                            />
+                          }
+                        >
+                          {fila.observacion ? <EyeIcon /> : <PlusIcon />}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {fila.observacion ? "Ver observación" : "Sin observación"}
+                        </TooltipContent>
+                      </Tooltip>
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 truncate text-left hover:underline"
+                        onClick={() => onAbrirObservacion(fila)}
+                        title={fila.observacion ?? undefined}
+                      >
+                        {fila.observacion ? (
+                          <span className="text-foreground">{fila.observacion}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Sin observación</span>
+                        )}
+                      </button>
+                      {/* La cuenta viene en el listado; las imágenes se ven al abrir. */}
+                      {fila.evidencias > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Badge variant="soft" color="neutral" className="shrink-0 cursor-default" />
+                            }
+                          >
+                            <ImageIcon className="size-3" data-icon="inline-start" />
+                            {fila.evidencias}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {fila.evidencias === 1
+                              ? "1 evidencia adjunta"
+                              : `${fila.evidencias} evidencias adjuntas`}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {fila.observacion && fila.observacionEstado === "BORRADOR" && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Badge variant="soft" color="info" className="shrink-0 cursor-default" />
+                            }
+                          >
+                            Borrador (IA) – pendiente de revisión
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Generada por IA. No sale en el boletín hasta que alguien la revise y la
+                            guarde.
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {fila.observacionDesactualizada && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Badge variant="soft" color="warning" className="shrink-0 cursor-default" />
+                            }
+                          >
+                            Desactualizada
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            El docente dejó observaciones nuevas después de guardar este texto.
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

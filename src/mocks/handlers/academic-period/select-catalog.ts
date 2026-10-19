@@ -7,8 +7,8 @@ import { ratingScaleTypesDb } from "../../db/academic-period/rating-scale-types"
 import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
 import { metodologiasDb } from "../../db/academic-period/metodologias"
 import { GRADES } from "../../db/reservations"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
-import { MATRICULA_STATUSES } from "@/features/coverage/api/ui-mappings-matricula"
+import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
+import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
 
 interface SelectCategoryRow {
   pk_lista_valor: number

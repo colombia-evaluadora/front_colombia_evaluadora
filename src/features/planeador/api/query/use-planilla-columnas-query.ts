@@ -80,7 +80,7 @@ export async function fetchPlanillaColumnas(
 
 /**
  * Columnas de la Planilla (una por actividad del grupo/asignatura elegidos)
- * — reemplaza el hack de filtrar `useActividadesQuery()` en el cliente por
+ * — reemplaza el hack de filtrar todas las actividades en el cliente por
  * `grado`/`grupo`/`asignatura`/rango de fechas: el endpoint real ya hace ese
  * cruce del lado del servidor.
  */

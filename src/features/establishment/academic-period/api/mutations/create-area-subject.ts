@@ -9,8 +9,8 @@ import type {
 import {
   extractWriteResultId,
   type WriteResultResponse,
-} from "./extract-write-result"
-import { toAsignaturasPayload } from "./to-asignaturas-payload"
+} from "../utils/extract-write-result"
+import { toAsignaturasPayload } from "../utils/to-asignaturas-payload"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 async function createAreaSubject(

@@ -3,14 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
-// Misma familia que `fn_fun_baja_establecimiento_bulk` (funcionarios,
-// confirmado contra el backend real: no hay envelope `{status, message,
-// deletedCount}`, cada id trae su propia fila). Se asume el mismo contrato
-// acá (`fn_est_soft_delete_bulk`) por la misma convención de nombres/ruta —
-// pendiente confirmar contra una respuesta real (ver
-// `summarizeEmployeeBulkDelete` en `employees/api/mutations/use-bulk-delete.ts`
-// para el caso ya confirmado).
+// Se asume el contrato de `fn_fun_baja_establecimiento_bulk` (fila por id); sin confirmar.
 export interface BulkDeleteEstablishmentRow {
   pk_establecimiento: string
   status: string
@@ -20,13 +15,7 @@ export interface BulkDeleteEstablishmentResult {
   rows: BulkDeleteEstablishmentRow[]
 }
 
-/**
- * El SSO real registra esto como `POST /establecimientos/bulk-delete`
- * (llama a `fn_est_soft_delete_bulk`, borrado lógico), con los ids en
- * `{ pks: [...] }` — no un array plano en el body de un DELETE como hace
- * el mock. El mock sigue esperando el array plano vía DELETE (no se tocó
- * ese handler); acá solo se resuelve distinto según el modo.
- */
+// Real: POST con `{ pks }`; el mock espera array plano vía DELETE.
 function bulkDeleteEstablishments(ids: number[]): Promise<BulkDeleteEstablishmentResult> {
   if (env.ENABLE_API_MOCKING) {
     // `api.delete(url, body)` no existe en la firma estándar de axios.
@@ -75,7 +64,7 @@ export function useBulkDelete({
     mutationFn: bulkDeleteEstablishments,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["establishments"] })
+      queryClient.invalidateQueries({ queryKey: establishmentKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

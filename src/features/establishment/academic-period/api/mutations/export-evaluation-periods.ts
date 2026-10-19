@@ -1,8 +1,5 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
 import { toEvaluationPeriodsFilters } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   EvaluationPeriodsQueryFilters,
   ExportFormat,
@@ -20,7 +17,7 @@ interface ExportEvaluationPeriodsInput {
   academicPeriodId?: number
 }
 
-function exportEvaluationPeriods(input: ExportEvaluationPeriodsInput): Promise<ExportResult> {
+export function exportEvaluationPeriods(input: ExportEvaluationPeriodsInput): Promise<ExportResult> {
   return downloadReport("periodos-evaluacion", {
     format: input.format,
     filters: toEvaluationPeriodsFilters({
@@ -28,18 +25,5 @@ function exportEvaluationPeriods(input: ExportEvaluationPeriodsInput): Promise<E
       sorting: [],
       academicPeriodId: input.academicPeriodId,
     }),
-  })
-}
-
-interface UseExportEvaluationPeriodsOptions {
-  mutationConfig?: MutationConfig<typeof exportEvaluationPeriods>
-}
-
-export function useExportEvaluationPeriods({
-  mutationConfig,
-}: UseExportEvaluationPeriodsOptions = {}) {
-  return useMutation({
-    mutationFn: exportEvaluationPeriods,
-    ...mutationConfig,
   })
 }
