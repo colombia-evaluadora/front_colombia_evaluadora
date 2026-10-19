@@ -85,16 +85,13 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
     .filter((m) => m.rol === "USER" || m.rol === "ASSISTANT")
     .sort((a, b) => a.secuencia - b.secuencia)
     .map((m) => {
-      // SSO #696: cada ASSISTANT trae `respuesta` completa. Mensajes viejos
-      // vienen sin ella (o reducida): se cae al texto + tipo de siempre.
+      // Mensajes viejos sin `respuesta`: texto + tipo.
       const respuesta =
         m.rol === "ASSISTANT"
           ? (m.respuesta ?? (m.tipoRespuesta ? { tipo: m.tipoRespuesta, texto: m.texto } : undefined))
           : undefined
       const accion = respuesta?.accionPendiente
-      // Solo una acción `PENDIENTE` (estado actual, ya vencida = EXPIRADA)
-      // vuelve a mostrar Confirmar / Cancelar. Las acciones de UI del
-      // historial NO se reaplican: la pantalla ya no es la de ese turno.
+      // Solo una acción PENDIENTE vuelve a mostrar botones; la UI del historial no se reaplica.
       const estadoAccion: EstadoAccionChat | undefined = accion
         ? accion.estado === "PENDIENTE"
           ? "PENDIENTE"
@@ -112,11 +109,7 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
     })
 }
 
-/**
- * Estado del chat con el agente: conversación actual, envío por SSE con
- * estados, detener, reintentar, confirmar/cancelar escrituras y aplicar las
- * acciones de UI sobre la pantalla abierta.
- */
+/** Estado del chat con el agente. */
 export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean } = {}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -143,13 +136,11 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
   const search = (location.search ?? {}) as Record<string, unknown>
 
   function construirContexto(): ContextoUi {
-    // `ruta` lleva también la query (sede, grupo, periodo…): el backend la
-    // trata como texto y es la única forma de pasarle esos ids hoy.
-    const ruta = `${location.pathname}${location.searchStr ?? ""}`.slice(0, MAX_RUTA)
+    // Solo el path: los ids van en `parametros`.
+    const ruta = location.pathname.slice(0, MAX_RUTA)
     const formularios = definicionFormularios()
     const filtros = filtrosDisponibles(search)
-    // URL primero (ids de la pantalla), después los valores de los filtros
-    // registrados por el listado abierto.
+    // URL primero, después los filtros del listado.
     const parametros = construirParametros(search, filtrosRegistrados()?.valores?.())
     return {
       ruta,
@@ -257,14 +248,12 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
       if (controller.signal.aborted) {
         actualizar(idRespuesta, {
           detenido: true,
-          // Mismo texto con que el backend cierra el turno cortado (queda así en el historial).
+          // Mismo texto que guarda el backend.
           texto: TEXTO_CANCELADO,
           respuesta: { tipo: "RESPUESTA", texto: TEXTO_CANCELADO },
         })
       } else {
-        // 404 (conversación inexistente o ajena) o 409 por archivada: la
-        // siguiente pregunta abre una conversación nueva. El 409 de "turno en
-        // curso" no la descarta.
+        // 404 o 409 por archivada: la próxima pregunta abre conversación nueva.
         const status = error instanceof AgenteError ? error.status : null
         if (status === 404 || (status === 409 && /archivada/i.test((error as Error).message))) {
           cambiarConversacion(null)
@@ -294,11 +283,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
     })
   }
 
-  /**
-   * Detener: corta la conexión y, además, pide al backend que cancele el
-   * turno (libera el turno en el acto, sin esperar el 409). Un fallo del
-   * `/cancelar` no importa: cerrar el streaming ya lo cancela.
-   */
+  /** Corta la conexión y pide al backend cancelar el turno. */
   function detener() {
     const enCurso = abortRef.current
     if (!enCurso) return
@@ -331,8 +316,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
           resultadosUi: aplicarRespuesta(respuesta),
         },
       ])
-      // Una escritura confirmada cambia datos de la app (planeador, funcionarios…):
-      // no se sabe cuáles, así que se marcan todas las queries como viejas.
+      // No se sabe qué datos cambió: se invalida todo.
       if (decision === "confirmar") queryClient.invalidateQueries()
       else queryClient.invalidateQueries({ queryKey: conversacionesQueryKey })
     } catch (error) {

@@ -3,14 +3,7 @@ import { useEffect } from "react"
 import type { CampoUi, CodigoFormularioAgente, FormularioUi } from "@/features/assistant/api/types"
 import { valorFiltroComo } from "@/features/assistant/lib/campos-ui"
 
-// Registro de lo que la pantalla abierta le expone al asistente (UI asistida).
-// Las pantallas se registran con los hooks de abajo y el asistente lee de acá
-// para armar `contextoUi` y para aplicar las acciones de UI (`RELLENAR`,
-// `LIMPIAR_CAMPO`, `RESALTAR`, `ABRIR_PESTANA`, `APLICAR_FILTROS`).
-//
-// El contrato pide que el propio componente del formulario genere su
-// definición (si se escribe a mano se desfasa): por eso `campos` es una
-// función que se evalúa al enviar cada mensaje, con los valores del momento.
+// Lo que la pantalla abierta expone al asistente. `campos` se evalúa en cada mensaje.
 
 export interface FormularioAsistente {
   codigo: CodigoFormularioAgente
@@ -52,19 +45,24 @@ export function pestanasRegistradas(): PestanasAsistente | null {
   return pestanas
 }
 
+/** Un select lleno solo manda la opción elegida. */
+export function acotarOpciones(campo: CampoUi): CampoUi {
+  const lleno = campo.valor != null && String(campo.valor).trim() !== ""
+  if (!lleno || !campo.opciones?.length) return campo
+  const elegida = campo.opciones.filter((o) => o.valor === String(campo.valor))
+  return { ...campo, opciones: elegida }
+}
+
 /** Definición de los formularios abiertos para `contextoUi` (máx. 5, como el backend). */
 export function definicionFormularios(): FormularioUi[] {
   return [...formularios.values()].slice(0, 5).map((f) => ({
     codigo: f.codigo,
     entidad: f.entidad,
-    campos: f.campos(),
+    campos: f.campos().map(acotarOpciones),
   }))
 }
 
-/**
- * Registra un formulario de la pantalla mientras esté montado. Pasá un objeto
- * estable o aceptá que se re-registre en cada render (es barato: es un Map).
- */
+/** Registra un formulario mientras esté montado. */
 export function useFormularioAsistente(formulario: FormularioAsistente | null) {
   useEffect(() => {
     if (!formulario) return
@@ -95,13 +93,7 @@ export function usePestanasAsistente(registro: PestanasAsistente | null) {
   })
 }
 
-/**
- * Registra los filtros de un listado a partir de su hook de filtros
- * (`useXxxFilters`): los nombres son las claves del formulario de filtros y
- * `APLICAR_FILTROS` los aplica con el mismo `applyFilters` que usa la
- * persona (que ya resetea `page: 0` y escribe la URL). Los filtros que el
- * agente no menciona conservan su valor.
- */
+/** Registra los filtros de un listado con su `applyFilters`. */
 export function useFiltrosDeListado<T extends object>(
   filters: T,
   applyFilters: (values: T) => void,

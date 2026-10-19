@@ -1,10 +1,9 @@
-import { useState } from "react"
+import { useState, type Ref } from "react"
 
 import { ArrowUpIcon, StopIcon } from "@/components/ui/icons"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group"
 
-// Límite de `ai.agente.limites.texto-max-caracteres` (default 4000): más
-// largo, el backend responde 400 antes del turno.
+// Tope del backend (`texto-max-caracteres`).
 export const MAX_CARACTERES = 4000
 
 interface ChatComposerProps {
@@ -13,18 +12,16 @@ interface ChatComposerProps {
   enviando: boolean
   disabled: boolean
   placeholder?: string
+  inputRef?: Ref<HTMLTextAreaElement>
 }
 
-/**
- * Sin adjuntar archivos: el agente no recibe archivos (solo `texto` y
- * `contextoUi`). El contexto de la pantalla viaja solo en cada mensaje.
- */
 export function ChatComposer({
   onSend,
   onStop,
   enviando,
   disabled,
   placeholder = "Escribe un mensaje...",
+  inputRef,
 }: ChatComposerProps) {
   const [texto, setTexto] = useState("")
   const largo = texto.length > MAX_CARACTERES
@@ -42,10 +39,11 @@ export function ChatComposer({
         event.preventDefault()
         enviar()
       }}
-      className="border-t p-4"
+      className="flex flex-col gap-1.5 px-4 pt-2 pb-3"
     >
-      <InputGroup className="bg-muted px-2 py-1">
+      <InputGroup className="rounded-xl bg-background px-2 py-1 shadow-sm">
         <InputGroupTextarea
+          ref={inputRef}
           value={texto}
           onChange={(event) => setTexto(event.target.value)}
           onKeyDown={(event) => {
@@ -85,6 +83,9 @@ export function ChatComposer({
           )}
         </InputGroupAddon>
       </InputGroup>
+      <p className="px-1 text-[11px] text-muted-foreground">
+        Enter envía, Shift + Enter agrega una línea. Revisa las respuestas antes de usarlas.
+      </p>
     </form>
   )
 }
