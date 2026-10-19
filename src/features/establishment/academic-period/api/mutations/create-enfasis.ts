@@ -6,17 +6,14 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "../utils/extract-write-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateEnfasisRelated } from "./invalidate"
 
 export interface CreateEnfasisInput {
   academicPeriodId: number
   nombre: string
 }
 
-// `POST /eval-col/enfasis` -> `fn_enfasis_resolver` (find-or-create por
-// nombre, migración V63). El backend deriva FK_ESTABLECIMIENTO a partir de
-// FK_PERIODO (periodo -> sede -> establecimiento), así que el body no
-// necesita el establecimiento explícito.
+// `fn_enfasis_resolver` (V63): find-or-create; el backend deriva el establecimiento.
 async function createEnfasis(input: CreateEnfasisInput): Promise<number> {
   const raw: WriteResultResponse = await api.post("/eval-col/enfasis", {
     FK_PERIODO: input.academicPeriodId,
@@ -37,7 +34,7 @@ export function useCreateEnfasis({
     mutationFn: createEnfasis,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.especialidades.all })
+      invalidateEnfasisRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

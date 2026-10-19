@@ -9,18 +9,15 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/utils/extract-write-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateAcademicPeriodRelated } from "./invalidate"
 
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues,
 ): CreateAcademicPeriodRequest {
-  // Body PLANO con las llaves de `fn_periodo_crear`. `name`/`schoolYearId` los
-  // deriva el backend y el usuario sale de `:CONTEXT.USER_ID` → no se mandan.
+  // Body plano de `fn_periodo_crear`; nombre, año y usuario los deriva el backend.
   const breaks = values.breaks ?? []
   return {
-    // `sedeId` es string en el front (Campus.id "1"); el backend espera BIGINT
-    // → se convierte a número. Por SSO llegaría string igual, pero lo mandamos
-    // ya numérico para dejar explícito el PK.
+    // El backend espera BIGINT.
     FK_SEDE: Number(values.sedeId), 
     FK_ESTADO: values.statusId,
     FECHA_INICIO: values.startDate,
@@ -33,19 +30,13 @@ export function toCreateAcademicPeriodRequest(
     RESERVA: values.reservationEnabled ? "S" : "N",
     BLOQUES_POR_DEFECTO: values.defaultBlocksCount,
     FK_PERIODO_ANTERIOR: values.previousPeriodId,
-    // `TIME[]` paralelos (misma longitud/orden). Siempre se manda el arreglo (no
-    // null): en update el front gestiona los descansos, así que `[]` = borrar
-    // todos. `null` queda reservado para "no tocar", que este form no usa.
+    // `TIME[]` paralelos; `[]` borra todos, `null` sería "no tocar".
     DESCANSO_INICIO: breaks.map((b) => b.startTime),
     DESCANSO_FIN: breaks.map((b) => b.endTime),
   }
 }
 
-// `fn_periodo_crear` devuelve solo el id nuevo (envuelto en `{rows:[...]}`
-// como todo lo demás en este catálogo) — antes esta función devolvía la
-// respuesta cruda sin desenvolver, tipada (incorrectamente) como
-// `AcademicPeriod` completo; `created.id` en academic-period-config-page.tsx
-// llegaba `undefined`.
+// `fn_periodo_crear` devuelve solo el id, envuelto en `{rows:[...]}`.
 async function createAcademicPeriod(
   values: AcademicPeriodFormValues
 ): Promise<{ id: number }> {
@@ -66,7 +57,7 @@ export function useCreateAcademicPeriod({ mutationConfig }: UseCreateAcademicPer
     mutationFn: createAcademicPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
+      invalidateAcademicPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

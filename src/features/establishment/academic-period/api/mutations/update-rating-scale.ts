@@ -7,7 +7,7 @@ import type {
   UpdateRatingScaleRequest,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { resolveRatingScaleRefs } from "@/features/establishment/academic-period/api/mutations/resolve-rating-scale-refs"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateRatingScaleRelated } from "./invalidate"
 
 interface UpdateRatingScaleInput {
   codigo: number
@@ -15,21 +15,7 @@ interface UpdateRatingScaleInput {
   values: UpdateRatingScaleRequest
 }
 
-// No existe `fn_escala_actualizar` en el backend (solo alta en lote y borrado
-// individual/masivo) — "editar" se resuelve como borrar la valoración vieja
-// (`fn_escala_eliminar`, PUT /eval-col/escalas/:ID) y crear la nueva con los
-// datos editados (`fn_escala_guardar_bulk`, POST /eval-col/escalas). El
-// `codigo`/id cambia (ya no es la misma fila).
-//
-// Nota: `values.teachingLevelIds` puede traer más de un nivel si la escala
-// fue creada agrupada (vía el diálogo de alta masiva); acá solo se borra el
-// `codigo` recibido (una fila) pero se recrea para TODOS esos niveles, así
-// que una escala agrupada en varios niveles puede quedar con filas viejas
-// huérfanas en los niveles que no sean `codigo`. El flujo normal de edición
-// en línea (`ScalesSubTable` en tab-rating-scales.tsx) siempre crea escalas
-// de un solo nivel, así que este caso no aplica en la práctica — pero si
-// aparecen valoraciones duplicadas tras editar una escala multi-nivel, es
-// por esto.
+// Sin `fn_escala_actualizar`: editar = borrar y recrear (multi-nivel puede dejar huérfanas).
 async function updateRatingScale({
   codigo,
   academicPeriodId,
@@ -66,7 +52,7 @@ export function useUpdateRatingScale({ mutationConfig }: UseUpdateRatingScaleOpt
     mutationFn: updateRatingScale,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
+      invalidateRatingScaleRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

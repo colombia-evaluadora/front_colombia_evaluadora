@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateStudyPlanRelated } from "./invalidate"
 
 interface DeleteStudyPlanItemsBulkInput {
   ids: number[]
@@ -26,11 +26,7 @@ export function useDeleteStudyPlanItemsBulk({
     mutationFn: deleteStudyPlanItemsBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlans.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.horario.all })
+      invalidateStudyPlanRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

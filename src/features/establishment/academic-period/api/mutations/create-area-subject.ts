@@ -11,7 +11,7 @@ import {
   type WriteResultResponse,
 } from "../utils/extract-write-result"
 import { toAsignaturasPayload } from "../utils/to-asignaturas-payload"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateAreaSubjectRelated } from "./invalidate"
 
 async function createAreaSubject(
   input: CreateAreaSubjectRequest
@@ -54,9 +54,7 @@ export function useCreateAreaSubject({ mutationConfig }: UseCreateAreaSubjectOpt
     mutationFn: createAreaSubject,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.areaSubjects.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.subjects.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.especialidades.all })
+      invalidateAreaSubjectRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -9,14 +9,12 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "../utils/extract-write-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateEvaluationPeriodRelated } from "./invalidate"
 
 interface UpdateEvaluationPeriodInput {
   // PK real (path); `fn_periodo_eval_actualizar` no recibe `fk_periodo`.
   id: number
-  // El popover de creación también arma este `academicPeriodId`; se acepta
-  // para no tocar el dialog, pero la actualización no lo usa (no reasigna
-  // el periodo académico).
+  // Se acepta pero no se usa: no reasigna el periodo académico.
   academicPeriodId?: number
   values: EvaluationPeriodFormValues
 }
@@ -34,9 +32,7 @@ function toUpdateEvaluationPeriodRequest(
   }
 }
 
-// `fn_periodo_eval_actualizar` devuelve
-// `{rows: [{fn_periodo_eval_actualizar: <id>}]}` (confirmado por
-// ThunderClient), no un envelope `{status, message}`.
+// Devuelve `{rows: [{fn_periodo_eval_actualizar: <id>}]}`.
 async function updateEvaluationPeriod({
   id,
   values,
@@ -60,7 +56,7 @@ export function useUpdateEvaluationPeriod({
     mutationFn: updateEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
+      invalidateEvaluationPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -2,17 +2,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateEvaluationPeriodRelated } from "./invalidate"
 
 interface DeleteEvaluationPeriodInput {
   // PK real; el PK es único, así que no hace falta desambiguar por periodo.
   id: number
 }
 
-// `fn_periodo_eval_soft_delete` es un soft delete expuesto como PUT
-// (`PUT /periodo-evaluacion/:ID`), no como DELETE. Devuelve
-// `{rows: [{fn_periodo_eval_soft_delete: <id>}]}` (confirmado por
-// ThunderClient); el front no necesita el valor, solo que la promesa resuelva.
+// `fn_periodo_eval_soft_delete`: soft delete expuesto como PUT.
 function deleteEvaluationPeriod({
   id,
 }: DeleteEvaluationPeriodInput): Promise<unknown> {
@@ -31,7 +28,7 @@ export function useDeleteEvaluationPeriod({
     mutationFn: deleteEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
+      invalidateEvaluationPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -9,7 +9,7 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "../utils/extract-write-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateEvaluationPeriodRelated } from "./invalidate"
 
 interface CreateEvaluationPeriodInput extends EvaluationPeriodFormValues {
   academicPeriodId?: number
@@ -18,8 +18,7 @@ interface CreateEvaluationPeriodInput extends EvaluationPeriodFormValues {
 export function toCreateEvaluationPeriodRequest(
   values: CreateEvaluationPeriodInput
 ): CreateEvaluationPeriodRequest {
-  // Body PLANO con las llaves de `fn_periodo_eval_crear`. El usuario sale de
-  // `:CONTEXT.USER_ID` → no se manda.
+  // Body plano de `fn_periodo_eval_crear`; el usuario sale del contexto.
   return {
     FK_PERIODO: values.academicPeriodId ?? 0,
     CODIGO: values.codigo,
@@ -31,8 +30,7 @@ export function toCreateEvaluationPeriodRequest(
   }
 }
 
-// `fn_periodo_eval_crear` devuelve `{rows: [{fn_periodo_eval_crear: <id>}]}`
-// (confirmado por ThunderClient), no un envelope `{status, message}`.
+// Devuelve `{rows: [{fn_periodo_eval_crear: <id>}]}`.
 async function createEvaluationPeriod(
   input: CreateEvaluationPeriodInput
 ): Promise<number> {
@@ -55,7 +53,7 @@ export function useCreateEvaluationPeriod({
     mutationFn: createEvaluationPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationPeriods.all })
+      invalidateEvaluationPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

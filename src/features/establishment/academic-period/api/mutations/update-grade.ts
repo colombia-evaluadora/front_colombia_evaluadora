@@ -7,16 +7,14 @@ import type {
   UpdateGradeRequest,
 } from "@/features/establishment/academic-period/api/types/grade"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateGradeRelated } from "./invalidate"
 
 interface UpdateGradeInput {
   id: number
   values: UpdateGradeRequest
 }
 
-// `PUT /eval-col/grados/:ID` (`fn_grado_actualizar`, id_query 58 — PUT desde
-// V67, no PATCH). El código (`grado`) no se puede editar (lo fija
-// `fn_grado_crear` al crear), así que no viaja.
+// `fn_grado_actualizar` (id_query 58, PUT desde V67); el código no se edita.
 async function updateGrade({ id, values }: UpdateGradeInput): Promise<MutationResult> {
   const fkGradoSiguiente =
     values.tieneGradoSiguiente === false
@@ -40,7 +38,7 @@ export function useUpdateGrade({ mutationConfig }: UseUpdateGradeOptions = {}) {
     mutationFn: updateGrade,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
+      invalidateGradeRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

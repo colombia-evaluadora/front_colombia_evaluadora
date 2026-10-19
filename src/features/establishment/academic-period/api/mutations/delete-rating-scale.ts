@@ -3,11 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/rating-scales"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateRatingScaleRelated } from "./invalidate"
 
-// `PUT /eval-col/escalas/:ID` (`fn_escala_eliminar`, id_query 54) — DELETE no
-// está permitido en el catálogo del SSO (`ck_query_http_method` solo admite
-// GET/POST/PUT/PATCH).
+// `fn_escala_eliminar` (id_query 54); el SSO no admite DELETE.
 function deleteRatingScale(codigo: number): Promise<MutationResult> {
   return api.put(`/eval-col/escalas/${codigo}`)
 }
@@ -22,7 +20,7 @@ export function useDeleteRatingScale({ mutationConfig }: UseDeleteRatingScaleOpt
     mutationFn: deleteRatingScale,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
+      invalidateRatingScaleRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })
