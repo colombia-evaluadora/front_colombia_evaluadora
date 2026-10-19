@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { z } from "zod"
@@ -137,16 +137,16 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   })
   const createScalesBulk = useCreateRatingScalesBulk()
 
-  const range = useMemo(() => parseGradingRange(criteria?.gradingFormatName), [criteria])
+  const range = parseGradingRange(criteria?.gradingFormatName)
   const rangeRef = useRef(range)
   rangeRef.current = range
-  const draftSchema = useMemo(() => makeRatingScaleGradesSchema(range), [range])
+  const draftSchema = makeRatingScaleGradesSchema(range)
 
   // Unicidad por nivel (MantisBT 0000731); ref porque `onSubmit` cierra sobre el render inicial.
-  const relevantExistingScales = useMemo(() => {
+  const relevantExistingScales = (() => {
     const rows = existingScalesData?.rows ?? []
     return rows.filter((s) => s.teachingLevelIds.some((id) => teachingLevelIds.includes(id)))
-  }, [existingScalesData, teachingLevelIds])
+  })()
   const relevantExistingScalesRef = useRef(relevantExistingScales)
   relevantExistingScalesRef.current = relevantExistingScales
   const draftsRef = useRef(drafts)
@@ -215,13 +215,13 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     if (editingIndex === index) cancelEdit()
   }
 
-  const orderedDrafts = useMemo(() => {
+  const orderedDrafts = (() => {
     const withIndex = drafts.map((draft, index) => ({ draft, index }))
     if (!sort) return withIndex
     const { key, dir } = sort
     const copy = [...withIndex].sort((a, b) => compareByScaleKey(a.draft[key], b.draft[key]))
     return dir === "desc" ? copy.reverse() : copy
-  }, [drafts, sort])
+  })()
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {

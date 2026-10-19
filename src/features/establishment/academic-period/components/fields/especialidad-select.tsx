@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import {
   CaretDownIcon,
@@ -45,7 +45,7 @@ export function EspecialidadSelect({
   const resolvedVariant = useInputVariant()
 
   const { data: options = [] } = useEspecialidadesQuery(academicPeriodId)
-  const sortedOptions = useMemo(() => {
+  const sortedOptions = (() => {
     const especialidades: typeof options = []
     const enfasis: typeof options = []
     for (const option of options) {
@@ -58,7 +58,7 @@ export function EspecialidadSelect({
       enfasis.push(option)
     }
     return [...especialidades, ...enfasis]
-  }, [options])
+  })()
 
   const createEnfasis = useCreateEnfasis({
     mutationConfig: {

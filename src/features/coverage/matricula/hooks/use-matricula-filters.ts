@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { coberturaMatriculaRoute } from "@/router"
 
 import type { MatriculaFiltersFormInput } from "@/features/coverage/shared/api/schema"
@@ -18,8 +16,7 @@ export function useMatriculaFilters(): MatriculaFilters {
   const search = coberturaMatriculaRoute.useSearch()
   const navigate = coberturaMatriculaRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: MatriculaFiltersFormInput) => {
+  const applyFilters = (values: MatriculaFiltersFormInput) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -33,11 +30,9 @@ export function useMatriculaFilters(): MatriculaFilters {
         }),
         replace: true,
       })
-    },
-    [navigate],
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -51,21 +46,18 @@ export function useMatriculaFilters(): MatriculaFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters = useMemo(
-    () => ({
+  const queryFilters = {
       search: search.search,
       statuses: search.statuses,
       campus: search.campus,
       shift: search.shift,
       grade: search.grade,
       group: search.group,
-    }),
-    [search.search, search.statuses, search.campus, search.shift, search.grade, search.group],
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0
     if (search.search) count += 1
     count += search.statuses?.length ?? 0
@@ -74,7 +66,7 @@ export function useMatriculaFilters(): MatriculaFilters {
     if (search.grade != null) count += 1
     if (search.group) count += 1
     return count
-  }, [search.search, search.statuses, search.campus, search.shift, search.grade, search.group])
+  })()
 
   const filtrosForm = {
     search: search.search ?? "",

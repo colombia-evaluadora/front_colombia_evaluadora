@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { MinusIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -165,26 +165,17 @@ export const ScheduleBuilder = forwardRef<
   // Fase 4 offline: el horario se consulta sin red; limpiar y guardar son solo en línea.
   const soloEnLinea = useOnlineOnly()
 
-  const subjectsById = useMemo(
-    () => Object.fromEntries(subjects.map((s) => [s.id, s])),
-    [subjects]
-  )
+  const subjectsById = Object.fromEntries(subjects.map((s) => [s.id, s]))
 
-  const slots = useMemo(() => buildSlots(jornada), [jornada])
-  const runs = useMemo(() => buildRuns(slots), [slots])
-  const classSlotIds = useMemo(
-    () => new Set(slots.filter((s) => s.kind === "class").map((s) => s.id)),
-    [slots]
-  )
+  const slots = buildSlots(jornada)
+  const runs = buildRuns(slots)
+  const classSlotIds = new Set(slots.filter((s) => s.kind === "class").map((s) => s.id))
 
-  const cells = useMemo(() => computeCells(schedule, runs), [schedule, runs])
+  const cells = computeCells(schedule, runs)
 
-  const hasScheduleEntries = useMemo(
-    () => Object.values(schedule).some((day) => Object.values(day).some(Boolean)),
-    [schedule],
-  )
+  const hasScheduleEntries = Object.values(schedule).some((day) => Object.values(day).some(Boolean))
 
-  const placedCounts = useMemo(() => {
+  const placedCounts = (() => {
     const counts: Record<string, number> = {}
     for (const day of Object.values(schedule)) {
       for (const [slotId, subjectId] of Object.entries(day)) {
@@ -194,7 +185,7 @@ export const ScheduleBuilder = forwardRef<
       }
     }
     return counts
-  }, [schedule, classSlotIds])
+  })()
 
   function setCell(dayId: string, slotId: string, subjectId: string) {
     if (!gradeGroup) return

@@ -47,7 +47,7 @@ export function HistorialCambiosSheet({
   cambios,
   cargando,
 }: HistorialCambiosSheetProps) {
-  const grupos = React.useMemo(() => agruparPorDia(cambios), [cambios])
+  const grupos = agruparPorDia(cambios)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

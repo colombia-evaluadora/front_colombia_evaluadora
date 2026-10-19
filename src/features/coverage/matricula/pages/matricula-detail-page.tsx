@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { Link } from "@tanstack/react-router"
 
 import {
@@ -71,10 +71,7 @@ function MatriculaDetailPageContent() {
     return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
   })()
 
-  const details = useMemo(
-    () => (data?.details ? resolveMatriculaMunicipioDepartments(data.details, municipalities) : null),
-    [data?.details, municipalities],
-  )
+  const details = (data?.details ? resolveMatriculaMunicipioDepartments(data.details, municipalities) : null)
 
   return (
     <TableScreen>

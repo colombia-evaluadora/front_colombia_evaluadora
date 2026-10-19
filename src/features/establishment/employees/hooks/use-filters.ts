@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { employeesRoute } from "@/router"
 
 import type { EmployeeFiltersFormInput } from "@/features/establishment/employees/api/schema"
@@ -18,8 +16,7 @@ export function useEmployeesFilters(): EmployeesFilters {
   const search = employeesRoute.useSearch()
   const navigate = employeesRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: EmployeeFiltersFormInput) => {
+  const applyFilters = (values: EmployeeFiltersFormInput) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -31,11 +28,9 @@ export function useEmployeesFilters(): EmployeesFilters {
         }),
         replace: true,
       })
-    },
-    [navigate]
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -47,26 +42,23 @@ export function useEmployeesFilters(): EmployeesFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters = useMemo(
-    () => ({
+  const queryFilters = {
       search: search.search,
       roles: search.roles,
       workSchedules: search.workSchedules,
       statuses: search.statuses,
-    }),
-    [search.roles, search.search, search.statuses, search.workSchedules]
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0
     if (search.search) count += 1
     count += search.roles?.length ?? 0
     count += search.workSchedules?.length ?? 0
     count += search.statuses?.length ?? 0
     return count
-  }, [search.roles, search.search, search.statuses, search.workSchedules])
+  })()
 
   const filtrosForm = {
     search: search.search ?? "",

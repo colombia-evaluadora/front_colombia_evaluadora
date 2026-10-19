@@ -216,12 +216,9 @@ function GrupoTabContent({
   const { status: conectividad } = useConnectivity()
   const informeSinDatosOffline = periodos.length > 0 && isOfflineWithoutData(informe, conectividad)
 
-  const filas = React.useMemo(
-    () => (informe.data ?? []).filter((fila) => coincide(fila, busqueda)),
-    [informe.data, busqueda],
-  )
-  const estudiantes = React.useMemo(() => agruparPorEstudiante(filas), [filas])
-  const columnas = React.useMemo(() => columnasDeFilas(filas), [filas])
+  const filas = (informe.data ?? []).filter((fila) => coincide(fila, busqueda))
+  const estudiantes = agruparPorEstudiante(filas)
+  const columnas = columnasDeFilas(filas)
 
   const esCualitativo = grupoEsCualitativo(informe.data)
 
@@ -455,10 +452,7 @@ function ReportsPageContent() {
   // Docente / director de grupo solo consultan: consolidar y redactar
   // observaciones es de coordinación, aunque el menú les dé EDITAR.
   const puedeEscribir = puedeEditar && !soloSusGrupos
-  const periodosCerrados = React.useMemo(
-    () => periodosDisponibles.filter((p) => p.cerrado).map((p) => p.id),
-    [periodosDisponibles],
-  )
+  const periodosCerrados = periodosDisponibles.filter((p) => p.cerrado).map((p) => p.id)
   const observacionLabel = useStudyPlanSubjectLabel(gradoActivoId, esCualitativoActivo)
 
   const alertasParams = { grupos: gruposAbiertosIds, periodos }
@@ -479,7 +473,7 @@ function ReportsPageContent() {
 
   const seleccionActiva = seleccionPorGrupo[grupoActivoId] ?? new Set<number>()
 
-  const etiquetaFiltros = React.useMemo(() => {
+  const etiquetaFiltros = (() => {
     const grupo = grupos.find((g) => g.grupoId === grupoActivoId)
     const nombres = periodos.map((id) =>
       id === PERIODO_FINAL_ID
@@ -491,7 +485,7 @@ function ReportsPageContent() {
     if (nombres.length > 0) partes.push(`Períodos: ${nombres.join(", ")}`)
     if (busqueda.trim()) partes.push(`Búsqueda: ${busqueda.trim()}`)
     return partes.join("   ·   ")
-  }, [grupos, grupoActivoId, periodos, periodosDisponibles, busqueda])
+  })()
 
   // Checks de período por estudiante (columna "Pe"). Solo tienen sentido con
   // varios períodos reales a la vista: con uno no hay nada que elegir, y las

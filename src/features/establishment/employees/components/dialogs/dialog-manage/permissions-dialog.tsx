@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentProps, type Dispatch, type SetStateAction } from "react"
+import { useState, type ComponentProps, type Dispatch, type SetStateAction } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -146,14 +146,14 @@ export function PermissionsDialog({
 }: PermissionsDialogProps) {
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
-  const sortedPermissions = useMemo(() => {
+  const sortedPermissions = (() => {
     if (!permissionSort) return permissions
     const { key, dir } = permissionSort
     const sorted = [...permissions].sort((a, b) =>
       compareBySortKey(permissionSortValue(a, key), permissionSortValue(b, key)),
     )
     return dir === "desc" ? sorted.reverse() : sorted
-  }, [permissions, permissionSort])
+  })()
   // Estado del permiso: dominio fijo (TSEDE_USUARIO.TLV_ESTADO, no un
   // catálogo real), value por `.code` a propósito — ver
   // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.

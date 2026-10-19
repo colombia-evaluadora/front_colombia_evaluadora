@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -85,11 +85,11 @@ export function SelectGeneralAreaDialog({
   const deleteArea = useDeleteAreaSubject()
 
   // Búsqueda por nombre (client-side: el catálogo se trae completo).
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     const query = search.trim().toLowerCase()
     if (!query) return areas
     return areas.filter((area) => area.nombre.toLowerCase().includes(query))
-  }, [areas, search])
+  })()
 
   const pageCount = toPageCount(filtered.length, PAGE_SIZE)
   const page = Math.min(pageIndex, pageCount - 1)

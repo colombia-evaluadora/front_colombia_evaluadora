@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { addDays } from "date-fns"
 import { useForm, useSelector } from "@tanstack/react-form"
 
@@ -157,10 +157,10 @@ export function AcademicPeriodForm({
   const { data: missingPreviousPeriod } = useAcademicPeriodQuery(
     previousPeriodMissing ? selectedPreviousPeriodId : undefined,
   )
-  const previousPeriodOptionsWithSelected = useMemo(() => {
+  const previousPeriodOptionsWithSelected = (() => {
     if (!missingPreviousPeriod) return previousPeriodOptions
     return [...previousPeriodOptions, { id: missingPreviousPeriod.id, name: missingPreviousPeriod.name }]
-  }, [previousPeriodOptions, missingPreviousPeriod])
+  })()
 
   return (
     <form

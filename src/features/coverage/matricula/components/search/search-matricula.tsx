@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -52,14 +52,11 @@ export function SearchMatricula({
 
   // Igual que en establecimientos: el estado se escribe dentro del input,
   // `estado:(Activo)`. Ver `@/components/search/query-syntax`.
-  const syntax = useMemo<QuerySyntax<MatriculaFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<MatriculaFiltersFormInput> = {
       empty: { search: "", statuses: [], campus: "", shift: "", grade: "", group: "" },
       freeText: { key: "texto", field: "search" },
       terms: [optionsTerm("estado", "statuses", STATUS_OPTIONS)],
-    }),
-    [STATUS_OPTIONS],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

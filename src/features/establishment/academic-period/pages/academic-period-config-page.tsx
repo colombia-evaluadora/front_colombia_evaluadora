@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
@@ -145,7 +145,7 @@ function AcademicPeriodConfigPageContent() {
     },
   })
 
-  const detailJornada = useMemo(() => (detail ? toJornada(detail) : undefined), [detail])
+  const detailJornada = (detail ? toJornada(detail) : undefined)
 
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
     return <NotFoundPage />

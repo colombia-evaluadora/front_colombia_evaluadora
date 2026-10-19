@@ -156,7 +156,7 @@ export function RevisionCambiosAsistenciaSheet({ sesion, onOpenChange }: Revisio
   const { notify } = useNotify()
   const decidir = useAprobacionesAsistenciaMutation()
   const { data: tipoOptions = [] } = useTipoAsistenciaCatalogQuery()
-  const cambios = React.useMemo(() => agruparPorEstudiante(sesion?.solicitudes ?? []), [sesion])
+  const cambios = agruparPorEstudiante(sesion?.solicitudes ?? [])
 
   // Por defecto se seleccionan todos, como en la planilla de Informes.
   const [excluidos, setExcluidos] = React.useState<Set<string>>(new Set())

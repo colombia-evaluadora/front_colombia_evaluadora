@@ -31,19 +31,9 @@ export function InformeFiltros({ filtros, onChange }: InformeFiltrosProps) {
   const anios = useAniosInformeQuery(filtros.sedeId)
   const jornadas = useJornadasInformeQuery(filtros.sedeId, filtros.anio)
 
-  const sedeItems = React.useMemo(
-    () => Object.fromEntries((sedes.data ?? []).map((sede) => [String(sede.id), sede.nombre])),
-    [sedes.data],
-  )
-  const anioItems = React.useMemo(
-    () => Object.fromEntries((anios.data ?? []).map((a) => [String(a.anio), String(a.anio)])),
-    [anios.data],
-  )
-  const jornadaItems = React.useMemo(
-    () =>
-      Object.fromEntries((jornadas.data ?? []).map((j) => [String(j.id), j.nombre])),
-    [jornadas.data],
-  )
+  const sedeItems = Object.fromEntries((sedes.data ?? []).map((sede) => [String(sede.id), sede.nombre]))
+  const anioItems = Object.fromEntries((anios.data ?? []).map((a) => [String(a.anio), String(a.anio)]))
+  const jornadaItems = Object.fromEntries((jornadas.data ?? []).map((j) => [String(j.id), j.nombre]))
 
   // Una sola opción no es una elección: obliga a un clic que solo puede
   // terminar en ese valor. Nivel 3 alcanza una sede y una jornada.

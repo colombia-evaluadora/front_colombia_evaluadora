@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -39,16 +39,13 @@ export function SearchCampuses({
 
   // El filtro se escribe dentro del input —`zona:(Urbana)`— igual que en el
   // resto de los listados. Ver `@/components/search/query-syntax`.
-  const syntax = useMemo<QuerySyntax<CampusFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<CampusFiltersFormInput> = {
       empty: { search: "", zones: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
         optionsTerm("zona", "zones", toSearchOptions(zones)),
       ],
-    }),
-    [zones],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

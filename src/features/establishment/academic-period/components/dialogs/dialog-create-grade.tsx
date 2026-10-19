@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cleanErrorMessage, getErrorMessage } from "@/lib/api-client"
@@ -254,18 +254,14 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     gradeId: gradeId ?? undefined,
     enabled: open,
   })
-  const gradeGroupOptions = useMemo(
-    () =>
-      (gradeGroupsData?.rows ?? []).map((g) => ({
+  const gradeGroupOptions = (gradeGroupsData?.rows ?? []).map((g) => ({
         id: g.id,
         label: [g.codigo, g.jornadaName ?? g.jornada]
           .filter(Boolean)
           .join(" - "),
-      })),
-    [gradeGroupsData],
-  )
+      }))
 
-  const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
+  const scheduleSubjects: ScheduleSubject[] = (() => {
     const abbreviationById = new Map<number, string>()
     const colorById = new Map<number, string>()
     for (const area of areaData?.rows ?? []) {
@@ -282,7 +278,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
       blocks: item.intensidadHoraria,
       color: colorById.get(item.asignaturaId) ?? DEFAULT_SUBJECT_COLOR,
     }))
-  }, [planData, areaData])
+  })()
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
@@ -60,10 +60,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
     establecimientoId: colegio.establecimientoId,
     enabled: open && colegio.resuelto,
   })
-  const fieldSettings = useMemo(
-    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
-    [fieldConfig],
-  )
+  const fieldSettings = (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined)
   // Sin ningún archivo visible en la configuración de parámetro, el botón
   // solo abriría un sheet vacío -- ni el trigger tiene sentido. Sin config
   // cargada todavía se asume visible (mismo default que `isFieldVisible`).

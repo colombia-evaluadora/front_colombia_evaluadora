@@ -19,7 +19,7 @@ function formatFechaCorta(fecha: string | null): string {
 /** Regla 75: alerta naranja del coordinador, igual a la de Informes. */
 export function AsistenciaCambiosPendientesBanner() {
   const { data: solicitudes = [] } = useAprobacionesAsistenciaQuery(true)
-  const sesiones = React.useMemo(() => agruparPorSesion(solicitudes), [solicitudes])
+  const sesiones = agruparPorSesion(solicitudes)
   // Se guarda la clave y no la sesión: al resolver, la lista se refresca y el panel la sigue.
   const [clave, setClave] = React.useState<string | null>(null)
   const sesion = sesiones.find((s) => s.clave === clave) ?? null

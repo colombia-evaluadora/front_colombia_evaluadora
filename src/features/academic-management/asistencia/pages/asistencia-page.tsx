@@ -120,14 +120,14 @@ function AsistenciaPageContent() {
     { SEDE: sedeId ?? 0, ANIO: anio, MES: mes, MIAS: true },
     sedeId !== null && isDocente,
   )
-  const clavesPropias = React.useMemo(() => {
+  const clavesPropias = (() => {
     if (!isDocente) return null
     const set = new Set<string>()
     for (const s of misSesiones ?? []) {
       set.add(s.es_formativa ? `${s.fk_grupo}-act-${s.fk_tactividad}` : `${s.fk_grupo}-asig-${s.fk_asignatura}`)
     }
     return set
-  }, [isDocente, misSesiones])
+  })()
 
   function puedeEditarSesion(s: { fkGrupo: number; fkAsignatura: number; fkActividad: number | null; esFormativa: boolean }): boolean {
     if (!isDocente) return false
@@ -135,7 +135,7 @@ function AsistenciaPageContent() {
     return clavesPropias?.has(clave) ?? false
   }
 
-  const events = React.useMemo(() => {
+  const events = (() => {
     const map = new Map<number, AsistenciaDayEntry[]>()
     const porDia = new Map<number, SesionCalendario[]>()
 
@@ -180,7 +180,7 @@ function AsistenciaPageContent() {
     }
     return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sesiones, isDocente, clavesPropias])
+  })()
 
   const registrar = useAsistenciaRegistrarMutation()
   const [markingEntryId, setMarkingEntryId] = React.useState<string | null>(null)

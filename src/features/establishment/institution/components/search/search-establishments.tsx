@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -39,16 +39,13 @@ export function SearchEstablishments({
 
   // El filtro se escribe dentro del input —`estado:(Activo)`— igual que en el
   // resto de los listados. Ver `@/components/search/query-syntax`.
-  const syntax = useMemo<QuerySyntax<EstablishmentFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<EstablishmentFiltersFormInput> = {
       empty: { search: "", statuses: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
         optionsTerm("estado", "statuses", toSearchOptions(statuses)),
       ],
-    }),
-    [statuses],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

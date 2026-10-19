@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, textTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -36,8 +36,7 @@ export function SearchAcademicPeriods({
   // Los filtros se escriben dentro del input —`año:(2026) estado:(Abierto)`—
   // igual que en el resto de los listados.
   // Ver `@/components/search/query-syntax`.
-  const syntax = useMemo<QuerySyntax<AcademicPeriodsFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<AcademicPeriodsFiltersFormInput> = {
       empty: { sedeName: "", schoolYearId: "", statusId: "", startFrom: "", startTo: "" },
       freeText: { key: "sede", field: "sedeName" },
       terms: [
@@ -53,9 +52,7 @@ export function SearchAcademicPeriods({
         textTerm("desde", "startFrom"),
         textTerm("hasta", "startTo"),
       ],
-    }),
-    [statusOptions],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 

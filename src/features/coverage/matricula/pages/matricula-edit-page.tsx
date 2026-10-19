@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -104,10 +104,7 @@ function MatriculaEditPageContent() {
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
     useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
-  const configuredFieldSettings = useMemo(
-    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
-    [fieldConfig],
-  )
+  const configuredFieldSettings = (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined)
 
   useEffect(() => {
     if (isError) notify(getErrorMessage(error), { variant: "error" })
@@ -118,10 +115,7 @@ function MatriculaEditPageContent() {
 
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const grade = values?.academic.grade
-  const fieldSettings = useMemo(
-    () => applyGradeFieldRules(configuredFieldSettings, grade),
-    [configuredFieldSettings, grade],
-  )
+  const fieldSettings = applyGradeFieldRules(configuredFieldSettings, grade)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const initialGradeRef = useRef<string | null>(null)

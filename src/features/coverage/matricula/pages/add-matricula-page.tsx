@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -110,14 +110,10 @@ function AddMatriculaPageContent() {
       establecimientoId: colegio.establecimientoId,
       enabled: colegio.resuelto,
     })
-  const fieldSettings = useMemo(
-    () =>
-      applyGradeFieldRules(
+  const fieldSettings = applyGradeFieldRules(
         fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined,
         values.academic.grade,
-      ),
-    [fieldConfig, values.academic.grade],
-  )
+      )
 
   useEffect(() => {
     if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
@@ -164,7 +160,7 @@ function AddMatriculaPageContent() {
     JSON.stringify(values) !== JSON.stringify(initialValuesRef.current) ||
     Object.values(files).some((fileList) => fileList.length > 0)
 
-  const departments = useMemo<DepartmentOption[]>(() => {
+  const departments: DepartmentOption[] = (() => {
     const byName = new Map<string, DepartmentOption["municipalities"]>()
     for (const municipality of municipalities) {
       const list = byName.get(municipality.department.name) ?? []
@@ -172,7 +168,7 @@ function AddMatriculaPageContent() {
       byName.set(municipality.department.name, list)
     }
     return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
-  }, [municipalities])
+  })()
 
   const createMatricula = useCreateMatricula({
     mutationConfig: {
