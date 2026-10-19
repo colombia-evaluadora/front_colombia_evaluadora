@@ -134,8 +134,24 @@ export function AsistenciaSesionTabContent({
   const baseline = React.useRef<Record<number, TipoAsistencia>>({})
   const bloqueTardeBaseline = React.useRef<Record<number, number>>({})
   const precargado = React.useRef(false)
+  // Sin ediciones locales: si el padrón cambia (caché vieja que se refresca,
+  // aprobación, sync) se vuelve a precargar con lo del servidor.
+  const sinEdicionesLocales =
+    Object.keys(soporte).length === 0 &&
+    Object.keys(soporteEliminado).length === 0 &&
+    Object.keys(seleccion).length === Object.keys(baseline.current).length &&
+    Object.entries(seleccion).every(([fk, tipo]) => baseline.current[Number(fk)] === tipo) &&
+    Object.entries(bloqueTarde).every(([fk, b]) => bloqueTardeBaseline.current[Number(fk)] === b)
+  // Firma por contenido: `autoritativos` cambia de referencia en cada render.
+  const firmaServidor = [...autoritativos]
+    .map(([fk, { bloque, row }]) => `${fk}:${row.tipo_asistencia_valor}:${bloque}`)
+    .join(",")
+  const ultimaFirma = React.useRef(firmaServidor)
   React.useEffect(() => {
-    if (precargado.current || isPending) return
+    if (isPending) return
+    const cambioServidor = ultimaFirma.current !== firmaServidor
+    ultimaFirma.current = firmaServidor
+    if (precargado.current && !(cambioServidor && sinEdicionesLocales)) return
     const inicialSeleccion: Record<number, TipoAsistencia> = {}
     const inicialBloqueTarde: Record<number, number> = {}
     for (const [fkMatricula, { bloque, row }] of autoritativos) {
@@ -149,10 +165,10 @@ export function AsistenciaSesionTabContent({
     }
     baseline.current = inicialSeleccion
     bloqueTardeBaseline.current = inicialBloqueTarde
-    if (Object.keys(inicialSeleccion).length > 0) setSeleccion(inicialSeleccion)
-    if (Object.keys(inicialBloqueTarde).length > 0) setBloqueTarde(inicialBloqueTarde)
+    setSeleccion(inicialSeleccion)
+    setBloqueTarde(inicialBloqueTarde)
     precargado.current = true
-  }, [isPending, autoritativos])
+  }, [isPending, autoritativos, firmaServidor, sinEdicionesLocales])
   const columns = React.useMemo(
     () =>
       buildColumnsAsistenciaManual({
@@ -248,6 +264,8 @@ export function AsistenciaSesionTabContent({
 
   const hayAlgoQueGuardar =
     Object.entries(seleccionLista).some(([fk, tipo]) => tipo !== baseline.current[Number(fk)]) ||
+    // Cambiar solo el bloque de llegada también cuenta.
+    Object.keys(seleccionLista).some((fk) => bloqueTarde[Number(fk)] !== bloqueTardeBaseline.current[Number(fk)]) ||
     Object.keys(soporte).some((fk) => Number(fk) in seleccionLista) ||
     Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista)
   const mostrarGuardar = hayAlgoQueGuardar
