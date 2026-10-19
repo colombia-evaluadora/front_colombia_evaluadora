@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -12,7 +9,7 @@ interface ExportStudyPlanInput {
   format: ExportFormat
 }
 
-function exportStudyPlan(input: ExportStudyPlanInput): Promise<ExportResult> {
+export function exportStudyPlan(input: ExportStudyPlanInput): Promise<ExportResult> {
   return downloadReport("plan-estudio", {
     format: input.format,
     filters: {
@@ -21,16 +18,5 @@ function exportStudyPlan(input: ExportStudyPlanInput): Promise<ExportResult> {
       FK_ASIGNATURA: null,
       FK_ESPECIALIDAD: null,
     },
-  })
-}
-
-interface UseExportStudyPlanOptions {
-  mutationConfig?: MutationConfig<typeof exportStudyPlan>
-}
-
-export function useExportStudyPlan({ mutationConfig }: UseExportStudyPlanOptions = {}) {
-  return useMutation({
-    mutationFn: exportStudyPlan,
-    ...mutationConfig,
   })
 }

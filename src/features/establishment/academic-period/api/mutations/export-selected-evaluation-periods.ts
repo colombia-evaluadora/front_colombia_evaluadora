@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -27,24 +24,11 @@ interface ExportSelectedEvaluationPeriodsInput {
   academicPeriodId?: number
 }
 
-function exportSelectedEvaluationPeriods(
+export function exportSelectedEvaluationPeriods(
   input: ExportSelectedEvaluationPeriodsInput,
 ): Promise<ExportResult> {
   return downloadReport("periodos-evaluacion", {
     format: input.format,
     filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
-  })
-}
-
-interface UseExportSelectedEvaluationPeriodsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedEvaluationPeriods>
-}
-
-export function useExportSelectedEvaluationPeriods({
-  mutationConfig,
-}: UseExportSelectedEvaluationPeriodsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedEvaluationPeriods,
-    ...mutationConfig,
   })
 }

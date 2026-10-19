@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { api } from "@/lib/api-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -15,17 +12,6 @@ interface ExportGradeGroupsInput {
 
 // Sin endpoint real en el contrato todavía — mismo caso que el resto de
 // exports del módulo (ver comentario en `export-selected-grade-groups.ts`).
-function exportGradeGroups(input: ExportGradeGroupsInput): Promise<ExportResult> {
+export function exportGradeGroups(input: ExportGradeGroupsInput): Promise<ExportResult> {
   return api.post("/grade-groups/export-all", input)
-}
-
-interface UseExportGradeGroupsOptions {
-  mutationConfig?: MutationConfig<typeof exportGradeGroups>
-}
-
-export function useExportGradeGroups({ mutationConfig }: UseExportGradeGroupsOptions = {}) {
-  return useMutation({
-    mutationFn: exportGradeGroups,
-    ...mutationConfig,
-  })
 }

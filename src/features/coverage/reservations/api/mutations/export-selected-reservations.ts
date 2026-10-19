@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { api } from "@/lib/api-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/coverage/reservations/api/types/reservation"
 
 interface ExportSelectedReservationsInput {
@@ -9,19 +6,6 @@ interface ExportSelectedReservationsInput {
   format: ExportFormat
 }
 
-function exportSelectedReservations(input: ExportSelectedReservationsInput): Promise<ExportResult> {
+export function exportSelectedReservations(input: ExportSelectedReservationsInput): Promise<ExportResult> {
   return api.post("/coverage/reservations/export", input)
-}
-
-interface UseExportSelectedReservationsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedReservations>
-}
-
-export function useExportSelectedReservations({
-  mutationConfig,
-}: UseExportSelectedReservationsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedReservations,
-    ...mutationConfig,
-  })
 }

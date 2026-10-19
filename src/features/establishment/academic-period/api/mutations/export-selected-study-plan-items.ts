@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
@@ -14,7 +11,7 @@ interface ExportSelectedStudyPlanItemsInput {
   academicPeriodId?: number
 }
 
-function exportSelectedStudyPlanItems(
+export function exportSelectedStudyPlanItems(
   input: ExportSelectedStudyPlanItemsInput,
 ): Promise<ExportResult> {
   // `FK_PERIODO` acota (lo exige `fn_plan_reporte_listar`), `ids` recorta la
@@ -22,18 +19,5 @@ function exportSelectedStudyPlanItems(
   return downloadReport("plan-estudio", {
     format: input.format,
     filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
-  })
-}
-
-interface UseExportSelectedStudyPlanItemsOptions {
-  mutationConfig?: MutationConfig<typeof exportSelectedStudyPlanItems>
-}
-
-export function useExportSelectedStudyPlanItems({
-  mutationConfig,
-}: UseExportSelectedStudyPlanItemsOptions = {}) {
-  return useMutation({
-    mutationFn: exportSelectedStudyPlanItems,
-    ...mutationConfig,
   })
 }

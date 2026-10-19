@@ -1,28 +1,5 @@
-import { useState } from "react"
-
-import {
-  FileDownloadOutlinedIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
-import { useNotify } from "@/components/notice/notice-context"
-
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-
-import { useExportSelectedEvaluationPeriods } from "@/features/establishment/academic-period/api/mutations/export-selected-evaluation-periods"
-import type { ExportFormat } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import { ExportDialog } from "@/components/export-dialog"
+import { exportSelectedEvaluationPeriods } from "@/features/establishment/academic-period/api/mutations/export-selected-evaluation-periods"
 
 interface ExportSelectedEvaluationPeriodsDialogProps {
   selectedIds: number[]
@@ -36,99 +13,14 @@ export function ExportSelectedEvaluationPeriodsDialog({
   resetSelection,
   academicPeriodId,
 }: ExportSelectedEvaluationPeriodsDialogProps) {
-  const [open, setOpen] = useState(false)
-  const { notify } = useNotify()
   const count = selectedIds.length
-
-  const exportSelected = useExportSelectedEvaluationPeriods({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(result.message)
-        setOpen(false)
-        resetSelection()
-      },
-    },
-  })
-
-  function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: selectedIds, format, academicPeriodId })
-  }
-
-  const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="sm"
-                  aria-label={`Exportar ${count} seleccionados`}
-                />
-              }
-            />
-          }
-        >
-          <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
-          <span aria-hidden="true" className="tabular-nums">
-            ({count})
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>{`Exportar ${count} seleccionados`}</TooltipContent>
-      </Tooltip>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>
-            Elige un formato para exportar los {count} periodo(s) de evaluación seleccionado(s).
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              disabled={exportSelected.isPending}
-              aria-busy={pendingFormat === "excel"}
-              onClick={() => handleExport("excel")}
-            >
-              {pendingFormat === "excel" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FileXlsIcon data-icon="inline-start" />
-              )}
-              Excel
-            </Button>
-            <Button
-              size="sm"
-              type="button"
-              color="primary"
-              disabled={exportSelected.isPending}
-              aria-busy={pendingFormat === "pdf"}
-              onClick={() => handleExport("pdf")}
-            >
-              {pendingFormat === "pdf" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FilePdfIcon data-icon="inline-start" />
-              )}
-              PDF
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ExportDialog
+      label={`Exportar ${count} seleccionados`}
+      description={`Elige un formato para exportar los ${count} periodo(s) de evaluación seleccionado(s).`}
+      count={count}
+      onExported={resetSelection}
+      onExport={(format) => exportSelectedEvaluationPeriods({ ids: selectedIds, format, academicPeriodId })}
+    />
   )
 }
