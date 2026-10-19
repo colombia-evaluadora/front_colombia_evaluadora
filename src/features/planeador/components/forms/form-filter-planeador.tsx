@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -62,14 +62,8 @@ export function FilterPlaneadorForm({
     onSubmit: ({ value }) => onSubmit(value, alcanceInicial ? alcance : undefined),
   })
 
-  const estadoItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(ESTADO_OPTIONS.map((o) => [o.value, o.label])),
-    [],
-  )
-  const instrumentoItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(instrumentoOptions.map((o) => [o.value, o.label])),
-    [instrumentoOptions],
-  )
+  const estadoItems: Record<string, string> = Object.fromEntries(ESTADO_OPTIONS.map((o) => [o.value, o.label]))
+  const instrumentoItems: Record<string, string> = Object.fromEntries(instrumentoOptions.map((o) => [o.value, o.label]))
 
   return (
     <form

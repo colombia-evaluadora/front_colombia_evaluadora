@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
@@ -160,7 +160,7 @@ export function PlaneadorPlanillaPage() {
   const filas = calificacionesResult?.rows ?? []
   const cargandoPlanilla = filtro !== null && !sinDatosOffline && (isPendingColumnas || isPendingCalificaciones)
 
-  const columnas = useMemo(() => {
+  const columnas = (() => {
     if (!filtro) return []
     const term = buscar.trim().toLowerCase()
     return todasLasColumnas.filter((columna) => {
@@ -168,17 +168,13 @@ export function PlaneadorPlanillaPage() {
       const campo = verPor === "unidad" ? (columna.unidad ?? "") : columna.titulo
       return campo.toLowerCase().includes(term)
     })
-  }, [todasLasColumnas, filtro, verPor, buscar])
+  })()
 
-  const columnaIds = useMemo(() => new Set(columnas.map((c) => c.pkTactividad)), [columnas])
-  const filasFiltradas = useMemo(
-    () =>
-      filas.map((fila) => ({
+  const columnaIds = new Set(columnas.map((c) => c.pkTactividad))
+  const filasFiltradas = filas.map((fila) => ({
         ...fila,
         celdas: fila.celdas.filter((celda) => columnaIds.has(celda.pkTactividad)),
-      })),
-    [filas, columnaIds],
-  )
+      }))
 
   // Solo los asignados a la actividad: un no asignado no se califica.
   const estudiantesEnBulk = filas

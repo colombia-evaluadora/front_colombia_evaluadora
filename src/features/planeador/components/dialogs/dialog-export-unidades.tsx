@@ -1,32 +1,11 @@
-import { useState } from "react"
-
-import { useNotify } from "@/components/notice/notice-context"
-import {
-  FileDownloadOutlinedIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ExportDialog } from "@/components/export-dialog"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 import {
-  useExportUnidades,
+  exportUnidades,
   type PlaneadorUnidadesReportFilters,
   type RotulosExportUnidades,
 } from "@/features/planeador/api/mutations/export-unidades"
-import type { ExportFormat } from "@/features/planeador/api/types/actividad"
 
 interface DialogExportUnidadesProps {
   /** Texto del botón y su tooltip ("Exportar proyectos pedagógicos filtrados"). */
@@ -51,96 +30,19 @@ export function DialogExportUnidades({
 }: DialogExportUnidadesProps) {
   // El archivo lo genera el servidor: sin red no hay export.
   const soloEnLinea = useOnlineOnly()
-  const [open, setOpen] = useState(false)
-  const { notify } = useNotify()
-
-  const exportar = useExportUnidades({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(result.message)
-        setOpen(false)
-      },
-    },
-  })
-
-  const pendingFormat = exportar.isPending ? exportar.variables?.format : undefined
-
-  function handleExport(format: ExportFormat) {
-    exportar.mutate({ filters, format, rotulos })
-  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  disabled={disabled || soloEnLinea.disabled}
-                  aria-label={label}
-                />
-              }
-            />
-          }
-        >
-          <FileDownloadOutlinedIcon />
-        </TooltipTrigger>
-        <TooltipContent>{soloEnLinea.tooltip ?? label}</TooltipContent>
-      </Tooltip>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>
-            Elige un formato para exportar los {rotuloPlural} que se ven en la lista, con la
-            búsqueda y los filtros activos.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              disabled={exportar.isPending}
-              aria-busy={pendingFormat === "excel"}
-              onClick={() => handleExport("excel")}
-            >
-              {pendingFormat === "excel" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FileXlsIcon data-icon="inline-start" />
-              )}
-              Excel
-            </Button>
-            <Button
-              size="sm"
-              type="button"
-              color="primary"
-              disabled={exportar.isPending}
-              aria-busy={pendingFormat === "pdf"}
-              onClick={() => handleExport("pdf")}
-            >
-              {pendingFormat === "pdf" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FilePdfIcon data-icon="inline-start" />
-              )}
-              PDF
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ExportDialog
+      label={label}
+      description={
+        <>
+          Elige un formato para exportar los {rotuloPlural} que se ven en la lista, con la
+          búsqueda y los filtros activos.
+        </>
+      }
+      onExport={(format) => exportUnidades({ filters, format, rotulos })}
+      disabled={disabled || soloEnLinea.disabled}
+      tooltip={soloEnLinea.tooltip}
+    />
   )
 }

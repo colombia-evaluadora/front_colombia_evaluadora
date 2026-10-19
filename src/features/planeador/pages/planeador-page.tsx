@@ -173,14 +173,8 @@ function PlaneadorPageContent() {
   // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
   const { data: instrumentoOptions = [] } = useInstrumentoFiltroOptions()
 
-  const mesDesde = React.useMemo(
-    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)),
-    [displayMonth],
-  )
-  const mesHasta = React.useMemo(
-    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0)),
-    [displayMonth],
-  )
+  const mesDesde = toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1))
+  const mesHasta = toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0))
 
   // Pestaña de Rótulo de Ejecución activa (`?rotulo=`, `planeador-tabs.tsx`)
   // — SIEMPRE se resuelve, aunque el docente tenga un solo rótulo: ese único
@@ -191,8 +185,8 @@ function PlaneadorPageContent() {
   const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
 
   // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
-  // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
-  // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
+  // derivar stats/calendario/listado en el cliente (ver colección
+  // Postman `planeador-pantalla-principal`).
   const { data: statsCounts, error: errorStats } = useActividadesStatsQuery({
     search: buscar || undefined,
     instrumento,
@@ -290,8 +284,7 @@ function PlaneadorPageContent() {
   // el estado y la pestaña, no solo las del día que muestra el rail. También
   // el alcance (docente elegido, sede/año/jornada) y el instrumento: sin
   // ellos el archivo traía actividades que la pantalla no mostraba.
-  const exportFilters = React.useMemo(
-    () => ({
+  const exportFilters = {
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
       GRADO_ASIGNATURA_PARES: tabActiva?.pares.length ? tabActiva.pares.map(parToString) : undefined,
@@ -299,9 +292,7 @@ function PlaneadorPageContent() {
       SEDE: scope.sedeId,
       PERIODO: scope.periodoId,
       INSTRUMENTO: instrumento,
-    }),
-    [buscar, estado, tabActiva, scope.funcionario, scope.sedeId, scope.periodoId, instrumento],
-  )
+    }
   // Encabezados del PDF/Excel: el reporte trae fijos "Actividad" y "Unidad
   // tematica"; la pestaña sabe cómo se llaman de verdad. La unidad sale del
   // referente de la pestaña (su "Rótulo de secuencia"), con el mismo
@@ -385,7 +376,7 @@ function PlaneadorPageContent() {
   // mes solo aparece bajo su día de cierre (su inicio no cae en este mes);
   // una que arranca y cierra en el mismo mes aparece en las dos celdas de
   // ESTE mes, nunca en otro.
-  const events = React.useMemo(() => {
+  const events = (() => {
     const map = new Map<number, DayEvent[]>()
     function plantar(day: number, a: (typeof calendarioActividades)[number]) {
       const list = map.get(day) ?? []
@@ -418,7 +409,7 @@ function PlaneadorPageContent() {
       }
     }
     return map
-  }, [calendarioActividades, mesDesde, mesHasta, mostrarDocente])
+  })()
 
   return (
     <TableScreen>

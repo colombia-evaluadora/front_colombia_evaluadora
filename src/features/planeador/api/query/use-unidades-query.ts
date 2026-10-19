@@ -17,7 +17,7 @@ import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
 
-// Mismo criterio que `use-actividades-query.ts`: el contrato real exige
+// El contrato real exige
 // `size`/`offset` explícitos en la query string de los listados paginados.
 const PAGE_SIZE = 500
 
