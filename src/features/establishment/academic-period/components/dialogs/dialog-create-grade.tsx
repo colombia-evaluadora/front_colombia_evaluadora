@@ -8,6 +8,7 @@ import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -128,8 +129,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
-  // Preescolar usa "dimensiones" en vez de "asignaturas" (solo cambia el rótulo).
-  // El nombre viene del catálogo del backend, no de un enum: se compara sin mayúsculas.
+  // Preescolar usa "dimensiones"; el nombre viene del catálogo.
   const isPreescolar = (
     teachingLevels.find((l) => l.id === teachingLevelId)?.nombre ??
     grade?.teachingLevelName ??
@@ -280,8 +280,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     }))
   })()
 
-  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
-
   function closeDialog() {
     setOpen(false)
     resetForm()
@@ -299,22 +297,18 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     (!hasNextGrade || gradoSiguiente.trim() !== "")
   const canSaveHeader = isHeaderValid && (gradeId == null || isHeaderDirty)
 
-  function requestClose() {
-    if (saving) return
-    if (isHeaderDirty || promotionRef.current?.isDirty() || scheduleRef.current?.isDirty()) {
-      setConfirmDiscardOpen(true)
-      return
-    }
-    closeDialog()
-  }
+  const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
+    isSaving: saving,
+    isDirty: () =>
+      isHeaderDirty || !!promotionRef.current?.isDirty() || !!scheduleRef.current?.isDirty(),
+    onOpen: () => setOpen(true),
+    onClose: closeDialog,
+  })
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (next) setOpen(true)
-        else requestClose()
-      }}
+      onOpenChange={onOpenChange}
     >
       {isEditing ? (
         <Tooltip>
@@ -563,14 +557,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         </DialogFooter>
       </DialogContent>
 
-      <ConfirmDiscardDialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-        onConfirm={() => {
-          setConfirmDiscardOpen(false)
-          closeDialog()
-        }}
-      />
+      <ConfirmDiscardDialog {...discardDialogProps} />
     </Dialog>
   )
 }
