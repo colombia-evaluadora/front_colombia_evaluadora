@@ -58,6 +58,7 @@ import {
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
+import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { forosSearchSchema } from "@/features/comunicaciones/foros/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
@@ -160,6 +161,10 @@ const ListasValorPage = lazyRouteComponent(
 const AreasOficialesPage = lazyRouteComponent(
   () => import("@/features/administration/areas-oficiales/pages/areas-oficiales-page"),
   "AreasOficialesPage"
+)
+const SuperadministradoresPage = lazyRouteComponent(
+  () => import("@/features/administration/superadministradores/pages/superadministradores-page"),
+  "SuperadministradoresPage"
 )
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
@@ -646,6 +651,16 @@ export const areasOficialesRoute = createRoute({
   component: AreasOficialesPage,
 })
 
+export const superadministradoresRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.superadministradores.path,
+  validateSearch: superadministradoresSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Superadministradores" }],
+  },
+  component: SuperadministradoresPage,
+})
+
 export const criteriosPrioridadRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.criteriosPrioridad.path,
@@ -1105,6 +1120,7 @@ const routeTree = rootRoute.addChildren([
     listasValorRoute,
     areasOficialesRoute,
     criteriosPrioridadRoute,
+    superadministradoresRoute,
     parametrosEdadRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
