@@ -28,3 +28,12 @@ export function useReingresarMatricula({ mutationConfig }: UseReingresarMatricul
     ...restConfig,
   })
 }
+
+// Reingresar en lote: una sola recarga al final, no una por estudiante.
+export function useReingresarMatriculas() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: string[]) => Promise.allSettled(ids.map(reingresarMatricula)),
+    onSettled: () => invalidarMatriculas(queryClient),
+  })
+}
