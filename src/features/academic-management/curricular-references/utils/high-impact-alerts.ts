@@ -1,8 +1,7 @@
 import type { CurricularReferenceImpact } from "@/features/academic-management/curricular-references/api/query/fetch-impact"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
+import { esEnfoqueFormativo } from "@/features/academic-management/curricular-references/utils/catalogs"
 
-// Id del enfoque "Formativo" en el catálogo (ver catalogs.ts).
-const FORMATIVO_APPROACH_ID = 122
 
 export type HighImpactField =
   | "pedagogicalApproach"
@@ -89,7 +88,7 @@ function buildAlert(
         title: "Cambio de Enfoque Pedagógico",
         message:
           `Este cambio afecta ${units} y ${activities}. ` +
-          (next.pedagogicalApproach?.id === FORMATIVO_APPROACH_ID
+          (esEnfoqueFormativo(next.pedagogicalApproach)
             ? "Las actividades evaluativas existentes perderán acceso a sus instrumentos."
             : "Los registros narrativos existentes no se convierten automáticamente en instrumentos.") +
           (typeChanged && impact.activities > 0 ? ` ${evaluationTypeMessage(next, impact)}` : ""),

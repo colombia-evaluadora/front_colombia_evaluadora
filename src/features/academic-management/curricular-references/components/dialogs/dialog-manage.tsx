@@ -30,18 +30,19 @@ import {
   getVisibleAlerts,
   revertHighImpactFields,
   type HighImpactAlert,
-} from "@/features/academic-management/curricular-references/api/high-impact-alerts"
+} from "@/features/academic-management/curricular-references/utils/high-impact-alerts"
 import { HighImpactDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-high-impact"
 import { LevelConflictDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-level-conflict"
 import {
   toLevelConflict,
   type LevelConflict,
-} from "@/features/academic-management/curricular-references/api/level-conflict"
+} from "@/features/academic-management/curricular-references/utils/level-conflict"
 import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { esEnfoqueFormativo, esEvaluacionCuantitativa } from "@/features/academic-management/curricular-references/utils/catalogs"
 
 interface ManageCurricularReferenceDialogProps {
   open: boolean
@@ -86,20 +87,18 @@ const curricularReferenceSchema = z.object({
   level1: z.string().trim().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
   level2: z.string().trim().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
-    .object({ id: z.number().nullish() })
+    .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el enfoque pedagógico." }),
   evaluationType: z
-    .object({ id: z.number().nullish() })
+    .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
   instrument: z.string().trim().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
   executionLabel: z.string().trim().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
   regulation: z.string().trim().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
 }).superRefine((values, ctx) => {
-  const isFormativo = values.pedagogicalApproach?.id === 122
-  const isCuantitativa = values.evaluationType?.id === 112
-  if (isFormativo && isCuantitativa) {
+  if (esEnfoqueFormativo(values.pedagogicalApproach) && esEvaluacionCuantitativa(values.evaluationType)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["evaluationType"],

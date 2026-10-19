@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { CheckIcon, EyeIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
-import type { LevelConflict } from "@/features/academic-management/curricular-references/api/level-conflict"
+import type { LevelConflict } from "@/features/academic-management/curricular-references/utils/level-conflict"
 
 interface LevelConflictDialogProps {
   conflict: LevelConflict | null

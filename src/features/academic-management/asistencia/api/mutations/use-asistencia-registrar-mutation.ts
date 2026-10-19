@@ -2,6 +2,7 @@ import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 import { postMultipart } from "@/lib/files"
 import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
@@ -14,6 +15,7 @@ import type {
   AsistenciaRegistrarRequest,
   AsistenciaRegistroManual,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 interface SubirSoporteResponse {
   pk_tarchivo: number
@@ -165,16 +167,23 @@ async function registrarAsistencia({ versiones, ...body }: RegistrarInput): Prom
   return outcome.queued ? { afectados: 0, pendientes: [], queued: true } : outcome.result
 }
 
-export function useAsistenciaRegistrarMutation() {
+export function useAsistenciaRegistrarMutation({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof registrarAsistencia> } = {}) {
   const queryClient = useQueryClient()
+  const { onSuccess, ...rest } = mutationConfig ?? {}
   return useMutation({
     mutationFn: registrarAsistencia,
+    ...rest,
     // La outbox decide si hay red: la mutación no debe quedar pausada.
     networkMode: "always",
-    onSuccess: (result) => {
-      if (result.queued) return
-      queryClient.invalidateQueries({ queryKey: ["asistencia"] })
-      invalidarPlaneadorPorAsistencia(queryClient)
+    onSuccess: (...args) => {
+      // Encolada: la outbox invalida al sincronizar.
+      if (!args[0].queued) {
+        queryClient.invalidateQueries({ queryKey: asistenciaKeys.all })
+        invalidarPlaneadorPorAsistencia(queryClient)
+      }
+      onSuccess?.(...args)
     },
   })
 }

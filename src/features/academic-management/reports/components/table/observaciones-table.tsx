@@ -6,8 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
-import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
-import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
+import type { EstudianteFilas } from "@/features/academic-management/reports/utils/agrupar-filas"
+import type { MarcasPeriodo } from "@/features/academic-management/reports/utils/periodos-marcados"
 import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
 import {
   CeldaUltimaActualizacion,

@@ -11,7 +11,7 @@ import {
   nombreMateriaSeguimiento,
   TIPO_ASISTENCIA_DOT,
 } from "@/features/academic-management/asistencia/api/ui-mappings"
-import { EditarSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-editar-seguimiento"
+import { EditarSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialogs/dialog-editar-seguimiento"
 import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 function formatFecha(fecha: string): string {

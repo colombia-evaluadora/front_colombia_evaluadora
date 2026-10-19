@@ -9,7 +9,7 @@ import {
   marcaKey,
   resolverObjetivos,
   sinMarcasDe,
-} from "@/features/academic-management/reports/lib/periodos-marcados"
+} from "@/features/academic-management/reports/utils/periodos-marcados"
 
 function fila(matriculaId: number, periodoId: number, modoPeriodo: ModoPeriodo = "real"): FilaInforme {
   return { matriculaId, periodoId, modoPeriodo } as FilaInforme

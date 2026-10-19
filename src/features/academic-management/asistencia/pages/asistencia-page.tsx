@@ -12,7 +12,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
-import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"

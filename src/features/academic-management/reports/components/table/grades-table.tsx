@@ -2,7 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CaretDownIcon, CaretUpIcon, InfoIcon, WarningIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { RatingSymbolView } from "@/features/establishment/academic-period/components/rating-symbol"
+import { RatingSymbolView } from "@/features/establishment/academic-period/components/fields/rating-symbol"
 
 import type {
   AsignaturaInforme,
@@ -11,8 +11,8 @@ import type {
 import type {
   ColumnaAsignatura,
   EstudianteFilas,
-} from "@/features/academic-management/reports/lib/agrupar-filas"
-import type { MarcasPeriodo } from "@/features/academic-management/reports/lib/periodos-marcados"
+} from "@/features/academic-management/reports/utils/agrupar-filas"
+import type { MarcasPeriodo } from "@/features/academic-management/reports/utils/periodos-marcados"
 import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
 import {
   CeldaUltimaActualizacion,

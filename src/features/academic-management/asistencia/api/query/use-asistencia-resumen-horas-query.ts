@@ -7,6 +7,7 @@ import type {
   ResumenHoras,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 interface RawResumenHoras extends ResumenHoras {
   horas_programadas_semana?: number
@@ -30,7 +31,7 @@ export function useAsistenciaResumenHorasQuery(
 ) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
-    queryKey: ["asistencia", "resumen-horas", params],
+    queryKey: asistenciaKeys.resumenHoras(params),
     queryFn: () => fetchAsistenciaResumenHoras(params),
     enabled,
   })

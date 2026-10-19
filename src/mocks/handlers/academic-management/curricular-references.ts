@@ -10,7 +10,7 @@ import {
   nextSubjectLabelOptionId,
   subjectLabelOptionsDb,
 } from "@/mocks/db/academic-management/subject-label-options"
-import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
+import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/utils/catalogs"
 
 import type {
   CurricularReference,

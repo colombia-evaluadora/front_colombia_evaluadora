@@ -8,7 +8,7 @@ import {
   agruparPorSesion,
   useAprobacionesAsistenciaQuery,
 } from "@/features/academic-management/asistencia/api/query/use-aprobaciones-asistencia-query"
-import { RevisionCambiosAsistenciaSheet } from "@/features/academic-management/asistencia/components/revision-cambios-asistencia-sheet"
+import { RevisionCambiosAsistenciaSheet } from "@/features/academic-management/asistencia/components/sheets/revision-cambios-asistencia-sheet"
 
 function formatFechaCorta(fecha: string | null): string {
   if (!fecha) return "Sin fecha"

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/combobox"
 import { useAreasOficialesOpcionesQuery } from "@/features/administration/areas-oficiales/api/query/use-areas-oficiales-opciones-query"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
-import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
+import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/fields/subjects-multi-select"
 import { SubjectLabelSelect } from "@/features/academic-management/curricular-references/components/forms/subject-label-select"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"

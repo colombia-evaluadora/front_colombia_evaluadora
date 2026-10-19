@@ -61,15 +61,15 @@ import {
   agruparPorEstudiante,
   columnasDeFilas,
   etiquetaPeriodo,
-} from "@/features/academic-management/reports/lib/agrupar-filas"
+} from "@/features/academic-management/reports/utils/agrupar-filas"
 import {
   marcaKey,
   resolverObjetivos,
   sinMarcasDe,
   type MarcasPeriodo,
-} from "@/features/academic-management/reports/lib/periodos-marcados"
-import { GradesTable } from "@/features/academic-management/reports/components/grades-table"
-import { HistorialCambiosSheet } from "@/features/academic-management/reports/components/historial-cambios-sheet"
+} from "@/features/academic-management/reports/utils/periodos-marcados"
+import { GradesTable } from "@/features/academic-management/reports/components/table/grades-table"
+import { HistorialCambiosSheet } from "@/features/academic-management/reports/components/sheets/historial-cambios-sheet"
 import {
   InformeFiltros,
   type FiltrosInforme,
@@ -79,9 +79,9 @@ import {
   DialogDescargarTabla,
   DialogGenerarBoletin,
   type EstudianteBoletin,
-} from "@/features/academic-management/reports/components/dialog-export-informe"
-import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
-import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
+} from "@/features/academic-management/reports/components/dialogs/dialog-export-informe"
+import { ObservacionesTable } from "@/features/academic-management/reports/components/table/observaciones-table"
+import { ObservacionSheet } from "@/features/academic-management/reports/components/sheets/observacion-sheet"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
   PendingChangesBanners,

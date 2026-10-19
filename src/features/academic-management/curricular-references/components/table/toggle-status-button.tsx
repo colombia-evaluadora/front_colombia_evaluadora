@@ -13,13 +13,13 @@ import { fetchCurricularReferenceImpact } from "@/features/academic-management/c
 import {
   buildHighImpactAlerts,
   type HighImpactAlert,
-} from "@/features/academic-management/curricular-references/api/high-impact-alerts"
+} from "@/features/academic-management/curricular-references/utils/high-impact-alerts"
 import { HighImpactDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-high-impact"
 import { LevelConflictDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-level-conflict"
 import {
   toLevelConflict,
   type LevelConflict,
-} from "@/features/academic-management/curricular-references/api/level-conflict"
+} from "@/features/academic-management/curricular-references/utils/level-conflict"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 // Activar/Inactivar directo desde la fila, sin abrir el formulario.

@@ -57,13 +57,8 @@ type CreateStatementInput = {
   active: boolean
 }
 
-/**
- * Fase 4 offline (`add-offline-rest`): enunciados y evidencias se encolan en
- * la outbox. Un enunciado creado sin red NO tiene id hasta sincronizar, así que
- * no se le pueden colgar evidencias offline (la UI las pide sobre un enunciado
- * ya existente). Editar/eliminar se fusionan por enunciado: la última edición
- * gana (`coalesce`); un eliminar posterior viaja detrás, en orden FIFO.
- */
+// Un enunciado creado sin red no tiene id hasta sincronizar: no admite evidencias offline.
+// Editar se fusiona por enunciado (gana la última); eliminar viaja detrás en FIFO.
 registerOutboxHandler<CreateStatementInput>({
   kind: "referente.enunciado.crear",
   version: 1,
@@ -241,7 +236,8 @@ export function useUpdateStatement(options: { mutationConfig?: MutationConfig<ty
     networkMode: "always",
     ...options.mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["curricular-statements"] })
+      // Activar/inactivar o cambiar el área también mueve grados y contadores.
+      invalidateStatementDerived(queryClient)
       options.mutationConfig?.onSuccess?.(...args)
     },
   })
