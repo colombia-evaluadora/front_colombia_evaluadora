@@ -57,6 +57,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
+import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { forosSearchSchema } from "@/features/comunicaciones/foros/api/schema"
@@ -160,6 +161,10 @@ const ListasValorPage = lazyRouteComponent(
 const AreasOficialesPage = lazyRouteComponent(
   () => import("@/features/administration/areas-oficiales/pages/areas-oficiales-page"),
   "AreasOficialesPage"
+)
+const BitacoraPage = lazyRouteComponent(
+  () => import("@/features/bitacora/pages/bitacora-page"),
+  "BitacoraPage"
 )
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
@@ -615,6 +620,16 @@ export const auditoriaTablaDetalleRoute = createRoute({
     ],
   },
   component: TableOperationsPage,
+})
+
+export const bitacoraRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
+  path: paths.app.bitacora.path,
+  validateSearch: bitacoraSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, REGISTRO_ACTIVIDAD_CRUMB, { label: "Bitácora" }],
+  },
+  component: BitacoraPage,
 })
 
 export const rolesMenusRoute = createRoute({
@@ -1100,6 +1115,7 @@ const routeTree = rootRoute.addChildren([
       auditoriaTablasRoute,
       auditoriaTablaDetalleRoute,
       auditoriaSesionOperacionesRoute,
+      bitacoraRoute,
     ]),
     rolesMenusRoute,
     listasValorRoute,

@@ -68,6 +68,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/areas-oficiales": MENU.areasOficiales,
   "/app/administracion/criterios-prioridad": MENU.criteriosPrioridad,
   "/app/administracion/parametros-edad": MENU.parametrosEdad,
+  "/app/registro-de-actividad/bitacora": MENU.registroActividad,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
   "/app/establecimiento-educativo/agregar": MENU.establecimiento,
