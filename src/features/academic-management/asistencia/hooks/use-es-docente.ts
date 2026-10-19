@@ -5,16 +5,6 @@ const DIRECTOR_GRUPO_ROLE = "CEVAL-DIRECTOR_GRUPO"
 const COORDINADOR_ROLE = "CEVAL-COORDINADOR"
 const SUPER_ADMIN_ROLE = "CEVAL-SUPER_ADMINISTRADOR"
 
-export function useEsDocente(): boolean {
-  const { user } = useAuth()
-  return user?.roles.includes(DOCENTE_ROLE) ?? false
-}
-
-export function useEsDirectorGrupo(): boolean {
-  const { user } = useAuth()
-  return user?.roles.includes(DIRECTOR_GRUPO_ROLE) ?? false
-}
-
 export function useEsCoordinador(): boolean {
   const { user } = useAuth()
   return user?.roles.includes(COORDINADOR_ROLE) ?? false

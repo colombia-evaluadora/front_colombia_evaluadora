@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query"
+import { useQueries } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
@@ -17,15 +17,6 @@ export async function fetchEstudiantesSesion(
     { params },
   )
   return Array.isArray(raw) ? raw : (raw.rows ?? [])
-}
-
-export function useAsistenciaRosterQuery(params: AsistenciaSesionEstudiantesParams | null) {
-  return useQuery({
-    meta: estudiantesMeta(),
-    queryKey: asistenciaKeys.sesionEstudiantes(params),
-    queryFn: () => fetchEstudiantesSesion(params!),
-    enabled: params !== null,
-  })
 }
 
 export function useAsistenciaRosterPorBloquesQuery(
