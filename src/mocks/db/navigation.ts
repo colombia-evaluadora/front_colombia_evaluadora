@@ -106,6 +106,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V313: solo el Superadministrador. Código PARAMETROS_EDAD (mapeado en roles.ts).
+  {
+    id: 45,
+    name: "Parámetros de edad",
+    icon: "",
+    path: "/app/administracion/parametros-edad",
+    menuOrder: 6,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   {
     id: 5,
     name: "Usuarios",
