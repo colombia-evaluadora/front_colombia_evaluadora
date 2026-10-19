@@ -30,11 +30,18 @@ export interface PestanasAsistente {
 }
 
 const formularios = new Map<CodigoFormularioAgente, FormularioAsistente>()
+/** Formularios abiertos pero en solo lectura, con el motivo (p. ej. Regla 37 del planeador). */
+const bloqueados = new Map<CodigoFormularioAgente, string>()
 let filtros: FiltrosAsistente | null = null
 let pestanas: PestanasAsistente | null = null
 
 export function formularioRegistrado(codigo: string): FormularioAsistente | undefined {
   return formularios.get(codigo as CodigoFormularioAgente)
+}
+
+/** Motivo por el que el formulario abierto no se puede rellenar, si lo está. */
+export function motivoFormularioBloqueado(codigo: string): string | undefined {
+  return bloqueados.get(codigo as CodigoFormularioAgente)
 }
 
 export function filtrosRegistrados(): FiltrosAsistente | null {
@@ -71,6 +78,26 @@ export function useFormularioAsistente(formulario: FormularioAsistente | null) {
       if (formularios.get(formulario.codigo) === formulario) formularios.delete(formulario.codigo)
     }
   })
+}
+
+/**
+ * Un formulario en pantalla que NO se expone para rellenar (no entra en
+ * `contextoUi`), pero cuyo motivo se le devuelve al asistente si igual lo
+ * intenta: "no está abierto" lo confundiría. Devuelve con qué quitarlo.
+ */
+export function bloquearFormularioAsistente(codigo: CodigoFormularioAgente, motivo: string): () => void {
+  bloqueados.set(codigo, motivo)
+  return () => {
+    if (bloqueados.get(codigo) === motivo) bloqueados.delete(codigo)
+  }
+}
+
+/** `bloquearFormularioAsistente` mientras el formulario esté montado y `motivo` exista. */
+export function useFormularioBloqueadoAsistente(codigo: CodigoFormularioAgente, motivo: string | null | undefined) {
+  useEffect(() => {
+    if (!motivo) return
+    return bloquearFormularioAsistente(codigo, motivo)
+  }, [codigo, motivo])
 }
 
 export function useFiltrosAsistente(registro: FiltrosAsistente | null) {
