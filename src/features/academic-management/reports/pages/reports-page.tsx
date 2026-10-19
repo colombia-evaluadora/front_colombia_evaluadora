@@ -339,13 +339,19 @@ function ReportsPageContent() {
 
   const setFiltros = React.useCallback(
     (nuevos: FiltrosInforme) => {
+      const cambio =
+        nuevos.sedeId !== filtros.sedeId ||
+        nuevos.anio !== filtros.anio ||
+        nuevos.jornadaId !== filtros.jornadaId
       setSearch({
         sede: nuevos.sedeId ?? undefined,
         anio: nuevos.anio ?? undefined,
         jornada: nuevos.jornadaId ?? undefined,
+        // Periodos y grupos cuelgan de la cascada: no se arrastran a otra combinación.
+        ...(cambio && { periodos: undefined, grupos: undefined, tab: undefined }),
       })
     },
-    [setSearch],
+    [setSearch, filtros],
   )
 
   const periodosQuery = usePeriodosInformeQuery(filtros)
