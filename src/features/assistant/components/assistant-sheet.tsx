@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouterState } from "@tanstack/react-router"
 
 import {
@@ -8,9 +8,10 @@ import {
   CloudOffIcon,
   PlusIcon,
   SpinnerIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { MessageScrollerProvider } from "@/components/ui/message-scroller"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
@@ -24,17 +25,12 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 
 const SIN_CONEXION = "El asistente necesita conexión a internet."
 
-/**
- * Código del menú del asistente (SSO #696): menú sin pantalla sembrado para
- * los mismos roles que ya usaban el agente. `puedeVer` lo muestra;
- * `puedeCrear`/`puedeEditar` habilitan confirmar acciones y rellenar
- * formularios. El backend igual valida cada herramienta por su menú.
- */
+/** Menú del asistente: ver lo muestra; crear/editar permite acciones. */
 export const MENU_ASISTENTE = "ASISTENTE"
 
 export function AssistantSheet() {
   const permiso = useMenuPermission(MENU_ASISTENTE)
-  // Mientras carga, todo denegado (mismo criterio que el resto de pantallas).
+  // Mientras carga, todo denegado.
   if (!permiso.puedeVer) return null
   return <AssistantSheetContenido puedeAccionar={permiso.puedeCrear || permiso.puedeEditar} />
 }
@@ -45,6 +41,7 @@ function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) 
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const [vista, setVista] = useState<"chat" | "historial">("chat")
   const [abierto, setAbierto] = useState(false)
+  const mensajeRef = useRef<HTMLTextAreaElement>(null)
   const sugerenciasQuery = useSugerenciasQuery(pathname, { enabled: abierto && !online.disabled })
   const sugerencias = elegirSugerencias(sugerenciasQuery.data?.sugerencias, pathname)
 
@@ -60,42 +57,54 @@ function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) 
           <ChatCircleTextIcon />
           <span className="sr-only">Abrir asistente</span>
         </SheetTrigger>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md">
-          <SheetHeader className="border-b">
-            <div className="flex items-center gap-1 pr-8">
+        {/* Foco inicial en el mensaje. */}
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 sm:max-w-md"
+          initialFocus={mensajeRef}
+          showCloseButton={false}
+        >
+          <SheetHeader className="border-b px-4 py-3">
+            <div className="flex h-8 items-center gap-2">
               {vista === "historial" && (
                 <Button variant="ghost" color="neutral" size="icon-sm" onClick={() => setVista("chat")}>
                   <ArrowLeftIcon />
                   <span className="sr-only">Volver al chat</span>
                 </Button>
               )}
-              <SheetTitle className="flex-1">{vista === "chat" ? "Asistente" : "Conversaciones"}</SheetTitle>
+              <SheetTitle className="flex-1 truncate text-base">
+                {vista === "chat" ? "Asistente" : "Conversaciones"}
+              </SheetTitle>
               {vista === "chat" && (
                 <>
                   <Button
                     variant="ghost"
                     color="neutral"
                     size="icon-sm"
-                    title="Historial"
+                    title="Conversaciones anteriores"
                     disabled={online.disabled}
                     onClick={() => setVista("historial")}
                   >
                     <ClockCounterClockwiseIcon />
-                    <span className="sr-only">Ver conversaciones</span>
+                    <span className="sr-only">Ver conversaciones anteriores</span>
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     color="neutral"
-                    size="icon-sm"
-                    title="Nueva conversación"
+                    size="xs"
                     disabled={asistente.mensajes.length === 0 && !asistente.conversacionId}
                     onClick={asistente.nuevaConversacion}
                   >
-                    <PlusIcon />
-                    <span className="sr-only">Nueva conversación</span>
+                    <PlusIcon data-icon="inline-start" />
+                    Nueva
                   </Button>
                 </>
               )}
+              {/* X en la fila: la del Sheet va absoluta. */}
+              <SheetClose render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
+                <XIcon />
+                <span className="sr-only">Cerrar asistente</span>
+              </SheetClose>
             </div>
             <SheetDescription className="sr-only">
               Asistente de Colombia Evaluadora: consulta información y prepara cambios que tú confirmas.
@@ -146,6 +155,7 @@ function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) 
               <ChatComposer
                 onSend={(texto) => void asistente.enviar(texto)}
                 onStop={asistente.detener}
+                inputRef={mensajeRef}
                 enviando={asistente.enviando}
                 disabled={online.disabled}
                 placeholder={online.disabled ? "Sin conexión" : undefined}
