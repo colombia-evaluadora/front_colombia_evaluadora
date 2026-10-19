@@ -5,8 +5,8 @@ import {
   GENDER_OPTIONS,
   RELATIONSHIP_OPTIONS,
   RESIDENCE_OPTIONS,
-} from "@/features/coverage/api/ui-mappings"
-import type { Enrollment, EnrollmentStatus } from "@/features/coverage/api/types/enrollment"
+} from "@/features/coverage/shared/api/ui-mappings"
+import type { Enrollment, EnrollmentStatus } from "@/features/coverage/enrollments/api/types/enrollment"
 import {
   CAMPUSES,
   GROUPS,

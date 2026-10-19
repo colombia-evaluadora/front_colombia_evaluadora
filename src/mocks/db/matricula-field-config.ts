@@ -1,5 +1,5 @@
-import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
-import type { MatriculaFieldConfig } from "@/features/coverage/api/types/matricula"
+import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/matricula/utils/matricula-field-catalog"
+import type { MatriculaFieldConfig } from "@/features/coverage/matricula/api/types/matricula"
 
 // `fkCampo` es ficticio (1..N en el orden del catálogo) — el backend real
 // asigna los suyos, esto solo necesita ser estable dentro de una sesión de

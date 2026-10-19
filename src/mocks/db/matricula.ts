@@ -8,10 +8,10 @@ import type {
   Matricula,
   MatriculaDetails,
   MatriculaStatus,
-} from "@/features/coverage/api/types/matricula"
+} from "@/features/coverage/matricula/api/types/matricula"
 import { CAMPUSES, GRADES, GROUPS, INSTITUTIONS, levelForGrade } from "@/mocks/db/reservations"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
-import { RELATIONSHIP_OPTIONS } from "@/features/coverage/api/ui-mappings"
+import { RELATIONSHIP_OPTIONS } from "@/features/coverage/shared/api/ui-mappings"
 
 // La Jornada de matrícula sale del catálogo real de `TLISTA_VALOR`
 // (`jornadasDb`, el mismo que usa Períodos Académicos) — no del `Shift` fijo

@@ -5,7 +5,7 @@ import type {
   Reservation,
   ReservationStatus,
   Shift,
-} from "@/features/coverage/api/types/reservation"
+} from "@/features/coverage/reservations/api/types/reservation"
 
 export const INSTITUTIONS = [
   "I.E. San José",

@@ -6,7 +6,7 @@ import type {
   EnrollmentsQueryFilters,
   EnrollmentsQueryRequest,
   EnrollmentsQueryResponse,
-} from "@/features/coverage/api/types/enrollment"
+} from "@/features/coverage/enrollments/api/types/enrollment"
 
 function matches(value: string, needle: string): boolean {
   return value.toLowerCase().includes(needle.toLowerCase())

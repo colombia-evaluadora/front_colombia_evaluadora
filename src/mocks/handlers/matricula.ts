@@ -16,7 +16,7 @@ import {
 } from "@/mocks/db/matricula-field-config"
 import { CAMPUSES, GRADES } from "@/mocks/db/reservations"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import type {
   BulkMatriculaChangeRequest,
   BulkMatriculaChangeResult,
@@ -32,7 +32,7 @@ import type {
   MatriculaMutationResult,
   MatriculaQueryFilters,
   MatriculaQueryRequest,
-} from "@/features/coverage/api/types/matricula"
+} from "@/features/coverage/matricula/api/types/matricula"
 
 // snake_case, como manda el backend real — camelCase es solo del lado front
 // (ver `toMatriculaFieldConfig` en `use-matricula-field-config-query.ts`).
