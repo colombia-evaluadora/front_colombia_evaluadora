@@ -17,6 +17,7 @@ import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import {
   ArrowLeftIcon,
   CheckIcon,
+  ChartLineDownIcon,
   ChartLineUpIcon,
   FileUploadOutlinedIcon,
   InfoIcon,
@@ -24,26 +25,41 @@ import {
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
+import type { MatriculaMoveKind } from "@/features/coverage/matricula/api/mutations/move-matricula"
 import type { BulkGradeChange, BulkGradeChangeSubKind, BulkGradesAction } from "@/features/coverage/matricula/api/types/matricula"
+
+// Resultado del modo individual: "promocion" cubre también la reubicación (grado inferior)
+export type GradeChangeKind = "promocion" | "correccion"
+export type GradeChangeGradesAction = "eliminar" | "trasladar"
+
+export function gradeChangeKindLabel(kind: GradeChangeKind, isSuperior: boolean): string {
+  if (kind === "correccion") return "Corrección de matrícula"
+  return isSuperior ? "Promoción anticipada" : "Reubicación académica"
+}
+
+export function moveKindForGradeChange(kind: GradeChangeKind, isSuperior: boolean): MatriculaMoveKind {
+  if (kind === "correccion") return "corregir"
+  return isSuperior ? "promover" : "reubicar"
+}
+
+export interface GradeChangeResult {
+  kind: GradeChangeKind
+  reason: string
+  supportFile: File | null
+  gradesAction: GradeChangeGradesAction
+}
 
 interface RadioCardOptionProps {
   value: string
   checked: boolean
-  disabled?: boolean
   title: string
   description: string
 }
 
-function RadioCardOption({ value, checked, disabled, title, description }: RadioCardOptionProps) {
+function RadioCardOption({ value, checked, title, description }: RadioCardOptionProps) {
   return (
-    <label
-      className={cn(
-        "flex items-start gap-3 p-3",
-        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
-        checked && "bg-primary/5",
-      )}
-    >
-      <RadioGroupItem value={value} disabled={disabled} className="mt-0.5" />
+    <label className={cn("flex cursor-pointer items-start gap-3 p-3", checked && "bg-primary/5")}>
+      <RadioGroupItem value={value} className="mt-0.5" />
       <span className="flex flex-col gap-0.5">
         <span className="text-sm font-semibold text-foreground">{title}</span>
         <span className="text-sm text-muted-foreground">{description}</span>
@@ -52,45 +68,55 @@ function RadioCardOption({ value, checked, disabled, title, description }: Radio
   )
 }
 
-interface CambioGradoMatriculaDialogProps {
+interface BaseProps {
   open: boolean
-  /** Todos los seleccionados comparten el mismo grado de origen — solo ahí
-   * tiene sentido clasificar el cambio como Promoción/Reubicación (ver
-   * `dialog-modificar-matricula.tsx`). */
-  sameOrigin: boolean
-  fromGrade: number | null
   toGrade: number
-  onBack: () => void
-  onConfirm: (result: BulkGradeChange) => void
   onClose: () => void
 }
 
-export function CambioGradoMatriculaDialog({
-  open,
-  sameOrigin,
-  fromGrade,
-  toGrade,
-  onBack,
-  onConfirm,
-  onClose,
-}: CambioGradoMatriculaDialogProps) {
+/** Cambio masivo (`dialog-modificar-matricula.tsx`). */
+interface MasivoProps extends BaseProps {
+  modo: "masivo"
+  /** Solo con mismo grado de origen se clasifica como Promoción/Reubicación. */
+  sameOrigin: boolean
+  fromGrade: number | null
+  onBack: () => void
+  onConfirm: (result: BulkGradeChange) => void
+}
+
+/** Edición de una matrícula (`matricula-edit-page.tsx`). */
+interface IndividualProps extends BaseProps {
+  modo: "individual"
+  fromGrade: number
+  onConfirm: (result: GradeChangeResult) => void
+}
+
+type CambioGradoMatriculaDialogProps = MasivoProps | IndividualProps
+
+export function CambioGradoMatriculaDialog(props: CambioGradoMatriculaDialogProps) {
+  const { open, toGrade, fromGrade, onClose } = props
+  const masivo = props.modo === "masivo"
+  const sameOrigin = masivo ? props.sameOrigin : true
   const gradeLabel = useMatriculaGradeLabel()
   const isSuperior = sameOrigin && fromGrade != null ? toGrade > fromGrade : null
-  const directionalKind: BulkGradeChangeSubKind | null = isSuperior === null ? null : isSuperior ? "promocion" : "reubicacion"
+  const directionalKind: BulkGradeChangeSubKind | null =
+    isSuperior === null ? null : isSuperior ? "promocion" : "reubicacion"
+
+  // El modo individual siempre arranca en "eliminar"
+  const initialGradesAction: BulkGradesAction =
+    !masivo || directionalKind === "reubicacion" ? "eliminar" : "noTrasladar"
 
   const [subKind, setSubKind] = useState<BulkGradeChangeSubKind>(directionalKind ?? "correccion")
   const [reason, setReason] = useState("")
   const [supportFile, setSupportFile] = useState<File | null>(null)
-  const [gradesAction, setGradesAction] = useState<BulkGradesAction>(
-    directionalKind === "reubicacion" ? "eliminar" : "noTrasladar",
-  )
+  const [gradesAction, setGradesAction] = useState<BulkGradesAction>(initialGradesAction)
   const reasonId = useId()
 
   function reset() {
     setSubKind(directionalKind ?? "correccion")
     setReason("")
     setSupportFile(null)
-    setGradesAction(directionalKind === "reubicacion" ? "eliminar" : "noTrasladar")
+    setGradesAction(initialGradesAction)
   }
 
   function handleClose() {
@@ -100,7 +126,7 @@ export function CambioGradoMatriculaDialog({
 
   function handleBack() {
     reset()
-    onBack()
+    if (props.modo === "masivo") props.onBack()
   }
 
   const needsDetails = subKind === "promocion" || subKind === "reubicacion"
@@ -108,21 +134,52 @@ export function CambioGradoMatriculaDialog({
 
   function handleConfirm() {
     if (!canConfirm) return
-    onConfirm({
-      subKind,
-      reason: needsDetails ? reason : undefined,
-      supportFile: needsDetails ? supportFile : undefined,
-      gradesAction,
-    })
+    if (props.modo === "masivo") {
+      props.onConfirm({
+        subKind,
+        reason: needsDetails ? reason : undefined,
+        supportFile: needsDetails ? supportFile : undefined,
+        gradesAction,
+      })
+    } else {
+      props.onConfirm({
+        kind: needsDetails ? "promocion" : "correccion",
+        reason,
+        supportFile,
+        gradesAction: gradesAction as GradeChangeGradesAction,
+      })
+    }
     reset()
   }
+
+  // Textos propios de cada modo (se mantienen tal cual estaban)
+  const directionalDescription = masivo
+    ? subKindDescriptionMasivo(directionalKind)
+    : isSuperior
+      ? "Avance académico antes de lo previsto."
+      : "Necesidad pedagógica o disciplinaria."
+  const correccionDescription = masivo
+    ? "Ajuste administrativo sin promoción ni reubicación."
+    : isSuperior
+      ? "Ajuste administrativo sin promoción."
+      : "Ajuste administrativo."
+  const reasonLabel = masivo
+    ? `Motivo de ${subKind === "promocion" ? "la promoción" : "la reubicación"} (obligatorio)`
+    : `Motivo de ${isSuperior ? "la promoción" : "la reubicación"}*`
+  const supportLabel = masivo ? "Soporte (obligatorio)" : "Soporte*"
+  const showEliminar = masivo ? subKind === "reubicacion" : true
+  const kindForLabel: GradeChangeKind = needsDetails ? "promocion" : "correccion"
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl" showCloseButton={false}>
         <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle className="flex items-center gap-2">
-            <ChartLineUpIcon className="size-5 text-primary" />
+            {masivo || isSuperior ? (
+              <ChartLineUpIcon className="size-5 text-primary" />
+            ) : (
+              <ChartLineDownIcon className="size-5 text-primary" />
+            )}
             Cambio de grado
           </DialogTitle>
           {sameOrigin && fromGrade != null ? (
@@ -157,6 +214,10 @@ export function CambioGradoMatriculaDialog({
                 if (!value) return
                 const nextKind = value as BulkGradeChangeSubKind
                 setSubKind(nextKind)
+                // En masivo la opción "Eliminar" solo existe en reubicación: no dejar el radio sin marcar.
+                if (masivo && gradesAction !== "trasladar") {
+                  setGradesAction(nextKind === "reubicacion" ? "eliminar" : "noTrasladar")
+                }
                 if (nextKind === "correccion") {
                   setReason("")
                   setSupportFile(null)
@@ -164,27 +225,19 @@ export function CambioGradoMatriculaDialog({
               }}
               className="gap-0 divide-y divide-border overflow-hidden rounded-md border border-input"
             >
-              {sameOrigin && directionalKind === "promocion" && (
+              {directionalKind && isSuperior !== null && (
                 <RadioCardOption
-                  value="promocion"
-                  checked={subKind === "promocion"}
-                  title="Promoción anticipada"
-                  description="Avance académico antes de lo previsto."
-                />
-              )}
-              {sameOrigin && directionalKind === "reubicacion" && (
-                <RadioCardOption
-                  value="reubicacion"
-                  checked={subKind === "reubicacion"}
-                  title="Reubicación académica"
-                  description="Cambio de grado por reubicación del estudiante."
+                  value={directionalKind}
+                  checked={subKind === directionalKind}
+                  title={gradeChangeKindLabel("promocion", isSuperior)}
+                  description={directionalDescription}
                 />
               )}
               <RadioCardOption
                 value="correccion"
                 checked={subKind === "correccion"}
                 title="Corrección de matrícula"
-                description="Ajuste administrativo sin promoción ni reubicación."
+                description={correccionDescription}
               />
             </RadioGroup>
           </Field>
@@ -192,9 +245,7 @@ export function CambioGradoMatriculaDialog({
           {needsDetails && (
             <>
               <Field variant="outlined">
-                <FieldLabel htmlFor={reasonId}>
-                  Motivo de {subKind === "promocion" ? "la promoción" : "la reubicación"} (obligatorio)
-                </FieldLabel>
+                <FieldLabel htmlFor={reasonId}>{reasonLabel}</FieldLabel>
                 <Textarea
                   id={reasonId}
                   value={reason}
@@ -206,7 +257,7 @@ export function CambioGradoMatriculaDialog({
               </Field>
 
               <Field variant="outlined">
-                <FieldLabel>Soporte (obligatorio)</FieldLabel>
+                <FieldLabel>{supportLabel}</FieldLabel>
                 <FileUpload
                   value={supportFile ? [supportFile] : []}
                   onValueChange={(files) => setSupportFile(files[0] ?? null)}
@@ -243,40 +294,44 @@ export function CambioGradoMatriculaDialog({
             <RadioGroup
               value={gradesAction}
               onValueChange={(value) => value && setGradesAction(value as BulkGradesAction)}
-              className="flex min-h-11 flex-row flex-wrap items-center gap-6 rounded-md border border-input px-3"
-            >
-              {subKind === "reubicacion" ? (
-                <>
-                  <label className="flex items-center gap-2 text-sm">
-                    <RadioGroupItem value="eliminar" />
-                    Eliminar calificaciones
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <RadioGroupItem value="trasladar" />
-                    Trasladar calificaciones al nuevo grupo
-                  </label>
-                </>
-              ) : (
-                <>
-                  <label className="flex items-center gap-2 text-sm">
-                    <RadioGroupItem value="noTrasladar" />
-                    No trasladar calificaciones
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <RadioGroupItem value="trasladar" />
-                    Trasladar calificaciones al nuevo grupo
-                  </label>
-                </>
+              className={cn(
+                "flex min-h-11 flex-row items-center gap-6 rounded-md border border-input px-3",
+                masivo && "flex-wrap",
               )}
+            >
+              {showEliminar ? (
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="eliminar" />
+                  Eliminar calificaciones
+                </label>
+              ) : (
+                <label className="flex items-center gap-2 text-sm">
+                  <RadioGroupItem value="noTrasladar" />
+                  No trasladar calificaciones
+                </label>
+              )}
+              <label className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="trasladar" />
+                Trasladar calificaciones al nuevo grupo
+              </label>
             </RadioGroup>
           </Field>
+
+          {!masivo && isSuperior !== null && (
+            <div className="flex items-center gap-3 rounded-md border border-transparent bg-primary-22 px-4 py-1 text-sm font-medium text-primary">
+              <InfoIcon className="size-5 shrink-0" />
+              <span>Se registrará: {gradeChangeKindLabel(kindForLabel, isSuperior)}</span>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
-          <Button type="button" variant="outline" color="primary" size="sm" onClick={handleBack}>
-            <ArrowLeftIcon data-icon="inline-start" />
-            Anterior
-          </Button>
+          {masivo && (
+            <Button type="button" variant="outline" color="primary" size="sm" onClick={handleBack}>
+              <ArrowLeftIcon data-icon="inline-start" />
+              Anterior
+            </Button>
+          )}
           <Button type="button" color="primary" size="sm" disabled={!canConfirm} onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio
@@ -289,4 +344,10 @@ export function CambioGradoMatriculaDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function subKindDescriptionMasivo(kind: BulkGradeChangeSubKind | null): string {
+  return kind === "promocion"
+    ? "Avance académico antes de lo previsto."
+    : "Cambio de grado por reubicación del estudiante."
 }

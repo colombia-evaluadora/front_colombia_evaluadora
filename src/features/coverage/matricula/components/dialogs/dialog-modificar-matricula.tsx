@@ -747,6 +747,7 @@ export function ModificarMatriculaDialog({
 
       {first && (
         <CambioGradoMatriculaDialog
+          modo="masivo"
           open={open && step === "grado"}
           sameOrigin={sameGradeOrigin}
           fromGrade={sameGradeOrigin ? (commonGrade ?? first.grade) : null}
@@ -758,6 +759,7 @@ export function ModificarMatriculaDialog({
       )}
 
       <CambioGrupoMatriculaDialog
+        modo="masivo"
         open={open && step === "grupo"}
         toGroup={grupo}
         studentCount={count}
@@ -768,6 +770,7 @@ export function ModificarMatriculaDialog({
       />
 
       <CambioMatriculaSummaryDialog
+        modo="masivo"
         open={summary != null}
         summary={summary}
         onClose={() => {

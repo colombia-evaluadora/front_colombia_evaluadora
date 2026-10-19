@@ -29,23 +29,23 @@ import { useMunicipalitiesQuery } from "@/features/establishment/institution/api
 import { MatriculaFormBody } from "@/features/coverage/matricula/components/forms/matricula-form-body"
 import { MatriculaToolbar } from "@/features/coverage/matricula/components/matricula-toolbar"
 import {
-  GradeChangeDialog,
+  CambioGradoMatriculaDialog,
   gradeChangeKindLabel,
   moveKindForGradeChange,
   type GradeChangeResult,
-} from "@/features/coverage/matricula/components/dialogs/dialog-grade-change"
+} from "@/features/coverage/matricula/components/dialogs/dialog-cambio-grado-matricula"
 import {
-  GradeChangeSummaryDialog,
+  CambioMatriculaSummaryDialog,
   type GradeChangeSummary,
-} from "@/features/coverage/matricula/components/dialogs/dialog-grade-change-summary"
+} from "@/features/coverage/matricula/components/dialogs/dialog-cambio-matricula-summary"
 import {
   CambioSedeMatriculaDialog,
   type CambioSedeConfirmResult,
 } from "@/features/coverage/matricula/components/dialogs/dialog-cambio-sede-matricula"
 import {
-  GroupChangeDialog,
+  CambioGrupoMatriculaDialog,
   type GroupChangeResult,
-} from "@/features/coverage/matricula/components/dialogs/dialog-group-change"
+} from "@/features/coverage/matricula/components/dialogs/dialog-cambio-grupo-matricula"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import type {
   BulkGroupChangeClassification,
@@ -603,16 +603,18 @@ function MatriculaEditPageContent() {
       )}
 
       {gradeChange && (
-        <GradeChangeDialog
+        <CambioGradoMatriculaDialog
+          modo="individual"
           open
-          currentGrade={gradeChange.from}
-          newGrade={gradeChange.to}
+          fromGrade={gradeChange.from}
+          toGrade={gradeChange.to}
           onConfirm={handleGradeChangeConfirm}
-          onCancel={handleGradeChangeCancel}
+          onClose={handleGradeChangeCancel}
         />
       )}
 
-      <GradeChangeSummaryDialog
+      <CambioMatriculaSummaryDialog
+        modo="individual"
         open={gradeChangeSummary != null}
         summary={gradeChangeSummary}
         onClose={handleGradeChangeSummaryClose}
@@ -635,13 +637,14 @@ function MatriculaEditPageContent() {
       )}
 
       {groupChange && (
-        <GroupChangeDialog
+        <CambioGrupoMatriculaDialog
+          modo="individual"
           open
-          currentGroup={data?.matricula?.group ?? groupChange.from}
-          newGroup={toGroupCodigo ?? groupChange.to}
+          fromGroup={data?.matricula?.group ?? groupChange.from}
+          toGroup={toGroupCodigo ?? groupChange.to}
           hasGrades={data?.matricula?.hasGrades ?? false}
           onConfirm={handleGroupChangeConfirm}
-          onCancel={handleGroupChangeCancel}
+          onClose={handleGroupChangeCancel}
         />
       )}
     </TableScreen>
