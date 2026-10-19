@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
 import { toDigitsOnly } from "@/lib/text-input"
 
@@ -116,8 +117,10 @@ export function TablaEdades({
   const columns: ColumnDef<FilaParametro<EdadGrado>>[] = [
     {
       id: "grado",
+      accessorFn: (r) => r.fila?.nombre ?? "",
       meta: { label: "Grado" },
-      header: "Grado",
+      enableHiding: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
       cell: ({ row }) => {
         const f = row.original.fila
         if (f) return f.nombre
@@ -134,8 +137,12 @@ export function TablaEdades({
     },
     {
       id: "edad",
+      accessorFn: (r) => r.fila?.edad ?? 0,
       meta: { label: "Edad recomendada" },
-      header: () => <span className="block text-right">Edad recomendada</span>,
+      enableHiding: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Edad recomendada" className="justify-end" />
+      ),
       cell: ({ row }) => {
         const f = row.original.fila
         if (row.id === editandoId || !f) return campoEdad
@@ -184,6 +191,7 @@ export function TablaEdades({
       puedeAgregar={puedeEditar && libres.length > 0 && !edicion}
       onAgregar={() => setEdicion({ grado: null, nuevoGrado: "", edad: "" })}
       onSubmit={guardar}
+      valorOrden={(f, columna) => (columna === "edad" ? f.edad : (orden.get(f.grado) ?? 999))}
     />
   )
 }

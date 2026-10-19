@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "@/components/ui/icons"
@@ -55,7 +56,11 @@ export function TablaCortes({
   const [edicion, setEdicion] = useState<Edicion | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const ordenadas = [...filas].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+  // Por defecto, el orden de la lista CALENDARIO, como en grados.
+  const posicion = new Map(opciones.map((o, i) => [String(o.pkListaValor), i]))
+  const ordenadas = [...filas].sort(
+    (a, b) => (posicion.get(a.calendario) ?? 999) - (posicion.get(b.calendario) ?? 999),
+  )
   const libres = opciones.filter(
     (o) => o.habilitado && !filas.some((f) => f.calendario === String(o.pkListaValor)),
   )
@@ -129,8 +134,10 @@ export function TablaCortes({
   const columns: ColumnDef<FilaParametro<CorteCalendario>>[] = [
     {
       id: "calendario",
+      accessorFn: (r) => r.fila?.nombre ?? "",
       meta: { label: "Calendario" },
-      header: "Calendario",
+      enableHiding: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Calendario" />,
       cell: ({ row }) => {
         const f = row.original.fila
         if (f) return f.nombre
@@ -147,10 +154,12 @@ export function TablaCortes({
     },
     {
       id: "corte",
+      accessorFn: (r) => (r.fila ? r.fila.mes * 100 + r.fila.dia : 0),
       meta: { label: "Fecha de corte" },
-      header: () => (
+      enableHiding: false,
+      header: ({ column }) => (
         <span className="inline-flex items-center gap-1.5">
-          Fecha de corte
+          <DataTableColumnHeader column={column} title="Fecha de corte" />
           <Tooltip>
             <TooltipTrigger render={<span className="inline-flex text-muted-foreground" />}>
               <InfoIcon className="size-3.5" />
@@ -216,6 +225,7 @@ export function TablaCortes({
       puedeAgregar={puedeEditar && libres.length > 0 && !edicion}
       onAgregar={() => setEdicion({ calendario: null, nuevoCalendario: "", mes: "", dia: "" })}
       onSubmit={guardar}
+      valorOrden={(f, columna) => (columna === "corte" ? f.mes * 100 + f.dia : f.nombre)}
     />
   )
 }

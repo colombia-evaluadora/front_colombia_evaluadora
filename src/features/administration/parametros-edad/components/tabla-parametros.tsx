@@ -1,6 +1,7 @@
 "use no memo"
 
-import type { ColumnDef } from "@tanstack/react-table"
+import { useState } from "react"
+import type { ColumnDef, SortingState } from "@tanstack/react-table"
 
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTable } from "@/components/data-table"
@@ -42,10 +43,12 @@ export function TablaParametros<T>({
   puedeAgregar,
   onAgregar,
   onSubmit,
+  valorOrden,
 }: {
   titulo: string
   agregarLabel: string
   columns: ColumnDef<FilaParametro<T>>[]
+  /** Filas en el orden de la lista de valores (el de por defecto). */
   data: FilaParametro<T>[]
   /** id de la fila en edición: deja fijos sus botones de guardar y cancelar. */
   editandoId: string | null
@@ -53,18 +56,38 @@ export function TablaParametros<T>({
   puedeAgregar: boolean
   onAgregar: () => void
   onSubmit: (e: React.FormEvent) => void
+  /** Valor por el que se ordena cada columna ordenable. */
+  valorOrden: (fila: T, columna: string) => string | number
 }) {
+  // `useDataTable` ordena en manual: el orden se resuelve acá, en el navegador.
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [orden] = sorting
+  const nueva = data.filter((d) => d.fila === null)
+  const guardadas = data.filter((d): d is { id: string; fila: T } => d.fila !== null)
+  const ordenadas = orden
+    ? [...guardadas].sort((a, b) => {
+        const va = valorOrden(a.fila, orden.id)
+        const vb = valorOrden(b.fila, orden.id)
+        const r =
+          typeof va === "number" && typeof vb === "number"
+            ? va - vb
+            : String(va).localeCompare(String(vb), "es", { numeric: true })
+        return orden.desc ? -r : r
+      })
+    : guardadas
+
   const { table } = useDataTable({
     columns,
-    data,
+    // La fila de alta queda arriba con cualquier orden.
+    data: [...nueva, ...ordenadas],
     pageCount: 1,
     getRowId: (row) => row.id,
     pageIndex: 0,
     pageSize: Math.max(data.length, 1),
     goToPage: sinCambio,
     setPageSize: sinCambio,
-    sorting: [],
-    setSorting: sinCambio,
+    sorting,
+    setSorting,
   })
 
   return (
