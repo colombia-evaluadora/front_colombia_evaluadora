@@ -41,6 +41,7 @@ import { UserDetailsForm } from "@/features/establishment/employees/components/f
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { createEmptyPerson } from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
 
 /** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
 const accordionTriggerClassName =
@@ -61,19 +62,6 @@ function createEmptyEmployeeShell(): Omit<Employee, "person"> {
     address: "",
     permissions: [],
     status: "ACTIVE",
-  }
-}
-
-function createEmptyPerson(): Person {
-  return {
-    documentType: null,
-    identification: "",
-    firstName: "",
-    lastName: "",
-    birthDate: "",
-    gender: null,
-    email: "",
-    phone: "",
   }
 }
 
