@@ -6,7 +6,7 @@ import type { CreateGradeGroupRequest } from "@/features/establishment/academic-
 import {
   extractWriteResultId,
   type WriteResultResponse,
-} from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+} from "@/features/establishment/academic-period/api/utils/extract-write-result"
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 

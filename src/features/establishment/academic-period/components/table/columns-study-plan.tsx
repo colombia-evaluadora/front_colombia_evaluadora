@@ -6,7 +6,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
 import { DeleteStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
-import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
 
 interface CreateStudyPlanColumnsOptions {
   academicPeriodId?: number

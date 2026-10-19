@@ -4,6 +4,7 @@ import type { MutationConfig } from "@/lib/react-query"
 
 import { update } from "@/features/establishment/employees/api/mutations/update"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
 interface UpdateEmployeeInput {
   employeeId: number
@@ -28,7 +29,7 @@ export function useUpdate({ mutationConfig }: UseUpdateOptions = {}) {
     mutationFn: updateMutation,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: employeeKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

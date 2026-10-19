@@ -4,6 +4,7 @@ import type { MutationConfig } from "@/lib/react-query"
 
 import { updateEstablishment } from "@/features/establishment/institution/api/mutations/create"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
 interface UpdateEstablishmentInput {
   establishmentId: number
@@ -33,8 +34,7 @@ export function useUpdate({
     mutationFn: updateEstablishmentMutation,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["establishments"] })
-      queryClient.invalidateQueries({ queryKey: ["establishments", "query"] })
+      queryClient.invalidateQueries({ queryKey: establishmentKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

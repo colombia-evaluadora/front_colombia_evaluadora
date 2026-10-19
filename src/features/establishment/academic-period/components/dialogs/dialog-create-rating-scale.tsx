@@ -56,24 +56,26 @@ import type { RatingScaleType } from "@/features/establishment/academic-period/a
 import {
   RatingSymbolSelect,
   RatingSymbolView,
-} from "@/features/establishment/academic-period/components/rating-symbol"
+} from "@/features/establishment/academic-period/components/fields/rating-symbol"
 import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
   type GradingRange,
-} from "@/features/establishment/academic-period/components/grading-range"
+} from "@/features/establishment/academic-period/utils/grading-range"
 import {
   findDuplicateRatingScale,
   findOverlappingRatingScale,
   ratingScaleDuplicateMessage,
   ratingScaleOverlapMessage,
-} from "@/features/establishment/academic-period/components/rating-scale-duplicates"
-import { TeachingLevelsMultiSelect } from "@/features/establishment/academic-period/components/teaching-levels-multi-select"
+  type RatingScaleNameFields,
+  type RatingScaleRangeFields,
+} from "@/features/establishment/academic-period/utils/rating-scale-duplicates"
+import { TeachingLevelsMultiSelect } from "@/features/establishment/academic-period/components/fields/teaching-levels-multi-select"
 import {
   ScaleSortableHeader,
   compareByScaleKey,
   type ScaleSort,
-} from "@/features/establishment/academic-period/components/scale-sort-header"
+} from "@/features/establishment/academic-period/components/table/scale-sort-header"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
 type RatingScaleDraftValues = z.infer<ReturnType<typeof makeRatingScaleGradesSchema>>
@@ -104,11 +106,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const [drafts, setDrafts] = useState<RatingScaleDraftValues[]>([])
   const [sort, setSort] = useState<ScaleSort>(null)
 
-  // Aviso local, propio del diálogo: mientras sigue abierto, cualquier
-  // mensaje de esta pantalla no debe pasar por el `notify()` global —ese
-  // queda para el aviso de "Guardar" que se ve en la página una vez que el
-  // diálogo se cierra— o el mismo mensaje se veía duplicado (uno acá, otro
-  // detrás del overlay).
+  // Aviso local: con el diálogo abierto, `notify()` global duplicaría el mensaje.
   const [localNotice, setLocalNotice] = useState<{
     id: number
     message: string
@@ -144,10 +142,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   rangeRef.current = range
   const draftSchema = useMemo(() => makeRatingScaleGradesSchema(range), [range])
 
-  // Escalas ya existentes en alguno de los niveles seleccionados — la
-  // restricción de unicidad (Nombre/Abreviación) es por nivel de enseñanza
-  // (MantisBT 0000731). `useForm.onSubmit` cierra sobre el render inicial
-  // (mismo motivo que `rangeRef`), así que esto también necesita un ref.
+  // Unicidad por nivel (MantisBT 0000731); ref porque `onSubmit` cierra sobre el render inicial.
   const relevantExistingScales = useMemo(() => {
     const rows = existingScalesData?.rows ?? []
     return rows.filter((s) => s.teachingLevelIds.some((id) => teachingLevelIds.includes(id)))
@@ -157,6 +152,27 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const draftsRef = useRef(drafts)
   draftsRef.current = drafts
 
+  // Valida rango, duplicados y solapes contra `otras`; avisa y devuelve null si falla.
+  function validarEscala(value: unknown, otras: (RatingScaleNameFields & RatingScaleRangeFields)[]) {
+    const parsed = makeRatingScaleGradesSchema(rangeRef.current).safeParse(value)
+    if (!parsed.success) {
+      showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
+      return null
+    }
+    const duplicate = findDuplicateRatingScale(parsed.data, otras)
+    if (duplicate) {
+      const dup = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
+      showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, dup), "error")
+      return null
+    }
+    const overlapping = findOverlappingRatingScale(parsed.data, otras)
+    if (overlapping) {
+      showLocalNotice(ratingScaleOverlapMessage(overlapping), "error")
+      return null
+    }
+    return parsed.data
+  }
+
   const form = useForm({
     defaultValues: makeEmptyDraft(range),
     validators: {
@@ -164,33 +180,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       onSubmit: draftSchema,
     },
     onSubmit: ({ value, formApi }) => {
-      const r = rangeRef.current
-      const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
-      if (!parsed.success) {
-        showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
-        return
-      }
-      const duplicate = findDuplicateRatingScale(parsed.data, [
-        ...relevantExistingScalesRef.current,
-        ...draftsRef.current,
-      ])
-      if (duplicate) {
-        const duplicateValue =
-          duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
-        showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, duplicateValue), "error")
-        return
-      }
-      const overlapping = findOverlappingRatingScale(parsed.data, [
-        ...relevantExistingScalesRef.current,
-        ...draftsRef.current,
-      ])
-      if (overlapping) {
-        showLocalNotice(ratingScaleOverlapMessage(overlapping), "error")
-        return
-      }
-      setDrafts((prev) => [...prev, parsed.data])
+      const data = validarEscala(value, [...relevantExistingScalesRef.current, ...draftsRef.current])
+      if (!data) return
+      setDrafts((prev) => [...prev, data])
       showLocalNotice("Escala agregada a la lista.", "info")
-      formApi.reset(makeEmptyDraft(r))
+      formApi.reset(makeEmptyDraft(rangeRef.current))
     },
   })
 
@@ -209,31 +203,10 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
   function saveEditRow() {
     if (editingIndex == null || !editRow) return
-    const r = rangeRef.current
-    const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
-    if (!parsed.success) {
-      showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
-      return
-    }
     const otherDrafts = drafts.filter((_, i) => i !== editingIndex)
-    const duplicate = findDuplicateRatingScale(parsed.data, [
-      ...relevantExistingScales,
-      ...otherDrafts,
-    ])
-    if (duplicate) {
-      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
-      showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, value), "error")
-      return
-    }
-    const overlapping = findOverlappingRatingScale(parsed.data, [
-      ...relevantExistingScales,
-      ...otherDrafts,
-    ])
-    if (overlapping) {
-      showLocalNotice(ratingScaleOverlapMessage(overlapping), "error")
-      return
-    }
-    setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))
+    const data = validarEscala(editRow, [...relevantExistingScales, ...otherDrafts])
+    if (!data) return
+    setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? data : d)))
     cancelEdit()
   }
 
@@ -266,9 +239,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         academicPeriodId,
       })
     } catch (error) {
-      // El interceptor global también tostea el error; acá además lo
-      // mostramos en el banner del diálogo, que no queda detrás del overlay
-      // del modal.
+      // Además del toast global, se muestra en el banner del diálogo.
       showLocalNotice(getErrorMessage(error), "error")
       return
     }
@@ -308,12 +279,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
         </DialogHeader>
 
-        {/* Único bloque con scroll SOLO en el paso "continued" (la tabla de
-            escalas, potencialmente larga), con su propio padding -- el
-            `DialogContent` ya no tiene padding propio en ese paso (`p-0`),
-            así que el scroll queda al borde REAL del diálogo. El primer
-            paso (elegir niveles) es corto y nunca necesitó scroll, sigue
-            usando el padding base del `DialogContent`. */}
+        {/* Scroll propio solo en el paso "continued"; `DialogContent` va con `p-0`. */}
         <div
           className={cn(
             "flex min-w-0 flex-col gap-4",
@@ -453,13 +419,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
               <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
-                  // `mb-8`: dentro de este `<div>`, el mensaje de error de
-                  // cada nota es `absolute` (no ocupa lugar en el flujo, para
-                  // no desalinear las tres notas entre sí cuando solo una lo
-                  // muestra — ver los `<FieldError>` de abajo). Sin este
-                  // margen, al no haber escalas todavía en la lista (nada
-                  // entre este bloque y el `DialogFooter`), el texto flotante
-                  // quedaba pisando los botones Guardar/Cancelar.
+                  // `mb-8`: el error flotante de cada nota pisaría los botones del footer.
                   <div className="mb-8 flex flex-col gap-x-4 gap-y-4 sm:flex-row sm:items-end">
                     <form.Field name="notaMaxima">
                       {(field) => {
@@ -507,12 +467,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               }}
                               aria-invalid={isInvalid}
                             />
-                            {/* `absolute`: las tres notas comparten fila con
-                                `items-end` — si el mensaje ocupara su propio
-                                espacio en el flujo, el que lo mostrara
-                                quedaba más alto que los otros dos y
-                                desalineaba los inputs. Flotando debajo no
-                                mueve nada. */}
+                            {/* `absolute`: el error no desalinea las tres notas. */}
                             {isInvalid && (
                               <FieldError
                                 errors={field.state.meta.errors}
@@ -550,10 +505,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 if (e.target.value !== "" && Number.isNaN(value)) return
                                 field.handleChange(value)
                                 if (!Number.isFinite(value)) return
-                                // Misma idea que en "Nota máximo": el máximo
-                                // sigue al mínimo si ahora queda por debajo, y
-                                // la equivalente si queda fuera del nuevo
-                                // rango.
+                                // El máximo sigue al mínimo y la equivalente al nuevo rango.
                                 const { notaMaxima, notaEquivalente } = form.state.values
                                 const effectiveMax =
                                   Number.isFinite(notaMaxima) && notaMaxima < value
@@ -606,12 +558,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               }}
                               onBlur={() => {
                                 field.handleBlur()
-                                // Clamp al salir del campo, no en cada tecla
-                                // (si clampeara en cada `onChange`, escribir
-                                // un número de dos cifras por debajo del
-                                // mínimo de una cifra sería imposible: cada
-                                // dígito intermedio quedaría pisado por el
-                                // mínimo antes de terminar de tipear).
+                                // Clamp al salir: en cada tecla impediría tipear números de dos cifras.
                                 const { notaMinima, notaMaxima } = form.state.values
                                 const value = field.state.value
                                 if (!Number.isFinite(value)) return
@@ -658,10 +605,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                 <FieldVariantContext.Provider value="outlined">
                   <Table>
                     <TableHeader>
-                      {/* El encabezado no lleva fondo propio ni hover: comparte
-                        el de la tabla en reposo, igual que una fila sin el
-                        puntero encima. `has-aria-expanded` cubre el rato en que
-                        un menú de orden está abierto. */}
+                      {/* Sin fondo ni hover propio, como una fila en reposo. */}
                       <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
                         <TableHead className="text-foreground">
                           <ScaleSortableHeader
@@ -719,9 +663,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             onSortChange={setSort}
                           />
                         </TableHead>
-                        {/* Igual que en `DataTable`: la columna de acciones no
-                          rotula —el `th` solo reserva el ancho del bloque— y el
-                          título queda para lectores de pantalla. */}
+                        {/* Como en `DataTable`: acciones sin rótulo visible. */}
                         {actionsSpacerHeadCell}
                         <TableHead className="w-px text-foreground">
                           <span className="sr-only">Acciones</span>
@@ -768,9 +710,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   onChange={(e) => {
                                     const value = e.target.valueAsNumber
                                     if (e.target.value !== "" && Number.isNaN(value)) return
-                                    // La equivalente sigue al máximo/mínimo
-                                    // cuando queda fuera de rango — mismo
-                                    // criterio que en la fila de alta.
+                                    // La equivalente sigue al máximo/mínimo, como en la fila de alta.
                                     const equivalente = editRow.notaEquivalente
                                     patchEditRow({
                                       notaMaxima: value,
@@ -870,8 +810,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               </TableCell>
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
-                                {/* `true`: la fila en edición mantiene el bloque
-                                  fijo, no sujeto al hover. */}
+                                {/* `true`: la fila en edición mantiene el bloque fijo. */}
                                 <div className={actionsOverlayClass(true)}>
                                   <Tooltip>
                                     <TooltipTrigger

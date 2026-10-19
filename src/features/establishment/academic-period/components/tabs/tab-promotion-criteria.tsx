@@ -16,7 +16,7 @@ import { useCurriculumNodesQuery } from "@/features/establishment/academic-perio
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SelectItemsDialog } from "@/components/select-items-dialog"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
-import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
 import {
   promotionApprovalSchema,
   type PromotionApprovalValues,

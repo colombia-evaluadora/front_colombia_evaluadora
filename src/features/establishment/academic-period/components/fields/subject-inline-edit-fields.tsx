@@ -5,8 +5,8 @@ import type { NoticeVariant } from "@/components/notice/notice-banner"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import { ColorPickerPopover } from "@/features/establishment/academic-period/components/color-picker"
-import { EspecialidadSelect } from "@/features/establishment/academic-period/components/especialidad-select"
+import { ColorPickerPopover } from "@/features/establishment/academic-period/components/fields/color-picker"
+import { EspecialidadSelect } from "@/features/establishment/academic-period/components/fields/especialidad-select"
 import { SelectGeneralAreaDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-select-general-area"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
@@ -15,7 +15,7 @@ import {
   type SubjectDetail,
 } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useUpdateSubject } from "@/features/establishment/academic-period/api/mutations/update-subject"
-import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
+import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
 
 interface SubjectInlineEditFieldsProps {
   subject: SubjectDetail

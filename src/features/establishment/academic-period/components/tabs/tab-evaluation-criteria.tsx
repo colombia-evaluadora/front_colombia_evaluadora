@@ -79,7 +79,7 @@ const FIELDS = [
   },
 ] as const
 
-import { parseGradingRange } from "@/features/establishment/academic-period/components/grading-range"
+import { parseGradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 
 const DEFAULT_EMPTY_MESSAGE = "No hay opciones disponibles."
 const EMPTY_MESSAGES: Partial<Record<(typeof FIELDS)[number]["name"], string>> = {

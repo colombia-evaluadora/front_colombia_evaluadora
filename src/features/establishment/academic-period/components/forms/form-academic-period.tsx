@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { BreaksField } from "@/features/establishment/academic-period/components/breaks-field"
+import { BreaksField } from "@/features/establishment/academic-period/components/fields/breaks-field"
 
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 

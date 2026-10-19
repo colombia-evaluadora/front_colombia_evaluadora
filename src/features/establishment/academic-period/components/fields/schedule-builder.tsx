@@ -17,16 +17,16 @@ import {
 } from "@/components/ui/combobox"
 
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
-import { useUpdateHorario } from "../api/mutations/update-horario"
-import type { ScheduleEntry } from "../api/types/grade-config"
-import { useHorarioQuery } from "../api/query/use-horario"
+import { useUpdateHorario } from "@/features/establishment/academic-period/api/mutations/update-horario"
+import type { ScheduleEntry } from "@/features/establishment/academic-period/api/types/grade-config"
+import { useHorarioQuery } from "@/features/establishment/academic-period/api/query/use-horario"
 import {
   buildRuns,
   buildSlots,
   DAYS,
   type Jornada,
   type ScheduleSubject,
-} from "./schedule-data"
+} from "@/features/establishment/academic-period/utils/schedule-data"
 
 function subjectStyles(hex: string) {
   const normalized = hex.startsWith("#") ? hex : `#${hex}`

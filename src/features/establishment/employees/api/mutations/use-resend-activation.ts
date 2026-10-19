@@ -2,14 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
-/**
- * Reenvía el correo de activación de una cuenta pendiente. 204 si salió; 409
- * si la cuenta ya no está pendiente (el mensaje del backend se muestra tal
- * cual vía `getErrorMessage`). Exportada: `add-establishment-page.tsx` la usa
- * para mandar la invitación de rector/secretaria recién después de guardar el
- * establecimiento (ver `enviarInvitacion` en `registerFuncionario`).
- */
+/** 204 si se envió; 409 si la cuenta ya no está pendiente. */
 export async function resendActivation(correo: string): Promise<void> {
   await api.post("/auth/register/cval/funcionario/reenviar-activacion", { correo })
 }
@@ -26,7 +21,7 @@ export function useResendActivation({ mutationConfig }: UseResendActivationOptio
     mutationFn: resendActivation,
     ...rest,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["funcionarios-estado-cuenta"] })
+      queryClient.invalidateQueries({ queryKey: employeeKeys.estadoCuentaAll })
       onSuccess?.(...args)
     },
   })

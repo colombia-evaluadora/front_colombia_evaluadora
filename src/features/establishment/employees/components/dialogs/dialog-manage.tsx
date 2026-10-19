@@ -1,61 +1,24 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { z } from "zod"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
   CheckIcon,
   ControlPointIcon,
-  LockIcon,
   PencilIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
-import {
-  ComboboxField,
-  ComboboxFieldContent,
-  ComboboxFieldItem,
-  ComboboxFieldTrigger,
-  ComboboxFieldValue,
-} from "@/components/ui/combobox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  TableSortableHeader,
-  compareBySortKey,
-  type TableSort,
-} from "@/components/table-sort-header"
-import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toSelectOptions } from "@/lib/catalog-options"
 import { employeeInvitationNotice, SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
-import { optionalImageFile } from "@/lib/image-file"
-import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { useLogout, useUser } from "@/lib/auth"
@@ -85,297 +48,38 @@ import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/qu
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useAsistenteFuncionario } from "@/features/establishment/employees/hooks/use-asistente-funcionario"
-import type {
-  Employee,
-  EmployeeStatus,
-} from "@/features/establishment/employees/api/types/employee"
-import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
+import type { Employee } from "@/features/establishment/employees/api/types/employee"
+import type { Permission } from "@/features/establishment/institution/api/types/permission"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
-import { validarFormatoPersona } from "@/features/establishment/shared/person-field-rules"
-import {
-  createAdditionalInfoFromEmployee,
-  EmployeeAdditionalInfoForm,
-  type EmployeeAdditionalInfoValue,
-} from "@/features/establishment/employees/components/forms/form-employee-additional-info"
+import { createAdditionalInfoFromEmployee, type EmployeeAdditionalInfoValue } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { toEmailInput } from "@/lib/text-input"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
+import {
+  computePersonErrors,
+  createPermissionDraft,
+  EMPLOYEE_FIELD_PREFIX,
+  permissionDraftSchema,
+  type PermissionDraft,
+} from "@/features/establishment/employees/components/dialogs/dialog-manage/schema"
+import {
+  buildDraftSnapshot,
+  buildEmployeeStatus,
+  createEmptyPerson,
+  createInitialAdditionalInfo,
+  DIRECTOR_GRUPO_ROLE_CODE,
+  hasAdditionalInfoData,
+} from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
+import { PermissionsDialog } from "@/features/establishment/employees/components/dialogs/dialog-manage/permissions-dialog"
+import { AdditionalInfoDialog } from "@/features/establishment/employees/components/dialogs/dialog-manage/additional-info-dialog"
+import { SelfEmailChangedDialog } from "@/features/establishment/employees/components/dialogs/dialog-manage/self-email-changed-dialog"
 
 interface ManageEmployeeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   employeeId?: number | null
-}
-
-interface PermissionDraft {
-  order: string
-  roleId: number | null
-  campusId: number | null
-  workScheduleId: number | null
-  status: PermissionStatus | ""
-}
-
-/**
- * Los cinco campos del permiso son obligatorios (llevan asterisco). El orden
- * llega como texto del `input[type=number]`, así que se valida como texto y se
- * convierte aparte: un `number` vacío llega como `NaN` y el mensaje sería el
- * de tipo, no el de "falta el dato".
- */
-const permissionDraftSchema = z.object({
-  order: z
-    .string()
-    .trim()
-    .min(1, "Ingresa el orden.")
-    .refine((value) => Number.isInteger(Number(value)) && Number(value) > 0, {
-      message: "El orden debe ser un número entero mayor que cero.",
-    }),
-  // `custom` y no `number`: al validar que no es `null`, el resultado ya sale
-  // tipado como `number` y el permiso se arma sin castear.
-  roleId: z.custom<number>((value) => typeof value === "number", {
-    message: "Selecciona el rol.",
-  }),
-  campusId: z.custom<number>((value) => typeof value === "number", {
-    message: "Selecciona la sede educativa.",
-  }),
-  workScheduleId: z.custom<number>((value) => typeof value === "number", {
-    message: "Selecciona la jornada.",
-  }),
-  // `custom` y no `string`: al validar que no está vacío, el resultado ya sale
-  // tipado como `PermissionStatus` y el permiso se arma sin castear.
-  status: z.custom<PermissionStatus>((value) => typeof value === "string" && value !== "", {
-    message: "Selecciona el estado.",
-  }),
-})
-
-/**
- * ¿La información complementaria trae algo? Se usa al abrir el diálogo en modo
- * edición: si el funcionario ya llega con estos datos del backend, la sección
- * cuenta como guardada.
- */
-function hasAdditionalInfoData(value: EmployeeAdditionalInfoValue): boolean {
-  return Boolean(
-    value.address.trim() ||
-      value.employeeClass?.id ||
-      value.educationLevel?.id ||
-      value.grade?.id ||
-      value.highestEducationLevel?.id ||
-      value.fundingSource?.id ||
-      value.functionalPosition?.id ||
-      value.employmentType?.id,
-  )
-}
-
-/**
- * Badge por estado del permiso, con el mismo criterio que los estados de
- * periodo académico: `soft` y el color según la carga del estado. Lo consumen
- * el select del formulario y la columna Estado de la tabla, para que el mismo
- * dato no se pinte de dos maneras distintas en el mismo diálogo.
- */
-const PERMISSION_STATUS_BADGE: Record<
-  PermissionStatus,
-  Pick<ComponentProps<typeof Badge>, "variant" | "color">
-> = {
-  ACTIVE: { variant: "soft", color: "success" },
-  SUSPENDED: { variant: "soft", color: "destructive" },
-}
-
-/** Columnas por las que se puede ordenar la tabla de permisos. */
-type PermissionSortKey = "order" | "role" | "campus" | "workSchedule" | "status"
-
-/** El valor plano por el que ordena cada columna (los catálogos son objetos). */
-function permissionSortValue(permission: Permission, key: PermissionSortKey): unknown {
-  switch (key) {
-    case "order":
-      return permission.order
-    case "role":
-      return permission.role.name
-    case "campus":
-      return permission.campus.name
-    case "workSchedule":
-      return permission.workSchedule.name
-    case "status":
-      return permission.status
-  }
-}
-
-/*
- * Columna de acciones al estilo de `DataTable` y de la tabla de escalas de
- * valoración: la celda es `sticky` y de 1px —los botones son absolutos, su
- * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
- * ancho en el flujo, para que no se lleve una tajada del reparto.
- */
-/** TROL.CODIGO del director de grupo: ese permiso lo gestiona el grupo, no este diálogo. */
-const DIRECTOR_GRUPO_ROLE_CODE = "DIRECTOR_GRUPO"
-
-const PERMISSION_ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
-const PERMISSION_ACTIONS_SPACER_WIDTH = 96
-
-const PERMISSION_ACTIONS_SPACER_CELL = (
-  <td aria-hidden className="p-0">
-    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
-  </td>
-)
-
-const PERMISSION_ACTIONS_SPACER_HEAD = (
-  <th aria-hidden className="p-0">
-    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
-  </th>
-)
-
-/*
- * El bloque va a sangre contra el borde derecho, con el alto completo de la
- * fila, y aparece con el mismo fade que el hover. El fondo es el color del
- * hover de `TableRow` (`bg-muted/50`) ya resuelto: acá hace falta opaco porque
- * tapa las columnas que pasan por debajo al scrollear, y se mezcla contra
- * `--popover` —la tabla vive dentro de un Dialog—.
- */
-const permissionActionsOverlayClass = () =>
-  cn(
-    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
-    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--popover))]",
-    "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
-  )
-
-function createEmptyPerson(): Person {
-  return {
-    documentType: null,
-    identification: "",
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    secondLastName: "",
-    birthDate: "",
-    gender: null,
-    email: "",
-    phone: "",
-  }
-}
-
-function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
-  return {
-    employeeClass: null,
-    educationLevel: null,
-    grade: null,
-    highestEducationLevel: null,
-    fundingSource: null,
-    functionalPosition: null,
-    employmentType: null,
-    address: "",
-  }
-}
-
-function isBlankValue(value: string | null | undefined): boolean {
-  return value == null || value.trim() === ""
-}
-
-/**
- * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
- * correo y género — no llevan asterisco en el formulario (`UserDetailsForm`
- * lo comparte con otras pantallas donde son opcionales), pero acá son
- * obligatorios de verdad: `/register/cval/funcionario`
- * (`RegisterUsuarioRequest`, auth-center) y `fn_usu_crear` (SQL) los exigen
- * — el correo es la cuenta del funcionario y a donde llega la invitación de
- * activación, y género (REV: se había sacado, el negocio volvió a pedirlo)
- * nunca dejó de ser `@NotNull`/obligatorio en el backend. Fecha de
- * nacimiento, en cambio, sigue sin validarse acá: es columna nullable de
- * verdad. Las rutas coinciden con las que `UserDetailsForm` usa para ubicar
- * el mensaje debajo de cada campo, por eso van prefijadas con `employee`.
- *
- * Sin contraseña: el alta ya no la pide. El backend crea la cuenta pendiente
- * de activación y manda el enlace "Activa tu cuenta" (7 días) al correo,
- * donde la persona define su contraseña.
- */
-const employeePersonSchema = z
-  .object({
-    person: z.custom<Person>(),
-  })
-  .superRefine(({ person }, ctx) => {
-    const require = (path: string, value: string | null | undefined, message: string) => {
-      if (isBlankValue(value)) {
-        ctx.addIssue({ code: "custom", path: [path], message })
-      }
-    }
-
-    if (!person.documentType?.id) {
-      ctx.addIssue({ code: "custom", path: ["documentType"], message: "Selecciona el tipo de documento." })
-    }
-    require("identification", person.identification, "Ingresa el número de documento.")
-    require("firstName", person.firstName, "Ingresa el primer nombre.")
-    require("lastName", person.lastName, "Ingresa el primer apellido.")
-
-    // Formato de cada campo — nombres sin caracteres especiales, documento
-    // de 3 a 15 dígitos, teléfono de hasta 10, correo válido y mayoría de
-    // edad. Vive en un módulo compartido con rector/secretaria: las dos
-    // pantallas dan de alta a la misma clase de persona, y cuando cada una
-    // tenía su copia se desincronizaron (institución verificaba el correo y
-    // esta no, así que el mismo dato pasaba acá y lo rechazaba el backend).
-    validarFormatoPersona(person, ctx)
-
-    // Persona SIN `id` todavía: va a `POST /register/cval/funcionario`, que
-    // exige `@NotBlank` en email (mismo criterio que rector/secretaria en
-    // `makePersonSchema`, ver ese archivo). Persona CON `id` va a PUT
-    // (tolera estos campos vacíos), así que acá solo se exigen al crear.
-    if (!person.id) {
-      require("email", person.email, "Ingresa el correo electrónico.")
-      require("gender", person.gender?.name, "Selecciona el género.")
-    }
-  })
-
-function computePersonErrors(
-  person: Person | null,
-  // La foto es estado aparte (viaja como binario del multipart, no como JSON),
-  // pero se valida en el mismo paso: es el último punto antes de armar el
-  // envío, y sin esto un archivo fuera de regla llegaba entero al gateway.
-  photo?: File | null
-): Record<string, string> {
-  const nextErrors: Record<string, string> = {}
-
-  const parsedPhoto = optionalImageFile.safeParse(photo)
-  if (!parsedPhoto.success) {
-    nextErrors[`${EMPLOYEE_FIELD_PREFIX}.photo`] =
-      parsedPhoto.error.issues[0]?.message ?? "Archivo no válido."
-  }
-
-  if (!person) {
-    return nextErrors
-  }
-
-  const parsed = employeePersonSchema.safeParse({ person })
-  if (!parsed.success) {
-    for (const issue of parsed.error.issues) {
-      nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
-    }
-  }
-
-  return nextErrors
-}
-
-const EMPLOYEE_FIELD_PREFIX = "employee"
-
-function createPermissionDraft(nextOrder = 1): PermissionDraft {
-  return {
-    order: String(nextOrder),
-    roleId: null,
-    campusId: null,
-    workScheduleId: null,
-    status: "",
-  }
-}
-
-function buildDraftSnapshot(
-  person: Person,
-  additionalInfo: EmployeeAdditionalInfoValue,
-  permissions: Permission[],
-): string {
-  const { accountExists: _accountExists, ...personRest } = person
-  return JSON.stringify({ person: personRest, additionalInfo, permissions })
-}
-
-function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
-  return permissions.some((permission) => permission.status === "ACTIVE")
-    ? "ACTIVE"
-    : "SUSPENDED"
 }
 
 export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
@@ -432,8 +136,6 @@ function ManageEmployeeDialogContent({
   const [permissionErrors, setPermissionErrors] = useState<Record<string, string>>({})
   // Ídem para los datos de la persona, con las rutas de `UserDetailsForm`.
   const [personErrors, setPersonErrors] = useState<Record<string, string>>({})
-  // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
-  const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   /*
    * Secciones opcionales ya confirmadas con su botón Guardar. Es lo que decide
    * qué botón se ve y con qué ícono, y va aparte de los datos a propósito:
@@ -492,14 +194,7 @@ function ManageEmployeeDialogContent({
   const permissionsSnapshotRef = useRef<string>(JSON.stringify([]))
   const additionalInfoSnapshotRef = useRef<string>(JSON.stringify(createInitialAdditionalInfo()))
 
-  const sortedPermissions = useMemo(() => {
-    if (!permissionSort) return permissions
-    const { key, dir } = permissionSort
-    const sorted = [...permissions].sort((a, b) =>
-      compareBySortKey(permissionSortValue(a, key), permissionSortValue(b, key)),
-    )
-    return dir === "desc" ? sorted.reverse() : sorted
-  }, [permissions, permissionSort])
+
 
   /**
    * id efectivo del empleado: el de la URL en edición, o el recién creado
@@ -553,10 +248,6 @@ function ManageEmployeeDialogContent({
         : "Esta sede no tiene un periodo académico activo con jornada configurada."
   const workScheduleEmptyShortMessage =
     sedeTienePeriodos === false ? "Sin periodos académicos" : "Sin jornada activa"
-  // Estado del permiso: dominio fijo (TSEDE_USUARIO.TLV_ESTADO, no un
-  // catálogo real), value por `.code` a propósito — ver
-  // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
-  const permissionStatusItems = PERMISSION_STATUS_OPTIONS.map((status) => ({ value: status.code, label: status.name }))
 
   // Revalida en cada cambio tras un intento de guardar fallido, para que el
   // borde rojo desaparezca apenas el campo queda completo.
@@ -605,7 +296,7 @@ function ManageEmployeeDialogContent({
   }
 
   // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
-  // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
+  // activo por documento -- SIN tocar `person`, que ya
   // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
   // que el documento cambió tras el match, `form-user-details.tsx`). Sin
   // esto, `createdEmployeeId` quedaba apuntando al funcionario equivocado:
@@ -1155,7 +846,7 @@ function ManageEmployeeDialogContent({
       originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds])
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
-      void queryClient.invalidateQueries({ queryKey: ["employees"] })
+      void queryClient.invalidateQueries({ queryKey: employeeKeys.all })
       void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
 
       setPermissionsSaved(true)
@@ -1354,414 +1045,43 @@ function ManageEmployeeDialogContent({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={permissionsDialogOpen} onOpenChange={handlePermissionsDialogOpenChange}>
-        <DialogContent
-          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
-          showCloseButton={false}
-        >
-          <DialogHeader className="shrink-0 px-6 pt-6">
-            <DialogTitle>Asignar permisos</DialogTitle>
-          </DialogHeader>
+      <PermissionsDialog
+        open={permissionsDialogOpen}
+        onOpenChange={handlePermissionsDialogOpenChange}
+        permissionDraft={permissionDraft}
+        onDraftChange={setPermissionDraft}
+        permissionErrors={permissionErrors}
+        roleItems={roleItems}
+        campusItems={campusItems}
+        workScheduleItems={workScheduleItems}
+        isLoadingSedeJornadas={isLoadingSedeJornadas}
+        workScheduleEmptyMessage={workScheduleEmptyMessage}
+        workScheduleEmptyShortMessage={workScheduleEmptyShortMessage}
+        permissions={permissions}
+        onAdd={addPermission}
+        onRemove={removePermission}
+        hasChanges={hasPermissionsChanges}
+        onSave={closePermissionsDialog}
+        isSaving={isSavingPermissions}
+      />
 
-          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6 pt-2">
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-0">
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["order"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
-              <Input
-                id="permission-order"
-                placeholder="Agregar"
-                type="number"
-                min={1}
-                value={permissionDraft.order}
-                onChange={(event) =>
-                  setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
-                }
-              />
-              <FieldError>{permissionErrors["order"]}</FieldError>
-            </Field>
-
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["roleId"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
-              <ComboboxField
-                id="permission-role"
-                value={permissionDraft.roleId}
-                onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, roleId: value ?? null }))
-                }
-                items={toSelectItemsMap(roleItems)}
-              >
-                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["roleId"])}>
-                  <ComboboxFieldValue placeholder="Seleccionar" />
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  {roleItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
-                      {item.label}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxFieldContent>
-              </ComboboxField>
-              <FieldError>{permissionErrors["roleId"]}</FieldError>
-            </Field>
-
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["campusId"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="permission-campus">Sede educativa*</FieldLabel>
-              <ComboboxField
-                id="permission-campus"
-                value={permissionDraft.campusId}
-                onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({
-                    ...prev,
-                    campusId: value ?? null,
-                    workScheduleId: null,
-                  }))
-                }
-                items={toSelectItemsMap(campusItems)}
-              >
-                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["campusId"])}>
-                  <ComboboxFieldValue placeholder="Seleccionar" />
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  {campusItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value} title={item.label}>
-                      {item.label}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxFieldContent>
-              </ComboboxField>
-              <FieldError>{permissionErrors["campusId"]}</FieldError>
-            </Field>
-
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["workScheduleId"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
-              <ComboboxField
-                id="permission-schedule"
-                value={permissionDraft.workScheduleId}
-                onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, workScheduleId: value ?? null }))
-                }
-                items={toSelectItemsMap(workScheduleItems)}
-                disabled={
-                  permissionDraft.campusId == null || isLoadingSedeJornadas || workScheduleItems.length === 0
-                }
-              >
-                <ComboboxFieldTrigger
-                  aria-invalid={Boolean(permissionErrors["workScheduleId"])}
-                  title={
-                    permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas
-                      ? workScheduleEmptyMessage
-                      : undefined
-                  }
-                >
-                  <ComboboxFieldValue
-                    placeholder={
-                      isLoadingSedeJornadas
-                        ? "Cargando..."
-                        : permissionDraft.campusId != null && workScheduleItems.length === 0
-                          ? workScheduleEmptyShortMessage
-                          : "Seleccionar"
-                    }
-                  />
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  {workScheduleItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
-                      {item.label}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxFieldContent>
-              </ComboboxField>
-              <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
-            </Field>
-
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["status"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="permission-status">Estado*</FieldLabel>
-              <Select
-                id="permission-status"
-                value={permissionDraft.status}
-                onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({
-                    ...prev,
-                    status: (value ?? "") as PermissionStatus | "",
-                  }))
-                }
-                items={permissionStatusItems}
-              >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["status"])}>
-                  <SelectValue placeholder="Seleccionar">
-                    {(value) => {
-                      const badge = PERMISSION_STATUS_BADGE[value as PermissionStatus]
-                      if (!badge) return "Seleccionar"
-                      const label =
-                        permissionStatusItems.find((item) => item.value === value)?.label ?? value
-                      return (
-                        <Badge {...badge} className="text-xs">
-                          {label}
-                        </Badge>
-                      )
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {permissionStatusItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError>{permissionErrors["status"]}</FieldError>
-            </Field>
-
-            <div className="flex w-full flex-col gap-1.5 sm:w-auto">
-              <FieldLabel className="invisible">Agregar</FieldLabel>
-              <Button
-                variant="fill"
-                color="primary"
-                onClick={addPermission}
-                disabled={!permissionDraftSchema.safeParse(permissionDraft).success}
-                className="w-full sm:w-auto"
-              >
-                <ControlPointIcon data-icon="inline-start" />
-                Agregar
-              </Button>
-            </div>
-          </div>
-
-          <NoticeOutlet />
-
-          {permissions.length > 0 && (
-            <Table containerClassName="max-h-[36vh] overflow-y-auto">
-              <TableHeader>
-                <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
-                  <TableHead className="text-foreground">
-                    <TableSortableHeader
-                      title="Orden"
-                      sortKey="order"
-                      sort={permissionSort}
-                      onSortChange={setPermissionSort}
-                    />
-                  </TableHead>
-                  <TableHead className="text-foreground">
-                    <TableSortableHeader
-                      title="Rol"
-                      sortKey="role"
-                      sort={permissionSort}
-                      onSortChange={setPermissionSort}
-                    />
-                  </TableHead>
-                  <TableHead className="text-foreground">
-                    <TableSortableHeader
-                      title="Sede educativa"
-                      sortKey="campus"
-                      sort={permissionSort}
-                      onSortChange={setPermissionSort}
-                    />
-                  </TableHead>
-                  <TableHead className="text-foreground">
-                    <TableSortableHeader
-                      title="Jornada"
-                      sortKey="workSchedule"
-                      sort={permissionSort}
-                      onSortChange={setPermissionSort}
-                    />
-                  </TableHead>
-                  <TableHead className="text-foreground">
-                    <TableSortableHeader
-                      title="Estado"
-                      sortKey="status"
-                      sort={permissionSort}
-                      onSortChange={setPermissionSort}
-                    />
-                  </TableHead>
-                  {PERMISSION_ACTIONS_SPACER_HEAD}
-                  <TableHead className="w-px text-foreground">
-                    <span className="sr-only">Acciones</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedPermissions.map((permission) => (
-                  <TableRow
-                    key={`${permission.role.id}-${permission.campus.id}-${permission.order}`}
-                    className="group/row"
-                  >
-                    <TableCell className="font-medium">{permission.order}</TableCell>
-                    <TableCell>{permission.role.name}</TableCell>
-                    <TableCell>{permission.campus.name}</TableCell>
-                    <TableCell>{permission.workSchedule.name}</TableCell>
-                    <TableCell>
-                      <Badge {...PERMISSION_STATUS_BADGE[permission.status]}>
-                        {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
-                      </Badge>
-                    </TableCell>
-                    {PERMISSION_ACTIONS_SPACER_CELL}
-                    <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
-                      <div className={permissionActionsOverlayClass()}>
-                        {permission.role.code === DIRECTOR_GRUPO_ROLE_CODE ? (
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <span
-                                  className="inline-flex size-8 items-center justify-center text-muted-foreground"
-                                  aria-label="Permiso de director de grupo: se gestiona desde el grupo"
-                                />
-                              }
-                            >
-                              <LockIcon />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              El director de grupo se asigna y se quita desde el grupo.
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          <ConfirmRemoveButton
-                            label={`Quitar permiso ${permission.order}`}
-                            description={
-                              <>
-                                Se quitará el permiso de {permission.role.name} en{" "}
-                                {permission.campus.name}. Esta acción no se puede deshacer.
-                              </>
-                            }
-                            onConfirm={() => removePermission(permission)}
-                          />
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          </div>
-
-          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
-            {hasPermissionsChanges && (
-              <Button
-                variant="fill"
-                color="primary"
-                size="sm"
-                onClick={() => void closePermissionsDialog()}
-                disabled={isSavingPermissions}
-              >
-                <CheckIcon data-icon="inline-start" />
-                {isSavingPermissions ? "Guardando..." : "Guardar"}
-              </Button>
-            )}
-            <Button
-              variant="fill"
-              color="neutral"
-              size="sm"
-              onClick={() => handlePermissionsDialogOpenChange(false)}
-              disabled={isSavingPermissions}
-            >
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={additionalInfoDialogOpen} onOpenChange={handleAdditionalInfoDialogOpenChange}>
-        <DialogContent
-          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
-          showCloseButton={false}
-        >
-          <DialogHeader className="shrink-0 px-6 pt-6">
-            <DialogTitle>Información complementaria</DialogTitle>
-          </DialogHeader>
-
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
-            <NoticeOutlet className="mb-2" />
-
-            <EmployeeAdditionalInfoForm
-              value={additionalInfo}
-              onChange={setAdditionalInfo}
-            />
-          </div>
-
-          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
-            {hasAdditionalInfoChanges && (
-              <Button
-                variant="fill"
-                color="primary"
-                size="sm"
-                onClick={() => void closeAdditionalInfoDialog()}
-                disabled={updateAdditionalInfoMutation.isPending}
-              >
-                <CheckIcon data-icon="inline-start" />
-                {updateAdditionalInfoMutation.isPending ? "Guardando..." : "Guardar"}
-              </Button>
-            )}
-            <Button
-              variant="fill"
-              color="neutral"
-              size="sm"
-              onClick={() => handleAdditionalInfoDialogOpenChange(false)}
-              disabled={updateAdditionalInfoMutation.isPending}
-            >
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdditionalInfoDialog
+        open={additionalInfoDialogOpen}
+        onOpenChange={handleAdditionalInfoDialogOpenChange}
+        value={additionalInfo}
+        onChange={setAdditionalInfo}
+        hasChanges={hasAdditionalInfoChanges}
+        onSave={closeAdditionalInfoDialog}
+        isSaving={updateAdditionalInfoMutation.isPending}
+      />
 
       {/* Bloqueante a propósito: no hay "Cancelar" — ver el comentario de
           `handleConfirmSelfEmailChanged`. */}
-      <Dialog
+      <SelfEmailChangedDialog
         open={selfEmailChangedDialogOpen}
-        onOpenChange={(next) => {
-          if (!next) void handleConfirmSelfEmailChanged()
-        }}
-      >
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Correo electrónico actualizado</DialogTitle>
-            <DialogDescription>
-              El correo electrónico se actualizó correctamente. Por seguridad, se cerrará su sesión.
-              Le llegará un correo de activación a su nuevo correo electrónico: active la cuenta
-              desde ese enlace y defina su contraseña para volver a iniciar sesión.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="px-6 pb-6 sm:justify-end">
-            <Button
-              variant="fill"
-              color="primary"
-              size="sm"
-              onClick={() => void handleConfirmSelfEmailChanged()}
-              disabled={logoutMutation.isPending}
-            >
-              {logoutMutation.isPending ? "Cerrando sesión..." : "Entendido"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onConfirm={handleConfirmSelfEmailChanged}
+        isPending={logoutMutation.isPending}
+      />
     </>
   )
 }

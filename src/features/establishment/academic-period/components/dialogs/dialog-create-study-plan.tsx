@@ -53,7 +53,7 @@ import { QuickCreateSubjectDialog } from "./dialog-quick-create-subject"
 import {
   SubjectInlineEditFields,
   type SubjectInlineEditFieldsHandle,
-} from "@/features/establishment/academic-period/components/subject-inline-edit-fields"
+} from "@/features/establishment/academic-period/components/fields/subject-inline-edit-fields"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
@@ -63,7 +63,7 @@ import {
   studyPlanFormSchema,
   type StudyPlanFormValues,
 } from "@/features/establishment/academic-period/api/schema"
-import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
 
 const EMPTY: StudyPlanFormValues = {
   asignaturaId: 0,

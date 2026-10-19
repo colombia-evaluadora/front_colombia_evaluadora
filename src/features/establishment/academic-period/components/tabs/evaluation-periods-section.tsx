@@ -6,7 +6,7 @@ import { SpinnerIcon } from "@/components/ui/icons"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { plegarTexto } from "@/features/assistant/lib/campos-ui"
 import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
-import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
+import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
 
 const TabEvaluationPeriods = lazy(() =>
   import("@/features/establishment/academic-period/components/tabs/tab-evaluation-periods").then(

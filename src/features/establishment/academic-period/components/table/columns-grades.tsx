@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
-import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
+import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
 import { CreateGradeDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade"
 import { DeleteGradeDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-grade"
 

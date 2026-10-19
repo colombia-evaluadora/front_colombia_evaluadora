@@ -4,16 +4,14 @@ import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import type { MutationConfig } from "@/lib/react-query"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
 export interface DeleteEstablishmentResult {
   status: "ok" | "error"
   message: string
 }
 
-/**
- * PUT, no DELETE: no es un borrado real, es `fn_est_soft_delete` (ACTIVE=
- * FALSE) — el SSO real lo registra como `PUT /establecimientos/:ID`.
- */
+// PUT: es borrado lógico (`fn_est_soft_delete`).
 function deleteEstablishment(id: number): Promise<DeleteEstablishmentResult> {
   const url = apiPath(`/establishments/${id}`, `/establecimientos/${id}`)
   return env.ENABLE_API_MOCKING ? api.delete(url) : api.put(url)
@@ -32,7 +30,7 @@ export function useDelete({
     mutationFn: deleteEstablishment,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["establishments"] })
+      queryClient.invalidateQueries({ queryKey: establishmentKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

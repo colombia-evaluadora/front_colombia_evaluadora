@@ -25,11 +25,11 @@ import {
   type RatingScaleTypeOption,
   type RatingSymbol,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
-import type { GradingRange } from "@/features/establishment/academic-period/components/grading-range"
+import type { GradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 import {
   RatingSymbolSelect,
   RatingSymbolView,
-} from "@/features/establishment/academic-period/components/rating-symbol"
+} from "@/features/establishment/academic-period/components/fields/rating-symbol"
 import { DeleteRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-rating-scale"
 
 /** Los campos que la fila deja editar en línea. */

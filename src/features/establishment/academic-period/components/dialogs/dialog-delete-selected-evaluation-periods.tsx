@@ -21,7 +21,7 @@ import { useDeleteEvaluationPeriodsBulk } from "@/features/establishment/academi
 import {
   formatBulkDeleteError,
   summarizeBulkDelete,
-} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+} from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
 
 interface DeleteSelectedEvaluationPeriodsDialogProps {
   selectedIds: string[]

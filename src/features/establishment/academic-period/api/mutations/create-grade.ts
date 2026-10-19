@@ -6,7 +6,7 @@ import type { CreateGradeRequest } from "@/features/establishment/academic-perio
 import {
   extractWriteResultId,
   type WriteResultResponse,
-} from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+} from "@/features/establishment/academic-period/api/utils/extract-write-result"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 

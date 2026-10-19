@@ -40,7 +40,7 @@ import { DeleteSelectedRatingScalesDialog } from "@/features/establishment/acade
 import { DeleteSelectedRatingScaleValoracionesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scale-valoraciones"
 import { ExportRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-rating-scales"
 import { ExportSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-rating-scales"
-import { RatingSymbolSelect } from "@/features/establishment/academic-period/components/rating-symbol"
+import { RatingSymbolSelect } from "@/features/establishment/academic-period/components/fields/rating-symbol"
 import { createRatingScaleLevelColumns } from "@/features/establishment/academic-period/components/table/columns-rating-scales"
 import {
   createRatingScaleDetailColumns,
@@ -52,13 +52,13 @@ import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
   type GradingRange,
-} from "@/features/establishment/academic-period/components/grading-range"
+} from "@/features/establishment/academic-period/utils/grading-range"
 import {
   findDuplicateRatingScale,
   findOverlappingRatingScale,
   ratingScaleDuplicateMessage,
   ratingScaleOverlapMessage,
-} from "@/features/establishment/academic-period/components/rating-scale-duplicates"
+} from "@/features/establishment/academic-period/utils/rating-scale-duplicates"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
 interface TabRatingScalesProps {
@@ -256,7 +256,7 @@ function ScalesSubTable({
         setAddDraft(makeEmptyScaleDraft(range))
       },
       onError: () => {
-        notify("No se pudo agregar la escala de valoraciÃ³n.", {
+        notify("No se pudo agregar la escala de valoración.", {
           variant: "error",
         })
       },
@@ -463,7 +463,7 @@ function ScalesSubTable({
                 </TableCell>
                 <TableCell>
                   <Input
-                    aria-label="AbreviaciÃ³n"
+                    aria-label="Abreviación"
                     placeholder="Agregar"
                     value={addDraft.abreviacion}
                     onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
@@ -472,7 +472,7 @@ function ScalesSubTable({
                 </TableCell>
                 <TableCell>
                   <Input
-                    aria-label="Nota mÃ¡ximo"
+                    aria-label="Nota máximo"
                     placeholder="Agregar"
                     type="number"
                     step="0.1"
@@ -493,7 +493,7 @@ function ScalesSubTable({
                 </TableCell>
                 <TableCell>
                   <Input
-                    aria-label="Nota mÃ­nimo"
+                    aria-label="Nota mínimo"
                     placeholder="Agregar"
                     type="number"
                     step="0.1"

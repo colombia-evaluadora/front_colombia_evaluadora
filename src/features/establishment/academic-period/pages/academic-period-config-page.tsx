@@ -34,12 +34,12 @@ import type {
 } from "@/features/establishment/academic-period/api/schema"
 import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
 import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
-import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/evaluation-periods-section"
+import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/tabs/evaluation-periods-section"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
   type Jornada,
-} from "@/features/establishment/academic-period/components/schedule-data"
+} from "@/features/establishment/academic-period/utils/schedule-data"
 
 const FORM_ID = "academic-period-config-form"
 

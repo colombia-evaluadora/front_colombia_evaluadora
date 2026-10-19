@@ -8,7 +8,7 @@ import type { CreateAcademicPeriodRequest } from "@/features/establishment/acade
 import {
   extractWriteResultId,
   type WriteResultResponse,
-} from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+} from "@/features/establishment/academic-period/api/utils/extract-write-result"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 
 export function toCreateAcademicPeriodRequest(
