@@ -1,8 +1,12 @@
-import type { ReactNode } from "react"
+"use no memo"
+
+import type { ColumnDef } from "@tanstack/react-table"
 
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
+import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, PencilIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Select,
   SelectContent,
@@ -10,36 +14,59 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useDataTable } from "@/hooks/use-data-table"
 import { cn } from "@/lib/utils"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
-/** Marco común de las dos tablas: título, botón de alta, cabecera y vacío. */
-export function TablaParametros({
+/** Fila de la tabla: `fila` null es el alta que se está escribiendo. */
+export interface FilaParametro<T> {
+  id: string
+  fila: T | null
+}
+
+/** Ancho de la columna de acciones: dos botones (Modificar + Eliminar o ✓ + ✕). */
+export const ACCIONES_SIZE = 96
+
+const sinCambio = () => {}
+
+/**
+ * Marco común de las dos tablas sobre `DataTable`. Son listas cortas (un
+ * registro por grado o calendario), así que se muestran completas sin paginar.
+ */
+export function TablaParametros<T>({
   titulo,
   agregarLabel,
-  columnas,
-  vacio,
+  columns,
+  data,
+  editandoId,
+  emptyMessage,
   puedeAgregar,
   onAgregar,
   onSubmit,
-  children,
 }: {
   titulo: string
   agregarLabel: string
-  columnas: ReactNode
-  vacio: string | null
+  columns: ColumnDef<FilaParametro<T>>[]
+  data: FilaParametro<T>[]
+  /** id de la fila en edición: deja fijos sus botones de guardar y cancelar. */
+  editandoId: string | null
+  emptyMessage: string
   puedeAgregar: boolean
   onAgregar: () => void
   onSubmit: (e: React.FormEvent) => void
-  children: ReactNode
 }) {
+  const { table } = useDataTable({
+    columns,
+    data,
+    pageCount: 1,
+    getRowId: (row) => row.id,
+    pageIndex: 0,
+    pageSize: Math.max(data.length, 1),
+    goToPage: sinCambio,
+    setPageSize: sinCambio,
+    sorting: [],
+    setSorting: sinCambio,
+  })
+
   return (
     <form onSubmit={onSubmit} aria-label={titulo} className="flex min-w-0 flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
@@ -51,30 +78,18 @@ export function TablaParametros({
           disabled={!puedeAgregar}
           onClick={onAgregar}
         >
-          <PlusIcon />
+          <ControlPointIcon data-icon="inline-start" />
           {agregarLabel}
         </Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columnas}
-            <TableHead className="w-24">
-              <span className="sr-only">Acciones</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {children}
-          {vacio && (
-            <TableRow>
-              <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
-                {vacio}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <DataTable
+        table={table}
+        isPending={false}
+        isError={false}
+        onRetry={sinCambio}
+        emptyMessage={emptyMessage}
+        isRowActive={(row) => row.id === editandoId}
+      />
     </form>
   )
 }
@@ -103,42 +118,65 @@ export function AccionesFila({
   if (editando) {
     return (
       <div key="editando" className="flex justify-end gap-1">
-        <Button
-          key="guardar"
-          type="submit"
-          variant="ghost"
-          size="icon-sm"
-          disabled={guardando}
-          aria-label={`Guardar ${etiqueta}`}
-        >
-          <CheckIcon className="text-green" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          disabled={guardando}
-          aria-label="Cancelar"
-          onClick={onCancelar}
-        >
-          <XIcon />
-        </Button>
+        {/* Mismo estilo que la edición en fila de Escala de valoración. */}
+        <Tooltip key="guardar">
+          <TooltipTrigger
+            render={
+              <Button
+                type="submit"
+                color="primary"
+                size="icon-sm"
+                aria-label="Guardar cambios"
+                disabled={guardando}
+                aria-busy={guardando}
+              />
+            }
+          >
+            {guardando ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
+          </TooltipTrigger>
+          <TooltipContent>Guardar cambios</TooltipContent>
+        </Tooltip>
+        <Tooltip key="cancelar">
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="fill"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Cancelar edición"
+                disabled={guardando}
+                onClick={onCancelar}
+              />
+            }
+          >
+            <XIcon />
+          </TooltipTrigger>
+          <TooltipContent>Cancelar edición</TooltipContent>
+        </Tooltip>
       </div>
     )
   }
   return (
-    <div key="leyendo" className="flex justify-end">
-      <Button
-        key="modificar"
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        disabled={!puedeEditar}
-        aria-label={`Modificar ${etiqueta}`}
-        onClick={onModificar}
-      >
-        <PencilIcon />
-      </Button>
+    <div key="leyendo" className="flex justify-end gap-1">
+      <Tooltip key="modificar">
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`Modificar ${etiqueta}`}
+              disabled={!puedeEditar}
+              onClick={onModificar}
+            />
+          }
+        >
+          <PencilIcon />
+        </TooltipTrigger>
+        <TooltipContent>Modificar</TooltipContent>
+      </Tooltip>
       {eliminar && (
         <ConfirmRemoveButton
           key="eliminar"
