@@ -320,9 +320,7 @@ export const campusHandlers = [
     deleteManyCampusDetails(uniqueIds)
 
     return HttpResponse.json({
-      status: "ok",
-      message: `${uniqueIds.length} sede(s) eliminada(s).`,
-      deletedCount: uniqueIds.length,
+      rows: uniqueIds.map((id) => ({ pk_sede: String(id), status: "eliminado" })),
     })
   }),
 

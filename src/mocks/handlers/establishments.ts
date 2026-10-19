@@ -317,9 +317,7 @@ export const establishmentHandlers = [
     deleteManyEstablishmentDetails(uniqueIds)
 
     return HttpResponse.json({
-      status: "ok",
-      message: `${uniqueIds.length} establecimiento(s) eliminado(s).`,
-      deletedCount: uniqueIds.length,
+      rows: uniqueIds.map((id) => ({ pk_establecimiento: String(id), status: "eliminado" })),
     })
   }),
 
