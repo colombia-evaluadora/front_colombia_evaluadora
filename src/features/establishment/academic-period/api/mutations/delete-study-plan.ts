@@ -25,6 +25,7 @@ export function useDeleteStudyPlanItem({ mutationConfig }: UseDeleteStudyPlanIte
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.horario.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

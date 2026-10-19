@@ -22,6 +22,8 @@ export function useDeleteGradeGroup({ mutationConfig }: UseDeleteGradeGroupOptio
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.gradeGroups.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
+      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })
