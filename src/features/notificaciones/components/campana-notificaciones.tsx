@@ -51,7 +51,9 @@ export function CampanaNotificaciones() {
   const { status } = useConnectivity()
   const onlineOnly = useOnlineOnly()
   const contador = useContadorQuery()
-  const lista = useNotificacionesInfiniteQuery()
+  // Sin red la bandeja de la campana solo se pide al abrirla: cerrada no es
+  // parte de la pantalla, y el banner offline no debe decir que falta.
+  const lista = useNotificacionesInfiniteQuery({}, { enabled: open || status !== "offline" })
   const abrir = useAbrirNotificacion()
   const marcarTodas = useMarcarTodasLeidas()
 

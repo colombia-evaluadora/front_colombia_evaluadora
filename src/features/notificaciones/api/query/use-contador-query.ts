@@ -23,6 +23,8 @@ export function useContadorQuery() {
     queryKey: contadorQueryKey,
     queryFn: fetchContador,
     refetchInterval: realtimeEnabled ? 5 * 60_000 : 60_000,
-    meta: offlineMeta(TTL_OFFLINE.detalle),
+    // Contador del header: si sin red no está guardado, la pantalla abierta
+    // no está "incompleta" (el banner offline no lo cuenta).
+    meta: { ...offlineMeta(TTL_OFFLINE.detalle), offlineOptional: true },
   })
 }

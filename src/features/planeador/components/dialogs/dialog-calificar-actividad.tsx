@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CheckIcon, SpinnerIcon, XIcon, CheckSquareOffsetIcon } from "@/components/ui/icons"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
@@ -239,7 +239,7 @@ export function DialogCalificarActividad({
         <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto py-3">
           {isPendingInstrumento ? (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-8 text-sm">
-              <Spinner /> Cargando…
+              <LoadingLabel>Cargando…</LoadingLabel>
             </div>
           ) : instrumento?.instrumento === "RUBRICA" ? (
             <RubricaExpandida

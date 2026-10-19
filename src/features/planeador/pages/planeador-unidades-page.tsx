@@ -13,7 +13,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { PlusCircleIcon } from "@/components/ui/icons"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { paths } from "@/config/paths"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
@@ -254,7 +254,7 @@ function PlaneadorUnidadesPageContent() {
                   <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
                     {isPending && (
                       <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-                        <Spinner /> Cargando…
+                        <LoadingLabel>Cargando…</LoadingLabel>
                       </div>
                     )}
 

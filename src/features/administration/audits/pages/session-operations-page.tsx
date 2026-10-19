@@ -4,7 +4,7 @@ import { Link, useParams } from "@tanstack/react-router"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { paths } from "@/config/paths"
 
 import { useAuditSessionQuery } from "@/features/administration/audits/api/query/use-audit-session-query"
@@ -36,7 +36,7 @@ export function SessionOperationsPage() {
 
   const title = isPending ? (
     <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-      <Spinner /> Cargando sesión…
+      <LoadingLabel>Cargando sesión…</LoadingLabel>
     </div>
   ) : isError ? (
     getErrorMessage(error)

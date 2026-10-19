@@ -107,3 +107,30 @@ línea con mensaje claro (Cobertura: datos de menores, P6).
 `/app/sincronizar`: barra de progreso por lotes (concurrencia 3, ya existe en
 el motor), reanudable; reporte final de subidos / conflictos / rechazados con
 motivo; luego "Preparar todo" en modo refresco.
+
+## D-13. Ninguna carga infinita sin conexión (implementado)
+Reporte de testv2: sin red, lo que no se había preparado quedaba en skeleton o
+spinner para siempre. Con `networkMode: "online"` una query sin datos queda
+`pending`/`paused` hasta que vuelva la red; las mutaciones, en "Guardando…".
+
+Decisión (revisable): `networkMode` **híbrido por query**
+(`lib/offline/offline-query-client.ts`). Sin datos → `"always"`: el `queryFn`
+corre sin red, falla al instante y la pantalla muestra "Sin conexión: esta
+información no está guardada en este equipo". Con datos → `"online"`: el
+refetch se pausa y se sigue viendo lo guardado. `retry` no reintenta sin red y
+las mutaciones van con `"always"` (las que funcionan offline ya pasan por la
+outbox, D3).
+
+`"offlineFirst"` como default global se evaluó y se descartó: (1) sus
+reintentos sí se pausan sin red, así que una query sin datos cuyo primer
+intento falla quedaba igual cargando; (2) corre el `queryFn` aunque haya datos
+y un refetch sin red (al montar, al invalidar tras encolar en la outbox, por
+`refetchInterval`) deja la query en `error` con datos: las pantallas que miran
+`isError` antes que `data` escondían lo guardado y la capa optimista de la
+outbox parpadeaba a error. El híbrido no toca las queries con datos, así que
+la restauración del persister y la outbox no cambian.
+
+Red de seguridad en la UI: `useOfflineStall` (1,5 s sin red con un indicador
+de carga visible) en `DataTable`, `Skeleton`, `Spinner`, `LoadingLabel`,
+`Select` y `ComboboxField`, y una línea en el banner offline cuando una query
+observada no tiene datos por falta de red.

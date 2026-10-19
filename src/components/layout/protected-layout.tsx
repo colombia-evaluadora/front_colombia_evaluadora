@@ -62,7 +62,7 @@ export function ProtectedLayout() {
           pegadas al borde de la pantalla—. El breakpoint es el mismo que usa
           `useIsMobile` (768px) para decidir el modo drawer.
         */}
-        <div className="flex min-w-0 flex-1 flex-col pr-4 pb-4 max-md:pl-4 bg-sidebar">
+        <div data-slot="app-content" className="flex min-w-0 flex-1 flex-col pr-4 pb-4 max-md:pl-4 bg-sidebar">
           <VaultGate>
             <OnlineOnlyRouteGate>
               <Outlet />
