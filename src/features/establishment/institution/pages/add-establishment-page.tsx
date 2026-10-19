@@ -209,6 +209,8 @@ export function AddEstablishmentPage() {
   const activationNoticesRef = useRef<string[]>([])
   const activationFailedRef = useRef(false)
   const invitationWarningRef = useRef(false)
+  // Funcionarios creados en este submit: se cancelan si algo falla después.
+  const registradosRef = useRef<number[]>([])
 
   function takeActivationNotices() {
     const avisos = activationNoticesRef.current
@@ -335,6 +337,7 @@ export function AddEstablishmentPage() {
 
         // La invitación sale recién cuando el EE se guardó.
         const registered = await registerFuncionario(person, foto, { enviarInvitacion: false })
+        registradosRef.current.push(registered.pkFuncionario)
         const persistedPerson = { ...person, id: registered.pkFuncionario }
 
         // `mensajeInvitacion` no nulo: el backend ya sabe que no se puede invitar.
@@ -400,6 +403,7 @@ export function AddEstablishmentPage() {
     activationNoticesRef.current = []
     activationFailedRef.current = false
     invitationWarningRef.current = false
+    registradosRef.current = []
     setHasSubmitted(true)
 
     const validation = validateEstablishmentForm(formValues, { logo: shield, photos })
@@ -414,8 +418,6 @@ export function AddEstablishmentPage() {
     let nextPrincipal = formValues.principal
     let nextSecretary = formValues.secretary
     const pendingInvitations: PendingInvitation[] = []
-    let principalPkFuncionario: number | null = null
-    let secretaryPkFuncionario: number | null = null
 
     try {
       const persistedPrincipal = await persistPersonIfAny(
@@ -427,7 +429,6 @@ export function AddEstablishmentPage() {
       )
       if (persistedPrincipal) {
         nextPrincipal = persistedPrincipal.person
-        principalPkFuncionario = persistedPrincipal.pkFuncionarioRegistrado
         if (persistedPrincipal.pendingInvitation) pendingInvitations.push(persistedPrincipal.pendingInvitation)
       }
 
@@ -440,10 +441,11 @@ export function AddEstablishmentPage() {
       )
       if (persistedSecretary) {
         nextSecretary = persistedSecretary.person
-        secretaryPkFuncionario = persistedSecretary.pkFuncionarioRegistrado
         if (persistedSecretary.pendingInvitation) pendingInvitations.push(persistedSecretary.pendingInvitation)
       }
     } catch {
+      // Si el rector se guardó y la secretaria no, se deshace el rector.
+      await cancelarPendientesRegistrados()
       return
     }
 
@@ -453,11 +455,9 @@ export function AddEstablishmentPage() {
       secretary: nextSecretary,
     }
 
-    /** Cancela lo registrado en este submit si el EE falla (su transacción se abortó entera). */
+    /** Cancela lo registrado en este submit si algo falla después (el EE aborta su transacción entera). */
     async function cancelarPendientesRegistrados() {
-      const pendientes = [principalPkFuncionario, secretaryPkFuncionario].filter(
-        (pk): pk is number => pk !== null,
-      )
+      const pendientes = registradosRef.current
       if (pendientes.length === 0) return
 
       const results = await Promise.allSettled(
