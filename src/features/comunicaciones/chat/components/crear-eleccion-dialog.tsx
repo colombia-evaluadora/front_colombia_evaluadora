@@ -30,7 +30,7 @@ import {
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
-import { DateRangeField } from "@/features/establishment/academic-period/components/date-range-field"
+import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 const MIN_CANDIDATOS = 2

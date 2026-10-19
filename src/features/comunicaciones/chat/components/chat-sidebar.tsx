@@ -1,6 +1,5 @@
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
-import type { IconType } from "react-icons"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -20,6 +19,7 @@ import {
   PencilSimpleIcon,
   PaperPlaneTiltIcon,
   BellSlashIcon,
+  type Icon,
 } from "@/components/ui/icons"
 
 interface ChatSidebarProps {
@@ -174,7 +174,7 @@ function AccesoVista({
   proximamente,
   children,
 }: {
-  icono: IconType
+  icono: Icon
   activo: boolean
   onClick: () => void
   extra?: ReactNode

@@ -1,4 +1,3 @@
-import { IoMdCheckboxOutline } from "react-icons/io"
 import * as React from "react"
 import { SagaBadge } from "@/features/offline/components/saga-badge"
 
@@ -10,6 +9,7 @@ import {
   FileDownloadOutlinedIcon,
   PencilIcon,
   SpinnerIcon,
+  CheckSquareOffsetIcon,
 } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -76,7 +76,7 @@ interface ActividadCardProps {
 
 const ACCIONES_BASE: readonly Omit<Accion, "label" | "onClick">[] = [
   { id: "editar", Icon: PencilIcon },
-  { id: "marcar", Icon: IoMdCheckboxOutline },
+  { id: "marcar", Icon: CheckSquareOffsetIcon },
   { id: "aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" y "Eliminar" NO van acá: sus diálogos traen su propio
   // trigger, así que montarlos también en este loop duplicaría el botón.

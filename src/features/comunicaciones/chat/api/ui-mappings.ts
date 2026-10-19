@@ -1,6 +1,5 @@
-import type { IconType } from "react-icons"
 
-import { FilePdfIcon, FileTextIcon, ImageIcon, VideoCameraIcon, type Icon } from "@/components/ui/icons"
+import { FilePdfIcon, FileTextIcon, type Icon, ImageIcon, VideoCameraIcon } from "@/components/ui/icons"
 import type { Audiencia, CategoriaCanal, FormatoArchivo } from "@/features/comunicaciones/chat/api/types"
 import {
   MegaphoneIcon,
@@ -10,7 +9,7 @@ import {
   BallotIcon,
 } from "@/components/ui/icons"
 
-export const ICONO_CATEGORIA: Record<CategoriaCanal, IconType> = {
+export const ICONO_CATEGORIA: Record<CategoriaCanal, Icon> = {
   GENERAL: ChatTextIcon,
   VOTACION: BallotIcon,
   ENCUESTA: ClipboardIcon,

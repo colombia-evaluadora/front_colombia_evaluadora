@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   BrushIcon,
   CheckIcon,
+  CopyIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
   ImageIcon,
@@ -41,8 +42,8 @@ import {
   SpinnerIcon,
   WarningCircleIcon,
   XIcon,
+  ClipboardPasteIcon,
 } from "@/components/ui/icons"
-import { MdContentCopy, MdContentPaste } from "react-icons/md"
 import { cn } from "@/lib/utils"
 
 import { ArchivoImage } from "@/features/files/components/archivo-image"
@@ -271,7 +272,7 @@ export function ObservacionEstudianteSheet({
                     aria-label="Copiar observación"
                     onClick={copiarObservacion}
                   >
-                    {copiado ? <CheckIcon className="size-4" /> : <MdContentCopy className="size-4" />}
+                    {copiado ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{copiado ? "Copiada" : "Copiar observación"}</TooltipContent>
@@ -286,7 +287,7 @@ export function ObservacionEstudianteSheet({
                     aria-label="Pegar observación"
                     onClick={pegarObservacion}
                   >
-                    <MdContentPaste className="size-4" />
+                    <ClipboardPasteIcon className="size-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Pegar observación</TooltipContent>
