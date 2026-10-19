@@ -257,8 +257,9 @@ function TarjetaConfirmacion({
   const hora = expiraLegible(accion.expira)
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-yellow-stroke bg-yellow-22 p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-yellow-stroke bg-yellow-22 p-3">
       <div className="flex items-center gap-2">
+        <ShieldIcon className="size-4 shrink-0 text-yellow" />
         <span className="text-sm font-semibold">Confirma esta acción</span>
         {etiquetaFinal ? (
           <Badge variant="soft" color={accion.estado === "EJECUTADA" ? "success" : accion.estado === "FALLIDA" ? "destructive" : "muted"}>

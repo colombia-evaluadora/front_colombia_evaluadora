@@ -7,6 +7,7 @@ import type {
   RevertOperationChangeInput,
   RevertOperationChangeResponse,
 } from "@/features/administration/audits/api/types/audit-table"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface RevertOperationChangeVariables {
   tableSlug: string
@@ -129,12 +130,10 @@ export function useRevertOperationChange({ mutationConfig }: UseRevertOperationC
         // (`…/operations/:id/changes`) alcanza al listado de operaciones de
         // la tabla y a sus stats, que también cambian — el revert deja una
         // operación NUEVA registrada en la auditoría.
-        queryClient.invalidateQueries({
-          queryKey: ["audit-tables", variables.tableSlug, "operations"],
-        })
+        queryClient.invalidateQueries({ queryKey: auditKeys.tablas.operaciones.all(variables.tableSlug) })
         // El mismo revert puede dispararse desde la vista de una SESIÓN,
         // cuyo listado vive bajo otra clave y no cuelga de `audit-tables`.
-        queryClient.invalidateQueries({ queryKey: ["audits", "sessions"] })
+        queryClient.invalidateQueries({ queryKey: auditKeys.sesiones.detalles })
       }, 1500)
     },
   })

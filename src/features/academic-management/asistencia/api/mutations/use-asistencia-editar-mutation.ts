@@ -2,6 +2,7 @@ import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 
@@ -16,6 +17,7 @@ import type {
   AsistenciaEditarRequest,
   AsistenciaEditarResponse,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
+import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 interface EditarAsistenciaInput {
   /** Los registros de la fila: una corrida de bloques se edita entera, no solo su primer bloque. */
@@ -93,14 +95,20 @@ async function editarAsistencia({ pks, body, versiones }: EditarAsistenciaInput)
   return { pendientes, queued }
 }
 
-export function useAsistenciaEditarMutation() {
+export function useAsistenciaEditarMutation({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof editarAsistencia> } = {}) {
   const queryClient = useQueryClient()
+  const { onSettled, ...rest } = mutationConfig ?? {}
   return useMutation({
     mutationFn: editarAsistencia,
+    ...rest,
     networkMode: "always",
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["asistencia"] })
+    // También si falla a mitad del lote: los pks anteriores ya quedaron editados.
+    onSettled: (...args) => {
+      queryClient.invalidateQueries({ queryKey: asistenciaKeys.all })
       invalidarPlaneadorPorAsistencia(queryClient)
+      onSettled?.(...args)
     },
   })
 }

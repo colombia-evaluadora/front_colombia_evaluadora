@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
+
 export interface RoleMenuAssignment {
   id: number
   soloLectura: boolean
@@ -33,11 +35,9 @@ async function fetchRoleMenus(roleId: number): Promise<RoleMenuAssignment[]> {
   return rows.map(toAssignment)
 }
 
-export const roleMenusQueryKey = (roleId: number | null) => ["role-menus", roleId]
-
 export function useRoleMenusQuery(roleId: number | null) {
   return useQuery({
-    queryKey: roleMenusQueryKey(roleId),
+    queryKey: roleMenuKeys.roleMenus.detalle(roleId),
     queryFn: () => fetchRoleMenus(roleId as number),
     enabled: roleId != null,
   })

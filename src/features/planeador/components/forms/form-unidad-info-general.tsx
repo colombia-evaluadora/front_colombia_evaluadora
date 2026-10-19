@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 
 import {
   Field,
@@ -250,7 +250,7 @@ export function UnidadInfoGeneralFields({
   // en este grado"), que sigue siendo el fallback correcto: no hay de
   // dónde sacar una.
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
-  const grados = useMemo(() => {
+  const grados = (() => {
     if (tab && tab.grados.length > 0) return tab.grados
     const porId = new Map<number, { id: number; nombre: string }>()
     for (const par of docenteGradoAsignatura) {
@@ -259,14 +259,14 @@ export function UnidadInfoGeneralFields({
       }
     }
     return [...porId.values()]
-  }, [tab, docenteGradoAsignatura])
+  })()
 
-  const asignaturas = useMemo(() => {
+  const asignaturas = (() => {
     if (tab && tab.grados.length > 0) {
       return tab.asignaturas.map((a) => ({ asignaturaId: a.id, asignaturaNombre: a.nombre }))
     }
     return docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId)
-  }, [tab, docenteGradoAsignatura, draft.gradoId])
+  })()
 
   // Mismo rótulo dinámico que ya usa Plan de Estudio ("Dimensión", "Área", …
   // según lo que el referente curricular del grado tenga personalizado).

@@ -23,7 +23,7 @@ import { useDeleteSubjects } from "@/features/establishment/academic-period/api/
 import {
   formatBulkDeleteError,
   summarizeBulkDelete,
-} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+} from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
 
 interface DeleteSelectedStudyPlanItemsDialogProps {
   itemCount: number

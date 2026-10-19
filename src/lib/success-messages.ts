@@ -1,27 +1,15 @@
-/**
- * Mensajes de éxito de las operaciones de escritura.
- *
- * Antes se mostraba tal cual el `message` que devuelve el backend ("Sede
- * actualizada."), que llega abreviado, sin el nombre completo de la entidad y
- * con una redacción distinta en cada endpoint. Acá quedan centralizados para
- * que todos digan lo mismo: "<La entidad> se <acción> correctamente."
- *
- * Los errores siguen usando el `message` del backend: ese sí explica *por qué*
- * falló, y esa información el front no la tiene.
- */
+// Mensajes de éxito centralizados; los errores sí usan el `message` del backend.
 interface EntityMessages {
   created: string
   updated: string
   deleted: string
   /** Borrado múltiple desde la barra de herramientas de la tabla. */
   deletedMany?: (count: number) => string
-  /** Mensaje específico cuando una acción puntual no encaja en
-   *  created/updated/deleted (p. ej. "desactivar reserva de cupos"). */
+  /** Acción puntual que no encaja en created/updated/deleted. */
   deactivated?: string
   /** Reactivar lo que se inactivó (listas de valor). */
   activated?: string
-  /** Validación por un tercero (p. ej. el Coordinador sobre una actividad
-   *  del Planeador): aprobar o declinar. */
+  /** Aprobar o declinar (p. ej. Coordinador en el Planeador). */
   approved?: string
   declined?: string
 }
@@ -92,9 +80,8 @@ export const SUCCESS_MESSAGES = {
       count === 1
         ? "El periodo académico se eliminó correctamente."
         : `Los ${count} periodos académicos se eliminaron correctamente.`,
-    // Confirmación del toggle que desactiva el periodo de reserva de cupos.
-    // Se expone por separado de `updated` porque el usuario lo dispara sin
-    // editar el resto de la configuración.
+    // Toggle de la reserva de cupos, separado de `updated`.
+    activated: "El periodo de reserva de cupos se activó correctamente.",
     deactivated: "El periodo de reserva de cupos se desactivó correctamente.",
   },
   evaluationPeriod: {
@@ -168,6 +155,11 @@ export const SUCCESS_MESSAGES = {
     updated: "La inscripción se actualizó correctamente.",
     deleted: "La inscripción se eliminó correctamente.",
   },
+  matricula: {
+    created: "La matrícula se registró correctamente.",
+    updated: "La matrícula se actualizó correctamente.",
+    deleted: "El estudiante se eliminó correctamente.",
+  },
   actividad: {
     created: "La actividad se creó correctamente.",
     updated: "La actividad se actualizó correctamente.",
@@ -177,17 +169,8 @@ export const SUCCESS_MESSAGES = {
   },
 } satisfies Record<string, EntityMessages>
 
-/**
- * Aviso tras dar de alta un funcionario (o rector/secretaria) por
- * `POST /auth/register/cval/funcionario`. El alta ya no pide contraseña: el
- * backend crea la cuenta pendiente de activación y manda el correo "Activa tu
- * cuenta" (7 días). Contrato de la respuesta (sso PR #634):
- * - `mensajeInvitacion != null`: la cuenta quedó creada pero algo de la
- *   invitación falló; el backend explica qué → aviso `warning`.
- * - `invitacionEnviada`: se envió el correo de activación.
- * - ninguno de los dos: se reusó una cuenta activa existente, no hay
- *   invitación que anunciar.
- */
+// Alta de funcionario: `mensajeInvitacion` = la invitación falló (warning);
+// `invitacionEnviada` = se mandó el correo; ninguno = se reusó una cuenta activa.
 export function employeeInvitationNotice(result: {
   invitacionEnviada?: boolean | null
   mensajeInvitacion?: string | null

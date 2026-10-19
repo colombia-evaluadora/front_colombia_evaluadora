@@ -7,14 +7,14 @@ import { unwrapRow } from "@/lib/response-envelope"
 import { env } from "@/config/env"
 
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
+import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 
 interface CampusQueryResult {
   status: "ok"
   campus: Campus
 }
 
-/** Fila cruda de `fn_sed_buscar_por_pk` (V52) — columnas sueltas de TSEDE,
- * `fk_tlv_zona` sin resolver (sin `code`/`name`, solo el id). */
+/** Fila cruda de `fn_sed_buscar_por_pk`; `fk_tlv_zona` llega sin resolver. */
 interface RealCampusDetailRow {
   pk_tsede: number
   codigo: string
@@ -27,12 +27,7 @@ interface RealCampusDetailRow {
   telefono: string | null
 }
 
-/**
- * `zone` sale con `code`/`name` vacíos: la query no hace join contra
- * `TLISTA_VALOR` (`fn_sed_buscar_por_pk` no lo resuelve), solo trae el id.
- * El caller (dialog-manage.tsx) ya tiene el catálogo de zonas cargado para
- * completar el nombre — ver ahí.
- */
+// `zone` sin code/name: la query no resuelve TLISTA_VALOR; lo completa dialog-manage.
 function toCampus(row: RealCampusDetailRow): Campus {
   return {
     id: row.pk_tsede,
@@ -43,8 +38,7 @@ function toCampus(row: RealCampusDetailRow): Campus {
     commune: row.comuna ?? "",
     address: row.direccion ?? "",
     phone: row.telefono ?? "",
-    // No se edita (el EE de una sede es inmutable): se arrastra para
-    // poder filtrar el catálogo de zonas en edición.
+    // Inmutable en edición; se arrastra para filtrar el catálogo de zonas.
     establishmentId: row.fk_testablecimiento,
   }
 }
@@ -54,7 +48,6 @@ async function fetchCampus(id: number): Promise<CampusQueryResult> {
     return api.get(apiPath(`/establishments/campuses/${id}`, `/establecimientos/sedes/${id}`))
   }
 
-  // fn_sed_buscar_por_pk (V52) — fila cruda envuelta en {rows:[...]}.
   const row = unwrapRow<RealCampusDetailRow>(
     (await api.get(`/eval-col/establecimientos/sedes/${id}`)) as unknown as
       | { rows: RealCampusDetailRow[] }
@@ -65,7 +58,7 @@ async function fetchCampus(id: number): Promise<CampusQueryResult> {
 
 export function useCampusQuery(id: number | null, enabled = true) {
   return useQuery({
-    queryKey: ["campuses", id],
+    queryKey: campusKeys.detalle(id),
     meta: proveedorMeta(),
     queryFn: () => fetchCampus(id as number),
     enabled: enabled && Boolean(id),

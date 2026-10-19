@@ -8,16 +8,14 @@ import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import type { Permission, PermissionStatus } from "@/features/establishment/institution/api/types/permission"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
 interface EmployeeQueryResult {
   status: "ok"
   employee: Employee
 }
 
-/** Sub-objetos que `fn_usu_empleado_buscar_por_pk` ya arma como JSONB con
- * la misma forma que el front espera (camelCase) — no hace falta remapear
- * sus claves, solo tolerar los `null` que el backend sí puede mandar donde
- * el front pide `string`/`CatalogItem`. */
+/** Sub-objetos que el backend ya arma en camelCase; solo se toleran `null`. */
 interface RealPermissionRow {
   id: number
   orden: number
@@ -36,8 +34,7 @@ interface RealPermissionRow {
   status: PermissionStatus
 }
 
-/** Una fila de `fn_usu_empleado_buscar_por_pk` (columnas snake_case, cada
- * catálogo llega como `fk_x` + `x_nombre` sueltos, no anidados). */
+/** Fila de `fn_usu_empleado_buscar_por_pk`: catálogos como `fk_x` + `x_nombre`. */
 interface RealEmployeeDetailRow {
   pk_empleado: number
   fk_tlv_tipo_documento: number | null
@@ -70,15 +67,11 @@ interface RealEmployeeDetailRow {
   fk_tlv_tipo_vinculacion: number | null
   tipo_vinculacion_nombre: string | null
   direccion: string | null
-  /** `TUSUARIO.FK_TARCHIVO` — REV2 de `fn_usu_empleado_buscar_por_pk`. */
   fk_tarchivo_foto: number | null
   permisos: RealPermissionRow[]
 }
 
-/** `{id, name}` sin `code`: estas columnas del detalle no traen un código
- * de catálogo aparte (a diferencia de los selects genéricos), así que se
- * arma con el `fk_x` como `id`/`code` — mismo criterio que otros catálogos
- * "sueltos" del front que solo necesitan mostrar el nombre. */
+/** Sin código de catálogo: se usa el `fk_x` como `id`/`code`. */
 function toCatalogItem(id: number | null, name: string | null): CatalogItem | null {
   if (id === null || name === null) return null
   return { id, code: String(id), name }
@@ -138,20 +131,12 @@ function toEmployee(row: RealEmployeeDetailRow): Employee {
   }
 }
 
-/**
- * Exportada aparte de `useEmployeeQuery`: la usa también el formulario de
- * establecimiento para hidratar rector/secretaria (que son TFUNCIONARIO
- * como cualquier otro, `fk_tfuncionario_rector`/`secretaria` de
- * `fn_est_buscar_por_pk` es el mismo `pk_empleado` que espera
- * `fn_usu_empleado_buscar_por_pk`) fuera del ciclo de vida de un hook —
- * se llama a mano dentro de `fetchEstablishment`, no en un componente.
- */
+// Exportada: `fetchEstablishment` la usa para hidratar rector/secretaria.
 export async function fetchEmployee(id: number): Promise<EmployeeQueryResult> {
   if (env.ENABLE_API_MOCKING) {
     return api.get(`/establishments/employees/${id}`)
   }
 
-  // fn_usu_empleado_buscar_por_pk (V51) — fila cruda envuelta en {rows:[...]}.
   const row = unwrapRow<RealEmployeeDetailRow>(
     (await api.get(`/eval-col/establecimientos/funcionarios/${id}`)) as unknown as
       | { rows: RealEmployeeDetailRow[] }
@@ -162,7 +147,7 @@ export async function fetchEmployee(id: number): Promise<EmployeeQueryResult> {
 
 export function useEmployeeQuery(id: number | null, enabled = true) {
   return useQuery({
-    queryKey: ["employees", id],
+    queryKey: employeeKeys.detalle(id),
     queryFn: () => fetchEmployee(id as number),
     enabled: enabled && Boolean(id),
   })

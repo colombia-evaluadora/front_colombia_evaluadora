@@ -13,7 +13,7 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import type { HighImpactAlert } from "@/features/academic-management/curricular-references/api/high-impact-alerts"
+import type { HighImpactAlert } from "@/features/academic-management/curricular-references/utils/high-impact-alerts"
 
 interface HighImpactDialogProps {
   open: boolean

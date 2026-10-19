@@ -56,7 +56,7 @@ export function AsistenciaGrupoDrillDown({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const grados = React.useMemo(() => {
+  const grados = (() => {
     const porGradoJornada = new Map<string, AsistenciaDayEntry[]>()
     for (const item of items) {
       const key = `${item.grado}-${item.jornada}`
@@ -72,9 +72,9 @@ export function AsistenciaGrupoDrillDown({
         estado: peorEstado(entries.map((e) => e.estado)),
       }))
       .sort((a, b) => a.grado.localeCompare(b.grado) || a.jornada.localeCompare(b.jornada))
-  }, [items])
+  })()
 
-  const grupos = React.useMemo(() => {
+  const grupos = (() => {
     if (view.level !== "grupos") return []
     const porGrupo = new Map<string, AsistenciaDayEntry[]>()
     for (const item of items) {
@@ -86,9 +86,9 @@ export function AsistenciaGrupoDrillDown({
     return [...porGrupo.entries()]
       .map(([grupo, entries]) => ({ grupo, entries, estado: peorEstado(entries.map((e) => e.estado)) }))
       .sort((a, b) => a.grupo.localeCompare(b.grupo))
-  }, [items, view])
+  })()
 
-  const gruposTodos = React.useMemo(() => {
+  const gruposTodos = (() => {
     if (view.level !== "grupos-todos") return []
     const porGrupo = new Map<string, AsistenciaDayEntry[]>()
     for (const item of items) {
@@ -106,14 +106,14 @@ export function AsistenciaGrupoDrillDown({
         estado: peorEstado(entries.map((e) => e.estado)),
       }))
       .sort((a, b) => a.grado.localeCompare(b.grado) || a.grupo.localeCompare(b.grupo))
-  }, [items, view])
+  })()
 
-  const asignaturas = React.useMemo(() => {
+  const asignaturas = (() => {
     if (view.level !== "asignaturas") return []
     return items.filter(
       (item) => item.grado === view.grado && item.jornada === view.jornada && item.grupo === view.grupo,
     )
-  }, [items, view])
+  })()
 
   const titulo =
     view.level === "grados"

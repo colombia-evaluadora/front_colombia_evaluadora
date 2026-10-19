@@ -9,8 +9,7 @@ import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { isOutboxEnabled, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { PendingBadge } from "@/features/offline/components/pending-badge"
 import { celdaEntityKey } from "@/features/planeador/api/mutations/use-calificar-celda"
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
-import { IoMdCheckboxOutline } from "react-icons/io"
+import { CheckIcon, SpinnerIcon, XIcon, CheckSquareOffsetIcon } from "@/components/ui/icons"
 import {
   Popover,
   PopoverContent,
@@ -242,7 +241,7 @@ export function CeldaNotaPopover({
             />
           }
         >
-          <IoMdCheckboxOutline className="size-4" />
+          <CheckSquareOffsetIcon className="size-4" />
         </TooltipTrigger>
         <TooltipContent>Calificar a {estudianteNombre}</TooltipContent>
       </Tooltip>

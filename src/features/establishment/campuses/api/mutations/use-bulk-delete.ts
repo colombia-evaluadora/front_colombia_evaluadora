@@ -2,15 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
+import { invalidateCampuses } from "@/features/establishment/campuses/api/mutations/invalidate-campuses"
 import type { MutationConfig } from "@/lib/react-query"
 
-// Misma familia que `fn_fun_baja_establecimiento_bulk` (funcionarios,
-// confirmado contra el backend real: no hay envelope `{status, message,
-// deletedCount}`, cada id trae su propia fila). Se asume el mismo contrato
-// acá (`fn_sed_soft_delete_bulk`) por la misma convención de nombres/ruta —
-// pendiente confirmar contra una respuesta real (ver
-// `summarizeEmployeeBulkDelete` en `employees/api/mutations/use-bulk-delete.ts`
-// para el caso ya confirmado).
+// Una fila por id, sin envelope (contrato asumido igual al bulk de funcionarios).
 export interface BulkDeleteCampusRow {
   pk_sede: string
   status: string
@@ -20,11 +15,7 @@ export interface BulkDeleteCampusResult {
   rows: BulkDeleteCampusRow[]
 }
 
-/**
- * El SSO real registra esto como `PUT /establecimientos/sedes/bulk-delete`
- * (`fn_sed_soft_delete_bulk`, borrado lógico) con los ids en
- * `{ pks: [...] }`, no un array plano en el body de un DELETE.
- */
+/** Real: PUT con `{ pks }` (borrado lógico), no DELETE con array plano. */
 function bulkDeleteCampuses(ids: number[]): Promise<BulkDeleteCampusResult> {
   if (env.ENABLE_API_MOCKING) {
     // `api.delete(url, body)` no existe en la firma estándar de axios.
@@ -73,7 +64,7 @@ export function useBulkDelete({
     mutationFn: bulkDeleteCampuses,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["campuses"] })
+      invalidateCampuses(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -1,29 +1,9 @@
-/**
- * Única fuente de las query keys del Planeador (lecturas, invalidaciones,
- * `getQueryData`, `useIsFetching`…). Nada en el feature debería escribir un
- * array literal `["planeador", ...]`: se arma desde acá.
- *
- * Por qué una factory jerárquica: TanStack Query invalida por PREFIJO de la
- * key. Antes cada hook declaraba su key suelta y las invalidaciones se
- * escribían a mano, y varias no prefijaban lo que querían refrescar — p. ej.
- * `["planeador","actividades"]` no matcheaba `["planeador","actividades-mias",
- * params]`, así que importar actividades (y antes crear/editar/eliminar) no
- * refrescaba el rail, el calendario ni las cards de resumen. Acá cada nivel se
- * construye extendiendo el anterior (`[...actividadesAll, "mias", params]`),
- * de modo que `planeadorKeys.actividades.all` es por construcción prefijo de
- * todo lo que cuelga de él.
- *
- * Los params de los listados son genéricos a propósito: cada hook pasa su
- * propio objeto de params tipado y la factory no necesita importarlos.
- *
- * Las variantes `"none"` son las keys de queries deshabilitadas (sin id
- * todavía): nunca hacen fetch, solo evitan colisionar con una key real.
- */
+// Única fuente de query keys del Planeador. Factory jerárquica: TanStack invalida por PREFIJO.
+// Las variantes `"none"` son keys de queries deshabilitadas (sin id).
 
 const all = ["planeador"] as const
 
-/** Docente + sede + periodo académico del filtro avanzado: lo que acota las
- *  pestañas (`actividades.tabs` / `unidades.tabs`). */
+/** Docente + sede + periodo del filtro avanzado. */
 export interface PlaneadorAlcanceKey {
   funcionario?: number
   sede?: number
@@ -55,9 +35,7 @@ export const planeadorKeys = {
   all,
 
   actividades: {
-    /** Prefijo de TODOS los listados de actividades (rail, calendario, stats,
-     *  listado legado, programación). Es lo que invalida
-     *  `invalidarListadosActividades`. */
+    /** Prefijo de TODOS los listados de actividades. */
     all: actividadesAll,
     /** Listado legado `size=500` (lo usa `DialogBibliotecaRecursos`). */
     lista: () => [...actividadesAll, "lista"] as const,
@@ -72,10 +50,7 @@ export const planeadorKeys = {
       asignaturaId?: number,
       unidadId?: number | null,
     ) => [...actividadesAll, "configuracion", "programacion", grupoId, asignaturaId, unidadId] as const,
-    /** Pestañas del rótulo de ejecución: catálogo, fuera de `actividades.all`
-     *  a propósito (guardar una actividad no lo cambia). Con `funcionario`
-     *  (Super Admin/Coordinador mirando a otro docente) cuelga del mismo
-     *  prefijo, así `tabs()` sigue invalidando todas las variantes. */
+    /** Fuera de `actividades.all` a propósito: guardar una actividad no lo cambia. */
     tabs: (alcance?: PlaneadorAlcanceKey) =>
       alcance && Object.values(alcance).some((v) => v != null)
         ? ([...all, "actividades-tabs", alcance] as const)
@@ -84,8 +59,7 @@ export const planeadorKeys = {
 
   actividad: {
     all: actividadAll,
-    /** Detalle. Es prefijo de calificaciones/instrumento del mismo id, así que
-     *  invalidarlo también los refresca. */
+    /** Prefijo de calificaciones/instrumento del mismo id. */
     detalle: actividadDetalle,
     /** Sin `fecha` es prefijo de todas las fechas de esa actividad. */
     calificaciones: (id: number | "none", fecha?: string) =>
@@ -93,8 +67,7 @@ export const planeadorKeys = {
         ? ([...actividadDetalle(id), "calificaciones", fecha] as const)
         : ([...actividadDetalle(id), "calificaciones"] as const),
     instrumento: actividadInstrumento,
-    /** Validación de la planeación por el Coordinador (cuelga del detalle:
-     *  invalidar el detalle la refresca). */
+    /** Cuelga del detalle: invalidarlo la refresca. */
     validacionCoordinador: (id: number | "none") => [...actividadDetalle(id), "validacion-coordinador"] as const,
     instrumentoForm: (id: number | "none") => [...actividadInstrumento(id), "form"] as const,
     configuracionContexto: (
@@ -124,9 +97,7 @@ export const planeadorKeys = {
 
   unidad: {
     all: unidadAll,
-    /** Detalle. Es prefijo de todo lo que cuelga de la unidad (actividades,
-     *  criterios, valoraciones, referente, configuración…): vincular o
-     *  desvincular una actividad invalida este prefijo. */
+    /** Prefijo de todo lo que cuelga de la unidad. */
     detalle: unidadDetalle,
     actividades: (id: number | "none") => [...unidadDetalle(id), "actividades"] as const,
     actividadesDisponibles: (id: number | "none", search: string) =>
@@ -152,12 +123,10 @@ export const planeadorKeys = {
     [...all, "docente-grado-asignatura", periodoId ?? null, funcionario ?? null, sede ?? null] as const,
   docenteGrupos: (periodoId?: number, funcionario?: number, sede?: number) =>
     [...all, "docente-grupos", periodoId ?? null, funcionario ?? null, sede ?? null] as const,
-  /** Docentes del filtro avanzado (`GET /planeador/docentes?sede=&periodo=`).
-   *  `null` = sin acotar (Rector/Coordinador: el backend acota a su alcance). */
+  /** `null` = sin acotar (el backend acota al alcance del rol). */
   docentes: (sede?: number, periodo?: number) =>
     [...all, "docentes", sede ?? null, periodo ?? null] as const,
-  /** Cascada Sede → Año → Jornada del filtro avanzado
-   *  (`GET /planeador/filtros/sedes` y `/planeador/filtros/periodos?sede=`). */
+  /** Cascada Sede → Año → Jornada del filtro avanzado. */
   filtros: {
     sedes: () => [...all, "filtros", "sedes"] as const,
     periodos: (sede: number | "none") => [...all, "filtros", "periodos", sede] as const,
@@ -172,26 +141,22 @@ export const planeadorKeys = {
   adaptacionesReutilizables: <P>(params: P) => [...all, "adaptaciones-reutilizables", params] as const,
   dominioMaterial: (categoria: string) => [...all, "dominio-material", categoria] as const,
   tipoAdaptacionCatalog: () => [...all, "tipo-adaptacion-catalog"] as const,
-  /** La consume Asistencia (`use-sedes-opciones-query.ts`) pero vive bajo
-   *  `"planeador"` desde antes; se declara acá para que no haya dos fuentes. */
+  /** Lo consume Asistencia pero vive bajo `"planeador"`. */
   sedesOpciones: () => [...all, "sedes", "opciones"] as const,
 
-  /** Catálogos históricos que nunca llevaron el prefijo `"planeador"`. Se
-   *  conservan tal cual (con `staleTime: Infinity` cambiarles el valor no
-   *  aporta nada) y nunca se invalidan. */
+  /** Históricos sin prefijo `"planeador"`; nunca se invalidan. */
   catalogos: {
     agrupacionPlanilla: () => ["agrupacion-planilla-options"] as const,
     instrumentoEvaluacion: () => ["instrumento-evaluacion-catalog"] as const,
     momentoRegistro: () => ["momento-registro"] as const,
     tipoActividad: () => ["tipo-actividad-catalog"] as const,
+    /** Los que necesita el mapeo del detalle de actividad. */
+    detalle: (catalogo: "tipo-recurso" | "tipo-adaptacion" | "aplica-a") =>
+      ["planeador-detalle-catalogo", catalogo] as const,
   },
 } as const
 
-/**
- * `["planeador","actividad",<id>,"calificaciones",<fecha?>]` de CUALQUIER
- * actividad: el id va en el medio, así que no hay prefijo común y se filtra
- * por posición (lo usa `invalidarPlaneadorPorAsistencia`).
- */
+/** El id va en el medio: sin prefijo común, se filtra por posición. */
 export function esCalificacionesDeActividad(queryKey: readonly unknown[]): boolean {
   return (
     queryKey[0] === all[0] &&

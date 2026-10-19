@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useQueries } from "@tanstack/react-query"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -67,20 +67,20 @@ export function ActividadRecuperarCascada({
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
 
-  const grados = useMemo(() => {
+  const grados = (() => {
     const porId = new Map<number, { id: number; nombre: string }>()
     for (const par of docenteGradoAsignatura) {
       if (!porId.has(par.gradoId)) porId.set(par.gradoId, { id: par.gradoId, nombre: par.gradoNombre })
     }
     return [...porId.values()]
-  }, [docenteGradoAsignatura])
+  })()
 
   // Cruce (grupo × asignatura) del mismo grado — el docente no necesariamente
   // dicta esa asignatura EN ese grupo puntual (el backend es quien decide de
   // verdad, acá solo se arman las combinaciones candidatas a sondear), mismo
   // supuesto que ya usaba el resto de la cascada (Grupo y Asignatura salen de
   // dos catálogos separados, sin una tercera lista docente-grupo-asignatura).
-  const combos = useMemo(() => {
+  const combos = (() => {
     const result: { gradoId: number; grupoId: number; asignaturaId: number }[] = []
     for (const grado of grados) {
       const gruposDelGrado = docenteGrupos.filter((g) => g.gradoId === grado.id)
@@ -92,7 +92,7 @@ export function ActividadRecuperarCascada({
       }
     }
     return result
-  }, [grados, docenteGrupos, docenteGradoAsignatura])
+  })()
 
   // Solo se sondea mientras el popover está abierto — no tiene sentido
   // disparar esto (hasta docenteGrupos.length * docenteGradoAsignatura.length
@@ -112,25 +112,23 @@ export function ActividadRecuperarCascada({
     return (sondas[index]?.data?.length ?? 0) > 0
   }
 
-  const gradosConAlgo = useMemo(() => {
+  const gradosConAlgo = (() => {
     const ids = new Set<number>()
     combos.forEach((combo, i) => {
       if (comboTieneAlgo(i)) ids.add(combo.gradoId)
     })
     return ids
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `sondas` cambia de referencia en cada resolución; `combos` ya la representa indirectamente.
-  }, [combos, sondas])
+  })()
 
-  const gruposConAlgo = useMemo(() => {
+  const gruposConAlgo = (() => {
     const ids = new Set<number>()
     combos.forEach((combo, i) => {
       if (combo.gradoId === gradoIdDraft && comboTieneAlgo(i)) ids.add(combo.grupoId)
     })
     return ids
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [combos, sondas, gradoIdDraft])
+  })()
 
-  const asignaturasConAlgo = useMemo(() => {
+  const asignaturasConAlgo = (() => {
     const ids = new Set<number>()
     combos.forEach((combo, i) => {
       if (combo.gradoId === gradoIdDraft && combo.grupoId === grupoIdDraft && comboTieneAlgo(i)) {
@@ -138,23 +136,15 @@ export function ActividadRecuperarCascada({
       }
     })
     return ids
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [combos, sondas, gradoIdDraft, grupoIdDraft])
+  })()
 
-  const gradosVisibles = useMemo(() => grados.filter((g) => gradosConAlgo.has(g.id)), [grados, gradosConAlgo])
+  const gradosVisibles = grados.filter((g) => gradosConAlgo.has(g.id))
 
-  const gruposVisibles = useMemo(
-    () => docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft && gruposConAlgo.has(grupo.grupoId)),
-    [docenteGrupos, gradoIdDraft, gruposConAlgo],
-  )
+  const gruposVisibles = docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft && gruposConAlgo.has(grupo.grupoId))
 
-  const asignaturasVisibles = useMemo(
-    () =>
-      docenteGradoAsignatura.filter(
+  const asignaturasVisibles = docenteGradoAsignatura.filter(
         (par) => par.gradoId === gradoIdDraft && asignaturasConAlgo.has(par.asignaturaId),
-      ),
-    [docenteGradoAsignatura, gradoIdDraft, asignaturasConAlgo],
-  )
+      )
 
   // La combinación elegida ya se sondeó como parte de `combos` — reusar ese
   // resultado en vez de volver a pedirlo es justamente el punto de sondear

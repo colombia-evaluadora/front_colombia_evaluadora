@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { establishmentsRoute } from "@/router"
 
 import type { EstablishmentFiltersFormInput } from "@/features/establishment/institution/api/schema"
@@ -17,8 +15,7 @@ export function useEstablishmentsFilters(): EstablishmentsFilters {
   const search = establishmentsRoute.useSearch()
   const navigate = establishmentsRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: EstablishmentFiltersFormInput) => {
+  const applyFilters = (values: EstablishmentFiltersFormInput) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -28,11 +25,9 @@ export function useEstablishmentsFilters(): EstablishmentsFilters {
         }),
         replace: true,
       })
-    },
-    [navigate]
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -42,22 +37,19 @@ export function useEstablishmentsFilters(): EstablishmentsFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters = useMemo(
-    () => ({
+  const queryFilters = {
       search: search.search,
       status: search.statuses,
-    }),
-    [search.search, search.statuses]
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0
     if (search.search) count += 1
     count += search.statuses?.length ?? 0
     return count
-  }, [search.search, search.statuses])
+  })()
 
   return {
     filters: {

@@ -6,6 +6,7 @@ import { apiPath } from "@/lib/api-routes"
 import { api } from "@/lib/api-client"
 import { toSingleSort } from "@/lib/query-request-mapping"
 import { unwrapPaginated } from "@/lib/response-envelope"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
 import type {
     Establishment,
@@ -13,23 +14,10 @@ import type {
     EstablishmentsQueryResponse,
 } from "@/features/establishment/institution/api/types/establishment"
 
-/**
- * Normaliza los filtros de la UI a lo que espera el backend.
- *
- * Los `<Select>` del buscador mandan el id como TEXTO (`String(item.id)`),
- * pero los binds del catálogo están declarados `BIGINT[]` y el query-service
- * valida el tipo de cada elemento: un `["1"]` donde espera `[1]` se rechaza
- * con 400.
- *
- * Se exporta —y no queda embebido en el body de la consulta— porque la
- * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
- * misma conversión. Cuando esto vivía solo dentro del hook de listado, la
- * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
- */
+// Los Select mandan ids como texto y los binds son BIGINT[]: se convierten.
+// Exportado: la exportación debe aplicar la misma conversión.
 export function toEstablishmentsQueryFilters(filters: EstablishmentsQueryRequest["filters"]) {
-    // `status` viaja tal cual: desde V116 el backend filtra por CÓDIGO de
-    // estado (A, I, S, SC, ST), no por id, así que convertirlo a número
-    // rompería el bind (VARCHAR[]).
+    // `status` viaja como código (bind VARCHAR[]).
     return { ...filters, status: filters.status ?? [] }
 }
 
@@ -40,8 +28,7 @@ interface UseEstablishmentsQueryParams {
     pageSize: number
 }
 
-/** Fila cruda de `fn_est_listar_paginado` (V53) — columnas sueltas en
- * snake_case, no el `Establishment` anidado/camelCase que espera la tabla. */
+/** Fila de `fn_est_listar_paginado`: columnas sueltas en snake_case. */
 interface RealEstablishmentRow {
     pk_establecimiento: number
     codigo: string
@@ -77,8 +64,7 @@ async function fetchEstablishments(
         return unwrapPaginated(response)
     }
 
-    // El mock espera `sorting` como array tal cual; el backend real espera
-    // un único objeto (o null) — ver `toSingleSort`.
+    // El mock espera `sorting` como array; el backend, un único objeto.
     const body = {
         filters: toEstablishmentsQueryFilters(params.filters),
         sorting: toSingleSort(params.sorting),
@@ -93,12 +79,8 @@ async function fetchEstablishments(
     return { ...result, rows: result.rows.map(toEstablishment) }
 }
 
-export const establishmentsQueryKey = (
-    params: UseEstablishmentsQueryParams
-) => [
-    "establishments",
-    params,
-]
+export const establishmentsQueryKey = (params: UseEstablishmentsQueryParams) =>
+    establishmentKeys.lista(params)
 
 export function useEstablishmentsQuery(
     params: UseEstablishmentsQueryParams

@@ -18,8 +18,8 @@ import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
  * `planeador-pantalla-principal`) — listado del docente autenticado
  * (resuelto del token) para el rail izquierdo, reemplaza el hack de
- * `use-actividades-query.ts` (traer TODO con `size=500` y filtrar/paginar
- * en el cliente): acá `search`/`estados` ya filtran del lado del servidor y
+ * traer TODO con `size=500` y filtrar/paginar
+ * en el cliente: acá `search`/`estados` ya filtran del lado del servidor y
  * `size`/`offset` paginan de verdad (con default 20/0 si se omiten).
  *
  * La fila es un RESUMEN, no el detalle completo de `Actividad` — por eso se

@@ -22,6 +22,7 @@ import { useUpdateAcademicPeriodReservation } from "@/features/establishment/aca
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { AcademicPeriod, CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 interface ActivateReservationDialogProps {
   period: AcademicPeriod
@@ -74,7 +75,7 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
           notify(result.message, { variant: "error" })
           return
         }
-        notify("El periodo de reserva de cupos se activó correctamente.")
+        notify(SUCCESS_MESSAGES.academicPeriod.activated)
       },
       onError: (error) => {
         setOpen(false)

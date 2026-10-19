@@ -8,7 +8,7 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
  * Postman `planeador-guia-completa`, 1.6) — actividades ACTIVE, sin unidad,
  * de la misma asignatura y (vía su grupo) del mismo grado que la unidad
  * `:id`. Alimenta el modal "Vincular actividad" (`DialogAgregarActividad`),
- * reemplazando el filtro client-side sobre `useActividadesQuery()` (que
+ * reemplazando el filtro client-side sobre todas las actividades (que
  * comparaba `actividad.unidad.id === unidad.id`, un campo que ni siquiera
  * tiene sentido para una huérfana).
  *

@@ -6,6 +6,7 @@ import { AUDIT_API_PREFIX, apiPath } from "@/lib/api-routes"
 import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
 import { toBind } from "@/features/administration/audits/api/real-mapping"
 import type { AuditsStats, AuditsStatsRequest } from "@/features/administration/audits/api/types/audit"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 async function fetchAuditsStats(body: AuditsStatsRequest): Promise<AuditsStats> {
   const path = apiPath("/audits/stats", "/audits/stats", AUDIT_API_PREFIX)
@@ -38,7 +39,7 @@ async function fetchAuditsStats(body: AuditsStatsRequest): Promise<AuditsStats> 
 
 export function useAuditsStatsQuery(params: AuditsStatsRequest) {
   return useQuery({
-    queryKey: ["audits", "stats", params],
+    queryKey: auditKeys.sesiones.stats(params),
     queryFn: () => fetchAuditsStats(params),
     placeholderData: (previous) => previous,
     // Mismo criterio que useAuditsQuery (la lista que acompañan estas

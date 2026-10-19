@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
@@ -127,7 +126,7 @@ function PlaneadorUnidadesPageContent() {
   // pueda acotar sus `<Select>` de Grado/Asignatura a los de esa pestaña.
   const instrumentoActivo = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento
 
-  const filtered = React.useMemo(() => {
+  const filtered = (() => {
     const porInstrumento =
       tabActiva && tabActiva.gradoIds.length > 0
         ? unidades.filter((u) => u.gradoId != null && tabActiva.gradoIds.includes(u.gradoId))
@@ -145,7 +144,7 @@ function PlaneadorUnidadesPageContent() {
     return porFiltros.filter((u) =>
       [u.nombre, u.area, u.asignatura, u.grado].join(" ").toLowerCase().includes(term),
     )
-  }, [unidades, buscar, tabActiva, filters.estado, filters.filtro])
+  })()
 
   // Export PDF/Excel: estado, instrumento, búsqueda y pestaña se filtran acá
   // (el listado no los recibe), así que la lista visible viaja como `IDS`, con

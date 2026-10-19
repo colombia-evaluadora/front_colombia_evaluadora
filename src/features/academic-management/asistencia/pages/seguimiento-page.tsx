@@ -18,15 +18,15 @@ import { getErrorMessage } from "@/lib/api-client"
 import { asistenciaSeguimientoRoute } from "@/router"
 import { useAsistenciaSeguimientoQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-seguimiento-query"
 import { useAsistenciaCalendarioMesesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useAsistenciaAccess } from "@/features/academic-management/asistencia/api/use-es-docente"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import {
   TIPOS_JUSTIFICADOS,
   useTipoAsistenciaCatalogQuery,
 } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { SeguimientoSummaryCards } from "@/features/academic-management/asistencia/components/seguimiento-summary-cards"
-import { buildColumnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
+import { buildColumnsSeguimiento } from "@/features/academic-management/asistencia/components/table/columns-seguimiento"
 import { SearchSeguimiento } from "@/features/academic-management/asistencia/components/search/search-seguimiento"
-import { ExportSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-export-seguimiento"
+import { ExportSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialogs/dialog-export-seguimiento"
 import {
   catalogosDeSesiones,
   EMPTY_SEGUIMIENTO_FILTERS,

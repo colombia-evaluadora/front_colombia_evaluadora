@@ -8,7 +8,7 @@ import {
   reservationsDb,
 } from "@/mocks/db/reservations"
 import { academicPeriodsDb } from "@/mocks/db/academic-period/academic-periods"
-import { EDUCATION_LEVELS, SHIFTS } from "@/features/coverage/api/schema"
+import { EDUCATION_LEVELS, SHIFTS } from "@/features/coverage/shared/api/schema"
 import type {
   CreateReservationInput,
   ExportFormat,
@@ -19,7 +19,7 @@ import type {
   ReservationsQueryResponse,
   ReservationsStats,
   ReservationsStatsRequest,
-} from "@/features/coverage/api/types/reservation"
+} from "@/features/coverage/reservations/api/types/reservation"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",

@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { periodosAcademicosRoute } from "@/router"
 
 import type {
@@ -21,8 +19,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
   const search = periodosAcademicosRoute.useSearch()
   const navigate = periodosAcademicosRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: AcademicPeriodsFiltersFormValues) => {
+  const applyFilters = (values: AcademicPeriodsFiltersFormValues) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -37,11 +34,9 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         }),
         replace: true,
       })
-    },
-    [navigate],
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -54,39 +49,24 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters: AcademicPeriodsQueryFilters = useMemo(
-    () => ({
+  const queryFilters: AcademicPeriodsQueryFilters = {
       sedeName: search.sedeName,
       schoolYearId: search.schoolYearId,
       statusId: search.statusId ? [search.statusId] : undefined,
       startFrom: search.startFrom,
       startTo: search.startTo,
-    }),
-    [
-      search.sedeName,
-      search.schoolYearId,
-      search.statusId,
-      search.startFrom,
-      search.startTo,
-    ]
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let n = 0
     if (search.sedeName) n += 1
     if (search.schoolYearId) n += 1
     if (search.statusId) n += 1
     if (search.startFrom || search.startTo) n += 1
     return n
-  }, [
-    search.sedeName,
-    search.schoolYearId,
-    search.statusId,
-    search.startFrom,
-    search.startTo,
-  ])
+  })()
 
   const filtrosForm = {
     sedeName: search.sedeName ?? "",

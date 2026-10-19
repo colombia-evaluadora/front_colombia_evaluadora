@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -57,10 +57,7 @@ export function SearchAcademicAssignments({
 }: SearchAcademicAssignmentsProps) {
   const [open, setOpen] = useState(false)
 
-  const filters = useMemo<AssignmentFilters>(
-    () => ({ search: searchFilter, status }),
-    [searchFilter, status],
-  )
+  const filters: AssignmentFilters = { search: searchFilter, status }
 
   const { search, setSearch } = useQuerySearch({
     syntax: SYNTAX,

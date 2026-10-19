@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -31,6 +31,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { useDeleteAreaSubject } from "@/features/establishment/academic-period/api/mutations/delete-area-subject"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
+import { toPageCount } from "@/lib/pagination"
 
 const COLUMNS = 3
 const ROWS = 6
@@ -58,15 +59,11 @@ function chunkRows(areas: GeneralArea[]): GeneralArea[][] {
 }
 
 interface SelectGeneralAreaDialogProps {
-  // Nombre del área general seleccionada (valor del formulario).
   value: string
   onChange: (nombre: string) => void
   id?: string
   invalid?: boolean
-  /** Acta 19-sep-2026: al elegir la asignatura general de una asignatura
-   *  (a diferencia del área general) no se puede borrar del catálogo — es
-   *  una lista predefinida de ley. Default `true` para no tocar el
-   *  comportamiento existente del selector de área. */
+  /** `false` para asignaturas generales: son una lista predefinida de ley. */
   allowDelete?: boolean
 }
 
@@ -88,13 +85,13 @@ export function SelectGeneralAreaDialog({
   const deleteArea = useDeleteAreaSubject()
 
   // Búsqueda por nombre (client-side: el catálogo se trae completo).
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     const query = search.trim().toLowerCase()
     if (!query) return areas
     return areas.filter((area) => area.nombre.toLowerCase().includes(query))
-  }, [areas, search])
+  })()
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const pageCount = toPageCount(filtered.length, PAGE_SIZE)
   const page = Math.min(pageIndex, pageCount - 1)
   const pageAreas = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
   const grid = chunkRows(pageAreas)

@@ -13,19 +13,8 @@ interface UpdateEvaluationCriteriaInput {
   values: EvaluationCriteria
 }
 
-// Body PLANO con las llaves de `fn_criterio_eval_actualizar`
-// (`PUT /eval-col/periodos/:ID/criterio-evaluacion`, id_query 51 — PUT desde
-// V65, no PATCH: PATCH no funciona a nivel de plataforma en el SSO).
-// `SET_GRADING_SCALE` siempre TRUE: el front siempre manda `gradingScale` en
-// cada guardado (confirmado), y la función solo re-propaga la escala si de
-// verdad cambió.
-//
-// `MAX_RECOVERY_GRADE`: `p_max_recovery_grade` ya existe en
-// `fn_criterio_eval_actualizar` (guarda en PORCENTAJE_MAXIMO_RECUPERACION,
-// ver V79) — antes no se mandaba, así que ese campo nunca se guardaba pese a
-// que el back ya lo soporta. Si el id_query 51 en `public.query` todavía no
-// castea este BODY hacia el parámetro, hace falta actualizarlo ahí también
-// (mismo tipo de drift que se encontró en `initial_grade`/GET).
+// Body plano de `fn_criterio_eval_actualizar` (id_query 51). SET_GRADING_SCALE siempre
+// TRUE: se manda la escala en cada guardado y la función solo la re-propaga si cambió.
 function toEvaluationCriteriaRequest(values: EvaluationCriteria) {
   return {
     GRADING_FORMAT: values.gradingFormat,
@@ -47,7 +36,6 @@ function updateEvaluationCriteria({
   values,
 }: UpdateEvaluationCriteriaInput): Promise<MutationResult> {
   const body = toEvaluationCriteriaRequest(values)
-  console.log("[criterio-evaluacion save] body", body)
   return api.put(`/eval-col/periodos/${academicPeriodId}/criterio-evaluacion`, body)
 }
 
@@ -64,10 +52,7 @@ export function useUpdateEvaluationCriteria({
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.evaluationCriteria.all })
-      // Cambiar el formato de calificación cambia cómo `fn_escala_listar`
-      // reconvierte nota_minima/maxima/equivalente (relativas al formato del
-      // periodo) — sin invalidar esto, la pestaña de escalas seguía
-      // mostrando los valores viejos hasta un refresh manual.
+      // `fn_escala_listar` convierte las notas según el formato del periodo.
       queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
       mutationConfig?.onSuccess?.(...args)
     },

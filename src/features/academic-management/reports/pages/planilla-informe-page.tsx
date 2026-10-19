@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { MdHourglassTop } from "react-icons/md"
 
 import {
   TableScreen,
@@ -42,6 +41,7 @@ import {
   SpinnerIcon,
   WarningCircleIcon,
   XIcon,
+  HourglassIcon,
 } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -175,7 +175,7 @@ function CeldaActividad({ celda }: { celda: CeldaPlanilla | undefined }) {
       <Tooltip>
         <TooltipTrigger className="inline-flex items-center gap-1 font-bold outline-none">
           {formatNota(celda.nota)}
-          <MdHourglassTop className="text-orange size-4" />
+          <HourglassIcon className="text-orange size-4" />
         </TooltipTrigger>
         <TooltipContent className="bg-popover text-popover-foreground ring-foreground/10 grid w-48 shadow-md ring-1 [&>[data-side]]:bg-popover [&>[data-side]]:fill-popover grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 p-3 text-sm">
           <span>Nota actual</span>

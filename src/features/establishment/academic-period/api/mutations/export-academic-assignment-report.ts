@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 interface ExportAcademicAssignmentReportInput {
@@ -13,7 +10,7 @@ interface ExportAcademicAssignmentReportInput {
 // V140) — una fila por asignación docente+grado+grupo+asignatura+jornada.
 // NO confundir con el export de "funcionarios" (módulo empleados): ese trae
 // la lista de docentes sin sus asignaturas/grado/grupo asignados.
-function exportAcademicAssignmentReport(
+export function exportAcademicAssignmentReport(
   input: ExportAcademicAssignmentReportInput
 ): Promise<ExportResult> {
   return downloadReport("asignaciones", {
@@ -26,18 +23,5 @@ function exportAcademicAssignmentReport(
       FK_JORNADA: null,
       ESTADO: null,
     },
-  })
-}
-
-interface UseExportAcademicAssignmentReportOptions {
-  mutationConfig?: MutationConfig<typeof exportAcademicAssignmentReport>
-}
-
-export function useExportAcademicAssignmentReport({
-  mutationConfig,
-}: UseExportAcademicAssignmentReportOptions = {}) {
-  return useMutation({
-    mutationFn: exportAcademicAssignmentReport,
-    ...mutationConfig,
   })
 }

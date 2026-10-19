@@ -20,8 +20,7 @@ import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 /**
  * `GET /planeador/actividades/calendario` (V251, ver colección Postman
  * `planeador-pantalla-principal`) — reemplaza el hack de traer TODAS las
- * actividades con `size=500` y filtrar el mes en el cliente
- * (`use-actividades-query.ts`): este endpoint no pagina, filtra por
+ * actividades con `size=500` y filtrar el mes en el cliente: este endpoint no pagina, filtra por
  * SOLAPAMIENTO entre `[fecha_inicio, fecha_cierre]` de la actividad y el
  * rango `[fecha_desde, fecha_hasta]` pedido (una actividad que empezó en el
  * mes anterior pero sigue abierta SÍ aparece), y ya trae `fecha` como día de

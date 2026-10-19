@@ -1,8 +1,7 @@
-import { MdStar, MdStarBorder } from "react-icons/md"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { SpinnerIcon } from "@/components/ui/icons"
+import { SpinnerIcon, StarFillIcon, StarIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -63,9 +62,9 @@ export function EvidenciaFavoritoButton({
           {marcandoEsta ? (
             <SpinnerIcon className="animate-spin" />
           ) : esFavorito ? (
-            <MdStar className="text-amber-400" />
+            <StarFillIcon className="text-amber-400" />
           ) : (
-            <MdStarBorder />
+            <StarIcon />
           )}
         </Button>
       </TooltipTrigger>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
@@ -73,7 +73,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
   // necesariamente tener un grupo propio ahí, así que armar "Grado" a
   // partir de los grupos podía dejarlo vacío aunque sí hubiera datos en
   // grado-asignatura.
-  const grados = useMemo(() => {
+  const grados = (() => {
     const porId = new Map<number, { id: number; nombre: string }>()
     for (const par of docenteGradoAsignatura) {
       if (!porId.has(par.gradoId)) {
@@ -81,17 +81,11 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
       }
     }
     return [...porId.values()]
-  }, [docenteGradoAsignatura])
+  })()
 
-  const grupos = useMemo(
-    () => docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft),
-    [docenteGrupos, gradoIdDraft],
-  )
+  const grupos = docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft)
 
-  const asignaturas = useMemo(
-    () => docenteGradoAsignatura.filter((par) => par.gradoId === gradoIdDraft),
-    [docenteGradoAsignatura, gradoIdDraft],
-  )
+  const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoIdDraft)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)

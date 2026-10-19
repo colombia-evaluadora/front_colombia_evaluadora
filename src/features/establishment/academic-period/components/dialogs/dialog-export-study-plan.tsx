@@ -1,134 +1,17 @@
-import { useState } from "react"
-
-import {
-  FileDownloadOutlinedIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
-import { useNotify } from "@/components/notice/notice-context"
-
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogOverlay,
-  DialogPortal,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-
-import { useExportStudyPlan } from "@/features/establishment/academic-period/api/mutations/export-study-plan"
-import type { ExportFormat } from "@/features/establishment/academic-period/api/types/study-plan"
+import { ExportDialog } from "@/components/export-dialog"
+import { exportStudyPlan } from "@/features/establishment/academic-period/api/mutations/export-study-plan"
 
 interface ExportStudyPlanDialogProps {
   academicPeriodId?: number
 }
 
-// Reusa la MISMA función del listado (`fn_plan_reporte_listar`, sin paginar)
-// que alimenta esta pantalla, pero cruzando TODOS los grados del periodo —
-// no solo el grado que se está editando. Sin filtros, igual que periodo
-// académico/evaluación.
 export function ExportStudyPlanDialog({ academicPeriodId }: ExportStudyPlanDialogProps) {
-  const [open, setOpen] = useState(false)
-  const { notify } = useNotify()
-
-  const exportAll = useExportStudyPlan({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(result.message)
-        setOpen(false)
-      },
-    },
-  })
-
-  function handleExport(format: ExportFormat) {
-    exportAll.mutate({ format, filters: { academicPeriodId } })
-  }
-
-  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  aria-label="Exportar plan de estudio"
-                />
-              }
-            />
-          }
-        >
-          <FileDownloadOutlinedIcon />
-        </TooltipTrigger>
-        <TooltipContent>Exportar plan de estudio</TooltipContent>
-      </Tooltip>
-      {/* `forceRender`: este Dialog se abre anidado dentro del Dialog de
-          crear/editar grado (ya abierto) — mismo fix que
-          dialog-select-general-area.tsx. */}
-      <DialogPortal>
-        <DialogOverlay forceRender className="bg-black/30" />
-      </DialogPortal>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>
-            Elige un formato para exportar todo el plan de estudio del periodo.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              disabled={exportAll.isPending}
-              aria-busy={pendingFormat === "excel"}
-              onClick={() => handleExport("excel")}
-            >
-              {pendingFormat === "excel" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FileXlsIcon data-icon="inline-start" />
-              )}
-              Excel
-            </Button>
-            <Button
-              size="sm"
-              type="button"
-              color="primary"
-              disabled={exportAll.isPending}
-              aria-busy={pendingFormat === "pdf"}
-              onClick={() => handleExport("pdf")}
-            >
-              {pendingFormat === "pdf" ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <FilePdfIcon data-icon="inline-start" />
-              )}
-              PDF
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ExportDialog
+      label="Exportar plan de estudio"
+      description="Elige un formato para exportar todo el plan de estudio del periodo."
+      nested
+      onExport={(format) => exportStudyPlan({ format, filters: { academicPeriodId } })}
+    />
   )
 }

@@ -7,13 +7,13 @@ import { apiPath } from "@/lib/api-routes"
 import { unwrapRows } from "@/lib/response-envelope"
 
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
+import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 
 interface CampusesOptionsResult {
   rows: Campus[]
 }
 
-/** Fila cruda de GET /establecimientos/sedes/opciones (fn_sed_listar_todos,
- * V52 REV2 — ya trae el `Campus` completo, no solo id/nombre). */
+/** Fila de `fn_sed_listar_todos`: ya trae el `Campus` completo. */
 interface RealCampusOptionRow {
   pk_sede: number
   codigo: string
@@ -55,7 +55,7 @@ async function fetchCampusesOptions(): Promise<Campus[]> {
 
 export function useCampusesOptionsQuery() {
   return useQuery({
-    queryKey: ["campuses", "options"],
+    queryKey: campusKeys.options(),
     meta: proveedorMeta(),
     queryFn: fetchCampusesOptions,
   })

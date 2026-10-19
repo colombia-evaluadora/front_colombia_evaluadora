@@ -10,26 +10,17 @@ import { fetchEmployee } from "@/features/establishment/employees/api/query/use-
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 
 interface EstablishmentQueryResult {
   status: "ok"
   establishment: EstablishmentDetails
-  /**
-   * Registro completo de TFUNCIONARIO (no solo `Person`) para rector y
-   * secretaria, cuando el EE ya tiene uno enlazado (`fk_tfuncionario_rector`/
-   * `secretaria` no nulo) — `null` en mock, o si el EE nunca tuvo uno
-   * asignado. El form de establecimiento solo edita los campos de `Person`
-   * (`.person` acá), pero al guardar necesita reenviar el resto del
-   * `Employee` (clase, jornada de contratación, estado, dirección, etc.)
-   * tal cual vino, para no pisarlos con `null` al hacer el PATCH de
-   * `fn_fun_actualizar` — ver `add-establishment-page.tsx`.
-   */
+  /** Funcionario completo: al guardar se reenvía tal cual para no pisar campos con `null`. */
   principalEmployee: Employee | null
   secretaryEmployee: Employee | null
 }
 
-/** Fila cruda de `fn_est_buscar_por_pk` (V53, `RETURNS SETOF TESTABLECIMIENTO`)
- * — columnas sueltas de la tabla, sin ningún catálogo resuelto. */
+/** Fila de `fn_est_buscar_por_pk`: sin catálogos resueltos. */
 interface RealEstablishmentDetailRow {
   pk_establecimiento: number
   codigo: string
@@ -46,11 +37,7 @@ interface RealEstablishmentDetailRow {
   fax: string | null
   pagina_web: string | null
   fk_tpropiedad_juridica: number | null
-  /**
-   * `pk_tarchivo` del escudo. `fn_est_buscar_por_pk` es HOY la única query que
-   * lo expone, así que este es el único camino para pintar el escudo: con este
-   * id se acuña el token de vista (ver `ArchivoImage`).
-   */
+  /** Única query que expone el escudo. */
   fk_tarchivo: number | null
   resolucion_aprobacion: string | null
   licencia_funcionamiento: string | null
@@ -68,12 +55,7 @@ interface RealEstablishmentDetailRow {
   subsidio: "S" | "N" | null
 }
 
-/** `{id}` nada más: la query no hace join contra el catálogo real (ni
- * `TLISTA_VALOR` ni `TPROPIEDAD_JURIDICA`/`TMUNICIPIO`), así que `code`/
- * `name` quedan vacíos. Alcanza para que los `<Select>` del formulario
- * (que resuelven la etiqueta visible contra el catálogo ya cargado, por
- * `id`) muestren la opción correcta — no alcanza para mostrar el nombre en
- * un lugar que lo lea directo del objeto sin pasar por un `<Select>`. */
+/** Solo `id`: los `<Select>` resuelven la etiqueta contra el catálogo. */
 function toStub(id: number | null): CatalogItem | null {
   return id === null ? null : { id, code: "", name: "" }
 }
@@ -98,9 +80,7 @@ function toEstablishmentDetails(
       logoArchivoId: row.fk_tarchivo ?? null,
     },
     address: {
-      // `{id, name:"", department:{id:0,name:""}}`: mismo criterio que
-      // `toStub` — el `<Select>` de municipio resuelve la etiqueta contra
-      // `useMunicipalitiesQuery()` ya cargado, por `id`.
+      // Stub: el `<Select>` de municipio resuelve la etiqueta por `id`.
       municipality: row.fk_tmunicipio === null
         ? null
         : { id: row.fk_tmunicipio, name: "", department: { id: 0, name: "" } },
@@ -120,21 +100,11 @@ function toEstablishmentDetails(
       approvalResolution: row.resolucion_aprobacion ?? "",
       teachingLanguage: toStub(row.fk_tlv_idioma),
       calendar: toStub(row.fk_tlv_calendario),
-      // REV: estaban hardcodeados en `null` — `fn_est_buscar_por_pk` hace
-      // `SELECT *` de TESTABLECIMIENTO (trae FK_TLV_REGIMEN_CATCOSTO/
-      // FK_TLV_RANGO_TARIFA como cualquier otra columna), pero la fila cruda
-      // nunca declaraba esos dos campos ni el mapeo los leía — por eso el
-      // select se veía vacío al reabrir el editar aunque el dato sí se
-      // hubiera guardado.
       costRegime: toStub(row.fk_tlv_regimen_catcosto),
       populationGender: toStub(row.fk_tlv_genero_est),
       tuitionRange: toStub(row.fk_tlv_rango_tarifa),
       disabilityType: toStub(row.fk_tdiscapacidad),
-      // No hay columna booleana de licencia: `LICENCIA_FUNCIONAMIENTO` es
-      // VARCHAR y es lo que ya usa `licenseStatus` — `operatingLicense` no
-      // tiene una columna real detrás (tampoco viaja al crear, ver
-      // mutations/create.ts: no está en el `param_types` registrado).
-      // Se aproxima a partir de si hay texto de estado de licencia.
+      // Sin columna booleana: se infiere de `LICENCIA_FUNCIONAMIENTO`.
       operatingLicense: Boolean(row.licencia_funcionamiento?.trim()),
       licenseStatus: row.licencia_funcionamiento ?? "",
       licenseDate: row.fecha_licencia,
@@ -142,24 +112,13 @@ function toEstablishmentDetails(
       giftedAttention: row.talento === "S",
       subsidy: row.subsidio === "S",
     },
-    // fk_tfuncionario_rector/secretaria: `fn_est_buscar_por_pk` solo trae el
-    // PK suelto (no hace join contra TUSUARIO), así que la persona completa
-    // se resuelve aparte en `fetchEstablishment` (mismo PK que
-    // `fn_usu_empleado_buscar_por_pk` espera, ver `principalEmployee`/
-    // `secretaryEmployee` de `EstablishmentQueryResult`) y se pasa acá ya
-    // resuelta. `null` si el EE nunca tuvo uno asignado.
+    // Rector/secretaria se resuelven aparte en `fetchEstablishment`.
     principal: principal?.person ?? null,
     secretary: secretary?.person ?? null,
   }
 }
 
-/**
- * `fk_tfuncionario_rector`/`secretaria` son el mismo PK que
- * `fn_usu_empleado_buscar_por_pk` espera (TFUNCIONARIO es una sola tabla
- * para rector/secretaria/docentes/etc.) — se reusa `fetchEmployee` en vez
- * de duplicar el mapeo de fila cruda a `Person`. `null` si el EE no tiene
- * uno enlazado.
- */
+/** Rector/secretaria son TFUNCIONARIO: se reusa `fetchEmployee`. */
 async function fetchLinkedFuncionario(pk: number | null): Promise<Employee | null> {
   if (pk === null) return null
   const result = await fetchEmployee(pk)
@@ -174,7 +133,6 @@ async function fetchEstablishment(id: number): Promise<EstablishmentQueryResult>
     return { ...result, principalEmployee: null, secretaryEmployee: null }
   }
 
-  // fn_est_buscar_por_pk (V53) — fila cruda envuelta en {rows:[...]}.
   const row = unwrapRow<RealEstablishmentDetailRow>(
     (await api.get(`/eval-col/establecimientos/${id}`)) as unknown as
       | { rows: RealEstablishmentDetailRow[] }
@@ -196,7 +154,7 @@ async function fetchEstablishment(id: number): Promise<EstablishmentQueryResult>
 
 export function useEstablishmentQuery(id: number | null, enabled = true) {
   return useQuery({
-    queryKey: ["establishments", id],
+    queryKey: establishmentKeys.detalle(id),
     meta: proveedorMeta(),
     queryFn: () => fetchEstablishment(id as number),
     enabled: enabled && Boolean(id),

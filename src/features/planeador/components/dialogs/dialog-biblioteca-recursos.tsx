@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { CheckIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -113,15 +113,9 @@ export function DialogBibliotecaRecursos({
   // Los que ya están en el form no se ofrecen de nuevo. La comparación es
   // por `archivoId` y no por URL: la biblioteca son ARCHIVOS, y el mismo
   // archivo puede estar en dos actividades con descripciones distintas.
-  const yaAgregados = useMemo(
-    () => new Set(recursosActuales.map((r) => r.archivoId).filter((id): id is number => id != null)),
-    [recursosActuales],
-  )
+  const yaAgregados = new Set(recursosActuales.map((r) => r.archivoId).filter((id): id is number => id != null))
 
-  const items = useMemo(
-    () => (data?.items ?? []).filter((item) => !yaAgregados.has(item.archivoId)),
-    [data, yaAgregados],
-  )
+  const items = (data?.items ?? []).filter((item) => !yaAgregados.has(item.archivoId))
 
   // El total lo da el servidor y NO se descuenta lo filtrado acá: sería
   // mentir sobre cuántas páginas hay. En el peor caso una página muestra

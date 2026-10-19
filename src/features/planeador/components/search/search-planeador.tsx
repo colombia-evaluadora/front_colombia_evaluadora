@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
@@ -59,17 +59,14 @@ export function SearchPlaneador({
 
   // Ver `@/components/search/query-syntax`: el texto sin clave va a `buscar`
   // y cada filtro avanzado tiene la suya.
-  const syntax = useMemo<QuerySyntax<PlaneadorFiltersFormInput>>(
-    () => ({
+  const syntax: QuerySyntax<PlaneadorFiltersFormInput> = {
       empty: { buscar: "", filtro: "", estado: "" },
       freeText: { key: "actividad", field: "buscar" },
       terms: [
         optionTerm("estado", "estado", [...ESTADO_OPTIONS]),
         optionTerm("instrumento", "filtro", instrumentoOptions),
       ],
-    }),
-    [instrumentoOptions],
-  )
+    }
 
   const { search, setSearch, freeText } = useQuerySearch({
     syntax,

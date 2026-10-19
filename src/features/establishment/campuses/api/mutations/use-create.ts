@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { invalidateCampuses } from "@/features/establishment/campuses/api/mutations/invalidate-campuses"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { create } from "@/features/establishment/campuses/api/mutations/create"
@@ -15,7 +16,7 @@ export function useCreate({ mutationConfig }: UseCreateOptions = {}) {
     mutationFn: create,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["campuses"] })
+      invalidateCampuses(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -117,7 +117,7 @@ Los features reales se desvían (ver §6). **Al editar, seguí la convención de
   - `gestion-academica/{informes,referentes-curriculares}*` → `features/academic-management`
   - `planeador/*` → `features/planeador`
   - `asistencia*` → `features/academic-management/asistencia`
-- **Bug conocido**: las rutas de `_establishment` están agregadas dos veces en `routeTree` (directo bajo `appLayoutRoute` y dentro de `establishmentLayoutRoute`, ~L918-933). No copies ese patrón; una ruta va solo bajo el padre de su `getParentRoute`.
+- Una ruta va en `routeTree` solo bajo el padre de su `getParentRoute` (las de `_establishment` cuelgan únicamente de `establishmentLayoutRoute`).
 
 ### Search params
 - Schemas zod en `features/<f>/api/schema.ts`, pasados a `validateSearch`.
@@ -225,10 +225,10 @@ Cambiar el modo mock cambia paths (`apiPath`), unwrapping (`response-envelope`) 
 ## 6. Features (dominio y particularidades)
 
 ### `coverage` — Cobertura
-Todo plano en la raíz del feature (sin sub-carpetas) aunque tiene 4 subdominios:
+Un sub-feature por subdominio: `matricula/`, `reservations/`, `pre-matricula/`, `enrollments/` (inscritos); `shared/` tiene el schema de búsqueda y los ui-mappings comunes:
 - **Matrícula** (el más completo y **real**): lista, agregar (~70 campos), detalle, editar, configuración de campos por establecimiento (visible/obligatorio/editable), retirar/reingresar, cambios masivos de sede/grado/grupo (`move-matricula.ts`), homologación. Endpoints `/eval-col/matricula/query`, `/eval-col/cobertura-academica/matricula[/{id}]` (GET detalle, POST/PATCH **multipart**, **PUT = eliminar**, `{id}/retirar|reingresar` PUT). `create-matricula.ts` orquesta: resolver sede/jornada **por nombre** → periodo (`/periodos/resolver-matricula`) → grado → buscar/crear estudiante y acudiente → multipart → documentos extra. Formularios con `useState` + validación manual guiada por la config de campos (decisión documentada en `schema.ts`).
 - **Reserva de cupo**, **Pre-matrícula** (prototipo: año 2025→2026 hardcodeado, `onConfirm` con TODO), **Inscritos** (detalle stub): endpoints `/coverage/...` **solo existen en MSW** → no funcionan con mocks apagados.
-- Trío a copiar para pantallas de lista: `table-matricula.tsx` + `api/query/use-matricula-query.ts` + `hooks/use-matricula-filters.ts`.
+- Trío a copiar para pantallas de lista: `matricula/components/table/table-matricula.tsx` + `matricula/api/query/use-matricula-query.ts` + `matricula/hooks/use-matricula-filters.ts`.
 - Los mocks de matrícula para retirar/eliminar quedaron desactualizados respecto de los paths reales.
 
 ### `establishment` — Establecimiento educativo
@@ -236,18 +236,18 @@ Todo plano en la raíz del feature (sin sub-carpetas) aunque tiene 4 subdominios
 - `institution`/`campuses`/`employees`: **legacy** — ramas mock/real con `apiPath`, forms con `useState` + `safeParse` manual, mutaciones partidas en `create.ts` (fn) + `use-create.ts` (hook), payloads camelCase anidados: en modo real el fn de la mutación pasa los valores por un adaptador local (`toRealBackendPayload` en `institution/api/mutations/create.ts` y `employees/api/mutations/update.ts`, `toRealCreatePayload`/`toRealUpdatePayload` en `campuses/api/mutations/create.ts`) que aplana catálogos a `.id` y saca `id`/campos read-only; con mocks se manda el objeto de dominio tal cual (`toOutgoingPayload`).
 - `academic-period`: **más nuevo** — solo backend real (`/eval-col/...` hardcodeado, sin mocks), forms con `useForm` de TanStack + zod `validators`, un archivo por operación (`create-grade.ts` exporta `useCreateGrade`), bodies **UPPER_SNAKE planos** (`FK_SEDE`, `PAGE_INDEX`, `SORTING_ID`, `RESERVA: "S"|"N"`).
 - Dos sistemas de catálogos: `employees/api/query/use-catalogs.ts` (`useCatalogQuery(CATALOGS.X)`) y `academic-period/api/query/fetch-select-category.ts` (`fetchSelectCategory("JORNADA")` → `GET /eval-col/select/:CATEGORIA`). Otros features importan ambos. Para resolver texto → `pk_lista_valor` al armar un body usá `resolveCatalogId(queryClient?, CATEGORIA, nombre, { match | normalize })` / `findCatalogId(rows, ...)` (`academic-period/api/query/resolve-catalog-id.ts`); los `resolveXxxId` existentes son one-liners sobre él.
-- Resultados de escritura `{ rows: [{ fn_x: id }] }` → `extractWriteResultId`; bulk delete → `summarizeBulkDelete`/`formatBulkDeleteError`.
+- Resultados de escritura `{ rows: [{ fn_x: id }] }` → `extractWriteResultId`; bulk delete → `summarizeBulkDelete`/`formatBulkDeleteError` (en `academic-period/api/utils/`). En `academic-period`, los campos reutilizables van en `components/fields/` y los helpers puros en `utils/`.
 - Archivos gigantes (editá con cuidado, en porciones): `employees/components/dialogs/dialog-manage.tsx` (67 KB), `dialog-create-rating-scale.tsx`, `dialog-create-study-plan.tsx`, `add-establishment-page.tsx`.
 
 ### `academic-management` — Gestión académica
 - `curricular-references/`: referentes curriculares (enfoque FORMATIVO/EVALUATIVO que determina reglas del planeador), con enunciados y evidencias (evidencia = enunciado con `ENUNCIADO_PADRE`). `export.ts` solo funciona con MSW.
-- `reports/` (página en `academic-management/pages/reports-page.tsx`): Informes — cascada sede→año→jornada→periodos (incluye "Final", `PERIODO_FINAL_ID = -1`)→grupos; consolidar, observaciones cualitativas de preescolar generadas por IA (`/ai/observaciones/*`, 409 si no se manda `SOBRESCRIBIR`), boletín PDF. Todo el estado en la URL. Todo vía `evalCol.postRows` (lecturas por POST).
+- `reports/` (página en `reports/pages/reports-page.tsx`): Informes — cascada sede→año→jornada→periodos (incluye "Final", `PERIODO_FINAL_ID = -1`)→grupos; consolidar, observaciones cualitativas de preescolar generadas por IA (`/ai/observaciones/*`, 409 si no se manda `SOBRESCRIBIR`), boletín PDF. Todo el estado en la URL. Todo vía `evalCol.postRows` (lecturas por POST).
 - `asistencia/`: calendario mensual, registro manual por sesión (preescolar usa `ACTIVIDAD` en lugar de `ASIGNATURA`/`BLOQUE`), seguimiento. Sus mutaciones **no** aceptan `mutationConfig`. Acoplamiento circular con planeador (`invalidarPlaneadorPorAsistencia`).
 
 ### `planeador` — Planeador docente
 - Dominio: **Actividades** (ventana de fechas, tipo, evaluativa/formativa/recuperación, instrumento de evaluación: Rúbrica / Lista de cotejo / Escala de valoración / Otro, recursos, adaptaciones, estudiantes) agrupadas en **Unidades temáticas** (método de cálculo Ponderado / Promedio simple / Suma de puntos → la actividad lleva `PONDERACION` **o** `NOTA_MAXIMA`, nunca ambos; criterios por nivel; instrumento propio de la unidad desde V488). **Planilla** de calificación por periodo→grado→grupo→asignatura.
 - Páginas: actividades (rail por día `?dia` + calendario mensual o `ActividadDetallePanel` si `?actividad`, modos `?modo=grades|approval`), crear/editar actividad, unidades (`?unidad`, tabs por referente `?instrumento`), crear/editar unidad, planilla (estado local), vista previa de recurso (el recurso viaja en search; el form se guarda en sessionStorage con `lib/actividad-form-draft.ts`).
-- `components/forms/form-editar-actividad.tsx` (~5.200 líneas) sirve para crear y editar. `defaultValues` se leen una vez al montar: la página espera los datos y usa `key={id}`. Controles de Base UI ignoran `<fieldset disabled>` → cada sección recibe `disabled` explícito.
+- `components/forms/form-editar-actividad.tsx` (orquestador; las secciones viven en `form-editar-actividad/`) sirve para crear y editar. `defaultValues` se leen una vez al montar: la página espera los datos y usa `key={id}`. Controles de Base UI ignoran `<fieldset disabled>` → cada sección recibe `disabled` explícito.
 - **Guardado multi-paso con orden obligatorio**: actividad (POST/PUT) → vínculo unidad → evidencias (una por request) → materiales (PUT, reemplazo total) → instrumento (PUT; necesita que el PUT de actividad ya haya fijado `FK_TLV_INSTRUMENTO_EVALUACION`, si no 400/22023) → adaptaciones (reemplazo total) → criterios → estudiantes. Los PUT de reemplazo total **borran archivos que no se reenvíen por `archivoId`**.
 - Contrato: bodies UPPER_SNAKE, flags `"S"|"N"`, **campos JSONB se mandan como string JSON** (`DEFINICION`, `MATERIALES`, `ADAPTACIONES`, `CALIFICACION`), no hay DELETE (bajas por PATCH). Nombres de catálogo → `pk_lista_valor` con `resolveXxxId(nombre)` al armar el body.
 - Query keys: **solo desde `planeadorKeys`** (`api/query-keys.ts`), bajo `["planeador", ...]`: `actividades.{all,lista,mias,calendario,stats,programacion}`, `actividad.{detalle,calificaciones,instrumento,…}(id)`, `unidades.{all,lista}`, `unidad.{detalle,criterios,actividades,…}(id)`, `planilla.{calificaciones.{all,lista},columnas}`. Asistencia también la usa (`sedesOpciones`).

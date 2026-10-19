@@ -1,8 +1,4 @@
-// Contrato del agente de ai-control-service (`/api/ai/agente/**`).
-// Fuente: `docs/ai-control-service/contrato-agente.md` y los DTO de
-// `aicontrol/agente/web/dto` en el repo sso. Los nombres quedan en español y
-// tal cual los serializa Jackson: el front no los traduce a camelCase inglés
-// porque el contrato ya es camelCase y renombrar solo agregaría un mapeo.
+// Contrato del agente (`/api/ai/agente/**`), tal cual lo serializa el backend.
 
 /** Tipo de una respuesta del turno (`TipoRespuesta`). */
 export type TipoRespuesta =
@@ -27,21 +23,13 @@ export interface AccionPendiente {
   resumen: string
   /** `LocalDateTime` del servidor, sin zona (`2026-10-13T15:10:00`). */
   expira: string
-  /**
-   * Estado ACTUAL de la acción (SSO #696). En vivo siempre `PENDIENTE`; en el
-   * historial puede venir resuelta (y una pendiente vencida llega como
-   * `EXPIRADA`). Mensajes viejos no lo traen.
-   */
+  /** Estado actual; en vivo siempre `PENDIENTE`. */
   estado?: EstadoAccionPendiente
 }
 
 export type EstadoAccionPendiente = "PENDIENTE" | "EJECUTADA" | "FALLIDA" | "DESCARTADA" | "EXPIRADA"
 
-/**
- * Acción de UI (conjunto cerrado; no existe "enviar"). El backend ya las
- * validó contra los menús del usuario y el formulario abierto, pero el front
- * igual descarta `op` desconocidas y formularios que no registró.
- */
+/** Acción de UI; el front descarta `op` y formularios desconocidos. */
 export type AccionUi =
   | { op: "NAVEGAR"; pantalla: string; url: string; params?: Record<string, string> }
   | { op: "RELLENAR"; formulario: string; valores: Record<string, unknown> }
@@ -85,12 +73,7 @@ export interface MensajeHistorial {
   texto: string
   tipoRespuesta?: TipoRespuesta
   createdAt: string
-  /**
-   * Respuesta estructurada del turno (solo `ASSISTANT`, SSO #696): la misma
-   * `Respuesta` del endpoint de mensajes para volver a pintar tablas,
-   * faltantes, acciones y confirmaciones. Mensajes guardados antes del cambio
-   * traen una versión reducida (`tipo`, `texto`, `acciones`).
-   */
+  /** Respuesta completa del turno (solo `ASSISTANT`). */
   respuesta?: RespuestaAgente
 }
 
@@ -155,7 +138,7 @@ export type CodigoFormularioAgente =
   | "planeador.unidad"
 
 export interface ContextoUi {
-  /** Ruta con su query, hasta 1000 caracteres. */
+  /** Path de la pantalla, sin query. */
   ruta: string
   filtros?: string[]
   /** Escalares que identifican la pantalla (ids de la URL, filtros aplicados…), máx. 30. */

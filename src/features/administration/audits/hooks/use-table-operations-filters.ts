@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { auditoriaTablaDetalleRoute } from "@/router"
 
 import type {
@@ -20,25 +18,22 @@ export function useTableOperationsFilters(): TableOperationsFilters {
   const search = auditoriaTablaDetalleRoute.useSearch()
   const navigate = auditoriaTablaDetalleRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: TableOperationsFiltersFormValues) => {
-      navigate({
-        search: (prev) => ({
-          ...prev,
-          author_ip: values.author || undefined,
-          operations: values.operations.length ? values.operations : undefined,
-          occurredFrom: values.occurredFrom || undefined,
-          occurredTo: values.occurredTo || undefined,
-          fieldFilters: values.fieldFilters.length ? values.fieldFilters : undefined,
-          page: 0,
-        }),
-        replace: true,
-      })
-    },
-    [navigate],
-  )
+  const applyFilters = (values: TableOperationsFiltersFormValues) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        author_ip: values.author || undefined,
+        operations: values.operations.length ? values.operations : undefined,
+        occurredFrom: values.occurredFrom || undefined,
+        occurredTo: values.occurredTo || undefined,
+        fieldFilters: values.fieldFilters.length ? values.fieldFilters : undefined,
+        page: 0,
+      }),
+      replace: true,
+    })
+  }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -51,41 +46,24 @@ export function useTableOperationsFilters(): TableOperationsFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
   // Puertas adentro (form, request al backend) el filtro sigue llamándose
   // `author`; `author_ip` es el nombre del parámetro en la URL.
-  const queryFilters: TableOperationsQueryRequest["filters"] = useMemo(
-    () => ({
-      author: search.author_ip,
-      operations: search.operations,
-      occurredFrom: search.occurredFrom,
-      occurredTo: search.occurredTo,
-      fieldFilters: search.fieldFilters,
-    }),
-    [
-      search.author_ip,
-      search.operations,
-      search.occurredFrom,
-      search.occurredTo,
-      search.fieldFilters,
-    ],
-  )
+  const queryFilters: TableOperationsQueryRequest["filters"] = {
+    author: search.author_ip,
+    operations: search.operations,
+    occurredFrom: search.occurredFrom,
+    occurredTo: search.occurredTo,
+    fieldFilters: search.fieldFilters,
+  }
 
-  const activeFilterCount = useMemo(() => {
-    let n = 0
-    if (search.author_ip) n += 1
-    n += search.operations?.length ?? 0
-    if (search.occurredFrom || search.occurredTo) n += 1
-    n += search.fieldFilters?.length ?? 0
-    return n
-  }, [
-    search.author_ip,
-    search.operations,
-    search.occurredFrom,
-    search.occurredTo,
-    search.fieldFilters,
-  ])
+  let n = 0
+  if (search.author_ip) n += 1
+  n += search.operations?.length ?? 0
+  if (search.occurredFrom || search.occurredTo) n += 1
+  n += search.fieldFilters?.length ?? 0
+  const activeFilterCount = n
 
   return {
     filters: {

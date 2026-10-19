@@ -1,0 +1,131 @@
+import { useEffect } from "react"
+import { Link } from "@tanstack/react-router"
+
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
+import { Button } from "@/components/ui/button"
+import { SpinnerIcon } from "@/components/ui/icons"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+
+import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
+import { coberturaMatriculaDetalleRoute } from "@/router"
+import { useMatriculaDetailQuery } from "@/features/coverage/matricula/api/query/use-matricula-detail-query"
+import { useMatriculaFieldConfigQuery } from "@/features/coverage/matricula/api/query/use-matricula-field-config-query"
+import { useEstablecimientoDeSede } from "@/features/coverage/matricula/api/query/use-establecimiento-de-sede"
+import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
+import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
+import { MatriculaFormBody } from "@/features/coverage/matricula/components/forms/matricula-form-body"
+import { MatriculaToolbar } from "@/features/coverage/matricula/components/matricula-toolbar"
+import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
+import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
+import { resolveMatriculaMunicipioDepartments } from "@/features/coverage/matricula/utils/matricula-form-defaults"
+
+export function MatriculaDetailPage() {
+  return (
+    <NoticeProvider>
+      <MatriculaDetailPageContent />
+    </NoticeProvider>
+  )
+}
+
+function MatriculaDetailPageContent() {
+  const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
+  const { notify } = useNotify()
+  const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
+  // La configuración de campos es la del colegio de la sede de la matrícula.
+  const colegio = useEstablecimientoDeSede({
+    sedeId: data?.details?.sedeId,
+    sedeNombre: data?.details?.academic.campus,
+  })
+  const { data: catalogs } = useMatriculaCampusesQuery()
+  const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const {
+    data: fieldConfig,
+    isError: isFieldConfigError,
+    error: fieldConfigError,
+  } = useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
+  const fieldSettings = applyGradeFieldRules(
+    fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined,
+    data?.details?.academic.grade,
+  )
+
+  useEffect(() => {
+    if (isError) notify(getErrorMessage(error), { variant: "error" })
+  }, [isError, error, notify])
+  useEffect(() => {
+    if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
+  }, [isFieldConfigError, fieldConfigError, notify])
+
+  const departments: DepartmentOption[] = (() => {
+    const byName = new Map<string, DepartmentOption["municipalities"]>()
+    for (const municipality of municipalities) {
+      const list = byName.get(municipality.department.name) ?? []
+      list.push({ id: municipality.id, name: municipality.name })
+      byName.set(municipality.department.name, list)
+    }
+    return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
+  })()
+
+  const details = (data?.details ? resolveMatriculaMunicipioDepartments(data.details, municipalities) : null)
+
+  return (
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            <Button
+              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => prev} />}
+              variant="fill"
+              color="neutral"
+              size="sm"
+              nativeButton={false}
+            >
+              Cerrar
+            </Button>
+          }
+        >
+          Detalle de Matrícula
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+
+      {isPending && (
+        <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
+          <SpinnerIcon className="animate-spin" />
+          Cargando…
+        </div>
+      )}
+
+      {isError && (
+        <div className="p-10 text-center text-sm text-destructive">
+          {getErrorMessage(error)}
+        </div>
+      )}
+
+      {data?.status === "ok" && data.matricula && details && (
+        <TableScreenBody>
+          <div className="flex flex-col gap-6">
+            <MatriculaToolbar matricula={data.matricula} />
+            <MatriculaFormBody
+              values={details}
+              onChange={() => {}}
+              catalogs={catalogs}
+              departments={departments}
+              disabled
+              fieldSettings={fieldSettings}
+            />
+          </div>
+        </TableScreenBody>
+      )}
+
+      {data?.status === "error" && (
+        <div className="p-10 text-center text-sm text-destructive">{data.message}</div>
+      )}
+    </TableScreen>
+  )
+}

@@ -3,15 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
-// Fila real de `fn_fun_baja_establecimiento_bulk` (confirmado contra el
-// backend): no hay envelope `{status, message, deletedCount}` a nivel de
-// respuesta — cada id trae su propio resultado, como los demás bulk-delete
-// de esta app. `pk_funcionario` viaja como texto (aunque `ids` se manda como
-// number[]). `status` es "eliminado" en éxito; en falla viene prefijado
-// "error:" con la razón (`sin_establecimiento`, `no_encontrado`, ...) — el
-// set de razones no está cerrado, así que cualquier valor que no sea
-// "eliminado" se trata como fallo.
+// Sin envelope: cada id trae su fila; `pk_funcionario` llega como texto.
+// Todo `status` distinto de "eliminado" es fallo (razones no cerradas).
 export interface BulkDeleteEmployeeRow {
   pk_funcionario: string
   status: string
@@ -21,12 +16,7 @@ export interface BulkDeleteEmployeeResult {
   rows: BulkDeleteEmployeeRow[]
 }
 
-/**
- * `PUT /establecimientos/funcionarios/eliminar-multiple`
- * (`fn_fun_baja_establecimiento_bulk`, baja lógica) con los ids en
- * `{ pks: [...] }` — mismo formato que ya usan en vivo
- * `/establecimientos/bulk-delete` y `/establecimientos/sedes/bulk-delete`.
- */
+/** Baja lógica con `{ pks: [...] }`, como los demás bulk-delete. */
 function bulkDeleteEmployees(ids: number[]): Promise<BulkDeleteEmployeeResult> {
   if (env.ENABLE_API_MOCKING) {
     return api.request<BulkDeleteEmployeeResult>({
@@ -81,7 +71,7 @@ export function useBulkDelete({
     mutationFn: bulkDeleteEmployees,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] })
+      queryClient.invalidateQueries({ queryKey: employeeKeys.all })
       mutationConfig?.onSuccess?.(...args)
     },
   })

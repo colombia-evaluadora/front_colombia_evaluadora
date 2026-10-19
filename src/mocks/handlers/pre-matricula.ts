@@ -6,7 +6,7 @@ import {
   GENDER_OPTIONS,
   RELATIONSHIP_OPTIONS,
   RESIDENCE_OPTIONS,
-} from "@/features/coverage/api/ui-mappings"
+} from "@/features/coverage/shared/api/ui-mappings"
 import type {
   PreMatricula,
   PreMatriculaCatalogsRequest,
@@ -15,11 +15,11 @@ import type {
   PreMatriculaQueryRequest,
   PreMatriculaQueryResponse,
   PreMatriculaStatus,
-} from "@/features/coverage/api/types/pre-matricula"
+} from "@/features/coverage/pre-matricula/api/types/pre-matricula"
 import type {
   ReservationsQueryFilters,
   Reservation,
-} from "@/features/coverage/api/types/reservation"
+} from "@/features/coverage/reservations/api/types/reservation"
 
 function matches(value: string, needle: string): boolean {
   return value.toLowerCase().includes(needle.toLowerCase())

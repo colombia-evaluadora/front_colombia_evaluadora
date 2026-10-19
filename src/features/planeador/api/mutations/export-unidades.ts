@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-
 import { downloadReport } from "@/lib/report-client"
-import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -33,7 +30,7 @@ interface ExportUnidadesInput {
   rotulos?: RotulosExportUnidades
 }
 
-function exportUnidades({ filters, format, rotulos }: ExportUnidadesInput): Promise<ExportResult> {
+export function exportUnidades({ filters, format, rotulos }: ExportUnidadesInput): Promise<ExportResult> {
   return downloadReport("planeador-unidades", {
     filters,
     format,
@@ -42,16 +39,5 @@ function exportUnidades({ filters, format, rotulos }: ExportUnidadesInput): Prom
     columnLabels: rotulos
       ? { nombre: rotulos.unidad, total_actividades: rotulos.actividades }
       : undefined,
-  })
-}
-
-interface UseExportUnidadesOptions {
-  mutationConfig?: MutationConfig<typeof exportUnidades>
-}
-
-export function useExportUnidades({ mutationConfig }: UseExportUnidadesOptions = {}) {
-  return useMutation({
-    mutationFn: exportUnidades,
-    ...mutationConfig,
   })
 }

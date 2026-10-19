@@ -2,7 +2,7 @@ import {
   EDUCATION_LEVELS,
   EVALUATION_TYPES,
   PEDAGOGICAL_APPROACHES,
-} from "@/features/academic-management/curricular-references/api/catalogs"
+} from "@/features/academic-management/curricular-references/utils/catalogs"
 
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 

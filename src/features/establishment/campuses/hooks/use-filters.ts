@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { campusesRoute } from "@/router"
 
 import type { CampusFiltersFormInput } from "@/features/establishment/campuses/api/schema"
@@ -18,8 +16,7 @@ export function useCampusesFilters(): CampusesFilters {
   const search = campusesRoute.useSearch()
   const navigate = campusesRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: CampusFiltersFormInput) => {
+  const applyFilters = (values: CampusFiltersFormInput) => {
       navigate({
         search: (prev) => ({
           ...prev,
@@ -29,11 +26,9 @@ export function useCampusesFilters(): CampusesFilters {
         }),
         replace: true,
       })
-    },
-    [navigate]
-  )
+    }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -43,22 +38,19 @@ export function useCampusesFilters(): CampusesFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters = useMemo(
-    () => ({
+  const queryFilters = {
       search: search.search,
       zones: search.zones,
-    }),
-    [search.search, search.zones]
-  )
+    }
 
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0
     if (search.search) count += 1
     count += search.zones?.length ?? 0
     return count
-  }, [search.search, search.zones])
+  })()
 
   const filtrosForm = {
     search: search.search ?? "",

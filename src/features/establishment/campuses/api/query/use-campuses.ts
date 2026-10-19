@@ -6,6 +6,7 @@ import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
 import { toSingleSort } from "@/lib/query-request-mapping"
 import { unwrapPaginated } from "@/lib/response-envelope"
+import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 
 import type {
   Campus,
@@ -13,22 +14,9 @@ import type {
   CampusesQueryResponse,
 } from "@/features/establishment/campuses/api/types/campus"
 
-/**
- * Normaliza los filtros de la UI a lo que espera el backend.
- *
- * Hoy no convierte tipos: `zones` viaja como CÓDIGOS (texto) porque desde
- * V116 el backend filtra por código (binds `VARCHAR[]`), no por id. Lo único
- * que hace es garantizar un array vacío en lugar de `undefined`, para que el
- * bind siempre reciba un array.
- *
- * Se exporta —y no queda embebido en el body de la consulta— porque la
- * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
- * misma normalización. Cuando esto vivía solo dentro del hook de listado, la
- * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
- */
+// Exportado: la exportación debe normalizar los filtros igual que el listado.
 export function toCampusesQueryFilters(filters: CampusesQueryRequest["filters"]) {
-  // `zones` viaja tal cual: desde V116 el backend filtra por CÓDIGO de zona,
-  // no por id, así que convertir a número rompería el bind (VARCHAR[]).
+  // `zones` viaja como código (bind VARCHAR[]), no como id.
   return { ...filters, zones: filters.zones ?? [] }
 }
 
@@ -39,9 +27,7 @@ interface UseCampusesQueryParams {
   pageSize: number
 }
 
-/** Fila cruda de `fn_sed_listar_paginado` (V52) — a diferencia de
- * `fn_sed_listar_todos` (usado en el selector de sedes), esta versión
- * paginada NO trae `barrio`/`comuna`, solo lo que se ve en la tabla. */
+/** Fila de `fn_sed_listar_paginado`: no trae `barrio`/`comuna`. */
 interface RealCampusRow {
   pk_sede: number
   codigo: string
@@ -59,8 +45,7 @@ function toCampus(row: RealCampusRow): Campus {
     name: row.nombre,
     dane: row.codigo ?? "",
     zone: row.fk_zona === null ? null : { id: row.fk_zona, code: "", name: row.zona_nombre ?? "" },
-    // No vienen en este listado (ver comentario de RealCampusRow); solo se
-    // completan al abrir el detalle/edición, que sí trae el objeto entero.
+    // Solo vienen en el detalle.
     neighborhood: "",
     commune: "",
     address: row.direccion ?? "",
@@ -77,8 +62,7 @@ async function fetchCampuses(params: CampusesQueryRequest): Promise<CampusesQuer
     return unwrapPaginated(response)
   }
 
-  // El mock espera `sorting` como array tal cual; el backend real espera un
-  // único objeto (o null) — ver `toSingleSort`.
+  // El mock espera `sorting` como array; el backend, un único objeto.
   const body = {
     ...params,
     filters: toCampusesQueryFilters(params.filters),
@@ -92,10 +76,7 @@ async function fetchCampuses(params: CampusesQueryRequest): Promise<CampusesQuer
   return { ...result, rows: result.rows.map(toCampus) }
 }
 
-export const campusesQueryKey = (params: UseCampusesQueryParams) => [
-  "campuses",
-  params,
-]
+export const campusesQueryKey = (params: UseCampusesQueryParams) => campusKeys.lista(params)
 
 export function useCampusesQuery(params: UseCampusesQueryParams) {
   return useQuery({

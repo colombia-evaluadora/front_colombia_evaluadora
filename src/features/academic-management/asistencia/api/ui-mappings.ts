@@ -252,10 +252,6 @@ export function etiquetaBloques(bloques: number[] | undefined): string | null {
     : `Bloques ${numeros.join(", ")}`
 }
 
-export function gradoDeGrupo(grupo: string): string {
-  return `${grupo.slice(0, -2) || grupo}°`
-}
-
 /** "6" -> "6°" para mostrar -- el `grado_valor` real llega sin el símbolo. */
 export function formatGrado(grado: string): string {
   return grado.endsWith("°") ? grado : `${grado}°`

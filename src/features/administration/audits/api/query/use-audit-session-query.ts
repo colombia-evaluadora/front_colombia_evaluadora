@@ -6,6 +6,7 @@ import { AUDIT_API_PREFIX, apiPath } from "@/lib/api-routes"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import { toIsoDateTime } from "@/features/administration/audits/api/real-mapping"
 import type { AuditSession, SessionStatus } from "@/features/administration/audits/api/types/audit"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseAuditSessionQueryParams {
   sessionId: string
@@ -53,7 +54,7 @@ async function fetchAuditSession(sessionId: string): Promise<AuditSession> {
 
 export function useAuditSessionQuery({ sessionId, enabled }: UseAuditSessionQueryParams) {
   return useQuery({
-    queryKey: ["audits", "sessions", sessionId],
+    queryKey: auditKeys.sesiones.detalle(sessionId),
     queryFn: () => fetchAuditSession(sessionId),
     enabled: enabled ?? true,
   })

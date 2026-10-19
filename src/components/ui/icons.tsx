@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import type { IconBaseProps, IconType } from "react-icons"
 import { GoShieldLock } from "react-icons/go"
+import { IoMdCheckboxOutline } from "react-icons/io"
 import {
   MdAccessTime,
   MdOutlineAccountBalance,
@@ -186,6 +187,10 @@ import {
   MdStop,
   MdAutoAwesome,
   MdHistory,
+  MdContentPaste,
+  MdHourglassTop,
+  MdStar,
+  MdStarBorder,
 } from "react-icons/md"
 
 /**
@@ -425,3 +430,8 @@ export const FloppyDiskIcon = makeIcon(MdOutlineSave)
 export const StopIcon = makeIcon(MdStop)
 export const SparkleIcon = makeIcon(MdAutoAwesome)
 export const ClockCounterClockwiseIcon = makeIcon(MdHistory)
+export const CheckSquareOffsetIcon = makeIcon(IoMdCheckboxOutline)
+export const ClipboardPasteIcon = makeIcon(MdContentPaste)
+export const HourglassIcon = makeIcon(MdHourglassTop)
+export const StarIcon = makeIcon(MdStarBorder)
+export const StarFillIcon = makeIcon(MdStar)
