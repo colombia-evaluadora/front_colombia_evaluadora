@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { planeadorDb, registrarArchivoMaterial } from "@/mocks/db/planeador"
+import { planeadorDb, registrarArchivoMaterial, registrarResultadoMock } from "@/mocks/db/planeador"
+import { rechazoNoEditable } from "@/mocks/handlers/_planeador-regla37"
 import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
 import { notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
 import {
@@ -230,6 +231,8 @@ export const planeadorPlanillaHandlers = [
     if (!actividad) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     return HttpResponse.json({ rows: [{ instrumento_aplicado: tipoInstrumentoDe(actividad) }] })
   }),
 
@@ -265,6 +268,8 @@ export const planeadorPlanillaHandlers = [
       typeof body.CALIFICACION === "string" ? JSON.parse(body.CALIFICACION) : body.CALIFICACION
     const notas = calificacionANotas(actividad, calificacion)
     setOverride(actividadId, estudianteId, notas)
+    // Regla 37: con un resultado la actividad ya no se edita.
+    registrarResultadoMock(actividadId)
     const porcentaje = porcentajeFinal(notas, itemsPonderables(actividad))
     return HttpResponse.json({ rows: [{ calificacion: porcentaje }] })
   }),
@@ -319,6 +324,7 @@ export const planeadorPlanillaHandlers = [
       }
       return { pk_tactividad_estudiante: estudianteId }
     })
+    if (rows.some((r) => !("error" in r))) registrarResultadoMock(actividadId)
     return HttpResponse.json({ rows })
   }),
 
@@ -464,6 +470,7 @@ export const planeadorPlanillaHandlers = [
       )
     }
     setObservacion(actividadId, estudianteId, body.OBSERVACION)
+    if (body.OBSERVACION?.trim()) registrarResultadoMock(actividadId)
     return HttpResponse.json({ rows: [{ status: "OK" }] })
   }),
 ]
