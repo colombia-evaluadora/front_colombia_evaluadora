@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/input-group"
 import { CaretDownIcon, XIcon, CheckIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { OFFLINE_NO_OPTIONS_MESSAGE } from "@/lib/offline/offline-messages"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 const Combobox = ComboboxPrimitive.Root
 
@@ -619,6 +621,7 @@ function ComboboxFieldContent({
   >) {
   const anchorRef = React.useContext(ComboboxAnchorContext)
   const { query, visibleCount } = React.useContext(ComboboxFilterContext)
+  const offline = useConnectivity().status === "offline"
 
   return (
     <ComboboxPrimitive.Portal>
@@ -659,6 +662,18 @@ function ComboboxFieldContent({
               className="px-3 py-4 text-center text-sm text-muted-foreground"
             >
               Sin resultados
+            </div>
+          )}
+          {/*
+            Sin conexión y sin ninguna opción (no se guardaron en el equipo):
+            se dice por qué en vez de abrir un desplegable vacío.
+          */}
+          {query === "" && visibleCount === 0 && offline && (
+            <div
+              data-slot="combobox-field-offline-empty"
+              className="px-3 py-4 text-center text-sm text-muted-foreground"
+            >
+              {OFFLINE_NO_OPTIONS_MESSAGE}
             </div>
           )}
         </ComboboxPrimitive.Popup>
