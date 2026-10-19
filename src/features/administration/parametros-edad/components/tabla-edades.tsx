@@ -1,7 +1,10 @@
-import { useState } from "react"
+"use no memo"
 
+import { useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
+
+import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
-import { TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { toDigitsOnly } from "@/lib/text-input"
 
 import type { ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
@@ -11,11 +14,16 @@ import {
   type EdadGrado,
 } from "@/features/administration/parametros-edad/api/types"
 import {
+  ACCIONES_SIZE,
   AccionesFila,
   ErrorCampo,
   SelectFila,
   TablaParametros,
+  type FilaParametro,
 } from "@/features/administration/parametros-edad/components/tabla-parametros"
+
+/** id de la fila de alta, que aún no tiene grado. */
+const NUEVO = "nuevo"
 
 /** Fila en edición: `grado` null = alta nueva. */
 interface Edicion {
@@ -37,7 +45,7 @@ export function TablaEdades({
   opciones: ListaValor[]
   puedeEditar: boolean
   guardando: boolean
-  onGuardar: (grado: string, edad: number) => Promise<unknown>
+  onGuardar: (grado: string, edad: number, nuevo: boolean) => Promise<unknown>
   puedeEliminar: boolean
   onEliminar: (codigo: string) => Promise<boolean>
 }) {
@@ -73,7 +81,7 @@ export function TablaEdades({
       return setError(`La edad debe estar entre ${EDAD_MIN} y ${EDAD_MAX} años.`)
     }
     try {
-      await onGuardar(grado, edad)
+      await onGuardar(grado, edad, edicion.grado == null)
       cancelar()
     } catch {
       // El aviso lo muestra la mutación; la fila sigue abierta para corregir.
@@ -100,77 +108,90 @@ export function TablaEdades({
     </div>
   )
 
+  const data: FilaParametro<EdadGrado>[] = [
+    ...(edicion?.grado === null ? [{ id: NUEVO, fila: null }] : []),
+    ...ordenadas.map((f) => ({ id: f.grado, fila: f })),
+  ]
+  const editandoId = edicion ? (edicion.grado ?? NUEVO) : null
+
+  const columns: ColumnDef<FilaParametro<EdadGrado>>[] = [
+    {
+      id: "grado",
+      accessorFn: (r) => r.fila?.nombre ?? "",
+      meta: { label: "Grado" },
+      enableHiding: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
+      cell: ({ row }) => {
+        const f = row.original.fila
+        if (f) return f.nombre
+        return (
+          <SelectFila
+            label="Grado"
+            placeholder="Seleccione el grado"
+            opciones={libres.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
+            value={edicion?.nuevoGrado ?? ""}
+            onChange={(v) => setEdicion((p) => p && { ...p, nuevoGrado: v })}
+          />
+        )
+      },
+    },
+    {
+      id: "edad",
+      accessorFn: (r) => r.fila?.edad ?? 0,
+      meta: { label: "Edad recomendada" },
+      enableHiding: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Edad recomendada" className="justify-end" />
+      ),
+      cell: ({ row }) => {
+        const f = row.original.fila
+        if (row.id === editandoId || !f) return campoEdad
+        return <span className="block text-right tabular-nums">{f.edad} años</span>
+      },
+    },
+    {
+      id: "actions",
+      size: ACCIONES_SIZE,
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => {
+        const f = row.original.fila
+        return (
+          <AccionesFila
+            editando={row.id === editandoId}
+            puedeEditar={puedeEditar && !edicion}
+            guardando={guardando}
+            etiqueta={f?.nombre ?? "grado"}
+            onModificar={() =>
+              f && setEdicion({ grado: f.grado, nuevoGrado: "", edad: String(f.edad) })
+            }
+            onCancelar={cancelar}
+            eliminar={
+              f
+                ? {
+                    puede: puedeEliminar && !edicion,
+                    descripcion: `Se quitará la edad recomendada de ${f.nombre} y su situación de edad quedará Sin calcular.`,
+                    onConfirm: () => onEliminar(f.grado),
+                  }
+                : undefined
+            }
+          />
+        )
+      },
+    },
+  ]
+
   return (
     <TablaParametros
       titulo="Edad recomendada por grado"
       agregarLabel="Grado"
-      columnas={
-        <>
-          <TableHead>Grado</TableHead>
-          <TableHead className="text-right">Edad recomendada</TableHead>
-        </>
-      }
-      vacio={
-        filas.length === 0 && edicion?.grado !== null
-          ? "Aún no hay edades recomendadas. Use + Grado para agregar la primera."
-          : null
-      }
+      columns={columns}
+      data={data}
+      editandoId={editandoId}
+      emptyMessage="Aún no hay edades recomendadas. Use + Grado para agregar la primera."
       puedeAgregar={puedeEditar && libres.length > 0 && !edicion}
       onAgregar={() => setEdicion({ grado: null, nuevoGrado: "", edad: "" })}
       onSubmit={guardar}
-    >
-      {edicion?.grado === null && (
-        <TableRow>
-          <TableCell>
-            <SelectFila
-              label="Grado"
-              placeholder="Seleccione el grado"
-              opciones={libres.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
-              value={edicion.nuevoGrado}
-              onChange={(v) => setEdicion((p) => p && { ...p, nuevoGrado: v })}
-            />
-          </TableCell>
-          <TableCell>{campoEdad}</TableCell>
-          <TableCell>
-            <AccionesFila
-              editando
-              puedeEditar={puedeEditar}
-              guardando={guardando}
-              etiqueta="grado"
-              onModificar={cancelar}
-              onCancelar={cancelar}
-            />
-          </TableCell>
-        </TableRow>
-      )}
-      {ordenadas.map((f) => {
-        const editando = edicion?.grado === f.grado
-        return (
-          <TableRow key={f.grado}>
-            <TableCell>{f.nombre}</TableCell>
-            <TableCell className="text-right tabular-nums">
-              {editando ? campoEdad : `${f.edad} años`}
-            </TableCell>
-            <TableCell>
-              <AccionesFila
-                editando={editando}
-                puedeEditar={puedeEditar && !edicion}
-                guardando={guardando}
-                etiqueta={f.nombre}
-                onModificar={() =>
-                  setEdicion({ grado: f.grado, nuevoGrado: "", edad: String(f.edad) })
-                }
-                onCancelar={cancelar}
-                eliminar={{
-                  puede: puedeEliminar && !edicion,
-                  descripcion: `Se quitará la edad recomendada de ${f.nombre} y su situación de edad quedará Sin calcular.`,
-                  onConfirm: () => onEliminar(f.grado),
-                }}
-              />
-            </TableCell>
-          </TableRow>
-        )
-      })}
-    </TablaParametros>
+      valorOrden={(f, columna) => (columna === "edad" ? f.edad : (orden.get(f.grado) ?? 999))}
+    />
   )
 }

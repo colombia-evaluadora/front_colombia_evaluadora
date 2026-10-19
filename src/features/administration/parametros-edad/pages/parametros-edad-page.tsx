@@ -106,7 +106,9 @@ function ParametrosEdadContent() {
                 opciones={grados.data ?? []}
                 puedeEditar={puedeEditar}
                 guardando={save.isPending}
-                onGuardar={(codigo, edad) => save.mutateAsync({ tipo: "grado", codigo, edad })}
+                onGuardar={(codigo, edad, nuevo) =>
+                  save.mutateAsync({ tipo: "grado", codigo, edad, nuevo })
+                }
                 puedeEliminar={puedeEliminar && !remove.isPending}
                 onEliminar={(codigo) => eliminar("grado", codigo)}
               />
@@ -116,8 +118,8 @@ function ParametrosEdadContent() {
                   opciones={calendarios.data ?? []}
                   puedeEditar={puedeEditar}
                   guardando={save.isPending}
-                  onGuardar={(codigo, mes, dia) =>
-                    save.mutateAsync({ tipo: "calendario", codigo, mes, dia })
+                  onGuardar={(codigo, mes, dia, nuevo) =>
+                    save.mutateAsync({ tipo: "calendario", codigo, mes, dia, nuevo })
                   }
                   puedeEliminar={puedeEliminar && !remove.isPending}
                   onEliminar={(codigo) => eliminar("calendario", codigo)}
