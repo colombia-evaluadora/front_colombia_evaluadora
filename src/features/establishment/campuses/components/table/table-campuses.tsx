@@ -63,7 +63,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
 
   const columns = useMemo(() => createColumns({ onEdit: onEditCampus }), [onEditCampus])
 
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const { table, selectedIds, selectedRows: selectedItems, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -79,14 +79,9 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     columnVisibilityStorageKey: "table-campuses-column-visibility",
   })
 
-  const rows = data?.rows ?? []
-  const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(String(row.id))),
-    [rows, selectedIds],
-  )
   const namesById = useMemo(
-    () => new Map(rows.map((row) => [String(row.id), row.name])),
-    [rows],
+    () => new Map(selectedItems.map((row) => [String(row.id), row.name])),
+    [selectedItems],
   )
 
   const bulkDelete = useBulkDelete({

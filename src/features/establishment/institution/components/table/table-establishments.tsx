@@ -80,7 +80,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     pageSize,
   })
 
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const { table, selectedIds, selectedRows: selectedItems, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -96,14 +96,9 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     columnVisibilityStorageKey: "table-establishments-column-visibility",
   })
 
-  const rows = data?.rows ?? []
-  const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(String(row.id))),
-    [rows, selectedIds],
-  )
   const namesById = useMemo(
-    () => new Map(rows.map((row) => [String(row.id), row.name])),
-    [rows],
+    () => new Map(selectedItems.map((row) => [String(row.id), row.name])),
+    [selectedItems],
   )
 
   const bulkDelete = useBulkDelete({
