@@ -22,10 +22,20 @@ export interface StorageStatus {
 /** Aviso de cuota desde este porcentaje de uso. */
 export const QUOTA_WARN_RATIO = 0.8
 
+/** `display-mode` de una app instalada (ventana propia, sin la barra del navegador). */
+const INSTALLED_DISPLAY_MODES = ["standalone", "fullscreen", "minimal-ui"] as const
+
+/**
+ * ¿La app corre INSTALADA (pantalla de inicio / ventana propia)? Chromium y
+ * Firefox lo exponen con `display-mode`; Safari iOS con `navigator.standalone`.
+ */
 export function isInstalledPwa(): boolean {
   if (typeof window === "undefined") return false
   const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
-  return standalone || window.matchMedia?.("(display-mode: standalone)").matches === true
+  return (
+    standalone ||
+    INSTALLED_DISPLAY_MODES.some((mode) => window.matchMedia?.(`(display-mode: ${mode})`).matches === true)
+  )
 }
 
 export function isIos(): boolean {

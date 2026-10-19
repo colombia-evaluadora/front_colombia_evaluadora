@@ -32,7 +32,7 @@ export const toPreferencias = (row: PreferenciasRow): Preferencias => {
   }
 }
 
-async function fetchPreferencias(): Promise<Preferencias> {
+export async function fetchPreferencias(): Promise<Preferencias> {
   return toPreferencias(await api.get<PreferenciasRow>(NOTIFICACIONES_ENDPOINTS.preferencias()))
 }
 

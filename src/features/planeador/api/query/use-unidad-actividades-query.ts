@@ -49,7 +49,7 @@ function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
   }
 }
 
-async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad[]> {
+export async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad[]> {
   const rows = await evalCol.getRows<UnidadActividadRow>(
     `/planeador/unidades/${unidadId}/actividades?size=100&offset=0`,
   )

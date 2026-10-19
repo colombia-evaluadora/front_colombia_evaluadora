@@ -172,7 +172,7 @@ function firstRow(body: unknown): UnidadReferenteRow | undefined {
   return body as UnidadReferenteRow | undefined
 }
 
-async function fetchUnidadReferente(unidadId: number): Promise<UnidadReferente> {
+export async function fetchUnidadReferente(unidadId: number): Promise<UnidadReferente> {
   const body = await api.get(`/eval-col/planeador/unidades/${unidadId}/referente`)
   return toUnidadReferente(firstRow(body))
 }

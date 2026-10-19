@@ -4,7 +4,7 @@ import { fetchTeachingLevels } from "@/features/establishment/academic-period/ap
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { catalogoMeta } from "@/lib/offline/query-meta"
 
-async function fetchEducationLevels(): Promise<CatalogItem[]> {
+export async function fetchEducationLevels(): Promise<CatalogItem[]> {
   const levels = await fetchTeachingLevels()
   return levels.map((level) => ({ id: level.id, code: "", name: level.nombre }))
 }

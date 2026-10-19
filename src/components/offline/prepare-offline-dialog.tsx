@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { format, isToday } from "date-fns"
 import { es } from "date-fns/locale"
-import { hashKey, useQuery, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query"
+import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,53 +16,27 @@ import {
 import { CloudOffIcon } from "@/components/ui/icons"
 import { Progress } from "@/components/ui/progress"
 import {
-  buildPlanillaTargets,
   defaultPeriodos,
   fullYearSelection,
-  isCheckpointUsable,
   prepareFreshness,
-  type PrepareCheckpoint,
   type PrepareFreshness,
   uniqueAsignaturas,
-  type PlanillaTarget,
-  type PrepareAsignatura,
-  type PrepareGrupo,
-  type PreparePeriodo,
 } from "@/components/offline/prepare-offline-plan"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { StorageStatusCard } from "@/components/offline/storage-status-card"
 import { PinSetupCard } from "@/components/offline/pin-setup-card"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { fetchMatriculasGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { fetchAgrupacionPlanillaOptions } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
-import { fetchDocenteGradoAsignatura } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
-import { fetchDocenteGrupos } from "@/features/planeador/api/query/use-docente-grupos-query"
-import { fetchMomentosRegistro } from "@/features/planeador/api/query/use-momento-registro-catalog"
-import { fetchPeriodosEvaluacion } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
-import { fetchPlanillaCalificaciones } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
-import { fetchPlanillaColumnas } from "@/features/planeador/api/query/use-planilla-columnas-query"
-import { fetchSoportesEstudiante } from "@/features/planeador/api/query/use-soportes-estudiante-query"
-import { fetchTipoActividadCatalog } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
-import { fetchTipoAdaptacionOptions } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
-import { fetchSedesOpciones } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
-import { fetchTipoAsistenciaOptions } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
-import { cacheArchivo } from "@/lib/offline/file-cache"
+import { useUser } from "@/lib/auth"
 import { formatBytes } from "@/lib/offline/storage-status"
-import { fetchTodasLasActividadesMias } from "@/features/planeador/api/query/use-actividades-mias-query"
-import { actividadDetalleQueryOptions } from "@/features/planeador/api/query/use-actividad-detalle-query"
-import { fetchUnidadDetalle, fetchUnidades } from "@/features/planeador/api/query/use-unidades-query"
 import { getDeviceMode } from "@/lib/offline/query-persister"
-import {
-  TTL_OFFLINE,
-  catalogoMeta,
-  estudiantesMeta,
-  offlineMeta,
-  proveedorMeta,
-  type AppQueryMeta,
-} from "@/lib/offline/query-meta"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
-
-const LAST_PREPARE_KEY = "ce-offline-last-prepare"
+import {
+  hasResumableCheckpoint,
+  prepareStore,
+  runPrepare,
+  type PrepareTask,
+} from "@/features/offline/lib/prepare-engine"
+import { buildPrepareTasks, cachedOfflineTasks, fetchPrepareOptions } from "@/features/offline/lib/prepare-tasks"
+import { isAutoPrepareEnabled, setAutoPrepareEnabled } from "@/features/offline/lib/auto-prepare"
 
 const FRESHNESS_CLASS: Record<PrepareFreshness, string> = {
   fresca: "text-green",
@@ -72,183 +46,6 @@ const FRESHNESS_CLASS: Record<PrepareFreshness, string> = {
 
 const SHARED_DEVICE_COPY =
   'Este equipo está en modo compartido: no se guardan datos para usar sin conexión. Si es tu equipo personal y estás en el piloto, desmarca "Este es un equipo compartido" al iniciar sesión.'
-
-/**
- * Una tarea de la descarga. `run` puede devolver tareas nuevas (p. ej. una
- * planilla devuelve la descarga de sus evidencias): se agregan al final de la
- * cola y suman al total del progreso.
- */
-interface PrepareTask {
-  queryKey: QueryKey
-  run: (queryClient: QueryClient, stats: PrepareStats) => Promise<PrepareTask[] | void>
-}
-
-/** Bytes de archivos guardados en la corrida (se muestran al terminar). */
-interface PrepareStats {
-  archivoBytes: number
-}
-
-const CHECKPOINT_KEY = "ce-offline-prepare-checkpoint"
-
-function readCheckpoint(): PrepareCheckpoint | null {
-  try {
-    const raw = localStorage.getItem(CHECKPOINT_KEY)
-    return raw ? (JSON.parse(raw) as PrepareCheckpoint) : null
-  } catch {
-    return null
-  }
-}
-
-function writeCheckpoint(cp: PrepareCheckpoint | null) {
-  try {
-    if (cp) localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(cp))
-    else localStorage.removeItem(CHECKPOINT_KEY)
-  } catch {
-    // Sin storage: la preparación no se puede reanudar, solo repetir.
-  }
-}
-
-/**
- * Todo el planeador del docente (D-6): el detalle de cada actividad (con
- * instrumento, recursos y estudiantes) y de cada unidad, para abrirlos sin red
- * aunque nunca se hayan visitado en esta sesión.
- */
-function planeadorTasks(): PrepareTask[] {
-  return [
-    {
-      queryKey: ["offline", "prepare", "actividades"],
-      run: async () => {
-        const actividades = await fetchTodasLasActividadesMias()
-        return actividades.map(
-          (actividad): PrepareTask => ({
-            queryKey: planeadorKeys.actividad.detalle(actividad.id),
-            run: async (client) => {
-              await client.fetchQuery({ ...actividadDetalleQueryOptions(actividad.id, client), staleTime: 0 })
-            },
-          }),
-        )
-      },
-    },
-    {
-      queryKey: ["offline", "prepare", "unidades"],
-      run: async () => {
-        const { rows } = await fetchUnidades({})
-        return rows.map((unidad) =>
-          seed(planeadorKeys.unidad.detalle(unidad.id), () => fetchUnidadDetalle(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
-        )
-      },
-    },
-  ]
-}
-
-function seed(queryKey: QueryKey, queryFn: () => Promise<unknown>, meta: AppQueryMeta): PrepareTask {
-  return {
-    queryKey,
-    run: async (queryClient) => {
-      await queryClient.fetchQuery({ queryKey, queryFn, meta, staleTime: 0 })
-    },
-  }
-}
-
-/** Catálogos y proveedores que el docente necesita en cualquier pantalla offline. */
-function seedTasks(): PrepareTask[] {
-  return [
-    seed(planeadorKeys.sedesOpciones(), fetchSedesOpciones, proveedorMeta()),
-    seed(planeadorKeys.periodosEvaluacion(), fetchPeriodosEvaluacion, proveedorMeta()),
-    seed(["tipo-asistencia", "catalogo"], fetchTipoAsistenciaOptions, catalogoMeta()),
-    seed(planeadorKeys.catalogos.tipoActividad(), fetchTipoActividadCatalog, catalogoMeta()),
-    seed(planeadorKeys.catalogos.momentoRegistro(), fetchMomentosRegistro, catalogoMeta()),
-    seed(planeadorKeys.catalogos.agrupacionPlanilla(), fetchAgrupacionPlanillaOptions, catalogoMeta()),
-    seed(planeadorKeys.tipoAdaptacionCatalog(), fetchTipoAdaptacionOptions, catalogoMeta()),
-    seed(planeadorKeys.docenteGrupos(), () => fetchDocenteGrupos(), offlineMeta(TTL_OFFLINE.grupo)),
-    seed(
-      planeadorKeys.docenteGradoAsignatura(),
-      () => fetchDocenteGradoAsignatura(),
-      offlineMeta(TTL_OFFLINE.grupo),
-    ),
-  ]
-}
-
-/** Lista de estudiantes de cada grupo elegido (form de actividad). */
-function grupoTasks(grupoIds: number[]): PrepareTask[] {
-  return grupoIds.map((grupoId) =>
-    seed(planeadorKeys.matriculasGrupo(grupoId), () => fetchMatriculasGrupo(grupoId), estudiantesMeta()),
-  )
-}
-
-/** Archivos de una celda: la lista de soportes y el contenido de cada uno. */
-function archivoTasks(pkTactividadEstudiante: number, archivoIds: number[]): PrepareTask[] {
-  return [
-    seed(
-      planeadorKeys.actividadEstudiante.soportes(pkTactividadEstudiante),
-      () => fetchSoportesEstudiante(pkTactividadEstudiante),
-      estudiantesMeta(),
-    ),
-    ...archivoIds.map(
-      (archivoId): PrepareTask => ({
-        queryKey: ["archivo", archivoId],
-        run: async (_client, stats) => {
-          stats.archivoBytes += await cacheArchivo(archivoId)
-        },
-      }),
-    ),
-  ]
-}
-
-/** Columnas + calificaciones con los MISMOS params que la planilla; con
- *  `incluirArchivos`, encadena la descarga de las evidencias de cada celda. */
-function planillaTasks(targets: PlanillaTarget[], incluirArchivos: boolean): PrepareTask[] {
-  return targets.flatMap((params): PrepareTask[] => [
-    seed(
-      planeadorKeys.planilla.columnas(params),
-      () => fetchPlanillaColumnas(params),
-      offlineMeta(TTL_OFFLINE.grupo),
-    ),
-    {
-      queryKey: planeadorKeys.planilla.calificaciones.lista(params),
-      run: async (queryClient) => {
-        const data = await queryClient.fetchQuery({
-          queryKey: planeadorKeys.planilla.calificaciones.lista(params),
-          queryFn: () => fetchPlanillaCalificaciones(params),
-          meta: estudiantesMeta(),
-          staleTime: 0,
-        })
-        if (!incluirArchivos) return
-        return data.rows.flatMap((fila) =>
-          fila.celdas
-            .filter((celda) => celda.evidencias.length > 0)
-            .flatMap((celda) =>
-              archivoTasks(
-                celda.pkTactividadEstudiante,
-                celda.evidencias.map((e) => e.fkTarchivo),
-              ),
-            ),
-        )
-      },
-    },
-  ])
-}
-
-/**
- * Además de lo elegido, refresca **todas** las queries persistibles
- * (`meta.offline`) que ya están en memoria: actividades, unidades y rosters de
- * asistencia que el docente abrió en esta sesión. Así se reusan las keys y
- * `queryFn` exactas de cada pantalla sin duplicar sus parámetros.
- */
-function cachedOfflineTasks(queryClient: QueryClient, seeded: Set<string>): PrepareTask[] {
-  return queryClient
-    .getQueryCache()
-    .findAll({ predicate: (query) => Boolean(query.meta?.offline) && !seeded.has(query.queryHash) })
-    .map((query) => ({
-      queryKey: query.queryKey,
-      run: async (client) => {
-        await client.refetchQueries(
-          { queryKey: query.queryKey, exact: true, type: "all" },
-          { throwOnError: true },
-        )
-      },
-    }))
-}
 
 async function requestPersistentStorage(): Promise<string | null> {
   try {
@@ -263,44 +60,8 @@ async function requestPersistentStorage(): Promise<string | null> {
   }
 }
 
-function readLastPrepare(): number | null {
-  try {
-    const value = Number(localStorage.getItem(LAST_PREPARE_KEY))
-    return Number.isFinite(value) && value > 0 ? value : null
-  } catch {
-    return null
-  }
-}
-
 function formatPreparacion(at: number): string {
   return isToday(at) ? `hoy ${format(at, "HH:mm")}` : format(at, "d MMM, HH:mm", { locale: es })
-}
-
-interface PrepareOptions {
-  grupos: PrepareGrupo[]
-  asignaturas: PrepareAsignatura[]
-  periodos: PreparePeriodo[]
-}
-
-async function fetchPrepareOptions(): Promise<PrepareOptions> {
-  const [grupos, pares, periodos] = await Promise.all([
-    fetchDocenteGrupos(),
-    fetchDocenteGradoAsignatura(),
-    fetchPeriodosEvaluacion(),
-  ])
-  return {
-    grupos: grupos.map((g) => ({
-      grupoId: g.grupoId,
-      gradoId: g.gradoId,
-      nombre: `${g.gradoNombre} · ${g.grupoNombre}`,
-    })),
-    asignaturas: pares.map((p) => ({
-      gradoId: p.gradoId,
-      asignaturaId: p.asignaturaId,
-      nombre: p.asignaturaNombre,
-    })),
-    periodos: periodos.map((p) => ({ id: p.id, nombre: p.nombre, startDate: p.startDate, endDate: p.endDate })),
-  }
 }
 
 function toggle(set: Set<number>, id: number, checked: boolean): Set<number> {
@@ -363,29 +124,27 @@ function CheckList<T>({ legend, items, getId, getLabel, selected, onChange, disa
   )
 }
 
-type Phase = "idle" | "running" | "done"
-
 /**
- * "Preparar para usar sin conexión" (plan offline §7.9, tarea 4.3). El docente
+ * "Preparar para usar sin conexión" (plan offline §7.9, D-6/D-14). El docente
  * elige grupos, asignaturas y periodos (por defecto: todos sus grupos y
- * asignaturas y el periodo vigente) y si incluir archivos (evidencias).
- * Descarga catálogos, listas de estudiantes, la planilla de cada grupo ×
- * asignatura × periodo y refresca lo ya abierto; pide
- * `navigator.storage.persist()`. En modo equipo compartido queda
- * deshabilitado (nada se persiste, §0.3).
+ * asignaturas y el periodo vigente) y si incluir archivos. Qué se baja lo
+ * decide `features/offline/lib/prepare-tasks.ts` (las mismas keys que cada
+ * pantalla, incluidas las listas con filtros: calendarios por mes, rail por
+ * día, cascada de informes, referentes…) y lo corre el motor compartido con
+ * la autopreparación (`prepare-engine.ts`): si hay una corrida automática en
+ * curso, el diálogo muestra su progreso en vez de arrancar otra.
  */
 export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const queryClient = useQueryClient()
+  const { data: user } = useUser()
   const onlineOnly = useOnlineOnly()
   const shared = getDeviceMode() === "compartido"
-  const [phase, setPhase] = useState<Phase>("idle")
-  const [done, setDone] = useState(0)
-  const [total, setTotal] = useState(0)
-  const [failed, setFailed] = useState<PrepareTask[]>([])
+  const snapshot = useSyncExternalStore(prepareStore.subscribe, prepareStore.getSnapshot, prepareStore.getSnapshot)
+  // Corrida lanzada desde ESTE diálogo (para mostrar "Listo" al terminar).
+  const [lanzada, setLanzada] = useState(false)
   const [espacio, setEspacio] = useState<string | null>(null)
-  const [archivoBytes, setArchivoBytes] = useState<number | null>(null)
-  const [lastPrepare, setLastPrepare] = useState<number | null>(readLastPrepare)
   const [incluirArchivos, setIncluirArchivos] = useState(false)
+  const [autoPrepare, setAutoPrepare] = useState(isAutoPrepareEnabled)
   // `null` = sin tocar todavía: rigen los defaults de las opciones cargadas.
   const [grupos, setGrupos] = useState<Set<number> | null>(null)
   const [asignaturas, setAsignaturas] = useState<Set<number> | null>(null)
@@ -404,58 +163,10 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
   const periodosSel =
     periodos ?? new Set(defaultPeriodos(opciones.periodos, format(new Date(), "yyyy-MM-dd")))
 
-  async function runTasks(initial: PrepareTask[], { resume = false }: { resume?: boolean } = {}) {
-    setPhase("running")
-    setDone(0)
-    setTotal(initial.length)
-    setFailed([])
-    setArchivoBytes(null)
+  async function correr(tasks: PrepareTask[], { resume = false }: { resume?: boolean } = {}) {
+    setLanzada(true)
     setEspacio(await requestPersistentStorage())
-    const errores: PrepareTask[] = []
-    const queue = [...initial]
-    const stats: PrepareStats = { archivoBytes: 0 }
-    // Punto de control (D-6): lo ya descargado no se repite al reanudar.
-    const previo = readCheckpoint()
-    const checkpoint: PrepareCheckpoint =
-      resume && isCheckpointUsable(previo) ? previo : { startedAt: Date.now(), done: [] }
-    const hechas = new Set(checkpoint.done)
-    writeCheckpoint(checkpoint)
-    // Secuencial: no saturar una red escolar lenta y dar progreso real.
-    for (let i = 0; i < queue.length; i++) {
-      const hash = hashKey(queue[i].queryKey)
-      // Las tareas que expanden a otras (listas "offline") se repiten siempre:
-      // sus hijas sí se saltan si ya estaban.
-      if (hechas.has(hash) && queue[i].queryKey[0] !== "offline") {
-        setDone(i + 1)
-        continue
-      }
-      try {
-        const extra = await queue[i].run(queryClient, stats)
-        if (extra?.length) {
-          queue.push(...extra)
-          setTotal(queue.length)
-        }
-        hechas.add(hash)
-        if (i % 10 === 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
-      } catch {
-        errores.push(queue[i])
-      }
-      setDone(i + 1)
-    }
-    setFailed(errores)
-    if (stats.archivoBytes > 0) setArchivoBytes(stats.archivoBytes)
-    if (errores.length > 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
-    if (errores.length === 0) {
-      writeCheckpoint(null)
-      const now = Date.now()
-      setLastPrepare(now)
-      try {
-        localStorage.setItem(LAST_PREPARE_KEY, String(now))
-      } catch {
-        // Sin storage: solo se pierde el "Última preparación".
-      }
-    }
-    setPhase("done")
+    await runPrepare(queryClient, tasks, { origin: "manual", resume })
   }
 
   function start({ todoElAnio = false, resume = false }: { todoElAnio?: boolean; resume?: boolean } = {}) {
@@ -467,33 +178,34 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
       setAsignaturas(selection.asignaturas)
       setPeriodos(selection.periodos)
     }
-    const targets = buildPlanillaTargets(opciones.grupos, opciones.asignaturas, selection)
-    const elegidas = [
-      ...seedTasks(),
-      ...grupoTasks([...selection.grupos]),
-      ...planeadorTasks(),
-      ...planillaTasks(targets, incluirArchivos),
-    ]
+    const elegidas = buildPrepareTasks(queryClient, {
+      options: opciones,
+      selection,
+      incluirArchivos,
+      roles: user?.roles ?? [],
+    })
     const seeded = new Set(elegidas.map((task) => hashKey(task.queryKey)))
-    void runTasks([...elegidas, ...cachedOfflineTasks(queryClient, seeded)], { resume })
+    void correr([...elegidas, ...cachedOfflineTasks(queryClient, seeded)], { resume })
   }
 
-  const reanudable = phase === "idle" && isCheckpointUsable(readCheckpoint())
-
-  const running = phase === "running"
+  const running = snapshot.running
+  const terminada = lanzada && !running && snapshot.lastOutcome != null
+  const fallidas = terminada ? snapshot.failed : []
+  const reanudable = !running && !terminada && hasResumableCheckpoint()
   const disabled = shared || onlineOnly.disabled || running
   const cargandoOpciones = options.fetchStatus === "fetching" && options.isPending
   const selectionDisabled = disabled || cargandoOpciones
+  const lastPrepare = snapshot.lastPrepareAt
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !running && onOpenChange(next)}>
+    <Dialog open={open} onOpenChange={(next) => !(running && lanzada) && onOpenChange(next)}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Preparar para usar sin conexión</DialogTitle>
           <DialogDescription>
-            Descargaremos a este equipo lo necesario para trabajar sin internet: las planillas y listas de
-            estudiantes de los grupos, asignaturas y periodos que elijas, los catálogos y lo que ya abriste en
-            esta sesión. Puede tardar unos minutos.
+            Descargaremos a este equipo lo necesario para trabajar sin internet: las planillas, listas de estudiantes,
+            actividades, unidades, calendarios de asistencia, informes y referentes de los grupos, asignaturas y
+            periodos que elijas, los catálogos y lo que ya abriste en esta sesión. Puede tardar unos minutos.
           </DialogDescription>
         </DialogHeader>
 
@@ -553,42 +265,74 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
                   </span>
                 </span>
               </label>
+              <label className="flex items-start gap-2">
+                <Checkbox
+                  checked={autoPrepare}
+                  aria-label="Guardar datos automáticamente"
+                  onCheckedChange={(checked) => {
+                    setAutoPrepare(checked === true)
+                    setAutoPrepareEnabled(checked === true)
+                  }}
+                />
+                <span>
+                  Guardar datos automáticamente
+                  <span className="text-muted-foreground block text-xs">
+                    Con conexión, este equipo vuelve a preparar todo el año cada pocas horas, sin que tengas que
+                    hacer nada (solo lo que cambió y sin pasarse del espacio disponible).
+                  </span>
+                </span>
+              </label>
             </>
           )}
 
-          {phase !== "idle" && (
-            <Progress value={total ? Math.round((done / total) * 100) : 0} aria-label="Progreso de la descarga">
-              <span>{running ? `Descargando ${done} de ${total}…` : null}</span>
+          {(running || terminada) && (
+            <Progress
+              value={snapshot.total ? Math.round((snapshot.done / snapshot.total) * 100) : 0}
+              aria-label="Progreso de la descarga"
+            >
+              <span>
+                {running
+                  ? `${snapshot.origin === "auto" ? "Guardando datos automáticamente" : "Descargando"} ${snapshot.done} de ${snapshot.total}…`
+                  : null}
+              </span>
             </Progress>
           )}
 
-          {phase === "done" && failed.length === 0 && (
+          {terminada && fallidas.length === 0 && snapshot.lastOutcome === "ok" && (
             <p className="text-green">
               Listo. Este equipo puede usarse sin conexión.
               {lastPrepare && ` Última preparación: ${formatPreparacion(lastPrepare)}.`}
             </p>
           )}
-          {phase === "done" && failed.length > 0 && (
-            <p className="text-red">No se pudieron descargar {failed.length} elementos.</p>
+          {terminada && fallidas.length > 0 && (
+            <p className="text-red">No se pudieron descargar {fallidas.length} elementos.</p>
           )}
-          {phase === "idle" && lastPrepare && (
+          {terminada && snapshot.lastOutcome === "sin-conexion" && (
+            <p className="text-red">Se cortó la conexión: lo descargado quedó guardado. Continúa cuando vuelva.</p>
+          )}
+          {!running && !terminada && lastPrepare && (
             <p className={FRESHNESS_CLASS[prepareFreshness(lastPrepare)]}>
               Última preparación: {formatPreparacion(lastPrepare)}
               {prepareFreshness(lastPrepare) === "vieja" ? ". Hace más de un mes: conviene volver a preparar." : "."}
             </p>
           )}
-          {archivoBytes != null && (
-            <p className="text-muted-foreground">Archivos guardados en este equipo: {formatBytes(archivoBytes)}.</p>
+          {terminada && snapshot.archivoBytes != null && (
+            <p className="text-muted-foreground">Archivos guardados en este equipo: {formatBytes(snapshot.archivoBytes)}.</p>
           )}
           {espacio && <p className="text-muted-foreground">Espacio disponible en este equipo: {espacio}.</p>}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" color="neutral" disabled={running} onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            color="neutral"
+            disabled={running && lanzada}
+            onClick={() => onOpenChange(false)}
+          >
             Cerrar
           </Button>
-          {phase === "done" && failed.length > 0 ? (
-            <Button disabled={disabled} onClick={() => void runTasks(failed)}>
+          {terminada && fallidas.length > 0 ? (
+            <Button disabled={disabled} onClick={() => void correr(fallidas)}>
               Reintentar
             </Button>
           ) : (

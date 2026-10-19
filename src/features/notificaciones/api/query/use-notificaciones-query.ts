@@ -42,7 +42,7 @@ export function toNotificacionesFilters(filtros: NotificacionesFiltros): Notific
 export const notificacionesListaQueryKey = (filtros: NotificacionesFiltros) =>
   ["notificaciones", "lista", toNotificacionesFilters(filtros)] as const
 
-async function fetchNotificaciones(
+export async function fetchNotificaciones(
   filtros: NotificacionesFiltros,
   cursor: string | null,
 ): Promise<NotificacionesPage> {

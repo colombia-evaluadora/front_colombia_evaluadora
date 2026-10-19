@@ -149,7 +149,7 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
   }
 }
 
-async function fetchAcademicPeriods(
+export async function fetchAcademicPeriods(
   params: UseAcademicPeriodsQueryParams
 ): Promise<AcademicPeriodsQueryResponse> {
   const raw = await api.query<AcademicPeriodsListRawResponse>(

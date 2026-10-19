@@ -21,7 +21,7 @@ export function subjectLabelOptionsUrl() {
   )
 }
 
-async function fetchSubjectLabelOptions(): Promise<SubjectLabelOption[]> {
+export async function fetchSubjectLabelOptions(): Promise<SubjectLabelOption[]> {
   const raw = await api.get<RowsEnvelope<SubjectLabelOptionRow> | SubjectLabelOptionRow[]>(
     subjectLabelOptionsUrl(),
   )

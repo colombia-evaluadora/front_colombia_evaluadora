@@ -58,19 +58,21 @@ export const gruposPeriodoQueryKey = (params: GruposPeriodoParams) =>
 /** `POST /informes/grupos-periodo`. Reemplaza a `/planeador/docentes/grupos`,
  *  que exigía permiso de PLANEADOR y solo listaba los grupos donde el docente
  *  dicta — un rector o un coordinador no veía ninguno. */
+export async function fetchGruposPeriodo(params: GruposPeriodoParams): Promise<GrupoPeriodo[]> {
+  const rows = await evalCol.postRows<GrupoPeriodoRow>("/informes/grupos-periodo", {
+    FK_TSEDE: params.sedeId,
+    ANIO: params.anio,
+    FK_TLV_JORNADA: params.jornadaId,
+    SEARCH: params.search?.trim() || null,
+  })
+  return rows.map(toGrupo)
+}
+
 export function useGruposPeriodoQuery(params: GruposPeriodoParams) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: gruposPeriodoQueryKey(params),
-    queryFn: async (): Promise<GrupoPeriodo[]> => {
-      const rows = await evalCol.postRows<GrupoPeriodoRow>("/informes/grupos-periodo", {
-        FK_TSEDE: params.sedeId,
-        ANIO: params.anio,
-        FK_TLV_JORNADA: params.jornadaId,
-        SEARCH: params.search?.trim() || null,
-      })
-      return rows.map(toGrupo)
-    },
+    queryFn: () => fetchGruposPeriodo(params),
     enabled: params.sedeId != null && params.anio != null && params.jornadaId != null,
     staleTime: 1000 * 60,
   })

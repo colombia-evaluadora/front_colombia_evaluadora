@@ -122,17 +122,23 @@ export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<nu
  * porque el catálogo real dice "Otro (personalizado)" donde el front
  * muestra "Otro".
  */
+export const instrumentoFiltroOptionsQueryKey = () =>
+  [...planeadorKeys.catalogos.instrumentoEvaluacion(), "filtro"] as const
+
+/** Exportada para "Preparar sin conexión" (misma key y forma que la pantalla). */
+export async function fetchInstrumentoFiltroOptions() {
+  const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
+  return rows.map((row) => ({
+    value: String(row.pk_lista_valor),
+    label: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
+  }))
+}
+
 export function useInstrumentoFiltroOptions() {
   return useQuery({
     meta: catalogoMeta(),
-    queryKey: [...planeadorKeys.catalogos.instrumentoEvaluacion(), "filtro"] as const,
-    queryFn: async () => {
-      const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
-      return rows.map((row) => ({
-        value: String(row.pk_lista_valor),
-        label: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
-      }))
-    },
+    queryKey: instrumentoFiltroOptionsQueryKey(),
+    queryFn: fetchInstrumentoFiltroOptions,
     staleTime: Infinity,
   })
 }

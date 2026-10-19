@@ -4,6 +4,7 @@ import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { CATALOGS } from "@/lib/catalogs"
 import { unwrapRows } from "@/lib/response-envelope"
+import { catalogoMeta } from "@/lib/offline/query-meta"
 
 /**
  * Slug de catálogo: el *valor* de cualquier entrada de `CATALOGS`
@@ -179,6 +180,9 @@ export function getCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
  */
 export function useCatalogQuery<T>(catalog: CatalogSlug) {
   return useQuery({
+    // Catálogos genéricos (estados, zonas…): sin datos personales, se guardan
+    // para que las pantallas aptas sin red no queden con filtros vacíos.
+    meta: catalogoMeta(),
     staleTime: Infinity,
     queryKey: ["catalogs", catalog],
     queryFn: () => getCatalog<T>(catalog),

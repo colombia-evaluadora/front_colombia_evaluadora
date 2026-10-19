@@ -78,7 +78,7 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
   }
 }
 
-async function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
+export async function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
   const raw: AcademicPeriodDetailResponse = await api.get(
     `/eval-col/periodos-academicos/${id}`
   )

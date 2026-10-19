@@ -8,6 +8,9 @@ import { asistenciaKeys } from "@/features/academic-management/asistencia/api/qu
 /** Regla 75: solicitudes de corrección de asistencia que el coordinador puede resolver. */
 export function useAprobacionesAsistenciaQuery(enabled: boolean) {
   return useQuery({
+    // Aviso del coordinador: aprobar necesita red, así que si sin red no
+    // está guardado la pantalla no queda "incompleta".
+    meta: { offlineOptional: true },
     queryKey: asistenciaKeys.aprobaciones(),
     queryFn: async () => {
       const raw = await api.get<{ rows: SolicitudAprobacionAsistencia[] } | SolicitudAprobacionAsistencia[]>(

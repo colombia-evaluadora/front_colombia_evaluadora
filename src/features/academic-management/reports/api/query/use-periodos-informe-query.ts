@@ -58,18 +58,20 @@ export const periodosInformeQueryKey = (params: PeriodosInformeParams) =>
 /** `POST /informes/periodos`. `FK_TSEDE` y `FK_TLV_JORNADA` son obligatorios
  *  desde el cambio de contrato: antes aceptaba `{}` y devolvía todo el año de
  *  todas las sedes del alcance, con nombres repetidos e indistinguibles. */
+export async function fetchPeriodosInforme(params: PeriodosInformeParams): Promise<PeriodoInforme[]> {
+  const rows = await evalCol.postRows<PeriodoRow>("/informes/periodos", {
+    FK_TSEDE: params.sedeId,
+    ANIO: params.anio,
+    FK_TLV_JORNADA: params.jornadaId,
+  })
+  return rows.map(toPeriodo)
+}
+
 export function usePeriodosInformeQuery(params: PeriodosInformeParams) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: periodosInformeQueryKey(params),
-    queryFn: async (): Promise<PeriodoInforme[]> => {
-      const rows = await evalCol.postRows<PeriodoRow>("/informes/periodos", {
-        FK_TSEDE: params.sedeId,
-        ANIO: params.anio,
-        FK_TLV_JORNADA: params.jornadaId,
-      })
-      return rows.map(toPeriodo)
-    },
+    queryFn: () => fetchPeriodosInforme(params),
     enabled: params.sedeId != null && params.anio != null && params.jornadaId != null,
     staleTime: 1000 * 60 * 5,
   })

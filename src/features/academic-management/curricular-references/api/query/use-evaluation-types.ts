@@ -4,7 +4,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { catalogoMeta } from "@/lib/offline/query-meta"
 
-async function fetchEvaluationTypes(): Promise<CatalogItem[]> {
+export async function fetchEvaluationTypes(): Promise<CatalogItem[]> {
   const rows = await fetchSelectCategory("TIPO_EVALUACION")
   return rows.map((row) => ({ id: row.pk_lista_valor, code: row.valor, name: row.nombre }))
 }

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { CloudOffIcon, CloudSyncIcon, SignOutIcon } from "@/components/ui/icons"
+import { CloudOffIcon, CloudSyncIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
 import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
@@ -19,14 +19,22 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUser, useLogout } from "@/lib/auth"
+import { logoutKeepsDeviceData } from "@/lib/offline/device-policy"
 import { outboxStore } from "@/lib/offline/outbox/store"
+import { getDeviceMode } from "@/lib/offline/query-persister"
+import { LogoutDeviceDialog } from "@/features/offline/components/logout-device-dialog"
 import { LogoutPendingDialog } from "@/features/offline/components/logout-pending-dialog"
+import { WipeDeviceDataDialog } from "@/features/offline/components/wipe-device-data-dialog"
 
 export function NavUser() {
   const navigate = useNavigate()
   const { data: user, isPending } = useUser()
   const [prepareOpen, setPrepareOpen] = useState(false)
   const [logoutPendingOpen, setLogoutPendingOpen] = useState(false)
+  // App instalada (D-12): cerrar sesión conserva y bloquea; borrar es aparte.
+  const [logoutDeviceOpen, setLogoutDeviceOpen] = useState(false)
+  const [wipeOpen, setWipeOpen] = useState(false)
+  const personal = getDeviceMode() === "personal"
   const logoutMutation = useLogout({
     mutationConfig: {
       onSuccess: () => {
@@ -111,11 +119,19 @@ export function NavUser() {
             <CloudSyncIcon data-icon="inline-start" />
             Sincronizar ahora
           </DropdownMenuItem>
+          {personal && (
+            <DropdownMenuItem variant="destructive" onClick={() => setWipeOpen(true)}>
+              <TrashIcon data-icon="inline-start" />
+              Borrar los datos de este equipo…
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             disabled={logoutMutation.isPending}
             onClick={() => {
-              // Con cambios sin sincronizar se pregunta antes (plan §7.8).
-              if (outboxStore.getSummary().total > 0) setLogoutPendingOpen(true)
+              // App instalada: se conserva todo y se bloquea (D-12). En el
+              // navegador, con cambios sin sincronizar se pregunta (§7.8).
+              if (logoutKeepsDeviceData(getDeviceMode())) setLogoutDeviceOpen(true)
+              else if (outboxStore.getSummary().total > 0) setLogoutPendingOpen(true)
               else logoutMutation.mutate(undefined)
             }}
           >
@@ -131,6 +147,26 @@ export function NavUser() {
         onLogout={() => {
           setLogoutPendingOpen(false)
           logoutMutation.mutate(undefined)
+        }}
+      />
+      <LogoutDeviceDialog
+        open={logoutDeviceOpen}
+        onOpenChange={setLogoutDeviceOpen}
+        onLogout={() => {
+          setLogoutDeviceOpen(false)
+          logoutMutation.mutate({ keepDeviceData: true })
+        }}
+        onWipe={() => {
+          setLogoutDeviceOpen(false)
+          setWipeOpen(true)
+        }}
+      />
+      <WipeDeviceDataDialog
+        open={wipeOpen}
+        onOpenChange={setWipeOpen}
+        onWiped={() => {
+          setWipeOpen(false)
+          logoutMutation.mutate({ keepDeviceData: false })
         }}
       />
     </DropdownMenu>

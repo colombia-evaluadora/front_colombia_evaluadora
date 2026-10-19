@@ -95,7 +95,7 @@ function toUnidadTab(row: UnidadTabRow): UnidadTab {
   }
 }
 
-async function fetchUnidadesTabs(alcance: PlaneadorAlcanceParams): Promise<UnidadTab[]> {
+export async function fetchUnidadesTabs(alcance: PlaneadorAlcanceParams): Promise<UnidadTab[]> {
   const query = new URLSearchParams()
   setAlcanceQuery(query, alcance)
   const qs = query.toString()
