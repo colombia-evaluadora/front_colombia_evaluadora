@@ -86,7 +86,7 @@ export const navigationMenu: MockMenu[] = [
   // V317: solo el Superadministrador. El código AREAS_OFICIALES sale del nombre
   // (`menuCodigo` en handlers/roles.ts), igual que en el backend real.
   {
-    id: 43,
+    id: 47,
     name: "Áreas oficiales",
     icon: "",
     path: "/app/administracion/areas-oficiales",
@@ -106,13 +106,24 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
-  // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
+  // V313: solo el Superadministrador. Código PARAMETROS_EDAD (mapeado en roles.ts).
   {
     id: 45,
+    name: "Parámetros de edad",
+    icon: "",
+    path: "/app/administracion/parametros-edad",
+    menuOrder: 6,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
+  // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
+  {
+    id: 46,
     name: "Superadministradores",
     icon: "",
     path: "/app/administracion/superadministradores",
-    menuOrder: 6,
+    menuOrder: 7,
     type: "ITEM",
     idParent: 9,
     roleIds: [1],
