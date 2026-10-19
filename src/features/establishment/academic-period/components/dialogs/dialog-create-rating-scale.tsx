@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { useForm } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { z } from "zod"
 
@@ -173,7 +173,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     return parsed.data
   }
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: makeEmptyDraft(range),
     validators: {
       onChange: draftSchema,
@@ -315,26 +315,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
               className="flex flex-col gap-4"
             >
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <form.Field name="nombre">
-                  {(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
-                        <Input
-                          id={field.name}
-                          maxLength={130}
-                          placeholder="Agregar"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
+                <form.AppField name="nombre">
+                  {(field) => <field.TextField label="Nombre" required maxLength={130} />}
+                </form.AppField>
 
                 <form.Field name="tipo">
                   {(field) => {
@@ -374,26 +357,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
               </div>
 
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <form.Field name="abreviacion">
-                  {(field) => {
-                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
-                        <Input
-                          id={field.name}
-                          maxLength={30}
-                          placeholder="Agregar"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
+                <form.AppField name="abreviacion">
+                  {(field) => <field.TextField label="Abreviación" required maxLength={30} />}
+                </form.AppField>
 
                 <form.Field name="iconografia">
                   {(field) => {

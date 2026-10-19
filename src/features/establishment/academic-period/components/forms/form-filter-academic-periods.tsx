@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -36,7 +36,7 @@ export function FilterAcademicPeriodsForm({
   onSubmit,
   hideSede = false,
 }: FilterAcademicPeriodsFormProps) {
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: academicPeriodsFiltersFormSchema,
