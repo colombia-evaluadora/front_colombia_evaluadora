@@ -83,11 +83,7 @@ interface ManageEmployeeDialogProps {
 }
 
 export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
-  // `useNotify` ACÁ (fuera del `NoticeProvider` propio del diálogo) resuelve
-  // al provider de la página. Los avisos que se emiten justo antes de cerrar
-  // el diálogo tienen que ir ahí: si van al provider del diálogo quedan en un
-  // `NoticeOutlet` que desaparece con el cierre y el usuario no ve nada (así
-  // se perdía "Funcionario actualizado" y el aviso del correo de activación).
+  // Resuelve al provider de la página: los avisos previos al cierre van ahí.
   const { notify: notifyPage } = useNotify()
   return (
     <NoticeProvider>
@@ -106,21 +102,11 @@ function ManageEmployeeDialogContent({
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { data: currentUser } = useUser()
-  // El `sub` del JWT (y por lo tanto `AuthUser.email`/`.id`) ES el correo:
-  // si este guardado edita al usuario actualmente autenticado y le cambia
-  // el correo, el próximo `POST /auth/refresh` ya no encuentra a ese `sub`
-  // en la base (user_not_found) — la sesión queda viva unos minutos más
-  // por el token en memoria, hasta que algo dispara un refresh. Se cierra
-  // la sesión de forma controlada en vez de dejar que eso pase en silencio.
+  // El `sub` del JWT es el correo: cambiar el propio obliga a cerrar sesión.
   const logoutMutation = useLogout()
   const [selfEmailChangedDialogOpen, setSelfEmailChangedDialogOpen] = useState(false)
   const isEditMode = Boolean(employeeId)
-  /**
-   * id del empleado recién creado en esta sesión. Mientras está vacío no
-   * se han hecho llamadas a POST/PUT /employees; cuando se llena, el diálogo
-   * habilita los botones opcionales (permisos / información complementaria)
-   * y `handleMainSave` pasa a usar PUT /employees/:id.
-   */
+  /** id del empleado creado en esta sesión; habilita los botones opcionales. */
   const [createdEmployeeId, setCreatedEmployeeId] = useState<number | null>(null)
 
   const [person, setPerson] = useState<Person | null>(createEmptyPerson())
@@ -136,59 +122,27 @@ function ManageEmployeeDialogContent({
   const [permissionErrors, setPermissionErrors] = useState<Record<string, string>>({})
   // Ídem para los datos de la persona, con las rutas de `UserDetailsForm`.
   const [personErrors, setPersonErrors] = useState<Record<string, string>>({})
-  /*
-   * Secciones opcionales ya confirmadas con su botón Guardar. Es lo que decide
-   * qué botón se ve y con qué ícono, y va aparte de los datos a propósito:
-   * agregar una fila a la tabla —o escribir en el formulario— todavía no
-   * cuenta, recién el Guardar del diálogo lo hace. Cancelar deja el estado
-   * como estaba.
-   */
+  // Secciones opcionales confirmadas con su Guardar (no con el borrador).
   const [permissionsSaved, setPermissionsSaved] = useState(false)
   const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
-  // Aviso de invitación del alta (correo de activación enviado o no). Se
-  // muestra en el diálogo apenas se registra y se repite en la página al
-  // cerrar con el Guardar final, que es lo último que ve el usuario.
+  // Aviso de invitación del alta; se repite en la página al cerrar.
   const invitationNoticeRef = useRef<ReturnType<typeof employeeInvitationNotice> | null>(null)
   // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
   // del multipart, tanto en el alta (/register/cval/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoRemoved, setPhotoRemoved] = useState(false)
-  // La foto que ya se subió al crear. `photo` se limpia tras guardar —si no,
-  // el formulario queda sucio para siempre— pero el alta no devuelve el
-  // `pk_tarchivo`, así que sin esto la vista previa se vacía y parece que la
-  // foto no se guardó. Se reemplaza por la de verdad al reabrir en edición.
+  // Foto subida al crear: el alta no devuelve `pk_tarchivo`.
   const [uploadedPhoto, setUploadedPhoto] = useState<File | null>(null)
-  // PK_TFUNCIONARIO que devolvió el autocompletado por documento cuando la
-  // persona YA es funcionario activo (`fn_fun_activo_por_usuario`, V51 REV5
-  // — ver `use-user-by-document.ts`). Dispara el efecto de abajo, que carga
-  // el registro completo y trata el resto del diálogo como edición desde
-  // ya (habilita Permisos/Información complementaria sin esperar al primer
-  // Guardar) — con TFUNCIONARIO como una fila por persona, si ya existe uno
-  // activo, dar de alta ES editarlo, sea cual sea el establecimiento en el
-  // que se lo esté buscando.
+  // Funcionario activo encontrado por documento (V51 REV5): el alta pasa a edición.
   const [matchedFuncionarioId, setMatchedFuncionarioId] = useState<number | null>(null)
-  // Snapshot crudo del autocompletado (antes del placeholder de
-  // contraseña) cuando SÍ existe la cuenta pero todavía NO hay
-  // TFUNCIONARIO (`matchedFuncionarioId` se queda en null en ese caso).
-  // `fn_fun_crear` reusa el TUSUARIO tal cual estaba: si el usuario corrige
-  // algo del form antes de guardar, `handleMainSave` compara contra esto
-  // para saber si hace falta encadenar un PATCH además del alta (ver
-  // `personDataChangedSinceMatch`).
+  // Snapshot del autocompletado cuando hay cuenta sin TFUNCIONARIO, para detectar cambios.
   const personMatchSnapshotRef = useRef<Partial<Person> | null>(null)
-  // Snapshot de los `id` (PK_TSEDE_USUARIO) que ya existían al abrir/cargar
-  // el diálogo. Real-mode-only: el guardado de permisos compara `permissions`
-  // contra este set para armar el diff crear/eliminar que espera
-  // PUT /funcionario/:ID/permisos — ver closePermissionsDialog.
+  // PK_TSEDE_USUARIO al cargar, para el diff de permisos.
   const originalPermissionIdsRef = useRef<Set<number>>(new Set())
   const [isSavingPermissions, setIsSavingPermissions] = useState(false)
-  // Correo con el que se cargó este funcionario al abrir el diálogo —
-  // `person.email` ya lo pisa el formulario apenas el usuario lo edita, así
-  // que sin esto no hay forma de saber si el correo CAMBIÓ al guardar.
+  // Correo original, para saber si cambió al guardar.
   const originalEmailRef = useRef<string | undefined>(undefined)
-  // Se arma en `handleMainSave`, antes de guardar, y lo lee el `onSuccess`
-  // de `updateMutation`: si el correo editado es el de la sesión actual Y
-  // cambió de verdad, dispara el aviso de cierre de sesión en vez del
-  // mensaje normal de "funcionario actualizado".
+  // Lo lee `onSuccess`: si cambió el correo propio, avisa cierre de sesión.
   const selfEmailJustChangedRef = useRef(false)
   const cleanSnapshotRef = useRef<string | null>(null)
   const permissionsSnapshotRef = useRef<string>(JSON.stringify([]))
@@ -196,11 +150,7 @@ function ManageEmployeeDialogContent({
 
 
 
-  /**
-   * id efectivo del empleado: el de la URL en edición, o el recién creado
-   * durante esta sesión del diálogo. Mientras sea null, significa que la
-   * persona todavía no está enlazada a un empleado.
-   */
+  /** id efectivo: el de la URL o el creado en esta sesión. */
   const activeEmployeeId = isEditMode ? (employeeId ?? null) : createdEmployeeId
   const canOpenOptionalSections = Boolean(activeEmployeeId)
 
@@ -224,9 +174,7 @@ function ManageEmployeeDialogContent({
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: campuses = [] } = useCampusesOptionsQuery()
-  // El director de grupo se asigna y se quita desde el grupo (el back lo
-  // rechaza aquí): no se ofrece en el select, aunque el catálogo lo traiga
-  // porque el filtro por rol del listado sí lo necesita.
+  // El director de grupo se asigna desde el grupo; el back lo rechaza aquí.
   const roleItems = toSelectOptions(roles.filter((role) => role.code !== DIRECTOR_GRUPO_ROLE_CODE))
   const campusItems = toSelectOptions(campuses)
   const {
@@ -257,13 +205,7 @@ function ManageEmployeeDialogContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `personErrors` es guard, no dep.
   }, [person, photo])
 
-  /**
-   * Vuelca un `Employee` completo sobre todo el estado del diálogo — lo
-   * comparten el efecto de edición normal (`employeeQuery`) y el de "ya es
-   * funcionario activo" (`matchedEmployeeQuery`, ver más abajo): en ambos
-   * casos el diálogo termina mostrando exactamente lo mismo, solo cambia
-   * cómo se llegó al `id`.
-   */
+  /** Vuelca un `Employee` completo sobre el estado del diálogo. */
   function applyLoadedEmployee(employee: Employee) {
     const loadedPerson = { ...employee.person, accountExists: true }
     const loadedAdditionalInfo = createAdditionalInfoFromEmployee(employee)
@@ -280,9 +222,7 @@ function ManageEmployeeDialogContent({
     setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
     setPermissionErrors({})
     setPersonErrors({})
-    // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
-    // solo se manda si el usuario carga una nueva. Acá sí llega el
-    // `photoArchivoId`, así que la vista previa local ya no hace falta.
+    // La foto guardada no vuelve como `File`; basta `photoArchivoId`.
     setPhoto(null)
     setPhotoRemoved(false)
     setUploadedPhoto(null)
@@ -295,14 +235,7 @@ function ManageEmployeeDialogContent({
     additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
   }
 
-  // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
-  // activo por documento -- SIN tocar `person`, que ya
-  // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
-  // que el documento cambió tras el match, `form-user-details.tsx`). Sin
-  // esto, `createdEmployeeId` quedaba apuntando al funcionario equivocado:
-  // "Permisos"/"Información complementaria" seguían habilitados y
-  // `handleMainSave` tomaba la rama de edición (PUT) en vez de crear a la
-  // persona nueva que el usuario terminó tipeando.
+  // Deshace la carga de un match por documento sin tocar `person`.
   function unmatchEmployee() {
     setMatchedFuncionarioId(null)
     setCreatedEmployeeId(null)
@@ -364,14 +297,7 @@ function ManageEmployeeDialogContent({
     }
   }, [employeeQuery.data, isEditMode, open])
 
-  // El autocompletado por documento (`UserDetailsForm`, `onMatched` más
-  // abajo) puede encontrar que la persona YA es funcionario activo
-  // (`found.id`, ver `use-user-by-document.ts`/V51 REV5) — en ese caso el
-  // alta se trata como edición de ese registro desde ya: se carga completo
-  // y se habilitan Permisos/Información complementaria sin esperar al
-  // primer Guardar (mismo criterio que pide el negocio: si ya sabemos que
-  // se va a asignar permisos/editar info de alguien que ya existe, no tiene
-  // sentido fingir que es un alta nueva).
+  // Si la persona ya es funcionario activo (V51 REV5), el alta se trata como edición.
   const matchedEmployeeQuery = useEmployeeQuery(
     matchedFuncionarioId,
     open && !isEditMode && matchedFuncionarioId !== null,
@@ -420,13 +346,7 @@ function ManageEmployeeDialogContent({
           return
         }
 
-        // Guardó bien un correo propio distinto del que trae la sesión
-        // actual: el aviso de cierre de sesión REEMPLAZA al mensaje y
-        // cierre normales (no los dos) — el diálogo sigue montado para
-        // mostrar el modal bloqueante.
-        // Correo cambiado: la cuenta SSO vuelve a "pendiente de activación" y
-        // se envía el correo de activación al correo nuevo. Va DESPUÉS del
-        // guardado porque el backend valida que el cambio ya esté aplicado.
+        // Correo propio cambiado: el aviso de cierre reemplaza al normal; luego se reenvía la activación.
         const cambioCorreo = emailChangeRef.current
         emailChangeRef.current = null
         let activacionMsg: string | null = null
@@ -453,11 +373,7 @@ function ManageEmployeeDialogContent({
           return
         }
 
-        // En modo creación este guardado final también pasa por PUT (una vez
-        // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
-        // acá: el funcionario se está creando por primera vez.
-        // Si en este alta se mandó (o falló) la invitación de activación, ese
-        // es el aviso que tiene que quedar a la vista al cerrar.
+        // En creación también pasa por PUT: se distingue el mensaje y el aviso de invitación.
         const invitation = isEditMode ? null : invitationNoticeRef.current
         if (invitation && !activacionMsg) {
           notifyPage(invitation.message, { variant: invitation.variant })
@@ -522,11 +438,7 @@ function ManageEmployeeDialogContent({
       return
     }
 
-    // 1) Garantizar que la persona exista (POST /person en mock;
-    //    POST /register/cval/funcionario en real — ver más abajo, ese además
-    //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
-    // El correo se limpia de caracteres invisibles también acá: si el valor
-    // vino sucio de la base y no se tocó el input, igual se guarda limpio.
+    // 1) Garantizar que la persona exista; el correo se limpia de invisibles.
     let persistedPerson: Person = { ...draft, email: toEmailInput(draft.email ?? "") }
 
     const nextErrors = computePersonErrors(persistedPerson, photo)
@@ -540,22 +452,12 @@ function ManageEmployeeDialogContent({
       setPersonErrors({})
 
       if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
-        // Backend real: /register/cval/funcionario (auth-center, Java) crea
-        // TUSUARIO + TFUNCIONARIO (`fn_fun_crear` reusa el TUSUARIO si
-        // `accountExists` era `true`). TFUNCIONARIO ya no es una fila por
-        // establecimiento, así que no hace falta indicar a cuál pertenece
-        // ni enlazarlo después — el select de EE y el paso de "enlazar"
-        // (`fn_fun_enlazar_establecimiento`) quedaron obsoletos con este
-        // cambio de modelo (ver V51 REV5).
+        // Real: /register/cval/funcionario crea TUSUARIO + TFUNCIONARIO (V51 REV5).
         try {
           const registered = await registerFuncionario(persistedPerson, photo)
           persistedPerson = { ...persistedPerson, id: registered.pkFuncionario }
 
-          // `fn_fun_crear` reusó el TUSUARIO tal cual estaba cuando
-          // `accountExists` era `true` — si el usuario corrigió algo del
-          // form respecto a lo que trajo el autocompletado antes de
-          // guardar, esa corrección todavía no llegó al backend. Se
-          // encadena un PATCH aparte solo si de verdad cambió algo.
+          // `fn_fun_crear` reusa el TUSUARIO: si el form cambió, se encadena un PATCH.
           const snapshot = personMatchSnapshotRef.current
           if (snapshot && personDataChangedSinceMatch(snapshot, persistedPerson)) {
             await updateFuncionario(
@@ -580,22 +482,12 @@ function ManageEmployeeDialogContent({
 
           setPerson(persistedPerson)
           setCreatedEmployeeId(registered.pkFuncionario)
-          // A propósito NO se invalida `["employees"]` acá: el funcionario
-          // recién creado todavía no tiene ningún permiso asignado, así que
-          // no debe aparecer en la tabla hasta que se le asigne al menos
-          // uno (ver `closePermissionsDialog`, que sí invalida al guardar
-          // permisos).
-          // Deja el "borrador limpio" al día con lo que ya se persistió --
-          // mismo criterio que `applyLoadedEmployee` en edición. Sin esto
-          // el botón "Guardar" quedaba habilitado para siempre después de
-          // crear, aunque no hubiera ningún cambio nuevo sin guardar.
+          // No se invalida `["employees"]` hasta asignar permisos; se actualiza el snapshot.
           cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
           setUploadedPhoto(photo)
           setPhoto(null)
           setPhotoRemoved(false)
-          // Sin contraseña en el alta: el backend manda el correo de
-          // activación (o reusa una cuenta activa, y entonces no hay
-          // invitación que anunciar) — ver `employeeInvitationNotice`.
+          // Sin contraseña: el backend manda la activación (ver `employeeInvitationNotice`).
           const invitation = employeeInvitationNotice({
             ...registered,
             email: registered.email || persistedPerson.email,
@@ -603,10 +495,7 @@ function ManageEmployeeDialogContent({
           invitationNoticeRef.current = invitation
           notify(invitation.message, { variant: invitation.variant })
         } catch (error) {
-          // getErrorMessage y no error.message: un AxiosError ES un Error, y su
-          // .message es el generico de axios ("Request failed with status code
-          // 400"). El texto que explica el problema -- el correo mal formado, por
-          // ejemplo -- viene en response.data.message, que es lo que este lee.
+          // getErrorMessage lee response.data.message, no el genérico de axios.
           notify(getErrorMessage(error) || "No fue posible registrar el funcionario.", {
             variant: "error",
           })
@@ -625,14 +514,7 @@ function ManageEmployeeDialogContent({
       setPerson(result.person)
     }
 
-    // 2) Garantizar que el empleado exista en employeesDb vinculado a la
-    // persona. Si todavía no hay un id de empleado (primer guardado en
-    // creación o nuevo ingreso durante esta sesión), llamamos POST
-    // /employees con catálogos vacíos si el usuario no entró ni permisos
-    // ni información complementaria. A partir de ese momento los botones
-    // opcionales quedan disponibles sin cerrar el diálogo.
-    // (Solo mock: en real, este paso ya lo cubrió /register/cval/funcionario
-    // arriba — no hay un POST /employees separado.)
+    // 2) Solo mock: crear el empleado si aún no existe.
     const payload: Employee = {
       // Sin `id` cuando todavía no existe: lo asigna el backend al crear.
       id: activeEmployeeId ?? undefined,
@@ -657,12 +539,8 @@ function ManageEmployeeDialogContent({
         return
       }
 
-      // Fijamos el id del empleado recién creado para que las próximas
-      // invocaciones a handleMainSave pasen por PUT, y habilitamos los
-      // botones opcionales sin cerrar el diálogo.
+      // Las siguientes llamadas pasan por PUT.
       setCreatedEmployeeId(result.employee.id ?? null)
-      // Mismo criterio que en el alta real: deja el snapshot al día para
-      // que "Guardar" se oculte hasta que haya un cambio de verdad.
       cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
       setUploadedPhoto(photo)
       setPhoto(null)
@@ -675,9 +553,7 @@ function ManageEmployeeDialogContent({
       return
     }
 
-    // Empleado ya enlazado: editamos con PUT.
-    // Comparación sin importar mayúsculas: el correo es case-insensitive
-    // tanto para el login como para el `sub` del JWT.
+    // Editar con PUT; el correo se compara sin mayúsculas.
     selfEmailJustChangedRef.current = Boolean(
       isEditMode &&
         currentUser?.email &&
@@ -698,13 +574,7 @@ function ManageEmployeeDialogContent({
     setPhotoRemoved(false)
   }
 
-  /**
-   * Botón "Entendido" del modal de "correo propio actualizado" — y también
-   * lo que corre si alguien lo cierra por otra vía (Escape/backdrop):
-   * quedarse logueado con un token que ya no resuelve en el backend es
-   * justo el estado roto que este aviso previene, así que no hay un
-   * "cancelar" real acá.
-   */
+  /** "Entendido" (o cierre): cierra sesión, no hay cancelar real. */
   async function handleConfirmSelfEmailChanged() {
     setSelfEmailChangedDialogOpen(false)
     onOpenChange(false)
@@ -720,8 +590,7 @@ function ManageEmployeeDialogContent({
     const parsed = permissionDraftSchema.safeParse(permissionDraft)
 
     if (!parsed.success) {
-      // Un mensaje por campo, debajo del input que hay que corregir. Se guarda
-      // el primer issue de cada ruta porque ahí solo cabe una línea.
+      // Un mensaje por campo (el primer issue).
       const nextErrors: Record<string, string> = {}
       for (const issue of parsed.error.issues) {
         const path = issue.path.join(".")
@@ -774,30 +643,14 @@ function ManageEmployeeDialogContent({
     notify(`Permiso de ${role.name} en ${campus.name} agregado.`)
   }
 
-  // Se quita por referencia, no por orden: el orden solo es único por
-  // (rol, sede) (UK_TSEDE_USUARIO_2), así que filtrar por él se llevaba
-  // todos los permisos con el mismo número y "Guardar" los daba de baja.
+  // Por referencia: el orden solo es único por (rol, sede) (UK_TSEDE_USUARIO_2).
   function removePermission(removed: Permission) {
     setPermissions((current) => current.filter((permission) => permission !== removed))
 
     notify(`Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`)
   }
 
-  /**
-   * En mock, los permisos siguen viajando embebidos en el payload general
-   * del empleado (comportamiento original, sin cambios) — acá solo se
-   * confirma el borrador.
-   *
-   * En real, este es el punto que la propia `fn_fun_permisos_actualizar`
-   * espera como su único caller: `fn_fun_actualizar` ya no acepta lista de
-   * permisos, así que el "Guardar" de este sub-diálogo llama directo a
-   * PUT /funcionario/:ID/permisos con el diff contra
-   * `originalPermissionIdsRef` — altas (permisos sin `id`, agregados en
-   * este borrador) y bajas (`id`s que ya no están en `permissions`). No
-   * soporta "editar" un permiso existente (mismo límite que la función
-   * SQL): si alguien cambia el orden de un permiso ya persistido sin
-   * agregarlo/quitarlo, ese cambio de orden no se sincroniza.
-   */
+  /** Mock: confirma el borrador. Real: diff altas/bajas a PUT /funcionario/:ID/permisos. */
   async function closePermissionsDialog() {
     if (env.ENABLE_API_MOCKING || !activeEmployeeId) {
       setPermissionsSaved(true)
@@ -830,24 +683,34 @@ function ManageEmployeeDialogContent({
       ]
       const results = await updateEmployeePermissions(activeEmployeeId, items)
 
-      // Los `id` que la BD asignó a las altas vuelven en el mismo orden en
-      // que se mandaron los "crear" — se emparejan por posición para que el
-      // borrador ya quede con `id` y no se re-manden como altas la próxima
-      // vez que se abra "Guardar".
-      const createdIds = results.filter((row) => row.accion === "crear").map((row) => row.id)
-      let createdIndex = 0
+      // Una fila por ítem, en el mismo orden: `status` "error:..." si esa fila falló.
+      const fallo = (index: number) => results[index]?.status?.startsWith("error:") ?? true
+      const fallidas = results.filter((row) => row.status?.startsWith("error:")).map((row) => row.status.slice(6).replaceAll("_", " "))
+      const deletesFallidos = toDelete.filter((_, i) => fallo(i))
+      // Las altas exitosas quedan con su `id`; las fallidas siguen sin `id` y se reintentan.
+      const createdIds: number[] = []
+      let createIndex = toDelete.length
       const nextPermissions = permissions.map((permission) => {
         if (permission.id !== undefined) return permission
-        const id = createdIds[createdIndex]
-        createdIndex += 1
-        return id === undefined ? permission : { ...permission, id }
+        const index = createIndex
+        createIndex += 1
+        if (fallo(index)) return permission
+        createdIds.push(results[index].id)
+        return { ...permission, id: results[index].id }
       })
       setPermissions(nextPermissions)
-      originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds])
+      originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds, ...deletesFallidos])
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
       void queryClient.invalidateQueries({ queryKey: employeeKeys.all })
       void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
+
+      if (fallidas.length > 0) {
+        notify(`No se pudieron guardar ${fallidas.length} permiso(s): ${fallidas.join(", ")}.`, {
+          variant: "error",
+        })
+        return
+      }
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
@@ -945,21 +808,13 @@ function ManageEmployeeDialogContent({
               }}
               onMatched={(found) => {
                 if (found?.id) {
-                  // Ya es funcionario activo -- el efecto de arriba
-                  // (`matchedEmployeeQuery`) lo carga completo y trata el
-                  // resto del diálogo como edición.
+                  // Ya es funcionario activo: lo carga `matchedEmployeeQuery`.
                   setMatchedFuncionarioId(found.id)
                   personMatchSnapshotRef.current = null
                 } else {
-                  // Solo existe la cuenta (o no hay match): guarda el
-                  // snapshot para poder detectar ediciones antes de guardar
-                  // (ver el bloque de `personDataChangedSinceMatch` en
-                  // `handleMainSave`), y limpia cualquier carga anterior.
+                  // Solo existe la cuenta: guarda el snapshot y limpia cargas previas.
                   personMatchSnapshotRef.current = found ?? null
-                  // Si veníamos de un match a otro funcionario (el usuario
-                  // corrigió el documento porque no era la persona que
-                  // quería), hay que deshacer también lo que ese match cargó
-                  // -- no solo `matchedFuncionarioId`.
+                  // Si venía de otro match, también se deshace lo que cargó.
                   if (matchedFuncionarioId !== null) {
                     unmatchEmployee()
                   } else {
