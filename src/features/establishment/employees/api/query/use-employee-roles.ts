@@ -39,6 +39,7 @@ async function fetchEmployeeRoles(): Promise<CatalogItem[]> {
 
 export function useEmployeeRolesQuery() {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", "employee-roles"],
     queryFn: fetchEmployeeRoles,
   })

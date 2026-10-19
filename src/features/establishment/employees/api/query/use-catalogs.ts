@@ -179,6 +179,7 @@ export function getCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
  */
 export function useCatalogQuery<T>(catalog: CatalogSlug) {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", catalog],
     queryFn: () => getCatalog<T>(catalog),
   })

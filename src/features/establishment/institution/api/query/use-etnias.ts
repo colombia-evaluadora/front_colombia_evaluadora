@@ -41,6 +41,7 @@ async function fetchEtnias(): Promise<CatalogItem[]> {
 
 export function useEtniasQuery() {
   return useQuery({
+    staleTime: Infinity,
     queryKey: ["catalogs", "etnias"],
     meta: catalogoMeta(),
     queryFn: fetchEtnias,
