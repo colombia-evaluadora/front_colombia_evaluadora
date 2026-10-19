@@ -26,7 +26,7 @@ export const INSTRUMENTO_EVALUACION_POR_CODIGO: Record<string, string> = {
   OTRO: "Otro",
 }
 
-async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
+export async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
   const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
   return rows.map((row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre)
 }

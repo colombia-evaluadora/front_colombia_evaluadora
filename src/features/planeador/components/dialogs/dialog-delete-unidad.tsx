@@ -131,12 +131,17 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
   // Solo se consulta una vez que hay 409 (nadie busca un funcionario antes
   // de llegar a este paso) — mismo criterio de "enabled" condicional que el
   // resto del feature. Tamaño de página chico: es un picker, no un listado.
-  const { data: funcionarios } = useEmployeesQuery({
-    filters: { search: cederSearch },
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 8,
-  })
+  const { data: funcionarios } = useEmployeesQuery(
+    {
+      filters: { search: cederSearch },
+      sorting: [],
+      pageIndex: 0,
+      pageSize: 8,
+    },
+    // Antes se pedía siempre, aunque el diálogo estuviera cerrado (y sin red
+    // la pantalla de unidades quedaba "incompleta" por un picker oculto).
+    { enabled: open && conflictMessage != null },
+  )
 
   const { puedeEliminar } = usePlaneadorSoloLectura()
   // Fase 1 offline es solo lectura: eliminar/ceder necesitan red.

@@ -80,9 +80,11 @@ import { fetchRotuloActividad } from "@/features/planeador/api/query/use-rotulo-
 import { fetchPlaneadorDocentes } from "@/features/planeador/api/query/use-planeador-docentes-query"
 import { fetchReferenteCurricular } from "@/features/planeador/api/query/use-referente-curricular-query"
 import {
+  fetchInstrumentoEvaluacionCatalog,
   fetchInstrumentoFiltroOptions,
   instrumentoFiltroOptionsQueryKey,
 } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { fetchDominioMaterial } from "@/features/planeador/api/query/use-dominio-material-catalog"
 // Asistencia
 import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 import { fetchSedesOpciones } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
@@ -272,6 +274,20 @@ function catalogosPlaneador(): PrepareTask[] {
     seed(planeadorKeys.catalogos.agrupacionPlanilla(), fetchAgrupacionPlanillaOptions, catalogoMeta()),
     seed(planeadorKeys.tipoAdaptacionCatalog(), fetchTipoAdaptacionOptions, catalogoMeta()),
     seed(instrumentoFiltroOptionsQueryKey(), fetchInstrumentoFiltroOptions, catalogoMeta()),
+    // Formulario de actividad (crear/editar sin red): instrumentos y dominios
+    // permitidos de los materiales.
+    seed(planeadorKeys.catalogos.instrumentoEvaluacion(), fetchInstrumentoEvaluacionCatalog, catalogoMeta()),
+    seed(planeadorKeys.dominioMaterial("DOMINIO_MATERIAL_URL"), () => fetchDominioMaterial("DOMINIO_MATERIAL_URL"), catalogoMeta(), {
+      optional: true,
+    }),
+    seed(
+      planeadorKeys.dominioMaterial("DOMINIO_MATERIAL_REPOSITORIO"),
+      () => fetchDominioMaterial("DOMINIO_MATERIAL_REPOSITORIO"),
+      catalogoMeta(),
+      { optional: true },
+    ),
+    // Jornadas: las usan el chat (selector de personas) y los periodos.
+    seed(academicPeriodKeys.jornadas(), fetchJornadas, proveedorMeta(), { optional: true }),
     seed(planeadorKeys.docenteGrupos(), () => fetchDocenteGrupos(), offlineMeta(TTL_OFFLINE.grupo)),
     seed(planeadorKeys.docenteGradoAsignatura(), () => fetchDocenteGradoAsignatura(), offlineMeta(TTL_OFFLINE.grupo)),
   ]
@@ -668,7 +684,6 @@ function establecimientoTasks(queryClient: QueryClient): PrepareTask[] {
     tasks.push(
       seed(academicPeriodKeys.academicPeriodStatuses(), fetchAcademicPeriodStatuses, proveedorMeta()),
       seed(academicPeriodKeys.evaluationPeriodStatuses(), fetchEvaluationPeriodStatuses, proveedorMeta(), { optional: true }),
-      seed(academicPeriodKeys.jornadas(), fetchJornadas, proveedorMeta(), { optional: true }),
       seed(academicPeriodKeys.sedeOptions(), fetchSedeOptions, proveedorMeta(), { optional: true }),
       seed(academicPeriodKeys.academicPeriods.list(LISTA_POR_DEFECTO), () => fetchAcademicPeriods(LISTA_POR_DEFECTO), proveedorMeta(), {
         then: (result) =>

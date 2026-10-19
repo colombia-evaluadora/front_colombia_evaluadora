@@ -190,22 +190,31 @@ export function useLogout({
       const [, options] = args
       const keep = options?.keepDeviceData ?? logoutKeepsDeviceData(getDeviceMode())
       const sub = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)?.id ?? getActivePersistUser()
-      deactivatePersistUser()
-      // La DEK no sobrevive al logout: el próximo ingreso vuelve a pedir el PIN.
-      lockVault()
-      lastAuthedUser = null
-      // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
-      // pendientes decide conservar o descartar antes de llamar al logout.
-      await setOutboxUser(null)
-      if (sub && keep) await lockDeviceSession(sub).catch(() => undefined)
-      else if (sub) await clearUserData(sub).catch(() => undefined)
-      setAuthToken(null)
-      // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
-      stopRealtime()
-      // Full clear, not just the user key — otherwise cached protected data
-      // (nav menu, ...) stays "fresh" for `staleTime` and could be
-      // reused if a different user logs in on the same tab before it expires.
-      queryClient.clear()
+      // Mientras se cierra la sesión el usuario sigue en el cache: un
+      // `hasSession` concurrente (p. ej. la precarga de un link al pasar el
+      // mouse) lo encontraba y `onOnlineAuthenticated` volvía a activar la
+      // persistencia y desbloqueaba la app instalada recién bloqueada.
+      loggingOut = true
+      try {
+        deactivatePersistUser()
+        // La DEK no sobrevive al logout: el próximo ingreso vuelve a pedir el PIN.
+        lockVault()
+        // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
+        // pendientes decide conservar o descartar antes de llamar al logout.
+        await setOutboxUser(null)
+        if (sub && keep) await lockDeviceSession(sub).catch(() => undefined)
+        else if (sub) await clearUserData(sub).catch(() => undefined)
+        setAuthToken(null)
+        // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
+        stopRealtime()
+        // Full clear, not just the user key — otherwise cached protected data
+        // (nav menu, ...) stays "fresh" for `staleTime` and could be
+        // reused if a different user logs in on the same tab before it expires.
+        queryClient.clear()
+        lastAuthedUser = null
+      } finally {
+        loggingOut = false
+      }
       mutationConfig?.onSuccess?.(...args)
     },
   })
@@ -216,6 +225,8 @@ export function useLogout({
 // Último usuario online ya registrado (activación + `session`): evita
 // reescribir IndexedDB en cada navegación, porque el guard corre siempre.
 let lastAuthedUser: AuthUser | null = null
+// Logout en curso: no se vuelve a "autenticar" al usuario que sale.
+let loggingOut = false
 
 /**
  * Usuario confirmado por el servidor: pasa a ser el dueño de lo persistido
@@ -223,7 +234,7 @@ let lastAuthedUser: AuthUser | null = null
  * guarda su `session` con `lastOnlineAuthAt = ahora`.
  */
 async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
-  if (lastAuthedUser === user) return
+  if (lastAuthedUser === user || loggingOut) return
   lastAuthedUser = user
   try {
     await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
