@@ -1,14 +1,9 @@
 import { cn } from "@/lib/utils"
 
 /*
- * La columna de acciones de las tablas que se arman a mano (las de los
- * diálogos, que ordenan con estado local y no con TanStack, así que no pueden
- * reutilizar `DataTable`). Vivía copiada en cada una de esas tablas y se fue
- * separando entre ellas; acá queda una sola versión.
- *
- * La celda es `sticky` y de 1px —los botones van absolutos, su min-content es
- * 0— y el `spacer` que va JUSTO ANTES es quien le reserva el ancho en el flujo,
- * para que la columna no se lleve una tajada del reparto.
+ * Columna de acciones de las tablas armadas a mano, con el diseño de `DataTable`.
+ * La celda es sticky y de 1px (los botones son absolutos); el `spacer` que va
+ * justo antes le reserva el ancho.
  */
 export const ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
 
@@ -27,32 +22,20 @@ export const actionsSpacerHeadCell = (
 )
 
 /**
- * El bloque de botones: va a sangre contra el borde derecho, con el alto
- * completo de la fila, y aparece con el mismo fade que el hover (150ms, el
- * default de Tailwind) para que entren juntos.
+ * Bloque de botones contra el borde derecho; aparece con el hover de la fila
+ * (que lleva `group/row`). El fondo es opaco porque tapa las columnas al hacer
+ * scroll, mezclado con la superficie donde vive la tabla: el Dialog
+ * (`popover`) o un panel de pestaña (`background`).
  *
- * El fondo es el mismo color del hover de `TableRow` (`bg-muted/50`) pero ya
- * resuelto: acá hace falta opaco, porque el bloque tapa las columnas que pasan
- * por debajo al scrollear. Se mezcla contra `--popover` y no contra `--card`
- * como en `DataTable` porque estas tablas viven dentro de un Dialog —en el tema
- * rojo los dos tokens no coinciden—.
- *
- * `active` deja el bloque fijo: mientras se edita una fila, guardar y cancelar
- * no pueden depender de que el puntero siga encima. Lo mismo la fila de carga.
- *
- * El revelado por teclado va con `has(:focus-visible)` y no con `focus-within`:
- * al hacer click el botón queda enfocado, y como React reusa ese nodo del DOM
- * al cambiar la fila entre modo lectura y edición, el foco sobrevive al cambio
- * y `focus-within` dejaba el bloque pegado hasta hacer click en otro lado.
- * `:focus-visible` solo lo activa el foco por teclado, que es a quien apunta la
- * regla.
- *
- * La fila que lo contiene tiene que llevar `group/row`.
+ * `active` lo deja fijo (fila en edición). Con teclado se revela por
+ * `:focus-visible` y no `focus-within`, que lo dejaba pegado tras un click.
  */
-export const actionsOverlayClass = (active = false) =>
+export const actionsOverlayClass = (active = false, surface: "popover" | "background" = "popover") =>
   cn(
     "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
-    "bg-[color-mix(in_srgb,var(--muted)_28%,var(--popover))]",
+    surface === "popover"
+      ? "bg-[color-mix(in_srgb,var(--muted)_28%,var(--popover))]"
+      : "bg-[color-mix(in_srgb,var(--muted)_28%,var(--background))]",
     active
       ? "opacity-100"
       : "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
