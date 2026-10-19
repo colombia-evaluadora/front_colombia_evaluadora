@@ -77,8 +77,8 @@ usuario.
 | Planeador › Unidades | Lista, pestañas, detalle, referente (y nombre de la asignatura) y actividades de cada unidad |
 | Planeador › Planilla | Columnas y calificaciones por grupo × asignatura × periodo, rótulo, referente del grado e instrumento de cada actividad; selects de grupo/asignatura/periodo |
 | Asistencia | Calendario por sede y mes (todas y "mis clases"), resumen semanal del mes en curso y el siguiente, listas de estudiantes de cada sesión de los próximos 14 días, catálogo de tipos |
-| Informes | Cascada sede → año → jornadas → periodos y grupos; informe de cada grupo con los periodos por defecto y cada periodo suelto |
-| Referentes curriculares | Todas las páginas, catálogos del filtro, detalle con áreas, grados y enunciados por área × grado (evidencias del grado por defecto) |
+| Informes | Cascada sede → año → jornadas → periodos y grupos; informe de cada grupo con los periodos por defecto (otras combinaciones, solo con red) |
+| Referentes curriculares | Todas las páginas, catálogos del filtro y el detalle como se abre: áreas, grados, enunciados del área y grado por defecto y evidencias del primer enunciado |
 | Comunicaciones / Notificaciones | Foros, conversaciones, política del chat, bandeja, contador y preferencias |
 | Establecimiento (solo consulta) | Lista de EE, sedes, periodos (con detalle y periodos de evaluación) y sus catálogos |
 

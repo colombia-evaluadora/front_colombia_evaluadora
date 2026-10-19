@@ -18,10 +18,13 @@
  *   resumen semanal del mes en curso y el siguiente, y la lista de estudiantes
  *   de cada sesión de las próximas dos semanas.
  * - Informes: la cascada sede → año → jornada → periodos → grupos y el
- *   informe de cada grupo con los periodos por defecto y cada periodo suelto.
+ *   informe de cada grupo con los periodos por defecto (los mismos que elige
+ *   la pantalla). Otras combinaciones de periodos se ven solo con red: son
+ *   2^n y cada informe lo calcula el servidor.
  * - Referentes: todas las páginas del listado, los catálogos del filtro y el
- *   detalle de cada referente con sus enunciados (y evidencias del grado por
- *   defecto).
+ *   detalle de cada referente como se abre (área y grado por defecto, con las
+ *   evidencias del primer enunciado). Prepararlos por área × grado pedía
+ *   cientos de requests por referente.
  * - Comunicaciones, notificaciones y establecimiento (solo consulta).
  *
  * Solo se preparan las secciones que el menú del usuario incluye; lo que
@@ -543,18 +546,15 @@ function cascadaJornada(filtros: PeriodosInformeParams): PrepareTask {
   return seed(periodosInformeQueryKey(filtros), () => fetchPeriodosInforme(filtros), offlineMeta(TTL_OFFLINE.grupo), {
     then: (periodos) => {
       const porDefecto = periodosPorDefecto(periodos)
-      const combinaciones = [porDefecto, ...periodos.map((p) => [p.id]).filter((ids) => ids.join() !== porDefecto.join())]
       return [
         seed(gruposPeriodoQueryKey(filtros), () => fetchGruposPeriodo(filtros), offlineMeta(TTL_OFFLINE.grupo), {
           then: (grupos) =>
-            grupos.flatMap((grupo) =>
-              combinaciones
-                .filter((ids) => ids.length > 0)
-                .map((ids) => {
-                  const params = { grupoId: grupo.grupoId, periodos: ids }
+            porDefecto.length === 0
+              ? []
+              : grupos.map((grupo) => {
+                  const params = { grupoId: grupo.grupoId, periodos: porDefecto }
                   return seed(informeGrupoQueryKey(params), () => fetchInformeGrupo(params), estudiantesMeta(), { optional: true })
                 }),
-            ),
         }),
       ]
     },
@@ -572,21 +572,18 @@ function referenteDetalleTasks(id: number): PrepareTask[] {
       then: (referencia) => [
         seed(curricularReferenceGradesQueryKey(id), () => fetchCurricularReferenceGrades(id), catalogoMeta(), {
           then: (grados) => {
-            const areas = referencia.areas.length > 0 ? referencia.areas.map((a) => a.id as number) : [null]
-            const gradosIds = grados.length > 0 ? grados.map((g) => g.id) : [null]
-            return areas.flatMap((areaId) =>
-              gradosIds.map((gradeId, index) =>
-                seed(curricularStatementsQueryKey(id, areaId, gradeId), () => fetchStatements(id, areaId, gradeId), catalogoMeta(), {
-                  // Evidencias del grado que se abre por defecto (el primero).
-                  then: (enunciados) =>
-                    index === 0
-                      ? enunciados.map((e) =>
-                          seed(curricularEvidencesQueryKey(e.id), () => fetchEvidences(e.id), catalogoMeta(), { optional: true }),
-                        )
-                      : [],
-                }),
-              ),
-            )
+            // Como abre la pestaña de enunciados: primera área y primer grado
+            // (o `null` si no hay), y el primer enunciado seleccionado.
+            const areaId = referencia.areas.length > 0 ? (referencia.areas[0].id as number) : null
+            const gradeId = grados.length > 0 ? grados[0].id : null
+            return [
+              seed(curricularStatementsQueryKey(id, areaId, gradeId), () => fetchStatements(id, areaId, gradeId), catalogoMeta(), {
+                then: (enunciados) =>
+                  enunciados.length > 0
+                    ? [seed(curricularEvidencesQueryKey(enunciados[0].id), () => fetchEvidences(enunciados[0].id), catalogoMeta(), { optional: true })]
+                    : [],
+              }),
+            ]
           },
         }),
       ],

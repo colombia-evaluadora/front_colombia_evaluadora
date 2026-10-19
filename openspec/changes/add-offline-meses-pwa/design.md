@@ -149,10 +149,11 @@ cada lista con la MISMA key que usa su pantalla
   resumen semanal del mes en curso y el siguiente, y la lista de estudiantes de
   cada sesión de los próximos 14 días.
 - Informes: cascada sede → año (el actual) → cada jornada → periodos y grupos,
-  y el informe de cada grupo con los periodos por defecto y cada periodo suelto.
+  y el informe de cada grupo con los periodos por defecto (otras combinaciones
+  de periodos son 2^n y las calcula el servidor: solo con red).
 - Referentes: todas las páginas, catálogos del filtro y el detalle de cada
-  referente con sus enunciados por área × grado (evidencias del grado por
-  defecto).
+  referente como se abre (área y grado por defecto y evidencias del primer
+  enunciado); por área × grado eran cientos de requests por referente.
 - Comunicaciones, notificaciones y establecimiento (solo consulta).
 Solo se preparan las secciones del menú del usuario; lo que depende del rol va
 como tarea opcional (si responde 403 no cuenta como error). Las queries de esas
