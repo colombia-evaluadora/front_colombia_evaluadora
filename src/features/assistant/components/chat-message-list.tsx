@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react"
+
 import { ArrowRightIcon, CheckCircleIcon, SparkleIcon, SpinnerIcon, WarningCircleIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -9,6 +11,7 @@ import {
   MessageScrollerContent,
   MessageScrollerItem,
   MessageScrollerViewport,
+  useMessageScroller,
 } from "@/components/ui/message-scroller"
 
 import type { EstadoTurno } from "@/features/assistant/api/types"
@@ -49,6 +52,8 @@ export function ChatMessageList({
   }
 
   const ultimo = mensajes.at(-1)
+  // Solo la última pregunta ancla: con todas, al abrir el historial la vista saltaba a la primera.
+  const ultimaPregunta = mensajes.findLast((m) => m.rol === "user")
 
   return (
     <MessageScroller>
@@ -61,14 +66,14 @@ export function ChatMessageList({
               <MessageScrollerItem
                 key={mensaje.id}
                 messageId={mensaje.id}
-                scrollAnchor={esUsuario}
+                scrollAnchor={mensaje === ultimaPregunta}
                 className="animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
               >
                 {esUsuario ? (
                   <Message align="end">
                     <MessageContent>
                       <Bubble align="end" variant="default" className="max-w-[85%]">
-                        <BubbleContent>
+                        <BubbleContent className="rounded-2xl rounded-br-md">
                           <span className="whitespace-pre-wrap">{mensaje.texto}</span>
                         </BubbleContent>
                       </Bubble>
@@ -103,6 +108,7 @@ export function ChatMessageList({
         </MessageScrollerContent>
       </MessageScrollerViewport>
       <MessageScrollerButton />
+      <BajarAlFinal />
     </MessageScroller>
   )
 }
@@ -190,4 +196,27 @@ function ProgresoTurno({ estado, herramientas }: { estado: EstadoTurno | null; h
       )}
     </div>
   )
+}
+
+/**
+ * Al montar baja al último mensaje. La librería lo intenta mientras el Sheet
+ * anima (sin alto) y falla, así que se reintenta unos frames.
+ */
+function BajarAlFinal() {
+  const { scrollToEnd } = useMessageScroller()
+  const scrollRef = useRef(scrollToEnd)
+  scrollRef.current = scrollToEnd
+  useEffect(() => {
+    let intentos = 0
+    let frame = 0
+    const bajar = () => {
+      scrollRef.current({ behavior: "instant" })
+      const v = document.querySelector<HTMLElement>("[data-slot=message-scroller-viewport]")
+      const abajo = v && v.scrollHeight - v.clientHeight - v.scrollTop < 2
+      if (!abajo && ++intentos < 30) frame = requestAnimationFrame(bajar)
+    }
+    frame = requestAnimationFrame(bajar)
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  return null
 }
