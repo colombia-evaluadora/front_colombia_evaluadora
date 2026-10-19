@@ -22,7 +22,7 @@ import {
 } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { paths } from "@/config/paths"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
@@ -251,7 +251,7 @@ function EditarUnidadPageContent({
       <TableScreenBody className="rounded-b-none border-b-0">
         {(isPending || isLoadingPermiso || !puedeEditar || (!isError && unidad && !current)) && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-            <Spinner /> Cargando…
+            <LoadingLabel>Cargando…</LoadingLabel>
           </div>
         )}
 

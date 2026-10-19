@@ -3,10 +3,16 @@ import { toast } from "sonner"
 
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
-import { isNetworkError } from "@/lib/network-error"
+import { isNetworkError, NetworkSessionError } from "@/lib/network-error"
 import { APP_VERSION, noteMinClientVersion } from "@/lib/app-version"
 import { noteServerTime } from "@/lib/offline/clock"
-import { connectivityStore } from "@/lib/offline/connectivity"
+import { connectivityStore, isOfflineNow } from "@/lib/offline/connectivity"
+import {
+  NETWORK_ERROR_MESSAGE,
+  OFFLINE_NO_DATA_FULL_MESSAGE,
+  OFFLINE_SESSION_MESSAGE,
+  OFFLINE_WRITE_MESSAGE,
+} from "@/lib/offline/offline-messages"
 import { assertNoTmpIds } from "@/lib/offline/outbox/tmp-id"
 import { queryClient } from "@/lib/query-client"
 import type { AuthResponse } from "@/types/api"
@@ -517,7 +523,39 @@ function sinFraseDelBackend(message: string, status?: number): string {
   )
 }
 
+/**
+ * ¿La request que falló era una lectura? GET/HEAD, un POST de consulta marcado
+ * `readOnly` (`api.query`, `evalCol.postRows`) o un `/query` del motor de
+ * eval-col. Decide entre "no está guardada en este equipo" (lectura) y "esta
+ * acción necesita internet" (escritura).
+ */
+function isReadRequest(config: { method?: string; url?: string; readOnly?: boolean } | undefined): boolean {
+  const method = (config?.method ?? "get").toLowerCase()
+  if (method === "get" || method === "head" || config?.readOnly) return true
+  return /\/query(?:[/?]|$)/.test(config?.url ?? "")
+}
+
+/**
+ * Mensaje de un error de RED (sin respuesta del servidor) según el equipo esté
+ * sin conexión o solo con la red inestable. Sin conexión, una lectura que
+ * falla es una cuyo dato no estaba guardado en el equipo: las que sí lo
+ * estaban ni siquiera se piden (`OfflineAwareQueryClient`).
+ */
+function networkErrorMessage(error: unknown): string {
+  const offline = isOfflineNow()
+  if (error instanceof NetworkSessionError) return offline ? OFFLINE_SESSION_MESSAGE : NETWORK_ERROR_MESSAGE
+  if (!offline) return NETWORK_ERROR_MESSAGE
+  const config = Axios.isAxiosError(error) ? error.config : undefined
+  return isReadRequest(config) ? OFFLINE_NO_DATA_FULL_MESSAGE : OFFLINE_WRITE_MESSAGE
+}
+
 export function getErrorMessage(error: unknown): string {
+  // Sin respuesta (offline, DNS, timeout) o el refresh de sesión sin red: no
+  // hay frase del backend que mostrar y "Network Error" no le dice nada a un
+  // docente. Un 502/503/504 sí trae respuesta y sigue por el camino de status.
+  if (error instanceof NetworkSessionError || (Axios.isAxiosError(error) && !error.response && isNetworkError(error))) {
+    return networkErrorMessage(error)
+  }
   if (Axios.isAxiosError(error)) {
     const delCuerpo = mensajeDelCuerpo(error.response?.data)
     if (delCuerpo !== "") return cleanErrorMessage(delCuerpo)

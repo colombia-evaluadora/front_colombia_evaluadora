@@ -69,6 +69,7 @@ import {
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
   canAccessPath,
@@ -387,6 +388,13 @@ const appLayoutRoute = createRoute({
         to: paths.auth.login.path,
         search: { redirectTo: location.href },
       })
+    }
+
+    // Permisos por pantalla en segundo plano (no bloquea la navegación): así
+    // quedan en el snapshot de la sesión aunque la pantalla de aterrizaje no
+    // los use, y sin red los botones no quedan todos denegados.
+    if (connectivityStore.getState().status !== "offline") {
+      void context.queryClient.prefetchQuery(menuPermissionsQueryOptions)
     }
 
     // Una URL que no existe es un 404, no un "sin acceso".

@@ -13,7 +13,7 @@ import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import {
   Select,
   SelectContent,
@@ -172,7 +172,7 @@ export function InstrumentoGradingFields({
   if (isPending) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 text-sm">
-        <Spinner /> Cargando instrumento…
+        <LoadingLabel>Cargando instrumento…</LoadingLabel>
       </div>
     )
   }

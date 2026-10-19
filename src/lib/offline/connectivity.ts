@@ -273,6 +273,15 @@ export const connectivityStore = {
   },
 }
 
+/**
+ * ¿El equipo está sin conexión AHORA? El store manda; `navigator.onLine ===
+ * false` también cuenta (es la única señal fiable de "sin red": un `true` no
+ * prueba nada, pero un `false` sí) por si el evento todavía no llegó.
+ */
+export function isOfflineNow(): boolean {
+  return state.status === "offline" || (typeof navigator !== "undefined" && navigator.onLine === false)
+}
+
 /** Solo para tests: vuelve al estado inicial. */
 export function __resetConnectivityForTests(status: ConnectivityStatus = "online") {
   connectivityStore.stop()

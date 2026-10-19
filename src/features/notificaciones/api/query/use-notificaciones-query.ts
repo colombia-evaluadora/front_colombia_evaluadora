@@ -61,8 +61,12 @@ async function fetchNotificaciones(
  * se puede leer sin conexión; las escrituras se deshabilitan con `useOnlineOnly`.
  * La campana usa la misma key sin filtros, así comparte cache con la página.
  */
-export function useNotificacionesInfiniteQuery(filtros: NotificacionesFiltros = {}) {
+export function useNotificacionesInfiniteQuery(
+  filtros: NotificacionesFiltros = {},
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   return useInfiniteQuery({
+    enabled,
     queryKey: notificacionesListaQueryKey(filtros),
     queryFn: ({ pageParam }) => fetchNotificaciones(filtros, pageParam),
     initialPageParam: null as string | null,

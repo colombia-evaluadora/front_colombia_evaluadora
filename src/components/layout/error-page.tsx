@@ -3,7 +3,13 @@ import { useRouter } from "@tanstack/react-router"
 import type { ErrorComponentProps } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { isNetworkError } from "@/lib/network-error"
+import { isNetworkError, NetworkSessionError } from "@/lib/network-error"
+import { isOfflineNow } from "@/lib/offline/connectivity"
+import {
+  OFFLINE_NO_DATA_FULL_MESSAGE,
+  OFFLINE_SESSION_MESSAGE,
+  OFFLINE_SESSION_TITLE,
+} from "@/lib/offline/offline-messages"
 
 // Vite versiona cada chunk con un hash (`tab-rating-scales-LY7U7DNM.js`); un
 // deploy nuevo borra los archivos del build anterior. Una pestaña que ya
@@ -61,12 +67,20 @@ export function ErrorPage({ error }: ErrorComponentProps) {
 
   // Sin red (p. ej. el guard de /app agotó los reintentos del refresh): no
   // es "algo salió mal" sino "no llegamos al servidor", y reintentar sirve.
+  // Con el equipo sin conexión se dice así, y qué hacer para la próxima.
   if (isNetworkError(error)) {
+    const offline = isOfflineNow()
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
-        <h1 className="text-2xl font-semibold">No pudimos comunicarnos con el servidor</h1>
-        <p className="text-muted-foreground">
-          Revisa tu conexión a internet e intenta de nuevo.
+        <h1 className="text-2xl font-semibold">
+          {offline ? OFFLINE_SESSION_TITLE : "No pudimos comunicarnos con el servidor"}
+        </h1>
+        <p className="max-w-xl text-muted-foreground">
+          {offline
+            ? error instanceof NetworkSessionError
+              ? OFFLINE_SESSION_MESSAGE
+              : OFFLINE_NO_DATA_FULL_MESSAGE
+            : "Revisa tu conexión a internet e intenta de nuevo."}
         </p>
         <Button size="sm" onClick={() => void router.invalidate()} className="mt-2">
           Reintentar

@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 
@@ -128,7 +128,7 @@ export function ViewOperationChangesDialog({
 
         {isPending && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-            <Spinner /> Cargando cambios…
+            <LoadingLabel>Cargando cambios…</LoadingLabel>
           </div>
         )}
 
