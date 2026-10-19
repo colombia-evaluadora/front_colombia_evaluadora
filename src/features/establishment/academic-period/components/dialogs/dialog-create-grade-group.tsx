@@ -6,6 +6,7 @@ import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import {
   gradeGroupFormSchema,
   type GradeGroupFormValues,
 } from "@/features/establishment/academic-period/api/schema"
+import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",
@@ -150,34 +152,26 @@ export function CreateGradeGroupDialog({
     },
   })
 
-  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
-
   function closeDialog() {
     setOpen(false)
     setNotice(null)
     form.reset()
   }
 
-  function requestClose() {
-    if (isSaving) return
-    if (JSON.stringify(form.state.values) !== JSON.stringify(defaultValues)) {
-      setConfirmDiscardOpen(true)
-      return
-    }
-    closeDialog()
-  }
+  const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
+    isSaving,
+    isDirty: () => !formValuesEqual(form.state.values, defaultValues),
+    onOpen: () => {
+      setOpen(true)
+      setNotice(null)
+    },
+    onClose: closeDialog,
+  })
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setOpen(true)
-          setNotice(null)
-        } else {
-          requestClose()
-        }
-      }}
+      onOpenChange={onOpenChange}
     >
       {isEditing ? (
         <Tooltip>
@@ -349,14 +343,7 @@ export function CreateGradeGroupDialog({
         </DialogFooter>
       </DialogContent>
 
-      <ConfirmDiscardDialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-        onConfirm={() => {
-          setConfirmDiscardOpen(false)
-          closeDialog()
-        }}
-      />
+      <ConfirmDiscardDialog {...discardDialogProps} />
     </Dialog>
   )
 }

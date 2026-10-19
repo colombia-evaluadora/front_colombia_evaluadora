@@ -231,8 +231,11 @@ function MatriculaEditPageContent() {
 
   const moveMatricula = useMoveMatricula({
     mutationConfig: {
+      // El move corre después del PATCH: los demás datos ya quedaron guardados.
       onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
+        notify(`Los datos se guardaron, pero no se pudo aplicar el cambio: ${getErrorMessage(error)}`, {
+          variant: "error",
+        })
       },
     },
   })

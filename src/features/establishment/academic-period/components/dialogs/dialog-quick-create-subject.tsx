@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -27,6 +27,7 @@ import { useSubjectDetailsQuery } from "@/features/establishment/academic-period
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { useCreateSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 
 interface QuickCreateSubjectDialogProps {
   academicPeriodId?: number
@@ -91,12 +92,6 @@ export function QuickCreateSubjectDialog({
   const existingAreaSubjects =
     resolvedAreaId != null ? subjectDetails.filter((s) => s.areaId === resolvedAreaId) : []
 
-  useEffect(() => {
-    if (!open) return
-    reset()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
   function reset() {
     setNotice(null)
     setAsignaturaGeneral("")
@@ -109,10 +104,19 @@ export function QuickCreateSubjectDialog({
     setSubmitted(false)
   }
 
+  // Todo cierre pasa por aquí y resetea, así al reabrir ya está limpio.
   function close() {
     onOpenChange(false)
     reset()
   }
+
+  // Sin confirmación de descarte: solo bloquea el cierre mientras guarda.
+  const guarded = useGuardedDialog({
+    isSaving,
+    isDirty: () => false,
+    onOpen: () => onOpenChange(true),
+    onClose: close,
+  })
 
   const hasAreaSelection =
     isPreescolar || areaSelection.mode === "existing" || areaSelection.nombre.trim() !== ""
@@ -151,9 +155,7 @@ export function QuickCreateSubjectDialog({
 
       let areaId = resolvedAreaId
       if (areaId == null) {
-        // El área no existe todavía: se crea reutilizando lo que ya se
-        // completó para la asignatura (nombre, abreviación, orden,
-        // clasificación general) — no se pregunta por separado.
+        // Si el área no existe se crea con los datos de la asignatura.
         const areaNombre = isPreescolar ? nombreTrim : areaSelection.mode === "new" ? areaSelection.nombre.trim() : ""
         const areaResult = await createAreaSubject.mutateAsync({
           areaGeneral: String(subjectGeneralId),
@@ -166,9 +168,7 @@ export function QuickCreateSubjectDialog({
         areaId = areaResult.codigo
       }
 
-      // El hook invalida áreas/asignaturas y espera el refetch de las
-      // disponibles del plan antes de resolver, así `onSaved` ya puede
-      // autoseleccionar la nueva.
+      // El hook espera el refetch, así `onSaved` puede autoseleccionar.
       const subjectId = await createSubject.mutateAsync({
         areaId,
         areaGeneralId: subjectGeneralId,
@@ -192,14 +192,7 @@ export function QuickCreateSubjectDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next && isSaving) return
-        if (!next) {
-          close()
-          return
-        }
-        onOpenChange(true)
-      }}
+      onOpenChange={guarded.onOpenChange}
     >
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />

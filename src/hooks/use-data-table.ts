@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
   getCoreRowModel,
   useReactTable,
@@ -26,8 +26,7 @@ interface UseDataTableOptions<TData> extends DataTableFilters {
   data: TData[]
   pageCount: number
   getRowId: (row: TData) => string
-  // Si se define, la visibilidad de columnas se persiste en localStorage
-  // bajo esta clave, para recordarla entre sesiones.
+  // Si se define, persiste la visibilidad de columnas en localStorage.
   columnVisibilityStorageKey?: string
 }
 
@@ -44,6 +43,8 @@ function readStoredVisibility(storageKey: string | undefined): VisibilityState {
 interface UseDataTableResult<TData> {
   table: Table<TData>
   selectedIds: string[]
+  // Filas seleccionadas de todas las páginas visitadas, no solo la actual.
+  selectedRows: TData[]
   hasSelection: boolean
   resetSelection: () => void
 }
@@ -119,9 +120,17 @@ export function useDataTable<TData>({
     [rowSelection],
   )
 
+  // Recuerda las filas vistas para no perder la selección al cambiar de página.
+  const seenRowsRef = useRef(new Map<string, TData>())
+  for (const row of data) seenRowsRef.current.set(getRowId(row), row)
+  const selectedRows = selectedIds
+    .map((id) => seenRowsRef.current.get(id))
+    .filter((row): row is TData => row !== undefined)
+
   return {
     table,
     selectedIds,
+    selectedRows,
     hasSelection: selectedIds.length > 0,
     resetSelection: () => setRowSelection({}),
   }

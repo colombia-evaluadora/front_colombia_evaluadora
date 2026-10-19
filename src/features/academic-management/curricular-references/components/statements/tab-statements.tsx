@@ -95,7 +95,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
     if (filteredStatements.some((statement) => statement.id === selectedStatementId)) return
     setSelectedStatementId(filteredStatements[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statements, areaId, onlyUnassigned, statementsGradeId])
+  }, [statements, areaId, onlyUnassigned, statementsGradeId, search])
 
   const { data: evidences = [], isPending: isEvidencesPending } = useCurricularEvidencesQuery(
     selectedStatementId,

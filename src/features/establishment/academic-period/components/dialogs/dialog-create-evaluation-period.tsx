@@ -7,6 +7,7 @@ import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/c
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,7 @@ import {
   evaluationPeriodFormSchema,
   type EvaluationPeriodFormValues,
 } from "@/features/establishment/academic-period/api/schema"
+import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 
 const EMPTY: EvaluationPeriodFormValues = {
   codigo: "",
@@ -170,8 +172,7 @@ export function CreateEvaluationPeriodDialog({
       onChange: evaluationPeriodFormSchema,
       onSubmit: evaluationPeriodFormSchema,
     },
-    // `onSubmit` solo corre si el validador de submit pasó: no hace falta
-    // volver a parsear (el schema no transforma valores).
+    // El validador ya pasó y el schema no transforma.
     onSubmit: ({ value }) => {
       const payload = { ...value }
       if (isEditing) {
@@ -205,26 +206,21 @@ export function CreateEvaluationPeriodDialog({
     return () => subscription.unsubscribe()
   }, [isEditing, open, statusOptions, form])
 
-  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
-
-  function requestClose() {
-    if (isSaving) return
-    const { estadoId: _a, ...current } = form.state.values
-    const { estadoId: _b, ...initial } = defaultValues
-    if (JSON.stringify(current) !== JSON.stringify(initial)) {
-      setConfirmDiscardOpen(true)
-      return
-    }
-    handleOpenChange(false)
-  }
+  const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
+    isSaving,
+    isDirty: () => {
+      const { estadoId: _a, ...current } = form.state.values
+      const { estadoId: _b, ...initial } = defaultValues
+      return !formValuesEqual(current, initial)
+    },
+    onOpen: () => handleOpenChange(true),
+    onClose: () => handleOpenChange(false),
+  })
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (next) handleOpenChange(true)
-        else requestClose()
-      }}
+      onOpenChange={onOpenChange}
     >
       {isEditing ? (
         <Tooltip>
@@ -307,8 +303,7 @@ export function CreateEvaluationPeriodDialog({
             {(field) => (
               <form.Subscribe selector={(state) => [state.values.startDate, state.values.endDate]}>
                 {([startDate, endDate]) => {
-                  // Avisos que no son errores de validación: el campo los
-                  // muestra solo mientras no tenga un error propio.
+                  // Avisos no bloqueantes; se ocultan si el campo tiene error.
                   const outOfRange = !!startDate && !!endDate && startDate >= endDate
                   const noAvailableEndDate = !!startDate && !hasAvailableEndDate(startDate)
                   return (
@@ -489,14 +484,7 @@ export function CreateEvaluationPeriodDialog({
         </DialogFooter>
       </DialogContent>
 
-      <ConfirmDiscardDialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-        onConfirm={() => {
-          setConfirmDiscardOpen(false)
-          handleOpenChange(false)
-        }}
-      />
+      <ConfirmDiscardDialog {...discardDialogProps} />
     </Dialog>
   )
 }

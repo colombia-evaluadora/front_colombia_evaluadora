@@ -44,8 +44,8 @@ import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
 import { useMoveMatricula, type MatriculaMoveKind } from "@/features/coverage/matricula/api/mutations/move-matricula"
-import { useRetireMatricula } from "@/features/coverage/matricula/api/mutations/retire-matricula"
-import { useReingresarMatricula } from "@/features/coverage/matricula/api/mutations/reingresar-matricula"
+import { useRetireMatriculas } from "@/features/coverage/matricula/api/mutations/retire-matricula"
+import { useReingresarMatriculas } from "@/features/coverage/matricula/api/mutations/reingresar-matricula"
 import { CambioSedeMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-cambio-sede-matricula"
 import type { CambioSedeConfirmResult } from "@/features/coverage/matricula/components/dialogs/dialog-cambio-sede-matricula"
 import { CambioGradoMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-cambio-grado-matricula"
@@ -144,8 +144,8 @@ export function ModificarMatriculaDialog({
   }, [isPeriodoError, periodoError, notify])
 
   const moveMatricula = useMoveMatricula()
-  const retireMutation = useRetireMatricula()
-  const reingresarMutation = useReingresarMatricula()
+  const retireMutation = useRetireMatriculas()
+  const reingresarMutation = useReingresarMatriculas()
   const isApplying =
     moveMatricula.isPending || retireMutation.isPending || reingresarMutation.isPending
 
@@ -205,7 +205,9 @@ export function ModificarMatriculaDialog({
   const nombreRepetido = (catalogs?.sedes.filter((s) => s.nombre === sede).length ?? 0) > 1
   const sedeChanged = sedeId !== "" && (sede !== commonCampus || nombreRepetido)
   const gradoChanged = grado !== "" && Number(grado) !== commonGrade
-  const grupoChanged = grupo !== "" && grupo !== commonGroup
+  // `grupo` guarda el id; el origen solo se conoce por código.
+  const grupoCodigo = dependentCatalogs?.groups.find((g) => String(g.id) === grupo)?.codigo ?? ""
+  const grupoChanged = grupo !== "" && grupoCodigo !== commonGroup
 
   const missingGrupo = (sedeChanged || gradoChanged) && grupo === ""
   const canConfirm = count > 0 && (sedeChanged || gradoChanged || grupoChanged || accion !== "sinCambios")
@@ -240,7 +242,7 @@ export function ModificarMatriculaDialog({
     const alreadyDone = selected.length - applicable.length
     const mutate = accion === "retirar" ? retireMutation.mutateAsync : reingresarMutation.mutateAsync
 
-    const results = await Promise.allSettled(applicable.map((m) => mutate(m.id)))
+    const results = await mutate(applicable.map((m) => m.id))
     const failed = results.filter((r) => r.status === "rejected").length
     const accionLabel = accion === "retirar" ? "retirados" : "reingresados"
 
@@ -267,8 +269,8 @@ export function ModificarMatriculaDialog({
   ) {
     if (!(sedeChanged || gradoChanged || grupoChanged)) return
 
-    const targetGrupoId = dependentCatalogs?.groups.find((g) => g.codigo === grupo)?.id
-    if (targetGrupoId == null) {
+    const targetGrupoId = Number(grupo)
+    if (!grupo || !Number.isFinite(targetGrupoId)) {
       throw new Error("No se pudo identificar el grupo destino para el movimiento.")
     }
 
@@ -303,7 +305,7 @@ export function ModificarMatriculaDialog({
           fromGrade: moved?.anterior.grado ?? gradeLabel(original.grade),
           toGrade: moved?.nuevo.grado ?? (grado ? gradeLabel(Number(grado)) : gradeLabel(original.grade)),
           fromGroup: moved?.anterior.grupo ?? original.group,
-          toGroup: moved?.nuevo.grupo ?? (grupo || original.group),
+          toGroup: moved?.nuevo.grupo ?? (grupoCodigo || original.group),
         }
       }),
     })
@@ -650,6 +652,10 @@ export function ModificarMatriculaDialog({
                     {(sedeChanged || gradoChanged) && "*"}
                   </FieldLabel>
                   <ComboboxField
+                    items={{
+                      "": "Seleccionar",
+                      ...Object.fromEntries((dependentCatalogs?.groups ?? []).map((g) => [g.id, g.codigo])),
+                    }}
                     value={grupo}
                     onValueChange={(v) => setGrupo(v ?? "")}
                     disabled={!grado}
@@ -664,7 +670,7 @@ export function ModificarMatriculaDialog({
                         Seleccionar
                       </ComboboxFieldItem>
                       {(dependentCatalogs?.groups ?? []).map((group) => (
-                        <ComboboxFieldItem key={group.id} value={group.codigo}>
+                        <ComboboxFieldItem key={group.id} value={String(group.id)}>
                           {group.codigo}
                         </ComboboxFieldItem>
                       ))}
@@ -736,7 +742,7 @@ export function ModificarMatriculaDialog({
           fromGrade={first.grade}
           toGrade={grado ? Number(grado) : first.grade}
           fromGroup={first.group}
-          toGroup={grupo || first.group}
+          toGroup={grupoCodigo || first.group}
           gradeWillChange={gradoChanged}
           sameOrigin={sameGradeOrigin}
           onBack={queue.indexOf("sede") > 0 ? () => handleBackFrom("sede") : undefined}
@@ -761,7 +767,7 @@ export function ModificarMatriculaDialog({
       <CambioGrupoMatriculaDialog
         modo="masivo"
         open={open && step === "grupo"}
-        toGroup={grupo}
+        toGroup={grupoCodigo}
         studentCount={count}
         gradeChange={gradeChangeResult}
         onBack={() => handleBackFrom("grupo")}

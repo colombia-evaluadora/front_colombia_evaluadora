@@ -30,8 +30,8 @@ it("removes multiple campuses through the bulk-delete mock handler", async () =>
 
   const payload = await response.json()
 
-  expect(payload.status).toBe("ok")
-  expect(payload.deletedCount).toBe(3)
+  expect(payload.rows).toHaveLength(3)
+  expect(payload.rows.every((row: { status: string }) => row.status === "eliminado")).toBe(true)
   expect(campusesDb).toHaveLength(initialDetailsCount - 3)
   expect(campusesRowsDb).toHaveLength(initialRowsCount - 3)
   for (const target of targets) {

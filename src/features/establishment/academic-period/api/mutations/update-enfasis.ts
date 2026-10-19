@@ -6,18 +6,14 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "../utils/extract-write-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateEnfasisRelated } from "./invalidate"
 
 export interface UpdateEnfasisInput {
   id: number
   nombre: string
 }
 
-// `PUT /eval-col/enfasis/:ID` (`fn_enfasis_actualizar`, id_query 103) —
-// confirmado contra la función real: `p_nombre`/`p_codigo`/`p_fk_especialidad`
-// son todos opcionales (COALESCE con el valor actual si no vienen). La UI
-// solo deja editar el nombre, así que solo se manda `NOMBRE` — `CODIGO`/
-// `FK_ESPECIALIDAD` quedan como estaban.
+// `fn_enfasis_actualizar` (id_query 103): solo se edita el nombre.
 async function updateEnfasis(input: UpdateEnfasisInput): Promise<number> {
   const raw: WriteResultResponse = await api.put(
     `/eval-col/enfasis/${input.id}`,
@@ -38,7 +34,7 @@ export function useUpdateEnfasis({
     mutationFn: updateEnfasis,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.especialidades.all })
+      invalidateEnfasisRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

@@ -76,8 +76,7 @@ function applyFilters(rows: Campus[], filters: CampusesQueryRequest["filters"]):
       }
     }
 
-    // El `<Select>` del buscador manda `String(item.id)`, no el `code` (ver
-    // search-campuses.tsx).
+    // El buscador manda `String(item.id)`, no el `code`.
     if (filters.zones?.length && !filters.zones.includes(String(row.zone?.id ?? ""))) {
       return false
     }
@@ -108,9 +107,7 @@ function applySorting(
       return 0
     }
 
-    // `zone` puede ordenarse por su objeto completo (`CatalogItem | null`):
-    // el `?? ""` solo evita el `TypeError` de comparar contra `null`, no
-    // pretende un orden con sentido para esa columna.
+    // `?? ""` solo evita comparar contra null.
     return (av ?? "") > (bv ?? "") ? 1 : -1
   })
 
@@ -138,8 +135,6 @@ export const campusHandlers = [
     })
   }),
 
-  // Las exportaciones cuelgan de `/api/campuses/*`, no de
-  // `/api/establishments/campuses/*`, tal como las pide el front.
   http.post("*/api/campuses/export", async ({ request }) => {
     await delay(600)
 
@@ -178,14 +173,7 @@ export const campusHandlers = [
     })
   }),
 
-  // El mismo catálogo de sedes, pero con la ruta y el DTO del backend real
-  // (`fn_sed_listar_todos`, columnas de TSEDE en crudo). No es un duplicado
-  // por gusto: `useSedeOptionsQuery` —el select de Sede del periodo
-  // académico— pega derecho acá sin pasar por `apiPath`, así que sin este
-  // handler la pantalla se quedaba sin sedes en modo mock (y el 401 del
-  // request sin interceptar tumbaba la sesión entera). El handler legacy de
-  // arriba sigue sirviendo al diálogo de permisos de funcionarios, que
-  // todavía consume la forma `Campus`.
+  // DTO real (`fn_sed_listar_todos`) para `useSedeOptionsQuery`; sin él el mock pierde sedes.
   http.get("*/api/eval-col/establecimientos/sedes/opciones", async () => {
     await delay(150)
 
@@ -200,9 +188,7 @@ export const campusHandlers = [
         comuna: campus.commune,
         direccion: campus.address,
         telefono: campus.phone,
-        // `Campus` no guarda a qué establecimiento pertenece; se reparten en
-        // orden sobre los sembrados para que la relación sea estable entre
-        // recargas y cada establecimiento tenga al menos una sede.
+        // Reparto estable de sedes entre establecimientos.
         fk_establecimiento:
           establishmentsRowsDb[index % establishmentsRowsDb.length]?.id ?? 0,
       })),
@@ -320,9 +306,7 @@ export const campusHandlers = [
     deleteManyCampusDetails(uniqueIds)
 
     return HttpResponse.json({
-      status: "ok",
-      message: `${uniqueIds.length} sede(s) eliminada(s).`,
-      deletedCount: uniqueIds.length,
+      rows: uniqueIds.map((id) => ({ pk_sede: String(id), status: "eliminado" })),
     })
   }),
 
@@ -331,9 +315,7 @@ export const campusHandlers = [
 
     const idParam = Array.isArray(params.id) ? params.id[0] : params.id
 
-    // Guard defensivo: la ruta `bulk-delete` está registrada antes para
-    // que MSW no la confunda con `:id`, pero si el orden cambia seguimos
-    // devolviendo 404 sin dejar pasar `id === "bulk-delete"`.
+    // Guard por si cambia el orden de rutas.
     if (!idParam || idParam === "bulk-delete") {
       return HttpResponse.json(
         {

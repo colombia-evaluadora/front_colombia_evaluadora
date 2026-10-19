@@ -8,12 +8,9 @@ import {
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/utils/extract-write-result"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateGradeRelated } from "./invalidate"
 
-// Body PLANO con las llaves de `fn_grado_crear` (`POST /eval-col/grados`,
-// id_query 57). `nombre` viaja tal cual (el backend lo valida contra el
-// catálogo GRADOS por NOMBRE o VALOR y deriva el CODIGO de ahí);
-// `gradoSiguiente` sí necesita resolverse a PK (ver resolve-grado-siguiente.ts).
+// `fn_grado_crear` (id_query 57); `gradoSiguiente` se resuelve a PK.
 async function createGrade(input: CreateGradeRequest): Promise<{ id: number }> {
   const fkGradoSiguiente = await resolveGradoSiguienteId(input.gradoSiguiente)
   const raw = await api.post<WriteResultResponse>("/eval-col/grados", {
@@ -35,7 +32,7 @@ export function useCreateGrade({ mutationConfig }: UseCreateGradeOptions = {}) {
     mutationFn: createGrade,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.grades.all })
+      invalidateGradeRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })
