@@ -118,13 +118,15 @@ function MatriculaEditPageContent() {
   const fieldSettings = applyGradeFieldRules(configuredFieldSettings, grade)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  const initialGradeRef = useRef<string | null>(null)
-  const initialSedeRef = useRef<string | null>(null)
+  // Valores tal como llegaron: base para detectar cambios de grado, sede, grupo y acudiente.
+  const [inicial, setInicial] = useState<CreateMatriculaInput | null>(null)
+  const initialGrade = inicial?.academic.grade || null
+  const initialSede = inicial?.academic.campus || null
   // Por id: dos colegios pueden tener sedes con el mismo nombre.
-  const initialSedeIdRef = useRef<string | null>(null)
-  const initialGroupRef = useRef<string | null>(null)
+  const initialSedeId = inicial?.academic.campusId || null
+  const initialGroup = inicial?.academic.group || null
   // Si el documento cambia, se sustituye al acudiente (ver `performSave`).
-  const initialGuardianDocumentRef = useRef<{ documentType: string; documentNumber: string } | null>(null)
+  const initialGuardianDocument = inicial?.guardian ?? null
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
   const summaryNavigateIdRef = useRef(matriculaId)
@@ -138,32 +140,21 @@ function MatriculaEditPageContent() {
   } | null>(null)
   const [groupChange, setGroupChange] = useState<{ from: string; to: string } | null>(null)
 
-  useEffect(() => {
-    if (data?.status === "ok" && data.details && values === null && municipalities.length > 0) {
-      const resolved = resolveMatriculaMunicipioDepartments(data.details, municipalities)
-      setValues(resolved)
-      initialGradeRef.current = resolved.academic.grade
-      initialSedeRef.current = resolved.academic.campus
-      initialSedeIdRef.current = resolved.academic.campusId || null
-      initialGroupRef.current = resolved.academic.group
-      initialGuardianDocumentRef.current = {
-        documentType: resolved.guardian.documentType,
-        documentNumber: resolved.guardian.documentNumber,
-      }
-    }
-  }, [data, values, municipalities])
-
-  useEffect(() => {
-    const nextStatus = data?.status === "ok" ? data.details?.academic.status : undefined
-    if (nextStatus && values && nextStatus !== values.academic.status) {
-      setValues({ ...values, academic: { ...values.academic, status: nextStatus } })
-    }
-  }, [data, values])
+  // Estado ajustado durante el render (sin efecto): se siembra una vez y el estado sigue al backend.
+  if (data?.status === "ok" && data.details && values === null && municipalities.length > 0) {
+    const resolved = resolveMatriculaMunicipioDepartments(data.details, municipalities)
+    setValues(resolved)
+    setInicial(resolved)
+  }
+  const nextStatus = data?.status === "ok" ? data.details?.academic.status : undefined
+  if (nextStatus && values && nextStatus !== values.academic.status) {
+    setValues({ ...values, academic: { ...values.academic, status: nextStatus } })
+  }
 
   const guardianDocumentType = values?.guardian.documentType ?? ""
   const guardianDocumentNumber = values?.guardian.documentNumber ?? ""
   useEffect(() => {
-    const original = initialGuardianDocumentRef.current
+    const original = initialGuardianDocument
     const changed =
       original != null &&
       (guardianDocumentType !== original.documentType || guardianDocumentNumber !== original.documentNumber)
@@ -208,7 +199,7 @@ function MatriculaEditPageContent() {
       cancelled = true
       clearTimeout(timeout)
     }
-  }, [guardianDocumentType, guardianDocumentNumber])
+  }, [guardianDocumentType, guardianDocumentNumber, initialGuardianDocument])
 
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campusId: values?.academic.campusId || undefined,
@@ -268,7 +259,7 @@ function MatriculaEditPageContent() {
     if (!values || !data?.details || saving) return
 
     const { pkUsuarioEstudiante, pkUsuarioAcudiente } = data.details
-    const originalGuardianDocument = initialGuardianDocumentRef.current
+    const originalGuardianDocument = initialGuardianDocument
     const guardianReplaced =
       originalGuardianDocument != null &&
       (values.guardian.documentType !== originalGuardianDocument.documentType ||
@@ -297,8 +288,8 @@ function MatriculaEditPageContent() {
   }
 
   function handleGradeChangeCancel() {
-    if (gradeChange && values && initialGradeRef.current) {
-      setValues({ ...values, academic: { ...values.academic, grade: initialGradeRef.current } })
+    if (gradeChange && values && initialGrade) {
+      setValues({ ...values, academic: { ...values.academic, grade: initialGrade } })
     }
     setGradeChange(null)
   }
@@ -353,13 +344,13 @@ function MatriculaEditPageContent() {
   }
 
   function handleSedeChangeCancel() {
-    if (sedeChange && values && initialSedeRef.current) {
+    if (sedeChange && values && initialSede) {
       setValues({
         ...values,
         academic: {
           ...values.academic,
-          campus: initialSedeRef.current,
-          campusId: initialSedeIdRef.current ?? values.academic.campusId,
+          campus: initialSede,
+          campusId: initialSedeId ?? values.academic.campusId,
         },
       })
     }
@@ -409,8 +400,8 @@ function MatriculaEditPageContent() {
   }
 
   function handleGroupChangeCancel() {
-    if (groupChange && values && initialGroupRef.current) {
-      setValues({ ...values, academic: { ...values.academic, group: initialGroupRef.current } })
+    if (groupChange && values && initialGroup) {
+      setValues({ ...values, academic: { ...values.academic, group: initialGroup } })
     }
     setGroupChange(null)
   }
@@ -461,16 +452,16 @@ function MatriculaEditPageContent() {
     setMissingFields(missing)
     if (missing.length > 0) return
 
-    const originalSede = initialSedeRef.current
+    const originalSede = initialSede
     const currentSede = values.academic.campus
-    const originalSedeId = initialSedeIdRef.current
+    const originalSedeId = initialSedeId
     const currentSedeId = values.academic.campusId
     const cambioDeSede =
       originalSedeId && currentSedeId
         ? originalSedeId !== currentSedeId
         : Boolean(originalSede && currentSede && originalSede !== currentSede)
     if (originalSede && currentSede && cambioDeSede) {
-      const originalGrade = Number(initialGradeRef.current)
+      const originalGrade = Number(initialGrade)
       const currentGrade = Number(values.academic.grade)
       const etiqueta = (id: string | null | undefined, nombre: string) =>
         catalogs?.sedes.find((sede) => sede.id === id)?.label ?? nombre
@@ -485,7 +476,7 @@ function MatriculaEditPageContent() {
       return
     }
 
-    const original = initialGradeRef.current
+    const original = initialGrade
     const current = values.academic.grade
     if (
       original &&
@@ -499,7 +490,7 @@ function MatriculaEditPageContent() {
     }
 
 
-    const originalGroup = initialGroupRef.current
+    const originalGroup = initialGroup
     const currentGroup = values.academic.group
     if (originalGroup && currentGroup && originalGroup !== currentGroup) {
       setGroupChange({ from: originalGroup, to: currentGroup })
