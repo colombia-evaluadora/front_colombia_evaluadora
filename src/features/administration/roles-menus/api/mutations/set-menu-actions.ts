@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
 
 /** Acciones que tiene la vista (TMENU.ADMITE_GUARDAR / ADMITE_ELIMINAR, V303). */
 export interface MenuActions {
@@ -28,8 +28,8 @@ export function useSetMenuActions({ mutationConfig }: UseSetMenuActionsOptions =
     ...rest,
     onSuccess: (...args) => {
       // Una acción que la vista deja de tener sale de los permisos de los roles.
-      queryClient.invalidateQueries({ queryKey: menusQueryKey() })
-      queryClient.invalidateQueries({ queryKey: ["role-menus"] })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.menus.all })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.roleMenus.all })
       onSuccess?.(...args)
     },
   })

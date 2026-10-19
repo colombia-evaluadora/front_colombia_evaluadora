@@ -9,6 +9,7 @@ import type {
   TableOperationsStats,
   TableOperationsStatsRequest,
 } from "@/features/administration/audits/api/types/audit-table"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseTableOperationsStatsQueryParams extends TableOperationsStatsRequest {
   tableSlug: string
@@ -48,7 +49,7 @@ async function fetchTableOperationsStats({
 
 export function useTableOperationsStatsQuery(params: UseTableOperationsStatsQueryParams) {
   return useQuery({
-    queryKey: ["audit-tables", params.tableSlug, "operations", "stats", params],
+    queryKey: auditKeys.tablas.operaciones.stats(params.tableSlug, params),
     queryFn: () => fetchTableOperationsStats(params),
     placeholderData: (previous) => previous,
     // Mismo criterio que useTableOperationsQuery (la lista que acompañan

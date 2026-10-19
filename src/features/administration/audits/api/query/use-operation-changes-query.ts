@@ -9,6 +9,7 @@ import type {
   OperationChangesResponse,
   OperationType,
 } from "@/features/administration/audits/api/types/audit-table"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseOperationChangesQueryParams {
   tableSlug: string
@@ -71,14 +72,7 @@ async function fetchOperationChanges({
 
 export function useOperationChangesQuery(params: UseOperationChangesQueryParams) {
   return useQuery({
-    queryKey: [
-      "audit-tables",
-      params.tableSlug,
-      "operations",
-      params.operationId,
-      "changes",
-      { showAll: params.showAll ?? false },
-    ],
+    queryKey: auditKeys.tablas.operaciones.cambios(params.tableSlug, params.operationId, params.showAll ?? false),
     queryFn: () => fetchOperationChanges(params),
     enabled: params.enabled ?? true,
   })

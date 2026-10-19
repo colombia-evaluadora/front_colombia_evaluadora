@@ -1,5 +1,3 @@
-import { useCallback, useMemo } from "react"
-
 import { auditoriaSesionOperacionesRoute } from "@/router"
 
 import type {
@@ -20,24 +18,21 @@ export function useSessionOperationsFilters(): SessionOperationsFilters {
   const search = auditoriaSesionOperacionesRoute.useSearch()
   const navigate = auditoriaSesionOperacionesRoute.useNavigate()
 
-  const applyFilters = useCallback(
-    (values: SessionOperationsFiltersFormValues) => {
-      navigate({
-        search: (prev) => ({
-          ...prev,
-          operations: values.operations.length ? values.operations : undefined,
-          tableSlug: values.tableSlug || undefined,
-          occurredFrom: values.occurredFrom || undefined,
-          occurredTo: values.occurredTo || undefined,
-          page: 0,
-        }),
-        replace: true,
-      })
-    },
-    [navigate],
-  )
+  const applyFilters = (values: SessionOperationsFiltersFormValues) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        operations: values.operations.length ? values.operations : undefined,
+        tableSlug: values.tableSlug || undefined,
+        occurredFrom: values.occurredFrom || undefined,
+        occurredTo: values.occurredTo || undefined,
+        page: 0,
+      }),
+      replace: true,
+    })
+  }
 
-  const clearAllFilters = useCallback(() => {
+  const clearAllFilters = () => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -49,25 +44,20 @@ export function useSessionOperationsFilters(): SessionOperationsFilters {
       }),
       replace: true,
     })
-  }, [navigate])
+  }
 
-  const queryFilters: SessionOperationsQueryRequest["filters"] = useMemo(
-    () => ({
-      operations: search.operations,
-      tableSlug: search.tableSlug,
-      occurredFrom: search.occurredFrom,
-      occurredTo: search.occurredTo,
-    }),
-    [search.operations, search.tableSlug, search.occurredFrom, search.occurredTo],
-  )
+  const queryFilters: SessionOperationsQueryRequest["filters"] = {
+    operations: search.operations,
+    tableSlug: search.tableSlug,
+    occurredFrom: search.occurredFrom,
+    occurredTo: search.occurredTo,
+  }
 
-  const activeFilterCount = useMemo(() => {
-    let n = 0
-    n += search.operations?.length ?? 0
-    if (search.tableSlug) n += 1
-    if (search.occurredFrom || search.occurredTo) n += 1
-    return n
-  }, [search.operations, search.tableSlug, search.occurredFrom, search.occurredTo])
+  let n = 0
+  n += search.operations?.length ?? 0
+  if (search.tableSlug) n += 1
+  if (search.occurredFrom || search.occurredTo) n += 1
+  const activeFilterCount = n
 
   return {
     filters: {

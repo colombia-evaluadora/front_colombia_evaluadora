@@ -12,6 +12,7 @@ import type {
   SessionStatus,
 } from "@/features/administration/audits/api/types/audit"
 import { toPaginated } from "@/lib/pagination"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseAuditsQueryParams {
   filters: AuditsQueryRequest["filters"]
@@ -90,11 +91,9 @@ async function fetchAudits(params: UseAuditsQueryParams): Promise<AuditsQueryRes
   }
 }
 
-export const auditsQueryKey = (params: UseAuditsQueryParams) => ["audits", params]
-
 export function useAuditsQuery(params: UseAuditsQueryParams) {
   return useQuery({
-    queryKey: auditsQueryKey(params),
+    queryKey: auditKeys.sesiones.lista(params),
     queryFn: () => fetchAudits(params),
     placeholderData: (previous) => previous,
     // Cada entrada a "Registro de actividad" revalida contra el backend en

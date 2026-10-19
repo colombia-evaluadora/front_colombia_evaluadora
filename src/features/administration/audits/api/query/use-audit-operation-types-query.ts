@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { OperationTypeOption } from "@/features/administration/audits/api/types/audit-table"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 /**
  * El backend real no expone un catálogo para esto: los tres tipos son un
@@ -22,11 +23,9 @@ function fetchAuditOperationTypes(): Promise<OperationTypeOption[]> {
   return api.get("/audit-operation-types")
 }
 
-export const auditOperationTypesQueryKey = () => ["audit-operation-types"]
-
 export function useAuditOperationTypesQuery() {
   return useQuery({
-    queryKey: auditOperationTypesQueryKey(),
+    queryKey: auditKeys.tiposOperacion,
     queryFn: fetchAuditOperationTypes,
     staleTime: Infinity,
   })

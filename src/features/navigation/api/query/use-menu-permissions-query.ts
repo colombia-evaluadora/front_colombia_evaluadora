@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
 
 async function fetchMenuPermissions(): Promise<MenuPermission[]> {
   return evalCol.getRows<MenuPermission>("/usuarios/permisos-menu")
@@ -14,7 +15,7 @@ async function fetchMenuPermissions(): Promise<MenuPermission[]> {
  */
 export function useMenuPermissionsQuery() {
   return useQuery({
-    queryKey: ["navigation", "permisos-menu"],
+    queryKey: navigationKeys.permisosMenu,
     queryFn: fetchMenuPermissions,
     staleTime: Infinity,
   })

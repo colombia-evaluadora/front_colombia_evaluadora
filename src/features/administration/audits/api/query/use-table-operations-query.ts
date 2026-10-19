@@ -19,6 +19,7 @@ import type {
   TableOperationsQueryResponse,
 } from "@/features/administration/audits/api/types/audit-table"
 import { toPaginated } from "@/lib/pagination"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseTableOperationsQueryParams {
   tableSlug: string
@@ -115,7 +116,7 @@ async function fetchTableOperations(
 
 export function useTableOperationsQuery(params: UseTableOperationsQueryParams) {
   return useQuery({
-    queryKey: ["audit-tables", params.tableSlug, "operations", params],
+    queryKey: auditKeys.tablas.operaciones.lista(params.tableSlug, params),
     queryFn: () => fetchTableOperations(params),
     placeholderData: (previous) => previous,
     // Mismo criterio que `useAuditsQuery`: revalidar en cada entrada a la

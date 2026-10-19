@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
@@ -62,20 +62,18 @@ function RolesMenusPageContent() {
   const { data: menus = [], isPending: menusPending } = useMenusQuery()
   const { data: roleMenus = [], isPending: assignedPending } = useRoleMenusQuery(roleId)
 
-  const tree = useMemo(() => buildMenuTree(menus), [menus])
+  const tree = buildMenuTree(menus)
 
   // Asignados sin padre activo: el backend rechaza la lista entera si viajan.
-  const savedViews: RoleViews = useMemo(() => {
-    const { known } = partitionKnownMenus(
-      roleMenus.map((menu) => menu.id),
-      tree,
-    )
-    return new Map(
-      roleMenus
-        .filter((menu) => known.includes(menu.id))
-        .map((menu) => [menu.id, { acceso: true, guardar: menu.guardar, eliminar: menu.eliminar }]),
-    )
-  }, [roleMenus, tree])
+  const { known } = partitionKnownMenus(
+    roleMenus.map((menu) => menu.id),
+    tree,
+  )
+  const savedViews: RoleViews = new Map(
+    roleMenus
+      .filter((menu) => known.includes(menu.id))
+      .map((menu) => [menu.id, { acceso: true, guardar: menu.guardar, eliminar: menu.eliminar }]),
+  )
   // Con cambios sin guardar no se cambia de rol: se perderían sin aviso.
   const [viewsDirty, setViewsDirty] = useState(false)
 

@@ -4,16 +4,15 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type { Plan } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
 
 function fetchPlans(): Promise<Plan[]> {
   return evalCol.getRows<Plan>("/plans")
 }
 
-export const plansQueryKey = () => ["plans"]
-
 export function usePlansQuery() {
   return useQuery({
-    queryKey: plansQueryKey(),
+    queryKey: roleMenuKeys.plans,
     queryFn: fetchPlans,
     staleTime: Infinity,
   })
@@ -31,7 +30,7 @@ export function useCreatePlan({
     mutationFn: createPlan,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: plansQueryKey() })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.plans })
       mutationConfig?.onSuccess?.(...args)
     },
   })

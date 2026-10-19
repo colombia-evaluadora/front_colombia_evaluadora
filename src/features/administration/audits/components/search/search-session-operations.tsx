@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { useQuerySearch } from "@/components/search/use-query-search"
@@ -33,12 +33,8 @@ export function SearchSessionOperations({
 
   const { data: operationOptions = [] } = useAuditOperationTypesQuery()
 
-  const syntax = useMemo(
-    () =>
-      sessionOperationsSyntax(
-        operationOptions.map((option) => ({ value: option.key, label: option.label })),
-      ),
-    [operationOptions],
+  const syntax = sessionOperationsSyntax(
+    operationOptions.map((option) => ({ value: option.key, label: option.label })),
   )
 
   // El input contiene la consulta entera —términos `clave:(valor)` más la

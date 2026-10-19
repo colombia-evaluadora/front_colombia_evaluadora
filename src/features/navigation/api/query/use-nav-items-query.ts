@@ -7,6 +7,7 @@ import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import type { NavItem, NavItemDto } from "@/features/navigation/api/types/nav-item"
 
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
 
 /**
  * El sidebar sale de `GET /eval-col/my-menus` → `fn_list_my_menus`, que cruza
@@ -41,7 +42,7 @@ function resolveNavIcons(items: NavItemDto[]): NavItem[] {
 }
 
 export const navItemsQueryOptions = queryOptions({
-  queryKey: ["navigation", "menu"],
+  queryKey: navigationKeys.menu,
   queryFn: fetchNavItemsDto,
   staleTime: Infinity,
   // El guard de `/app` hace `ensureQueryData` con esto: con el default

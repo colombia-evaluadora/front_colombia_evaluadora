@@ -15,6 +15,7 @@ import type {
   AuditTablesQueryResponse,
 } from "@/features/administration/audits/api/types/audit-table"
 import { toPaginated } from "@/lib/pagination"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseAuditTablesQueryParams {
   filters: AuditTablesQueryRequest["filters"]
@@ -74,11 +75,9 @@ async function fetchAuditTables(
   }
 }
 
-export const auditTablesQueryKey = (params: UseAuditTablesQueryParams) => ["audit-tables", params]
-
 export function useAuditTablesQuery(params: UseAuditTablesQueryParams) {
   return useQuery({
-    queryKey: auditTablesQueryKey(params),
+    queryKey: auditKeys.tablas.lista(params),
     queryFn: () => fetchAuditTables(params),
     placeholderData: (previous) => previous,
     // Mismo criterio que `useAuditsQuery`: revalidar en cada entrada a la

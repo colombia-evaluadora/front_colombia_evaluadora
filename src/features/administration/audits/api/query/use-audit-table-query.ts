@@ -6,6 +6,7 @@ import { AUDIT_API_PREFIX, apiPath } from "@/lib/api-routes"
 import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
 import { DEFAULT_AUDIT_TABLE_ICON, tableNameToLabel, slugToTableName } from "@/features/administration/audits/api/real-mapping"
 import type { AuditTable } from "@/features/administration/audits/api/types/audit-table"
+import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
 interface UseAuditTableQueryParams {
   tableSlug: string
@@ -50,7 +51,7 @@ async function fetchAuditTable(tableSlug: string): Promise<AuditTable> {
 
 export function useAuditTableQuery({ tableSlug, enabled }: UseAuditTableQueryParams) {
   return useQuery({
-    queryKey: ["audit-tables", tableSlug],
+    queryKey: auditKeys.tablas.detalle(tableSlug),
     queryFn: () => fetchAuditTable(tableSlug),
     enabled: enabled ?? true,
   })
