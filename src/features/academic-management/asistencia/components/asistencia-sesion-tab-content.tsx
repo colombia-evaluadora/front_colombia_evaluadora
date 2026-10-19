@@ -1,5 +1,6 @@
 "use no memo"
 
+import { useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -14,8 +15,11 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
-import { useAsistenciaEditarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
-import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import { editarAsistencia } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
+import {
+  invalidarAsistencia,
+  registrarAsistencia,
+} from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { buildColumnsAsistenciaManual } from "@/features/academic-management/asistencia/components/table/columns-asistencia-manual"
 import type {
@@ -86,12 +90,11 @@ export function AsistenciaSesionTabContent({
     () => new Set(clavePendientes ? clavePendientes.split(",").map(Number) : []),
     [clavePendientes],
   )
-  const editar = useAsistenciaEditarMutation()
+  const queryClient = useQueryClient()
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
-  const registrar = useAsistenciaRegistrarMutation()
   // Registrar/corregir se encola sin red solo en el piloto.
   const soloEnLinea = useOfflineWritable()
   // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
@@ -325,11 +328,12 @@ export function AsistenciaSesionTabContent({
     const versionDePk = (pk: number) =>
       [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ?? null
     try {
+      // allSettled: lo que sí se guardó se consolida aunque falle otra llamada.
       const [altas, solicitudes] = await Promise.all([
-        Promise.all(
+        Promise.allSettled(
           [...nuevos.entries()].map(async ([bloque, registros]) => {
             // Captura tardía en período cerrado: también queda pendiente (Regla 75).
-            const { pendientes, queued } = await registrar.mutateAsync({
+            const { pendientes, queued } = await registrarAsistencia({
               GRUPO: sesion.fkGrupo,
               FECHA: fecha,
               REGISTROS: registros,
@@ -351,9 +355,9 @@ export function AsistenciaSesionTabContent({
             return pendientes.length > 0 ? registros.map((r) => r.fkMatricula) : []
           }),
         ),
-        Promise.all(
+        Promise.allSettled(
           correcciones.map(async ({ fkMatricula, pk, registro }) => {
-            const { pendientes, queued } = await editar.mutateAsync({
+            const { pendientes, queued } = await editarAsistencia({
               pks: [pk],
               ...(conVersiones && { versiones: { [pk]: versionDePk(pk) } }),
               body: {
@@ -367,7 +371,25 @@ export function AsistenciaSesionTabContent({
           }),
         ),
       ])
-      const quedaronPendientes = [...altas.flat(), ...solicitudes.filter((fk): fk is number => fk !== null)]
+      const fallidos = new Set<number>()
+      let errorFallo: unknown = null
+      const altasEntradas = [...nuevos.values()]
+      altas.forEach((r, i) => {
+        if (r.status === "rejected") {
+          errorFallo ??= r.reason
+          for (const reg of altasEntradas[i]) fallidos.add(reg.fkMatricula)
+        }
+      })
+      solicitudes.forEach((r, i) => {
+        if (r.status === "rejected") {
+          errorFallo ??= r.reason
+          fallidos.add(correcciones[i].fkMatricula)
+        }
+      })
+      const quedaronPendientes = [
+        ...altas.flatMap((r) => (r.status === "fulfilled" ? r.value : [])),
+        ...solicitudes.flatMap((r) => (r.status === "fulfilled" && r.value !== null ? [r.value] : [])),
+      ]
       if (encolados.length > 0) notify(QUEUED_MESSAGE, { variant: "info" })
       if (quedaronPendientes.length > 0) {
         setPendientesLocales((prev) => new Set([...prev, ...quedaronPendientes]))
@@ -375,23 +397,27 @@ export function AsistenciaSesionTabContent({
           variant: "info",
         })
       }
-      baseline.current = { ...baseline.current, ...seleccionGuardada }
+      const guardados = Object.fromEntries(
+        Object.entries(seleccionGuardada).filter(([fk]) => !fallidos.has(Number(fk))),
+      ) as Record<number, TipoAsistencia>
+      baseline.current = { ...baseline.current, ...guardados }
       bloqueTardeBaseline.current = {
         ...bloqueTardeBaseline.current,
         ...Object.fromEntries(
-          Object.entries(bloqueTarde).filter(([fk]) => Number(fk) in seleccionGuardada),
+          Object.entries(bloqueTarde).filter(([fk]) => Number(fk) in guardados),
         ),
       }
       setSoporte((prev) => {
         const next = { ...prev }
-        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        for (const fk of Object.keys(guardados)) delete next[Number(fk)]
         return next
       })
       setSoporteEliminado((prev) => {
         const next = { ...prev }
-        for (const fk of Object.keys(seleccionGuardada)) delete next[Number(fk)]
+        for (const fk of Object.keys(guardados)) delete next[Number(fk)]
         return next
       })
+      if (fallidos.size > 0) throw errorFallo
       return true
     } catch (error) {
       // Sin espacio o fuera de la ventana de 14 días: el mensaje es del encolado.
@@ -400,6 +426,8 @@ export function AsistenciaSesionTabContent({
       })
       return false
     } finally {
+      // Una sola recarga por guardado, no una por bloque o corrección.
+      if (nuevos.size > 0 || correcciones.length > 0) invalidarAsistencia(queryClient)
       setGuardando(false)
     }
   }
@@ -505,12 +533,12 @@ export function AsistenciaSesionTabContent({
             type="button"
             color="primary"
             size="sm"
-            disabled={registrar.isPending || editar.isPending || soloEnLinea.disabled}
+            disabled={guardando || soloEnLinea.disabled}
             title={soloEnLinea.tooltip ?? undefined}
-            aria-busy={registrar.isPending || editar.isPending}
+            aria-busy={guardando}
             onClick={handleGuardar}
           >
-            {registrar.isPending || editar.isPending ? (
+            {guardando ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
               <CheckIcon data-icon="inline-start" />
