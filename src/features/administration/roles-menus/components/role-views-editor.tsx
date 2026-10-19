@@ -173,9 +173,9 @@ export function RoleViewsEditor({
       </div>
 
       <Table containerClassName="max-h-[calc(100dvh-20rem)] min-h-64 overflow-y-auto">
-        <TableHeader className="sticky top-0 z-10 bg-background">
-          <TableRow>
-            <TableHead>
+        <TableHeader className="sticky top-0 z-20 bg-background">
+          <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+            <TableHead className="text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 Módulo / submódulo
                 <Tooltip>
@@ -195,7 +195,7 @@ export function RoleViewsEditor({
               </span>
             </TableHead>
             {ACTIONS.map((action) => (
-              <TableHead key={action} className="w-40">
+              <TableHead key={action} className="w-40 text-foreground">
                 {ACTION_LABELS[action]}
               </TableHead>
             ))}
@@ -425,7 +425,6 @@ function ConfirmRemovalsDialog({
   )
 }
 
-/** "Módulo › Vista", o solo el módulo. */
 function viewPath(tree: MenuTreeNode[], id: number): string {
   for (const group of tree) {
     if (group.id === id) return group.name

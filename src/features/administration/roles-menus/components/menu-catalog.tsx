@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
+import { ACTIONS_CELL_CLASS, actionsOverlayClass } from "@/components/table-row-actions"
 import { Button } from "@/components/ui/button"
 import {
   DotsSixVerticalIcon,
@@ -25,6 +26,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useArrastrarFilas } from "@/hooks/use-arrastrar-filas"
 import { getErrorMessage } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 
 import { useReorderMenus } from "@/features/administration/roles-menus/api/mutations/reorder-menus"
 import { useSetMenuState } from "@/features/administration/roles-menus/api/mutations/set-menu-state"
@@ -42,11 +44,7 @@ import { DialogSaveMenu } from "@/features/administration/roles-menus/components
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-/**
- * Módulos y submódulos (Administración del Sistema, Sección 4.1): el catálogo de
- * vistas en árbol, activas e inactivas. Lo que puede cada rol se define en la
- * otra pestaña.
- */
+/** Módulos y submódulos (Sección 4.1): catálogo de vistas en árbol, activas e inactivas. */
 export function MenuCatalog() {
   const { notify } = useNotify()
   const { puedeCrear, puedeEditar, puedeEliminar } = useMenuPermission("CONFIG_ROLES_MENUS")
@@ -92,7 +90,6 @@ export function MenuCatalog() {
     moveTo(node, siblings, siblings.findIndex((it) => it.id === node.id) + direction)
   }
 
-  /** Lleva `node` al índice `to` (desde 0) entre sus hermanos. */
   function moveTo(node: MenuCatalogNode, siblings: MenuCatalogNode[], to: number) {
     const ids = siblings.map((it) => it.id)
     const target = ids[to]
@@ -192,9 +189,10 @@ export function MenuCatalog() {
             {node.activo ? "Activo" : "Inactivo"}
           </Badge>
         </TableCell>
-        <TableCell>
-          {/* Aparecen al pasar el mouse o con el foco; en pantallas táctiles, siempre. */}
-          <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100 pointer-coarse:opacity-100">
+        {actionsSpacerCell}
+        <TableCell className={ACTIONS_CELL_CLASS}>
+          {/* Mismo bloque que `DataTable`; en pantallas táctiles, siempre visible. */}
+          <div className={cn(actionsOverlayClass(false, "background"), "pointer-coarse:opacity-100")}>
             {puedeEditar ? (
               <>
                 <RowAction
@@ -216,7 +214,6 @@ export function MenuCatalog() {
               <RowAction
                 label={deleteBlock ?? "Eliminar"}
                 disabled={deleteBlock != null}
-                destructive
                 onClick={() => setDeleting({ menu: node, childrenCount: children.length })}
               >
                 <TrashIcon />
@@ -248,30 +245,31 @@ export function MenuCatalog() {
 
       {/* Lo que se arrastra flota sobre lo demás. */}
       <Table containerClassName="max-h-[calc(100dvh-20rem)] min-h-64 overflow-y-auto [&_[data-arrastrando]]:relative [&_[data-arrastrando]]:z-10 [&_[data-arrastrando]]:bg-card [&_[data-arrastrando]]:shadow-lg [&_[data-arrastrando]]:select-none">
-        <TableHeader className="sticky top-0 z-10 bg-background">
-          <TableRow className="bg-muted/50">
-            <TableHead>Nombre</TableHead>
-            <TableHead>Módulo padre</TableHead>
-            <TableHead className="w-20 text-center">Icono</TableHead>
-            <TableHead className="w-24 text-right">
+        <TableHeader className="sticky top-0 z-20 bg-background">
+          <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+            <TableHead className="text-foreground">Nombre</TableHead>
+            <TableHead className="text-foreground">Módulo padre</TableHead>
+            <TableHead className="w-20 text-center text-foreground">Icono</TableHead>
+            <TableHead className="w-24 text-right text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 Orden
-                <HelpTip text="Posición en el menú lateral, dentro de su módulo. Cámbiala con Subir y Bajar." />
+                <HelpTip text="Posición en el menú lateral, dentro de su módulo. Cámbiala arrastrando la fila." />
               </span>
             </TableHead>
-            <TableHead className="w-48">
+            <TableHead className="w-48 text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 Acciones disponibles
                 <HelpTip text="Lo que se puede hacer en la vista. Es el tope para todos los roles: lo que no esté aquí no se puede dar en Vistas base por rol." />
               </span>
             </TableHead>
-            <TableHead className="w-28">
+            <TableHead className="w-28 text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 Estado
                 <HelpTip text="Una vista inactiva no aparece en el menú de ningún rol. Si el módulo está inactivo, tampoco sus submódulos." />
               </span>
             </TableHead>
-            <TableHead>
+            {actionsSpacerHeadCell}
+            <TableHead className="w-px">
               <span className="sr-only">Acciones</span>
             </TableHead>
           </TableRow>
@@ -313,13 +311,11 @@ export function MenuCatalog() {
 function RowAction({
   label,
   disabled,
-  destructive,
   onClick,
   children,
 }: {
   label: string
   disabled?: boolean
-  destructive?: boolean
   onClick: () => void
   children: ReactNode
 }) {
@@ -329,7 +325,7 @@ function RowAction({
         <Button
           type="button"
           variant="ghost"
-          color={destructive ? "destructive" : "neutral"}
+          color="neutral"
           size="icon-sm"
           aria-label={label}
           disabled={disabled}
@@ -342,6 +338,20 @@ function RowAction({
     </Tooltip>
   )
 }
+
+const ACTIONS_WIDTH = 120
+
+const actionsSpacerCell = (
+  <td aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_WIDTH }} />
+  </td>
+)
+
+const actionsSpacerHeadCell = (
+  <th aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_WIDTH }} />
+  </th>
+)
 
 function HelpTip({ text }: { text: string }) {
   return (
