@@ -92,6 +92,10 @@ const CONTENIDO_LOCAL: Record<string, RegExp> = {
   "/app/pendientes": /Cambios pendientes|No tienes cambios pendientes/i,
   "/app/sincronizar": /Sincronizar/i,
   "/app/sin-acceso": /acceso/i,
+  // Sin `?sede=` la pantalla pide entrar desde Asistencia (no consulta nada).
+  "/app/asistencia/seguimiento": /Seguimiento necesita una sede/i,
+  // Sin recurso en el borrador local (sessionStorage) no hay nada que mostrar.
+  "/app/planeador/recursos/vista-previa": /no tiene una fuente cargada/i,
 }
 
 async function limpiarEquipo(page: Page) {
