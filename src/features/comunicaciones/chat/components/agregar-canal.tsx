@@ -43,8 +43,8 @@ export function AgregarCanal({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          aria-label="Agregar canal"
-          title="Agregar canal"
+          aria-label="Agregar foro"
+          title="Agregar foro"
           className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/50 data-popup-open:text-foreground"
         >
           <PlusIcon className="size-5" />
@@ -52,7 +52,7 @@ export function AgregarCanal({
         <DropdownMenuContent side="right" align="start" className="w-64">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="px-3 pt-2 pb-1.5 text-sm font-semibold tracking-normal text-foreground normal-case">
-              Selecciona el tipo de canal:
+              Selecciona el tipo de foro:
             </DropdownMenuLabel>
             {TIPOS_CANAL.map((t) => {
               const Icono = ICONO_CATEGORIA[t.categoria]

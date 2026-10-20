@@ -15,6 +15,10 @@ export const CHAT_FUNCIONES = {
   encuestas: true,
   elecciones: true,
   evaluaciones: true,
+  // Card de diseño (Prioridad 1 del chat): menciones y reacciones fuera de la UI. Los
+  // endpoints de comms-service quedan dormidos (no se borran tablas): volver a `true` las trae.
+  menciones: false,
+  reacciones: false,
 } as const
 
 export const PROXIMAMENTE = "Próximamente"

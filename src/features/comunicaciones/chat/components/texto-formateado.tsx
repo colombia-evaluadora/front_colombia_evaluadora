@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import {
   bloques,
   segmentosEnLinea,
@@ -64,8 +65,11 @@ function EnLinea({ linea, menciones }: { linea: string; menciones?: Mencion[] })
       segmentarMenciones(s.valor, menciones).map((p, j) =>
         p.tipo === "texto" ? (
           <span key={`${i}-${j}`}>{p.valor}</span>
-        ) : (
+        ) : CHAT_FUNCIONES.menciones ? (
           <MencionChip key={`${i}-${j}`} mencion={p.mencion} />
+        ) : (
+          // Sin menciones en la UI: el nombre como texto, sin resaltar.
+          <span key={`${i}-${j}`}>@{p.mencion.nombre}</span>
         ),
       )
     ) : (

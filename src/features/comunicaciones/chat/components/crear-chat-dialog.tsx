@@ -20,12 +20,15 @@ import { SelectorChips } from "@/features/comunicaciones/chat/components/selecto
 import { useCrearForo } from "@/features/comunicaciones/foros/api/mutations/use-acciones-foro"
 
 const AYUDA =
-  "Los canales son el lugar donde se producen las conversaciones sobre un tema. Usa un nombre que sea fácil de encontrar y comprender."
+  "Los foros son el lugar donde se producen las conversaciones sobre un tema. Usa un nombre que sea fácil de encontrar y comprender."
+const AYUDA_GRUPO =
+  "Un grupo reúne a las personas que elijas para conversar. Quien lo crea lo administra: puede añadir, quitar y nombrar administradores."
 
 // Nombres estilo canal: minúsculas y guiones en lugar de espacios.
 const aNombreCanal = (v: string) => v.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "")
 
-// Crear un canal (o un foro, `tipo="FORO"`): primero el nombre y luego, opcional, las personas.
+// Crear un foro del chat (`CANAL`), un grupo (`GRUPO`, al menos una persona) o un foro con
+// hilos de la pantalla Foros (`FORO`): primero el nombre y luego las personas.
 export function CrearChatDialog({
   open,
   onClose,
@@ -35,8 +38,9 @@ export function CrearChatDialog({
   open: boolean
   onClose: () => void
   onCreado: (id: number) => void
-  tipo?: "CANAL" | "FORO"
+  tipo?: "CANAL" | "FORO" | "GRUPO"
 }) {
+  const esGrupo = tipo === "GRUPO"
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [nombre, setNombre] = useState("")
@@ -60,7 +64,7 @@ export function CrearChatDialog({
   }
 
   const creado = (canal: Conversacion) => {
-    notify(esForo ? `Se creó el foro ${canal.nombre}.` : `Se creó #${canal.nombre}.`)
+    notify(esGrupo ? `Se creó el grupo ${canal.nombre}.` : esForo ? `Se creó el foro ${canal.nombre}.` : `Se creó #${canal.nombre}.`)
     cerrar()
     onCreado(canal.id)
   }
@@ -68,7 +72,11 @@ export function CrearChatDialog({
   const crearChat = (conMiembros: Persona[]) => {
     const ids = conMiembros.map((p) => p.id)
     if (esForo) crearForo.mutate({ nombre: limpio, miembros: ids }, { onSuccess: creado })
-    else crearCanal.mutate({ nombre: limpio, categoria: "GENERAL", miembros: ids }, { onSuccess: creado })
+    else
+      crearCanal.mutate(
+        { nombre: limpio, categoria: "GENERAL", miembros: ids, tipo: esGrupo ? "GRUPO" : undefined },
+        { onSuccess: creado },
+      )
   }
 
   return (
@@ -76,7 +84,7 @@ export function CrearChatDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="truncate">
-            {paso === 1 ? (esForo ? "Crear un foro" : "Crear un canal") : `Añadir personas a ${limpio}`}
+            {paso === 1 ? (esGrupo ? "Crear un grupo" : "Crear un foro") : `Añadir personas a ${limpio}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -93,19 +101,19 @@ export function CrearChatDialog({
               <span className="absolute -top-2.5 left-3 bg-popover px-1 text-sm font-medium">
                 Nombre
               </span>
-              <HashIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+              {!esGrupo && <HashIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />}
               <input
                 autoFocus
                 value={nombre}
                 maxLength={80}
-                onChange={(e) => setNombre(aNombreCanal(e.target.value))}
-                placeholder="Por ejemplo, planificacion-presupuesto"
+                onChange={(e) => setNombre(esGrupo ? e.target.value.replace(/^\s+/, "") : aNombreCanal(e.target.value))}
+                placeholder={esGrupo ? "Por ejemplo, Proyecto feria de ciencias" : "Por ejemplo, planificacion-presupuesto"}
                 aria-describedby="crear-chat-ayuda"
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </label>
             <p id="crear-chat-ayuda" className="text-xs text-muted-foreground">
-              {AYUDA}
+              {esGrupo ? AYUDA_GRUPO : AYUDA}
             </p>
           </form>
         ) : (
@@ -121,7 +129,9 @@ export function CrearChatDialog({
             <p className="text-xs text-muted-foreground">
               {esForo
                 ? "Las personas que añadas verán las publicaciones del foro y podrán participar según la política de la institución."
-                : "Las personas que añadas verán el historial del canal y podrán escribir en él."}
+                : esGrupo
+                  ? "Añade al menos una persona. Verán los mensajes del grupo y podrán escribir en él."
+                  : "Las personas que añadas verán el historial del foro y podrán escribir en él."}
             </p>
           </div>
         )}
@@ -137,7 +147,7 @@ export function CrearChatDialog({
             <Button type="submit" form="crear-chat" disabled={!limpio}>
               Siguiente
             </Button>
-          ) : miembros.length === 0 ? (
+          ) : miembros.length === 0 && !esGrupo ? (
             <Button
               type="button"
               color="neutral"
@@ -151,7 +161,7 @@ export function CrearChatDialog({
             <Button
               type="button"
               onClick={() => crearChat(miembros)}
-              disabled={crear.isPending}
+              disabled={crear.isPending || miembros.length === 0}
               aria-busy={crear.isPending}
             >
               Agregar

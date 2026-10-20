@@ -9,6 +9,11 @@ import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { AgregarCompanero } from "@/features/comunicaciones/chat/components/agregar-companero"
+import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
+import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
+import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import {
@@ -19,6 +24,9 @@ import {
   PencilSimpleIcon,
   PaperPlaneTiltIcon,
   BellSlashIcon,
+  PlusIcon,
+  UserIcon,
+  UsersThreeIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -47,14 +55,29 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const { puedeGestionar } = useChatAccess()
+  const { puedeGestionar, reglaDirectoCon } = useChatAccess()
+  const { notify } = useNotify()
   const [texto, setTexto] = useState("")
+  const [crearGrupo, setCrearGrupo] = useState(false)
   const t = texto.trim().toLowerCase()
-  // El buscador filtra la lista en el lugar.
+  // El buscador (en lugar del nombre del establecimiento) filtra la lista en el lugar y,
+  // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
   const visibles = t ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t)) : conversaciones
+  const personasQuery = usePersonasQuery(t.length >= 2, texto)
+  const conDirecto = new Set(conversaciones.filter((c) => c.tipo === "DIRECTO").map((c) => c.nombre))
+  const personas =
+    t.length >= 2
+      ? (personasQuery.data ?? [])
+          .filter((p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO" && !conDirecto.has(p.nombre))
+          .filter((p) => coincidePersona(p, texto, !personasQuery.isPlaceholderData))
+          .slice(0, 8)
+      : []
+  const abrirDirecto = useAbrirDirecto()
 
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
-  const canales = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
+  const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
+  // En el chat los CANAL se llaman "Foros" (los foros con hilos tienen su propia pantalla).
+  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
   const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
@@ -78,7 +101,7 @@ export function ChatSidebar({
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setTexto("")}
-            placeholder="Buscar canales y personas"
+            placeholder="Buscar conversaciones y personas"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
           {texto && (
@@ -136,12 +159,37 @@ export function ChatSidebar({
               Reintentar
             </button>
           </div>
-        ) : t && visibles.length === 0 ? (
+        ) : t && visibles.length === 0 && personas.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
-            Ningún canal o persona coincide con “{texto.trim()}”.
+            {personasQuery.isFetching ? "Buscando…" : `Ninguna conversación o persona coincide con “${texto.trim()}”.`}
           </p>
         ) : (
           <>
+            {personas.length > 0 && (
+              <Seccion titulo="Personas">
+                {personas.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      disabled={abrirDirecto.isPending}
+                      onClick={() =>
+                        abrirDirecto.mutate(p.id, {
+                          onSuccess: (c) => {
+                            setTexto("")
+                            onSeleccionar(c.id)
+                          },
+                          onError: (e) => notify(getErrorMessage(e), { variant: "error" }),
+                        })
+                      }
+                      className="flex h-9 w-full items-center gap-3 rounded-lg px-2 text-left text-sm hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    >
+                      <UserIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">{p.nombre}</span>
+                    </button>
+                  </li>
+                ))}
+              </Seccion>
+            )}
             <Seccion
               titulo="Mensajes directos"
               accion={puedeGestionar && <AgregarCompanero onCreado={onSeleccionar} />}
@@ -149,10 +197,28 @@ export function ChatSidebar({
               {directos.map(item)}
             </Seccion>
             <Seccion
-              titulo="Canales"
+              titulo="Grupos"
+              accion={
+                puedeGestionar && (
+                  <button
+                    type="button"
+                    onClick={() => setCrearGrupo(true)}
+                    aria-label="Crear grupo"
+                    title="Crear grupo"
+                    className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    <PlusIcon className="size-5" />
+                  </button>
+                )
+              }
+            >
+              {grupos.map(item)}
+            </Seccion>
+            <Seccion
+              titulo="Foros"
               accion={puedeGestionar && <AgregarCanal onCreado={onSeleccionar} />}
             >
-              {canales.map(item)}
+              {foros.map(item)}
             </Seccion>
             {archivadas.length > 0 && (
               <Seccion titulo={`Archivados (${archivadas.length})`} inicialAbierta={false}>
@@ -162,6 +228,7 @@ export function ChatSidebar({
           </>
         )}
       </nav>
+      <CrearChatDialog tipo="GRUPO" open={crearGrupo} onClose={() => setCrearGrupo(false)} onCreado={onSeleccionar} />
     </aside>
   )
 }
@@ -254,7 +321,7 @@ function ItemConversacion({
   onClick: () => void
   onSalida: () => void
 }) {
-  const Icono = ICONO_CATEGORIA[c.categoria]
+  const Icono = c.tipo === "GRUPO" ? UsersThreeIcon : ICONO_CATEGORIA[c.categoria]
   const conPendientes = c.noLeidos > 0 && !activa
   return (
     <li
@@ -289,12 +356,8 @@ function ItemConversacion({
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />
         )}
-        {conPendientes && (c.menciones ?? 0) > 0 && (
-          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-red px-1.5 text-xs font-bold text-red-foreground">
-            <span className="sr-only">Menciones sin leer: </span>@{c.menciones}
-          </span>
-        )}
-        {conPendientes && !c.menciones && (
+        {/* Menciones y reacciones quedan fuera de la UI (card de diseño); solo el contador de no leídos. */}
+        {conPendientes && (
           <span className="grid h-5 min-w-5 place-items-center rounded-full border px-1.5 text-xs font-medium">
             <span className="sr-only">Mensajes sin leer: </span>
             {c.noLeidos}

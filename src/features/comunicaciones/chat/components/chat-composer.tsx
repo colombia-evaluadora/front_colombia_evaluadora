@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react"
 
 import {
@@ -133,7 +134,8 @@ export function ChatComposer({
   const [elegidos, setElegidos] = useState<Mencionable[]>(mencionesIniciales)
   const [consulta, setConsulta] = useState<{ inicio: number; consulta: string } | null>(null)
   const [activa, setActiva] = useState(0)
-  const sugerencias = consulta ? sugerenciasMencion(consulta.consulta, miembros, permitirMasivas) : []
+  const sugerencias =
+    CHAT_FUNCIONES.menciones && consulta ? sugerenciasMencion(consulta.consulta, miembros, permitirMasivas) : []
   const abiertas = sugerencias.length > 0
 
   const actualizarConsulta = (valor: string, cursor: number) => {
@@ -401,9 +403,11 @@ export function ChatComposer({
           >
             <SmileyIcon className="size-5" />
           </SelectorEmoji>
-          <Herramienta etiqueta="Mencionar a alguien" onClick={() => insertar("@")}>
-            <AtIcon className="size-5" />
-          </Herramienta>
+          {CHAT_FUNCIONES.menciones && (
+            <Herramienta etiqueta="Mencionar a alguien" onClick={() => insertar("@")}>
+              <AtIcon className="size-5" />
+            </Herramienta>
+          )}
           <Separador className="max-sm:hidden" />
           <Herramienta etiqueta="Grabar video" pendiente className="max-sm:hidden">
             <VideoCameraIcon className="size-5" />
