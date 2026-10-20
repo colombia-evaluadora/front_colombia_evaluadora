@@ -5,12 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  CheckCircleFillIcon,
-  CheckCircleIcon,
-  DotsSixVerticalIcon,
-  LockIcon,
-} from "@/components/ui/icons"
+import { StarFillIcon, StarIcon, DotsSixVerticalIcon, LockIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type {
@@ -25,7 +20,8 @@ interface CreateColumnsOptions {
   /** pk del valor cuya acción (estado o predeterminado) está en curso. */
   pendiente: number | null
   onIrALista: (categoria: string) => void
-  onPredeterminado: (valor: ListaValor) => void
+  /** true = marcar, false = quitar (la lista queda sin predeterminado). */
+  onPredeterminado: (valor: ListaValor, predeterminado: boolean) => void
   /** Se arrastra solo sin búsqueda ni otro orden: así la tabla es la lista real. */
   ordenable: boolean
   /** Posición del primer valor de la página, para numerar mientras se arrastra. */
@@ -199,20 +195,34 @@ export function createValoresColumns({
                       color="neutral"
                       size="icon-sm"
                       disabled={pendiente === v.pkListaValor}
-                      onClick={() => onPredeterminado(v)}
+                      onClick={() => onPredeterminado(v, true)}
                     />
                   }
                 >
                   <span className="sr-only">Marcar {v.nombre} como predeterminado</span>
-                  <CheckCircleIcon />
+                  <StarIcon />
                 </TooltipTrigger>
                 <TooltipContent>Marcar como predeterminado</TooltipContent>
               </Tooltip>
             )}
             {v.predeterminado && (
-              <span className="inline-flex size-8 items-center justify-center text-primary">
-                <CheckCircleFillIcon className="size-4" aria-hidden />
-              </span>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      color="primary"
+                      size="icon-sm"
+                      disabled={pendiente === v.pkListaValor}
+                      onClick={() => onPredeterminado(v, false)}
+                    />
+                  }
+                >
+                  <span className="sr-only">Quitar {v.nombre} como predeterminado</span>
+                  <StarFillIcon />
+                </TooltipTrigger>
+                <TooltipContent>Quitar predeterminado</TooltipContent>
+              </Tooltip>
             )}
             <DialogSaveValor
               key={`${v.pkListaValor}-${v.nombre}-${v.etiqueta}-${v.padre?.pkListaValor}`}

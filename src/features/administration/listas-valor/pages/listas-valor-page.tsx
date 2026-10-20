@@ -216,7 +216,12 @@ function ListasValorPageContent() {
   const onSettled = () => setPendiente(null)
   const predeterminado = usePredeterminadoValor({
     mutationConfig: {
-      onSuccess: (v) => notify(`«${v.nombre}» quedó como valor predeterminado.`),
+      onSuccess: (v) =>
+        notify(
+          v.predeterminado
+            ? `«${v.nombre}» quedó como valor predeterminado.`
+            : `La lista quedó sin valor predeterminado.`,
+        ),
       onError,
       onSettled,
     },
@@ -228,9 +233,9 @@ function ListasValorPageContent() {
         puedeEditar: permisos.puedeEditar,
         pendiente,
         onIrALista: seleccionar,
-        onPredeterminado: (v) => {
+        onPredeterminado: (v, marcar) => {
           setPendiente(v.pkListaValor)
-          predeterminado.mutate({ id: v.pkListaValor, predeterminado: true })
+          predeterminado.mutate({ id: v.pkListaValor, predeterminado: marcar })
         },
         ordenable,
         offset: pageIndex * paginacion.pageSize,
