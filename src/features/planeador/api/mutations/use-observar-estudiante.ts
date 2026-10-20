@@ -67,6 +67,9 @@ registerOutboxHandler<ObservarPayload>({
     planeadorKeys.planilla.calificaciones.all,
     planeadorKeys.actividadEstudiante.nota(p.pkTactividadEstudiante),
     p.actividadId != null ? planeadorKeys.actividad.calificaciones(p.actividadId) : ["planeador", "actividad"],
+    // La observación cuenta como "ya calificó" en la alerta de planillas
+    // pendientes de Informes (preescolar no pone notas): igual que calificar-celda.
+    ["informes"],
   ],
   rebase: (p, conflict) => ({ ...p, baseVersion: conflict.serverVersion ?? null }),
   describe: (p) => ({
@@ -112,6 +115,8 @@ export function useObservarEstudianteMutation({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
       invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      // Alertas de Informes: una observación saca la planilla de "pendientes".
+      queryClient.invalidateQueries({ queryKey: ["informes"] })
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,
