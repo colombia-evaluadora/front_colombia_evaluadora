@@ -67,7 +67,8 @@ export const comunicacionesEleccionesHandlers = [
     const lista = votantes.get(e.conversacionId) ?? new Set<string>()
     lista.add(correo)
     votantes.set(e.conversacionId, lista)
-    return HttpResponse.json({ rows: [{ ...e, yaVoto: true }] })
+    // Quien vota nunca es quien la creó.
+    return HttpResponse.json({ rows: [{ ...e, esCreador: false, yaVoto: true }] })
   }),
 
   http.patch(URL("conversaciones/:id/eleccion/cerrar"), async ({ params }) => {
