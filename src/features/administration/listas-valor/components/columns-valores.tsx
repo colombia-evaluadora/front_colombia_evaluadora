@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,9 @@ import { DialogSaveValor } from "@/features/administration/listas-valor/componen
 interface CreateColumnsOptions {
   categoria: Categoria
   puedeEditar: boolean
+  puedeEliminar: boolean
+  /** Devuelve false si falló, para dejar abierta la confirmación. */
+  onEliminar: (valor: ListaValor) => Promise<boolean>
   /** pk del valor cuya acción (estado o predeterminado) está en curso. */
   pendiente: number | null
   onIrALista: (categoria: string) => void
@@ -38,6 +42,8 @@ interface CreateColumnsOptions {
 export function createValoresColumns({
   categoria,
   puedeEditar,
+  puedeEliminar,
+  onEliminar,
   pendiente,
   onIrALista,
   onPredeterminado,
@@ -177,7 +183,7 @@ export function createValoresColumns({
       ),
   })
 
-  if (puedeEditar) {
+  if (puedeEditar || puedeEliminar) {
     columns.push({
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
@@ -186,7 +192,7 @@ export function createValoresColumns({
         return (
           <div className="flex items-center justify-end gap-1">
             {/* Inactivo no puede ser predeterminado (V101). */}
-            {v.habilitado && !v.predeterminado && (
+            {puedeEditar && v.habilitado && !v.predeterminado && (
               <Tooltip>
                 <TooltipTrigger
                   render={
@@ -205,7 +211,7 @@ export function createValoresColumns({
                 <TooltipContent>Marcar como predeterminado</TooltipContent>
               </Tooltip>
             )}
-            {v.predeterminado && (
+            {puedeEditar && v.predeterminado && (
               <Tooltip>
                 <TooltipTrigger
                   render={
@@ -224,11 +230,22 @@ export function createValoresColumns({
                 <TooltipContent>Quitar predeterminado</TooltipContent>
               </Tooltip>
             )}
-            <DialogSaveValor
-              key={`${v.pkListaValor}-${v.nombre}-${v.etiqueta}-${v.padre?.pkListaValor}`}
-              categoria={categoria}
-              valor={v}
-            />
+            {puedeEditar && (
+              <DialogSaveValor
+                key={`${v.pkListaValor}-${v.nombre}-${v.etiqueta}-${v.padre?.pkListaValor}`}
+                categoria={categoria}
+                valor={v}
+              />
+            )}
+            {/* Los del sistema no se eliminan (V101). */}
+            {puedeEliminar && !v.esSistema && (
+              <ConfirmRemoveButton
+                label={`Eliminar ${v.nombre}`}
+                title="Eliminar valor"
+                description={`Se eliminará «${v.nombre}» de la lista. No se puede si está en uso o si tiene valores hijos activos; en esos casos, inactívelo.`}
+                onConfirm={() => onEliminar(v)}
+              />
+            )}
           </div>
         )
       },

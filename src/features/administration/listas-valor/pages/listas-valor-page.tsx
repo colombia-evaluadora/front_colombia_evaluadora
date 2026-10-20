@@ -21,10 +21,12 @@ import { CaretRightIcon, LockIcon, MagnifyingGlassIcon, TreeIcon } from "@/compo
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { useOrdenarValores } from "@/features/administration/listas-valor/api/mutations/ordenar-valores"
+import { useDeleteValor } from "@/features/administration/listas-valor/api/mutations/delete-valor"
 import { usePredeterminadoValor } from "@/features/administration/listas-valor/api/mutations/predeterminado-valor"
 import { useCategoriasQuery } from "@/features/administration/listas-valor/api/query/use-categorias-query"
 import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
@@ -227,10 +229,24 @@ function ListasValorPageContent() {
     },
   })
 
+  const deleteValor = useDeleteValor()
+  async function eliminarValor(v: ListaValor) {
+    try {
+      await deleteValor.mutateAsync({ id: v.pkListaValor })
+      notify(SUCCESS_MESSAGES.listaValor.deleted)
+      return true
+    } catch (error) {
+      onError(error)
+      return false
+    }
+  }
+
   const columns = categoria
     ? createValoresColumns({
         categoria,
         puedeEditar: permisos.puedeEditar,
+        puedeEliminar: permisos.puedeEliminar,
+        onEliminar: eliminarValor,
         pendiente,
         onIrALista: seleccionar,
         onPredeterminado: (v, marcar) => {
