@@ -37,6 +37,7 @@ import { toast } from "sonner"
 import { NoticeBanner, type Notice, type NoticeVariant } from "@/components/notice/notice-banner"
 import { pendingNoticeStore, type NotifyOptions } from "@/components/notice/pending-notice"
 import { setSuppressGlobalErrorToast } from "@/lib/api-client"
+import { resolveSuccessMessage } from "@/lib/server-message"
 
 interface NoticeDispatch {
   notify: (message: string, options?: NotifyOptions) => void
@@ -51,7 +52,8 @@ const DEFAULT_AUTO_CLOSE: Record<NoticeVariant, number> = {
 }
 
 const FALLBACK: NoticeDispatch = {
-  notify: (message, options) => {
+  notify: (localMessage, options) => {
+    const message = resolveSuccessMessage(localMessage, options?.variant)
     if (options?.variant === "error") toast.error(message)
     else if (options?.variant === "warning") toast.warning(message)
     else toast.success(message)
@@ -78,7 +80,7 @@ let activeNoticeProviders = 0
  * DESTINO al montarse (patrón "guardar y navegar"; ver `pending-notice.ts`).
  */
 export function queueNotice(message: string, options?: NotifyOptions) {
-  pendingNoticeStore.set({ message, options })
+  pendingNoticeStore.set({ message: resolveSuccessMessage(message, options?.variant), options })
 }
 
 export function NoticeProvider({ children }: { children: ReactNode }) {
@@ -90,7 +92,8 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
     idRef.current += 1
     setNotice({
       id: idRef.current,
-      message,
+      // El texto del servidor (header X-Mensaje, sso V590) gana sobre el local.
+      message: resolveSuccessMessage(message, variant),
       variant,
       autoCloseMs: options?.autoCloseMs ?? DEFAULT_AUTO_CLOSE[variant],
     })

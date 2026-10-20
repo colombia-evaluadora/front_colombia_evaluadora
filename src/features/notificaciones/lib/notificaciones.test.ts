@@ -28,10 +28,10 @@ describe("safeDeepLink", () => {
 })
 
 describe("formatContador / formatActores", () => {
-  it("topa el contador en 99+", () => {
+  it("topa el contador en 9+", () => {
     expect(formatContador(0)).toBe("0")
-    expect(formatContador(99)).toBe("99")
-    expect(formatContador(100)).toBe("99+")
+    expect(formatContador(9)).toBe("9")
+    expect(formatContador(10)).toBe("9+")
   })
 
   it("resume actores agrupados", () => {
