@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
+import { filtrarGrupos } from "@/mocks/handlers/comunicaciones-grupos"
 
 import type {
   AdjuntoMensaje,
@@ -132,7 +133,8 @@ export const comunicacionesHandlers = [
         .map((c) => ({ ...c, esCreador: false }))
       return HttpResponse.json({ rows })
     }
-    return HttpResponse.json({ rows: conversaciones })
+    // Los grupos solo para sus miembros, con `esAdmin` de quien pide.
+    return HttpResponse.json({ rows: filtrarGrupos(conversaciones, request) })
   }),
 
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).

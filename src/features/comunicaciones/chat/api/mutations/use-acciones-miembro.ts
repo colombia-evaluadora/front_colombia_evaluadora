@@ -43,6 +43,16 @@ export function useEliminarMiembro(conversacionId: number) {
   })
 }
 
+// Nombrar o retirar administrador del grupo o foro (comms-service: siempre queda uno).
+export function useCambiarRolMiembro(conversacionId: number) {
+  const invalidar = useInvalidar(conversacionId)
+  return useMutation({
+    mutationFn: ({ id, admin }: { id: number; admin: boolean }) =>
+      evalCol.patchRow<Miembro>(`${base(conversacionId)}/${id}/rol`, { ROL: admin ? "ADMIN" : "MIEMBRO" }),
+    onSuccess: invalidar,
+  })
+}
+
 // Abre (o crea) el mensaje directo con una persona.
 export function useAbrirDirecto() {
   const queryClient = useQueryClient()

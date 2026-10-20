@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { Fragment, useEffect, useRef, type ReactNode } from "react"
 
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
@@ -134,7 +135,7 @@ export function ChatMessages({
                   className={cn(
                     "-mx-2 rounded-xl px-2 transition-colors duration-700 data-destacado:bg-primary/15 motion-reduce:transition-none",
                     // Me mencionaron: franja amarilla como en Discord.
-                    m.meMenciona && !m.esPropio && "border-l-3 border-yellow bg-yellow-22/60",
+                    CHAT_FUNCIONES.menciones && m.meMenciona && !m.esPropio && "border-l-3 border-yellow bg-yellow-22/60",
                   )}
                 >
                   <MensajeItem mensaje={m} onResponder={onResponder} onIrAMensaje={onIrAMensaje} />
@@ -250,7 +251,7 @@ function MensajeItem({
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
           {m.adjunto && <Adjunto mensaje={m} propio />}
         </article>
-        <ReaccionesMensaje mensaje={m} />
+        {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
     )
   }
@@ -271,7 +272,7 @@ function MensajeItem({
         <div className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3">
           {/* Los mensajes ajenos solo se pueden reaccionar y responder. */}
           <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
-            <BotonReaccionar mensaje={m} />
+            {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
             <BotonResponder mensaje={m} onResponder={onResponder} />
           </div>
           <header className="mb-1 flex items-baseline gap-2 text-xs">
@@ -282,7 +283,7 @@ function MensajeItem({
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
           {m.adjunto && <Adjunto mensaje={m} />}
         </div>
-        <ReaccionesMensaje mensaje={m} />
+        {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
     </article>
   )

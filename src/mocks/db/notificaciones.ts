@@ -67,6 +67,19 @@ const TIPOS: TipoFixture[] = [
     agrupable: true,
   },
   {
+    tipo: "CHAT_MENSAJE",
+    categoria: "CHAT",
+    etiqueta: "Mensajes nuevos en grupos y foros",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: true,
+    email: false,
+    titulo: () => `Nuevos mensajes en ${faker.helpers.arrayElement(["Proyecto feria", "docentes-general"])}`,
+    cuerpo: () => faker.lorem.sentence(),
+    deepLink: () => `/app/comunicaciones/chat?canal=${faker.number.int({ min: 2, max: 4 })}`,
+    agrupable: true,
+  },
+  {
     tipo: "CHAT_REACCION",
     categoria: "CHAT",
     etiqueta: "Reacciones a tus mensajes",
@@ -179,7 +192,8 @@ function crearNotificacion(minutosAtras: number): NotificacionRow {
 }
 
 /** Bandeja del usuario, ordenada por `creada_en` desc (orden del cursor). */
-export const notificacionesDb: (NotificacionRow & { archivada: boolean })[] = (() => {
+// `usuario` (correo): solo la ve esa persona (avisos del chat multiusuario); sin él, cualquiera.
+export const notificacionesDb: (NotificacionRow & { archivada: boolean; usuario?: string })[] = (() => {
   let minutos = 2
   return Array.from({ length: 75 }, () => {
     const row = crearNotificacion(minutos)
