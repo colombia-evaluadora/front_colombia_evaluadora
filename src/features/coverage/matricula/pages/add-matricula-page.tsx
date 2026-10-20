@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -110,10 +110,15 @@ function AddMatriculaPageContent() {
       establecimientoId: colegio.establecimientoId,
       enabled: colegio.resuelto,
     })
-  const fieldSettings = applyGradeFieldRules(
+  // Estable a propósito: es dep del efecto de validación y el compiler no la memoiza aquí (si cambia en cada render, bucle).
+  const fieldSettings = useMemo(
+    () =>
+      applyGradeFieldRules(
         fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined,
         values.academic.grade,
-      )
+      ),
+    [fieldConfig, values.academic.grade],
+  )
 
   useEffect(() => {
     if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
