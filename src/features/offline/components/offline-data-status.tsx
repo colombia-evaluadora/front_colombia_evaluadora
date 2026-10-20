@@ -64,7 +64,7 @@ export function OfflineDataStatus() {
         color="neutral"
         size="sm"
         data-slot="offline-data-status"
-        aria-label={`${texto}. Preparar sin conexión`}
+        aria-label={`Estado de los datos del equipo: ${texto}`}
         title={texto}
         onClick={() => setOpen(true)}
         className={cn("gap-1.5", tono)}
