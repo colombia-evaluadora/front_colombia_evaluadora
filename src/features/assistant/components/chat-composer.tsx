@@ -55,17 +55,17 @@ export function ChatComposer({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="min-h-9 border-none bg-transparent px-2 py-1.5"
+          className="max-h-40 min-h-9 overflow-y-auto border-none bg-transparent px-2 py-1.5"
           aria-label="Mensaje para el asistente"
         />
-        <InputGroupAddon align="block-end" className="pt-1">
+        <InputGroupAddon align="inline-end" className="flex-col items-end self-end pb-1">
           {largo && (
             <span className="text-xs text-red">
               {texto.length}/{MAX_CARACTERES}
             </span>
           )}
           {enviando ? (
-            <InputGroupButton type="button" variant="fill" size="icon-sm" className="ml-auto" onClick={onStop}>
+            <InputGroupButton type="button" variant="fill" size="icon-sm" onClick={onStop}>
               <StopIcon />
               <span className="sr-only">Detener respuesta</span>
             </InputGroupButton>
@@ -74,7 +74,6 @@ export function ChatComposer({
               type="submit"
               variant="fill"
               size="icon-sm"
-              className="ml-auto"
               disabled={disabled || largo || texto.trim() === ""}
             >
               <ArrowUpIcon />

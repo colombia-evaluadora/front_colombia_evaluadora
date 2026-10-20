@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 import type { AccionUi, DatosTabla, EstadoAccionPendiente, Faltante } from "@/features/assistant/api/types"
+import { fechaServidor } from "@/features/assistant/lib/fecha-servidor"
 import { Markdown } from "@/features/assistant/components/markdown"
 import type { MensajeChat } from "@/features/assistant/hooks/use-asistente"
 import { describirAccion, esRutaInterna, type ResultadoAccion } from "@/features/assistant/lib/acciones-ui"
@@ -224,7 +225,7 @@ function AccionesUi({ acciones, resultados }: { acciones: AccionUi[]; resultados
 }
 
 function expiraLegible(expira: string): string {
-  const fecha = new Date(expira)
+  const fecha = fechaServidor(expira)
   return Number.isNaN(fecha.getTime()) ? "" : format(fecha, "HH:mm")
 }
 
