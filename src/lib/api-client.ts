@@ -6,6 +6,7 @@ import { paths } from "@/config/paths"
 import { isNetworkError, NetworkSessionError } from "@/lib/network-error"
 import { APP_VERSION, noteMinClientVersion } from "@/lib/app-version"
 import { noteServerTime } from "@/lib/offline/clock"
+import { noteServerMessage } from "@/lib/server-message"
 import { connectivityStore, isOfflineNow } from "@/lib/offline/connectivity"
 import {
   NETWORK_ERROR_MESSAGE,
@@ -324,6 +325,11 @@ api.interceptors.response.use(
     // BE-7: hora del servidor para corregir un reloj del equipo mal puesto.
     noteServerTime(response.headers?.["x-server-time"] as string | undefined)
     noteMinClientVersion(response.headers?.["x-min-client-version"] as string | undefined)
+    // Mensaje de éxito del servidor (etiqueta de la escritura, sso V590): lo
+    // usa notify() en vez del texto local. Las lecturas no lo traen.
+    if (!isReadRequest(response.config)) {
+      noteServerMessage(response.headers?.["x-mensaje"] as string | undefined)
+    }
     return response.data
   },
   async (error) => {

@@ -17,10 +17,10 @@ export function safeDeepLink(link: string | null | undefined): string {
   return trimmed
 }
 
-/** Etiqueta del contador de la campana: tope `99+` (spec "Campana"). */
+/** Etiqueta del contador de la campana: tope `9+` (requerimiento: el badge no crece a dos cifras). */
 export function formatContador(n: number): string {
   if (!n || n < 0) return "0"
-  return n > 99 ? "99+" : String(n)
+  return n > 9 ? "9+" : String(n)
 }
 
 /** "Ana y 4 más reaccionaron…": prefijo de actores de una entrada agrupada (D-2.4). */

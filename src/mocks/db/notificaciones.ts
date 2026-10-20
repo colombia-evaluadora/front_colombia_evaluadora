@@ -153,6 +153,20 @@ const TIPOS: TipoFixture[] = [
     deepLink: () => "/app/planeador/actividades",
   },
   {
+    // Confirmación de una acción propia (sso V590): la etiqueta de la escritura.
+    // Solo bandeja por defecto (sin push): espejo de CatalogoTipos del backend.
+    tipo: "APP_ACCION",
+    categoria: "SISTEMA",
+    etiqueta: "Confirmaciones de tus acciones",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: false,
+    email: false,
+    titulo: () => "Creación de la sede Norte",
+    cuerpo: () => "Hiciste este cambio desde la pantalla de sedes.",
+    deepLink: () => "/app/establecimiento-educativo/sedes",
+  },
+  {
     tipo: "SISTEMA_MANTENIMIENTO",
     categoria: "SISTEMA",
     etiqueta: "Avisos de la institución",
