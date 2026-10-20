@@ -59,6 +59,7 @@ import { listasValorSearchSchema } from "@/features/administration/listas-valor/
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
+import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { forosSearchSchema } from "@/features/comunicaciones/foros/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
@@ -69,6 +70,7 @@ import {
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
   canAccessPath,
@@ -165,6 +167,10 @@ const AreasOficialesPage = lazyRouteComponent(
 const BitacoraPage = lazyRouteComponent(
   () => import("@/features/bitacora/pages/bitacora-page"),
   "BitacoraPage"
+)
+const SuperadministradoresPage = lazyRouteComponent(
+  () => import("@/features/administration/superadministradores/pages/superadministradores-page"),
+  "SuperadministradoresPage"
 )
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
@@ -387,6 +393,13 @@ const appLayoutRoute = createRoute({
         to: paths.auth.login.path,
         search: { redirectTo: location.href },
       })
+    }
+
+    // Permisos por pantalla en segundo plano (no bloquea la navegación): así
+    // quedan en el snapshot de la sesión aunque la pantalla de aterrizaje no
+    // los use, y sin red los botones no quedan todos denegados.
+    if (connectivityStore.getState().status !== "offline") {
+      void context.queryClient.prefetchQuery(menuPermissionsQueryOptions)
     }
 
     // Una URL que no existe es un 404, no un "sin acceso".
@@ -659,6 +672,16 @@ export const areasOficialesRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Áreas oficiales" }],
   },
   component: AreasOficialesPage,
+})
+
+export const superadministradoresRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.superadministradores.path,
+  validateSearch: superadministradoresSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Superadministradores" }],
+  },
+  component: SuperadministradoresPage,
 })
 
 export const criteriosPrioridadRoute = createRoute({
@@ -1121,6 +1144,7 @@ const routeTree = rootRoute.addChildren([
     listasValorRoute,
     areasOficialesRoute,
     criteriosPrioridadRoute,
+    superadministradoresRoute,
     parametrosEdadRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,

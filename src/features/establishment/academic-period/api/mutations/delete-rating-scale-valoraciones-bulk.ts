@@ -3,17 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateRatingScaleRelated } from "./invalidate"
 
 interface DeleteRatingScaleValoracionesBulkInput {
   ids: number[]
 }
 
-// `POST /eval-col/escalas/valoraciones/bulk-delete`
-// (`fn_escala_valoracion_bulk_delete`, id_query 146) — a diferencia de
-// `deleteRatingScalesBulk` (que borra la escala COMPLETA de un nivel de
-// enseñanza), esto borra un subconjunto de bandas (`TESCALA_VALORACION`)
-// dentro de una misma escala, por su PK.
+// `fn_escala_valoracion_bulk_delete` (id_query 146): borra bandas de una escala.
 function deleteRatingScaleValoracionesBulk({
   ids,
 }: DeleteRatingScaleValoracionesBulkInput): Promise<BulkDeleteResult> {
@@ -32,7 +28,7 @@ export function useDeleteRatingScaleValoracionesBulk({
     mutationFn: deleteRatingScaleValoracionesBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
+      invalidateRatingScaleRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

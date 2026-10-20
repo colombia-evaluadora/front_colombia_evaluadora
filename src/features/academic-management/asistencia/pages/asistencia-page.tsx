@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
 import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 import { Link, useNavigate } from "@tanstack/react-router"
@@ -16,7 +17,10 @@ import { useAsistenciaAccess } from "@/features/academic-management/asistencia/h
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
-import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import {
+  invalidarAsistencia,
+  registrarAsistencia,
+} from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { AsistenciaCambiosPendientesBanner } from "@/features/academic-management/asistencia/components/asistencia-cambios-pendientes-banner"
 import { AsistenciaSedeSelector } from "@/features/academic-management/asistencia/components/asistencia-sede-selector"
 import { AsistenciaMonthDayPicker } from "@/features/academic-management/asistencia/components/asistencia-month-day-picker"
@@ -182,7 +186,7 @@ function AsistenciaPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   })()
 
-  const registrar = useAsistenciaRegistrarMutation()
+  const queryClient = useQueryClient()
   const [markingEntryId, setMarkingEntryId] = React.useState<string | null>(null)
   const [markedEntryIds, setMarkedEntryIds] = React.useState<Set<string>>(new Set())
 
@@ -195,7 +199,7 @@ function AsistenciaPageContent() {
       // solo `entry.bloque` (el primero) dejaba el resto sin registrar.
       const solicitudes = await Promise.all(
         entry.bloques.map((bloque) =>
-          registrar.mutateAsync({
+          registrarAsistencia({
             GRUPO: entry.fkGrupo,
             FECHA: entry.fecha,
             MARCAR_TODOS: 1,
@@ -229,6 +233,7 @@ function AsistenciaPageContent() {
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
     } finally {
+      invalidarAsistencia(queryClient)
       setMarkingEntryId(null)
     }
   }

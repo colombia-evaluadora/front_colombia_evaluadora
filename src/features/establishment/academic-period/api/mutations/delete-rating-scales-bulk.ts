@@ -3,19 +3,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateRatingScaleRelated } from "./invalidate"
 
 interface DeleteRatingScalesBulkInput {
   academicPeriodId: number
   teachingLevelIds: number[]
 }
 
-// `POST /eval-col/escalas/bulk-delete` (`fn_escala_nivel_bulk_soft_delete`,
-// id_query 55 — corregido en V82: antes llamaba a `fn_escala_bulk_delete`,
-// que solo borraba las bandas de valoración de un nivel y dejaba
-// TNIVEL_ESCALA/TESCALA activos ("escala fantasma"). Ahora borra la escala
-// completa por nivel. El body espera `PERIODO_ACADEMICO_ID` e `IDS`
-// (ids de nivel de enseñanza), no `ids` de banda.
+// `fn_escala_nivel_bulk_soft_delete` (id_query 55, V82): borra la escala completa por nivel.
 function deleteRatingScalesBulk({
   academicPeriodId,
   teachingLevelIds,
@@ -38,7 +33,7 @@ export function useDeleteRatingScalesBulk({
     mutationFn: deleteRatingScalesBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
+      invalidateRatingScaleRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

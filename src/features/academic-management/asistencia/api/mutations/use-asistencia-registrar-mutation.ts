@@ -1,5 +1,5 @@
 import { outboxHeaders } from "@/lib/offline/outbox/headers"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -150,7 +150,7 @@ export type RegistrarInput = AsistenciaRegistrarRequest & {
   versiones?: Record<number, string | null | undefined>
 }
 
-async function registrarAsistencia({ versiones, ...body }: RegistrarInput): Promise<RegistrarResultado> {
+export async function registrarAsistencia({ versiones, ...body }: RegistrarInput): Promise<RegistrarResultado> {
   const files: Record<string, File> = {}
   const REGISTROS = body.REGISTROS?.map((r): RegistroCola => {
     const baseVersion = versiones?.[r.fkMatricula] ?? null
@@ -165,6 +165,12 @@ async function registrarAsistencia({ versiones, ...body }: RegistrarInput): Prom
   const kind = body.MARCAR_TODOS && !REGISTROS?.length ? "asistencia.marcar-todos" : "asistencia.registrar"
   const outcome = await runOrQueue<RegistrarPayload, RegistrarResultado>(kind, { ...body, REGISTROS }, { files })
   return outcome.queued ? { afectados: 0, pendientes: [], queued: true } : outcome.result
+}
+
+/** Una sola recarga de asistencia y planeador; para lotes que llaman las funciones directas. */
+export function invalidarAsistencia(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: asistenciaKeys.all })
+  invalidarPlaneadorPorAsistencia(queryClient)
 }
 
 export function useAsistenciaRegistrarMutation({

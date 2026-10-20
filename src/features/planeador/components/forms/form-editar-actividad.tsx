@@ -76,6 +76,11 @@ interface EditarActividadFormProps {
    * `<fieldset disabled>`) y el submit no hace nada.
    */
   readOnly?: boolean
+  /**
+   * Por qué está en solo lectura (Regla 37 o permisos): el asistente lo
+   * devuelve si le piden rellenar este formulario.
+   */
+  motivoSoloLectura?: string
 }
 
 /**
@@ -90,6 +95,7 @@ export function EditarActividadForm({
   esNueva = false,
   tab,
   readOnly = false,
+  motivoSoloLectura,
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
@@ -222,6 +228,7 @@ export function EditarActividadForm({
     form,
     actividadId: esNueva ? null : actividad.id,
     readOnly,
+    motivoSoloLectura,
     esFormativa,
     seccionVisible: (seccion) => camposEfectivos?.[seccion]?.visible !== false,
     tiposActividad: tiposActividadAsistente,

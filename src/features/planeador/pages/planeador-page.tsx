@@ -22,7 +22,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { PlusCircleIcon, DotsThreeIcon, CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 
 import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-actividades-stats-query"
 import { useActividadesCalendarioQuery } from "@/features/planeador/api/query/use-actividades-calendario-query"
@@ -627,7 +627,7 @@ function PlaneadorPageContent() {
                   <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
                     {isPending && (
                       <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-8 text-sm">
-                        <Spinner /> Cargando…
+                        <LoadingLabel>Cargando…</LoadingLabel>
                       </div>
                     )}
 

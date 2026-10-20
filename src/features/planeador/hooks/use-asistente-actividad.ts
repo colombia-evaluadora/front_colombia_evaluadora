@@ -8,7 +8,7 @@ import {
   resolverOpcion,
   type OpcionesUi,
 } from "@/features/assistant/lib/campos-ui"
-import { useFormularioAsistente } from "@/features/assistant/lib/registro-ui"
+import { useFormularioAsistente, useFormularioBloqueadoAsistente } from "@/features/assistant/lib/registro-ui"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 // Registro de `planeador.actividad` (ai.ui_formulario, origen DB, V557.2)
@@ -74,7 +74,13 @@ interface Opciones {
   form: FormLike
   /** Id de la actividad que se edita; `null` en altas. */
   actividadId: number | null
+  /**
+   * En solo lectura (Regla 37 o sin permiso de editar) el formulario no se
+   * registra: el asistente no lo ve ni lo puede rellenar. Si igual lo pide,
+   * recibe `motivoSoloLectura`.
+   */
   readOnly: boolean
+  motivoSoloLectura?: string
   esFormativa: boolean
   /** Visibilidad efectiva por sección (`camposEfectivos` del form). */
   seccionVisible: (seccion: "evaluacion" | "ponderacion") => boolean
@@ -86,6 +92,7 @@ export function useAsistenteActividad({
   form,
   actividadId,
   readOnly,
+  motivoSoloLectura,
   esFormativa,
   seccionVisible,
   tiposActividad,
@@ -140,6 +147,10 @@ export function useAsistenteActividad({
     return ""
   }
 
+  useFormularioBloqueadoAsistente(
+    "planeador.actividad",
+    readOnly ? (motivoSoloLectura ?? "Esta actividad está en solo lectura; no se puede modificar.") : null,
+  )
   useFormularioAsistente(
     readOnly
       ? null

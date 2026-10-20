@@ -4,13 +4,9 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkCreateRatingScalesRequest } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { resolveRatingScaleRefs } from "@/features/establishment/academic-period/api/mutations/resolve-rating-scale-refs"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateRatingScaleRelated } from "./invalidate"
 
-// Body PLANO con las llaves de `fn_escala_guardar_bulk`
-// (`POST /eval-col/escalas`, id_query 53). Devuelve la cantidad de
-// valoraciones creadas (no las filas), a diferencia del mock — nada la
-// consume hoy (ver tab-rating-scales.tsx / dialog-create-rating-scale.tsx,
-// solo usan onSuccess/onError).
+// `fn_escala_guardar_bulk` (id_query 53); devuelve la cantidad creada.
 async function createRatingScalesBulk(
   input: BulkCreateRatingScalesRequest
 ): Promise<number> {
@@ -18,9 +14,7 @@ async function createRatingScalesBulk(
   return api.post("/eval-col/escalas", {
     ACADEMIC_PERIOD_ID: input.academicPeriodId,
     TEACHING_LEVEL_IDS: input.teachingLevelIds,
-    // `CAST(:BODY.SCALES AS JSONB)` espera el valor como STRING de JSON, no
-    // como objeto anidado — confirmado contra Postman. Si se manda el array
-    // sin stringify, el binder no lo castea bien a JSONB.
+    // `CAST(:BODY.SCALES AS JSONB)` espera el JSON como string.
     SCALES: JSON.stringify(
       input.scales.map((scale, i) => ({
         nombre: scale.nombre,
@@ -48,7 +42,7 @@ export function useCreateRatingScalesBulk({
     mutationFn: createRatingScalesBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.ratingScales.all })
+      invalidateRatingScaleRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

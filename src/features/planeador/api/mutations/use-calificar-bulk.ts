@@ -7,7 +7,10 @@ import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
+import {
+  invalidarCalificacionesActividad,
+  refrescarBloqueoEdicion,
+} from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
 /**
  * `PUT /planeador/actividades/:id/calificar-bulk/<tipo>` (confirmado real,
@@ -89,7 +92,9 @@ registerOutboxHandler<CalificarBulkInput>({
     ),
   invalidates: (p) => [
     planeadorKeys.planilla.calificaciones.all,
-    planeadorKeys.actividad.calificaciones(p.actividadId),
+    // El detalle (y lo que cuelga) trae el bloqueo de la Regla 37; los listados, el lápiz.
+    planeadorKeys.actividad.detalle(p.actividadId),
+    planeadorKeys.actividades.all,
     ["informes"],
   ],
   describe: (p) => ({
@@ -118,6 +123,8 @@ export function useCalificarBulkMutation({ mutationConfig }: UseCalificarBulkOpt
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      // Regla 37: el primer resultado bloquea la edición (lápiz, panel, edición).
+      refrescarBloqueoEdicion(queryClient, variables.actividadId)
       // Alertas y planilla de Informes: la nota cambia la definitiva o abre una solicitud.
       queryClient.invalidateQueries({ queryKey: ["informes"] })
       onSuccess?.(result, variables, ...rest)

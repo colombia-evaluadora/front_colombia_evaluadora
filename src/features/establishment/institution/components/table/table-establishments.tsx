@@ -38,9 +38,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 
 interface EstablishmentsDataTableProps {
   title: ReactNode
-  // Acción principal de la página (ej. "Agregar"). Se renderiza dentro de la
-  // barra de herramientas, no en el encabezado, para que baje junto al
-  // buscador.
+  // Acción principal, en la barra de herramientas.
   action?: ReactNode
 }
 
@@ -53,15 +51,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     useEstablishmentsFilters()
 
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
-  /**
-   * El catálogo de estados es compartido entre features y viene con etiqueta
-   * neutra ("Activo"). En esta tabla los establecimientos se filtran con
-   * femenino ("Activa"), así que ajustamos solo el `name` al renderizar sin
-   * tocar el `code` (que en real es "A"/"I"/"S"/"SC"/"ST" — el código real
-   * de `ESTADO_ESTABLECIMIENTO` — y en mock sigue siendo "ACTIVE"; el `id`
-   * de este catálogo es un correlativo interno, no el discriminador de
-   * estado).
-   */
+  /** El catálogo dice "Activo"; aquí se muestra en femenino sin tocar el `code`. */
   const establishmentStatuses = useMemo(
     () =>
       entityStatuses.map((status) =>
@@ -70,9 +60,6 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     [entityStatuses],
   )
 
-  // `queryFilters.status` ya trae el `id` (como texto, ver
-  // search-establishments.tsx) — `useEstablishmentsQuery` solo necesita
-  // convertirlo a número, no resolverlo contra ningún catálogo.
   const { data, isPending, isError, error, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
     sorting,
@@ -80,12 +67,11 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     pageSize,
   })
 
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const { table, selectedIds, selectedRows: selectedItems, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
-    // la fila es number, así que se convierte solo para la selección.
+    // `getRowId` devuelve string; el id real es number.
     getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
@@ -96,14 +82,9 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     columnVisibilityStorageKey: "table-establishments-column-visibility",
   })
 
-  const rows = data?.rows ?? []
-  const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(String(row.id))),
-    [rows, selectedIds],
-  )
   const namesById = useMemo(
-    () => new Map(rows.map((row) => [String(row.id), row.name])),
-    [rows],
+    () => new Map(selectedItems.map((row) => [String(row.id), row.name])),
+    [selectedItems],
   )
 
   const bulkDelete = useBulkDelete({
@@ -159,7 +140,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
                     buildDescription={(count, sample) => {
                       const list = sample.join(", ")
                       const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                      return `Se eliminarán permanentemente los establecimientos educativos ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                      return `Se eliminarán los establecimientos educativos ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
                     }}
                     onConfirm={async (ids) => {
                       await bulkDelete.mutateAsync(ids)

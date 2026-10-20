@@ -16,6 +16,7 @@ const MENU = {
   listasValor: "/app/administracion/listas-valor",
   areasOficiales: "/app/administracion/areas-oficiales",
   criteriosPrioridad: "/app/administracion/criterios-prioridad",
+  superadministradores: "/app/administracion/superadministradores",
   parametrosEdad: "/app/administracion/parametros-edad",
   establecimiento: "/app/establecimiento-educativo/general",
   sedes: "/app/establecimiento-educativo/sedes",
@@ -67,6 +68,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/listas-valor": MENU.listasValor,
   "/app/administracion/areas-oficiales": MENU.areasOficiales,
   "/app/administracion/criterios-prioridad": MENU.criteriosPrioridad,
+  "/app/administracion/superadministradores": MENU.superadministradores,
   "/app/administracion/parametros-edad": MENU.parametrosEdad,
   "/app/registro-de-actividad/bitacora": MENU.registroActividad,
 

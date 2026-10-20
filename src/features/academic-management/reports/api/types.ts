@@ -1,20 +1,12 @@
 /** Tipos de los endpoints `POST /api/eval-col/informes/...`. */
 
-/**
- * El id con el que se pide —y con el que llega— la fila Final. No es un PK:
- * es un centinela. Va dentro del mismo arreglo `PERIODOS` que los períodos
- * reales, y por eso se puede pedir el Final solo (`[-1]`), que con una
- * bandera aparte era imposible: un arreglo vacío significa *todos*.
- */
+/** Centinela (no PK) de la fila Final dentro de `PERIODOS`; `[-1]` pide solo el Final. */
 export const PERIODO_FINAL_ID = -1
 
-/** `final` no es un período del calendario: es la fila que el backend
- *  calcula al vuelo con la nota del año. Llega con
- *  `periodoId: PERIODO_FINAL_ID`. */
+/** `final` = nota del año calculada al vuelo, con `periodoId: PERIODO_FINAL_ID`. */
 export type ModoPeriodo = "real" | "requerido" | "final"
 
-/** Sin criterio de evaluación configurado el backend responde `cualitativo`
- *  — esa es la vía normal de preescolar, no un hueco de datos. */
+/** Sin criterio de evaluación llega `cualitativo` (lo normal en preescolar). */
 export type FormatoPeriodo = "numerico" | "cualitativo"
 
 export type EstadoNota =
@@ -27,17 +19,13 @@ export type EstadoNota =
   | "cambio_propuesto"
   /** Lo que le falta sacar (solo en `modo_periodo: "requerido"`). */
   | "requerido"
-  /** Promedio del año, calculado al imprimir: no lo guardó nadie
-   *  (solo en `modo_periodo: "final"`). */
+  /** Promedio del año calculado al vuelo (solo en `modo_periodo: "final"`). */
   | "final"
 
-/** `BORRADOR` = la generó la IA y nadie la revisó todavía: el boletín no la
- *  imprime hasta que una persona la guarde (eso la pasa a APROBADA o
- *  MODIFICADA). Llega con el cambio de sso `fix/observaciones-ia-borrador`. */
+/** `BORRADOR` = generada por IA sin revisar; no sale en el boletín hasta guardarla. */
 export type ObservacionEstado = "APROBADA" | "MODIFICADA" | "BORRADOR"
 
-/** La terna sede + año + jornada resuelve un periodo académico, y de ahí
- *  salen los períodos de evaluación y los grupos. */
+/** Sede + año + jornada resuelven el periodo académico. */
 export interface SedeInforme {
   id: number
   nombre: string
@@ -50,8 +38,7 @@ export interface AnioInforme {
   esActual: boolean
 }
 
-/** Una fila por período académico, no por jornada distinta: la terna puede
- *  resolver más de uno y ningún índice lo impide. */
+/** Una fila por período académico: la terna puede resolver más de uno. */
 export interface JornadaInforme {
   id: number
   nombre: string
@@ -66,13 +53,11 @@ export interface GrupoPeriodo {
   grupoId: number
   grupoCodigo: string | null
   grupoNombre: string
-  /** Armada con la misma convención del planeador — los códigos negativos de
-   *  preescolar son correctos. */
+  /** Convención del planeador: los códigos negativos de preescolar son válidos. */
   grupoEtiqueta: string
   capacidad: number | null
   estudiantes: number
-  /** La del grupo, que casi nunca es la del período académico: el endpoint no
-   *  filtra por ella, solo la devuelve. */
+  /** La del grupo (no la del período académico); solo informativa. */
   jornadaId: number | null
   jornadaNombre: string | null
   gradoId: number
@@ -91,13 +76,11 @@ export interface PeriodoInforme {
   abreviacion: string | null
   fechaInicio: string
   fechaFin: string
-  /** Es la misma condición con la que el backend arma la alerta roja — no
-   *  recalcularla por fechas desde acá. */
+  /** Viene del backend; no recalcular por fechas. */
   termino: boolean
   enCurso: boolean
   calificable: boolean
-  /** `periodo_cerrado` (sso `fix/informes-boletin`): cerrado = no se
-   *  consolida ni se editan observaciones. Si no llega, se asume abierto. */
+  /** Cerrado = no se consolida ni se editan observaciones. Ausente = abierto. */
   cerrado: boolean
   sede: string | null
   jornada: string | null
@@ -112,27 +95,21 @@ export interface AsignaturaInforme {
   estado: EstadoNota
   esNumerico: boolean
   nota: number | null
-  /** `null` con estado `cambio_propuesto` significa "la propuesta es que ya
-   *  no hay nota": el docente dio de baja las actividades. */
+  /** `null` con `cambio_propuesto` = se propone quitar la nota. */
   notaPropuesta: number | null
   valoracion: string | null
   simbolo: string | null
   aprobada: boolean | null
-  /** Habilitación/Nivelación (recuperación sobre la nota del período, Regla
-   *  68): `nota` es la resultante (R) y estas tres la original (C). Fuera de
-   *  ese caso, `conRecuperacion` es `false` y las tres llegan en `null`. */
+  /** Recuperación (Regla 68): `nota` es la resultante y estas tres la original. */
   conRecuperacion: boolean
   notaOriginal: number | null
   valoracionOriginal: string | null
   simboloOriginal: string | null
   /** Modo requerido: ya le alcanza sin sacar nada más. */
   yaAsegurado: boolean
-  /** Modo requerido: `false` = ya perdió pase lo que pase. El valor llega
-   *  igual aunque supere el máximo. */
+  /** Modo requerido: `false` = ya perdió (el valor llega aunque supere el máximo). */
   alcanzable: boolean
-  /** `error_configuracion` (sso `fix/informes-boletin`): por qué no se puede
-   *  calcular esta nota (sin criterio, sin escala…). Con valor, la celda no
-   *  se consolida. `null` si no hay problema o si el backend aún no lo manda. */
+  /** Por qué no se puede calcular (sin criterio, sin escala…); con valor no se consolida. */
   errorConfiguracion: string | null
 }
 
@@ -143,9 +120,7 @@ export interface FilaInforme {
   periodoId: number
   periodoNombre: string
   periodoAbreviacion: string | null
-  /** Junto con `formato` deciden cómo renderizar. En preescolar
-   *  `asignaturas` llega con filas en `null`, así que mirar si viene vacío
-   *  no sirve para distinguirlo. */
+  /** Con `formato` decide cómo renderizar; en preescolar `asignaturas` no viene vacío. */
   modoPeriodo: ModoPeriodo
   formato: FormatoPeriodo
   esCualitativo: boolean
@@ -160,9 +135,7 @@ export interface FilaInforme {
   observacionEstado: ObservacionEstado | null
   observacionDesactualizada: boolean
   tieneCambiosPropuestos: boolean
-  /** Cuántas imágenes adjuntas a observaciones tiene la fila. En la fila
-   *  Final, las de todo el año. Viene en el listado para no pedir las
-   *  evidencias solo para saber si hay que dibujar la sección. */
+  /** Imágenes adjuntas; en la fila Final, las de todo el año. */
   evidencias: number
 }
 
@@ -179,6 +152,7 @@ export interface EvidenciaInforme {
   actividadId: number
   actividadTitulo: string | null
   observacion: string | null
+  esFavorito: boolean
 }
 
 export interface PlanillaPendiente {
@@ -212,15 +186,9 @@ export interface HistorialDetalle {
   matriculaId: number
   estudiante: string
   documento: string | null
-  /** Asignaturas que ese guardado escribió para el estudiante. Es la suma
-   *  de guardadas + actualizadas: el historial NO conserva el desglose, lo
-   *  suma al registrar (`v_g + v_a` en fn_informe_periodo_guardar). El
-   *  desglose solo existe en la respuesta del guardado, en el momento. */
+  /** Guardadas + actualizadas; el historial no conserva el desglose. */
   asignaturas: number
-  /** Promedio tal como quedó ese día, en porcentaje 0-100 y copiado, no
-   *  recalculado. No se pinta: sin el criterio de evaluación del período no
-   *  se puede homologar al formato del colegio, y mostrar 77,7 al lado de
-   *  notas en 3,3 es justo lo que corrigió la V474. */
+  /** Porcentaje 0-100 de ese día. No se pinta: no se puede homologar (V474). */
   promedio: number | null
 }
 
@@ -228,8 +196,7 @@ export interface HistorialCambio {
   id: number
   grupoId: number
   grupoNombre: string
-  /** `null` = se guardó el informe completo; con valor, una sola asignatura
-   *  desde la planilla. */
+  /** `null` = informe completo; con valor, una asignatura desde la planilla. */
   asignaturaId: number | null
   asignaturaNombre: string | null
   /** `informe` = guardado completo; el otro origen es la planilla. */
@@ -257,8 +224,7 @@ export interface CeldaPlanilla {
   nota: number | null
   valoracion: string | null
   observacion: string | null
-  /** Regla 55: `nota` es la propuesta de una corrección pendiente; la
-   *  vigente queda en `notaAnterior`. "Aprobar" la aplica. */
+  /** Regla 55: `nota` es la propuesta pendiente; la vigente, `notaAnterior`. */
   solicitudPendiente: boolean
   notaAnterior: number | null
   esEvaluativa: boolean
@@ -273,8 +239,7 @@ export interface FilaPlanilla {
   matriculaId: number
   estudianteId: number
   nombreCompleto: string
-  /** Ambas homologadas a la escala del colegio: la flecha se decide
-   *  comparando lo que se dibuja, no los porcentajes. */
+  /** Homologadas: la flecha compara lo que se dibuja, no los porcentajes. */
   definitivaGuardada: number | null
   definitivaProyectada: number | null
   actividades: CeldaPlanilla[]
@@ -282,13 +247,7 @@ export interface FilaPlanilla {
 
 export type ResultadoGuardado = "guardada" | "actualizada" | "sin_cambio" | "sin_proyeccion"
 
-/**
- * Lo que devuelve consolidar el INFORME (`fn_informe_periodo_guardar`), una
- * fila por estudiante. No tiene `resultado`: ese estado de una sola nota es
- * de la planilla, que consolida UNA asignatura. Acá se consolidan todas las
- * del estudiante a la vez, así que el backend devuelve cuántas cayeron en
- * cada caso.
- */
+/** Resultado de consolidar el informe: por estudiante, cuántas asignaturas cayeron en cada caso. */
 export interface ConsolidacionEstudiante {
   matriculaId: number
   estudiante: string

@@ -36,3 +36,11 @@
 ## 7. Extras
 - [x] 7.1 EE y Sedes: crear/editar/eliminar ocultos sin red
 - [x] 7.2 Paquete USB: la firma ECDSA prueba integridad; la identidad la da la sesión del que importa (sin registro de equipos hasta aprobar D-3)
+
+## 8. Ninguna carga infinita sin conexión (D-13)
+- [x] 8.1 `OfflineAwareQueryClient`: `networkMode` por query (sin datos `always`, con datos `online`); `retry` sin reintentos sin red; mutaciones con `networkMode: "always"`
+- [x] 8.2 Evaluar `networkMode: "offlineFirst"` como default global: descartado (decisión en design D-13)
+- [x] 8.3 Mensajes sin conexión en `getErrorMessage`, `ErrorPage` y `NetworkSessionError` (lectura / escritura / sesión)
+- [x] 8.4 `useOfflineStall` + `DataTable`, `Skeleton`, `Spinner`, `LoadingLabel`, `Select` y `ComboboxField` sin cargas infinitas
+- [x] 8.5 Banner: "Parte de esta pantalla no está guardada en este equipo" (`meta.offlineOptional` para lo accesorio del header)
+- [x] 8.6 E2E `offline-sin-preparar.spec.ts` (todas las rutas no administrativas sin Preparar) y `offline-all-routes.spec.ts` sigue verde

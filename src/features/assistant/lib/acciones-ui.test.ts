@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { aplicarAcciones, esRutaInterna } from "@/features/assistant/lib/acciones-ui"
+import { bloquearFormularioAsistente } from "@/features/assistant/lib/registro-ui"
 
 describe("esRutaInterna", () => {
   it("solo admite rutas /app", () => {
@@ -30,5 +31,23 @@ describe("aplicarAcciones", () => {
     expect(navegar).toHaveBeenCalledWith("/app/planeador/actividades", {})
     expect(aplicarFiltrosUrl).toHaveBeenCalledWith({ sede: "1" })
     expect(resultados[2].aplicada).toBe(false)
+  })
+})
+
+describe("formulario bloqueado (Regla 37 del planeador)", () => {
+  const entorno = () => ({ navegar: vi.fn(), aplicarFiltrosUrl: vi.fn(), filtrosDeLaPantalla: [] })
+  const rellenar = { op: "RELLENAR", formulario: "planeador.actividad", valores: { nombre: "Otro nombre" } }
+
+  it("no lo rellena y le devuelve al asistente el motivo, no un 'no está abierto'", () => {
+    const motivo = "No puedes editar esta actividad porque ya tiene calificaciones, observaciones o \"No presentó\" registrados."
+    const quitar = bloquearFormularioAsistente("planeador.actividad", motivo)
+    try {
+      const [resultado] = aplicarAcciones([rellenar], entorno())
+      expect(resultado).toMatchObject({ aplicada: false, motivo })
+    } finally {
+      quitar()
+    }
+    const [sinBloqueo] = aplicarAcciones([rellenar], entorno())
+    expect(sinBloqueo).toMatchObject({ aplicada: false, motivo: "El formulario no está abierto en esta pantalla." })
   })
 })

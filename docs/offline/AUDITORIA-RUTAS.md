@@ -25,6 +25,45 @@ después de "Preparar" y falla si aparece "Esta sección necesita conexión".
    diario; sus queries no se persistían. Arreglo: `proveedorMeta` en las
    queries de institución/sedes y excepción de solo consulta.
 
+## Cargas infinitas sin conexión (sin haber preparado)
+
+Reporte de testv2: "solo me aparecía el loading en todo". Sin red, lo que no
+estaba guardado en el equipo dejaba la pantalla en skeleton o spinner para
+siempre.
+
+**Causa.** Con el `networkMode: "online"` de TanStack Query, una query sin
+datos que arranca sin red queda `pending` con `fetchStatus: "paused"` hasta
+que vuelva la conexión: la pantalla ve `isPending` y no sale del "cargando".
+Las mutaciones pausadas dejaban los botones en "Guardando…". Solo Informes y
+la Planilla lo detectaban a mano (`isOfflineWithoutData`), y "Preparar todo el
+año" solo refrescaba las listas con filtros propios de cada pantalla si se
+habían abierto en esa sesión.
+
+**Arreglo global** (no pantalla por pantalla):
+
+| Capa | Qué hace | Dónde |
+|---|---|---|
+| `networkMode` híbrido | Por query: **sin datos → `"always"`** (el `queryFn` corre sin red, falla al instante y la query termina en `error`); **con datos → `"online"`** (el refetch se pausa y se sigue viendo lo guardado). El `retry` no reintenta sin red. Las mutaciones van con `"always"`: fallan enseguida en vez de quedar en "Guardando…". | `lib/offline/offline-query-client.ts`, `lib/react-query.ts` |
+| Mensaje de error | `getErrorMessage` distingue sin conexión: lectura → "Sin conexión: esta información no está guardada en este equipo. Cuando tengas conexión, usa «Preparar sin conexión»…"; escritura → "Sin conexión: esta acción necesita internet…"; sesión → aviso propio. `ErrorPage` usa los mismos textos. | `lib/api-client.ts`, `lib/offline/offline-messages.ts`, `components/layout/error-page.tsx` |
+| Componentes compartidos | `useOfflineStall`: un indicador de carga que sigue visible 1,5 s sin conexión no va a resolverse. `DataTable` muestra el aviso en vez del skeleton o del error genérico; `Skeleton` y `Spinner` se ocultan; `LoadingLabel` reemplaza "spinner + Cargando…" por el aviso; `Select` y `ComboboxField` dicen "estas opciones no están guardadas en este equipo" en vez de abrir vacíos. | `components/data-table.tsx`, `components/ui/{skeleton,spinner,select,combobox}.tsx`, `components/offline/loading-label.tsx` |
+| Red de seguridad | El banner offline agrega "Parte de esta pantalla no está guardada en este equipo…" cuando una query observada no tiene datos por falta de red (las accesorias del header se marcan `meta.offlineOptional`). | `lib/offline/missing-data.ts`, `components/layout/offline-banner.tsx` |
+
+**Decisión sobre `networkMode: "offlineFirst"` como default** (evaluado y
+descartado): sus reintentos sí se pausan sin red (una query sin datos cuyo
+primer intento falla quedaba igual en "cargando"), y corre el `queryFn`
+aunque haya datos, así que un refetch sin red (al montar, al invalidar tras
+encolar en la outbox, por `refetchInterval`) dejaba la query en `error` con
+datos y las pantallas que miran `isError` antes que `data` escondían lo
+guardado. El modo híbrido no cambia nada para las queries con datos: la
+restauración del persister y la capa optimista de la outbox siguen igual.
+
+**Prueba:** `e2e/offline-sin-preparar.spec.ts` entra con red (sin Preparar),
+pasa a modo avión (`navigator.onLine = false` + API caída) y recorre todas las
+rutas no administrativas como administrador y las del menú del docente: a los
+3 s no puede quedar ningún skeleton, spinner ni "Cargando…", y cada pantalla
+muestra lo guardado o un aviso claro (en la pantalla, en el banner o el empty
+state "Esta sección necesita conexión").
+
 ## Tabla
 
 | Ruta | Sin conexión | Por qué | Arreglo / pendiente |

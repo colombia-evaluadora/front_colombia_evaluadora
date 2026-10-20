@@ -1,4 +1,5 @@
 import { AxiosError, AxiosHeaders, type AxiosResponse } from "axios"
+import { onlineManager } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
 
 import { isNetworkError, NetworkSessionError } from "@/lib/network-error"
@@ -40,8 +41,19 @@ describe("queryConfig", () => {
     expect(retry(2, red)).toBe(false)
     expect(retry(0, conStatus(400))).toBe(false)
   })
-  it("no reintenta mutaciones y usa networkMode online", () => {
+  it("sin red no reintenta: el reintento fallaría igual y alargaba el 'cargando'", () => {
+    const red = new AxiosError("Network Error", "ERR_NETWORK")
+    onlineManager.setOnline(false)
+    try {
+      expect(retry(0, red)).toBe(false)
+    } finally {
+      onlineManager.setOnline(true)
+    }
+  })
+  it("no reintenta mutaciones, que tampoco quedan pausadas sin red", () => {
     expect(queryConfig.mutations.retry).toBe(false)
-    expect(queryConfig.queries.networkMode).toBe("online")
+    expect(queryConfig.mutations.networkMode).toBe("always")
+    // El de las queries lo decide `OfflineAwareQueryClient` por query.
+    expect("networkMode" in queryConfig.queries).toBe(false)
   })
 })

@@ -6,7 +6,7 @@ import type {
   MutationResult,
   UpdateStudyPlanItemRequest,
 } from "@/features/establishment/academic-period/api/types/study-plan"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateStudyPlanRelated } from "./invalidate"
 interface UpdateStudyPlanItemInput {
   codigo: number
   gradeId: number
@@ -40,12 +40,7 @@ export function useUpdateStudyPlanItem({ mutationConfig }: UseUpdateStudyPlanIte
     mutationFn: updateStudyPlanItem,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlans.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.studyPlanAvailable.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentSubjects.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.teacherAssignments.all })
-      // En preescolar el backend arma el horario solo al guardar el plan (V437).
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.horario.all })
+      invalidateStudyPlanRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

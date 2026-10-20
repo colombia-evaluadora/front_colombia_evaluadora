@@ -12,6 +12,7 @@ import {
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -64,6 +65,7 @@ import {
   type StudyPlanFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
+import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 
 const EMPTY: StudyPlanFormValues = {
   asignaturaId: 0,
@@ -276,8 +278,6 @@ export function CreateStudyPlanDialog({
     setSubjectName(created.nombreInterno)
   }
 
-  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
-
   function closeDialog() {
     setOpen(false)
     setNotice(null)
@@ -286,29 +286,22 @@ export function CreateStudyPlanDialog({
     setSubjectName(item?.asignatura ?? "")
   }
 
-  function requestClose() {
-    if (isSaving) return
-    const isDirty =
-      JSON.stringify(form.state.values) !== JSON.stringify(defaultValues) ||
-      personalizar !== tienePersonalizacion
-    if (isDirty) {
-      setConfirmDiscardOpen(true)
-      return
-    }
-    closeDialog()
-  }
+  const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
+    isSaving,
+    isDirty: () =>
+      !formValuesEqual(form.state.values, defaultValues) ||
+      personalizar !== tienePersonalizacion,
+    onOpen: () => {
+      setOpen(true)
+      setNotice(null)
+    },
+    onClose: closeDialog,
+  })
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setOpen(true)
-          setNotice(null)
-        } else {
-          requestClose()
-        }
-      }}
+      onOpenChange={onOpenChange}
     >
       {isEditing ? (
         <Tooltip>
@@ -839,14 +832,7 @@ export function CreateStudyPlanDialog({
         </DialogFooter>
       </DialogContent>
 
-      <ConfirmDiscardDialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-        onConfirm={() => {
-          setConfirmDiscardOpen(false)
-          closeDialog()
-        }}
-      />
+      <ConfirmDiscardDialog {...discardDialogProps} />
     </Dialog>
   )
 }

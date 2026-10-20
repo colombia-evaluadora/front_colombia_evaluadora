@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 import type { AccionUi, DatosTabla, EstadoAccionPendiente, Faltante } from "@/features/assistant/api/types"
+import { fechaServidor } from "@/features/assistant/lib/fecha-servidor"
 import { Markdown } from "@/features/assistant/components/markdown"
 import type { MensajeChat } from "@/features/assistant/hooks/use-asistente"
 import { describirAccion, esRutaInterna, type ResultadoAccion } from "@/features/assistant/lib/acciones-ui"
@@ -224,7 +225,7 @@ function AccionesUi({ acciones, resultados }: { acciones: AccionUi[]; resultados
 }
 
 function expiraLegible(expira: string): string {
-  const fecha = new Date(expira)
+  const fecha = fechaServidor(expira)
   return Number.isNaN(fecha.getTime()) ? "" : format(fecha, "HH:mm")
 }
 
@@ -250,8 +251,8 @@ function TarjetaConfirmacion({
 }) {
   const accion = mensaje.respuesta!.accionPendiente!
   const estado = mensaje.estadoAccion ?? "PENDIENTE"
-  const vencida = new Date(accion.expira).getTime() < Date.now()
-  const pendiente = estado === "PENDIENTE" && !vencida && puedeAccionar
+  // La vigencia la decide el servidor (410 al confirmar), no el reloj local.
+  const pendiente = estado === "PENDIENTE" && puedeAccionar
   // Estado real del backend (historial); en vivo siempre es PENDIENTE.
   const etiquetaFinal = accion.estado && accion.estado !== "PENDIENTE" ? ETIQUETA_ESTADO_ACCION[accion.estado] : null
   const hora = expiraLegible(accion.expira)
@@ -268,7 +269,6 @@ function TarjetaConfirmacion({
         ) : (
           estado === "RESUELTA" && <Badge variant="soft" color="muted">Resuelta</Badge>
         )}
-        {estado === "PENDIENTE" && vencida && <Badge variant="soft" color="muted">Vencida</Badge>}
       </div>
       <p className="text-sm whitespace-pre-wrap">{accion.resumen}</p>
       {pendiente && hora && <p className="text-xs text-muted-foreground">Disponible hasta las {hora}.</p>}

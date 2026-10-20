@@ -12,6 +12,9 @@ import {
   type QueueBanner,
 } from "@/lib/offline/banner-message"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { useOfflineMissingData } from "@/lib/offline/missing-data"
+import { OFFLINE_MISSING_DATA_BANNER } from "@/lib/offline/offline-messages"
+import { isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
 import { useOutboxSummary } from "@/lib/offline/outbox/hooks"
 import { outboxWindow } from "@/lib/offline/outbox/policy"
 import { getOutboxUser } from "@/lib/offline/outbox/store"
@@ -103,6 +106,11 @@ export function OfflineBanner() {
   })
   const connectivityMessage = visible ? getOfflineBannerMessage(state, pathname) : null
   const isOffline = state.status === "offline"
+  // Red de seguridad de las cargas infinitas: sin red, si la pantalla usa una
+  // query que no tiene datos guardados, se dice acá aunque la vista no pinte
+  // su propio aviso. En una vista solo en línea ya lo dice el empty state.
+  const missingData = useOfflineMissingData()
+  const missingLine = visible && isOffline && missingData && !isOnlineOnlyPath(pathname)
   const pendientesAction =
     summary.total > 0 ? { label: `Ver pendientes (${summary.total})`, href: "/app/pendientes" } : undefined
 
@@ -139,6 +147,11 @@ export function OfflineBanner() {
             </Link>
           )}
         </div>
+      )}
+      {missingLine && (
+        <p data-slot="offline-missing-data" className="bg-navy-22 px-4 pb-2 text-sm text-navy">
+          {OFFLINE_MISSING_DATA_BANNER}
+        </p>
       )}
     </div>
   )

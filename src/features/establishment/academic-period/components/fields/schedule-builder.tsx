@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { MinusIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -139,11 +139,13 @@ export const ScheduleBuilder = forwardRef<
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  // Snapshot del horario tal como quedó guardado — compararlo contra el
-  // estado actual es lo que decide si el botón "Guardar" debe mostrarse.
+  // Snapshot guardado: decide si se muestra "Guardar".
   const savedSnapshotRef = useRef<string>("{}")
 
   const schedule = schedulesByGroup[gradeGroup] ?? {}
+
+  // Una sola serialización por cambio del horario (no en cada dragover).
+  const currentSnapshot = useMemo(() => JSON.stringify(schedulesByGroup), [schedulesByGroup])
 
   const { data: horarioEntries } = useHorarioQuery(gradeId)
   useEffect(() => {
@@ -151,18 +153,16 @@ export const ScheduleBuilder = forwardRef<
     const byGroup = aSchedulesPorGrupo(horarioEntries)
     const incoming = JSON.stringify(byGroup)
     if (incoming === savedSnapshotRef.current) return
-    // Se rehidrata cada vez que el backend trae celdas distintas -- en preescolar
-    // el horario lo genera él solo al guardar el plan de estudio (V437) -- pero
-    // nunca se pisa lo que el usuario tenga sin guardar.
-    if (JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current) return
+    // Se rehidrata si el backend cambia (V437) sin pisar cambios sin guardar.
+    if (currentSnapshot !== savedSnapshotRef.current) return
     setSchedulesByGroup(byGroup)
     savedSnapshotRef.current = incoming
-  }, [horarioEntries, schedulesByGroup])
+  }, [horarioEntries, currentSnapshot])
 
-  const isDirty = JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current
+  const isDirty = currentSnapshot !== savedSnapshotRef.current
 
   const updateHorario = useUpdateHorario()
-  // Fase 4 offline: el horario se consulta sin red; limpiar y guardar son solo en línea.
+  // Offline: el horario se consulta sin red; limpiar y guardar son solo en línea.
   const soloEnLinea = useOnlineOnly()
 
   const subjectsById = Object.fromEntries(subjects.map((s) => [s.id, s]))
@@ -201,9 +201,6 @@ export const ScheduleBuilder = forwardRef<
     })
   }
 
-  // Acta 19-sep-2026: si el automático (o el usuario) llenó el horario y no
-  // convence, hay que poder borrarlo entero de una — antes solo se podía
-  // quitar bloque por bloque.
   function clearAllSlots() {
     if (!gradeGroup) return
     setSchedulesByGroup((prev) => ({ ...prev, [gradeGroup]: {} }))
@@ -259,7 +256,7 @@ export const ScheduleBuilder = forwardRef<
 
   async function saveSchedule(id: number) {
     await updateHorario.mutateAsync({ gradeId: id, entries: buildScheduleEntries() })
-    savedSnapshotRef.current = JSON.stringify(schedulesByGroup)
+    savedSnapshotRef.current = currentSnapshot
   }
 
   async function handleSaveClick() {

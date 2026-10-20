@@ -1,54 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
 import { invalidateCampuses } from "@/features/establishment/campuses/api/mutations/invalidate-campuses"
 import type { MutationConfig } from "@/lib/react-query"
+import {
+  createBulkDeleteFn,
+  summarizeEntityBulkDelete,
+  type BulkDeleteEntityResult,
+  type BulkDeleteEntityRow,
+  type BulkDeleteEntitySummary,
+} from "@/features/establishment/shared/api/bulk-delete"
 
 // Una fila por id, sin envelope (contrato asumido igual al bulk de funcionarios).
-export interface BulkDeleteCampusRow {
-  pk_sede: string
-  status: string
-}
+export type BulkDeleteCampusRow = BulkDeleteEntityRow<"pk_sede">
+export type BulkDeleteCampusResult = BulkDeleteEntityResult<"pk_sede">
+export type BulkDeleteCampusSummary = BulkDeleteEntitySummary
 
-export interface BulkDeleteCampusResult {
-  rows: BulkDeleteCampusRow[]
-}
-
-/** Real: PUT con `{ pks }` (borrado lógico), no DELETE con array plano. */
-function bulkDeleteCampuses(ids: number[]): Promise<BulkDeleteCampusResult> {
-  if (env.ENABLE_API_MOCKING) {
-    // `api.delete(url, body)` no existe en la firma estándar de axios.
-    return api.request<BulkDeleteCampusResult>({
-      method: "DELETE",
-      url: "/establishments/campuses/bulk-delete",
-      data: ids,
-    }) as unknown as Promise<BulkDeleteCampusResult>
-  }
-  return api.put("/eval-col/establecimientos/sedes/bulk-delete", { pks: ids })
-}
-
-export interface BulkDeleteCampusSummary {
-  succeededCount: number
-  failed: { id: string; reason: string }[]
-}
+/** Real: PUT con `{ pks }` (borrado lógico). */
+const bulkDeleteCampuses = createBulkDeleteFn<BulkDeleteCampusResult>({
+  mockUrl: "/establishments/campuses/bulk-delete",
+  realUrl: "/eval-col/establecimientos/sedes/bulk-delete",
+  realMethod: "put",
+})
 
 export function summarizeCampusBulkDelete(
   result: BulkDeleteCampusResult
 ): BulkDeleteCampusSummary {
-  const failed: BulkDeleteCampusSummary["failed"] = []
-  let succeededCount = 0
-  for (const row of result.rows) {
-    if (row.status === "eliminado") {
-      succeededCount += 1
-    } else {
-      const reason = row.status.startsWith("error:")
-        ? row.status.slice("error:".length)
-        : row.status
-      failed.push({ id: row.pk_sede, reason })
-    }
-  }
-  return { succeededCount, failed }
+  return summarizeEntityBulkDelete(result, "pk_sede")
 }
 
 interface UseBulkDeleteOptions {
