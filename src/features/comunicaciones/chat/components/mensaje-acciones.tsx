@@ -1,3 +1,4 @@
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 
 import {
@@ -44,7 +45,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
   return (
     <>
       <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
-        <BotonReaccionar mensaje={m} />
+        {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
         {extra}
         <Accion etiqueta="Editar mensaje" onClick={() => setEditando(true)}>
           <PencilSimpleIcon className="size-4.5" />

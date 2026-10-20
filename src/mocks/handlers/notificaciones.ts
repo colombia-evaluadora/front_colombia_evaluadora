@@ -2,6 +2,7 @@ import { delay, http, HttpResponse } from "msw"
 
 import type { NotificacionesPageRow, PreferenciasPayload } from "@/features/notificaciones/api/types"
 import { horarioSilenciosoDb, notificacionesDb, preferenciasTiposDb } from "@/mocks/db/notificaciones"
+import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 
 /**
  * Mock del centro de notificaciones (`notification-service`, sin backend
@@ -10,7 +11,12 @@ import { horarioSilenciosoDb, notificacionesDb, preferenciasTiposDb } from "@/mo
  */
 const RUTA = (path = "") => `*/api/notificaciones${path}`
 
-const visibles = () => notificacionesDb.filter((n) => !n.archivada)
+// Las filas con `usuario` (avisos del chat multiusuario, `comunicaciones-grupos`) solo las ve esa
+// persona; las demás son del fixture y las ve cualquiera.
+const visibles = (request?: Request) => {
+  const email = request ? usuarioDe(request)?.email : undefined
+  return notificacionesDb.filter((n) => !n.archivada && (!n.usuario || n.usuario === email))
+}
 
 function buscar(id: unknown) {
   return notificacionesDb.find((n) => n.id === id && !n.archivada)
@@ -19,9 +25,9 @@ function buscar(id: unknown) {
 const noEncontrada = () => HttpResponse.json({ message: "La notificación no existe." }, { status: 404 })
 
 export const notificacionesHandlers = [
-  http.get(RUTA("/contador"), async () => {
+  http.get(RUTA("/contador"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ no_leidas: visibles().filter((n) => !n.leida_en).length })
+    return HttpResponse.json({ no_leidas: visibles(request).filter((n) => !n.leida_en).length })
   }),
 
   http.post(RUTA("/leer-todas"), async ({ request }) => {
@@ -72,7 +78,7 @@ export const notificacionesHandlers = [
     const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 30, 1), 100)
     const cursor = url.searchParams.get("cursor")
 
-    let rows = visibles()
+    let rows = visibles(request)
     if (categoria) rows = rows.filter((n) => n.categoria === categoria)
     if (estado === "no-leidas") rows = rows.filter((n) => !n.leida_en)
     if (estado === "leidas") rows = rows.filter((n) => n.leida_en)

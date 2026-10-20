@@ -56,7 +56,7 @@ export function ChatHeader({
       <button
         type="button"
         onClick={() => setMiembros(true)}
-        disabled={!puedeGestionar}
+        disabled={c.tipo === "DIRECTO" ? !puedeGestionar : false}
         aria-label={`Ver los ${formatoMiembros(c.totalMiembros)} miembros`}
         title="Ver miembros"
         className="ml-auto flex shrink-0 items-center gap-2 rounded-full py-1 pr-2 pl-1 hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none lg:ml-2"
@@ -75,7 +75,9 @@ export function ChatHeader({
           <span className="sr-only"> miembros</span>
         </span>
       </button>
-      {puedeGestionar && <MiembrosDialog conversacion={c} open={miembros} onClose={() => setMiembros(false)} />}
+      {(puedeGestionar || c.tipo === "GRUPO" || c.tipo === "CANAL") && (
+        <MiembrosDialog conversacion={c} open={miembros} onClose={() => setMiembros(false)} />
+      )}
 
       <ConversacionAcciones conversacion={c} variante="encabezado" activa onSalida={onVolver} />
     </header>
