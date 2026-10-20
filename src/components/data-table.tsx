@@ -366,6 +366,8 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
   const hideableColumns = table
     .getAllColumns()
     .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+  // La última visible no se puede ocultar (useDataTable también lo impide).
+  const visibles = hideableColumns.filter((column) => column.getIsVisible()).length
 
   return (
     <DropdownMenu>
@@ -382,6 +384,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
             <DropdownMenuCheckboxItem
               key={column.id}
               checked={column.getIsVisible()}
+              disabled={visibles === 1 && column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
             >
               {column.columnDef.meta?.label ?? column.id}
