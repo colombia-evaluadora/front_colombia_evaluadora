@@ -45,13 +45,29 @@ export function SelectorVotantes({
   const marcados = lista.filter((v) => seleccion.has(v.id)).length
   const todos = lista.length > 0 && marcados === lista.length
 
+  // Grupo de origen de cada persona elegida: arma el resumen "Para quién".
+  const [grupoDe, setGrupoDe] = useState<Map<number, string>>(() => new Map())
+
   const cambiar = (ids: number[], marcar: boolean) => {
     const s = new Set(seleccion)
+    const g = new Map(grupoDe)
     for (const id of ids) {
-      if (marcar) s.add(id)
-      else s.delete(id)
+      if (marcar) {
+        s.add(id)
+        if (filtro && !g.has(id)) g.set(id, filtro.valor)
+      } else s.delete(id)
     }
+    setGrupoDe(g)
     onCambio(s)
+  }
+
+  const quitarGrupo = (grupo: string) =>
+    cambiar([...seleccion].filter((id) => (grupoDe.get(id) ?? "Otros") === grupo), false)
+
+  const resumen = new Map<string, number>()
+  for (const id of seleccion) {
+    const g = grupoDe.get(id) ?? "Otros"
+    resumen.set(g, (resumen.get(g) ?? 0) + 1)
   }
 
   const valores = grupoActivo === "GRADO" ? opciones.data?.grados : opciones.data?.funcionarios
@@ -200,6 +216,24 @@ export function SelectorVotantes({
         <p role="alert" className="text-sm text-red">
           {mensajeInvalido}
         </p>
+      )}
+      {resumen.size > 0 && (
+        <div aria-label="Para quién" className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium">Para quién:</span>
+          {[...resumen].map(([grupo, n]) => (
+            <span key={grupo} className="flex items-center gap-1 rounded-full border bg-muted/40 py-0.5 pr-1 pl-3">
+              {grupo} ({n})
+              <button
+                type="button"
+                aria-label={`Quitar ${grupo}`}
+                onClick={() => quitarGrupo(grupo)}
+                className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
       )}
       {seleccion.size > 0 && (
         <p className="text-sm text-muted-foreground">

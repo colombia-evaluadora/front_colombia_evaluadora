@@ -119,6 +119,11 @@ export function EleccionResultados({
       aria-label={`Resultados de ${e.nombre}`}
       className="mb-4 rounded-xl border bg-card p-3 md:p-4"
     >
+      {finalizada && !e.esCreador && (
+        <h3 className="mb-1 font-semibold">
+          Resultados finales{e.yaVoto ? " · Tu voto quedó registrado (es secreto)" : ""}
+        </h3>
+      )}
       <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
         <ArrowCounterClockwiseIcon aria-hidden className="size-3.5" />
         Actualizado hace {segundos} {segundos === 1 ? "segundo" : "segundos"}
@@ -132,6 +137,8 @@ export function EleccionResultados({
             {porcentaje(pendientes, e.totalHabilitados)}%)
           </dd>
         </div>
+        {/* Solo el creador recibe cuántos abrieron el canal; a los votantes les llega 0. */}
+        {e.esCreador && (
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium">Visibilidad del canal:</dt>
           <dd className="text-muted-foreground">
@@ -139,6 +146,7 @@ export function EleccionResultados({
             {Math.max(0, e.totalHabilitados - e.vieronCanal)}
           </dd>
         </div>
+        )}
       </dl>
 
       {visibles ? (
