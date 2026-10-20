@@ -388,7 +388,7 @@ function SuperadministradorForm({
                     label="Correo electrónico"
                     required
                     type="email"
-                    maxLength={254}
+                    maxLength={120}
                     autoComplete="off"
                     transform={toEmailInput}
                     className="sm:col-span-2"

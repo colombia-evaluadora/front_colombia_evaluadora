@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { FormDisabledProvider, useAppForm } from "@/lib/forms"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { toSafeTextInput } from "@/lib/text-input"
 
 import { useEstadoCriterioPrioridad } from "@/features/administration/criterios-prioridad/api/mutations/estado-criterio-prioridad"
 import { useSaveCriterioPrioridad } from "@/features/administration/criterios-prioridad/api/mutations/save-criterio-prioridad"
@@ -241,7 +242,13 @@ function CriterioForm({
           <FormDisabledProvider disabled={soloLectura}>
             <form.AppField name="nombre">
               {(f) => (
-                <f.TextField label="Nombre" required maxLength={80} placeholder="Ej. Estrato" />
+                <f.TextField
+                    label="Nombre"
+                    required
+                    maxLength={80}
+                    transform={(v) => toSafeTextInput(v, 80)}
+                    placeholder="Ej. Estrato"
+                  />
               )}
             </form.AppField>
             <form.AppField name="descripcion">
@@ -249,6 +256,7 @@ function CriterioForm({
                 <f.TextareaField
                   label="Descripción"
                   maxLength={300}
+                  transform={(v) => toSafeTextInput(v, 300)}
                   rows={2}
                   placeholder="Para qué sirve el criterio (opcional, de 10 a 300 caracteres)"
                 />

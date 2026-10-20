@@ -183,6 +183,8 @@ interface TextareaFieldProps extends BaseFieldProps {
   showCounter?: boolean
   rows?: number
   textareaClassName?: string
+  /** Sanitizador de `onChange`, como en `TextField` (p. ej. `toSafeTextInput`). */
+  transform?: (value: string) => string
 }
 
 export function TextareaField({
@@ -191,6 +193,7 @@ export function TextareaField({
   showCounter = true,
   rows,
   textareaClassName,
+  transform,
   ...frame
 }: TextareaFieldProps) {
   const { field, value, invalid, errors, disabled } = useRegisteredField<string>(frame.disabled)
@@ -219,7 +222,7 @@ export function TextareaField({
         className={cn(variant === "outlined" && TEXTAREA_OUTLINED, textareaClassName)}
         value={value ?? ""}
         onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(e.target.value)}
+        onChange={(e) => field.handleChange(transform ? transform(e.target.value) : e.target.value)}
         aria-invalid={invalid}
       />
     </FieldFrame>

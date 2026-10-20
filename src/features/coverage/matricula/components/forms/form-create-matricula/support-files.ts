@@ -15,6 +15,8 @@ export interface SupportFileFieldConfig {
   fieldId: string
   label: string
   multiple?: boolean
+  /** Solo imágenes (la foto); el resto admite también PDF. */
+  soloImagen?: boolean
 }
 
 export const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
@@ -25,11 +27,38 @@ export const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
     label: "Certificado de estudios del año anterior",
   },
   { key: "medicalCertificate", fieldId: "file-medical-certificate", label: "Certificado médico del estudiante" },
-  { key: "studentPhoto", fieldId: "file-student-photo", label: "Foto del estudiante" },
+  { key: "studentPhoto", fieldId: "file-student-photo", label: "Foto del estudiante", soloImagen: true },
   { key: "otherDocuments", fieldId: "file-other-documents", label: "Otros documentos relevantes", multiple: true },
 ]
 
 export const MATRICULA_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
+// Formatos de los archivos de soporte: los mismos que ya piden los soportes de
+// cambio de sede y de grado (PDF, JPG y PNG, 25 MB). El file-service no
+// restringe el tipo, así que la regla vive en el formulario.
+const FORMATOS = {
+  documento: { extensiones: ["pdf", "jpg", "jpeg", "png"], texto: "PDF, JPG o PNG" },
+  imagen: { extensiones: ["jpg", "jpeg", "png"], texto: "JPG o PNG" },
+} as const
+
+const formatoDe = (config: SupportFileFieldConfig) => FORMATOS[config.soloImagen ? "imagen" : "documento"]
+
+/** Para el `accept` del selector de archivos: ".pdf,.jpg,.jpeg,.png". */
+export const acceptDe = (config: SupportFileFieldConfig) =>
+  formatoDe(config).extensiones.map((ext) => `.${ext}`).join(",")
+
+/** La indicación que se muestra en cada campo: "PDF, JPG o PNG · máximo 25 MB". */
+export const formatosTexto = (config: SupportFileFieldConfig) => `${formatoDe(config).texto} · máximo 25 MB`
+
+/** Motivo por el que se rechaza el archivo (se muestra tras su nombre), o null si se acepta. */
+export function validarArchivoSoporte(file: File, config: SupportFileFieldConfig): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
+  if (!(formatoDe(config).extensiones as readonly string[]).includes(extension)) {
+    return `no es un formato permitido: use ${formatoDe(config).texto}`
+  }
+  if (file.size > MATRICULA_MAX_FILE_SIZE_BYTES) return "supera el máximo permitido de 25 MB"
+  return null
+}
 
 export function fileKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`

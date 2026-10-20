@@ -60,7 +60,9 @@ export function superadministradorFormSchema(esNumerico: (pkTipo: number) => boo
         .string()
         .trim()
         .min(1, required("El correo electrónico"))
-        .max(254, maxLength(254, "El correo electrónico"))
+        // 8 a 120: 120 es TUSUARIO.CORREO_ELECTRONICO (no los 254 de la Sección 7); V327 valida lo mismo.
+        .min(8, minLength(8, "El correo electrónico"))
+        .max(120, maxLength(120, "El correo electrónico"))
         .email(invalidEmail()),
       activo: z.boolean(),
     })

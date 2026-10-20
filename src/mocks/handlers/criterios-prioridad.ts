@@ -25,10 +25,21 @@ interface Body {
   HABILITADO?: boolean
 }
 
+/** Como `fn_texto_comparable` (V327): sin tildes ni mayúsculas, espacios colapsados; la ñ se conserva. */
+const comparable = (texto: string) =>
+  texto
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/ñ/gi, "\u0000")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\u0000/g, "ñ")
+    .toLowerCase()
+
 function validar(body: Body, pkExcluir?: number): string | null {
   const nombre = body.NOMBRE?.trim() ?? ""
   if (nombre.length < 4 || nombre.length > 80) return "El nombre del criterio debe tener entre 4 y 80 caracteres."
-  if (criteriosDb.some((c) => c.pkCriterio !== pkExcluir && c.nombre.toLowerCase() === nombre.toLowerCase()))
+  if (criteriosDb.some((c) => c.pkCriterio !== pkExcluir && comparable(c.nombre) === comparable(nombre)))
     return "El nombre ya existe en otro criterio de prioridad."
   const campo = camposDb.find((c) => c.pkCampo === body.CAMPO)
   if (!campo) return "Seleccione el campo que evalúa el criterio."
