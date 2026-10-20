@@ -212,7 +212,15 @@ function ChatContent() {
           {vista === "archivos" ? (
             <ArchivosView onVolver={() => seleccionar(undefined)} />
           ) : vista === "borradores" ? (
-            <BorradoresView onVolver={() => seleccionar(undefined)} onEditar={editarBorrador} />
+            <BorradoresView
+              onVolver={() => seleccionar(undefined)}
+              onEditar={editarBorrador}
+              onAbrirEnviado={(e) =>
+                navigate({
+                  search: (prev) => ({ ...prev, canal: e.conversacionId, vista: undefined, mensaje: e.mensajeId ?? undefined }),
+                })
+              }
+            />
           ) : activa ? (
             <>
               <ChatHeader

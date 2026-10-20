@@ -333,3 +333,17 @@ export interface Votante {
   documento: string
   numero: number
 }
+
+// Bandeja "Enviados": DIRECTO/CANAL son mensajes; el resto, actividades publicadas.
+export type TipoEnviado = "DIRECTO" | "CANAL" | "COMUNICADO" | "ENCUESTA" | "ELECCION" | "EVALUACION"
+
+export interface Enviado {
+  clave: string
+  tipo: TipoEnviado
+  conversacionId: number
+  conversacionNombre: string
+  // null en actividades: se abre el canal.
+  mensajeId: number | null
+  texto: string
+  fecha: string
+}

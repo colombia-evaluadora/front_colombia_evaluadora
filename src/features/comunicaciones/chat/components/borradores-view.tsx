@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
-import type { Borrador, EstadoBorrador } from "@/features/comunicaciones/chat/api/types"
+import type { Borrador, Enviado, EstadoBorrador } from "@/features/comunicaciones/chat/api/types"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import {
   useEliminarBorrador,
@@ -27,6 +27,7 @@ import {
   TrashIcon,
   PaperPlaneTiltIcon,
 } from "@/components/ui/icons"
+import { EnviadosLista } from "@/features/comunicaciones/chat/components/enviados-lista"
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
 
 const PESTANAS: Array<{ estado: EstadoBorrador; etiqueta: string; vacio: string }> = [
@@ -57,9 +58,11 @@ interface BorradoresViewProps {
   onVolver: () => void
   // Abre el canal con el texto del borrador en el editor.
   onEditar: (borrador: Borrador) => void
+  // Abre la conversación (y el mensaje) de un enviado.
+  onAbrirEnviado: (enviado: Enviado) => void
 }
 
-export function BorradoresView({ onVolver, onEditar }: BorradoresViewProps) {
+export function BorradoresView({ onVolver, onEditar, onAbrirEnviado }: BorradoresViewProps) {
   const { notify } = useNotify()
   const { data = [], isPending, isError, refetch } = useBorradoresQuery()
   const [pestana, setPestana] = useState<EstadoBorrador>("BORRADOR")
@@ -96,14 +99,16 @@ export function BorradoresView({ onVolver, onEditar }: BorradoresViewProps) {
               )}
             >
               {p.etiqueta}
-              {total > 0 && <span className="text-xs text-muted-foreground tabular-nums">{total}</span>}
+              {total > 0 && p.estado !== "ENVIADO" && <span className="text-xs text-muted-foreground tabular-nums">{total}</span>}
             </button>
           )
         })}
       </div>
 
       <div role="tabpanel" aria-label={actual?.etiqueta} className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5">
-        {isPending ? (
+        {pestana === "ENVIADO" ? (
+          <EnviadosLista onAbrir={onAbrirEnviado} />
+        ) : isPending ? (
           <div className="space-y-2" aria-busy>
             {Array.from({ length: 2 }, (_, i) => (
               <Skeleton key={i} className="h-17 w-full" />

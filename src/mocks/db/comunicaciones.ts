@@ -86,6 +86,8 @@ export const conversaciones: Conversacion[] = [
     actividadAbierta: true,
     esBot: false,
     totalMiembros: 860,
+    // Igual que la elección del mock (`db/comunicaciones-elecciones.ts`): la creó el usuario.
+    esCreador: true,
     miembrosDestacados: MIEMBROS,
     silenciadoHasta: null,
     archivada: false,

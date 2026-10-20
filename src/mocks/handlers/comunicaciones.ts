@@ -507,6 +507,48 @@ export const comunicacionesArchivosHandlers = [
     return HttpResponse.json({ rows: archivos })
   }),
 
+  // Mismo contrato que comms-service: mensajes propios + actividades creadas por el usuario.
+  http.get(URL("enviados"), async ({ request }) => {
+    await delay(200)
+    const tipo = new globalThis.URL(request.url).searchParams.get("tipo")
+    const ACTIVIDAD: Partial<Record<CategoriaCanal, "COMUNICADO" | "ENCUESTA" | "ELECCION" | "EVALUACION">> = {
+      ANUNCIO: "COMUNICADO",
+      ENCUESTA: "ENCUESTA",
+      VOTACION: "ELECCION",
+      EXAMEN: "EVALUACION",
+    }
+    const propios = mensajes
+      .filter((m) => m.esPropio && !m.sistema && !m.votacion)
+      .flatMap((m) => {
+        const c = conversaciones.find((x) => x.id === m.conversacionId)
+        if (!c || c.tipo === "FORO") return []
+        return [{
+          clave: `M${m.id}`,
+          tipo: c.tipo === "DIRECTO" ? "DIRECTO" : "CANAL",
+          conversacionId: c.id,
+          conversacionNombre: c.nombre,
+          mensajeId: m.id,
+          texto: m.texto || (m.adjunto ? `Adjunto: ${m.adjunto.nombre}` : ""),
+          fecha: m.fecha,
+        }]
+      })
+    const actividades = conversaciones
+      .filter((c) => c.esCreador && ACTIVIDAD[c.categoria])
+      .map((c) => ({
+        clave: `A${c.id}`,
+        tipo: ACTIVIDAD[c.categoria],
+        conversacionId: c.id,
+        conversacionNombre: c.nombre,
+        mensajeId: null,
+        texto: "",
+        fecha: mensajes.find((m) => m.conversacionId === c.id)?.fecha ?? new Date().toISOString(),
+      }))
+    const rows = [...propios, ...actividades]
+      .filter((e) => !tipo || e.tipo === tipo)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    return HttpResponse.json({ rows })
+  }),
+
   http.get(URL("borradores"), async () => {
     await delay(250)
     return HttpResponse.json({ rows: borradores })
