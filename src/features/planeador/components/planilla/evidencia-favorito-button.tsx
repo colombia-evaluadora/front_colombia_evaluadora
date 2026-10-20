@@ -1,3 +1,4 @@
+import { useIsMutating } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -8,7 +9,10 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 
 import { useSoportesEstudianteQuery } from "@/features/planeador/api/query/use-soportes-estudiante-query"
-import { useMarcarFavoritoSoporteMutation } from "@/features/planeador/api/mutations/use-observacion-soporte"
+import {
+  favoritoMutationKey,
+  useMarcarFavoritoSoporteMutation,
+} from "@/features/planeador/api/mutations/use-observacion-soporte"
 
 interface EvidenciaFavoritoButtonProps {
   pkTactividadEstudiante: number
@@ -25,8 +29,10 @@ export function EvidenciaFavoritoButton({
   const { notify } = useNotify()
   const { data: soportes } = useSoportesEstudianteQuery(pkTactividadEstudiante)
   const marcar = useMarcarFavoritoSoporteMutation({
+    pkTactividadEstudiante,
     mutationConfig: { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
   })
+  const marcandoOtra = useIsMutating({ mutationKey: favoritoMutationKey(pkTactividadEstudiante) }) > 0
 
   const esFavorito = soportes?.some((s) => s.pk === pkTactividadSoporte && s.esFavorito) ?? false
   const marcandoEsta = marcar.isPending && marcar.variables?.pkTactividadSoporte === pkTactividadSoporte
@@ -54,7 +60,7 @@ export function EvidenciaFavoritoButton({
           className="rounded-full"
           aria-label={etiqueta}
           aria-pressed={esFavorito}
-          disabled={soportes == null || marcar.isPending || soloEnLinea.disabled}
+          disabled={soportes == null || marcandoOtra || soloEnLinea.disabled}
           onClick={() =>
             marcar.mutate({ pkTactividadSoporte, pkTactividadEstudiante, esFavorito: !esFavorito })
           }
