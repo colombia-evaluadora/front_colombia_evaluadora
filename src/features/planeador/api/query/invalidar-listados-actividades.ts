@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
@@ -29,4 +30,7 @@ export function invalidarListadosActividades(
   if (options?.detalleId != null) {
     queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(options.detalleId) })
   }
+  // Editar, eliminar o importar actividades mueve la nota de la asignatura:
+  // la tabla y las alertas de Informes (cambios y planillas pendientes).
+  invalidarInformes(queryClient)
 }

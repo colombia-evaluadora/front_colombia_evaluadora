@@ -7,6 +7,7 @@ import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 /**
  * Regla 62: marca No presentó o lo quita (vuelve a Pendiente):
@@ -31,7 +32,11 @@ registerOutboxHandler<EstadoResultadoInput>({
       { ESTADO: input.estado },
       { headers: outboxHeaders(ctx), background: ctx.background },
     ),
-  invalidates: (p) => [planeadorKeys.actividad.calificaciones(p.actividadId), planeadorKeys.planilla.calificaciones.all],
+  invalidates: (p) => [
+    planeadorKeys.actividad.calificaciones(p.actividadId),
+    planeadorKeys.planilla.calificaciones.all,
+    ["informes"],
+  ],
   describe: (p) => ({
     titulo: p.estado === "NO_PRESENTO" ? "Marcar No presentó" : "Quitar No presentó",
     detalle: `Actividad ${p.actividadId}`,
@@ -57,6 +62,8 @@ export function useEstadoResultadoMutation(
       const [, input] = args
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(input.actividadId) })
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       options.mutationConfig?.onSuccess?.(...args)
     },
   })

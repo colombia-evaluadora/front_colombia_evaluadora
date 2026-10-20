@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client"
 import { unwrapRow, type RowsEnvelope } from "@/lib/response-envelope"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 interface SetEstudiantesInput {
   actividadId: number
@@ -94,6 +95,8 @@ export function useSetEstudiantesActividad({ mutationConfig }: UseSetEstudiantes
     mutationFn: (input: SetEstudiantesInput) => setEstudiantesActividad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(variables.actividadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

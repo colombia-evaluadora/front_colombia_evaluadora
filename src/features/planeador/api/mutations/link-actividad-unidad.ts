@@ -4,6 +4,7 @@ import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-reque
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 export interface LinkActividadInput {
   unidadId: number
@@ -67,6 +68,8 @@ export function useLinkActividadUnidad({ mutationConfig }: UseLinkActividadUnida
     mutationFn: (input: LinkActividadInput) => linkActividadUnidad(input),
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

@@ -4,6 +4,7 @@ import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-reque
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 // `PATCH`, no `DELETE` — mismo motor que el resto de soft-deletes del
 // Planeador. Sin body: el `:actividadId` en el path alcanza.
@@ -34,6 +35,8 @@ export function useUnlinkActividadUnidad({
     mutationFn: (actividadId: number) => unlinkActividadUnidad(actividadId),
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,
