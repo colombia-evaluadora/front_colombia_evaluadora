@@ -20,7 +20,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon, StarFillIcon } from "@/components/ui/icons"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -50,8 +50,7 @@ interface ObservacionSheetProps {
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   onGuardar: (fila: FilaInforme, texto: string, borrador: Borrador | null) => void
-  /** Con motivo (sin permiso de edición, rol de solo lectura o período
-   *  cerrado) la hoja solo muestra: sin generar, guardar ni eliminar. */
+  /** Sin permiso, rol de solo lectura o período cerrado: la hoja solo muestra. */
   soloLecturaMotivo?: string | null
 }
 
@@ -67,30 +66,20 @@ export function ObservacionSheet({
   const { notify } = useNotify()
   const [texto, setTexto] = React.useState("")
   const [borrador, setBorrador] = React.useState<Borrador | null>(null)
-  // Mismo patrón que `ObservacionEstudianteSheet` en Planeador: clic en la
-  // miniatura abre la misma imagen más grande en un diálogo aparte.
   const [evidenciaAmpliada, setEvidenciaAmpliada] = React.useState<EvidenciaInforme | null>(null)
-  // Se pide cuando `handleGenerar` choca con un texto que el docente ya
-  // modificó a mano (409): confirmar acá es lo que arma el reintento con
-  // `sobrescribir: true`.
+  // 409 al generar: el docente ya editó el texto; confirmar reintenta con `sobrescribir`.
   const [confirmarSobrescribir, setConfirmarSobrescribir] = React.useState(false)
   const generar = useGenerarObservacionMutation()
-  // Fase 4 offline: guardar a mano se encola en la outbox, pero generar con IA
-  // necesita el modelo del servidor y sigue siendo solo en línea.
+  // Guardar se encola offline; generar con IA es solo en línea.
   const soloEnLinea = useOnlineOnly("Generar con IA necesita conexión. Puedes escribir la observación a mano.")
 
-  // La fila Final tiene el mismo ciclo que un período —generar, revisar,
-  // guardar— pero contra otra tabla y otro endpoint: su borrador encadena los
-  // resúmenes YA consolidados, no las observaciones por actividad. El `null`
-  // como periodoId es lo que elige ese camino en las mutaciones.
+  // El Final resume los períodos consolidados; `periodoId: null` elige ese camino.
   const esFinal = fila?.modoPeriodo === "final"
   const periodoIdOnull = esFinal ? null : (fila?.periodoId ?? null)
-  // La IA ahora deja la observación guardada como BORRADOR: "Guardar" es la
-  // acción de revisión/aprobación que la habilita para el boletín.
+  // Lo de la IA queda en BORRADOR hasta que se guarde.
   const esBorradorIa = fila?.observacionEstado === "BORRADOR"
 
-  // Las evidencias del período; en el Final, las de todo el año. La cuenta ya
-  // viene en el listado, así que no se pide nada cuando no hay ninguna.
+  // En el Final, las de todo el año; sin evidencias no se pide nada.
   const evidencias = useEvidenciasInformeQuery(
     fila ? { matriculaId: fila.matriculaId, periodoId: esFinal ? null : fila.periodoId } : null,
     (fila?.evidencias ?? 0) > 0,
@@ -222,22 +211,32 @@ export function ObservacionSheet({
                 ) : (
                   <div className="flex flex-wrap items-start gap-2">
                     {(evidencias.data ?? []).map((evidencia) => (
-                      <button
-                        key={evidencia.id}
-                        type="button"
-                        className="block cursor-zoom-in rounded-md"
-                        aria-label="Ver evidencia en grande"
-                        onClick={() => setEvidenciaAmpliada(evidencia)}
-                      >
-                        <ArchivoImage
-                          archivoId={evidencia.archivoId}
-                          alt={
-                            evidencia.nombre ??
-                            `Evidencia de ${evidencia.actividadTitulo ?? fila?.nombreCompleto ?? ""}`
-                          }
-                          className="size-20"
-                        />
-                      </button>
+                      <div key={evidencia.id} className="relative">
+                        <button
+                          type="button"
+                          className="block cursor-zoom-in rounded-md"
+                          aria-label="Ver evidencia en grande"
+                          onClick={() => setEvidenciaAmpliada(evidencia)}
+                        >
+                          <ArchivoImage
+                            archivoId={evidencia.archivoId}
+                            alt={
+                              evidencia.nombre ??
+                              `Evidencia de ${evidencia.actividadTitulo ?? fila?.nombreCompleto ?? ""}`
+                            }
+                            className="size-20"
+                          />
+                        </button>
+                        {evidencia.esFavorito && (
+                          <span
+                            className="absolute -top-1.5 -left-1.5 inline-flex rounded-full bg-background p-0.5 shadow-sm"
+                            title="Evidencia favorita"
+                            aria-label="Evidencia favorita"
+                          >
+                            <StarFillIcon className="size-4 text-amber-400" />
+                          </span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

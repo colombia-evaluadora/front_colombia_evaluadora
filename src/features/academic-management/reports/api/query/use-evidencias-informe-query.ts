@@ -17,6 +17,7 @@ interface EvidenciaRow {
   fk_tactividad: number
   actividad_titulo: string | null
   observacion: string | null
+  es_favorito?: boolean | null
 }
 
 function toEvidencia(row: EvidenciaRow): EvidenciaInforme {
@@ -32,8 +33,18 @@ function toEvidencia(row: EvidenciaRow): EvidenciaInforme {
     actividadId: row.fk_tactividad,
     actividadTitulo: row.actividad_titulo,
     observacion: row.observacion,
+    esFavorito: row.es_favorito === true,
   }
 }
+
+/** Mismo orden que el boletín (V541). */
+function compararEvidencias(a: EvidenciaInforme, b: EvidenciaInforme) {
+  if (a.esFavorito !== b.esFavorito) return a.esFavorito ? -1 : 1
+  const porFecha = (b.fecha ?? "").localeCompare(a.fecha ?? "")
+  return porFecha !== 0 ? porFecha : b.id - a.id
+}
+
+export const evidenciasInformeAllKey = ["informes", "evidencias"] as const
 
 export interface EvidenciasInformeParams {
   matriculaId: number
@@ -42,24 +53,18 @@ export interface EvidenciasInformeParams {
 }
 
 export const evidenciasInformeQueryKey = (params: EvidenciasInformeParams) =>
-  ["informes", "evidencias", params] as const
+  [...evidenciasInformeAllKey, params] as const
 
 /**
- * `POST /informes/evidencias`. Las imágenes adjuntas a las observaciones de un
- * estudiante en un período.
- *
- * No se reutiliza `GET /planeador/actividades/estudiantes/:ID/soportes`, que
- * lee la misma tabla, por dos motivos independientes: su gate es
- * `PLANEADOR/VER` —quien mira informes puede no tener planeador y se comería
- * un 403 en una pantalla donde sí puede ver— y se pide por actividad, así que
- * serían N llamadas y habría que saber de antemano qué actividades hay.
+ * `POST /informes/evidencias`. No se usa el de soportes del planeador: pide
+ * gate `PLANEADOR/VER` y va por actividad, no por período.
  */
 async function fetchEvidencias(params: EvidenciasInformeParams): Promise<EvidenciaInforme[]> {
   const rows = await evalCol.postRows<EvidenciaRow>("/informes/evidencias", {
     FK_TMATRICULA: params.matriculaId,
     FK_TPERIODO_EVALUACION: params.periodoId,
   })
-  return rows.map(toEvidencia)
+  return rows.map(toEvidencia).sort(compararEvidencias)
 }
 
 export function useEvidenciasInformeQuery(
@@ -69,7 +74,7 @@ export function useEvidenciasInformeQuery(
   return useQuery({
     queryKey: params
       ? evidenciasInformeQueryKey(params)
-      : (["informes", "evidencias", "none"] as const),
+      : ([...evidenciasInformeAllKey, "none"] as const),
     queryFn: () => fetchEvidencias(params!),
     enabled: enabled && params !== null,
     staleTime: 1000 * 30,

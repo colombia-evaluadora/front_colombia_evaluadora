@@ -15,7 +15,7 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
-import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
+import { useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
@@ -27,7 +27,11 @@ import {
   ValidacionCoordinadorEstado,
 } from "@/features/planeador/components/validacion-coordinador"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
+import {
+  MENSAJE_RESULTADOS_SIN_SINCRONIZAR,
+  motivoNoEditable,
+  resultadosSinSincronizar,
+} from "@/features/planeador/lib/actividad-editable"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { buildEditarActividadSaga } from "@/features/planeador/offline/build-sagas"
 import { runSaga } from "@/features/planeador/offline/run-saga"
@@ -41,6 +45,9 @@ import {
 } from "@/features/planeador/offline/saga-messages"
 
 const FORM_ID = "editar-actividad-form"
+
+const MENSAJE_SIN_PERMISO_EDITAR =
+  "Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla."
 
 /**
  * Resumen en texto plano de `afectadosAdaptacion`/`avisosPiar` (Reglas
@@ -77,12 +84,20 @@ export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
 
+  // Regla 37: el bloqueo (`motivoNoEditable`) se decide con el detalle del
+  // servidor, no con el de la caché, que pudo quedar de antes de la primera
+  // calificación (hecha en el panel, en la planilla o en otro equipo). Con
+  // red, el formulario no se monta hasta que llega el detalle fresco; sin red
+  // (fetch en pausa) se usa el guardado.
   const {
     data: actividad,
     isPending,
     isError,
     error,
-  } = useActividadDetalleQuery(actividadId ? Number(actividadId) : undefined)
+    isFetchedAfterMount,
+    fetchStatus,
+  } = useActividadDetalleQuery(actividadId ? Number(actividadId) : undefined, { siempreAlMontar: true })
+  const verificandoBloqueo = !!actividad && !isFetchedAfterMount && fetchStatus === "fetching"
 
   if (!actividadId) {
     return (
@@ -106,7 +121,7 @@ export function PlaneadorEditarActividadPage() {
   return (
     <NoticeProvider>
       <EditarActividadPageContent
-        isPending={isPending}
+        isPending={isPending || verificandoBloqueo}
         isError={isError}
         error={error}
         actividad={actividad}
@@ -199,10 +214,19 @@ function EditarActividadPageContent({
   const [guardando, setGuardando] = useState(false)
   const escritura = useOfflineWritable("Necesitas conexión para editar actividades en este equipo.")
 
+  // Regla 37: con calificaciones, observaciones o "No presentó" (o siendo
+  // base de una recuperación) la actividad se ve entera pero no se guarda: el
+  // backend respondería 409 igual. Las calificaciones hechas sin red que
+  // esperan en la outbox también cuentan: el servidor todavía no las ve.
+  const ops = useOutboxOps()
+  const bloqueoEdicion =
+    motivoNoEditable(actividad) ??
+    (actividad && resultadosSinSincronizar(ops, actividad.id) > 0 ? MENSAJE_RESULTADOS_SIN_SINCRONIZAR : undefined)
+
   async function handleSubmit(values: Actividad) {
-    // Regla 37: la actividad ya no se edita (el form ya está en solo lectura;
-    // esto es solo una red de seguridad por si llega a dispararse el submit).
-    if (motivoNoEditable(actividad)) return
+    // El form ya está en solo lectura; esto es la red de seguridad por si
+    // llega a dispararse el submit.
+    if (bloqueoEdicion) return
     if (!actividad || guardando) return
     setGuardando(true)
     let run: Awaited<ReturnType<typeof runSaga>>
@@ -255,9 +279,6 @@ function EditarActividadPageContent({
   // ya cargado); ahora vive en el footer sticky junto al "Guardar".
   const mostrarValidacion =
     !isPendingCompleto && !isLoadingPermiso && puedeAbrir && !!actividadParaForm && !!actividad?.requiereValidacion
-  // Regla 37: con calificaciones u observaciones la actividad se ve entera
-  // pero no se guarda (el backend respondería 23503 igual).
-  const bloqueoEdicion = motivoNoEditable(actividad)
   const formSoloLectura = soloLectura || !!bloqueoEdicion
   const mostrarGuardar = isDirty && !formSoloLectura
 
@@ -296,9 +317,7 @@ function EditarActividadPageContent({
         {!isPendingCompleto && !isLoadingPermiso && puedeAbrir && actividadParaForm && (
           <div className="flex flex-col gap-6">
             {soloLectura ? (
-              <p className="text-muted-foreground text-sm">
-                Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla.
-              </p>
+              <p className="text-muted-foreground text-sm">{MENSAJE_SIN_PERMISO_EDITAR}</p>
             ) : (
               bloqueoEdicion && (
                 <p role="status" className="rounded-sm border border-yellow-stroke bg-yellow-22 px-3 py-2 text-sm">
@@ -311,6 +330,7 @@ function EditarActividadPageContent({
               actividad={actividadParaForm}
               formId={FORM_ID}
               readOnly={formSoloLectura}
+              motivoSoloLectura={soloLectura ? MENSAJE_SIN_PERMISO_EDITAR : bloqueoEdicion}
               onDirtyChange={setIsDirty}
               onSubmit={handleSubmit}
             />

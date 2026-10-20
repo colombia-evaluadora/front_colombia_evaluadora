@@ -96,6 +96,11 @@ export interface UnidadActividad {
    *  sobre el total del grupo). `null` con cualquier otro método, o si
    *  todavía no se capturó. */
   notaMaxima: number | null
+  /** Regla 37: por qué la actividad ya no se edita (con calificaciones,
+   *  observaciones o "No presentó", o base de una recuperación), o
+   *  `undefined` si se puede. Bloquea su peso/puntaje en línea, "Editar" y
+   *  "Desvincular" en la tabla de la unidad. Ver `lib/actividad-editable.ts`. */
+  motivoNoEditable?: string
 }
 
 export interface UnidadTematica {

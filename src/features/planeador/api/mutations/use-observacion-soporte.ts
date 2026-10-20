@@ -9,12 +9,9 @@ import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { evidenciasInformeAllKey } from "@/features/academic-management/reports/api/query/use-evidencias-informe-query"
 
-/**
- * Adjuntar/quitar UNA evidencia de la observación de un estudiante
- * (`TACTIVIDAD_SOPORTE`, V461) — complementa `BODY.EVIDENCIAS` del `PUT
- * .../observar` (reemplazo completo) sin tocar los demás adjuntos.
- */
+/** Adjuntar/quitar UNA evidencia sin tocar las demás (V461). */
 export interface AgregarSoporteInput {
   pkTactividadEstudiante: number
   archivo: File
@@ -27,14 +24,8 @@ interface SoporteRow {
   pk_tactividad_soporte: number
 }
 
-/**
- * Va SIEMPRE por file-service (`/files/eval-col/...`, no `/eval-col/...`):
- * el campo `FK_TARCHIVO` está declarado `FILE:actividad` en el catálogo, así
- * que sube el binario, lo registra en TARCHIVO y reemplaza el campo por su
- * pk antes de reenviar — un solo paso, mismo patrón que los materiales de
- * apoyo (V426).
- */
-/** Op de la outbox: el archivo viaja como blob (clave `archivo`, §6.8). */
+/** Va por file-service, que sube el binario y reemplaza `FK_TARCHIVO` por su pk.
+ *  En la outbox el archivo viaja como blob (clave `archivo`). */
 interface AgregarSoportePayload {
   pkTactividadEstudiante: number
   fecha: string
@@ -53,8 +44,7 @@ registerOutboxHandler<AgregarSoportePayload>({
   // Misma entidad que calificar/observar: FIFO por celda.
   entityKey: (p) => `planilla:act-est:${p.pkTactividadEstudiante}`,
   async send(p: AgregarSoportePayload, ctx: SendCtx) {
-    // Multipart: el gateway no aplica Idempotency-Key (una respuesta perdida
-    // puede duplicar el adjunto; se quita a mano desde la observación).
+    // Multipart sin Idempotency-Key: una respuesta perdida puede duplicar el adjunto.
     const respuesta = await postMultipart<RowsEnvelope<SoporteRow> | SoporteRow>(
       `/eval-col/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/soportes`,
       { FECHA: p.fecha },
@@ -92,7 +82,10 @@ registerOutboxHandler<MarcarFavoritoSoporteInput>({
       { ES_FAVORITO: input.esFavorito },
       { headers: outboxHeaders(ctx), background: ctx.background },
     ),
-  invalidates: (p) => [planeadorKeys.actividadEstudiante.soportes(p.pkTactividadEstudiante)],
+  invalidates: (p) => [
+    planeadorKeys.actividadEstudiante.soportes(p.pkTactividadEstudiante),
+    evidenciasInformeAllKey,
+  ],
   describe: (p) => ({
     titulo: p.esFavorito ? "Marcar evidencia favorita" : "Quitar evidencia favorita",
     detalle: "",
@@ -139,8 +132,7 @@ export function useAgregarObservacionSoporteMutation({
 
 export interface QuitarSoporteInput {
   pkTactividadSoporte: number
-  /** Para invalidar la nota de ESE estudiante — el endpoint solo recibe el
-   *  pk del soporte, no el del estudiante. */
+  /** Solo para invalidar; el endpoint no lo recibe. */
   pkTactividadEstudiante: number
   /** `yyyy-MM-dd`, mismo gate de asistencia que agregar/observar. */
   fecha: string
@@ -192,23 +184,31 @@ async function marcarFavoritoSoporte(input: MarcarFavoritoSoporteInput): Promise
   return { queued: outcome.queued }
 }
 
+/** Una sola en vuelo por estudiante: dos a la vez chocan con el índice único (23505). */
+export const favoritoMutationKey = (pkTactividadEstudiante: number) =>
+  [...planeadorKeys.actividadEstudiante.soportes(pkTactividadEstudiante), "favorito"] as const
+
 interface UseMarcarFavoritoSoporteOptions {
+  pkTactividadEstudiante: number
   mutationConfig?: MutationConfig<typeof marcarFavoritoSoporte>
 }
 
 export function useMarcarFavoritoSoporteMutation({
+  pkTactividadEstudiante,
   mutationConfig,
-}: UseMarcarFavoritoSoporteOptions = {}) {
+}: UseMarcarFavoritoSoporteOptions) {
   const queryClient = useQueryClient()
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
+    mutationKey: favoritoMutationKey(pkTactividadEstudiante),
     mutationFn: marcarFavoritoSoporte,
     networkMode: "always",
     onSuccess: (result, variables, ...rest) => {
       queryClient.invalidateQueries({
         queryKey: planeadorKeys.actividadEstudiante.soportes(variables.pkTactividadEstudiante),
       })
+      queryClient.invalidateQueries({ queryKey: evidenciasInformeAllKey })
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,

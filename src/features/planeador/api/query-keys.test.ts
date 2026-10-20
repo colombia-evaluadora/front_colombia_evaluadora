@@ -1,7 +1,10 @@
 import { QueryClient } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
 
-import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
+import {
+  invalidarCalificacionesActividad,
+  refrescarBloqueoEdicion,
+} from "@/features/planeador/api/mutations/invalidar-calificaciones"
 import { esCalificacionesDeActividad, planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Mismo criterio que TanStack Query (`partialMatchKey` sobre arrays). */
@@ -82,5 +85,38 @@ describe("invalidarCalificacionesActividad", () => {
     const { qc, keys, invalida } = sembrar()
     await invalidarCalificacionesActividad(qc)
     expect(keys.map(invalida)).toEqual([true, true, false])
+  })
+})
+
+describe("refrescarBloqueoEdicion (Regla 37)", () => {
+  const sembrar = (detalle: { motivoNoEditable?: string }) => {
+    const qc = new QueryClient()
+    const keys = [
+      planeadorKeys.actividad.detalle(5),
+      planeadorKeys.actividad.calificaciones(5, "2026-10-14"),
+      planeadorKeys.actividad.detalle(6),
+      planeadorKeys.actividades.mias({ dia: "2026-10-14" }),
+    ]
+    for (const k of keys) qc.setQueryData(k, k === keys[0] ? detalle : 1)
+    const invalida = (k: readonly unknown[]) => qc.getQueryState(k)?.isInvalidated
+    return { qc, keys, invalida }
+  }
+
+  it("con la actividad todavía editable refresca su detalle (solo él) y los listados", async () => {
+    const { qc, keys, invalida } = sembrar({})
+    await refrescarBloqueoEdicion(qc, 5)
+    expect(keys.map(invalida)).toEqual([true, false, false, true])
+  })
+
+  it("ya bloqueada no vuelve a pedir nada en cada celda", async () => {
+    const { qc, keys, invalida } = sembrar({ motivoNoEditable: "No puedes editar esta actividad…" })
+    await refrescarBloqueoEdicion(qc, 5)
+    expect(keys.map(invalida)).toEqual([false, false, false, false])
+  })
+
+  it("sin id marca todos los detalles (no lo que cuelga de ellos) y los listados", async () => {
+    const { qc, keys, invalida } = sembrar({})
+    await refrescarBloqueoEdicion(qc)
+    expect(keys.map(invalida)).toEqual([true, false, true, true])
   })
 })
