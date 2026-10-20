@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -104,7 +104,10 @@ function MatriculaEditPageContent() {
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
     useMatriculaFieldConfigQuery({ establecimientoId: colegio.establecimientoId, enabled: colegio.resuelto })
-  const configuredFieldSettings = (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined)
+  const configuredFieldSettings = useMemo(
+    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
+    [fieldConfig],
+  )
 
   useEffect(() => {
     if (isError) notify(getErrorMessage(error), { variant: "error" })
@@ -115,7 +118,8 @@ function MatriculaEditPageContent() {
 
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const grade = values?.academic.grade
-  const fieldSettings = applyGradeFieldRules(configuredFieldSettings, grade)
+  // Estable a propósito: es dep del efecto de validación y el compiler no la memoiza aquí (si cambia en cada render, bucle).
+  const fieldSettings = useMemo(() => applyGradeFieldRules(configuredFieldSettings, grade), [configuredFieldSettings, grade])
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
   // Valores tal como llegaron: base para detectar cambios de grado, sede, grupo y acudiente.
