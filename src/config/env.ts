@@ -41,6 +41,11 @@ const createEnv = () => {
     // Alinea la sesión offline, la ventana de la outbox y la retención de datos
     // guardados. Default 180 (un semestre largo); revisable.
     OFFLINE_MAX_DAYS: z.coerce.number().int().min(1).max(400).optional().default(180),
+    // Autopreparación en segundo plano (`add-offline-meses-pwa` D-14): en un
+    // equipo personal, con red y la app quieta, vuelve a correr "Preparar"
+    // (incremental) al entrar y cada pocas horas. `off` la apaga para todos;
+    // cada equipo puede apagarla en "Preparar sin conexión". Default `on`.
+    OFFLINE_AUTO_PREPARE: z.enum(["on", "off"]).optional().default("on"),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(

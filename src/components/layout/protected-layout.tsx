@@ -13,6 +13,9 @@ import { CampanaNotificaciones } from "@/features/notificaciones/components/camp
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { OfflineBanner } from "@/components/layout/offline-banner"
 import { HeaderSyncIndicator } from "@/features/offline/components/header-sync-indicator"
+import { AutoPrepareRunner } from "@/features/offline/components/auto-prepare-runner"
+import { FirstPrepareBanner } from "@/features/offline/components/first-prepare-banner"
+import { OfflineDataStatus } from "@/features/offline/components/offline-data-status"
 import { OnlineOnlyRouteGate } from "@/components/offline/online-only-route-gate"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -42,12 +45,15 @@ export function ProtectedLayout() {
             <ColorThemeToggle />
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
+            <OfflineDataStatus />
             <HeaderSyncIndicator />
             <CampanaNotificaciones />
             <NavUser />
           </div>
         </header>
         <OfflineBanner />
+        <FirstPrepareBanner />
+        <AutoPrepareRunner />
         <UpdateRequiredBanner />
         <StorageWarningBanner />
         {/*

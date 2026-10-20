@@ -3,6 +3,7 @@ import { useForm, useStore } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
 import { toEmailInput } from "@/lib/text-input"
+import { canUsePersonalDevice, isInstalledPersonalDevice } from "@/lib/offline/device-policy"
 import { canChoosePersonalDevice } from "@/lib/offline/pilot"
 
 import {
@@ -30,6 +31,8 @@ interface LoginFormProps {
 
 export function LoginForm({ id, onSubmit }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
+  // App instalada (D-12): equipo personal automático, sin checkbox ni piloto.
+  const instalada = isInstalledPersonalDevice()
 
   const form = useForm({
     defaultValues: {
@@ -41,8 +44,9 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       // con "compartido" marcado por defecto el docente que solo iniciaba
       // sesión se quedaba sin menú ni datos guardados y offline no podía
       // trabajar. Fuera del piloto sigue siendo "compartido" y la página
-      // revalida con el token (`isOfflinePilotUser`).
-      sharedDevice: !canChoosePersonalDevice(""),
+      // revalida con el token (`isOfflinePilotUser`). En la app instalada es
+      // siempre personal (`lib/offline/device-policy.ts`).
+      sharedDevice: !instalada && !canChoosePersonalDevice(""),
     },
     validators: {
       onChange: loginFormSchema,
@@ -54,7 +58,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
   // login se decide por el correo escrito; la página revalida con el token.
   const email = useStore(form.store, (state) => state.values.email)
   const sharedDevice = useStore(form.store, (state) => state.values.sharedDevice)
-  const puedeElegirPersonal = canChoosePersonalDevice(email)
+  const puedeElegirPersonal = canUsePersonalDevice(email)
   useEffect(() => {
     if (!puedeElegirPersonal && !sharedDevice) form.setFieldValue("sharedDevice", true)
   }, [form, puedeElegirPersonal, sharedDevice])
@@ -170,7 +174,16 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
         </form.Field>
 
         <form.Field name="sharedDevice">
-          {(field) => (
+          {(field) =>
+            instalada ? (
+              // En la app instalada no se ofrece "equipo compartido": nadie la
+              // instala en un computador de sala, y el docente la instala para
+              // trabajar sin conexión (default revisable, D-12).
+              <p data-slot="installed-device-note" className="text-xs text-muted-foreground">
+                App instalada: este equipo es personal y guarda tus datos para que puedas trabajar sin
+                conexión.
+              </p>
+            ) : (
             <Field orientation="horizontal" className="items-start">
               <Checkbox
                 id={field.name}
@@ -195,7 +208,8 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                 )}
               </div>
             </Field>
-          )}
+            )
+          }
         </form.Field>
       </FieldGroup>
     </form>

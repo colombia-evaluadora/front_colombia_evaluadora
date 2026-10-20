@@ -7,7 +7,7 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 
 // TODO: ajustar ruta y mapeo cuando exista el backend (hoy solo MSW).
-async function fetchConversaciones() {
+export async function fetchConversaciones() {
   return evalCol.getRows<Conversacion>("/comunicaciones/conversaciones")
 }
 

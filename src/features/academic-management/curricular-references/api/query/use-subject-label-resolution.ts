@@ -9,7 +9,7 @@ interface SubjectLabelResolutionRow {
   nombre_asignatura: string | null
 }
 
-async function fetchResolvedSubjectLabel(referenceId: number): Promise<string | null> {
+export async function fetchResolvedSubjectLabel(referenceId: number): Promise<string | null> {
   const url = apiPath(
     `/academic-management/curricular-references/${referenceId}/nombre-asignatura`,
     `/referentes-curriculares/${referenceId}/nombre-asignatura`,

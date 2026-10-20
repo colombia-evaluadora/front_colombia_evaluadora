@@ -31,3 +31,21 @@ Sin conexión, ninguna pantalla, tabla, select, combobox ni diálogo SHALL queda
 #### Scenario: Pantalla con datos guardados
 - **WHEN** el docente abre sin red una pantalla que sí preparó
 - **THEN** ve los datos guardados (con su fecha) y el refetch espera a que vuelva la red sin mostrar un error
+
+### Requirement: La app instalada guarda todo
+Cuando la app corre instalada (PWA) y el modo offline no está apagado, el equipo SHALL considerarse personal sin pedir confirmación ni pertenecer al piloto, SHALL preparar todo el año automáticamente al primer ingreso mostrando el progreso, y MUST seguir preparando de forma incremental en segundo plano mientras haya conexión.
+
+#### Scenario: Primer ingreso en la app instalada
+- **WHEN** un docente inicia sesión por primera vez en la app instalada
+- **THEN** no ve "Este es un equipo compartido", y sin tocar nada la app guarda todo el año con una barra de progreso y luego muestra "Datos guardados: hace X"
+
+### Requirement: Cerrar sesión en la app instalada no borra
+En la app instalada, cerrar sesión SHALL conservar los datos guardados y los cambios sin sincronizar y MUST bloquear la entrada sin red hasta verificar la contraseña o el PIN; borrar los datos del equipo MUST ser una acción explícita con aviso, y con cambios sin sincronizar MUST pedir una segunda confirmación.
+
+#### Scenario: Cierre de sesión por error sin red
+- **WHEN** el docente cierra sesión sin red y vuelve a entrar con su correo y contraseña
+- **THEN** recupera sus datos guardados y sus cambios pendientes
+
+#### Scenario: Borrar con pendientes
+- **WHEN** el docente elige "Borrar los datos de este equipo" con cambios sin sincronizar
+- **THEN** la app lo advierte y solo borra tras una segunda confirmación

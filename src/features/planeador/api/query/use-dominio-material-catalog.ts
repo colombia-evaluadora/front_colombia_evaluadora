@@ -15,14 +15,17 @@ export type DominioMaterialCategoria = "DOMINIO_MATERIAL_URL" | "DOMINIO_MATERIA
  * `staleTime: Infinity`: mismo criterio que el resto de los catálogos de
  * `TLISTA_VALOR` de este feature (no cambian durante la sesión).
  */
+/** Exportada para "Preparar sin conexión" (misma key y forma que el formulario). */
+export async function fetchDominioMaterial(categoria: DominioMaterialCategoria): Promise<string[]> {
+  const rows = await fetchSelectCategory(categoria)
+  return rows.map((row) => row.valor.trim().toLowerCase()).filter(Boolean)
+}
+
 export function useDominioMaterialCatalog(categoria: DominioMaterialCategoria) {
   return useQuery({
     meta: catalogoMeta(),
     queryKey: planeadorKeys.dominioMaterial(categoria),
-    queryFn: async () => {
-      const rows = await fetchSelectCategory(categoria)
-      return rows.map((row) => row.valor.trim().toLowerCase()).filter(Boolean)
-    },
+    queryFn: () => fetchDominioMaterial(categoria),
     staleTime: Infinity,
   })
 }

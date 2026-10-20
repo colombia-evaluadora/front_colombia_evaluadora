@@ -10,5 +10,12 @@ async function fetchBorradores() {
 }
 
 export function useBorradoresQuery() {
-  return useQuery({ queryKey: chatKeys.borradores, queryFn: fetchBorradores, enabled: CHAT_FUNCIONES.borradores })
+  return useQuery({
+    queryKey: chatKeys.borradores,
+    queryFn: fetchBorradores,
+    enabled: CHAT_FUNCIONES.borradores,
+    // Los borradores programados se gestionan en línea: sin red no hacen
+    // falta para leer el chat guardado.
+    meta: { offlineOptional: true },
+  })
 }

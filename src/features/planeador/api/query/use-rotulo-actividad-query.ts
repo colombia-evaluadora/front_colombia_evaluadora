@@ -35,7 +35,7 @@ function toRotuloActividad(row: RotuloActividadRow | undefined): RotuloActividad
   }
 }
 
-async function fetchRotuloActividad(
+export async function fetchRotuloActividad(
   gradoId: number,
   asignaturaId: number | undefined,
   anio: number | undefined,

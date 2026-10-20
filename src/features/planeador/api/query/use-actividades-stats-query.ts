@@ -48,7 +48,7 @@ export interface UseActividadesStatsParams extends PlaneadorAlcanceParams {
   funcionario?: number
 }
 
-async function fetchActividadesStats(
+export async function fetchActividadesStats(
   params: UseActividadesStatsParams,
 ): Promise<ActividadesStatsCounts> {
   const query = new URLSearchParams()

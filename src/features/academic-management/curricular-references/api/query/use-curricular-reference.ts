@@ -91,7 +91,7 @@ function toCurricularReference(row: CurricularReferenceRow, areas: CurricularRef
   }
 }
 
-async function fetchCurricularReference(id: number): Promise<CurricularReference> {
+export async function fetchCurricularReference(id: number): Promise<CurricularReference> {
   const url = apiPath(`/academic-management/curricular-references/${id}`, `/referentes-curriculares/${id}`)
 
   if (env.ENABLE_API_MOCKING) {

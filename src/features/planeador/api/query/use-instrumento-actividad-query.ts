@@ -66,7 +66,7 @@ function toInstrumentoActividad(row: InstrumentoActividadRow | undefined): Instr
   } as InstrumentoActividad
 }
 
-async function fetchInstrumentoActividad(actividadId: number): Promise<InstrumentoActividad> {
+export async function fetchInstrumentoActividad(actividadId: number): Promise<InstrumentoActividad> {
   const rows = await evalCol.getRows<InstrumentoActividadRow>(
     `/planeador/actividades/${actividadId}/instrumento`,
   )

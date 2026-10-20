@@ -91,7 +91,7 @@ export function toEvaluationPeriod(row: EvaluationPeriodListRow): EvaluationPeri
   }
 }
 
-async function fetchEvaluationPeriods(
+export async function fetchEvaluationPeriods(
   params: UseEvaluationPeriodsQueryParams
 ): Promise<EvaluationPeriodsQueryResponse> {
   const raw = await api.query<EvaluationPeriodsListRawResponse>(

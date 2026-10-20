@@ -28,7 +28,7 @@ function toEvidence(row: EvidenceRow, statementId: number): CurricularEvidence {
   }
 }
 
-async function fetchEvidences(statementId: number): Promise<CurricularEvidence[]> {
+export async function fetchEvidences(statementId: number): Promise<CurricularEvidence[]> {
   const url = apiPath(
     `/academic-management/curricular-statements/${statementId}/evidences`,
     `/referentes-curriculares/enunciados/${statementId}/evidencias`,

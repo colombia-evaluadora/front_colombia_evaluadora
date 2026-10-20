@@ -9,7 +9,7 @@ import { academicPeriodKeys } from "@/features/establishment/academic-period/api
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/ESTADOPERIODO`).
-async function fetchAcademicPeriodStatuses(): Promise<
+export async function fetchAcademicPeriodStatuses(): Promise<
   AcademicPeriodStatusOption[]
 > {
   const rows = await fetchSelectCategory("ESTADOPERIODO")

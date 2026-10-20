@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { ArrowRightIcon, ShieldLockIcon, ShieldIcon } from "@/components/ui/icons"
@@ -14,9 +14,10 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { enterOfflineSession, getOfflineContinueName, useLogin } from "@/lib/auth"
+import { enterOfflineSession, getOfflineContinueInfo, unlockOfflineSession, useLogin } from "@/lib/auth"
 import { toAuthUserFromToken } from "@/lib/auth-mapper"
-import { canChoosePersonalDevice, isOfflinePilotUser } from "@/lib/offline/pilot"
+import { canUsePersonalDevice, isInstalledPersonalDevice, isPersonalDeviceAllowed } from "@/lib/offline/device-policy"
+import { saveLocalCredential } from "@/lib/offline/local-credential"
 import { setDeviceMode } from "@/lib/offline/query-persister"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 
@@ -36,22 +37,43 @@ export function LoginPage() {
 
   const loginMutation = useLogin()
   const isOffline = useConnectivity().status === "offline"
+  const [unlockError, setUnlockError] = useState<string | null>(null)
 
   // "Continuar sin conexión como {nombre}": solo con red caída, equipo
-  // personal y una `session` de ≤ 14 días (lo decide `getOfflineContinueName`).
-  const { data: offlineName } = useQuery({
-    queryKey: ["offline", "continue-name"],
-    queryFn: getOfflineContinueName,
+  // personal y una `session` vigente (lo decide `getOfflineContinueInfo`).
+  // Tras "Cerrar sesión" en la app instalada (D-12) la sesión queda BLOQUEADA:
+  // sin PIN se entra escribiendo la contraseña (verificada en el equipo); con
+  // PIN se entra y la bóveda lo pide.
+  const { data: offlineInfo } = useQuery({
+    queryKey: ["offline", "continue-info"],
+    queryFn: getOfflineContinueInfo,
     enabled: isOffline,
     networkMode: "always",
     gcTime: 0,
   })
+  const offlineName = offlineInfo?.name ?? null
+  const needsPassword = !!offlineInfo?.locked && !offlineInfo.hasPin
+  const canUnlockWithPassword = needsPassword && !!offlineInfo?.hasCredential
+
+  const goToApp = () => navigate({ to: search || paths.app.root.getHref() })
 
   const continueOffline = useMutation({
-    mutationFn: () => enterOfflineSession(queryClient),
+    mutationFn: () => enterOfflineSession(queryClient, { unlocked: !!offlineInfo?.locked }),
     networkMode: "always",
     onSuccess: (user) => {
-      if (user) navigate({ to: search || paths.app.root.getHref() })
+      if (user) goToApp()
+    },
+  })
+
+  const unlockOffline = useMutation({
+    mutationFn: (values: { email: string; password: string }) => unlockOfflineSession(queryClient, values),
+    networkMode: "always",
+    onSuccess: (user) => {
+      if (user) goToApp()
+      else
+        setUnlockError(
+          `Sin conexión solo puede entrar ${offlineName ?? "la última cuenta que usó este equipo"}, con la última contraseña que usó aquí con internet.`,
+        )
     },
   })
 
@@ -62,19 +84,44 @@ export function LoginPage() {
   }, [loginMutation.isSuccess, navigate, search])
 
   async function handleSubmit({ sharedDevice, ...values }: LoginFormValues) {
+    // Sin red solo se puede desbloquear lo que ya está en el equipo.
+    if (isOffline) {
+      if (!canUnlockWithPassword) return
+      setUnlockError(null)
+      unlockOffline.mutate({ email: values.email, password: values.password })
+      return
+    }
     // El modo del equipo se fija ANTES del login: en "compartido" no se
     // persiste nada (y se borra lo que hubiera) desde la primera respuesta.
-    const personal = !sharedDevice && canChoosePersonalDevice(values.email)
+    // En la app instalada es personal sin depender del piloto (D-12).
+    const personal = !sharedDevice && canUsePersonalDevice(values.email)
     await setDeviceMode(personal ? "personal" : "compartido").catch(() => undefined)
     loginMutation.mutate(values, {
       onSuccess: async (data) => {
-        // Revalidación con el token (correo + roles): fuera del piloto el
-        // equipo vuelve a "compartido" y se borra lo que se hubiera escrito.
-        if (personal && !isOfflinePilotUser(toAuthUserFromToken(data.token))) {
+        const user = toAuthUserFromToken(data.token)
+        // Revalidación con el token (correo + roles): fuera del piloto (y
+        // fuera de la app instalada) el equipo vuelve a "compartido" y se
+        // borra lo que se hubiera escrito.
+        if (personal && !isPersonalDeviceAllowed(user)) {
           await setDeviceMode("compartido").catch(() => undefined)
+          return
+        }
+        // App instalada: credencial local para poder volver a entrar SIN red
+        // después de cerrar sesión (nunca la contraseña en claro).
+        if (personal && user && isInstalledPersonalDevice()) {
+          await saveLocalCredential(user.id, values.password).catch(() => undefined)
         }
       },
     })
+  }
+
+  let offlineCopy: string | null = null
+  if (isOffline) {
+    if (!offlineInfo) offlineCopy = "Necesitas conexión para iniciar sesión por primera vez en este equipo."
+    else if (canUnlockWithPassword)
+      offlineCopy = "Sin conexión: escribe tu correo y tu contraseña para volver a abrir tus datos guardados en este equipo."
+    else if (needsPassword) offlineCopy = "Necesitas conexión para volver a entrar en este equipo."
+    else offlineCopy = "Necesitas conexión para iniciar sesión."
   }
 
   return (
@@ -92,28 +139,33 @@ export function LoginPage() {
       </CardContent>
 
       <CardFooter className="flex flex-col gap-2">
-        {isOffline && (
+        {offlineCopy && (
           <p role="status" className="text-muted-foreground text-center text-sm">
-            {offlineName
-              ? "Necesitas conexión para iniciar sesión."
-              : "Necesitas conexión para iniciar sesión por primera vez en este equipo."}
+            {offlineCopy}
+          </p>
+        )}
+        {unlockError && (
+          <p role="alert" className="text-red text-center text-sm">
+            {unlockError}
           </p>
         )}
         <Button
           type="submit"
           color="primary"
           form={LOGIN_FORM_ID}
-          disabled={loginMutation.isPending || isOffline}
+          disabled={
+            loginMutation.isPending || unlockOffline.isPending || (isOffline && !canUnlockWithPassword)
+          }
           className="w-full"
         >
-          Ingresar
-          {loginMutation.isPending ? (
-            <Spinner data-icon="inline-end" />
+          {isOffline && canUnlockWithPassword ? "Entrar sin conexión" : "Ingresar"}
+          {loginMutation.isPending || unlockOffline.isPending ? (
+            <Spinner data-icon="inline-end" persistOffline />
           ) : (
             <ArrowRightIcon data-icon="inline-end" />
           )}
         </Button>
-        {isOffline && offlineName && (
+        {isOffline && offlineName && !needsPassword && (
           <Button
             type="button"
             variant="outline"

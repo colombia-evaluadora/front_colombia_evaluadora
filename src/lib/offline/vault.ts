@@ -96,6 +96,12 @@ export async function loadVault(sub: string | null): Promise<VaultState> {
   return state
 }
 
+/** ¿El usuario creó un PIN en este equipo? (sin tocar el estado de la bóveda) */
+export async function hasVault(sub: string): Promise<boolean> {
+  if (!isIndexedDbAvailable()) return false
+  return (await getMeta<VaultRecord>(vaultKey(sub)).catch(() => undefined)) != null
+}
+
 /** Crea el PIN y deja la bóveda abierta. */
 export async function createVault(sub: string, pin: string): Promise<void> {
   if (!isValidPin(pin)) throw new Error(`El PIN debe tener al menos ${PIN_MIN_LENGTH} dígitos.`)

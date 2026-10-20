@@ -109,7 +109,7 @@ export interface UseActividadesCalendarioParams extends PlaneadorAlcanceParams {
   funcionario?: number
 }
 
-async function fetchActividadesCalendario(
+export async function fetchActividadesCalendario(
   params: UseActividadesCalendarioParams,
 ): Promise<ActividadCalendario[]> {
   const query = new URLSearchParams({
