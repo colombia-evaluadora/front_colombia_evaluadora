@@ -2,6 +2,7 @@ import type { AccionUi } from "@/features/assistant/api/types"
 import {
   filtrosRegistrados,
   formularioRegistrado,
+  motivoFormularioBloqueado,
   pestanasRegistradas,
 } from "@/features/assistant/lib/registro-ui"
 
@@ -76,7 +77,8 @@ function aplicarUna(accion: AccionUi, entorno: EntornoAcciones): ResultadoAccion
     case "RESALTAR": {
       const formulario = formularioRegistrado(accion.formulario)
       if (!formulario) {
-        return { accion, aplicada: false, motivo: "El formulario no está abierto en esta pantalla." }
+        const bloqueo = motivoFormularioBloqueado(accion.formulario)
+        return { accion, aplicada: false, motivo: bloqueo ?? "El formulario no está abierto en esta pantalla." }
       }
       if (accion.op === "RELLENAR") formulario.rellenar(accion.valores ?? {})
       else if (accion.op === "LIMPIAR_CAMPO") formulario.limpiar(accion.campo)

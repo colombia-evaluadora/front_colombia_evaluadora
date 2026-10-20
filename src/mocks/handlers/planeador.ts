@@ -3,6 +3,7 @@ import { http, HttpResponse, delay } from "msw"
 import {
   addActividad,
   deleteActividadById,
+  motivoNoEditableMock,
   nombreArchivoMaterial,
   planeadorDb,
   registrarArchivoMaterial,
@@ -43,6 +44,7 @@ import type {
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date"
 import { hashString } from "@/mocks/handlers/planeador/docentes"
+import { editableFila, rechazoNoEditable } from "@/mocks/handlers/_planeador-regla37"
 import { grupoIdDe } from "@/mocks/db/planilla"
 
 /**
@@ -191,6 +193,7 @@ const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
 const SEDES_OPCIONES_URL = "/api/eval-col/planeador/sedes/opciones"
+const ROTULO_ACTIVIDAD_URL = "/api/eval-col/planeador/rotulo-actividad"
 
 /**
  * Recorta `rows` según `?size=`/`?offset=` de la query string (el contrato
@@ -616,6 +619,7 @@ export const planeadorHandlers = [
       es_recuperacion: row.esRecuperacion ? "S" : "N",
       estudiantes_asignados: row.totalEstudiantes,
       estudiantes_evaluados: row.evaluados,
+      ...editableFila(row.id),
       total_count: page.totalCount,
       dia: porDia.dia,
       dia_anterior: porDia.diaAnterior,
@@ -850,7 +854,9 @@ export const planeadorHandlers = [
         { status: 404 },
       )
     }
-    return HttpResponse.json({ rows: [found] })
+    // Regla 37: el detalle real trae `motivo_no_editable`; el mock devuelve
+    // el modelo del front, así que va ya como `motivoNoEditable`.
+    return HttpResponse.json({ rows: [{ ...found, motivoNoEditable: motivoNoEditableMock(id) }] })
   }),
 
   // Edición parcial de la actividad — el mock, a diferencia del real, no
@@ -864,6 +870,8 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as Actividad & { NOTA_MAXIMA?: number }
     // Edición inline del "Puntaje" (columna de la tabla de Actividades de
     // una unidad "Suma de puntos", `useUpdatePuntajeActividadUnidad`): esa
@@ -887,6 +895,8 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { FK_REFERENTE_ENUNCIADO: number }
     const actual = planeadorDb[index]!
     if (!actual.evidenciasIds.includes(body.FK_REFERENTE_ENUNCIADO)) {
@@ -907,6 +917,8 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { FK_TCRITERIO_UNIDAD: number }
     const actual = planeadorDb[index]!
     if (!actual.criteriosUnidadIds.includes(body.FK_TCRITERIO_UNIDAD)) {
@@ -919,8 +931,10 @@ export const planeadorHandlers = [
   // `pk_tarchivo` (V451). El real pasa por `file-service`, que registra el
   // archivo y reemplaza el campo por el id; acá alcanza con acuñar uno y
   // recordar el nombre, que es lo único que el paso 2 pierde.
-  http.post(ACTIVIDAD_MATERIAL_ARCHIVO_URL, async ({ request }) => {
+  http.post(ACTIVIDAD_MATERIAL_ARCHIVO_URL, async ({ params, request }) => {
     await delay(200)
+    const bloqueo = rechazoNoEditable(Number(params.id))
+    if (bloqueo) return bloqueo
     const form = await request.formData()
     const archivo = form.get("ARCHIVO")
     if (!(archivo instanceof File)) {
@@ -933,8 +947,10 @@ export const planeadorHandlers = [
   // (V470): mismo patrón que el paso 1 de materiales de arriba — sube UN
   // binario y devuelve su `pk_tarchivo` (reusa el mismo registro en
   // memoria, no hace falta uno propio).
-  http.post(ACTIVIDAD_ADAPTACION_ARCHIVO_URL, async ({ request }) => {
+  http.post(ACTIVIDAD_ADAPTACION_ARCHIVO_URL, async ({ params, request }) => {
     await delay(200)
+    const bloqueo = rechazoNoEditable(Number(params.id))
+    if (bloqueo) return bloqueo
     const form = await request.formData()
     const archivo = form.get("ARCHIVO")
     if (!(archivo instanceof File)) {
@@ -1041,6 +1057,8 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { MATERIALES?: string }
     const materiales = JSON.parse(String(body.MATERIALES ?? "[]")) as {
       url?: string
@@ -1089,6 +1107,8 @@ export const planeadorHandlers = [
   http.put(ACTIVIDAD_ADAPTACIONES_URL, async ({ params }) => {
     await delay(200)
     const id = Number(params.id)
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const found = planeadorDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
@@ -1107,6 +1127,8 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
+    const bloqueo = rechazoNoEditable(id)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { FK_TMATRICULAS?: number[]; ASIGNAR_TODO_EL_GRUPO?: boolean }
     const actual = planeadorDb[index]!
     actual.asignarTodoElGrupo = Boolean(body.ASIGNAR_TODO_EL_GRUPO)
@@ -1649,6 +1671,7 @@ export const planeadorHandlers = [
       instrumento_evaluacion: a.instrumento,
       grupo: a.grupo,
       ponderacion: a.ponderacion,
+      ...editableFila(a.actividadId),
     }))
     return HttpResponse.json({ rows })
   }),
@@ -1698,6 +1721,8 @@ export const planeadorHandlers = [
     await delay(250)
     const id = Number(params.id)
     const actividadId = Number(params.actividadId)
+    const bloqueo = rechazoNoEditable(actividadId)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { PONDERACION: number | null }
     const created = addActividadToUnidad(id, actividadId, body.PONDERACION ?? 0)
     if (created === null) {
@@ -1719,6 +1744,8 @@ export const planeadorHandlers = [
   http.patch(UNIDAD_ACTIVIDAD_UNLINK_URL, async ({ params }) => {
     await delay(200)
     const actividadId = Number(params.actividadId)
+    const bloqueo = rechazoNoEditable(actividadId)
+    if (bloqueo) return bloqueo
     const ok = unlinkActividadFromUnidad(actividadId)
     if (!ok) {
       return HttpResponse.json(
@@ -1733,6 +1760,8 @@ export const planeadorHandlers = [
   http.put(UNIDAD_ACTIVIDAD_PONDERACION_URL, async ({ params, request }) => {
     await delay(200)
     const actividadId = Number(params.actividadId)
+    const bloqueo = rechazoNoEditable(actividadId)
+    if (bloqueo) return bloqueo
     const body = (await request.json()) as { PONDERACION: number }
     const ok = updatePonderacionActividad(actividadId, body.PONDERACION)
     if (!ok) {
@@ -2003,6 +2032,17 @@ export const planeadorHandlers = [
             ? `${aplicadas} actividades importadas`
             : `${aplicadas} de ${filasAplicadas.length} actividades importadas; ${omitidas} con problemas (ver filas)`,
       filas: filasAplicadas,
+    })
+  }),
+
+  // Rótulo de la actividad para un grado (`fn_planeador_rotulo_actividad`,
+  // V511): sin handler la petición salía al proxy, volvía 502 y el planeador
+  // quedaba con el banner de "servidor caído" (y las lecturas en pausa).
+  http.get(ROTULO_ACTIVIDAD_URL, async ({ request }) => {
+    await delay(80)
+    const grado = Number(new URL(request.url).searchParams.get("grado"))
+    return HttpResponse.json({
+      rows: [{ fk_tgrado: grado, pk_referente_curricular: null, rotulo_ejecucion: "Actividad" }],
     })
   }),
 
