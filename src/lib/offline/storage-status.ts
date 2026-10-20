@@ -101,7 +101,9 @@ interface BeforeInstallPromptEvent extends Event {
 let deferredPrompt: BeforeInstallPromptEvent | null = null
 const installListeners = new Set<() => void>()
 
-if (typeof window !== "undefined") {
+// `typeof addEventListener`: los tests que reemplazan `window` por un objeto
+// mínimo importan este módulo (vía `device-policy` → `auth`).
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault()
     deferredPrompt = event as BeforeInstallPromptEvent

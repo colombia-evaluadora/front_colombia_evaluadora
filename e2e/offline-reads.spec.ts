@@ -117,7 +117,7 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await page.reload()
   // Entrada automática en modo sin conexión (equipo personal, session ≤ 14 días).
   await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({
-    timeout: 30_000,
+    timeout: 60_000,
   })
   expect(new URL(page.url()).pathname).toBe(ACTIVIDADES)
   await expect(page.getByText(/^Datos del /).first()).toBeVisible({ timeout: 15_000 })

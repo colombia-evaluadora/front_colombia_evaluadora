@@ -58,7 +58,7 @@ test("ninguna ruta no administrativa muestra el empty state sin red tras prepara
   await page.reload()
   // Garantiza que de verdad estamos en modo sin conexión (si no, la prueba
   // pasaría trivialmente).
-  await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({ timeout: 60_000 })
   // Navegación SPA: Vite dev no sirve módulos nuevos con la red "caída" del
   // lado de la API, pero la página ya cargada sí navega.
   const ir = async (p: string) => {

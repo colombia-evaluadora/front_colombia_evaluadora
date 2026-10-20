@@ -238,6 +238,9 @@ async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
   lastAuthedUser = user
   try {
     await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
+    // Un logout que arrancó mientras tanto manda: no se desbloquea ni se
+    // vuelve a registrar al usuario que está saliendo.
+    if (loggingOut) return
     // Con red el servidor ya confirmó quién es: si la app instalada quedó
     // bloqueada por un "Cerrar sesión" anterior, se desbloquea.
     await unlockDeviceSession(user.id).catch(() => undefined)
