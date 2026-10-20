@@ -70,7 +70,7 @@ export function usePeriodosInformeQuery(params: PeriodosInformeParams) {
       })
       return rows.map(toPeriodo)
     },
-    enabled: params.sedeId != null && params.jornadaId != null,
+    enabled: params.sedeId != null && params.anio != null && params.jornadaId != null,
     staleTime: 1000 * 60 * 5,
   })
 }

@@ -3,10 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/academic-period"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateAcademicPeriodRelated } from "./invalidate"
 
-// `fn_periodo_soft_delete` es un soft delete expuesto como PUT
-// (`PUT /periodos-academicos/:ID`), no como DELETE.
+// Soft delete expuesto como PUT.
 function deleteAcademicPeriod(id: number): Promise<MutationResult> {
   return api.put(`/eval-col/periodos-academicos/${id}`)
 }
@@ -21,7 +20,7 @@ export function useDeleteAcademicPeriod({ mutationConfig }: UseDeleteAcademicPer
     mutationFn: deleteAcademicPeriod,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
+      invalidateAcademicPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

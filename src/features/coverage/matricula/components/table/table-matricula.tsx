@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useMemo, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -45,7 +45,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     pageSize,
   })
 
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const { table, selectedIds: selectedRowIds, selectedRows, hasSelection, resetSelection } = useDataTable({
     columns: columnsMatricula,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -59,18 +59,9 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     columnVisibilityStorageKey: "table-matricula-column-visibility",
   })
 
-  const rows = data?.rows ?? []
-  const selectedRowIds = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)).map((row) => row.id),
-    [rows, selectedIds],
-  )
-  const selectedRows = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)),
-    [rows, selectedIds],
-  )
-
   function deselectRow(id: string) {
-    table.getRow(id)?.toggleSelected(false)
+    // Sobre el estado: la fila puede estar en otra página.
+    table.setRowSelection(({ [id]: _, ...rest }) => rest)
   }
 
   const exportColumns = table

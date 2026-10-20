@@ -65,6 +65,11 @@ export interface OfflineQueryOptions {
 export interface OfflineQueryMeta {
   offline?: OfflineQueryOptions
   persistSelect?: (data: unknown) => unknown
+  /**
+   * Dato accesorio (contador del header, asistente): si falta sin red, el
+   * banner no avisa que la pantalla está incompleta (`lib/offline/missing-data.ts`).
+   */
+  offlineOptional?: boolean
 }
 
 // `meta` de TanStack es `Record<string, unknown>`: esto da autocompletado

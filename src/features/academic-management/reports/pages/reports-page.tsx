@@ -167,8 +167,7 @@ interface GrupoTabContentProps {
   onToggleMarca: (matriculaId: number, periodoId: number) => void
 }
 
-/** Una celda que el botón "Guardar notas" puede consolidar: pendiente, sin
- *  error de configuración y de un período abierto. */
+/** Celda consolidable: pendiente, sin error de configuración y de período abierto. */
 function celdaConsolidable(
   fila: FilaInforme,
   asignatura: FilaInforme["asignaturas"][number],
@@ -182,9 +181,7 @@ function celdaConsolidable(
   )
 }
 
-/** Cualitativo = TODAS las filas del grupo lo son. Se calcula sobre los datos
- *  sin filtrar: con el buscador activo, el subconjunto visible podía cambiar
- *  la plantilla del boletín y la tabla que se pinta. */
+/** Cualitativo = todas las filas del grupo; se calcula sin el filtro del buscador. */
 function grupoEsCualitativo(filas: FilaInforme[] | undefined): boolean {
   return (filas?.length ?? 0) > 0 && filas!.every((fila) => fila.formato === "cualitativo")
 }
@@ -339,13 +336,19 @@ function ReportsPageContent() {
 
   const setFiltros = React.useCallback(
     (nuevos: FiltrosInforme) => {
+      const cambio =
+        nuevos.sedeId !== filtros.sedeId ||
+        nuevos.anio !== filtros.anio ||
+        nuevos.jornadaId !== filtros.jornadaId
       setSearch({
         sede: nuevos.sedeId ?? undefined,
         anio: nuevos.anio ?? undefined,
         jornada: nuevos.jornadaId ?? undefined,
+        // Periodos y grupos cuelgan de la cascada: no se arrastran a otra combinación.
+        ...(cambio && { periodos: undefined, grupos: undefined, tab: undefined }),
       })
     },
-    [setSearch],
+    [setSearch, filtros],
   )
 
   const periodosQuery = usePeriodosInformeQuery(filtros)
@@ -440,9 +443,7 @@ function ReportsPageContent() {
   const grupoActivoId = Number(activeTab)
   const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
 
-  // Misma key que la del tab activo: TanStack Query la deduplica. La página
-  // la necesita sin el filtro del buscador para decidir la plantilla del
-  // boletín y qué seleccionados están consolidados.
+  // Misma key que el tab activo (se deduplica); sin filtro del buscador.
   const informeActivo = useInformeGrupoQuery(
     grupoActivoId > 0 && periodos.length > 0 ? { grupoId: grupoActivoId, periodos } : null,
   )
@@ -487,24 +488,18 @@ function ReportsPageContent() {
     return partes.join("   ·   ")
   })()
 
-  // Checks de período por estudiante (columna "Pe"). Solo tienen sentido con
-  // varios períodos reales a la vista: con uno no hay nada que elegir, y las
-  // marcas que quedaran de antes se ignoran.
+  // Checks de período (columna "Pe"): solo aplican con varios períodos a la vista.
   const mostrarMarcas = periodosReales.length > 1
   const marcasActivas = mostrarMarcas
     ? (marcasPorGrupo[grupoActivoId] ?? new Set<string>())
     : new Set<string>()
 
-  // Sobre los datos sin filtrar: un seleccionado puede estar oculto por el
-  // buscador y la acción igual lo incluye.
+  // Sin filtrar: un seleccionado oculto por el buscador igual se incluye.
   const datosActivos = informeActivo.data ?? []
   const filaDe = (matriculaId: number, periodoId: number) =>
     datosActivos.find((f) => f.matriculaId === matriculaId && f.periodoId === periodoId)
 
-  // Guardar: sin marcas, todos los períodos reales a la vista (como siempre);
-  // con marcas, solo los marcados de cada estudiante. Por período, solo las
-  // matrículas con alguna celda consolidable, y nunca un período cerrado ni el
-  // Final (-1 es un centinela que el backend calcula al vuelo: da P0002).
+  // Por período, solo matrículas consolidables; nunca período cerrado ni Final (-1).
   const paraGuardar = resolverObjetivos(datosActivos, seleccionActiva, marcasActivas, "todos")
   const lotesGuardar = periodosReales
     .filter((periodoId) => !periodosCerrados.includes(periodoId))
@@ -520,8 +515,7 @@ function ReportsPageContent() {
     }))
     .filter((lote) => lote.matriculas.length > 0)
 
-  // Boletín: un estudiante en UN período. Sin marcas vale el único período
-  // real a la vista; con varios hay que marcarlo, y los que falten bloquean.
+  // Boletín: un estudiante en un período; con varios hay que marcarlo.
   const paraBoletin = resolverObjetivos(datosActivos, seleccionActiva, marcasActivas, "unico")
   const estudiantesBoletin: EstudianteBoletin[] = paraBoletin.objetivos.flatMap((o) => {
     const fila = filaDe(o.matriculaId, o.periodoId)
@@ -557,8 +551,7 @@ function ReportsPageContent() {
       else next.add(matriculaId)
       return { ...prev, [grupoActivoId]: next }
     })
-    // Al deseleccionarlo se van sus checks de período: si vuelve a
-    // seleccionarse, empieza de cero en vez de recuperar marcas olvidadas.
+    // Al deseleccionar se limpian sus checks de período.
     if (estaba) {
       setMarcasPorGrupo((prev) => ({
         ...prev,
@@ -587,8 +580,7 @@ function ReportsPageContent() {
     })
   }
 
-  /** "Ir a consolidar" del aviso del boletín: deja seleccionados solo los
-   *  pendientes y, con varios períodos a la vista, marcado su período. */
+  /** "Ir a consolidar": selecciona solo los pendientes y marca su período. */
   function irAConsolidar(pendientes: { matriculaId: number; periodoId: number }[]) {
     setSeleccionPorGrupo((prev) => ({
       ...prev,
@@ -606,8 +598,7 @@ function ReportsPageContent() {
       notify("Selecciona al menos un estudiante para consolidar.", { variant: "error" })
       return
     }
-    // Una llamada por período (ver `lotesGuardar`): el endpoint consolida un
-    // período a la vez, con las matrículas que se le indiquen.
+    // El endpoint consolida un período a la vez.
     const lotes = lotesGuardar
     if (lotes.length === 0) {
       notify("No hay notas pendientes por consolidar en lo seleccionado.", { variant: "error" })
@@ -638,10 +629,7 @@ function ReportsPageContent() {
       )
       return
     }
-    // Un estudiante cuenta como consolidado si se le escribió al menos una
-    // asignatura. Es la misma regla con la que el backend decide registrar
-    // el historial (`IF v_g + v_a > 0` en fn_informe_periodo_guardar), así
-    // que el aviso y el historial no pueden contradecirse.
+    // Misma regla que fn_informe_periodo_guardar (`IF v_g + v_a > 0`).
     const escribio = (d: (typeof filas)[number]) => d.guardadas + d.actualizadas > 0
     const consolidados = new Set(filas.filter(escribio).map((d) => d.matriculaId)).size
     const sinProyeccion = new Set(
@@ -693,8 +681,7 @@ function ReportsPageContent() {
       }
       setObservacionAbierta(null)
     } catch (error) {
-      // La página tiene NoticeProvider: el toast global de axios está
-      // suprimido, así que el mensaje del backend se muestra acá.
+      // Con NoticeProvider el toast global de axios está suprimido.
       notify(getErrorMessage(error), { variant: "error" })
     }
   }

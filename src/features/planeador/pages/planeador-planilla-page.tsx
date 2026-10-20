@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import {
   Select,
   SelectContent,
@@ -341,7 +341,7 @@ export function PlaneadorPlanillaPage() {
 
           {filtro && !columnaEnBulk && cargandoPlanilla && (
             <div className="text-muted-foreground flex items-center justify-center gap-2 py-24 text-sm">
-              <Spinner /> Cargando planilla…
+              <LoadingLabel>Cargando planilla…</LoadingLabel>
             </div>
           )}
 

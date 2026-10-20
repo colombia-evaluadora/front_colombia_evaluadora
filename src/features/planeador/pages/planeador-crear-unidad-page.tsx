@@ -11,7 +11,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { paths } from "@/config/paths"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
@@ -158,7 +158,7 @@ function PlaneadorCrearUnidadPageContent() {
       <TableScreenBody className="rounded-b-none border-b-0">
         {isLoadingPermiso || !puedeCrear ? (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-            <Spinner /> Cargando…
+            <LoadingLabel>Cargando…</LoadingLabel>
           </div>
         ) : (
           <form

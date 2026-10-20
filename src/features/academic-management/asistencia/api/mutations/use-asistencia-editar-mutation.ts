@@ -78,7 +78,7 @@ registerOutboxHandler<EditarPayload>({
   }),
 })
 
-async function editarAsistencia({ pks, body, versiones }: EditarAsistenciaInput): Promise<EditarResultado> {
+export async function editarAsistencia({ pks, body, versiones }: EditarAsistenciaInput): Promise<EditarResultado> {
   const file = body.SOPORTE_ARCHIVO instanceof File ? body.SOPORTE_ARCHIVO : null
   const soporte = file ? "soporte" : (body.SOPORTE_ARCHIVO as number | undefined)
   const pendientes: number[] = []

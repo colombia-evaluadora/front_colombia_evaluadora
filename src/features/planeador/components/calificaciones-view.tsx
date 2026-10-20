@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
+import { LoadingLabel } from "@/components/offline/loading-label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckCircleIcon,
@@ -97,7 +97,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   if (isPending) {
     return (
       <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-        <Spinner /> Cargando calificaciones…
+        <LoadingLabel>Cargando calificaciones…</LoadingLabel>
       </div>
     )
   }

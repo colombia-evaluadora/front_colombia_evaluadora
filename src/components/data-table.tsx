@@ -12,6 +12,9 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { OfflineDataMessage } from "@/components/offline/offline-data-message"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
+import { useOfflineStall } from "@/lib/offline/use-offline-stall"
 import {
   Table as UITable,
   TableBody,
@@ -118,6 +121,13 @@ export function DataTable({
 }: DataTableProps) {
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
+  // Sin conexión la tabla nunca queda en skeleton para siempre ni muestra un
+  // error genérico: si los datos no están guardados en el equipo, lo dice.
+  // `isPending` puede seguir en `true` sin red (query deshabilitada porque su
+  // filtro padre no cargó): a los 1,5 s se reemplaza por el aviso.
+  const offline = useConnectivity().status === "offline"
+  const pendingStalled = useOfflineStall(isPending)
+  const showOfflineMessage = pendingStalled || (isError && offline)
 
   // Los botones de fila son un overlay ABSOLUTO sobre la celda `actions`, no
   // contenido en flujo: así no empujan el layout y solo se revelan al hacer
@@ -243,7 +253,13 @@ export function DataTable({
           ))}
         </TableHeader>
         <TableBody>
-          {isPending ? (
+          {showOfflineMessage ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columnCount} className="whitespace-normal">
+                <OfflineDataMessage />
+              </TableCell>
+            </TableRow>
+          ) : isPending ? (
             Array.from({ length: skeletonRowCount }).map((_, i) => (
               <TableRow key={i}>
                 {visibleColumns.map((col, j) => {
@@ -350,6 +366,8 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
   const hideableColumns = table
     .getAllColumns()
     .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+  // La última visible no se puede ocultar (useDataTable también lo impide).
+  const visibles = hideableColumns.filter((column) => column.getIsVisible()).length
 
   return (
     <DropdownMenu>
@@ -366,6 +384,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
             <DropdownMenuCheckboxItem
               key={column.id}
               checked={column.getIsVisible()}
+              disabled={visibles === 1 && column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
             >
               {column.columnDef.meta?.label ?? column.id}

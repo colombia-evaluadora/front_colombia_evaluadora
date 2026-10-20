@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingLabel } from "@/components/offline/loading-label"
 import {
   CheckIcon,
   MagnifyingGlassIcon,
@@ -153,7 +153,7 @@ export function CalificacionesAprobacionView({
   if (isPending || isPendingInstrumento) {
     return (
       <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
-        <Spinner /> Cargando estudiantes…
+        <LoadingLabel>Cargando estudiantes…</LoadingLabel>
       </div>
     );
   }

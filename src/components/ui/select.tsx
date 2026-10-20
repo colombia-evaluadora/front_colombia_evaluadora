@@ -12,6 +12,8 @@ import {
   type InputVariant,
 } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { OFFLINE_NO_OPTIONS_MESSAGE } from "@/lib/offline/offline-messages"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 /**
  * Mapa opcional `value → label` que el `Select` raíz puede pasar para que el
@@ -204,10 +206,41 @@ function SelectContent({
           <SelectPrimitive.List className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-1.5">
             {children}
           </SelectPrimitive.List>
+          <SelectOfflineEmpty>{children}</SelectOfflineEmpty>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
     </SelectPrimitive.Portal>
+  )
+}
+
+/**
+ * ¿Hay alguna opción en el árbol? Atraviesa `SelectGroup` y fragments; un
+ * rótulo o separador solo no cuenta. Cualquier otro elemento cuenta como
+ * opción (puede ser un componente propio que envuelve `SelectItem`).
+ */
+function hasSelectItems(node: React.ReactNode): boolean {
+  if (node == null || typeof node === "boolean") return false
+  if (Array.isArray(node)) return node.some(hasSelectItems)
+  if (!React.isValidElement(node)) return true
+  if (node.type === SelectGroup || node.type === React.Fragment) {
+    return hasSelectItems((node.props as { children?: React.ReactNode }).children)
+  }
+  return node.type !== SelectLabel && node.type !== SelectSeparator
+}
+
+/**
+ * Sin conexión, un select cuyas opciones vienen del servidor y no estaban
+ * guardadas queda sin items: en vez de un desplegable vacío se dice por qué.
+ * Con red no se pinta nada (el comportamiento de siempre).
+ */
+function SelectOfflineEmpty({ children }: { children: React.ReactNode }) {
+  const offline = useConnectivity().status === "offline"
+  if (!offline || hasSelectItems(children)) return null
+  return (
+    <p data-slot="select-offline-empty" className="px-3 py-3 text-center text-sm text-muted-foreground">
+      {OFFLINE_NO_OPTIONS_MESSAGE}
+    </p>
   )
 }
 

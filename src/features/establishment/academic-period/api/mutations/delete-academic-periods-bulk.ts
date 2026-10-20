@@ -3,10 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { BulkDeleteResult } from "@/features/establishment/academic-period/api/utils/bulk-delete-result"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateAcademicPeriodRelated } from "./invalidate"
 
-// Borrado en lote por ids, en una sola request atómica
-// (`fn_periodo_bulk_delete`, expuesto como PUT `/periodos-academicos`).
+// `fn_periodo_bulk_delete`, atómico, expuesto como PUT.
 function deleteAcademicPeriodsBulk(ids: number[]): Promise<BulkDeleteResult> {
   return api.put("/eval-col/periodos-academicos", { IDS: ids })
 }
@@ -23,7 +22,7 @@ export function useDeleteAcademicPeriodsBulk({
     mutationFn: deleteAcademicPeriodsBulk,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.academicPeriods.all })
+      invalidateAcademicPeriodRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

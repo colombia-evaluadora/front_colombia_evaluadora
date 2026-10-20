@@ -160,6 +160,14 @@ export const SUCCESS_MESSAGES = {
     updated: "La matrícula se actualizó correctamente.",
     deleted: "El estudiante se eliminó correctamente.",
   },
+  // Un Superadministrador no se elimina (Regla 9): `deleted` no se usa.
+  superadministrador: {
+    created: "Superadministrador creado.",
+    updated: "Superadministrador guardado.",
+    deleted: "Superadministrador eliminado.",
+    activated: "Superadministrador activado.",
+    deactivated: "Superadministrador inactivado. Perdió el acceso y se cerraron sus sesiones.",
+  },
   actividad: {
     created: "La actividad se creó correctamente.",
     updated: "La actividad se actualizó correctamente.",
@@ -186,4 +194,27 @@ export function employeeInvitationNotice(result: {
     }
   }
   return { message: "Funcionario creado.", variant: "success" }
+}
+
+// Guardar un Superadministrador: el texto del requerimiento ("Superadministrador
+// creado. Se envió el enlace a [correo].") y sus variantes sin enlace o con falla.
+export function superadministradorSaveNotice(
+  result: {
+    enlaceEnviadoA: string | null
+    cuentaExistente: boolean
+    enlaceFallido: string | null
+  },
+  creado: boolean,
+): { message: string; variant: "success" | "warning" } {
+  const base = creado ? SUCCESS_MESSAGES.superadministrador.created : SUCCESS_MESSAGES.superadministrador.updated
+  if (result.enlaceFallido != null) {
+    return { message: `${base} No se pudo enviar el enlace: ${result.enlaceFallido}`, variant: "warning" }
+  }
+  if (result.enlaceEnviadoA) {
+    return { message: `${base} Se envió el enlace a ${result.enlaceEnviadoA}.`, variant: "success" }
+  }
+  if (creado && result.cuentaExistente) {
+    return { message: `${base} Ya tenía una cuenta activa: entra con su contraseña actual.`, variant: "success" }
+  }
+  return { message: base, variant: "success" }
 }

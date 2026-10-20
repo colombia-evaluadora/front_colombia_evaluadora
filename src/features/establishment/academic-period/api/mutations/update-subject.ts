@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
+import { invalidateSubjectRelated } from "./invalidate"
 
 interface UpdateSubjectInput {
   subjectId: number
@@ -37,12 +37,7 @@ export function useUpdateSubject({ mutationConfig }: UseUpdateSubjectOptions = {
     mutationFn: updateSubject,
     ...mutationConfig,
     onSuccess: (...args) => {
-      const [, variables] = args
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.areaSubjects.all })
-      queryClient.invalidateQueries({ queryKey: academicPeriodKeys.subjects.all })
-      queryClient.invalidateQueries({
-        queryKey: academicPeriodKeys.subjectDetails.byPeriod(variables.academicPeriodId),
-      })
+      invalidateSubjectRelated(queryClient)
       mutationConfig?.onSuccess?.(...args)
     },
   })

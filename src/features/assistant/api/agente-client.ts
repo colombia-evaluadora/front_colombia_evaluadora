@@ -25,12 +25,15 @@ export class AgenteError extends Error {
   readonly status: number
   /** Segundos de `Retry-After` en un 429. */
   readonly reintentarEn: number | null
+  /** El stream terminó sin `respuesta` ni `error`: el turno pudo completarse en el servidor. */
+  readonly cortado: boolean
 
-  constructor(status: number, mensaje: string, reintentarEn: number | null = null) {
+  constructor(status: number, mensaje: string, reintentarEn: number | null = null, cortado = false) {
     super(mensaje)
     this.name = "AgenteError"
     this.status = status
     this.reintentarEn = reintentarEn
+    this.cortado = cortado
   }
 }
 
@@ -58,12 +61,15 @@ export async function archivarConversacion(id: string): Promise<void> {
   await api.put(`${AGENTE_PATH}/conversaciones/${id}/archivar`)
 }
 
+// La escritura puede tardar: mismo tope que el gateway (170 s), no los 20 s por defecto.
+const TIMEOUT_ACCION = 170_000
+
 export function confirmarAccion(id: string): Promise<RespuestaAgente> {
-  return api.post<RespuestaAgente>(`${AGENTE_PATH}/acciones/${id}/confirmar`)
+  return api.post<RespuestaAgente>(`${AGENTE_PATH}/acciones/${id}/confirmar`, undefined, { timeout: TIMEOUT_ACCION })
 }
 
 export function cancelarAccion(id: string): Promise<RespuestaAgente> {
-  return api.post<RespuestaAgente>(`${AGENTE_PATH}/acciones/${id}/cancelar`)
+  return api.post<RespuestaAgente>(`${AGENTE_PATH}/acciones/${id}/cancelar`, undefined, { timeout: TIMEOUT_ACCION })
 }
 
 /**
@@ -156,5 +162,5 @@ export async function enviarMensajeStream(
       throw new AgenteError(status, mensaje)
     }
   }
-  throw new AgenteError(502, "La respuesta del asistente se cortó. Intenta de nuevo.")
+  throw new AgenteError(502, "La respuesta del asistente se cortó. Revisa la conversación.", null, true)
 }

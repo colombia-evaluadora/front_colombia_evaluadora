@@ -20,3 +20,14 @@ Al preparar el equipo la app SHALL pedir `navigator.storage.persist()`, mostrar 
 
 ### Requirement: Instante de captura
 Toda escritura enviada por la outbox SHALL llevar `X-Client-Captured-At` con el instante en que el usuario capturó el cambio.
+
+### Requirement: Ninguna carga infinita sin conexión
+Sin conexión, ninguna pantalla, tabla, select, combobox ni diálogo SHALL quedar en un estado de carga indefinido: en uno o dos segundos MUST mostrar lo guardado en el equipo o un aviso claro ("Sin conexión: esta información no está guardada en este equipo", con la sugerencia de usar "Preparar sin conexión" cuando haya red, o "Esta sección necesita conexión" en las vistas de administración).
+
+#### Scenario: Pantalla nunca preparada
+- **WHEN** el docente abre sin red una pantalla cuyos datos no se guardaron
+- **THEN** a los 3 s no hay skeletons ni spinners y la pantalla dice que la información no está guardada en este equipo
+
+#### Scenario: Pantalla con datos guardados
+- **WHEN** el docente abre sin red una pantalla que sí preparó
+- **THEN** ve los datos guardados (con su fecha) y el refetch espera a que vuelva la red sin mostrar un error

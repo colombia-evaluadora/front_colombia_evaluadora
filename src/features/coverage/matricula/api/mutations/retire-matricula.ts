@@ -28,3 +28,12 @@ export function useRetireMatricula({ mutationConfig }: UseRetireMatriculaOptions
     ...restConfig,
   })
 }
+
+// Retirar en lote: una sola recarga al final, no una por estudiante.
+export function useRetireMatriculas() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: string[]) => Promise.allSettled(ids.map(retireMatricula)),
+    onSettled: () => invalidarMatriculas(queryClient),
+  })
+}

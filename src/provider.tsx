@@ -15,6 +15,13 @@ import "@/features/offline/register-handlers"
 // guard de `/app` (`hasSession`), así ocurre antes de cualquier loader.
 startOfflineSupport(queryClient)
 
+// Solo en desarrollo: los E2E esperan a que una navegación termine de cargar
+// (`__ceRouter.state.status`) y listan las queries sin datos sin red
+// (`e2e/offline-sin-preparar.spec.ts`). En el build de producción no existe.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  Object.assign(window, { __ceRouter: router, __ceQueryClient: queryClient })
+}
+
 export function AppProvider() {
   return (
     <QueryClientProvider client={queryClient}>
