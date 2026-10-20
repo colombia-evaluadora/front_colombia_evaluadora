@@ -53,7 +53,7 @@ function toCampus(row: RealCampusRow): Campus {
   }
 }
 
-async function fetchCampuses(params: CampusesQueryRequest): Promise<CampusesQueryResponse> {
+export async function fetchCampuses(params: CampusesQueryRequest): Promise<CampusesQueryResponse> {
   if (env.ENABLE_API_MOCKING) {
     const response = await api.query(
       apiPath("/establishments/campuses/query", "/establecimientos/sedes/query"),

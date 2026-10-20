@@ -36,6 +36,9 @@ export function ultimaActualizacionKey(matriculaId: number, periodoId: number): 
  */
 export function useUltimaActualizacionQuery(params: UltimaActualizacionParams | null) {
   return useQuery({
+    // Dato accesorio de la tabla (fecha del último guardado): sin red y sin
+    // copia, la pantalla igual muestra el informe guardado.
+    meta: { offlineOptional: true },
     queryKey: params
       ? ultimaActualizacionQueryKey(params)
       : ([...informeGrupoQueryKeyPrefix(), "ultima-actualizacion", "none"] as const),

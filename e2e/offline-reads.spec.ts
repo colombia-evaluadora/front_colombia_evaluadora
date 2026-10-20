@@ -96,7 +96,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guardados", async ({ page }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(480_000)
   await login(page, "docente@example.com", { shared: false })
   await recorrer(page)
 
@@ -104,7 +104,7 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
   await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 60_000 })
+  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
   await shot(page, "f1-a-preparado")
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 
@@ -117,7 +117,7 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await page.reload()
   // Entrada automática en modo sin conexión (equipo personal, session ≤ 14 días).
   await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({
-    timeout: 30_000,
+    timeout: 60_000,
   })
   expect(new URL(page.url()).pathname).toBe(ACTIVIDADES)
   await expect(page.getByText(/^Datos del /).first()).toBeVisible({ timeout: 15_000 })
@@ -272,7 +272,7 @@ test("piloto: fuera de VITE_APP_OFFLINE_PILOT no se puede desmarcar 'equipo comp
 test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el botón queda deshabilitado", async ({
   page,
 }) => {
-  test.setTimeout(180_000)
+  test.setTimeout(480_000)
   await login(page, "docente@example.com", { shared: false })
   await page.goto("/app/planeador/planilla")
   await page.getByRole("button", { name: "Preparar sin conexión" }).click()
@@ -289,7 +289,7 @@ test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el 
   }
   await dialog.getByRole("checkbox", { name: "Incluir archivos" }).click()
   await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 90_000 })
+  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
   await shot(page, "f1-k-preparar-seleccion")
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 

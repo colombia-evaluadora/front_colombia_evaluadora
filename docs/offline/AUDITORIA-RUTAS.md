@@ -64,6 +64,39 @@ rutas no administrativas como administrador y las del menú del docente: a los
 muestra lo guardado o un aviso claro (en la pantalla, en el banner o el empty
 state "Esta sección necesita conexión").
 
+## Guardar todo en el equipo (Preparar, autopreparación y app instalada)
+
+"Preparar todo el año" ya no depende de lo que se abrió en la sesión: baja
+cada lista con la misma key que usa su pantalla
+(`features/offline/lib/prepare-tasks.ts`), solo de las secciones del menú del
+usuario.
+
+| Pantalla | Qué queda guardado |
+|---|---|
+| Planeador › Actividades | Pestañas de rótulo; por pestaña, resumen, calendario de cada mes de los periodos elegidos y rail por día (hoy y hasta 15 días ocupados a cada lado); detalle de todas las actividades; filtro de instrumento |
+| Planeador › Unidades | Lista, pestañas, detalle, referente (y nombre de la asignatura) y actividades de cada unidad |
+| Planeador › Planilla | Columnas y calificaciones por grupo × asignatura × periodo, rótulo, referente del grado e instrumento de cada actividad; selects de grupo/asignatura/periodo |
+| Asistencia | Calendario por sede y mes (todas y "mis clases"), resumen semanal del mes en curso y el siguiente, listas de estudiantes de cada sesión de los próximos 14 días, catálogo de tipos |
+| Informes | Cascada sede → año → jornadas → periodos y grupos; informe de cada grupo con los periodos por defecto (otras combinaciones, solo con red) |
+| Referentes curriculares | Todas las páginas, catálogos del filtro y el detalle como se abre: áreas, grados, enunciados del área y grado por defecto y evidencias del primer enunciado |
+| Comunicaciones / Notificaciones | Foros, conversaciones, política del chat, bandeja, contador y preferencias |
+| Establecimiento (solo consulta) | Lista de EE, sedes, periodos (con detalle y periodos de evaluación) y sus catálogos |
+
+- **Autopreparación** (default revisable): en un equipo personal, con red
+  estable, se repite sola e incremental al entrar, cada 4 h y dentro de la
+  cuota; el header muestra "Datos guardados: hace X". Se apaga por equipo en
+  "Preparar" o con `VITE_APP_OFFLINE_AUTO_PREPARE=off`.
+- **App instalada (PWA)**: equipo personal sin checkbox ni piloto (el
+  kill-switch `off` manda), todo el año al primer ingreso con progreso,
+  incremental al volver la red, `persist()` automático. "Cerrar sesión"
+  bloquea en vez de borrar (se vuelve a entrar con la contraseña, verificada en
+  el equipo sin red, o con el PIN); "Borrar los datos de este equipo" es aparte
+  y con cambios sin sincronizar pide doble confirmación.
+- **Prueba**: `e2e/offline-all-routes.spec.ts` exige que tras "Preparar todo el
+  año" ninguna query de la vista por defecto quede sin datos;
+  `e2e/offline-app-instalada.spec.ts` recorre la app instalada (matchMedia
+  `standalone`).
+
 ## Tabla
 
 | Ruta | Sin conexión | Por qué | Arreglo / pendiente |

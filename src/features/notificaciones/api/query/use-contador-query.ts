@@ -8,7 +8,7 @@ import type { ContadorRow } from "@/features/notificaciones/api/types"
 
 export const contadorQueryKey = ["notificaciones", "contador"] as const
 
-async function fetchContador(): Promise<number> {
+export async function fetchContador(): Promise<number> {
   const row = await api.get<ContadorRow>(NOTIFICACIONES_ENDPOINTS.contador())
   return Number(row?.no_leidas ?? 0)
 }

@@ -23,11 +23,14 @@ export const PUBLICACIONES_POR_PAGINA = 30
 const refetchInterval = realtimeEnabled ? false : 30_000
 
 /** Canales FORO del usuario: los mismos de `/conversaciones`, filtrados. */
+export async function fetchForos(): Promise<Conversacion[]> {
+  return (await evalCol.getRows<Conversacion>("/comunicaciones/conversaciones")).filter((c) => c.tipo === "FORO")
+}
+
 export function useForosQuery() {
   return useQuery({
     queryKey: forosKeys.lista,
-    queryFn: async () =>
-      (await evalCol.getRows<Conversacion>("/comunicaciones/conversaciones")).filter((c) => c.tipo === "FORO"),
+    queryFn: fetchForos,
     meta: offlineMeta(TTL_OFFLINE.detalle),
     refetchInterval,
   })

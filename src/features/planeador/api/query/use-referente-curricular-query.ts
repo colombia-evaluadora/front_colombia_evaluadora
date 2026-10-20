@@ -137,7 +137,7 @@ function firstRow(body: unknown): ReferenteCurricularRow | undefined {
   return body as ReferenteCurricularRow | undefined
 }
 
-async function fetchReferenteCurricular(
+export async function fetchReferenteCurricular(
   gradoId: number,
   asignaturaId: number | undefined,
 ): Promise<ReferenteCurricular> {

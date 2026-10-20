@@ -200,7 +200,7 @@ interface ActividadesMiasResult {
   diaSiguiente?: string | null
 }
 
-async function fetchActividadesMias(
+export async function fetchActividadesMias(
   params: UseActividadesMiasParams,
 ): Promise<ActividadesMiasResult> {
   const query = new URLSearchParams()

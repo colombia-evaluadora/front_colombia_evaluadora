@@ -13,6 +13,7 @@ import {
   clearUserData,
   deactivatePersistUser,
   getActivePersistUser,
+  getDeviceMode,
   initOfflinePersistence,
   startQueryPersister,
 } from "@/lib/offline/query-persister"
@@ -22,6 +23,15 @@ import {
   seedNavigationFromSession,
   startSessionSnapshotSync,
 } from "@/lib/offline/session"
+import { logoutKeepsDeviceData } from "@/lib/offline/device-policy"
+import {
+  hasLocalCredential,
+  isDeviceSessionLocked,
+  lockDeviceSession,
+  unlockDeviceSession,
+  verifyLocalCredential,
+} from "@/lib/offline/local-credential"
+import { hasVault } from "@/lib/offline/vault"
 import { configureOutbox, isSyncing, startOutbox, syncNow } from "@/lib/offline/outbox/engine"
 import { notifySyncIdle, setSyncInProgressProbe } from "@/lib/offline/sw-update"
 import { outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
@@ -58,12 +68,21 @@ export async function getUser(): Promise<AuthUser | null> {
   }
 }
 
+export interface LogoutOptions {
+  /**
+   * Conservar lo guardado en el equipo y bloquearlo en vez de borrarlo. Por
+   * defecto lo decide `logoutKeepsDeviceData` (app instalada = conserva);
+   * "Borrar los datos de este equipo" pasa `false` después de borrar.
+   */
+  keepDeviceData?: boolean
+}
+
 /**
  * Sin red (§7.8) el logout igual tiene que limpiar este equipo: si el POST
  * falla por red se resuelve como logout local (la cookie `sso_refresh` vence
  * sola en el servidor). Un error HTTP real sí se propaga.
  */
-const logout = async (): Promise<void> => {
+const logout = async (_options?: LogoutOptions): Promise<void> => {
   // Web Push (D-4.4): la suscripción de este navegador se borra ANTES del
   // logout, mientras el token todavía sirve para el `DELETE`. En un equipo
   // compartido el siguiente usuario no debe recibir los avisos del anterior.
@@ -166,22 +185,36 @@ export function useLogout({
     onSuccess: async (...args) => {
       // Lo persistido de ESTE usuario (queries + session) se borra antes de
       // vaciar la memoria (§5.5). Si IndexedDB falla, el logout sigue.
+      // En la app instalada se CONSERVA y queda bloqueado (D-12): un docente
+      // que cierra sesión por error sin red no pierde meses de datos.
+      const [, options] = args
+      const keep = options?.keepDeviceData ?? logoutKeepsDeviceData(getDeviceMode())
       const sub = queryClient.getQueryData<AuthUser>(USER_QUERY_KEY)?.id ?? getActivePersistUser()
-      deactivatePersistUser()
-      // La DEK no sobrevive al logout: el próximo ingreso vuelve a pedir el PIN.
-      lockVault()
-      lastAuthedUser = null
-      // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
-      // pendientes decide conservar o descartar antes de llamar al logout.
-      await setOutboxUser(null)
-      if (sub) await clearUserData(sub).catch(() => undefined)
-      setAuthToken(null)
-      // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
-      stopRealtime()
-      // Full clear, not just the user key — otherwise cached protected data
-      // (nav menu, ...) stays "fresh" for `staleTime` and could be
-      // reused if a different user logs in on the same tab before it expires.
-      queryClient.clear()
+      // Mientras se cierra la sesión el usuario sigue en el cache: un
+      // `hasSession` concurrente (p. ej. la precarga de un link al pasar el
+      // mouse) lo encontraba y `onOnlineAuthenticated` volvía a activar la
+      // persistencia y desbloqueaba la app instalada recién bloqueada.
+      loggingOut = true
+      try {
+        deactivatePersistUser()
+        // La DEK no sobrevive al logout: el próximo ingreso vuelve a pedir el PIN.
+        lockVault()
+        // La outbox NO se borra acá (D-F2-6): el diálogo de logout con
+        // pendientes decide conservar o descartar antes de llamar al logout.
+        await setOutboxUser(null)
+        if (sub && keep) await lockDeviceSession(sub).catch(() => undefined)
+        else if (sub) await clearUserData(sub).catch(() => undefined)
+        setAuthToken(null)
+        // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
+        stopRealtime()
+        // Full clear, not just the user key — otherwise cached protected data
+        // (nav menu, ...) stays "fresh" for `staleTime` and could be
+        // reused if a different user logs in on the same tab before it expires.
+        queryClient.clear()
+        lastAuthedUser = null
+      } finally {
+        loggingOut = false
+      }
       mutationConfig?.onSuccess?.(...args)
     },
   })
@@ -192,6 +225,8 @@ export function useLogout({
 // Último usuario online ya registrado (activación + `session`): evita
 // reescribir IndexedDB en cada navegación, porque el guard corre siempre.
 let lastAuthedUser: AuthUser | null = null
+// Logout en curso: no se vuelve a "autenticar" al usuario que sale.
+let loggingOut = false
 
 /**
  * Usuario confirmado por el servidor: pasa a ser el dueño de lo persistido
@@ -199,10 +234,16 @@ let lastAuthedUser: AuthUser | null = null
  * guarda su `session` con `lastOnlineAuthAt = ahora`.
  */
 async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
-  if (lastAuthedUser === user) return
+  if (lastAuthedUser === user || loggingOut) return
   lastAuthedUser = user
   try {
     await activatePersistUser(queryClient, user.id, { keep: [USER_QUERY_KEY] })
+    // Un logout que arrancó mientras tanto manda: no se desbloquea ni se
+    // vuelve a registrar al usuario que está saliendo.
+    if (loggingOut) return
+    // Con red el servidor ya confirmó quién es: si la app instalada quedó
+    // bloqueada por un "Cerrar sesión" anterior, se desbloquea.
+    await unlockDeviceSession(user.id).catch(() => undefined)
     await setOutboxUser(user.id)
     const pendientes = outboxStore.getSummary().total
     if (pendientes > 0) toast.info(`Tienes ${pendientes} cambios guardados de una sesión anterior. Sincronizando…`)
@@ -224,10 +265,18 @@ async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
  * usuario, su cache persistido y el menú/permisos (≤ 30 días). Sin token: las
  * requests no salen hasta que vuelva la red y el refresh lo reautentique.
  */
-export async function enterOfflineSession(queryClient: QueryClient): Promise<AuthUser | null> {
+export async function enterOfflineSession(
+  queryClient: QueryClient,
+  { unlocked = false }: { unlocked?: boolean } = {},
+): Promise<AuthUser | null> {
   await initOfflinePersistence()
   const session = await getUsableOfflineSession()
   if (!session) return null
+  // Tras "Cerrar sesión" en la app instalada (D-12) no se entra solo: hay que
+  // desbloquear en el login (contraseña o PIN), que vuelve a llamar con
+  // `unlocked: true`.
+  if (!unlocked && (await isDeviceSessionLocked(session.sub))) return null
+  if (unlocked) await unlockDeviceSession(session.sub).catch(() => undefined)
   const user: AuthUser = {
     ...toAuthUser({
       id: session.sub,
@@ -248,8 +297,51 @@ export async function enterOfflineSession(queryClient: QueryClient): Promise<Aut
 
 /** Nombre a ofrecer en "Continuar sin conexión como {nombre}", si se puede. */
 export async function getOfflineContinueName(): Promise<string | null> {
+  return (await getOfflineContinueInfo())?.name ?? null
+}
+
+export interface OfflineContinueInfo {
+  sub: string
+  name: string
+  /** Se cerró sesión en la app instalada: hay que desbloquear para entrar. */
+  locked: boolean
+  /** Tiene PIN: al entrar lo pide la bóveda (`VaultGate`). */
+  hasPin: boolean
+  /** Hay credencial local para verificar la contraseña sin red. */
+  hasCredential: boolean
+}
+
+/** Sesión guardada del último usuario del equipo y cómo se puede reabrir sin red. */
+export async function getOfflineContinueInfo(): Promise<OfflineContinueInfo | null> {
   await initOfflinePersistence()
-  return (await getUsableOfflineSession())?.name ?? null
+  const session = await getUsableOfflineSession()
+  if (!session) return null
+  const [locked, hasPin, hasCredential] = await Promise.all([
+    isDeviceSessionLocked(session.sub),
+    hasVault(session.sub),
+    hasLocalCredential(session.sub),
+  ])
+  return { sub: session.sub, name: session.name, locked, hasPin, hasCredential }
+}
+
+/**
+ * Desbloqueo SIN red de la app instalada tras cerrar sesión: el correo tiene
+ * que ser el del último usuario y la contraseña la última que usó con red en
+ * este equipo (`local-credential.ts`). Con PIN, lo pide luego la bóveda.
+ */
+export async function unlockOfflineSession(
+  queryClient: QueryClient,
+  { email, password }: { email: string; password: string },
+): Promise<AuthUser | null> {
+  const info = await getOfflineContinueInfo()
+  if (!info || info.sub.toLowerCase() !== email.trim().toLowerCase()) return null
+  if (info.hasCredential) {
+    if (!(await verifyLocalCredential(info.sub, password))) return null
+  } else if (!info.hasPin) {
+    // Sin credencial local ni PIN no hay cómo comprobar quién es sin red.
+    return null
+  }
+  return enterOfflineSession(queryClient, { unlocked: true })
 }
 
 let revalidating = false
@@ -359,6 +451,9 @@ export async function hasSession(queryClient: QueryClient): Promise<boolean> {
       const exhausted = attempt >= SESSION_RETRY_DELAYS_MS.length
       if (exhausted || connectivityStore.getState().status === "offline") {
         if (await enterOfflineSession(queryClient)) return true
+        // App instalada bloqueada tras cerrar sesión (D-12): al login, que
+        // ofrece desbloquear sin red con la contraseña o el PIN.
+        if ((await getOfflineContinueInfo())?.locked) return false
         if (exhausted) throw error
       }
       await wait(SESSION_RETRY_DELAYS_MS[attempt])

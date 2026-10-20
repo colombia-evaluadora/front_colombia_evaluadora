@@ -96,7 +96,7 @@ function toActividadTab(row: ActividadTabRow): ActividadTab {
   }
 }
 
-async function fetchActividadesTabs(alcance: PlaneadorAlcanceParams): Promise<ActividadTab[]> {
+export async function fetchActividadesTabs(alcance: PlaneadorAlcanceParams): Promise<ActividadTab[]> {
   const query = new URLSearchParams()
   setAlcanceQuery(query, alcance)
   const qs = query.toString()

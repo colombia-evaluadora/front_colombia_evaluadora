@@ -116,7 +116,7 @@ export interface InformeGrupoParams {
   search?: string
 }
 
-async function fetchInformeGrupo(params: InformeGrupoParams): Promise<FilaInforme[]> {
+export async function fetchInformeGrupo(params: InformeGrupoParams): Promise<FilaInforme[]> {
   const rows = await evalCol.postRows<FilaInformeRow>("/informes/grupo", {
     FK_TGRUPO: params.grupoId,
     PERIODOS: params.periodos?.length ? params.periodos : null,

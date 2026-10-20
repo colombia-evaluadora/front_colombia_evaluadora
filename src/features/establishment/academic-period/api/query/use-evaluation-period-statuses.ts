@@ -10,7 +10,7 @@ import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR
 // (`GET /eval-col/select/ESTADOPERIODOEVALUACION`).
-async function fetchEvaluationPeriodStatuses(): Promise<
+export async function fetchEvaluationPeriodStatuses(): Promise<
   EvaluationPeriodStatusOption[]
 > {
   const rows = await fetchSelectCategory("ESTADOPERIODOEVALUACION")

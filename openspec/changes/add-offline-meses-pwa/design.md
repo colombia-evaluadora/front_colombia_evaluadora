@@ -134,3 +134,68 @@ Red de seguridad en la UI: `useOfflineStall` (1,5 s sin red con un indicador
 de carga visible) en `DataTable`, `Skeleton`, `Spinner`, `LoadingLabel`,
 `Select` y `ComboboxField`, y una línea en el banner offline cuando una query
 observada no tiene datos por falta de red.
+
+## D-6 (ampliado). Preparar cubre las listas con filtros (implementado)
+"Preparar todo el año" ya no depende de lo que se abrió en la sesión: baja
+cada lista con la MISMA key que usa su pantalla
+(`features/offline/lib/prepare-tasks.ts`):
+- Planeador: pestañas de rótulo; por pestaña, resumen, calendario de cada mes
+  de los periodos elegidos y el rail por día (hoy y hasta 15 días ocupados a
+  cada lado, siguiendo `dia_anterior`/`dia_siguiente`); unidades con su
+  referente y actividades; detalle de todas las actividades.
+- Planilla: además de columnas y calificaciones, el rótulo, el referente del
+  grado y el instrumento de cada actividad (popover de la celda).
+- Asistencia: calendario por sede y mes (todas las sesiones y "mis clases"),
+  resumen semanal del mes en curso y el siguiente, y la lista de estudiantes de
+  cada sesión de los próximos 14 días.
+- Informes: cascada sede → año (el actual) → cada jornada → periodos y grupos,
+  y el informe de cada grupo con los periodos por defecto (otras combinaciones
+  de periodos son 2^n y las calcula el servidor: solo con red).
+- Referentes: todas las páginas, catálogos del filtro y el detalle de cada
+  referente como se abre (área y grado por defecto y evidencias del primer
+  enunciado); por área × grado eran cientos de requests por referente.
+- Comunicaciones, notificaciones y establecimiento (solo consulta).
+Solo se preparan las secciones del menú del usuario; lo que depende del rol va
+como tarea opcional (si responde 403 no cuenta como error). Las queries de esas
+pantallas declaran su `meta.offline` (la pantalla lo pisaba al montar si el
+hook no lo tenía). El E2E `offline-all-routes` exige que, tras preparar, ninguna
+query de la vista por defecto quede sin datos.
+
+## D-12. App instalada = equipo personal (implementado, default revisable)
+Cuando la app corre INSTALADA (`display-mode` standalone/fullscreen/
+minimal-ui, o `navigator.standalone` en iOS):
+- El equipo es personal automáticamente: no se muestra "Este es un equipo
+  compartido" y no se exige la lista del piloto (`VITE_APP_OFFLINE_PILOT`).
+  Nadie instala la PWA de su institución en un computador de sala compartida,
+  y el docente que la instala lo hace para trabajar sin red.
+- El kill-switch manda: con `VITE_APP_OFFLINE=off` (o el flag remoto) la app
+  instalada vuelve a las reglas del navegador.
+- Guarda todo sola: "Preparar todo el año" al primer ingreso (con progreso
+  visible) y después incremental en segundo plano, también apenas vuelve la
+  red (D-14). Pide `navigator.storage.persist()` sin esperar a "Preparar".
+- "Cerrar sesión" NO borra lo guardado: un docente que cierra sesión por error
+  sin red perdería meses de datos sin forma de volver a bajarlos. La app queda
+  BLOQUEADA: con red se vuelve a entrar con la contraseña (servidor); sin red,
+  con la contraseña verificada en el equipo (credencial local PBKDF2-SHA256,
+  310 000 iteraciones, nunca la contraseña ni el token,
+  `lib/offline/local-credential.ts`) o con el PIN si se creó (`vault.ts`).
+- Borrar es una acción aparte, "Borrar los datos de este equipo", con aviso
+  fuerte; con cambios sin sincronizar exige una segunda confirmación (y ofrece
+  sincronizar primero). Borra lo del usuario: datos, cola, PIN, credencial
+  local y archivos guardados.
+En la pestaña del navegador todo sigue como antes (piloto, checkbox, logout
+que borra).
+
+## D-14. Autopreparación en segundo plano (implementado, default revisable)
+En un equipo personal, con red estable, la app visible, sin sincronización en
+curso, con la bóveda abierta y el almacenamiento por debajo del 80 %, se
+vuelve a correr "Preparar todo el año" solo: al entrar (a los 5 s), cada 4 h
+mientras la app está abierta y, en la app instalada, al volver la red si lo
+último tiene más de 30 min. Es incremental (lo bajado hace < 2 h no se vuelve a
+pedir; las listas sí, para descubrir lo nuevo) y cede el hilo entre tareas.
+Una sola corrida a la vez para el equipo (el diálogo muestra la automática si
+está en curso). El header muestra "Datos guardados: hace X" (verde < 7 días,
+amarillo < 30, rojo después) o "Guardando datos… N %"; la primera corrida
+muestra además un aviso con el progreso. Se apaga por equipo en "Preparar"
+("Guardar datos automáticamente") o para todos con
+`VITE_APP_OFFLINE_AUTO_PREPARE=off`.
