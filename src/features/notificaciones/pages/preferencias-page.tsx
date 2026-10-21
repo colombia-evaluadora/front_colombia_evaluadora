@@ -13,6 +13,8 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -70,16 +72,20 @@ function PreferenciasContent({ pushToggle }: { pushToggle?: ReactNode }) {
         <div className="flex flex-col gap-6 py-4">
           <NoticeOutlet />
           {preferencias.isPending ? (
-            <div className="grid place-items-center py-16">
-              <Spinner />
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-6 w-72" />
+              <Skeleton className="h-64 w-full" />
             </div>
           ) : preferencias.isError ? (
-            <div className="flex flex-col items-start gap-2 py-8">
-              <p className="text-sm text-red">{getErrorMessage(preferencias.error)}</p>
-              <Button variant="outline" onClick={() => void preferencias.refetch()}>
+            <Empty className="py-16">
+              <EmptyHeader>
+                <EmptyTitle>No se pudieron cargar las preferencias</EmptyTitle>
+                <EmptyDescription>{getErrorMessage(preferencias.error)}</EmptyDescription>
+              </EmptyHeader>
+              <Button size="sm" variant="link" onClick={() => void preferencias.refetch()}>
                 Reintentar
               </Button>
-            </div>
+            </Empty>
           ) : (
             <FormPreferencias
               // Re-monta al recargar del servidor: `defaultValues` se leen una vez.

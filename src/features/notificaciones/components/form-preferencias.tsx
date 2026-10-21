@@ -2,11 +2,21 @@ import { useEffect } from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 
 import { DatePicker } from "@/components/date-picker"
+import { FormSectionHeading } from "@/components/form-section-heading"
+import { Badge } from "@/components/ui/badge"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { LockIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
-import { Toggle } from "@/components/ui/toggle"
-import { cn } from "@/lib/utils"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
   preferenciasFormSchema,
@@ -33,8 +43,17 @@ interface FormPreferenciasProps {
  * activo y bloqueado (D-3.1). Las celdas fijadas por la institución quedan
  * deshabilitadas con "Definido por tu institución" (D-3.3). Base UI ignora
  * `<fieldset disabled>`: cada control recibe `disabled` explícito.
+ *
+ * La matriz copia la de permisos por vista de roles-menus
+ * (`role-views-editor.tsx`): `Table` de `ui/`, `Switch round` y el motivo de
+ * un bloqueo en un `Tooltip` (no en un `title` nativo).
  */
-export function FormPreferencias({ preferencias, onSubmit, disabled = false, onDirtyChange }: FormPreferenciasProps) {
+export function FormPreferencias({
+  preferencias,
+  onSubmit,
+  disabled = false,
+  onDirtyChange,
+}: FormPreferenciasProps) {
   const form = useForm({
     defaultValues: toPreferenciasFormValues(preferencias),
     validators: { onChange: preferenciasFormSchema, onSubmit: preferenciasFormSchema },
@@ -56,21 +75,22 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
     const bloqueado = canal === "push" ? tipo.pushBloqueado : tipo.emailBloqueado
     const nombreCanal = canal === "push" ? "push" : "correo"
     return (
-      <td className="px-2 py-2 text-center">
+      <TableCell>
         <form.Field name={`tipos[${index}].${canal}`}>
           {(field) => (
-            <span className="inline-flex items-center gap-1" title={bloqueado ? BLOQUEADO_TEXTO : undefined}>
+            <span className="inline-flex items-center gap-2">
               <Switch
+                round
                 checked={Boolean(field.state.value)}
                 disabled={disabled || bloqueado}
                 aria-label={`${tipo.etiqueta}: ${nombreCanal}${bloqueado ? ` (${BLOQUEADO_TEXTO})` : ""}`}
                 onCheckedChange={(checked) => field.handleChange(checked)}
               />
-              {bloqueado && <LockIcon aria-hidden className="size-3.5 text-muted-foreground" />}
+              {bloqueado && <BloqueadoIndicador />}
             </span>
           )}
         </form.Field>
-      </td>
+      </TableCell>
     )
   }
 
@@ -78,74 +98,73 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
     <form
       id={PREFERENCIAS_FORM_ID}
       noValidate
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-8"
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
         void form.handleSubmit()
       }}
     >
-      <section aria-labelledby="pref-matriz-titulo" className="flex flex-col gap-2">
-        <div>
-          <h2 id="pref-matriz-titulo" className="text-sm font-semibold">
+      <section aria-labelledby="pref-matriz-titulo" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <FormSectionHeading as="h2" id="pref-matriz-titulo">
             Canales por tipo de notificación
-          </h2>
+          </FormSectionHeading>
           <p className="text-sm text-muted-foreground">
-            La bandeja de la aplicación siempre recibe todas tus notificaciones; aquí eliges qué más quieres recibir
-            por push y por correo.
+            La bandeja de la aplicación siempre recibe todas tus notificaciones; aquí eliges qué más
+            quieres recibir por push y por correo.
           </p>
         </div>
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-2 font-medium">
-                  Tipo
-                </th>
-                <th scope="col" className="w-24 px-2 py-2 text-center font-medium">
-                  En la app
-                </th>
-                <th scope="col" className="w-24 px-2 py-2 text-center font-medium">
-                  Push
-                </th>
-                <th scope="col" className="w-24 px-2 py-2 text-center font-medium">
-                  Correo
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {preferencias.tipos.map((tipo, index) => (
-                <tr key={tipo.tipo}>
-                  <th scope="row" className="px-4 py-2 text-left font-normal">
-                    <span className="block">{tipo.etiqueta}</span>
-                    <span className="block text-xs text-muted-foreground">{CATEGORIA_LABELS[tipo.categoria]}</span>
-                  </th>
-                  <td className="px-2 py-2 text-center">
-                    <Switch checked disabled aria-label={`${tipo.etiqueta}: en la app (siempre activo)`} />
-                  </td>
-                  {celdaCanal(index, "push", tipo)}
-                  {celdaCanal(index, "email", tipo)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table containerClassName="border">
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-foreground">Tipo</TableHead>
+              <TableHead className="w-32 text-foreground">En la app</TableHead>
+              <TableHead className="w-32 text-foreground">Push</TableHead>
+              <TableHead className="w-32 text-foreground">Correo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {preferencias.tipos.map((tipo, index) => (
+              <TableRow key={tipo.tipo}>
+                <TableCell className="whitespace-normal">
+                  <span className="flex flex-col items-start gap-1">
+                    <span className="font-medium">{tipo.etiqueta}</span>
+                    <Badge variant="soft" color="muted">
+                      {CATEGORIA_LABELS[tipo.categoria]}
+                    </Badge>
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    round
+                    checked
+                    disabled
+                    aria-label={`${tipo.etiqueta}: en la app (siempre activo)`}
+                  />
+                </TableCell>
+                {celdaCanal(index, "push", tipo)}
+                {celdaCanal(index, "email", tipo)}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </section>
 
-      <section aria-labelledby="pref-horario-titulo" className="flex flex-col gap-3">
-        <div>
-          <h2 id="pref-horario-titulo" className="text-sm font-semibold">
+      <section aria-labelledby="pref-horario-titulo" className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <FormSectionHeading as="h2" id="pref-horario-titulo">
             Horario silencioso
-          </h2>
+          </FormSectionHeading>
           <p className="text-sm text-muted-foreground">
-            Durante este horario no se envían push ni correos; se entregan al terminar si siguen sin leer. Los avisos
-            urgentes de la institución sí llegan. Zona horaria: {horario.zona}.
+            Durante este horario no se envían push ni correos; se entregan al terminar si siguen sin
+            leer. Los avisos urgentes de la institución sí llegan. Zona horaria: {horario.zona}.
           </p>
           {horario.bloqueado && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <LockIcon aria-hidden className="size-3.5" />
+            <Badge variant="outline" color="muted" className="mt-1">
+              <LockIcon data-icon="inline-start" />
               {BLOQUEADO_TEXTO}
-            </p>
+            </Badge>
           )}
         </div>
 
@@ -154,6 +173,7 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
             <Field orientation="horizontal">
               <Switch
                 id={field.name}
+                round
                 checked={field.state.value}
                 disabled={horarioBloqueado}
                 onCheckedChange={(checked) => field.handleChange(checked)}
@@ -170,10 +190,13 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
                 <form.Field key={clave} name={`horarioSilencioso.${clave}`}>
                   {(field) => {
                     const isInvalid =
-                      (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                      (field.state.meta.isTouched || submissionAttempts > 0) &&
+                      !field.state.meta.isValid
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>{clave === "desde" ? "Desde*" : "Hasta*"}</FieldLabel>
+                        <FieldLabel htmlFor={field.name}>
+                          {clave === "desde" ? "Desde*" : "Hasta*"}
+                        </FieldLabel>
                         <DatePicker
                           mode="time"
                           id={field.name}
@@ -194,36 +217,42 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
 
             <form.Field name="horarioSilencioso.dias">
               {(field) => {
-                const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                const isInvalid =
+                  (field.state.meta.isTouched || submissionAttempts > 0) &&
+                  !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel>Días</FieldLabel>
-                    <div className="flex flex-wrap gap-1" role="group" aria-label="Días del horario silencioso">
-                      {DIAS_SEMANA.map((dia) => {
-                        const activo = field.state.value.includes(dia.value)
-                        return (
-                          <Toggle
-                            key={dia.value}
-                            variant="outline"
-                            aria-label={dia.label}
-                            title={dia.label}
-                            pressed={activo}
-                            disabled={horarioBloqueado}
-                            className={cn("size-9", activo && "bg-primary text-primary-foreground")}
-                            onPressedChange={(pressed) => {
-                              const next = pressed
-                                ? [...field.state.value, dia.value]
-                                : field.state.value.filter((d) => d !== dia.value)
-                              field.handleChange(next)
-                              field.handleBlur()
-                            }}
-                          >
-                            {dia.corto}
-                          </Toggle>
-                        )
-                      })}
-                    </div>
-                    <FieldDescription>Un rango que cruza la medianoche (22:00 a 06:00) es válido.</FieldDescription>
+                    {/* Selección múltiple con el `ToggleGroup` del sistema (como
+                        el filtro de estado de auditoría): los días van como
+                        string en el grupo y como número (1-7) en el form. */}
+                    <ToggleGroup
+                      multiple
+                      spacing={0}
+                      variant="outline"
+                      aria-label="Días del horario silencioso"
+                      disabled={horarioBloqueado}
+                      value={field.state.value.map(String)}
+                      onValueChange={(value: string[]) => {
+                        field.handleChange(value.map(Number))
+                        field.handleBlur()
+                      }}
+                    >
+                      {DIAS_SEMANA.map((dia) => (
+                        <ToggleGroupItem
+                          key={dia.value}
+                          value={String(dia.value)}
+                          size="sm"
+                          aria-label={dia.label}
+                          className="min-w-9"
+                        >
+                          {dia.corto}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                    <FieldDescription>
+                      Un rango que cruza la medianoche (22:00 a 06:00) es válido.
+                    </FieldDescription>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 )
@@ -233,5 +262,16 @@ export function FormPreferencias({ preferencias, onSubmit, disabled = false, onD
         )}
       </section>
     </form>
+  )
+}
+
+function BloqueadoIndicador() {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex text-muted-foreground" />}>
+        <LockIcon aria-hidden className="size-3.5" />
+      </TooltipTrigger>
+      <TooltipContent>{BLOQUEADO_TEXTO}</TooltipContent>
+    </Tooltip>
   )
 }

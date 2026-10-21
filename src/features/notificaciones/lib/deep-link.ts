@@ -30,3 +30,17 @@ export function formatActores(actores: string[], conteo: number): string | null 
   if (total <= 1) return actores[0]
   return `${actores[0]} y ${total - 1} más`
 }
+
+/**
+ * Tipos cuyo actor es siempre el propio dueño de la bandeja: `APP_ACCION` es la
+ * confirmación de una escritura que hizo el usuario (sso V590 encola el aviso
+ * para quien actuó, con `app.user_id` como actor). Anteponer su nombre
+ * ("Laura Martínez: Áreas oficiales: …") no aporta nada.
+ */
+const TIPOS_ACCION_PROPIA = new Set(["APP_ACCION"])
+
+/** Título visible: con el prefijo de actores solo si los actores son otras personas. */
+export function tituloNotificacion(n: { tipo: string; titulo: string; actores: string[]; conteo: number }): string {
+  const actores = TIPOS_ACCION_PROPIA.has(n.tipo) ? null : formatActores(n.actores, n.conteo)
+  return actores ? `${actores}: ${n.titulo}` : n.titulo
+}

@@ -4,12 +4,15 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { BellIcon, CloudOffIcon, GearIcon } from "@/components/ui/icons"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { BellIcon, CloudOffIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { getErrorMessage } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useMarcarTodasLeidas } from "@/features/notificaciones/api/mutations/marcar-todas-leidas"
@@ -76,12 +79,14 @@ export function CampanaNotificaciones() {
       >
         <BellIcon />
         {noLeidas > 0 && (
-          <span
+          <Badge
             aria-hidden
-            className="absolute -top-1.5 -right-1.5 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-red px-1 text-[10px] font-semibold text-white tabular-nums"
+            variant="fill"
+            color="destructive"
+            className="absolute -top-1.5 -right-1.5 h-4.5 min-w-4.5 rounded-full px-1 tracking-normal tabular-nums"
           >
             {etiqueta}
-          </span>
+          </Badge>
         )}
       </PopoverTrigger>
       {/* Anuncio accesible de cambios del contador (spec "Anuncio accesible"). */}
@@ -90,7 +95,12 @@ export function CampanaNotificaciones() {
       </span>
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] gap-0 p-0">
         <div className="flex items-center gap-2 border-b px-4 py-2">
-          <h2 className="flex-1 text-sm font-medium">Notificaciones</h2>
+          <h2 className="flex-1 text-sm font-semibold">Notificaciones</h2>
+          {noLeidas > 0 && (
+            <Badge variant="soft" color="info">
+              {etiqueta} sin leer
+            </Badge>
+          )}
           <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
             <Button
               variant="link"
@@ -104,13 +114,13 @@ export function CampanaNotificaciones() {
         </div>
 
         {status === "offline" && (
-          <p role="status" className="flex items-center gap-2 bg-yellow-22 px-4 py-2 text-xs">
-            <CloudOffIcon aria-hidden className="size-4" />
+          <p role="status" className="flex items-center gap-2 border-b bg-yellow-22 px-4 py-2 text-xs text-foreground">
+            <CloudOffIcon aria-hidden className="size-4 text-yellow" />
             Sin conexión: se muestran las notificaciones guardadas.
           </p>
         )}
         {marcarTodas.isError && (
-          <p role="alert" className="px-4 py-2 text-xs text-red">
+          <p role="alert" className="border-b bg-red-22 px-4 py-2 text-xs text-red">
             {getErrorMessage(marcarTodas.error)}
           </p>
         )}
@@ -121,13 +131,29 @@ export function CampanaNotificaciones() {
               <Spinner />
             </div>
           ) : lista.isError && recientes.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No se pudieron cargar las notificaciones.</p>
+            <Empty className="py-8">
+              <EmptyHeader>
+                <EmptyTitle>No se pudieron cargar las notificaciones</EmptyTitle>
+                <EmptyDescription>{getErrorMessage(lista.error)}</EmptyDescription>
+              </EmptyHeader>
+              <Button size="sm" variant="link" onClick={() => void lista.refetch()}>
+                Reintentar
+              </Button>
+            </Empty>
           ) : recientes.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No tienes notificaciones.</p>
+            <Empty className="py-8">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>No tienes notificaciones</EmptyTitle>
+                <EmptyDescription>Cuando algo requiera tu atención aparecerá aquí.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
-            <ul>
+            <ul className="divide-y">
               {recientes.map((n) => (
-                <li key={n.id}>
+                <li key={n.id} className={cn("hover:bg-muted/50", !n.leida && "bg-blue-22/40")}>
                   <NotificacionItem
                     compact
                     notificacion={n}
