@@ -5,11 +5,21 @@ export const BITACORA_MODULOS = {
   GESTION_ACADEMICA: "Gestión Académica",
   GESTION_ESTUDIANTIL: "Gestión Estudiantil",
   ADMINISTRACION: "Administración del Sistema",
+  COMUNICACIONES: "Comunicaciones",
 } as const
 
 export type BitacoraModulo = keyof typeof BITACORA_MODULOS
 
 export const BITACORA_MODULO_IDS = Object.keys(BITACORA_MODULOS) as BitacoraModulo[]
+
+/**
+ * Módulos cuyos registros tienen sede y jornada. Administración es global y Comunicaciones (chat,
+ * foros y actividades) cuelga del establecimiento del canal, sin sede (V565, ruta CANAL): ahí no se
+ * filtra ni se muestra sede/jornada.
+ */
+export function moduloConSedeJornada(modulo: BitacoraModulo) {
+  return modulo !== "ADMINISTRACION" && modulo !== "COMUNICACIONES"
+}
 
 export const BITACORA_ACCIONES = {
   CREAR: "Crear",
@@ -64,6 +74,11 @@ export interface BitacoraEvento {
   entidad: string
   registro: string
   accion: BitacoraAccion
+  /**
+   * Qué se hizo, en palabras del módulo que escribió (`app.etiqueta`, V571): "Agregar a Ana al
+   * grupo Feria", "Actualización del funcionario …". `null` si no la dejó.
+   */
+  descripcion: string | null
   /** Columnas que cambiaron, sin nombre legible (los legibles vienen del estado). */
   campos: string[]
   motivo: string | null

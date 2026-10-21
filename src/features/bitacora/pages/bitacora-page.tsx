@@ -29,7 +29,7 @@ import { useBitacoraEstadoQuery } from "@/features/bitacora/api/query/use-bitaco
 import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import { useBitacoraQuery } from "@/features/bitacora/api/query/use-bitacora-query"
-import { BITACORA_MODULOS, type BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
+import { BITACORA_MODULOS, moduloConSedeJornada, type BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
 import { createBitacoraColumns } from "@/features/bitacora/components/columns-bitacora"
 import { DetalleEvento } from "@/features/bitacora/components/detalle-evento"
 import { DialogRestaurarEvento } from "@/features/bitacora/components/dialog-restaurar-evento"
@@ -82,7 +82,7 @@ function BitacoraPageContent() {
   )
 
   const columns = createBitacoraColumns({
-    conSedeJornada: modulo !== "ADMINISTRACION",
+    conSedeJornada: moduloConSedeJornada(modulo),
     expandidoId,
     estados,
     onToggle: (e) => setExpandidoId((id) => (id === e.id ? null : e.id)),
@@ -104,14 +104,16 @@ function BitacoraPageContent() {
   const alcance =
     modulo === "ADMINISTRACION"
       ? `Toda la plataforma, ${rango}`
-      : [
-          establecimiento,
-          sede ? `sede ${sede}` : "todas las sedes",
-          jornada ? `jornada ${jornada.toLowerCase()}` : "todas las jornadas",
-          rango,
-        ]
-          .filter(Boolean)
-          .join(", ")
+      : !moduloConSedeJornada(modulo)
+        ? [establecimiento, rango].filter(Boolean).join(", ")
+        : [
+            establecimiento,
+            sede ? `sede ${sede}` : "todas las sedes",
+            jornada ? `jornada ${jornada.toLowerCase()}` : "todas las jornadas",
+            rango,
+          ]
+            .filter(Boolean)
+            .join(", ")
 
   return (
     <TableScreen>

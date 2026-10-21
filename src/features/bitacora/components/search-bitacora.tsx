@@ -26,6 +26,7 @@ import {
   BITACORA_ACCIONES,
   BITACORA_MODULO_IDS,
   BITACORA_MODULOS,
+  moduloConSedeJornada,
   type BitacoraModulo,
 } from "@/features/bitacora/api/types/bitacora"
 import { filtrosVacios, type BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
@@ -92,6 +93,7 @@ export function SearchBitacora({
 
   const rangoInvalido = draft.desde && draft.hasta && draft.hasta < draft.desde
   const set = (patch: Partial<BitacoraFilters>) => setDraft((d) => ({ ...d, ...patch }))
+  const conSedeJornada = moduloConSedeJornada(draft.modulo)
 
   function toggleAccion(accion: string, checked: boolean) {
     set({ accion: checked ? [...draft.accion, accion] : draft.accion.filter((a) => a !== accion) })
@@ -140,7 +142,15 @@ export function SearchBitacora({
             options={MODULO_OPTIONS}
             value={draft.modulo}
             // Cada módulo tiene sus entidades: al cambiarlo se quita la elegida.
-            onChange={(v) => v && set({ modulo: v as BitacoraModulo, entidad: "" })}
+            // Comunicaciones no tiene sede ni jornada: no se arrastran las de otro módulo.
+            onChange={(v) =>
+              v &&
+              set({
+                modulo: v as BitacoraModulo,
+                entidad: "",
+                ...(moduloConSedeJornada(v as BitacoraModulo) ? {} : { sede: "", jornada: "" }),
+              })
+            }
             obligatorio
           />
           {esSuperAdmin && draft.modulo !== "ADMINISTRACION" && (
@@ -155,15 +165,19 @@ export function SearchBitacora({
             />
           )}
           {/* Alcance de mayor a menor; la sede va a todo el ancho: sus nombres son largos. */}
-          <Combo id="bitacora-sede" label="Sede" options={sedesDraft} value={draft.sede} onChange={(v) => set({ sede: v, jornada: "" })} />
+          {conSedeJornada && (
+            <Combo id="bitacora-sede" label="Sede" options={sedesDraft} value={draft.sede} onChange={(v) => set({ sede: v, jornada: "" })} />
+          )}
           <div className="grid grid-cols-2 gap-3">
-            <Combo
-              id="bitacora-jornada"
-              label="Jornada"
-              options={jornadasDraft}
-              value={draft.jornada}
-              onChange={(v) => set({ jornada: v })}
-            />
+            {conSedeJornada && (
+              <Combo
+                id="bitacora-jornada"
+                label="Jornada"
+                options={jornadasDraft}
+                value={draft.jornada}
+                onChange={(v) => set({ jornada: v })}
+              />
+            )}
             <Combo
               id="bitacora-entidad"
               label="Entidad"
