@@ -43,6 +43,7 @@ import {
   PlaneadorLecturaBanner,
 } from "@/features/planeador/components/planeador-docente-selector"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
+import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { getErrorMessage } from "@/lib/api-client"
 
 /**
@@ -145,9 +146,10 @@ function PlaneadorUnidadesPageContent() {
   // derecha nunca quede vacía.
   const unidadIdNum = filtered.find((u) => String(u.id) === search.unidad)?.id ?? filtered[0]?.id
   const unidadId = unidadIdNum !== undefined ? String(unidadIdNum) : undefined
-  // Unidad de otro docente (Coordinador viendo toda su sede): el panel
-  // queda en solo lectura.
-  const unidadAbiertaAjena = esAjena(filtered.find((u) => String(u.id) === unidadId))
+  // Unidad de otro docente vista por Coordinador/Rector/Super Admin: solo lectura.
+  // Para el docente es compartida (Regla 25): la usa, pero no la edita.
+  const soloLecturaAjena = (unidad: UnidadTematica | undefined) => scope.puedeElegirDocente && esAjena(unidad)
+  const unidadAbiertaAjena = soloLecturaAjena(filtered.find((u) => String(u.id) === unidadId))
 
   const setUnidadId = (next: string) =>
     navigate({
@@ -264,7 +266,7 @@ function PlaneadorUnidadesPageContent() {
                       <ul className="flex flex-col gap-2">
                         {filtered.map((unidad) => (
                           <li key={unidad.id}>
-                            <PlaneadorSoloLecturaScope activo={esAjena(unidad)}>
+                            <PlaneadorSoloLecturaScope activo={soloLecturaAjena(unidad)}>
                               <UnidadCard
                                 unidad={unidad}
                                 mostrarDocente={mostrarDocente}
