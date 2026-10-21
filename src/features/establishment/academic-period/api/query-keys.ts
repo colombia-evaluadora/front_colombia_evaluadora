@@ -96,6 +96,9 @@ export const academicPeriodKeys = {
     all: gradesAll,
     list: <P>(params: P) => [...gradesAll, params] as const,
   },
+  gradeRotulos: {
+    byGrade: (gradeId?: number) => ["grade-rotulos-referente", gradeId] as const,
+  },
   horario: {
     all: horarioAll,
     byGrade: (gradeId?: number) => [...horarioAll, gradeId] as const,

@@ -15,7 +15,7 @@ import { usePeriodAreasQuery, type AreaOption } from "@/features/establishment/a
 import { useCurriculumNodesQuery } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SelectItemsDialog } from "@/components/select-items-dialog"
-import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { useGradeSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
 import {
   promotionApprovalSchema,
@@ -112,7 +112,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
     ref,
   ) {
     const isGradeScope = gradeId != null
-    const subjectLabel = useStudyPlanSubjectLabel(gradeId, Boolean(isPreescolar))
+    const subjectLabel = useGradeSubjectLabel(gradeId, Boolean(isPreescolar))
 
     const { data: periodCriteria, isPending: periodLoading } =
       usePromotionCriteriaQuery(academicPeriodId)
