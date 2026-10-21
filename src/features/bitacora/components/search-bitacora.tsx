@@ -15,12 +15,23 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { ESTABLECIMIENTOS, JORNADAS, SEDES } from "@/features/bitacora/api/mock-bitacora"
-import { BITACORA_ACCIONES, BITACORA_MODULO_IDS, BITACORA_MODULOS, type BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
+
+import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
+import { useBitacoraEntidadesQuery } from "@/features/bitacora/api/query/use-bitacora-entidades-query"
+import {
+  BITACORA_ACCION_IDS,
+  BITACORA_ACCIONES,
+  BITACORA_MODULO_IDS,
+  BITACORA_MODULOS,
+  type BitacoraModulo,
+} from "@/features/bitacora/api/types/bitacora"
 import { filtrosVacios, type BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
 
-const MODULO_OPTIONS = BITACORA_MODULO_IDS.map((m) => ({ value: m, label: BITACORA_MODULOS[m].nombre }))
-const ACCION_OPTIONS = BITACORA_ACCIONES.map((a) => ({ value: a, label: a }))
+const MODULO_OPTIONS = BITACORA_MODULO_IDS.map((m) => ({ value: m, label: BITACORA_MODULOS[m] }))
+const ACCION_OPTIONS = BITACORA_ACCION_IDS.map((a) => ({ value: a, label: BITACORA_ACCIONES[a] }))
 const RANGO_INVALIDO = "La fecha Hasta no puede ser anterior a la fecha Desde."
 
 interface SearchBitacoraProps {
@@ -43,14 +54,30 @@ export function SearchBitacora({
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(filters)
 
-  const entidadesDe = (m: BitacoraModulo) => BITACORA_MODULOS[m].entidades.map((e) => ({ value: e, label: e }))
-  const entidadOptions = entidadesDe(filters.modulo)
+  const toOptions = (rows: { id: number; name: string }[] = []) =>
+    rows.map((r) => ({ value: String(r.id), label: r.name }))
+  const establecimientos = toOptions(useEstablishmentsOptionsQuery(esSuperAdmin).data)
+  // Las sedes dependen del establecimiento: las del panel, del que se está eligiendo.
+  const toSedes = (rows: { id: number; nombre: string }[] = []) =>
+    rows.map((s) => ({ value: String(s.id), label: s.nombre }))
+  const sedes = toSedes(useBitacoraSedesQuery(filters.establecimiento).data)
+  const sedesDraft = toSedes(useBitacoraSedesQuery(draft.establecimiento).data)
+  // Con sede elegida, sus jornadas; sin sede (o sin respuesta), el catálogo general.
+  const catalogoJornadas = toOptions(useJornadasQuery().data)
+  const jornadasDe = (rows: { id: number; nombre: string }[] | undefined) =>
+    rows?.length ? rows.map((j) => ({ value: String(j.id), label: j.nombre })) : catalogoJornadas
+  const jornadas = jornadasDe(useSedeJornadasActivasQuery(filters.sede ? Number(filters.sede) : null).data)
+  const jornadasDraft = jornadasDe(useSedeJornadasActivasQuery(draft.sede ? Number(draft.sede) : null).data)
+  const toEntidades = (rows: { codigo: string; nombre: string }[] = []) =>
+    rows.map((e) => ({ value: e.codigo, label: e.nombre }))
+  const entidadOptions = toEntidades(useBitacoraEntidadesQuery(filters.modulo).data)
+  const entidadesDraft = toEntidades(useBitacoraEntidadesQuery(draft.modulo).data)
   const syntax: QuerySyntax<BitacoraFilters> = {
     empty: { ...filtrosVacios(), modulo: filters.modulo, establecimiento: filters.establecimiento, desde: filters.desde, hasta: filters.hasta },
     freeText: { key: "usuario", field: "q" },
     terms: [
-      optionTerm("sede", "sede", SEDES),
-      optionTerm("jornada", "jornada", JORNADAS),
+      optionTerm("sede", "sede", sedes),
+      optionTerm("jornada", "jornada", jornadas),
       optionTerm("entidad", "entidad", entidadOptions),
       optionsTerm("accion", "accion", ACCION_OPTIONS),
     ],
@@ -76,6 +103,13 @@ export function SearchBitacora({
     setOpen(false)
   }
 
+  // "Limpiar filtros" del panel: conserva módulo, establecimiento y la búsqueda.
+  function handleClearFilters() {
+    const next = { ...filtrosVacios(), modulo: draft.modulo, establecimiento: draft.establecimiento, q: freeText }
+    setDraft(next)
+    applyFilters(next)
+  }
+
   function handleClearAll() {
     clearAllFilters()
     setSearch("")
@@ -90,6 +124,7 @@ export function SearchBitacora({
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}
+        onClearFilters={handleClearFilters}
         activeFilterCount={activeFilterCount}
         badgeCount={activeFilterCount - (filters.q ? 1 : 0)}
         open={open}
@@ -108,16 +143,35 @@ export function SearchBitacora({
             onChange={(v) => v && set({ modulo: v as BitacoraModulo, entidad: "" })}
             obligatorio
           />
-          {esSuperAdmin && draft.modulo !== "administracion" && (
+          {esSuperAdmin && draft.modulo !== "ADMINISTRACION" && (
             <Combo
               id="bitacora-establecimiento"
               label="Establecimiento *"
-              options={ESTABLECIMIENTOS}
+              options={establecimientos}
               value={draft.establecimiento}
-              onChange={(v) => v && set({ establecimiento: v })}
+              // Otro establecimiento, otras sedes: se quita la elegida.
+              onChange={(v) => v && set({ establecimiento: v, sede: "", jornada: "" })}
               obligatorio
             />
           )}
+          {/* Alcance de mayor a menor; la sede va a todo el ancho: sus nombres son largos. */}
+          <Combo id="bitacora-sede" label="Sede" options={sedesDraft} value={draft.sede} onChange={(v) => set({ sede: v, jornada: "" })} />
+          <div className="grid grid-cols-2 gap-3">
+            <Combo
+              id="bitacora-jornada"
+              label="Jornada"
+              options={jornadasDraft}
+              value={draft.jornada}
+              onChange={(v) => set({ jornada: v })}
+            />
+            <Combo
+              id="bitacora-entidad"
+              label="Entidad"
+              options={entidadesDraft}
+              value={draft.entidad}
+              onChange={(v) => set({ entidad: v })}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="bitacora-desde">Desde *</FieldLabel>
@@ -143,32 +197,15 @@ export function SearchBitacora({
             </Field>
           </div>
           {rangoInvalido && <FieldError>{RANGO_INVALIDO}</FieldError>}
-          <div className="grid grid-cols-2 gap-3">
-            <Combo id="bitacora-sede" label="Sede" options={SEDES} value={draft.sede} onChange={(v) => set({ sede: v })} />
-            <Combo
-              id="bitacora-jornada"
-              label="Jornada"
-              options={JORNADAS}
-              value={draft.jornada}
-              onChange={(v) => set({ jornada: v })}
-            />
-          </div>
-          <Combo
-            id="bitacora-entidad"
-            label="Entidad"
-            options={entidadesDe(draft.modulo)}
-            value={draft.entidad}
-            onChange={(v) => set({ entidad: v })}
-          />
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="grid grid-cols-2 gap-x-3 gap-y-2">
             <legend className="mb-2 text-sm font-medium">Acción</legend>
-            {BITACORA_ACCIONES.map((accion) => (
+            {BITACORA_ACCION_IDS.map((accion) => (
               <label key={accion} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={draft.accion.includes(accion)}
                   onCheckedChange={(checked) => toggleAccion(accion, checked)}
                 />
-                {accion}
+                {BITACORA_ACCIONES[accion]}
               </label>
             ))}
           </fieldset>

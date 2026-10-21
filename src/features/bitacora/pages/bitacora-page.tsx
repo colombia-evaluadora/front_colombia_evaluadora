@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { ExportDialog } from "@/components/export-dialog"
 import {
   TableScreen,
   TableScreenActions,
@@ -15,17 +16,18 @@ import {
 } from "@/components/layout/table-screen"
 import { useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
-import { FilePdfIcon, FileXlsIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 import { parseDateValue } from "@/lib/date-value"
-import { toPageCount } from "@/lib/pagination"
-
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { AuditViewTabs } from "@/features/administration/audits/components/audit-view-tabs"
-import { ESTABLECIMIENTOS } from "@/features/bitacora/api/mock-bitacora"
+
+import { exportarBitacora } from "@/features/bitacora/api/mutations/exportar-bitacora"
+import { useBitacoraEstadoQuery } from "@/features/bitacora/api/query/use-bitacora-estado-query"
+import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import { useBitacoraQuery } from "@/features/bitacora/api/query/use-bitacora-query"
 import { BITACORA_MODULOS, type BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
 import { createBitacoraColumns } from "@/features/bitacora/components/columns-bitacora"
@@ -47,57 +49,74 @@ const fechaCorta = (value: string) => {
 function BitacoraPageContent() {
   const { notify } = useNotify()
   const { data: user } = useUser()
-  const { filters, applyFilters, clearAllFilters, activeFilterCount } = useBitacoraFilters()
-  const { modulo } = filters
-  const config = BITACORA_MODULOS[modulo]
+  const esSuperAdmin = Boolean(user?.isSuperAdmin)
+  const { filters: filtrosUrl, applyFilters, clearAllFilters, activeFilterCount } = useBitacoraFilters()
   const paginacion = useTablePagination()
-  const [expandidoId, setExpandidoId] = useState<number | null>(null)
+  const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [restaurando, setRestaurando] = useState<BitacoraEvento | null>(null)
 
-  const { data: eventos = [], isPending, isError, error, refetch } = useBitacoraQuery(filters)
+  // El Superadministrador consulta un establecimiento: sin elegido, el primero.
+  const { data: establecimientos = [] } = useEstablishmentsOptionsQuery(esSuperAdmin)
+  const filters = {
+    ...filtrosUrl,
+    establecimiento:
+      filtrosUrl.establecimiento || (esSuperAdmin ? String(establecimientos[0]?.id ?? "") : ""),
+  }
+  const { modulo } = filters
+  const { data: sedes = [] } = useBitacoraSedesQuery(filters.establecimiento)
+  const { data: jornadas = [] } = useJornadasQuery()
+  const esperaEstablecimiento = esSuperAdmin && modulo !== "ADMINISTRACION" && !filters.establecimiento
 
-  // Más recientes primero, salvo que se ordene por otra columna.
-  const [orden] = paginacion.sorting
-  const ordenados = [...eventos].sort((a, b) => {
-    if (!orden || orden.id === "fecha") {
-      const r = a.fecha.getTime() - b.fecha.getTime()
-      return orden && !orden.desc ? r : -r
-    }
-    const valor = (e: BitacoraEvento) =>
-      orden.id === "usuario" ? e.usuario.nombre : orden.id === "sede" ? `${e.sede}` : orden.id === "accion" ? e.accion : e.entidad
-    const r = valor(a).localeCompare(valor(b), "es")
-    return orden.desc ? -r : r
-  })
-  const pageCount = toPageCount(ordenados.length, paginacion.pageSize)
-  const pageIndex = Math.min(paginacion.pageIndex, Math.max(pageCount - 1, 0))
-  const desde = pageIndex * paginacion.pageSize
-  const pagina = ordenados.slice(desde, desde + paginacion.pageSize)
+  const params = {
+    filters,
+    sorting: paginacion.sorting,
+    pageIndex: paginacion.pageIndex,
+    pageSize: paginacion.pageSize,
+  }
+  const { data, isPending, isError, error, refetch } = useBitacoraQuery(params, !esperaEstablecimiento)
+  const eventos = data?.rows ?? []
+  const pageCount = data?.pageCount ?? 0
+  const { data: estados } = useBitacoraEstadoQuery(
+    eventos.map((e) => e.id),
+    filters.establecimiento,
+  )
 
   const columns = createBitacoraColumns({
-    conSedeJornada: modulo !== "administracion",
+    conSedeJornada: modulo !== "ADMINISTRACION",
     expandidoId,
+    estados,
     onToggle: (e) => setExpandidoId((id) => (id === e.id ? null : e.id)),
   })
   const { table } = useDataTable({
     columns,
-    data: pagina,
+    data: eventos,
     pageCount,
-    getRowId: (row) => String(row.id),
+    getRowId: (row) => row.id,
     ...paginacion,
-    pageIndex,
     columnVisibilityStorageKey: "bitacora-column-visibility",
   })
 
-  const establecimiento = ESTABLECIMIENTOS.find((e) => e.value === filters.establecimiento)?.label
+  const establecimiento = establecimientos.find((e) => String(e.id) === filters.establecimiento)?.name
+  // Dónde está parado el usuario: establecimiento, sede y jornada, y el rango.
+  const sede = sedes.find((s) => String(s.id) === filters.sede)?.nombre
+  const jornada = jornadas.find((j) => String(j.id) === filters.jornada)?.name
+  const rango = `del ${fechaCorta(filters.desde)} al ${fechaCorta(filters.hasta)}`
   const alcance =
-    modulo === "administracion"
-      ? `del ${fechaCorta(filters.desde)} al ${fechaCorta(filters.hasta)}`
-      : `${establecimiento}, del ${fechaCorta(filters.desde)} al ${fechaCorta(filters.hasta)}`
+    modulo === "ADMINISTRACION"
+      ? `Toda la plataforma, ${rango}`
+      : [
+          establecimiento,
+          sede ? `sede ${sede}` : "todas las sedes",
+          jornada ? `jornada ${jornada.toLowerCase()}` : "todas las jornadas",
+          rango,
+        ]
+          .filter(Boolean)
+          .join(", ")
 
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description={alcance}>Bitácora de {config.nombre}</TableScreenTitle>
+        <TableScreenTitle description={alcance}>Bitácora de {BITACORA_MODULOS[modulo]}</TableScreenTitle>
         <AuditViewTabs />
         <TableScreenToolbar>
           <SearchBitacora
@@ -105,27 +124,15 @@ function BitacoraPageContent() {
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
             activeFilterCount={activeFilterCount}
-            esSuperAdmin={Boolean(user?.isSuperAdmin)}
+            esSuperAdmin={esSuperAdmin}
           />
           <TableScreenActions>
-            {(["PDF", "Excel"] as const).map((formato) => (
-              <Button
-                key={formato}
-                variant="outline"
-                color="neutral"
-                size="sm"
-                disabled={eventos.length === 0}
-                // TODO: reporte con los mismos filtros cuando exista en el back; queda registrado.
-                onClick={() =>
-                  notify(`La exportación a ${formato} estará disponible cuando se conecte la bitácora.`, {
-                    variant: "info",
-                  })
-                }
-              >
-                {formato === "PDF" ? <FilePdfIcon data-icon="inline-start" /> : <FileXlsIcon data-icon="inline-start" />}
-                Exportar {formato}
-              </Button>
-            ))}
+            <ExportDialog
+              label="Exportar la bitácora filtrada"
+              disabled={eventos.length === 0}
+              description="Elige un formato para exportar todos los registros de la bitácora que coincidan con la búsqueda y los filtros activos."
+              onExport={(formato) => exportarBitacora(formato, params)}
+            />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -139,26 +146,23 @@ function BitacoraPageContent() {
           errorMessage={error ? getErrorMessage(error) : undefined}
           renderSubRow={(row) =>
             expandidoId === row.original.id ? (
-              <DetalleEvento evento={row.original as BitacoraEvento} onRestaurar={setRestaurando} />
+              <DetalleEvento
+                evento={row.original as BitacoraEvento}
+                estado={estados?.get(row.original.id)}
+                onRestaurar={setRestaurando}
+              />
             ) : null
           }
-          emptyMessage={
-            <span className="flex flex-col items-center gap-3">
-              No hay registros de la bitácora que coincidan con la búsqueda y los filtros aplicados.
-              <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
-                Limpiar filtros
-              </Button>
-            </span>
-          }
+          emptyMessage="No hay registros de la bitácora que coincidan con la búsqueda y los filtros aplicados."
         />
         <Pagination
           viewOptions={<DataTableViewOptions table={table} />}
-          pageIndex={pageIndex}
+          pageIndex={paginacion.pageIndex}
           pageCount={pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < pageCount - 1}
+          canPrev={paginacion.pageIndex > 0}
+          canNext={paginacion.pageIndex < pageCount - 1}
           onPageChange={paginacion.goToPage}
-          totalCount={ordenados.length}
+          totalCount={data?.totalCount ?? 0}
           pageSize={paginacion.pageSize}
           onPageSizeChange={paginacion.setPageSize}
         />
@@ -166,7 +170,9 @@ function BitacoraPageContent() {
 
       <DialogRestaurarEvento
         modulo={modulo}
+        establecimiento={filters.establecimiento}
         evento={restaurando}
+        estado={restaurando ? estados?.get(restaurando.id) : undefined}
         onClose={() => setRestaurando(null)}
         onRestaurado={() => {
           setRestaurando(null)

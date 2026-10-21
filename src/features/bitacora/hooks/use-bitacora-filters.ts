@@ -3,17 +3,21 @@ import { subDays } from "date-fns"
 import { formatDateValue } from "@/lib/date-value"
 import { bitacoraRoute } from "@/router"
 
-import { ESTABLECIMIENTOS } from "@/features/bitacora/api/mock-bitacora"
 import type { BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
 
 /** Filtros en la forma del buscador (strings; vacío = sin filtro). */
 export interface BitacoraFilters {
   modulo: BitacoraModulo
   q: string
+  /** pk del establecimiento; solo lo elige el Superadministrador. */
   establecimiento: string
+  /** pk de la sede. */
   sede: string
+  /** `pk_lista_valor` de la jornada. */
   jornada: string
+  /** Código de la entidad. */
   entidad: string
+  /** Códigos de acción (`MODIFICAR`, …). */
   accion: string[]
   desde: string
   hasta: string
@@ -28,9 +32,9 @@ export function rangoPorDefecto() {
 /** Módulo, establecimiento y fechas son obligatorios: se cambian, pero no se quitan. */
 export function filtrosVacios(): BitacoraFilters {
   return {
-    modulo: "establecimiento",
+    modulo: "ESTABLECIMIENTO",
     q: "",
-    establecimiento: ESTABLECIMIENTOS[0]!.value,
+    establecimiento: "",
     sede: "",
     jornada: "",
     entidad: "",
@@ -47,7 +51,7 @@ export function useBitacoraFilters() {
   const filters: BitacoraFilters = {
     modulo: search.modulo ?? base.modulo,
     q: search.q ?? "",
-    establecimiento: search.establecimiento ?? base.establecimiento,
+    establecimiento: search.establecimiento ?? "",
     sede: search.sede ?? "",
     jornada: search.jornada ?? "",
     entidad: search.entidad ?? "",
@@ -76,14 +80,15 @@ export function useBitacoraFilters() {
   }
 
   // Los obligatorios no cuentan como filtro activo.
-  const activeFilterCount = [filters.q, filters.sede, filters.jornada, filters.entidad].filter(Boolean).length +
-    filters.accion.length
+  const activeFilterCount =
+    [filters.q, filters.sede, filters.jornada, filters.entidad].filter(Boolean).length + filters.accion.length
 
   return {
     filters,
     applyFilters,
     // Limpiar conserva módulo y establecimiento.
-    clearAllFilters: () => applyFilters({ ...filtrosVacios(), modulo: filters.modulo, establecimiento: filters.establecimiento }),
+    clearAllFilters: () =>
+      applyFilters({ ...filtrosVacios(), modulo: filters.modulo, establecimiento: filters.establecimiento }),
     activeFilterCount,
   }
 }

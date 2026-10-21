@@ -9,17 +9,20 @@ import { Button } from "@/components/ui/button"
 import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import type { BitacoraCambio, BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
+import type { BitacoraCambio, BitacoraEstado, BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
 import { AccionBadge } from "@/features/bitacora/components/accion-badge"
 
 export function createBitacoraColumns({
   conSedeJornada,
   expandidoId,
+  estados,
   onToggle,
 }: {
   /** Administración del Sistema es global: no tiene sede ni jornada. */
   conSedeJornada: boolean
-  expandidoId: number | null
+  expandidoId: string | null
+  /** Campos legibles de cada evento; mientras cargan se muestran los nombres crudos. */
+  estados: Map<string, BitacoraEstado> | undefined
   onToggle: (evento: BitacoraEvento) => void
 }): ColumnDef<BitacoraEvento>[] {
   const columnas: ColumnDef<BitacoraEvento>[] = [
@@ -74,7 +77,9 @@ export function createBitacoraColumns({
       cell: ({ row }) => (
         <span className="flex flex-col">
           <span className="font-medium">{row.original.usuario.nombre}</span>
-          <span className="text-xs text-muted-foreground">{row.original.usuario.rol}</span>
+          {row.original.usuario.rol && (
+            <span className="text-xs text-muted-foreground">{row.original.usuario.rol}</span>
+          )}
         </span>
       ),
     },
@@ -88,7 +93,7 @@ export function createBitacoraColumns({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Sede y jornada" />,
       cell: ({ row }) => (
         <span className="flex flex-col">
-          <span>{row.original.sede ?? "—"}</span>
+          <span>{row.original.sede ?? "Todas"}</span>
           <span className="text-xs text-muted-foreground">{row.original.jornada ?? "—"}</span>
         </span>
       ),
@@ -120,11 +125,13 @@ export function createBitacoraColumns({
       meta: { label: "Cambio" },
       header: () => "Cambio",
       cell: ({ row }) => {
-        const [primero, ...resto] = row.original.cambios
+        const cambios = estados?.get(row.original.id)?.cambios
+        if (!cambios) return <span className="text-muted-foreground">{row.original.campos.join(", ") || "—"}</span>
+        const [primero, ...resto] = cambios
         if (!primero) return "—"
         return (
           <span className="block max-w-80 whitespace-normal">
-            {cambioTexto(primero)}
+            {cambioTexto(primero, row.original)}
             {resto.length > 0 && (
               <span className="text-muted-foreground">
                 {" "}
@@ -143,8 +150,8 @@ export function createBitacoraColumns({
 }
 
 /** Resumen de un campo: "Teléfono: 607 634 5210 → 607 634 5299". */
-function cambioTexto(c: BitacoraCambio) {
-  if (c.campo === "Registro" && c.nuevo == null) return "Registro eliminado (copia guardada)"
+function cambioTexto(c: BitacoraCambio, e: BitacoraEvento) {
+  if (e.accion === "ELIMINAR") return "Registro eliminado (copia guardada)"
   if (c.anterior == null) return `${c.campo}: ${c.nuevo}`
   if (c.nuevo == null) return `${c.campo}: ${c.anterior} → sin valor`
   return `${c.campo}: ${c.anterior} → ${c.nuevo}`

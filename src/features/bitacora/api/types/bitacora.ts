@@ -1,67 +1,91 @@
-/** Submódulos de la Bitácora: uno por módulo auditado (Administración del Sistema, §12.2). */
+/** Módulos auditados, con el código que usa el back (`MODULO`). */
 export const BITACORA_MODULOS = {
-  establecimiento: { nombre: "Establecimiento", entidades: ["Establecimiento", "Sede", "Funcionario", "Rol asignado", "Período académico"] },
-  cobertura: { nombre: "Cobertura Educativa", entidades: ["Matrícula", "Reserva de cupo", "Inscripción", "Convocatoria"] },
-  "gestion-academica": { nombre: "Gestión Académica", entidades: ["Actividad", "Calificación", "Asistencia", "Referente curricular"] },
-  "gestion-estudiantil": { nombre: "Gestión Estudiantil", entidades: ["Anotación", "Caso de convivencia", "Citación", "PIAR"] },
-  administracion: { nombre: "Administración del Sistema", entidades: ["Lista de valores", "Área oficial", "Vista por rol", "Criterio de prioridad", "Parámetro de edad", "Superadministrador"] },
+  ESTABLECIMIENTO: "Establecimiento",
+  COBERTURA: "Cobertura Educativa",
+  GESTION_ACADEMICA: "Gestión Académica",
+  GESTION_ESTUDIANTIL: "Gestión Estudiantil",
+  ADMINISTRACION: "Administración del Sistema",
 } as const
 
 export type BitacoraModulo = keyof typeof BITACORA_MODULOS
 
 export const BITACORA_MODULO_IDS = Object.keys(BITACORA_MODULOS) as BitacoraModulo[]
 
-export const BITACORA_ACCIONES = [
-  "Crear",
-  "Modificar",
-  "Cambio de estado",
-  "Eliminar",
-  "Restauración",
-] as const
+export const BITACORA_ACCIONES = {
+  CREAR: "Crear",
+  MODIFICAR: "Modificar",
+  CAMBIO_ESTADO: "Cambio de estado",
+  ELIMINAR: "Eliminar",
+  RESTAURACION: "Restauración",
+} as const
 
-export type BitacoraAccion = (typeof BITACORA_ACCIONES)[number]
+export type BitacoraAccion = keyof typeof BITACORA_ACCIONES
+
+export const BITACORA_ACCION_IDS = Object.keys(BITACORA_ACCIONES) as BitacoraAccion[]
+
+export type TipoRestauracion = "RESTAURAR_VALOR" | "RECUPERAR_REGISTRO"
+
+export const TIPO_RESTAURACION_LABEL: Record<TipoRestauracion, string> = {
+  RESTAURAR_VALOR: "Restaurar valor",
+  RECUPERAR_REGISTRO: "Recuperar registro eliminado",
+}
+
+export interface BitacoraEntidad {
+  codigo: string
+  nombre: string
+}
 
 export interface BitacoraCambio {
   campo: string
   anterior: string | null
   nuevo: string | null
-  /** Valor que tiene hoy el campo; si difiere de `nuevo`, hubo cambios después. */
+  /** Valor que tiene hoy el campo (`null` si el registro ya no existe). */
   actual?: string | null
 }
 
-/** Un evento inmutable de la bitácora. */
+export interface EventoPosterior {
+  pk: string
+  fecha: string
+  usuario: string
+  sede: string | null
+  accion: string
+  campo: string | null
+}
+
+/** Una fila del listado (ClickHouse). */
 export interface BitacoraEvento {
-  id: number
+  /** `lsn-seq`. */
+  id: string
   fecha: Date
-  usuario: { nombre: string; documento: string; rol: string }
+  usuario: { nombre: string; documento: string | null; rol: string | null }
+  esSistema: boolean
   sede: string | null
   jornada: string | null
   entidad: string
   registro: string
   accion: BitacoraAccion
-  /** Todos los campos que cambiaron en el mismo evento. */
-  cambios: BitacoraCambio[]
-  /** Eventos que cambiaron los mismos campos después de este. */
-  posteriores?: string[]
-  /** Vista que gestiona el registro (para el aviso de no restaurable). */
-  vista: string
-  /** Solo en eventos Restauración. */
-  motivo?: string
+  /** Columnas que cambiaron, sin nombre legible (los legibles vienen del estado). */
+  campos: string[]
+  motivo: string | null
+  tipoRestauracion: TipoRestauracion | null
+  motivoBloqueoEvento: string | null
+  /** El registro sigue como lo dejó el evento. */
+  vigente: boolean
+  eventosPosteriores: EventoPosterior[]
 }
 
-export type TipoRestauracion = "Restaurar valor" | "Recuperar registro eliminado"
+/** Lo que agrega `sso-admin /estado` para cada evento de la página. */
+export interface BitacoraEstado {
+  id: string
+  cambios: BitacoraCambio[]
+  vista: string | null
+  /** Permisos de Guardar en la vista dueña (Regla 18) y catálogo. */
+  puede: boolean
+  motivoBloqueo: string | null
+}
 
-/** Qué restauración admite un evento, o por qué no (Regla 18). */
-export function restauracionDe(
-  e: BitacoraEvento,
-): { tipo: TipoRestauracion } | { motivo: string; correccion: string } {
-  if (e.usuario.nombre === "Sistema")
-    return { motivo: "es un cambio hecho por Sistema", correccion: "corregirlo" }
-  if (e.accion === "Modificar") return { tipo: "Restaurar valor" }
-  if (e.accion === "Eliminar") return { tipo: "Recuperar registro eliminado" }
-  if (e.accion === "Cambio de estado")
-    return { motivo: "es un cambio de estado con efectos de ciclo de vida", correccion: "revertirlo" }
-  if (e.accion === "Restauración")
-    return { motivo: "es un registro de la propia bitácora", correccion: "deshacerlo" }
-  return { motivo: "la creación no se restaura", correccion: "quitar el registro" }
+export interface BitacoraPagina {
+  rows: BitacoraEvento[]
+  totalCount: number
+  pageCount: number
 }

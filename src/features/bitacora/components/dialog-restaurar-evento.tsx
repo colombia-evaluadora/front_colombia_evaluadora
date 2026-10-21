@@ -1,53 +1,60 @@
 import { useState, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ArrowCounterClockwiseIcon, CheckCircleIcon, XCircleIcon } from "@/components/ui/icons"
+import {
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  SpinnerIcon,
+  XCircleIcon,
+} from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 
-import { useRestaurarEvento } from "@/features/bitacora/api/mutations/restaurar-evento"
+import { bitacoraKeys } from "@/features/bitacora/api/query-keys"
+import { restaurarEvento, useRestaurarEvento } from "@/features/bitacora/api/mutations/restaurar-evento"
 import {
+  BITACORA_ACCIONES,
   BITACORA_MODULOS,
-  restauracionDe,
+  TIPO_RESTAURACION_LABEL,
+  type BitacoraEstado,
   type BitacoraEvento,
   type BitacoraModulo,
 } from "@/features/bitacora/api/types/bitacora"
 
 const MOTIVO_MIN = 10
 const MOTIVO_MAX = 500
+// La vista previa valida el evento, no el motivo: va uno válido de relleno.
+const MOTIVO_VISTA_PREVIA = "Vista previa de la restauración."
 
 interface DialogRestaurarEventoProps {
   modulo: BitacoraModulo
+  establecimiento: string
   evento: BitacoraEvento | null
+  estado: BitacoraEstado | undefined
   onClose: () => void
   onRestaurado: () => void
 }
 
 /** Restaurar información (§12.3): valida antes y crea un evento Restauración. */
-export function DialogRestaurarEvento({ modulo, evento, onClose, onRestaurado }: DialogRestaurarEventoProps) {
+export function DialogRestaurarEvento(props: DialogRestaurarEventoProps) {
   return (
-    <Dialog open={evento != null} onOpenChange={(next) => !next && onClose()}>
-      {evento && (
-        <Contenido key={evento.id} modulo={modulo} evento={evento} onClose={onClose} onRestaurado={onRestaurado} />
-      )}
+    <Dialog open={props.evento != null} onOpenChange={(next) => !next && props.onClose()}>
+      {props.evento && <Contenido key={props.evento.id} {...props} evento={props.evento} />}
     </Dialog>
   )
 }
 
 function Contenido({
   modulo,
+  establecimiento,
   evento,
+  estado,
   onClose,
   onRestaurado,
 }: DialogRestaurarEventoProps & { evento: BitacoraEvento }) {
@@ -55,12 +62,17 @@ function Contenido({
   const [intento, setIntento] = useState(false)
   const restaurar = useRestaurarEvento({ mutationConfig: { onSuccess: onRestaurado } })
 
-  const restauracion = restauracionDe(evento)
-  const tipo = "tipo" in restauracion ? restauracion.tipo : ""
-  const recuperar = tipo === "Recuperar registro eliminado"
-  // Restaurar valor solo si nadie cambió los campos después del evento.
-  const sinCambiosDespues = recuperar || evento.cambios.every((c) => c.actual === c.nuevo)
-  const puedeRestaurar = sinCambiosDespues
+  // El back corre todas las validaciones sin escribir (vigencia, dependencias, reglas del módulo).
+  const vistaPrevia = useQuery({
+    queryKey: bitacoraKeys.vistaPrevia(evento.id),
+    queryFn: () =>
+      restaurarEvento({ id: evento.id, motivo: MOTIVO_VISTA_PREVIA, establecimiento, vistaPrevia: true }),
+    retry: false,
+    gcTime: 0,
+  })
+
+  const recuperar = evento.tipoRestauracion === "RECUPERAR_REGISTRO"
+  const puede = vistaPrevia.isSuccess
 
   const largo = motivo.trim().length
   const errorMotivo =
@@ -72,11 +84,9 @@ function Contenido({
 
   function handleRestaurar() {
     setIntento(true)
-    if (errorMotivo || !puedeRestaurar) return
-    restaurar.mutate({ modulo, evento, motivo: motivo.trim() })
+    if (errorMotivo || !puede) return
+    restaurar.mutate({ id: evento.id, motivo: motivo.trim(), establecimiento })
   }
-
-  const modulonombre = BITACORA_MODULOS[modulo].nombre
 
   return (
     <DialogContent className="sm:max-w-2xl">
@@ -92,33 +102,35 @@ function Contenido({
 
       <dl className="grid gap-x-4 gap-y-2 rounded-md border border-border px-3 py-2 text-sm sm:grid-cols-[10rem_1fr]">
         <Dato label="Evento">
-          {format(evento.fecha, "dd/MM/yyyy HH:mm")}, {evento.usuario.nombre} ({evento.usuario.rol})
-          {evento.sede ? `, ${evento.sede}` : ""}, {evento.accion}
+          {format(evento.fecha, "dd/MM/yyyy HH:mm")}, {evento.usuario.nombre}
+          {evento.usuario.rol ? ` (${evento.usuario.rol})` : ""}
+          {evento.sede ? `, ${evento.sede}` : ""}, {BITACORA_ACCIONES[evento.accion]}
         </Dato>
         <Dato label="Tipo de restauración">
-          {tipo} <span className="text-muted-foreground">(lo determina el evento)</span>
+          {evento.tipoRestauracion && TIPO_RESTAURACION_LABEL[evento.tipoRestauracion]}{" "}
+          <span className="text-muted-foreground">(lo determina el evento)</span>
         </Dato>
       </dl>
 
-      {!recuperar && (
+      {!recuperar && estado && (
         <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Campo</TableHead>
-                <TableHead>Valor actual</TableHead>
-                <TableHead>Se restaurará a</TableHead>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Campo</TableHead>
+              <TableHead>Valor actual</TableHead>
+              <TableHead>Se restaurará a</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {estado.cambios.map((c) => (
+              <TableRow key={c.campo} className="hover:bg-transparent">
+                <TableCell className="text-muted-foreground">{c.campo}</TableCell>
+                <TableCell className={c.actual !== c.nuevo ? "text-red" : undefined}>{c.actual ?? "—"}</TableCell>
+                <TableCell>{c.anterior ?? "—"}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {evento.cambios.map((c) => (
-                <TableRow key={c.campo} className="hover:bg-transparent">
-                  <TableCell className="text-muted-foreground">{c.campo}</TableCell>
-                  <TableCell className={c.actual !== c.nuevo ? "text-red" : undefined}>{c.actual ?? "—"}</TableCell>
-                  <TableCell>{c.anterior ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <Field orientation="vertical" variant="outlined" data-invalid={(intento && errorMotivo) || undefined}>
@@ -141,35 +153,44 @@ function Contenido({
       <ul
         className={
           "flex flex-col gap-2 rounded-md border px-3 py-2 text-sm " +
-          (puedeRestaurar ? "border-border" : "border-red-stroke bg-red-22/40")
+          (vistaPrevia.isError ? "border-red-stroke bg-red-22/40" : "border-border")
         }
       >
-        {recuperar ? (
-          <Validacion ok>Las dependencias del registro siguen existiendo.</Validacion>
-        ) : sinCambiosDespues ? (
-          <Validacion ok>El valor actual sigue siendo el que dejó el evento.</Validacion>
-        ) : (
+        {vistaPrevia.isPending ? (
+          <li className="flex items-center gap-2 text-muted-foreground">
+            <SpinnerIcon className="size-4 animate-spin" aria-hidden />
+            Comprobando si se puede restaurar…
+          </li>
+        ) : vistaPrevia.isError ? (
           <Validacion ok={false}>
-            <span className="font-medium">El valor actual cambió después del evento.</span>
-            <span className="block text-muted-foreground">
-              Eventos posteriores: {evento.posteriores?.join("; ")}. Revise ese evento antes de restaurar.
-            </span>
+            <span className="font-medium">{getErrorMessage(vistaPrevia.error)}</span>
+            {evento.eventosPosteriores.length > 0 && (
+              <span className="block text-muted-foreground">
+                Eventos posteriores:{" "}
+                {evento.eventosPosteriores
+                  .map((p) => `${p.fecha.replace("T", " ").slice(0, 16)}, ${p.usuario}${p.campo ? ` (${p.campo})` : ""}`)
+                  .join("; ")}
+                . Revise ese evento antes de restaurar.
+              </span>
+            )}
           </Validacion>
+        ) : (
+          <>
+            <Validacion ok>
+              {recuperar
+                ? "Las dependencias del registro siguen existiendo."
+                : "El valor actual sigue siendo el que dejó el evento."}
+            </Validacion>
+            <Validacion ok>Se cumplen las reglas vigentes del módulo {BITACORA_MODULOS[modulo]}.</Validacion>
+          </>
         )}
-        {/* Las reglas vigentes las valida el back al restaurar. */}
-        <Validacion ok>Se cumplen las reglas vigentes del módulo {modulonombre}.</Validacion>
       </ul>
 
       <DialogFooter>
         <Button size="sm" variant="outline" color="neutral" onClick={onClose} disabled={restaurar.isPending}>
           Cancelar
         </Button>
-        <Button
-          size="sm"
-          color="primary"
-          disabled={!puedeRestaurar || restaurar.isPending}
-          onClick={handleRestaurar}
-        >
+        <Button size="sm" color="primary" disabled={!puede || restaurar.isPending} onClick={handleRestaurar}>
           <ArrowCounterClockwiseIcon data-icon="inline-start" />
           Restaurar
         </Button>

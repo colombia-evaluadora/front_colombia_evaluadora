@@ -1,17 +1,119 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import type { SortingState } from "@tanstack/react-table"
 import { endOfDay, startOfDay } from "date-fns"
 
+import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
+import { AUDIT_API_PREFIX } from "@/lib/api-routes"
 import { parseDateValue } from "@/lib/date-value"
+import { toPageCount } from "@/lib/pagination"
+import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
 
 import { eventosMock } from "@/features/bitacora/api/mock-bitacora"
-import type { BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
+import { bitacoraKeys } from "@/features/bitacora/api/query-keys"
+import type {
+  BitacoraAccion,
+  BitacoraEvento,
+  BitacoraPagina,
+  EventoPosterior,
+  TipoRestauracion,
+} from "@/features/bitacora/api/types/bitacora"
 import type { BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
 
-const all = ["bitacora"] as const
-export const bitacoraKeys = {
-  all,
-  lista: (filters: BitacoraFilters) => [...all, "lista", filters] as const,
+export interface BitacoraParams {
+  filters: BitacoraFilters
+  sorting: SortingState
+  pageIndex: number
+  pageSize: number
 }
+
+/** Fila de `POST /audit-cval/bitacora/query` (V571). */
+interface BitacoraRow {
+  pk_tbitacora: string
+  fecha: string
+  usuario_nombre: string
+  usuario_documento: string | null
+  usuario_rol: string | null
+  es_sistema: "S" | "N"
+  sede: string | null
+  jornada: string | null
+  entidad: string
+  registro: string
+  accion: BitacoraAccion
+  campos: string[] | null
+  motivo: string | null
+  tipo_restauracion: TipoRestauracion | null
+  motivo_bloqueo_evento: string | null
+  vigente: "S" | "N"
+  eventos_posteriores: EventoPosterior[] | null
+  total_count: number | string
+}
+
+const toEvento = (row: BitacoraRow): BitacoraEvento => ({
+  id: row.pk_tbitacora,
+  // Viene en hora de Colombia, sin zona.
+  fecha: new Date(`${row.fecha}-05:00`),
+  usuario: { nombre: row.usuario_nombre, documento: row.usuario_documento, rol: row.usuario_rol },
+  esSistema: row.es_sistema === "S",
+  sede: row.sede,
+  jornada: row.jornada,
+  entidad: row.entidad,
+  registro: row.registro,
+  accion: row.accion,
+  campos: row.campos ?? [],
+  motivo: row.motivo,
+  tipoRestauracion: row.tipo_restauracion,
+  motivoBloqueoEvento: row.motivo_bloqueo_evento,
+  vigente: row.vigente === "S",
+  eventosPosteriores: row.eventos_posteriores ?? [],
+})
+
+/** Filtros con los nombres del back. Exportado: lo reusa la exportación. */
+export function toBitacoraFilters(f: BitacoraFilters) {
+  return {
+    MODULO: f.modulo,
+    // Solo cuenta para el Superadministrador; a los demás el back los fija en el suyo.
+    FK_ESTABLECIMIENTO: f.modulo === "ADMINISTRACION" ? undefined : f.establecimiento || undefined,
+    FK_SEDE: f.sede || undefined,
+    FK_JORNADA: f.jornada || undefined,
+    ENTIDAD: f.entidad || undefined,
+    // El back extrae los códigos de un texto (`extractAll`).
+    ACCIONES: f.accion.length ? f.accion.join(",") : undefined,
+    BUSQUEDA: f.q.trim().length >= 3 ? f.q.trim() : undefined,
+    DESDE: f.desde,
+    HASTA: f.hasta,
+  }
+}
+
+export function toBitacoraSorting(sorting: SortingState) {
+  const [orden] = sorting
+  return orden ? { id: orden.id, desc: orden.desc } : { id: "fecha", desc: true }
+}
+
+async function fetchBitacora(params: BitacoraParams): Promise<BitacoraPagina> {
+  if (env.ENABLE_API_MOCKING) return fetchBitacoraMock(params)
+
+  const response = await api.query<RowsEnvelope<BitacoraRow>>(`${AUDIT_API_PREFIX}/bitacora/query`, {
+    filters: toBitacoraFilters(params.filters),
+    sorting: toBitacoraSorting(params.sorting),
+    pageIndex: params.pageIndex,
+    pageSize: params.pageSize,
+  })
+  const rows = unwrapRows(response)
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows: rows.map(toEvento), totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
+export function useBitacoraQuery(params: BitacoraParams, enabled = true) {
+  return useQuery({
+    queryKey: bitacoraKeys.lista(params),
+    queryFn: () => fetchBitacora(params),
+    placeholderData: keepPreviousData,
+    enabled,
+  })
+}
+
+// --- Mock -----------------------------------------------------------------
 
 const normalizar = (text: string) =>
   text
@@ -19,30 +121,27 @@ const normalizar = (text: string) =>
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
 
-function coincide(e: BitacoraEvento, f: BitacoraFilters) {
+async function fetchBitacoraMock({ filters: f, sorting, pageIndex, pageSize }: BitacoraParams) {
+  await new Promise((r) => setTimeout(r, 250))
   const q = normalizar(f.q.trim())
-  if (q && !normalizar(e.usuario.nombre).includes(q) && !e.usuario.documento.includes(q)) return false
-  if (f.sede && e.sede !== f.sede) return false
-  if (f.jornada && e.jornada !== f.jornada) return false
-  if (f.entidad && e.entidad !== f.entidad) return false
-  if (f.accion.length && !f.accion.includes(e.accion)) return false
   const desde = parseDateValue(f.desde)
   const hasta = parseDateValue(f.hasta)
-  if (desde && e.fecha < startOfDay(desde)) return false
-  if (hasta && e.fecha > endOfDay(hasta)) return false
-  return true
-}
-
-// TODO: reemplazar por el endpoint de la bitácora cuando exista en el back.
-async function fetchBitacora(filters: BitacoraFilters) {
-  await new Promise((r) => setTimeout(r, 250))
-  return eventosMock(filters.modulo).filter((e) => coincide(e, filters))
-}
-
-export function useBitacoraQuery(filters: BitacoraFilters) {
-  return useQuery({
-    queryKey: bitacoraKeys.lista(filters),
-    queryFn: () => fetchBitacora(filters),
-    placeholderData: (prev) => prev,
-  })
+  const filtrados = eventosMock(f.modulo)
+    .map((m) => m.evento)
+    .filter(
+      (e) =>
+        (!q || normalizar(`${e.usuario.nombre} ${e.usuario.documento ?? ""}`).includes(q)) &&
+        (!f.accion.length || f.accion.includes(e.accion)) &&
+        (!desde || e.fecha >= startOfDay(desde)) &&
+        (!hasta || e.fecha <= endOfDay(hasta)),
+    )
+  const { id, desc } = toBitacoraSorting(sorting)
+  const valor = (e: BitacoraEvento) =>
+    id === "usuario" ? e.usuario.nombre : id === "sede" ? (e.sede ?? "") : id === "accion" ? e.accion : id === "entidad" ? e.entidad : e.fecha.toISOString()
+  const ordenados = [...filtrados].sort((a, b) => (desc ? -1 : 1) * valor(a).localeCompare(valor(b), "es"))
+  return {
+    rows: ordenados.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
+    totalCount: ordenados.length,
+    pageCount: toPageCount(ordenados.length, pageSize),
+  }
 }

@@ -1,23 +1,37 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { restaurarMock } from "@/features/bitacora/api/mock-bitacora"
-import { bitacoraKeys } from "@/features/bitacora/api/query/use-bitacora-query"
-import type { BitacoraEvento, BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
+import { bitacoraKeys } from "@/features/bitacora/api/query-keys"
 
-// TODO: endpoint de restauración cuando exista en el back.
-async function restaurarEvento({
-  modulo,
-  evento,
-  motivo,
-}: {
-  modulo: BitacoraModulo
-  evento: BitacoraEvento
+interface RestaurarVariables {
+  id: string
   motivo: string
-}) {
-  await new Promise((r) => setTimeout(r, 400))
-  restaurarMock(modulo, evento, motivo)
+  establecimiento: string
+  /** Valida todo sin escribir: alimenta las comprobaciones del modal. */
+  vistaPrevia?: boolean
+}
+
+/** `AuditRevertResponse` de sso-admin; `applied=false` en la vista previa. */
+interface RestaurarResponse {
+  applied: boolean
+  message: string
+}
+
+export async function restaurarEvento({ id, motivo, establecimiento, vistaPrevia }: RestaurarVariables) {
+  if (env.ENABLE_API_MOCKING) {
+    await new Promise((r) => setTimeout(r, 300))
+    restaurarMock(id, motivo, Boolean(vistaPrevia))
+    return { applied: !vistaPrevia, message: "" }
+  }
+  return api.post<RestaurarResponse>(`/sso-admin/audit/bitacora/${id}/restaurar`, {
+    MOTIVO: motivo,
+    FK_ESTABLECIMIENTO: establecimiento || undefined,
+    VISTA_PREVIA: vistaPrevia || undefined,
+  })
 }
 
 export function useRestaurarEvento({
@@ -29,6 +43,7 @@ export function useRestaurarEvento({
     mutationFn: restaurarEvento,
     ...rest,
     onSuccess: (...args) => {
+      // Crea un evento Restauración y cambia la vigencia del original.
       queryClient.invalidateQueries({ queryKey: bitacoraKeys.all })
       onSuccess?.(...args)
     },
