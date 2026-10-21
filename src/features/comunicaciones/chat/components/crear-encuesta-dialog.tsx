@@ -16,17 +16,18 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
-import type { VisibilidadResultados } from "@/features/comunicaciones/chat/api/types"
-import { useCrearEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
+import type { Encuesta, VisibilidadResultados } from "@/features/comunicaciones/chat/api/types"
+import { useCrearEncuesta, useEditarEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
 import { OPCIONES_SI_NO } from "@/features/comunicaciones/chat/lib/encuesta"
 import {
+  aPreguntaLocal,
   errorPregunta,
   nuevaPregunta,
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
-import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { diaMinimo, errorCierre, isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 const datosSchema = z
   .object({
@@ -47,22 +48,35 @@ export function CrearEncuestaDialog({
   open,
   onClose,
   onCreada,
+  editar,
 }: {
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
+  // "Editar Encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
+  // abre la monta con `key` para que los valores iniciales se lean una vez.
+  editar?: Encuesta
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [resultados, setResultados] = useState<VisibilidadResultados>("PUBLICOS")
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [resultados, setResultados] = useState<VisibilidadResultados>(editar?.resultados ?? "PUBLICOS")
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => (editar?.preguntas ?? []).map(aPreguntaLocal))
   const [participantes, setParticipantes] = useState<Set<number>>(new Set())
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
-  const crear = useCrearEncuesta()
+  const crearNueva = useCrearEncuesta()
+  const editarEncuesta = useEditarEncuesta(editar?.conversacionId ?? 0)
+  const crear = editar ? editarEncuesta : crearNueva
 
   const datos = useAppForm({
-    defaultValues: DATOS_INICIALES,
+    defaultValues: editar
+      ? {
+          nombre: editar.nombre,
+          descripcion: editar.descripcion,
+          fechaInicio: isoALocal(editar.fechaInicio),
+          fechaCierre: isoALocal(editar.fechaCierre),
+        }
+      : DATOS_INICIALES,
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "ENCUESTA")])
@@ -90,22 +104,31 @@ export function CrearEncuestaDialog({
   const crearEncuesta = () => {
     setIntentado(true)
     if (preguntas.length === 0 || preguntas.some((p) => errorPregunta(p, "ENCUESTA"))) return
-    if (participantes.size === 0) return
+    if (!editar && participantes.size === 0) return
     const v = datos.state.values
-    crear.mutate(
-      {
-        nombre: v.nombre.trim(),
-        descripcion: v.descripcion.trim(),
-        fechaInicio: aIso(v.fechaInicio),
-        fechaCierre: aIso(v.fechaCierre),
-        resultados,
-        participantes: [...participantes],
-        preguntas: preguntas.map((p) => ({
-          tipo: p.tipo,
-          texto: p.texto.trim(),
-          opciones: p.tipo === "SI_NO" ? OPCIONES_SI_NO : p.opciones.map((o) => o.texto.trim()),
-        })),
-      },
+    const cuerpo = {
+      nombre: v.nombre.trim(),
+      descripcion: v.descripcion.trim(),
+      fechaInicio: aIso(v.fechaInicio),
+      fechaCierre: aIso(v.fechaCierre),
+      resultados,
+      preguntas: preguntas.map((p) => ({
+        tipo: p.tipo,
+        texto: p.texto.trim(),
+        opciones: p.tipo === "SI_NO" ? OPCIONES_SI_NO : p.opciones.map((o) => o.texto.trim()),
+      })),
+    }
+    if (editar) {
+      editarEncuesta.mutate(cuerpo, {
+        onSuccess: (e) => {
+          notify(`Se guardaron los cambios de ${e.nombre}.`)
+          reiniciar()
+        },
+      })
+      return
+    }
+    crearNueva.mutate(
+      { ...cuerpo, participantes: [...participantes] },
       {
         onSuccess: (canal) => {
           notify(`Se creó la encuesta ${canal.nombre}.`)
@@ -121,7 +144,7 @@ export function CrearEncuestaDialog({
       <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Crear una Encuesta</DialogTitle>
+            <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
           </DialogHeader>
 
           {paso === 1 ? (
@@ -203,7 +226,8 @@ export function CrearEncuestaDialog({
                 onCambio={setPreguntas}
                 intentado={intentado}
               />
-              {/* Quiénes responden: entran al canal y reciben el aviso al abrir. */}
+              {/* Quiénes responden: entran al canal y reciben el aviso al abrir. Al editar no cambian. */}
+              {!editar && (
               <SelectorVotantes
                 titulo="Participantes"
                 mensajeInvalido="Selecciona al menos una persona que responda la encuesta."
@@ -211,6 +235,7 @@ export function CrearEncuestaDialog({
                 onCambio={setParticipantes}
                 invalido={intentado && participantes.size === 0}
               />
+              )}
             </div>
           )}
 
@@ -239,7 +264,7 @@ export function CrearEncuestaDialog({
                     disabled={preguntas.length === 0 || crear.isPending}
                     aria-busy={crear.isPending}
                   >
-                    Crear
+                    {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button

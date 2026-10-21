@@ -68,3 +68,19 @@ export function errorPregunta(p: PreguntaLocal, modo: ModoPreguntas): string | n
   }
   return null
 }
+
+/** Pregunta guardada (encuesta o evaluación) → pregunta en edición, para "Editar". */
+export function aPreguntaLocal(p: {
+  tipo: TipoPregunta
+  texto: string
+  opciones: Array<{ texto: string; correcta?: boolean }>
+  puntos?: number
+}): PreguntaLocal {
+  return {
+    clave: nuevaClave(),
+    tipo: p.tipo,
+    texto: p.texto,
+    opciones: p.opciones.map((o) => ({ clave: nuevaClave(), texto: o.texto, correcta: !!o.correcta })),
+    puntos: p.puntos == null ? "" : String(p.puntos),
+  }
+}

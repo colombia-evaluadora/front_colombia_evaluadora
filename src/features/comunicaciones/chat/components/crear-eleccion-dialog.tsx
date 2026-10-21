@@ -25,10 +25,12 @@ import { cn } from "@/lib/utils"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import {
   useCrearEleccion,
+  useEditarEleccion,
   type CandidatoNuevo,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
-import { validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -72,24 +74,48 @@ export function CrearEleccionDialog({
   open,
   onClose,
   onCreada,
+  editar,
 }: {
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
+  // "Editar Elección" (diseño 4058:62794): mismos pasos sin el de votantes (el censo no cambia).
+  // Quien la abre la monta con `key` para que los valores iniciales se lean una vez.
+  editar?: Eleccion
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2 | 3>(1)
   const [votantes, setVotantes] = useState<Set<number>>(new Set())
   const [votantesIntentado, setVotantesIntentado] = useState(false)
-  const [candidatos, setCandidatos] = useState<CandidatoLocal[]>([])
+  const [candidatos, setCandidatos] = useState<CandidatoLocal[]>(() =>
+    (editar?.candidatos ?? []).map((c) => ({
+      clave: siguienteClave++,
+      nombre: c.nombre,
+      numero: c.numero,
+      lema: c.lema,
+      foto: null,
+      fotoUrl: c.fotoUrl,
+    })),
+  )
   const [descartar, setDescartar] = useState(false)
-  const crear = useCrearEleccion()
+  const crearNueva = useCrearEleccion()
+  const editarEleccion = useEditarEleccion(editar?.conversacionId ?? 0)
+  const crear = editar ? editarEleccion : crearNueva
   const { data: jornadas = [] } = useJornadasQuery()
 
   const datos = useAppForm({
-    defaultValues: DATOS_INICIALES,
+    defaultValues: editar
+      ? {
+          nombre: editar.nombre,
+          descripcion: editar.descripcion,
+          fechaInicio: isoALocal(editar.fechaInicio),
+          fechaCierre: isoALocal(editar.fechaCierre),
+          jornadaId: editar.jornadaId,
+          verResultadosEnVivo: editar.verResultadosEnVivo,
+        }
+      : DATOS_INICIALES,
     validators: { onSubmit: datosSchema },
-    onSubmit: () => setPaso(2),
+    onSubmit: () => setPaso(editar ? 3 : 2),
   })
 
   const reiniciar = () => {
@@ -110,17 +136,26 @@ export function CrearEleccionDialog({
 
   const crearEleccion = () => {
     const v = datos.state.values
-    crear.mutate(
-      {
-        nombre: v.nombre.trim(),
-        descripcion: v.descripcion.trim(),
-        fechaInicio: aIso(v.fechaInicio),
-        fechaCierre: aIso(v.fechaCierre),
-        jornadaId: v.jornadaId,
-        verResultadosEnVivo: v.verResultadosEnVivo,
-        votantes: [...votantes],
-        candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
-      },
+    const cuerpo = {
+      nombre: v.nombre.trim(),
+      descripcion: v.descripcion.trim(),
+      fechaInicio: aIso(v.fechaInicio),
+      fechaCierre: aIso(v.fechaCierre),
+      jornadaId: v.jornadaId,
+      verResultadosEnVivo: v.verResultadosEnVivo,
+      candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
+    }
+    if (editar) {
+      editarEleccion.mutate(cuerpo, {
+        onSuccess: (e) => {
+          notify(`Se guardaron los cambios de ${e.nombre}.`)
+          reiniciar()
+        },
+      })
+      return
+    }
+    crearNueva.mutate(
+      { ...cuerpo, votantes: [...votantes] },
       {
         onSuccess: (canal) => {
           notify(`Se creó la elección ${canal.nombre}.`)
@@ -136,7 +171,7 @@ export function CrearEleccionDialog({
       <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Crear una Elección</DialogTitle>
+            <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
           </DialogHeader>
 
           {paso === 1 ? (
@@ -258,7 +293,7 @@ export function CrearEleccionDialog({
               </>
             ) : (
               <>
-                <Button type="button" variant="outline" onClick={() => setPaso(2)} disabled={crear.isPending}>
+                <Button type="button" variant="outline" onClick={() => setPaso(editar ? 1 : 2)} disabled={crear.isPending}>
                   <ArrowLeftIcon data-icon="inline-start" />
                   Atrás
                 </Button>
@@ -274,7 +309,7 @@ export function CrearEleccionDialog({
                         : undefined
                     }
                   >
-                    Crear
+                    {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button
@@ -415,7 +450,7 @@ function TarjetaCandidato({
   candidato: CandidatoLocal
   onQuitar: () => void
 }) {
-  const url = useUrlArchivo(c.foto)
+  const url = useUrlArchivo(c.foto) ?? c.fotoUrl ?? null
   return (
     <div className="relative flex items-center gap-3 rounded-lg border px-4 py-3">
       <span className="w-8 shrink-0 text-lg font-bold text-muted-foreground tabular-nums">
