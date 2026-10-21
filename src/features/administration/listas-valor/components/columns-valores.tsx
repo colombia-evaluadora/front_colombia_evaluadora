@@ -6,7 +6,13 @@ import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { StarFillIcon, StarIcon, DotsSixVerticalIcon, LockIcon } from "@/components/ui/icons"
+import {
+  DotsSixVerticalIcon,
+  LockIcon,
+  StarFillIcon,
+  StarIcon,
+  TrashIcon,
+} from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type {
@@ -237,7 +243,19 @@ export function createValoresColumns({
                 valor={v}
               />
             )}
-            {/* Los del sistema no se eliminan (V101). */}
+            {/* Los del sistema no se eliminan (V101): el botón queda visible pero bloqueado,
+                para que se sepa que la opción existe. */}
+            {puedeEliminar && v.esSistema && (
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" tabIndex={0} />}>
+                  <Button variant="ghost" color="neutral" size="icon-sm" disabled>
+                    <span className="sr-only">Eliminar {v.nombre} (no disponible)</span>
+                    <TrashIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Valor del sistema: no se puede eliminar</TooltipContent>
+              </Tooltip>
+            )}
             {puedeEliminar && !v.esSistema && (
               <ConfirmRemoveButton
                 label={`Eliminar ${v.nombre}`}
@@ -251,7 +269,7 @@ export function createValoresColumns({
       },
       enableSorting: false,
       enableHiding: false,
-      size: 96,
+      size: 144,
     })
   }
 

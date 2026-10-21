@@ -7,12 +7,12 @@ import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
-  TableScreenTabs,
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AuditViewTabs } from "@/features/administration/audits/components/audit-view-tabs"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { paths } from "@/config/paths"
@@ -23,11 +23,6 @@ import { useAuditTablesQuery } from "@/features/administration/audits/api/query/
 import { getErrorMessage } from "@/lib/api-client"
 
 const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
-
-const viewLinks = [
-  { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },
-  { label: "Por tablas", to: paths.app.auditoriaTablas.getHref() },
-]
 
 export function AuditTablesDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize } = useTablePagination()
@@ -44,20 +39,7 @@ export function AuditTablesDataTable() {
       <TableScreen>
         <TableScreenHeader>
           <TableScreenTitle>Tablas de auditoría</TableScreenTitle>
-          <TableScreenTabs>
-            <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
-              {viewLinks.map((view) => (
-                <Link
-                  key={view.to}
-                  to={view.to}
-                  activeProps={{ "data-active": "true" }}
-                  className="-mb-px rounded-t-lg border border-border border-b-border bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground data-active:border-b-card data-active:bg-card data-active:text-foreground"
-                >
-                  {view.label}
-                </Link>
-              ))}
-            </nav>
-          </TableScreenTabs>
+        <AuditViewTabs />
           <TableScreenToolbar>
             <Skeleton className="h-10 w-72" />
           </TableScreenToolbar>
@@ -103,20 +85,7 @@ export function AuditTablesDataTable() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle>Tablas de auditoría</TableScreenTitle>
-        <TableScreenTabs>
-          <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
-            {viewLinks.map((view) => (
-              <Link
-                key={view.to}
-                to={view.to}
-                activeProps={{ "data-active": "true" }}
-                className="-mb-px rounded-t-lg border border-border border-b-border bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground data-active:border-b-card data-active:bg-card data-active:text-foreground"
-              >
-                {view.label}
-              </Link>
-            ))}
-          </nav>
-        </TableScreenTabs>
+        <AuditViewTabs />
         <TableScreenToolbar>
           <FilterAuditTablesForm
             id={FILTER_AUDIT_TABLES_FORM_ID}
