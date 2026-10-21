@@ -1,8 +1,5 @@
-import {
-  ETIQUETA_EDITAR,
-  EditarActividad,
-  esActividadEditable,
-} from "@/features/comunicaciones/chat/components/editar-actividad"
+import { EditarActividad } from "@/features/comunicaciones/chat/components/editar-actividad"
+import { ETIQUETA_EDITAR, esActividadEditable } from "@/features/comunicaciones/chat/lib/actividad-editable"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"

@@ -8,19 +8,6 @@ import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/c
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components/crear-evaluacion-dialog"
 
-/** Categorías con actividad propia que se editan con su diálogo de creación ("Editar …"). */
-export const CATEGORIAS_EDITABLES = ["VOTACION", "ENCUESTA", "EXAMEN", "ANUNCIO"] as const
-
-export const ETIQUETA_EDITAR: Record<(typeof CATEGORIAS_EDITABLES)[number], string> = {
-  VOTACION: "Editar elección",
-  ENCUESTA: "Editar encuesta",
-  EXAMEN: "Editar evaluación",
-  ANUNCIO: "Editar comunicado",
-}
-
-export const esActividadEditable = (c: Pick<Conversacion, "categoria" | "esCreador">) =>
-  !!c.esCreador && (CATEGORIAS_EDITABLES as readonly string[]).includes(c.categoria)
-
 /**
  * Abre el diálogo de edición de la actividad del canal (diseños 4058:62794, 4060:63421,
  * 4062:67466 y 4062:67938) con los datos actuales. comms-service solo deja editar a quien la creó y
