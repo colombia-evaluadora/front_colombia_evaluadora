@@ -214,6 +214,7 @@ function PlaneadorUnidadesPageContent() {
                 aria-label={`Agregar ${tabLabel}`}
                 title={soloEnLinea.tooltip ?? `Agregar ${tabLabel}`}
                 disabled={soloEnLinea.disabled}
+                nativeButton={soloEnLinea.disabled}
                 render={
                   soloEnLinea.disabled ? undefined : <Link
                     to={paths.app.planeadorUnidadCrear.getHref()}

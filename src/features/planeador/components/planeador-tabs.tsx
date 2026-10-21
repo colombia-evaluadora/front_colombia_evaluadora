@@ -153,6 +153,7 @@ export function PlaneadorTabs() {
             <TabsTrigger
               key={view.key}
               value={view.key}
+              nativeButton={false}
               render={
                 <Link to={view.to} search={searchDe(view)} />
               }

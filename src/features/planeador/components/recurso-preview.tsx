@@ -63,6 +63,7 @@ function EnlaceExterno({ url }: { url: string }) {
         color="primary"
         size="sm"
         type="button"
+        nativeButton={false}
         render={
           <a href={url} target="_blank" rel="noopener noreferrer" />
         }
@@ -114,6 +115,7 @@ function MedioNoReproducible({
           color="primary"
           size="sm"
           type="button"
+          nativeButton={false}
           render={<a href={url} download target="_blank" rel="noopener noreferrer" />}
         >
           <InsertLinkOutlinedIcon data-icon="inline-start" />
@@ -221,6 +223,7 @@ function AbrirAparte({ url, etiqueta }: { url: string; etiqueta: string }) {
         color="neutral"
         size="sm"
         type="button"
+        nativeButton={false}
         render={<a href={url} target="_blank" rel="noopener noreferrer" />}
       >
         <InsertLinkOutlinedIcon data-icon="inline-start" />

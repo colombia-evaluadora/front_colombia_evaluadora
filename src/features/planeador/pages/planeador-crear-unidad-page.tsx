@@ -145,6 +145,7 @@ function PlaneadorCrearUnidadPageContent() {
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorUnidades.getHref()} search={{ instrumento }} />}
             >
               Cerrar

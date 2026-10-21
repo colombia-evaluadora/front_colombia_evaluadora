@@ -193,6 +193,7 @@ function PlaneadorCrearActividadPageContent() {
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorActividades.getHref()} />}
             >
               Cerrar

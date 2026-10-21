@@ -256,6 +256,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                 size="sm"
                 type="button"
                 className="shrink-0"
+                nativeButton={false}
                 render={
                   <Link
                     to={paths.app.planeadorActividadCrear.getHref()}

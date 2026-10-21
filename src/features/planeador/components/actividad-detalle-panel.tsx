@@ -156,6 +156,7 @@ export function ActividadDetallePanel({
                     variant="ghost"
                     color="neutral"
                     size="icon-sm"
+                    nativeButton={false}
                     render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
                     aria-label={actividad ? `${accionEditar} ${actividad.nombre}` : accionEditar}
                   />

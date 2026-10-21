@@ -447,6 +447,7 @@ function PlaneadorPageContent() {
                     variant="fill"
                     aria-label={`Nuev${nuevoGenero} ${rotuloEnMinuscula(nuevoRotuloLabel)}`}
                     className="rounded-r-none border-r-0"
+                    nativeButton={false}
                     render={
                       <Link
                         to={paths.app.planeadorActividadCrear.getHref()}

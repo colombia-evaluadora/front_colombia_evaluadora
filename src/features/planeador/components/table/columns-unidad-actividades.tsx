@@ -516,6 +516,7 @@ export function createUnidadActividadesColumns(
                   color="neutral"
                   size="icon-sm"
                   aria-label={`Ver ${row.original.nombre}`}
+                  nativeButton={false}
                   render={
                     <Link
                       to={planeadorRoute.id}
@@ -560,6 +561,7 @@ export function createUnidadActividadesColumns(
                     color="neutral"
                     size="icon-sm"
                     aria-label={`Editar ${row.original.nombre}`}
+                    nativeButton={false}
                     render={
                       <Link
                         to={paths.app.planeadorActividadEditar.getHref(
@@ -588,6 +590,7 @@ export function createUnidadActividadesColumns(
                     color="neutral"
                     size="icon-sm"
                     aria-label={`Calificar ${row.original.nombre}`}
+                    nativeButton={false}
                     render={
                       <Link
                         to={planeadorRoute.id}

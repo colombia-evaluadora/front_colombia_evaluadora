@@ -760,6 +760,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
                       size="icon-sm"
                       aria-label="Editar"
                       disabled={soloEnLinea.disabled}
+                      nativeButton={soloEnLinea.disabled}
                       render={
                         soloEnLinea.disabled ? undefined : <Link
                           to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))}
