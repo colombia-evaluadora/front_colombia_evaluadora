@@ -58,6 +58,12 @@ export function DetalleEvento({
           ) : (
             <Skeleton className="h-24 w-full" />
           )}
+          {evento.descripcion && (
+            <p className="text-sm">
+              <span className="text-muted-foreground">Descripción: </span>
+              {evento.descripcion}
+            </p>
+          )}
           {evento.motivo && (
             <p className="text-sm">
               <span className="text-muted-foreground">Motivo: </span>

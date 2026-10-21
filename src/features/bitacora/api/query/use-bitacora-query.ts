@@ -11,12 +11,13 @@ import { unwrapRows, type RowsEnvelope } from "@/lib/response-envelope"
 
 import { eventosMock } from "@/features/bitacora/api/mock-bitacora"
 import { bitacoraKeys } from "@/features/bitacora/api/query-keys"
-import type {
-  BitacoraAccion,
-  BitacoraEvento,
-  BitacoraPagina,
-  EventoPosterior,
-  TipoRestauracion,
+import {
+  moduloConSedeJornada,
+  type BitacoraAccion,
+  type BitacoraEvento,
+  type BitacoraPagina,
+  type EventoPosterior,
+  type TipoRestauracion,
 } from "@/features/bitacora/api/types/bitacora"
 import type { BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
 
@@ -40,6 +41,7 @@ interface BitacoraRow {
   entidad: string
   registro: string
   accion: BitacoraAccion
+  descripcion: string | null
   campos: string[] | null
   motivo: string | null
   tipo_restauracion: TipoRestauracion | null
@@ -60,6 +62,7 @@ const toEvento = (row: BitacoraRow): BitacoraEvento => ({
   entidad: row.entidad,
   registro: row.registro,
   accion: row.accion,
+  descripcion: row.descripcion ?? null,
   campos: row.campos ?? [],
   motivo: row.motivo,
   tipoRestauracion: row.tipo_restauracion,
@@ -74,8 +77,9 @@ export function toBitacoraFilters(f: BitacoraFilters) {
     MODULO: f.modulo,
     // Solo cuenta para el Superadministrador; a los demás el back los fija en el suyo.
     FK_ESTABLECIMIENTO: f.modulo === "ADMINISTRACION" ? undefined : f.establecimiento || undefined,
-    FK_SEDE: f.sede || undefined,
-    FK_JORNADA: f.jornada || undefined,
+    // Comunicaciones no tiene sede: una sede de otro módulo que quede en la URL no debe vaciar el listado.
+    FK_SEDE: moduloConSedeJornada(f.modulo) ? f.sede || undefined : undefined,
+    FK_JORNADA: moduloConSedeJornada(f.modulo) ? f.jornada || undefined : undefined,
     ENTIDAD: f.entidad || undefined,
     // El back extrae los códigos de un texto (`extractAll`).
     ACCIONES: f.accion.length ? f.accion.join(",") : undefined,

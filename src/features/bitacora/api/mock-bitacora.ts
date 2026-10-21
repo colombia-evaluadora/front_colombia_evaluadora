@@ -1,13 +1,14 @@
 import { subDays, subMinutes } from "date-fns"
 
-import type {
-  BitacoraAccion,
-  BitacoraCambio,
-  BitacoraEntidad,
-  BitacoraEstado,
-  BitacoraEvento,
-  BitacoraModulo,
-  TipoRestauracion,
+import {
+  moduloConSedeJornada,
+  type BitacoraAccion,
+  type BitacoraCambio,
+  type BitacoraEntidad,
+  type BitacoraEstado,
+  type BitacoraEvento,
+  type BitacoraModulo,
+  type TipoRestauracion,
 } from "@/features/bitacora/api/types/bitacora"
 
 // Datos de ejemplo para el modo con mocks (ENABLE_API_MOCKING); el back real va por ClickHouse.
@@ -31,7 +32,22 @@ export const ENTIDADES_MOCK: Record<BitacoraModulo, BitacoraEntidad[]> = {
     { codigo: "LISTA_VALOR", nombre: "Lista de valores" },
     { codigo: "AREA_OFICIAL", nombre: "Área oficial" },
   ],
+  COMUNICACIONES: [
+    { codigo: "CONVERSACION", nombre: "Grupo, foro o actividad" },
+    { codigo: "PARTICIPANTE", nombre: "Participante" },
+    { codigo: "MENSAJE", nombre: "Mensaje" },
+  ],
 }
+
+/** Etiquetas de comms-service (`app.etiqueta`) para el módulo Comunicaciones. */
+const DESCRIPCIONES_COMUNICACIONES = [
+  "Crear el grupo Feria de ciencias",
+  "Agregar a Ana Sofía Pérez G. al grupo Feria de ciencias",
+  "Enviar un mensaje en el grupo Feria de ciencias",
+  "Quitar a Juan D. Ortiz del grupo Feria de ciencias",
+  "Eliminar un mensaje en el foro General",
+  "Publicar el comunicado Reunión de padres",
+]
 
 const USUARIOS = [
   { nombre: "Marta Lucía Rojas", documento: "52341987", rol: "Rector" },
@@ -71,7 +87,7 @@ function tipoDe(accion: BitacoraAccion): TipoRestauracion | null {
 
 function generar(modulo: BitacoraModulo): EventoMock[] {
   const entidades = ENTIDADES_MOCK[modulo]
-  const global = modulo === "ADMINISTRACION"
+  const global = !moduloConSedeJornada(modulo)
   return Array.from({ length: 48 }, (_, i) => {
     const accion = ACCIONES[i % ACCIONES.length]!
     const usuario = USUARIOS[(i * 3) % USUARIOS.length]!
@@ -95,6 +111,8 @@ function generar(modulo: BitacoraModulo): EventoMock[] {
         entidad: entidad.nombre,
         registro: REGISTROS[(i * 3) % REGISTROS.length]!,
         accion,
+        descripcion:
+          modulo === "COMUNICACIONES" ? DESCRIPCIONES_COMUNICACIONES[i % DESCRIPCIONES_COMUNICACIONES.length]! : null,
         campos: cambios.map((c) => c.campo),
         motivo: null,
         tipoRestauracion: tipoDe(accion),

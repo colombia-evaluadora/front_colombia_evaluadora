@@ -4,6 +4,8 @@ import { AUDIT_API_PREFIX } from "@/lib/api-routes"
 import { downloadReport } from "@/lib/report-client"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
+import { moduloConSedeJornada } from "@/features/bitacora/api/types/bitacora"
+
 import {
   toBitacoraFilters,
   toBitacoraSorting,
@@ -11,7 +13,7 @@ import {
 } from "@/features/bitacora/api/query/use-bitacora-query"
 
 /** Columnas del reporte (`reporting.reports.bitacora`), en el orden de la tabla. */
-const COLUMNAS = ["fecha", "usuario_nombre", "sede", "jornada", "entidad", "registro", "accion", "cambio"]
+const COLUMNAS = ["fecha", "usuario_nombre", "sede", "jornada", "entidad", "registro", "accion", "descripcion", "cambio"]
 
 /** Descarga la consulta con los mismos filtros y deja constancia de la exportación (Regla 17). */
 export async function exportarBitacora(
@@ -26,7 +28,7 @@ export async function exportarBitacora(
     format,
     filters: filtros,
     sorting: toBitacoraSorting(sorting),
-    columns: filters.modulo === "ADMINISTRACION" ? COLUMNAS.filter((c) => c !== "sede" && c !== "jornada") : COLUMNAS,
+    columns: moduloConSedeJornada(filters.modulo) ? COLUMNAS : COLUMNAS.filter((c) => c !== "sede" && c !== "jornada"),
   })
   if (resultado.status === "ok") {
     // El registro no debe tumbar una descarga que ya se hizo.
