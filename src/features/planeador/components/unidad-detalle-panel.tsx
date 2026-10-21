@@ -51,6 +51,7 @@ import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planead
 
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { getErrorMessage } from "@/lib/api-client"
+import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 type PanelTab = "general" | "rubricas" | "actividades"
@@ -538,6 +539,10 @@ function UnidadTabs({
   )
 }
 
+function esForbidden(error: unknown): boolean {
+  return (error as { response?: { status?: number } } | null)?.response?.status === 403
+}
+
 /** Detalle de unidad como panel embebido; las pestañas son estado local, no rutas. */
 export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onDeleted }: UnidadDetallePanelProps) {
   const { data: unidad, isPending, isError, error, refetch } = useUnidadDetalleQuery(Number(unidadId))
@@ -545,6 +550,8 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
   const [tab, setTab] = React.useState<PanelTab>("general")
   const { puedeEditar } = usePlaneadorSoloLectura()
   const soloEnLinea = useOnlineOnly()
+  // Unidad compartida de un colega (Regla 25): se usa, pero no se edita ni se elimina.
+  const ajena = esAjena(unidad)
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col rounded-md border bg-card">
@@ -555,7 +562,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
         {unidad && (
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Página aparte, no modal, como "Editar" de Actividad. */}
-            {puedeEditar && (
+            {puedeEditar && !ajena && (
               <Tooltip>
                 <TooltipTrigger
                   render={
@@ -580,7 +587,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
                 <TooltipContent>{soloEnLinea.tooltip ?? "Editar"}</TooltipContent>
               </Tooltip>
             )}
-            <DialogDeleteUnidad unidad={unidad} rotuloUnidad={rotuloUnidad} onDeleted={onDeleted} />
+            {!ajena && <DialogDeleteUnidad unidad={unidad} rotuloUnidad={rotuloUnidad} onDeleted={onDeleted} />}
           </div>
         )}
       </div>
@@ -595,9 +602,12 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
         {isError && (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
             <p className="text-red text-sm">{getErrorMessage(error)}</p>
-            <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
-              Reintentar
-            </Button>
+            {/* 403: la unidad no se comparte con este docente; reintentar no cambia nada. */}
+            {!esForbidden(error) && (
+              <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
+                Reintentar
+              </Button>
+            )}
           </div>
         )}
 

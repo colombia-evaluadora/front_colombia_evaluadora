@@ -52,10 +52,10 @@ export function StorageStatusCard() {
   const risks = storageRisks(status).filter((r) => r !== "ok")
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border px-3 py-2">
-      <p className="flex items-center gap-2">
-        <InfoIcon className="size-4 shrink-0" aria-hidden />
-        <span>
+    <div className="flex min-w-0 flex-col gap-2 rounded-md border px-3 py-2">
+      <p className="flex min-w-0 items-start gap-2">
+        <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <span className="min-w-0 break-words">
           Almacenamiento {persistLabel(status.persisted)} · usado {formatBytes(status.usage)} de{" "}
           {formatBytes(status.quota)} · puedes trabajar sin conexión hasta {OFFLINE_MAX_DAYS} días.
         </span>

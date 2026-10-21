@@ -83,6 +83,14 @@ let consecutiveHeartbeatFailures = 0
 /** Heartbeats OK seguidos mientras se está `offline` (histéresis). */
 let recoveryOks = 0
 let offlineBackoffMs = OFFLINE_MIN_INTERVAL_MS
+/**
+ * Última respuesta correcta de la API (ms). Si una request respondió hace
+ * nada, un heartbeat que "no llegó" no prueba que se cortó la red: lo más
+ * probable es que el hilo estuviera ocupado (Preparar cifrando y guardando)
+ * y el timeout del probe disparara tarde. Sin esto, "Preparar" quedaba
+ * "sin conexión" con la red perfecta.
+ */
+let lastSuccessAt = 0
 
 function setState(status: ConnectivityStatus, reason?: ConnectivityReason) {
   const nextReason = status === "online" ? undefined : reason
@@ -120,9 +128,32 @@ function schedule(delay?: number) {
   timer = setTimeout(() => void runHeartbeat(), delay ?? nextInterval())
 }
 
+export const PROBE_DRIFT_TOLERANCE_MS = 1_000
+export const PROBE_DRIFT_GRACE_MS = 2_000
+
+/**
+ * Timeout del probe que no se deja engañar por un hilo bloqueado: si el timer
+ * dispara mucho más tarde de lo pedido (el hilo estuvo ocupado), la respuesta
+ * probablemente ya llegó y está en cola detrás del timer; se le da un margen
+ * corto en lugar de abortar.
+ */
+function armProbeTimeout(controller: AbortController): () => void {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const arm = (ms: number, grace: boolean) => {
+    const armedAt = Date.now()
+    timeout = setTimeout(() => {
+      const late = Date.now() - armedAt - ms
+      if (!grace && late > PROBE_DRIFT_TOLERANCE_MS) arm(PROBE_DRIFT_GRACE_MS, true)
+      else controller.abort()
+    }, ms)
+  }
+  arm(HEARTBEAT_TIMEOUT_MS, false)
+  return () => clearTimeout(timeout)
+}
+
 async function probe(): Promise<HeartbeatResult> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), HEARTBEAT_TIMEOUT_MS)
+  const clearProbeTimeout = armProbeTimeout(controller)
   const startedAt = Date.now()
   try {
     const response = await fetch(`${env.API_URL}${HEARTBEAT_PATH}`, {
@@ -159,12 +190,14 @@ async function probe(): Promise<HeartbeatResult> {
   } catch {
     return "network"
   } finally {
-    clearTimeout(timeout)
+    clearProbeTimeout()
   }
 }
 
 function applyHeartbeat(result: HeartbeatResult) {
   if (result === "network") {
+    // La API respondió hace menos que el timeout del heartbeat: hay red.
+    if (Date.now() - lastSuccessAt < HEARTBEAT_TIMEOUT_MS) return
     consecutiveHeartbeatFailures += 1
     recoveryOks = 0
     if (consecutiveHeartbeatFailures >= FAILURES_FOR_OFFLINE) setState("offline", "network")
@@ -240,6 +273,7 @@ export const connectivityStore = {
 
   /** Una request respondió: si se estaba degradado por errores de red, se sale. */
   reportSuccess() {
+    lastSuccessAt = Date.now()
     if (state.status === "offline") {
       // La histéresis exige heartbeats: solo se adelanta la verificación.
       if (recoveryOks === 0) schedule(0)
@@ -291,6 +325,12 @@ export function __resetConnectivityForTests(status: ConnectivityStatus = "online
   recoveryOks = 0
   offlineBackoffMs = OFFLINE_MIN_INTERVAL_MS
   inFlight = false
+  lastSuccessAt = 0
+}
+
+/** Solo para tests: cambia el estado avisando a los suscriptores. */
+export function __setConnectivityForTests(status: ConnectivityStatus) {
+  setState(status, status === "online" ? undefined : "network")
 }
 
 /** Solo para tests: simula los eventos del navegador sin `window`. */

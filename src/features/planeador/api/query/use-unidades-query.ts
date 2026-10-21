@@ -31,6 +31,9 @@ const PAGE_SIZE = 500
  */
 interface UnidadRealRow extends DocenteDuenoRow {
   pk_tunidad: number
+  /** Creador de la unidad (Regla 25): nombre e id. */
+  docente?: string | null
+  fk_tfuncionario?: number | null
   nombre: string
   asignatura: string
   /** Id real de la asignatura — necesario para preseleccionar el `<Select>`
@@ -132,7 +135,11 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     instrumento: row.instrumento_evaluacion ?? undefined,
     instrumentoId: row.fk_tlv_instrumento_evaluacion ?? undefined,
     rotuloEjecucion: row.rotulo_ejecucion,
-    ...toDocenteDueno(row),
+    ...toDocenteDueno({
+      ...row,
+      fk_tfuncionario_docente: row.fk_tfuncionario_docente ?? row.fk_tfuncionario,
+      docente_nombre: row.docente_nombre ?? row.docente,
+    }),
   }
 }
 

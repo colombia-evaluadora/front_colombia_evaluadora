@@ -18,6 +18,7 @@ import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-ro
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { demostrativoRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { esAjena } from "@/features/planeador/lib/docente-dueno"
 
 interface UnidadCardProps {
   unidad: UnidadTematica
@@ -109,9 +110,9 @@ export function UnidadCard({
         )}
       </div>
 
-      {mostrarDocente && unidad.docenteNombre && (
+      {(mostrarDocente || esAjena(unidad)) && unidad.docenteNombre && (
         <p className="text-[0.625rem] leading-snug font-medium break-words">
-          {unidad.docenteNombre}
+          {mostrarDocente ? unidad.docenteNombre : `Creada por ${unidad.docenteNombre}`}
         </p>
       )}
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
@@ -142,7 +143,7 @@ export function UnidadCard({
           "group-focus-within/unidad:pointer-events-auto group-focus-within/unidad:opacity-100",
         )}
       >
-        {puedeEditar && (
+        {puedeEditar && !esAjena(unidad) && (
           <Tooltip>
             <TooltipTrigger
               render={

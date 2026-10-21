@@ -49,14 +49,14 @@ export function PinSetupCard() {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border px-3 py-2">
+    <div className="flex min-w-0 flex-col gap-3 rounded-md border px-3 py-3">
       <p className="font-semibold">Proteger con PIN (recomendado)</p>
       <p className="text-muted-foreground text-xs">
         Cifra en este equipo las notas, la asistencia y los datos de tus estudiantes. Si lo olvidas, se pierde lo
         que no hayas sincronizado.
       </p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field data-invalid={error ? true : undefined}>
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
           <FieldLabel htmlFor="pin-nuevo">PIN ({PIN_MIN_LENGTH}+ dígitos)</FieldLabel>
           <Input
             id="pin-nuevo"
@@ -67,7 +67,7 @@ export function PinSetupCard() {
             onChange={(e) => setPin(toDigitsOnly(e.target.value, 12))}
           />
         </Field>
-        <Field data-invalid={error ? true : undefined}>
+        <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
           <FieldLabel htmlFor="pin-confirmar">Confirmar PIN</FieldLabel>
           <Input
             id="pin-confirmar"
