@@ -33,11 +33,7 @@ export interface CrearEvaluacionInput {
 
 const sn = (v: boolean) => (v ? "S" : "N")
 
-export function useCrearEvaluacion() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (v: CrearEvaluacionInput) =>
-      evalCol.postRow<Conversacion>("/comunicaciones/evaluaciones", {
+const cuerpoEvaluacion = (v: Omit<CrearEvaluacionInput, "participantes">) => ({
         NOMBRE: v.nombre,
         DESCRIPCION: v.descripcion,
         FECHA_INICIO: v.fechaInicio,
@@ -46,7 +42,6 @@ export function useCrearEvaluacion() {
         PUNTAJE_TOTAL: v.puntajeTotal,
         INTENTOS: v.intentos,
         MOSTRAR_RESULTADOS: v.mostrarResultados,
-        PARTICIPANTES: v.participantes,
         PREGUNTAS: v.preguntas.map((p, i) => ({
           ORDEN: i + 1,
           TIPO: p.tipo,
@@ -54,8 +49,33 @@ export function useCrearEvaluacion() {
           PUNTOS: p.puntos,
           OPCIONES: p.opciones.map((o) => ({ TEXTO: o.texto, CORRECTA: sn(o.correcta) })),
         })),
+})
+
+export function useCrearEvaluacion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (v: CrearEvaluacionInput) =>
+      evalCol.postRow<Conversacion>("/comunicaciones/evaluaciones", {
+        ...cuerpoEvaluacion(v),
+        PARTICIPANTES: v.participantes,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+  })
+}
+
+/**
+ * "Editar Evaluación" (diseño 4062:67466): comms-service lo permite a quien la creó y antes de la
+ * primera entrega (409 si no). Los participantes no cambian.
+ */
+export function useEditarEvaluacion(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (v: Omit<CrearEvaluacionInput, "participantes">) =>
+      evalCol.patchRow<Evaluacion>(`/comunicaciones/conversaciones/${conversacionId}/evaluacion`, cuerpoEvaluacion(v)),
+    onSuccess: (evaluacion) => {
+      queryClient.setQueryData(chatKeys.evaluacion(conversacionId), evaluacion)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+    },
   })
 }
 

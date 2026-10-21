@@ -11,6 +11,7 @@ import { conversaciones } from "@/mocks/db/comunicaciones"
 import { encuestas, respondieron } from "@/mocks/db/comunicaciones-encuestas"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
+import { notificarActividad } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 // En la demo la crea el administrador; el resto son las personas asignadas que la responden.
 function vistaDe(e: Encuesta, request: Request): Encuesta {
@@ -37,6 +38,40 @@ interface CrearEncuestaBody {
 let siguienteId = 100
 
 export const comunicacionesEncuestasHandlers = [
+  // "Editar Encuesta": como comms-service, solo mientras nadie la haya respondido.
+  http.patch(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
+    await delay(250)
+    const e = encuestas.find((x) => x.conversacionId === Number(params.id))
+    if (!e) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    if (usuarioDe(request)?.role !== "ADMIN") {
+      return HttpResponse.json({ message: "Solo quien creó la encuesta puede editarla." }, { status: 403 })
+    }
+    if (e.participantes > 0) return HttpResponse.json({ message: "La encuesta ya tiene respuestas: no se puede editar." }, { status: 409 })
+    const body = (await request.json()) as CrearEncuestaBody
+    const nombre = body.NOMBRE?.trim()
+    if (!nombre || !body.PREGUNTAS?.length) {
+      return HttpResponse.json({ message: "Completa el nombre y agrega preguntas." }, { status: 400 })
+    }
+    Object.assign(e, {
+      nombre,
+      descripcion: body.DESCRIPCION ?? "",
+      fechaInicio: body.FECHA_INICIO ?? null,
+      fechaCierre: body.FECHA_CIERRE ?? null,
+      resultados: body.RESULTADOS ?? "PUBLICOS",
+      preguntas: body.PREGUNTAS.map((p) => ({
+        id: siguienteId++,
+        tipo: p.TIPO,
+        texto: p.TEXTO,
+        totalRespuestas: 0,
+        respuestas: [],
+        opciones: (p.TIPO === "SI_NO" ? OPCIONES_SI_NO : p.OPCIONES).map((texto) => ({ id: siguienteId++, texto, votos: 0 })),
+      })),
+    })
+    const conv = conversaciones.find((c) => c.id === e.conversacionId)
+    if (conv) conv.nombre = nombre
+    return HttpResponse.json({ rows: [vistaDe(e, request)] })
+  }),
+
   http.get(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
     await delay(200)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
@@ -96,8 +131,12 @@ export const comunicacionesEncuestasHandlers = [
       miembrosDestacados: ["Andrés Gómez"],
       silenciadoHasta: null,
       archivada: false,
+      creadoPor: "Andrés Gómez",
+      esCreador: true,
     }
     conversaciones.push(canal)
+    // Aviso a quienes la responden (comms-service: CHAT_ENCUESTA al abrir).
+    notificarActividad(canal.id, "CHAT_ENCUESTA", `Encuesta abierta: ${nombre}`, "Entra al canal y respóndela.")
     encuestas.push({
       conversacionId: canal.id,
       nombre,

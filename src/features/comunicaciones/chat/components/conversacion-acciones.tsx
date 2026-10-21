@@ -1,3 +1,8 @@
+import {
+  ETIQUETA_EDITAR,
+  EditarActividad,
+  esActividadEditable,
+} from "@/features/comunicaciones/chat/components/editar-actividad"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
@@ -72,7 +77,7 @@ const SILENCIOS: Array<{ valor: SilencioDuracion; etiqueta: string; aviso: strin
   { valor: "SIEMPRE", etiqueta: "Siempre", aviso: "Notificaciones silenciadas." },
 ]
 
-type Dialogo = "renombrar" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
+type Dialogo = "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -113,7 +118,14 @@ export function ConversacionAcciones({
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
+  // Elección, encuesta, evaluación o comunicado propios: el lápiz abre "Editar …" con todos sus
+  // datos; los foros y grupos solo se renombran.
+  const actividadEditable = esActividadEditable(c)
   const abrirRenombrar = () => {
+    if (actividadEditable) {
+      setDialogo("editarActividad")
+      return
+    }
     setNombre(c.nombre)
     setDialogo("renombrar")
   }
@@ -169,6 +181,12 @@ export function ConversacionAcciones({
               <LightningIcon />
               <span className="flex-1">Votación rápida</span>
               {!CHAT_FUNCIONES.votacionRapida && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
+            </DropdownMenuItem>
+          )}
+          {actividadEditable && (
+            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("editarActividad")}>
+              <PencilSimpleIcon />
+              {ETIQUETA_EDITAR[c.categoria as keyof typeof ETIQUETA_EDITAR]}
             </DropdownMenuItem>
           )}
           {/* Solo quien creó la elección puede cerrarla, y solo mientras sigue abierta. */}
@@ -304,6 +322,8 @@ export function ConversacionAcciones({
         Al cerrar la votación, los participantes ya no podrán votar y los resultados quedarán
         disponibles según la configuración definida.
       </Confirmacion>
+
+      <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
 
       <Dialog open={dialogo === "renombrar"} onOpenChange={(open) => !open && cerrar()}>
         <DialogContent>

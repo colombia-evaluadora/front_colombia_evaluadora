@@ -34,6 +34,44 @@ interface CrearEleccionBody {
 }
 
 export const comunicacionesEleccionesHandlers = [
+  // "Editar Elección": como comms-service, solo antes del primer voto. El censo no cambia.
+  http.patch(URL("conversaciones/:id/eleccion"), async ({ params, request }) => {
+    await delay(250)
+    const e = elecciones.find((x) => x.conversacionId === Number(params.id))
+    if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
+      return HttpResponse.json({ message: "Solo quien creó la elección puede editarla." }, { status: 403 })
+    }
+    const votos = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
+    if (votos > 0) return HttpResponse.json({ message: "La elección ya tiene votos: no se puede editar." }, { status: 409 })
+    const body = (await request.json()) as CrearEleccionBody
+    const nombre = body.NOMBRE?.trim()
+    const candidatos = body.CANDIDATOS ?? []
+    if (!nombre || !body.FK_JORNADA) {
+      return HttpResponse.json({ message: "Completa el nombre y la jornada." }, { status: 400 })
+    }
+    if (candidatos.length < 2) return HttpResponse.json({ message: "Agrega al menos dos candidatos." }, { status: 400 })
+    Object.assign(e, {
+      nombre,
+      descripcion: body.DESCRIPCION ?? "",
+      fechaInicio: body.FECHA_INICIO ?? null,
+      fechaCierre: body.FECHA_CIERRE ?? null,
+      jornadaId: body.FK_JORNADA,
+      verResultadosEnVivo: body.VER_RESULTADOS === "S",
+      candidatos: candidatos.map((c, i) => ({
+        id: i + 1,
+        nombre: c.NOMBRE,
+        numero: c.NUMERO,
+        lema: c.LEMA,
+        fotoUrl: c.FOTO_URL,
+        votos: 0,
+      })),
+    })
+    const conv = conversaciones.find((c) => c.id === e.conversacionId)
+    if (conv) conv.nombre = nombre
+    return HttpResponse.json({ rows: [{ ...e, yaVoto: false }] })
+  }),
+
   http.get(URL("votantes/opciones"), async () => {
     await delay(150)
     return HttpResponse.json({ rows: [{ grados: GRADOS, funcionarios: FUNCIONARIOS }] })
@@ -122,6 +160,8 @@ export const comunicacionesEleccionesHandlers = [
       miembrosDestacados: ["Andrés Gómez"],
       silenciadoHasta: null,
       archivada: false,
+      creadoPor: "Andrés Gómez",
+      esCreador: true,
     }
     conversaciones.push(canal)
     // Campana única: el aviso "entra a votar" va a la bandeja general.

@@ -77,7 +77,16 @@ export function filtrarGrupos(rows: Conversacion[], request: Request) {
   return rows.flatMap((c) =>
     c.tipo === "GRUPO"
       ? (vistaGrupo(c, yo) ?? [])
-      : [c.tipo === "CANAL" && c.esAdmin === undefined ? { ...c, esAdmin: yo === USUARIO_ACTUAL.id } : c],
+      : [
+          c.tipo === "CANAL"
+            ? {
+                ...c,
+                esAdmin: c.esAdmin ?? yo === USUARIO_ACTUAL.id,
+                // Las actividades del mock las creó Andrés: solo él las edita.
+                esCreador: !!c.esCreador && yo === USUARIO_ACTUAL.id,
+              }
+            : c,
+        ],
   )
 }
 
