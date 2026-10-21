@@ -37,8 +37,28 @@ export interface PoliticaChat {
    * del administrador del canal). Opcional: un backend sin foros no lo manda.
    */
   foros?: PoliticaForos
+  /**
+   * Grupos (comms-service `comms.politica.grupos`, PENDIENTE DE CONFIRMAR CON NATALIA): quién crea y
+   * quién agrega participantes (`ADMIN` solo administradores, `TODOS` cualquier miembro).
+   */
+  grupos?: PoliticaGrupos
   /** `true` mientras la institución no haya confirmado la política. */
   pendienteDeAprobacion: boolean
+}
+
+export interface PoliticaGrupos {
+  crear: PerfilChat[]
+  agregar: "ADMIN" | "TODOS"
+  sucesionAlMasAntiguo: boolean
+}
+
+/** Quién ve el buscador para añadir: el administrador; en un grupo con `agregar=TODOS`, cualquiera. */
+export function puedeAgregarParticipantes(
+  politica: Pick<PoliticaChat, "grupos">,
+  c: { tipo: string; esAdmin?: boolean },
+): boolean {
+  if (c.esAdmin) return true
+  return c.tipo === "GRUPO" && politica.grupos?.agregar === "TODOS"
 }
 
 const todos = (regla: ReglaDirecto): Record<PerfilChat, ReglaDirecto> => ({
@@ -57,6 +77,8 @@ export const POLITICA_CHAT_SUGERIDA: PoliticaChat = {
     ESTUDIANTE: todos("PROHIBIDO"),
   },
   mencionesMasivas: ["DIRECTIVO", "DOCENTE"],
+  // Defaults de comms-service (`comms.politica.grupos`).
+  grupos: { crear: ["DIRECTIVO", "DOCENTE"], agregar: "ADMIN", sucesionAlMasAntiguo: true },
   // Mismos defaults que comms-service (`comms.politica.foros`): todos participan y modera dirección.
   foros: {
     publicar: ["DIRECTIVO", "DOCENTE", "ACUDIENTE", "ESTUDIANTE"],

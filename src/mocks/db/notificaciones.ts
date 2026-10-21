@@ -216,7 +216,15 @@ export const notificacionesDb: (NotificacionRow & { archivada: boolean; usuario?
   })
 })()
 
-export const preferenciasTiposDb: PreferenciaTipoRow[] = TIPOS.map((t) => ({
+// Avisos de membresía de grupos (comms-service): solo preferencias; no entran a la bandeja
+// aleatoria del fixture (la sembrada con faker no cambia). Espejo de CatalogoTipos.
+const TIPOS_MEMBRESIA = [
+  { tipo: "CHAT_GRUPO_AGREGADO", categoria: "CHAT", etiqueta: "Te agregaron a un grupo o foro", push: true, email: false, silenciable: true },
+  { tipo: "CHAT_GRUPO_QUITADO", categoria: "CHAT", etiqueta: "Te quitaron de un grupo o foro", push: true, email: false, silenciable: true },
+  { tipo: "CHAT_GRUPO_SALIDA", categoria: "CHAT", etiqueta: "Alguien salió de un grupo que administras", push: false, email: false, silenciable: true },
+] as const
+
+export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA].map((t) => ({
   tipo: t.tipo,
   categoria: t.categoria,
   etiqueta: t.etiqueta,
