@@ -30,7 +30,12 @@ const RUTAS_SOLO_EN_LINEA = ["/app/cobertura/matricula", "/app/establecimiento-e
 
 const VACIO = "Esta sección necesita conexión"
 
-test("ninguna ruta no administrativa muestra el empty state sin red tras preparar", async ({ page }) => {
+// Un usuario por perfil de menú: el bug de "Establecimiento sin guardar" solo
+// se veía con el menú de super admin/rector, que el docente no tiene.
+const USUARIOS = ["docente@example.com", "admin@example.com", "coordinador@example.com"]
+
+for (const usuario of USUARIOS)
+test(`${usuario}: ninguna ruta muestra el empty state sin red tras preparar`, async ({ page }) => {
   test.setTimeout(600_000)
   await page.goto("/login")
   await page.evaluate(
@@ -40,7 +45,7 @@ test("ninguna ruta no administrativa muestra el empty state sin red tras prepara
         req.onsuccess = req.onerror = req.onblocked = () => resolve()
       }),
   )
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo electrónico").fill(usuario)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
   if (await compartido.isChecked()) await compartido.click()
@@ -81,6 +86,8 @@ test("ninguna ruta no administrativa muestra el empty state sin red tras prepara
   for (const ruta of RUTAS_NO_ADMIN) {
     await ir(ruta)
     await page.waitForTimeout(2_000)
+    // Rutas fuera del menú del usuario redirigen: no aplican a este perfil.
+    if (new URL(page.url()).pathname !== ruta) continue
     await expect(page.getByText(VACIO), `${ruta} no debe pedir conexión`).toHaveCount(0)
     // Tras "Preparar todo el año" la vista por defecto tiene TODO guardado: el
     // banner no debe decir que falta algo (prueba que Preparar usa las mismas

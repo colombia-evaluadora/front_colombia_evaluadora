@@ -29,7 +29,7 @@ export default defineConfig({
     env: {
       VITE_APP_ENABLE_API_MOCKING: "active",
       VITE_APP_OFFLINE: "full",
-      VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com",
+      VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com,coordinador@example.com",
       VITE_APP_OFFLINE_AUTO_PREPARE: "off",
     },
   },

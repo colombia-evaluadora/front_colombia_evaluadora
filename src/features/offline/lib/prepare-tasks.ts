@@ -567,10 +567,23 @@ function cascadaJornada(filtros: PeriodosInformeParams): PrepareTask {
           then: (grupos) =>
             porDefecto.length === 0
               ? []
-              : grupos.map((grupo) => {
-                  const params = { grupoId: grupo.grupoId, periodos: porDefecto }
-                  return seed(informeGrupoQueryKey(params), () => fetchInformeGrupo(params), estudiantesMeta(), { optional: true })
-                }),
+              : [
+                  ...grupos.map((grupo) => {
+                    const params = { grupoId: grupo.grupoId, periodos: porDefecto }
+                    return seed(informeGrupoQueryKey(params), () => fetchInformeGrupo(params), estudiantesMeta(), { optional: true })
+                  }),
+                  // `useStudyPlanSubjectLabel(gradoActivoId)` de la pantalla de
+                  // informes pide el referente del grado del grupo activo. Los
+                  // grupos de informes (rector/coordinador) no son los de la
+                  // planilla del docente, así que no salían de `planillaTasks`.
+                  ...[...new Set(grupos.map((g) => g.gradoId).filter((id): id is number => id != null))].map(
+                    (gradoId) =>
+                      seed(planeadorKeys.referenteCurricular(gradoId), () => fetchReferenteCurricular(gradoId, undefined), catalogoMeta(), {
+                        optional: true,
+                        then: (referente) => (referente.id != null ? [subjectLabelTask(referente.id)] : []),
+                      }),
+                  ),
+                ],
         }),
       ]
     },
