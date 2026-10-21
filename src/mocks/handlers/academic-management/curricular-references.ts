@@ -140,6 +140,22 @@ export const curricularReferencesHandlers = [
     return HttpResponse.json<CurricularReferencesQueryResponse>({ rows, pageCount, totalCount })
   }),
 
+  // Estática antes de `:id`: MSW usa el primer match y `:id` se la tragaba (404).
+  http.get("*/api/academic-management/curricular-references/personalizar-asignatura", async () => {
+    await delay(150)
+
+    const rows = subjectLabelOptionsDb
+      .filter((row) => row.activo)
+      .map((row) => ({
+        pk_lista_valor: row.id,
+        valor: row.valor,
+        es_semilla: row.esSemilla,
+        en_uso: curricularReferencesDb.filter((reference) => reference.subjectLabel?.id === row.id).length,
+      }))
+
+    return HttpResponse.json(rows)
+  }),
+
   http.get("*/api/academic-management/curricular-references/:id", async ({ params }) => {
     await delay(150)
 
@@ -283,20 +299,6 @@ export const curricularReferencesHandlers = [
     return HttpResponse.json({ status: "ok", message: "Referente curricular eliminado." })
   }),
 
-  http.get("*/api/academic-management/curricular-references/personalizar-asignatura", async () => {
-    await delay(150)
-
-    const rows = subjectLabelOptionsDb
-      .filter((row) => row.activo)
-      .map((row) => ({
-        pk_lista_valor: row.id,
-        valor: row.valor,
-        es_semilla: row.esSemilla,
-        en_uso: curricularReferencesDb.filter((reference) => reference.subjectLabel?.id === row.id).length,
-      }))
-
-    return HttpResponse.json(rows)
-  }),
 
   http.post("*/api/academic-management/curricular-references/personalizar-asignatura", async ({ request }) => {
     await delay(250)

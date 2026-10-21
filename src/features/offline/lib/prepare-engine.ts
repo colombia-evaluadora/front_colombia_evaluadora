@@ -247,7 +247,13 @@ async function execute(
     const hash = hashKey(task.queryKey)
     // Las tareas que expanden a otras (listas) se repiten siempre: sus hijas
     // sí se saltan si ya estaban.
-    if (hechas.has(hash) && !task.expands && task.queryKey[0] !== "offline") {
+    // Solo se salta si el dato SIGUE en el cache: el checkpoint vive en
+    // localStorage (global, no por usuario) y sobrevive a un logout/borrado
+    // de datos o a una corrida "parcial". Sin este chequeo, una reanudación
+    // (la autopreparación siempre reanuda) marcaba la lista de establecimientos
+    // como hecha sin bajarla y el encabezado decía "Datos guardados" igual.
+    const enCache = queryClient.getQueryState(task.queryKey)?.data !== undefined
+    if (hechas.has(hash) && enCache && !task.expands && task.queryKey[0] !== "offline") {
       set({ done: i + 1 })
       continue
     }
@@ -259,7 +265,10 @@ async function execute(
       }
       hechas.add(hash)
       if (i % 10 === 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
-    } catch {
+    } catch (error) {
+      // Deja rastro de qué key falló: sin esto un "parcial" no dice qué pantalla
+      // quedó sin guardar.
+      console.warn("[offline] preparar falló", JSON.stringify(task.queryKey), error)
       if (!task.optional) failed.push(task)
     }
     set({ done: i + 1 })
