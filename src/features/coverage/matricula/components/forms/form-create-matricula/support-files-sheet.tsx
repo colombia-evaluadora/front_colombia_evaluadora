@@ -9,7 +9,7 @@ import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-u
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaFile } from "@/features/coverage/matricula/api/types/matricula"
 import { MatriculaFormSection } from "./fields"
-import { MATRICULA_MAX_FILE_SIZE_BYTES, type MatriculaSupportFiles, SUPPORT_FILE_FIELDS, type SupportFileFieldConfig, fileKey, formatFileSize, groupExistingFilesByKey } from "./support-files"
+import { type MatriculaSupportFiles, SUPPORT_FILE_FIELDS, type SupportFileFieldConfig, acceptDe, fileKey, formatFileSize, formatosTexto, groupExistingFilesByKey, validarArchivoSoporte } from "./support-files"
 
 function FileTypeIcon({ file }: { file: File }) {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
@@ -174,16 +174,20 @@ function SupportFilesSheetField({
         onChange(files)
       }}
       multiple={config.multiple}
-      onFileValidate={(file) =>
-        file.size > MATRICULA_MAX_FILE_SIZE_BYTES ? "supera el máximo permitido de 25 MB" : null
-      }
+      accept={acceptDe(config)}
+      onFileValidate={(file) => validarArchivoSoporte(file, config)}
       onFileReject={(file, message) => setRejection(`${file.name} ${message}`)}
       className="gap-2"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground">
-          {config.label}
-          {required ? "*" : ""}
+        <span className="flex flex-col">
+          <span className="text-sm font-semibold text-foreground">
+            {config.label}
+            {required ? "*" : ""}
+          </span>
+          {canAttach && (
+            <span className="text-xs text-muted-foreground">{formatosTexto(config)}</span>
+          )}
         </span>
         {canAttach && (
           <Tooltip>
@@ -397,7 +401,7 @@ export function SupportFilesSheet({
           <SheetDescription>
             {viewOnly
               ? "Documentos cargados para este estudiante."
-              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante."}
+              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante. Se aceptan archivos PDF, JPG o PNG (la foto, solo JPG o PNG) de hasta 25 MB."}
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">

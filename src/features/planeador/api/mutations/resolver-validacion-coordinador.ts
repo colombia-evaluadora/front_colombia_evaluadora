@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 import {
   toValidacionCoordinador,
   type ValidacionCoordinadorRow,
@@ -46,6 +47,8 @@ export function useResolverValidacionCoordinador({
       const [, input] = args
       // Prefijo del detalle: refresca también la validación de esa actividad.
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(input.actividadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(...args)
     },
   })

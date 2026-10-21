@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 import {
   PERIODO_FINAL_ID,
@@ -45,32 +45,10 @@ export function PeriodoFilter({
             checked={seleccionados.includes(periodo.id)}
             onCheckedChange={() => toggle(periodo.id)}
           />
-          {/* El estado va debajo del nombre y abreviado (A/C) para no
-              ensanchar la fila; el tooltip lo explica. */}
-          <div className="flex flex-col items-start gap-0.5">
-            <Label htmlFor={`periodo-${periodo.id}`} className="font-normal text-foreground">
-              {periodo.nombre}
-            </Label>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Badge
-                    variant="soft"
-                    color={periodo.cerrado ? "neutral" : "success"}
-                    className="cursor-default"
-                    aria-label={periodo.cerrado ? "Período cerrado" : "Período abierto"}
-                  />
-                }
-              >
-                {periodo.cerrado ? "C" : "A"}
-              </TooltipTrigger>
-              <TooltipContent>
-                {periodo.cerrado
-                  ? "Período cerrado: no se puede consolidar ni editar observaciones."
-                  : "Período abierto: se puede consolidar y editar observaciones."}
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <Label htmlFor={`periodo-${periodo.id}`} className="font-normal text-foreground">
+            {periodo.nombre}
+          </Label>
+          <MarcaEstadoPeriodo cerrado={periodo.cerrado} />
         </div>
       ))}
       {/* No va dentro del map: existe siempre, incluso mientras los períodos
@@ -87,5 +65,40 @@ export function PeriodoFilter({
         </Label>
       </div>
     </fieldset>
+  )
+}
+
+/**
+ * Estado del período junto a su nombre: píldora con punto y la inicial (A/C),
+ * azul si está abierto y neutra si está cerrado. El tooltip dice el estado
+ * completo y qué implica.
+ */
+function MarcaEstadoPeriodo({ cerrado }: { cerrado: boolean }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            tabIndex={0}
+            aria-label={cerrado ? "Período cerrado" : "Período abierto"}
+            className={cn(
+              "inline-flex cursor-default items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-none font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+              cerrado
+                ? "border-border bg-background text-muted-foreground"
+                : "border-blue-stroke bg-blue-22 text-blue",
+            )}
+          />
+        }
+      >
+        <span aria-hidden className="size-1.5 rounded-full bg-current" />
+        {cerrado ? "C" : "A"}
+      </TooltipTrigger>
+      <TooltipContent>
+        <span className="font-semibold">{cerrado ? "Cerrado" : "Abierto"}</span>
+        {cerrado
+          ? ": no se puede consolidar ni editar observaciones."
+          : ": se puede consolidar y editar observaciones."}
+      </TooltipContent>
+    </Tooltip>
   )
 }

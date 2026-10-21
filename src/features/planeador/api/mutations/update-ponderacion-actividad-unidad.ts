@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 interface UpdatePonderacionInput {
   actividadId: number
@@ -41,6 +42,8 @@ export function useUpdatePonderacionActividadUnidad({
     mutationFn: updatePonderacionActividadUnidad,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,

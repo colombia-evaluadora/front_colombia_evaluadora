@@ -43,11 +43,7 @@ import {
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinidoRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
-/** Valor de una celda en línea que la Regla 37 ya no deja editar (la
- *  actividad tiene calificaciones, observaciones o "No presentó", o es base
- *  de una recuperación): se ve, no se edita, y el motivo va en el tooltip.
- *  Un `<span>` enfocable y no un botón deshabilitado: el deshabilitado no
- *  recibe hover y el motivo nunca se vería. */
+/** Celda bloqueada por Regla 37: `<span>` enfocable (no botón deshabilitado) para que el tooltip con el motivo se vea. */
 function ValorBloqueado({ valor, motivo }: { valor: ReactNode; motivo: string }) {
   return (
     <Tooltip>
@@ -67,9 +63,7 @@ function ValorBloqueado({ valor, motivo }: { valor: ReactNode; motivo: string })
   )
 }
 
-/** Celda "(%)" editable en línea — clic muestra el input, Enter/blur
- *  guarda, Escape descarta. Solo tiene sentido con cálculo "Ponderado": el
- *  llamador no la renderiza para los otros dos métodos. */
+/** Celda "(%)" editable en línea; solo para cálculo "Ponderado". */
 function CeldaPonderacion({
   actividad,
   unidadId,
@@ -77,17 +71,7 @@ function CeldaPonderacion({
 }: {
   actividad: UnidadActividad
   unidadId: number
-  /** Tope OPTIMISTA para esta fila: `100 - (suma de ponderación del RESTO
-   *  de actividades YA VINCULADAS A ESTA UNIDAD) `— no un `100` fijo, para
-   *  que subir el % de una actividad no deje a simple vista esta unidad por
-   *  encima del 100%. NO es el tope autoritativo: el backend (sso V223,
-   *  `tr_tactividad_ponderacion_unidad`) topa el 100% por (unidad, grupo),
-   *  y este clamp suma las actividades de TODOS los grupos de la unidad, así
-   *  que con varios grupos es más estricto que el real. Si el backend rechaza
-   *  un valor (23514), el error se muestra en el toast de `onError` más abajo.
-   *  El modal "Vincular actividad" (`DialogAgregarActividad`) sí usa el tope
-   *  real por fila (`porcentajeDisponible`, de
-   *  `fn_unidad_ponderacion_disponible`). */
+  /** Tope optimista (100 - resto de la unidad); el real lo topa el backend por (unidad, grupo), sso V223. */
   maxDisponible: number
 }) {
   const [editando, setEditando] = useState(false)
@@ -102,8 +86,7 @@ function CeldaPonderacion({
         notify("Ponderación actualizada.")
         setEditando(false)
       },
-      // El motivo del backend (p. ej. la Regla 37 si alguien calificó
-      // mientras la tabla estaba abierta), no un genérico.
+      // Motivo del backend (p. ej. Regla 37), no un genérico.
       onError: (error) =>
         notify(`No se pudo actualizar la ponderación. ${getErrorMessage(error)}`, { variant: "error" }),
     },
@@ -145,9 +128,7 @@ function CeldaPonderacion({
         value={valor}
         onChange={(e) => {
           const raw = e.target.value
-          // Mismo recorte que `DialogAgregarActividad`: `max` del input HTML
-          // no bloquea el tecleo, solo marca `:invalid` — hay que clampear
-          // a mano para que no se pueda pasar del 100% de la unidad.
+          // `max` del input no bloquea el tecleo: se clampea a mano.
           setValor(raw === "" ? "" : String(Math.min(Number(raw) || 0, maxDisponible)))
         }}
         onKeyDown={(e) => {
@@ -178,10 +159,7 @@ function CeldaPonderacion({
   )
 }
 
-/** Celda "Puntaje" editable en línea — mismo patrón que `CeldaPonderacion`
- *  (clic muestra el input, Enter/blur guarda, Escape descarta), pero para
- *  unidades "Suma de puntos": no hay tope de 100, el backend deriva el %
- *  de forma proporcional sobre el total de puntajes del (unidad, grupo). */
+/** Celda "Puntaje" para "Suma de puntos": sin tope, el backend deriva el %. */
 function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; unidadId: number }) {
   const [editando, setEditando] = useState(false)
   // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
@@ -270,8 +248,6 @@ function BotonDesvincular({
 }: {
   actividad: UnidadActividad
   unidadId: number
-  /** Rótulos reales de la actividad y de la unidad (ver
-   *  `createUnidadActividadesColumns`) — nunca "actividad"/"unidad" fijos. */
   rotuloActividad: string
   rotuloUnidad: string
 }) {
@@ -296,8 +272,7 @@ function BotonDesvincular({
     },
   })
 
-  // Regla 37: con resultados la actividad ya no sale de la unidad (el
-  // backend lo rechaza). Botón visible con el motivo, sin abrir el diálogo.
+  // Regla 37: con resultados no se desvincula; botón visible con el motivo.
   if (actividad.motivoNoEditable) {
     return (
       <Tooltip>
@@ -374,38 +349,8 @@ function BotonDesvincular({
   )
 }
 
-/**
- * Columnas de las actividades vinculadas a una unidad, con su peso dentro de
- * ella.
- *
- * `unidadId` (para invalidar su detalle) y `metodoCalculo` viajan como
- * parámetros porque la columna de peso CAMBIA según el método de cálculo de
- * la unidad (pedido explícito, antes se veía igual sin importar el método):
- *   - "Ponderado": columna "(%)", editable en línea (`CeldaPonderacion`).
- *   - "Suma de puntos": columna "Puntaje", editable en línea
- *     (`CeldaPuntaje`, `TACTIVIDAD.NOTA_MAXIMA`) — el "(%)" en este modo es
- *     un DERIVADO que calcula el backend, no algo que el docente edite.
- *   - "Promedio simple": sin columna de peso — cada actividad pesa lo
- *     mismo, no hay nada que editar (el caller muestra un banner explicando
- *     esto arriba de la tabla, ver `UnidadDetallePanel`).
- * `esFormativa` manda ANTES que `metodoCalculo`: una unidad Formativa no
- * calibra nota en absoluto —sus actividades se OBSERVAN, no se califican—
- * así que ninguna columna de peso aplica sin importar qué método de cálculo
- * tenga guardado (ese campo es un remanente sin uso real en Formativo).
- * Reportado en vivo: una unidad formativa (actividades "Participación en
- * clase"/"Tarea", sin instrumento) seguía mostrando "(%)" en 0 para todas,
- * como si calificara. Por el mismo motivo —Formativa no tiene instrumento de
- * evaluación— la columna "Instrumento" tampoco se muestra: quedaba siempre
- * vacía.
- * `totalPonderacion` es la suma de `ponderacion` de TODAS las actividades ya
- * vinculadas A ESTA UNIDAD (la pasa el caller, que ya tiene esa lista) — de
- * ahí sale el tope OPTIMISTA de cada fila en modo Ponderado (`100 -
- * totalPonderacion + actividad.ponderacion`, sumando de vuelta lo que la
- * fila YA aporta al total). Ojo: no es el tope real — el backend topa por
- * (unidad, grupo) (sso V223); ver el comentario de `maxDisponible` en
- * `CeldaPonderacion` más arriba. No aplica en Suma de puntos: el puntaje
- * no tiene tope, el reparto proporcional lo hace el backend.
- */
+/** Columnas de actividades de una unidad; la columna de peso depende de `metodoCalculo` y
+ * `esFormativa` la oculta (se observa, no se califica). */
 export function createUnidadActividadesColumns(
   unidadId: number,
   metodoCalculo: MetodoCalculo,
@@ -413,15 +358,10 @@ export function createUnidadActividadesColumns(
   esFormativa: boolean,
   puedeEditar: boolean,
   puedeEliminar: boolean,
-  /** Rótulo real de la unidad para "Actividad" (Regla 13) — nunca el
-   *  literal fijo. */
+  /** Rótulo real de la unidad (Regla 13). */
   rotuloActividadLabel: string = ROTULO_ACTIVIDAD_FALLBACK,
-  /** Rótulo de la unidad ("Unidad temática"/"Proyecto pedagógico"/…) para el
-   *  copy de "Desvincular". */
   rotuloUnidad: string = UNIDAD_TAB_FALLBACK,
-  /** Sede/año/jornada/docente que se está mirando (filtro avanzado): "Ver"
-   *  lo arrastra al listado de Actividades para seguir sobre el mismo
-   *  alcance —y en solo lectura— en vez de caer al planeador propio. */
+  /** Alcance del filtro avanzado: "Ver" lo arrastra al listado, en solo lectura. */
   docenteSearch: PlaneadorAlcanceSearch = {},
 ): ColumnDef<UnidadActividad>[] {
   const columnaPeso: ColumnDef<UnidadActividad>[] = esFormativa
@@ -447,8 +387,7 @@ export function createUnidadActividadesColumns(
             {
               id: "puntaje",
               accessorKey: "notaMaxima",
-              // "(Σ)" es el par de "(%)" de Ponderado: la reunión del 22-sep pidió
-              // el símbolo de sumatoria en la cabecera (min. 36:57).
+              // "(Σ)" pedido en la reunión del 22-sep.
               meta: { label: "(Σ) Puntaje" },
               header: ({ column }) => <DataTableColumnHeader column={column} title="(Σ)" />,
               cell: ({ row }) => <CeldaPuntaje actividad={row.original} unidadId={unidadId} />,
@@ -471,9 +410,7 @@ export function createUnidadActividadesColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
       cell: ({ row }) => <span>{row.original.tipo}</span>,
     },
-    // Formativa: no hay instrumento de evaluación en absoluto (se observa,
-    // no se califica) — la columna quedaba siempre vacía. Mismo criterio
-    // que `columnaPeso` (`esFormativa` manda antes que cualquier otra cosa).
+    // Formativa: sin instrumento de evaluación, la columna quedaba vacía.
     ...(esFormativa
       ? []
       : [
@@ -498,16 +435,8 @@ export function createUnidadActividadesColumns(
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
-          {/* `actividad.actividadId`, no `actividad.id` (el vínculo) — ver
-              el comentario de `UnidadActividad` en `unidad-tematica.ts`. */}
-          {/* "Ver" va al listado principal del Planeador con la actividad
-              seleccionada (`?actividad=`), que abre el mismo panel embebido
-              que al hacer click en su card — no a la página standalone
-              `planeadorDetalle` (esa es un drill-down aparte, con su propio
-              "Volver al Planeador"; acá el usuario ya está viendo el
-              detalle de una UNIDAD, así que "Ver" tiene que llevarlo a la
-              vista con la que el resto de la app ya muestra una
-              actividad). */}
+          {/* `actividadId`, no `id` (el vínculo). */}
+          {/* "Ver" abre el panel embebido del listado (`?actividad=`), no `planeadorDetalle`. */}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -516,6 +445,7 @@ export function createUnidadActividadesColumns(
                   color="neutral"
                   size="icon-sm"
                   aria-label={`Ver ${row.original.nombre}`}
+                  nativeButton={false}
                   render={
                     <Link
                       to={planeadorRoute.id}
@@ -529,9 +459,7 @@ export function createUnidadActividadesColumns(
             </TooltipTrigger>
             <TooltipContent>Ver {row.original.nombre}</TooltipContent>
           </Tooltip>
-          {/* Regla 37: con resultados el lápiz queda visible pero inerte y el
-              tooltip dice por qué (mismo criterio que `ActividadCard`); "Ver"
-              sigue abriendo la actividad. */}
+          {/* Regla 37: lápiz visible pero inerte, con el motivo en el tooltip. */}
           {puedeEditar && row.original.motivoNoEditable && (
             <Tooltip>
               <TooltipTrigger
@@ -560,6 +488,7 @@ export function createUnidadActividadesColumns(
                     color="neutral"
                     size="icon-sm"
                     aria-label={`Editar ${row.original.nombre}`}
+                    nativeButton={false}
                     render={
                       <Link
                         to={paths.app.planeadorActividadEditar.getHref(
@@ -575,10 +504,7 @@ export function createUnidadActividadesColumns(
               <TooltipContent>Editar {row.original.nombre}</TooltipContent>
             </Tooltip>
           )}
-          {/* Chulito: abre el panel del listado principal directo en modo
-              "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
-              header de `ActividadDetallePanel`. En solo lectura no se
-              califica (el panel tampoco abre ese modo). */}
+          {/* Abre el panel en modo "Marcar" (`?modo=grades`); no en solo lectura. */}
           {puedeEditar && (
             <Tooltip>
               <TooltipTrigger
@@ -588,6 +514,7 @@ export function createUnidadActividadesColumns(
                     color="neutral"
                     size="icon-sm"
                     aria-label={`Calificar ${row.original.nombre}`}
+                    nativeButton={false}
                     render={
                       <Link
                         to={planeadorRoute.id}

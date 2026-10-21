@@ -18,6 +18,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import type { SelectOption } from "@/lib/catalog-options"
 import { useAppForm } from "@/lib/forms"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { toSafeTextInput } from "@/lib/text-input"
 import { cn } from "@/lib/utils"
 
 import { useEstadoAreaOficial } from "@/features/administration/areas-oficiales/api/mutations/estado-area-oficial"
@@ -153,6 +154,7 @@ function SaveAreaOficialContent({
                 label="Nombre"
                 required
                 maxLength={100}
+                transform={(v) => toSafeTextInput(v, 100)}
                 placeholder="Ej. Matemáticas"
                 description="De 3 a 100 caracteres. No puede repetirse en el catálogo."
               />

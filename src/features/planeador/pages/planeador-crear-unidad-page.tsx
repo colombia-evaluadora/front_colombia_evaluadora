@@ -36,16 +36,7 @@ import { planeadorUnidadCrearRoute } from "@/router"
 
 const FORM_ID = "crear-unidad-form"
 
-/**
- * Alta de una unidad temática en una ruta aparte — mismo patrón que
- * `planeador-crear-actividad-page.tsx`: form en blanco, footer siempre
- * visible con "Guardar" (un form recién abierto nunca está "ya guardado").
- *
- * Solo cubre "Información general": los criterios y las actividades
- * vinculadas se agregan después, desde el panel de detalle de la unidad ya
- * creada (mismos diálogos "Agregar criterio"/"Vincular actividad" de
- * siempre) — no tiene sentido pedirlos acá, antes de que la unidad exista.
- */
+/** Solo "Información general": criterios y actividades se agregan desde el detalle, cuando la unidad ya existe. */
 export function PlaneadorCrearUnidadPage() {
   return (
     <NoticeProvider>
@@ -59,9 +50,7 @@ function PlaneadorCrearUnidadPageContent() {
   const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
 
-  // Mismo guard de permiso que `planeador-crear-actividad-page.tsx`: sin
-  // "crear" en Planeador, redirige al listado apenas se sabe que no hay
-  // permiso.
+  // El router solo gatea por sesión: sin "crear" se redirige al listado.
   const { puedeCrear, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
@@ -69,46 +58,21 @@ function PlaneadorCrearUnidadPageContent() {
     }
   }, [isLoadingPermiso, puedeCrear, navigate])
 
-  // `?instrumento=` llega cuando se entra desde el botón "Agregar
-  // {instrumento}" de una pestaña (`planeador-unidades-page.tsx`) — permite
-  // saber DESDE EL PRIMER RENDER qué instrumento se está creando, sin
-  // esperar a que el docente elija un Grado (que es lo único de lo que
-  // `useUnidadInstrumentoLabel` puede derivarlo). Con esa pestaña identificada
-  // también se acotan los `<Select>` de Grado/Asignatura a los que caen bajo
-  // ESE instrumento (`tabDesdeAgregar.grados`/`.asignaturas`, ver
-  // `UnidadInfoGeneralFields`) en vez de todo el catálogo del docente.
+  // `?instrumento=` da el instrumento desde el primer render (sin esperar Grado) y acota Grado/Asignatura a esa pestaña.
   const search = useSearch({ from: planeadorUnidadCrearRoute.id })
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const tabDesdeAgregar = unidadTabs?.find((tab) => tab.instrumento === search.instrumento)
-  // Rótulo dinámico ("Unidad temática"/"Proyecto pedagógico"/…, ver
-  // `planeador-tabs.tsx`) para el título y el mensaje de éxito — el mismo
-  // texto fijo "Unidad temática" no tenía sentido para un docente de
-  // Preescolar. Sin `?instrumento=` (entrada directa a la URL, sin pasar por
-  // el botón "Agregar") cae al criterio anterior, derivado del Grado ya
-  // elegido en el form.
+  // Rótulo dinámico (Preescolar = "Proyecto pedagógico"); sin `?instrumento=` se deriva del Grado elegido.
   const instrumentoPorGrado = useUnidadInstrumentoLabel(draft.gradoId)
   const instrumento = tabDesdeAgregar?.instrumento ?? instrumentoPorGrado
-  // Rótulo de la actividad (Regla 13) para la pestaña "Actividad" de
-  // `UnidadFormTabs`: en el alta no hay `unidad.rotuloEjecucion`, se
-  // resuelve por el Grado/Asignatura del borrador (mismo criterio que
-  // `UnidadInfoGeneralFields`, misma query cacheada).
+  // Rótulo de actividad (Regla 13): en el alta no hay `rotuloEjecucion`, sale del Grado/Asignatura del borrador.
   const { data: rotuloActividad } = useRotuloActividadQuery(
     draft.gradoId ?? tabDesdeAgregar?.grados[0]?.id,
     draft.asignaturaId,
   )
-  // El título de la pantalla y su descripción venían fijos en
-  // "unidad"/"unidad temática", igual que el resto de textos de acá antes de
-  // este cambio. "Crear X" (no "Nuevo/a X") evita tener que concordar
-  // género con el instrumento — mismo criterio que ya usa el título de
-  // `planeador-editar-unidad-page.tsx` ("Editar X"). El anterior
-  // `Nuevo${esMasculino ? "" : "a"}` producía literalmente "Nuevoa unidad
-  // temática" para el caso femenino: concatenar "a" a continuación de
-  // "Nuevo" no da "Nueva".
+  // Título "Crear X" (no "Nuevo/a X") para no concordar género con el instrumento.
   const esMasculino = articuloDefinido(instrumento) === "el"
-  // Sin form-library acá (`draft` es estado plano): "hay cambios" se
-  // resuelve comparando contra el borrador vacío con el que arrancó la
-  // página — mismo criterio de footer sticky que
-  // `planeador-editar-actividad-page.tsx` (`isDirty`).
+  // `draft` es estado plano: "hay cambios" = distinto del borrador vacío inicial.
   const isDirty = JSON.stringify(draft) !== JSON.stringify(UNIDAD_DRAFT_VACIO)
 
   // Saga de un paso (Fase 3 offline): sin red queda en la outbox.
@@ -119,17 +83,12 @@ function PlaneadorCrearUnidadPageContent() {
       navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
     },
     onSuccess: () => {
-      // `navigate` deja esta pantalla — un `notify()` acá se perdería con
-      // el `NoticeProvider` de esta pantalla al desmontarse.
+      // `queueNotice`: un `notify()` se perdería al desmontarse esta pantalla.
       queueNotice(mensajeUnidadGuardada("creado", instrumento))
-      // `?instrumento=`: vuelve a la misma pestaña (y su miga de pan).
+      // Vuelve a la misma pestaña (y su miga de pan).
       navigate({ to: paths.app.planeadorUnidades.getHref(), search: { instrumento } })
     },
-    // Antes esto ignoraba el `error` de la mutación y siempre mostraba
-    // este mismo texto quemado, así que un 409 por nombre duplicado o un
-    // 400 de validación real se leían igual que un fallo de red genérico
-    // — sin pista de qué corregir. `getErrorMessage` ya trae su propio
-    // fallback genérico si el backend no manda `message`.
+    // Mensaje real del backend (409 duplicado, 400 validación), no un texto genérico.
     onError: (mensaje: string) => {
       notify(mensaje, { variant: "error" })
     },
@@ -145,6 +104,7 @@ function PlaneadorCrearUnidadPageContent() {
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorUnidades.getHref()} search={{ instrumento }} />}
             >
               Cerrar

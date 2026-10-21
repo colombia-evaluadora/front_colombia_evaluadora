@@ -102,6 +102,10 @@ export const paths = {
       path: "registro-de-actividad/tablas/$tableSlug",
       getHref: (tableSlug: string) => `/app/registro-de-actividad/tablas/${tableSlug}`,
     },
+    bitacora: {
+      path: "registro-de-actividad/bitacora",
+      getHref: () => "/app/registro-de-actividad/bitacora",
+    },
     rolesMenus: {
       path: "administracion/roles-menus",
       getHref: () => "/app/administracion/roles-menus",

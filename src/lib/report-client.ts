@@ -5,33 +5,16 @@ import { env } from "@/config/env"
 import { authRequestInterceptor, cleanErrorMessage } from "@/lib/api-client"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
-/**
- * Cliente de los reportes del `reporting-service`.
- *
- * Instancia propia y no `api` por una razón concreta: el interceptor de
- * respuesta de `api` devuelve `response.data` y descarta el resto, pero acá
- * las cabeceras son parte del resultado — `Content-Disposition` trae el nombre
- * del archivo y `X-Report-Rows` cuántos registros salieron. El request
- * interceptor sí se reutiliza, así que manda el mismo Bearer que el resto de
- * la app.
- *
- * El backend responde el binario en el cuerpo (no una URL), así que la
- * descarga se arma acá con un object URL.
- */
+/** Cliente del `reporting-service`: instancia propia porque se necesitan las cabeceras de la respuesta. */
 const reportApi = Axios.create({
   baseURL: env.API_URL,
-  // Todo lo que devuelve el servicio es binario… incluidos los errores, que
-  // llegan como JSON pero envueltos en un Blob. Ver `mensajeDeError`.
+  // Todo llega como binario, también los errores (ver `mensajeDeError`).
   responseType: "blob",
 })
 
 reportApi.interceptors.request.use(authRequestInterceptor)
 
-/**
- * Claves registradas en el catálogo del `reporting-service`
- * (`reporting.reports.*` de su `application.yml`). Cada una corresponde a una
- * fila `…/reporte` en `public.query`.
- */
+/** Claves de `reporting.reports.*` del `reporting-service`. */
 export type ReportKey =
   | "funcionarios"
   | "establecimientos"
@@ -54,37 +37,18 @@ export type ReportKey =
   | "auditoria-sesiones"
   | "auditoria-tabla-operaciones"
   | "auditoria-sesion-operaciones"
+  | "bitacora"
 
 interface ReportInput {
   format: ExportFormat
-  /** Los mismos filtros que la tabla; vacío significa "sin filtrar" = todo. */
+  /** Los mismos filtros que la tabla; vacío = todo. */
   filters?: unknown
-  /** El orden de la tabla, si se quiere respetar en el reporte. */
   sorting?: unknown
-  /**
-   * Claves de columna a incluir, EN ORDEN -- típicamente las columnas que la
-   * tabla tiene visibles en ese momento (`table.getVisibleLeafColumns()`).
-   * `reporting-service` las filtra contra el catálogo YA declarado para ese
-   * reporte (`ReportRequest.columns`): una clave que no esté ahí se ignora,
-   * nunca se agrega una columna nueva por este camino. Vacío u omitido =
-   * todas las configuradas (comportamiento de siempre).
-   */
+  /** Columnas a incluir, en orden; solo filtra las ya declaradas del reporte. Vacío = todas. */
   columns?: string[]
-  /**
-   * El resumen de filtros para el membrete del archivo, ya escrito. `filters`
-   * son los binds de la consulta, así que ahí los filtros son ids: impresos
-   * salen como "Fk Tgrupo: 11474" en vez de "Grupo: 5°01", que es lo único
-   * que el lector del archivo puede interpretar. Acá están los nombres, así
-   * que la línea se manda hecha. Sin esto, el servicio la arma de `filters`
-   * como siempre.
-   */
+  /** Resumen de filtros ya escrito para el membrete (con nombres, no ids). */
   filtersLabel?: string
-  /**
-   * Encabezados a usar en vez de los configurados, por clave de columna
-   * (`ReportRequest.columnLabels`). Para nombres que dependen de datos, como
-   * los rótulos del planeador ("Experiencia" en vez de "Actividad"). Igual
-   * que `columns`, solo renombra columnas ya declaradas del reporte.
-   */
+  /** Encabezados que reemplazan a los configurados, por clave de columna. */
   columnLabels?: Record<string, string>
   /** Query params de la URL (ej. `nivel` del boletín). */
   params?: Record<string, string>
@@ -95,24 +59,13 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-/**
- * Pide el reporte, dispara la descarga y devuelve el mismo
- * `{ status, message }` que ya consumen los diálogos de exportación. Mantener
- * esa forma es deliberado: los diálogos no cambian, solo cambia de dónde sale
- * el archivo.
- */
+/** Pide el reporte, dispara la descarga y devuelve `{ status, message }`. */
 export async function downloadReport(
   key: ReportKey,
   { format, filters, sorting, columns, filtersLabel, columnLabels, params }: ReportInput,
 ): Promise<ExportResult> {
   try {
-    // El genérico explícito NO es decorativo: `api-client` tiene un
-    // `declare module "axios"` que retipa AxiosInstance.post como
-    // `Promise<T>` porque SU interceptor desenvuelve `response.data`. Esa
-    // augmentación es global y alcanza también a esta instancia, que no
-    // desenvuelve nada — así que sin el genérico el resultado quedaba
-    // `unknown`. Pidiendo `AxiosResponse<Blob>` el tipo vuelve a coincidir
-    // con lo que realmente llega en runtime.
+    // Genérico explícito: la augmentación global de axios en `api-client` lo retipa.
     const response = await reportApi.post<AxiosResponse<Blob>>(`/reportes/${key}`, {
       format,
       filters,
@@ -128,10 +81,8 @@ export async function downloadReport(
 
     guardar(blob, nombre)
 
+    // Vacío se descarga igual, pero se avisa.
     if (Number.isFinite(filas) && filas === 0) {
-      // Se descarga igual —el archivo es válido y sirve como constancia de que
-      // el filtro no encontró nada—, pero se avisa, porque un archivo vacío
-      // que aparece sin explicación se lee como un error del sistema.
       return { status: "ok", message: "No hay registros que coincidan con los filtros.", filas }
     }
 
@@ -150,14 +101,13 @@ export async function downloadReport(
 function nombreDeArchivo(contentDisposition: unknown): string | null {
   if (typeof contentDisposition !== "string") return null
 
-  // Se prueba primero `filename*` (RFC 6266), que es el que conserva las
-  // tildes; `filename` a secas es el fallback para clientes viejos.
+  // Primero `filename*`, que conserva las tildes.
   const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition)
   if (utf8?.[1]) {
     try {
       return decodeURIComponent(utf8[1])
     } catch {
-      // Un `filename*` mal formado no debería costarnos la descarga entera.
+      // Mal formado: se usa `filename`.
     }
   }
 
@@ -174,21 +124,11 @@ function guardar(blob: Blob, nombre: string) {
   enlace.click()
   enlace.remove()
 
-  // El revoke va DIFERIDO, no en la misma vuelta del event loop. `.click()`
-  // solo encola la descarga: el navegador todavía no leyó el blob. Revocar el
-  // object URL inmediatamente después le saca el contenido de abajo y la
-  // descarga se cancela en silencio — sin error, sin archivo, y con el aviso
-  // de éxito igual en pantalla. Revocarlo hace falta (si no, el blob queda
-  // retenido hasta cerrar la pestaña, y un reporte son varios MB), pero
-  // después de que la descarga arrancó.
+  // Revocar diferido: hacerlo enseguida cancela la descarga en silencio.
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
-/**
- * Con `responseType: "blob"` el cuerpo de error también llega como Blob, así
- * que el `{ message }` del backend hay que leerlo del texto. Sin esto, todos
- * los errores se verían como "[object Blob]".
- */
+/** Con `responseType: "blob"` el error también es un Blob: se lee su `message`. */
 async function mensajeDeError(error: unknown): Promise<string> {
   const respuesta = Axios.isAxiosError(error) ? error.response : undefined
   const cuerpo = respuesta?.data
@@ -200,7 +140,7 @@ async function mensajeDeError(error: unknown): Promise<string> {
       const mensaje = json.message ?? json.detail
       if (mensaje) return cleanErrorMessage(mensaje)
     } catch {
-      // No era JSON: se cae al mensaje genérico de abajo.
+      // No era JSON.
     }
   }
 

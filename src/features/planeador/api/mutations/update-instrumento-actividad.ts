@@ -16,6 +16,7 @@ import type {
   Rubrica,
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 /**
  * Los `pk` de `TLISTA_VALOR` NO son estables entre entornos, y el catálogo
@@ -250,6 +251,8 @@ export function useUpdateInstrumentoActividad({ mutationConfig }: UseUpdateInstr
       // criterio(s) activo(s) pero se calificaron M" en cuanto el docente
       // marcaba ese criterio de más.
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.instrumento(variables.actividadId) })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

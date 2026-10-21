@@ -167,6 +167,7 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
       color="neutral"
       size="sm"
       type="button"
+      nativeButton={false}
       render={<a href={url} target="_blank" rel="noopener noreferrer" />}
     >
       <EyeIcon data-icon="inline-start" />

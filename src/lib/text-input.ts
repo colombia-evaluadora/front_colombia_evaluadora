@@ -83,6 +83,13 @@ export function toLettersOnly(value: string, maxLength?: number): string {
   return maxLength ? letters.slice(0, maxLength) : letters
 }
 
+/**
+ * El conjunto de `toSafeTextInput` como validación (schemas zod): letras,
+ * dígitos, espacios y . , ' ( ) & # / -. Sin emojis ni otros símbolos. Es el
+ * mismo que valida el back (`fn_texto_seguro`, V327).
+ */
+export const SAFE_TEXT_PATTERN = /^[\p{L}\p{N}\s.,'()&#/-]*$/u
+
 export function toSafeTextInput(value: string, maxLength?: number): string {
   const cleaned = value.replace(/[^\p{L}\p{N}\s.,'()&#/-]/gu, "")
   return maxLength ? cleaned.slice(0, maxLength) : cleaned

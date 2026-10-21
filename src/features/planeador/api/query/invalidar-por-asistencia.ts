@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 import { esCalificacionesDeActividad, planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
@@ -20,4 +21,7 @@ export function invalidarPlaneadorPorAsistencia(queryClient: QueryClient): void 
   queryClient.invalidateQueries({
     predicate: ({ queryKey }) => esCalificacionesDeActividad(queryKey),
   })
+  // Informes: la asistencia entra en la nota y las aprobaciones masivas
+  // resuelven correcciones pendientes (alerta naranja).
+  invalidarInformes(queryClient)
 }

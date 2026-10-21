@@ -49,13 +49,7 @@ const FORM_ID = "editar-actividad-form"
 const MENSAJE_SIN_PERMISO_EDITAR =
   "Tu usuario puede consultar esta actividad, pero no tiene permiso para modificarla."
 
-/**
- * Resumen en texto plano de `afectadosAdaptacion`/`avisosPiar` (Reglas
- * 46/48) para agregarlo al aviso de éxito de `PUT .../estudiantes` — el
- * `NoticeProvider` muestra un solo mensaje por pantalla, así que no hay
- * dónde más mostrarlos sin perder la confirmación del guardado. Vacío si
- * ninguna lista trae datos (caso normal).
- */
+/** Resumen de afectadosAdaptacion/avisosPiar (Reglas 46/48) para el aviso de éxito: NoticeProvider muestra uno solo. */
 function construirAvisoEstudiantes(resultado: SetEstudiantesResult): string {
   const partes: string[] = []
   if (resultado.afectadosAdaptacion.length > 0) {
@@ -69,26 +63,12 @@ function construirAvisoEstudiantes(resultado: SetEstudiantesResult): string {
   return partes.length > 0 ? ` ${partes.join(" ")}` : ""
 }
 
-/**
- * Edición de una actividad en una ruta aparte (no in-place en el panel).
- *
- * Mismo `<TableScreen>` que el resto de las pantallas de gestión, con un
- * `<TableScreenFooter>` sticky al pie: el aviso + el botón "Guardar" solo
- * aparecen cuando hay cambios sin guardar (mismo patrón que el editar de
- * Establecimiento Educativo).
- *
- * El form carga la actividad vía `useActividadDetalleQuery` y guarda con
- * `useUpdateActividad` (`PUT /planeador/actividades/:id`, parcial).
- */
+/** Edición de actividad en ruta aparte (no in-place en el panel). */
 export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
 
-  // Regla 37: el bloqueo (`motivoNoEditable`) se decide con el detalle del
-  // servidor, no con el de la caché, que pudo quedar de antes de la primera
-  // calificación (hecha en el panel, en la planilla o en otro equipo). Con
-  // red, el formulario no se monta hasta que llega el detalle fresco; sin red
-  // (fetch en pausa) se usa el guardado.
+  // Regla 37: el bloqueo se decide con el detalle fresco del servidor; sin red se usa el de caché.
   const {
     data: actividad,
     isPending,
@@ -147,10 +127,7 @@ function EditarActividadPageContent({
   const [isDirty, setIsDirty] = useState(false)
   const { notify } = useNotify()
 
-  // Con "ver" pero sin "editar" en Planeador, o siendo Coordinador sin rol
-  // docente (ver `usePlaneadorSoloLectura`), la actividad se muestra entera
-  // en solo lectura y sin "Guardar". Sin ninguno de los dos, la pantalla no debería ni poder
-  // verse: redirige al listado apenas se sabe que no hay permiso.
+  // Ver sin editar (o Coordinador sin rol docente) = solo lectura; sin ninguno redirige al listado.
   const navigate = useNavigate()
   const { puedeEditar, puedeVer, soloLectura, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   const puedeAbrir = puedeEditar || puedeVer
@@ -160,32 +137,14 @@ function EditarActividadPageContent({
     }
   }, [isLoadingPermiso, puedeAbrir, navigate])
 
-  // Para resolver si la unidad NUEVA (si el docente la cambió en el
-  // select) calcula por "Ponderado" — ver el comentario de `handleSubmit`.
-
-  // Precarga la rúbrica/lista de cotejo/escala/personalizado YA GUARDADA
-  // (el detalle real no la trae, ver `use-instrumento-actividad-form-query.ts`)
-  // ANTES de montar `EditarActividadForm`: el form solo lee `defaultValues`
-  // una vez al montar (`useForm`), así que aplicarla después con
-  // `setFieldValue` marcaría el form "sucio" apenas termina de cargar, sin
-  // que el docente haya tocado nada.
+  // Precargar el instrumento guardado antes de montar: useForm lee defaultValues una vez y setFieldValue lo ensuciaría.
   const esEvaluativa = actividad?.esEvaluativa ?? false
   const { data: instrumentoForm, isPending: isPendingInstrumento } = useInstrumentoActividadFormQuery(
     actividad?.id,
     esEvaluativa,
   )
   const isPendingCompleto = isPending || (esEvaluativa && isPendingInstrumento)
-  // `{...actividad, ...instrumentoForm}` a secas pisaba `instrumentoPersonalizado`
-  // ENTERO: `instrumentoForm` (GET .../instrumento) resuelve `metodoValoracion`/
-  // `tipoEvidenciaEsperada`, pero no conoce `requiereArchivo`/`requiereRespuestaTexto`/
-  // `descripcion` — esos viven en el detalle real de la actividad (`REQUIERE_ARCHIVO`/
-  // `REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO`, campos de la actividad misma, no del
-  // instrumento — ver `campos_disponibles...descripcionInstrumento.motivo`: "va en el
-  // POST/PATCH de la actividad"), así que `toInstrumentoActividadParaForm` los rellena
-  // con `false`/`""` a falta de otra cosa. El spread superficial dejaba esos tres
-  // placeholders ganando sobre el valor real ya guardado: el docente marcaba "El
-  // estudiante debe adjuntar un archivo", guardaba bien (confirmado: el backend sí lo
-  // persiste), pero al reabrir la actividad el checkbox volvía a aparecer destildado.
+  // Spread superficial pisaba requiereArchivo/requiereRespuestaTexto/descripcion reales con placeholders del instrumento.
   const actividadParaForm =
     actividad && (!esEvaluativa || instrumentoForm)
       ? {
@@ -200,32 +159,21 @@ function EditarActividadPageContent({
         }
       : undefined
 
-  // Guardado como saga (Fase 3 offline, `features/planeador/offline`): el
-  // orden real de siempre —unidad (vincular/desvincular) → PUT de la
-  // actividad (con evidencias y criterios) → materiales → instrumento →
-  // estudiantes → adaptaciones—, cada paso solo si cambió y con su
-  // `Idempotency-Key` fija. Con red se envían desde acá y se detiene en el
-  // primer error (nada de "actividad actualizada" con un paso mudo, ver la
-  // historia en git de este archivo); sin red, o si la red se cae a mitad, lo
-  // que falta queda en la outbox. La edición encolada verifica al sincronizar
-  // la regla 37 y que nadie haya cambiado la actividad mientras tanto.
+  // Saga (Fase 3 offline): unidad → PUT → materiales → instrumento → estudiantes → adaptaciones; para en el primer error,
+  // sin red queda en outbox y al sincronizar verifica Regla 37 y cambios ajenos.
   const { data: unidadesResult } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
   const [guardando, setGuardando] = useState(false)
   const escritura = useOfflineWritable("Necesitas conexión para editar actividades en este equipo.")
 
-  // Regla 37: con calificaciones, observaciones o "No presentó" (o siendo
-  // base de una recuperación) la actividad se ve entera pero no se guarda: el
-  // backend respondería 409 igual. Las calificaciones hechas sin red que
-  // esperan en la outbox también cuentan: el servidor todavía no las ve.
+  // Regla 37: con calificaciones/observaciones/No presentó/recuperación (incluso en outbox) no se guarda; backend daría 409.
   const ops = useOutboxOps()
   const bloqueoEdicion =
     motivoNoEditable(actividad) ??
     (actividad && resultadosSinSincronizar(ops, actividad.id) > 0 ? MENSAJE_RESULTADOS_SIN_SINCRONIZAR : undefined)
 
   async function handleSubmit(values: Actividad) {
-    // El form ya está en solo lectura; esto es la red de seguridad por si
-    // llega a dispararse el submit.
+    // Red de seguridad: el form ya está en solo lectura.
     if (bloqueoEdicion) return
     if (!actividad || guardando) return
     setGuardando(true)
@@ -275,8 +223,6 @@ function EditarActividadPageContent({
     onClose()
   }
 
-  // Misma condición que tenía la card de validación (se mostraba con el form
-  // ya cargado); ahora vive en el footer sticky junto al "Guardar".
   const mostrarValidacion =
     !isPendingCompleto && !isLoadingPermiso && puedeAbrir && !!actividadParaForm && !!actividad?.requiereValidacion
   const formSoloLectura = soloLectura || !!bloqueoEdicion
@@ -291,6 +237,7 @@ function EditarActividadPageContent({
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorActividades.getHref()} />}
             >
               Cerrar
@@ -338,13 +285,7 @@ function EditarActividadPageContent({
         )}
       </TableScreenBody>
 
-      {/* El footer es el que avisa y guarda; aparece solo cuando hay cambios.
-          Sigue el patrón de `add-establishment-page`: siempre está montado
-          (preserva el layout del `TableScreen`), pero su contenido solo
-          pinta el aviso + el Guardar cuando `isDirty`. */}
-      {/* Una sola barra: a la izquierda el estado de la validación del
-          coordinador y el aviso de cambios; a la derecha "Aprobar" (si
-          `puedeValidar`) y "Guardar" (si hay cambios). */}
+      {/* Footer siempre montado (layout); aviso/Guardar solo si isDirty, Aprobar si puedeValidar. */}
       <TableScreenFooter>
         <div className="flex min-w-0 flex-col gap-2">
           {mostrarValidacion && (
