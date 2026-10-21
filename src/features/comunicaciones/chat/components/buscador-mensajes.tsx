@@ -34,7 +34,8 @@ export function BuscadorMensajes({
   }
 
   return (
-    <div className="relative ml-auto hidden w-full max-w-xs lg:block">
+    // Ancho fijo y moderado: el nombre de la conversación tiene prioridad (diseño 3726:34058).
+    <div className="relative hidden w-40 shrink-0 lg:block xl:w-48">
       <label className="flex h-10 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
         <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
         <span className="sr-only">Buscar en la conversación</span>

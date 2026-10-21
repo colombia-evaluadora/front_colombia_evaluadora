@@ -31,6 +31,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { puedeAgregarParticipantes } from "@/features/comunicaciones/chat/lib/politica-chat"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 
 const POR_PAGINA = 6
@@ -74,7 +76,10 @@ export function MiembrosDialog({
   const donde = c.tipo === "GRUPO" ? "grupo" : "foro"
 
   const todos = miembros.data ?? []
-  const lista = todos
+  // Buscar en la lista de participantes (diseño 4567:68583), para todos los miembros.
+  const [filtro, setFiltro] = useState("")
+  const f = filtro.trim()
+  const lista = f ? todos.filter((m) => coincidePersona({ id: m.id, nombre: m.nombre, correo: "" }, f, false)) : todos
   const enGrupo = new Set(todos.map((m) => m.id))
   // El buscador sugiere a todo el colegio e indica quién ya está en el canal.
   const sugerencias: Persona[] = [
@@ -90,6 +95,7 @@ export function MiembrosDialog({
   const cerrar = () => {
     setSeleccion([])
     setConsulta("")
+    setFiltro("")
     setPagina(0)
     setMarcados(new Set())
     onClose()
@@ -100,7 +106,9 @@ export function MiembrosDialog({
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="truncate">Participantes de {c.nombre}</DialogTitle>
+          <DialogTitle className="truncate">
+            {puedeAgregar ? `Añadir personas a ${c.nombre}` : `Participantes de ${c.nombre}`}
+          </DialogTitle>
         </DialogHeader>
 
         {puedeAgregar && (
@@ -162,6 +170,20 @@ export function MiembrosDialog({
           </p>
         )}
 
+        <Field variant="outlined">
+          <FieldLabel htmlFor="filtro-miembros">Buscar en {c.tipo === "GRUPO" ? "el grupo" : "el foro"}</FieldLabel>
+          <Input
+            id="filtro-miembros"
+            type="search"
+            value={filtro}
+            onChange={(e) => {
+              setFiltro(e.target.value)
+              setPagina(0)
+            }}
+            placeholder="Nombre de la persona"
+          />
+        </Field>
+
         <div className="rounded-lg border">
           {miembros.isPending ? (
             <div className="space-y-2 p-3" aria-busy>
@@ -220,7 +242,9 @@ export function MiembrosDialog({
                 ))}
               </ul>
               {lista.length === 0 && (
-                <p className="p-4 text-center text-sm text-muted-foreground">Aún no hay nadie en el {donde}.</p>
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  {f ? `Nadie coincide con «${f}».` : `Aún no hay nadie en el ${donde}.`}
+                </p>
               )}
               {paginas > 1 && (
                 <nav aria-label="Páginas de miembros" className="flex items-center justify-center gap-2 border-t p-3 text-sm">

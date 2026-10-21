@@ -118,6 +118,34 @@ export const conversaciones: Conversacion[] = [
     silenciadoHasta: null,
     archivada: false,
   },
+  // DM con una persona del colegio: encabezado con avatar, nombre y perfil; no leído en naranja.
+  {
+    id: 9,
+    nombre: "Darlene Robertson",
+    tipo: "DIRECTO",
+    categoria: "GENERAL",
+    noLeidos: 1,
+    actividadAbierta: false,
+    esBot: false,
+    totalMiembros: 2,
+    miembrosDestacados: ["Darlene Robertson"],
+    silenciadoHasta: null,
+    archivada: false,
+  },
+  // Foro archivado: sección "Archivados" arriba de la lista.
+  {
+    id: 10,
+    nombre: "04-proyecto-lectura-2025",
+    tipo: "CANAL",
+    categoria: "GENERAL",
+    noLeidos: 0,
+    actividadAbierta: false,
+    esBot: false,
+    totalMiembros: 18,
+    miembrosDestacados: MIEMBROS,
+    silenciadoHasta: null,
+    archivada: true,
+  },
   {
     id: 8,
     nombre: "Suspensión de clases por mantenimiento",
@@ -214,7 +242,21 @@ export const mensajes: Mensaje[] = [
     "Recuerden subir las notas del segundo periodo antes del viernes.",
     haceDias(0, 8, 5),
   ),
+  mensaje(9, darlene, "Hola Andrés, ¿tienes un momento para revisar la planilla de 7°B?", haceDias(0, 6, 50)),
+  mensaje(10, marta, "Cerramos el proyecto de lectura. ¡Gracias a todos!", haceDias(30, 9, 0)),
 ]
+
+// Estados del diseño en "02-docentes-general" (id 3): un mensaje fijado, uno propio editado y uno
+// borrado (comms-service: el original solo lo ve quien modera; ver el handler de mensajes).
+{
+  const fijado = mensajes.find((m) => m.conversacionId === 3 && m.texto.startsWith("Claro que sí"))
+  if (fijado) fijado.fijado = true
+  const editado = mensajes.find((m) => m.conversacionId === 3 && m.texto.startsWith("En Word"))
+  if (editado) Object.assign(editado, { editado: true, editadoEn: haceDias(1, 10, 33) })
+  const borrado = mensaje(3, marta, "Les comparto mi número personal para coordinar: 300 000 0000.", haceDias(0, 7, 35))
+  Object.assign(borrado, { eliminado: true, eliminadoEn: haceDias(0, 7, 36) })
+  mensajes.splice(mensajes.findIndex((m) => m.texto.startsWith("Les dejo la versión")), 0, borrado)
+}
 
 // Votación rápida nueva del usuario actual, publicada como mensaje.
 export function nuevaVotacionRapida(
@@ -411,3 +453,17 @@ export function miembrosDe(conversacionId: number): Miembro[] {
 
 // Una votación rápida ya cerrada para ver los resultados finales.
 nuevaVotacionRapida(3, "¿Suspender clases mañana?", "SI_NO", 5, [18, 9], new Date(Date.now() - 60 * 60_000))
+
+// Votación rápida de otra persona que se editó: quien vota ve "La votación fue modificada…".
+{
+  const v = nuevaVotacionRapida(2, "¿Hacemos la reunión de área el jueves?", "SI_NO", 30, [0, 0], new Date(Date.now() - 2 * 60_000))
+  Object.assign(v, { autor: marta, esPropio: false, editado: true, editadoEn: new Date(Date.now() - 2 * 60_000).toISOString() })
+}
+
+// Confirmación de lectura (comms-service: menor `ultimo_leido_msg` de los miembros). Los demás
+// leyeron todo menos el último mensaje propio de cada conversación: ✓✓ en los anteriores, ✓ en él.
+for (const c of conversaciones) {
+  const propios = mensajes.filter((m) => m.conversacionId === c.id && m.esPropio && !m.votacion)
+  const ultimo = propios.at(-1)
+  c.leidoHasta = ultimo ? ultimo.id - 1 : Math.max(0, ...mensajes.filter((m) => m.conversacionId === c.id).map((m) => m.id))
+}

@@ -265,8 +265,11 @@ function leerCerrada(id: number) {
 // Mensaje de inicio que traen los canales de elección y encuesta al crearse.
 export function CanalBienvenida({
   canal: e,
+  tipo = "canal",
 }: {
   canal: Pick<Eleccion, "conversacionId" | "nombre" | "creadoPor" | "esCreador">
+  // "foro" en los foros generales y "grupo" en los grupos (card: Canales → Foros).
+  tipo?: "canal" | "foro" | "grupo"
 }) {
   const [cerrada, setCerrada] = useState(() => leerCerrada(e.conversacionId))
   if (cerrada) return null
@@ -285,12 +288,14 @@ export function CanalBienvenida({
       aria-label="Bienvenida"
       className="relative mb-4 rounded-xl border bg-card py-3 pr-10 pl-4"
     >
-      <h3 className="font-semibold">
-        <span aria-hidden>👋 </span>Te damos la bienvenida a {e.nombre}
+      {/* 15-16 px como en el diseño (3751:43647); antes heredaba el tamaño de un h3. */}
+      <h3 className="text-[15px] leading-snug font-semibold">
+        <span aria-hidden>👋 </span>Te damos la bienvenida a {tipo === "foro" ? "#" : ""}
+        {e.nombre}
       </h3>
-      <p className="text-sm text-muted-foreground">
-        {e.esCreador ? "Creaste este canal." : `${e.creadoPor} creó este canal.`} Este es el
-        principio del canal {e.nombre}.
+      <p className="text-[13px] text-muted-foreground">
+        {e.esCreador ? `Creaste este ${tipo}.` : `${e.creadoPor} creó este ${tipo}.`} Este es el
+        principio del {tipo} {e.nombre}.
       </p>
       <button
         type="button"
