@@ -39,8 +39,7 @@ interface FilaEstudiante {
 interface CalificarActividadBulkProps {
   actividadId: number
   titulo: string
-  /** `yyyy-MM-dd` — fecha de la actividad (`PlanillaColumna.fechaInicio`),
-   *  la que exige el backend real al calificar. */
+  /** `yyyy-MM-dd` de la actividad; el backend la exige al calificar. */
   fecha: string
   estudiantes: FilaEstudiante[]
   onVolver: () => void
@@ -57,12 +56,7 @@ export interface EstadoGuardar {
   guardando: boolean
 }
 
-/** El bulk real acepta UN criterio/ítem/nivel por request — si el docente
- *  llenó varios criterios de la rúbrica en el form, se dispara un request
- *  por cada uno, todos con la misma lista de estudiantes/fecha (ver nota en
- *  `use-calificar-bulk.ts`). */
-// Exportada: la reusa `CalificacionesAprobacionView`, que arma el mismo bulk
-// desde el panel de aprobación.
+// Un request por criterio/ítem: el bulk real acepta uno solo. También la usa `CalificacionesAprobacionView`.
 export function buildBulkInputs(
   instrumento: InstrumentoActividad,
   value: NotaCriterio[],
@@ -71,16 +65,10 @@ export function buildBulkInputs(
   fecha: string,
 ) {
   const base = { actividadId, estudianteIds, fecha } as const
-  // "Otro (personalizado)" con método configurado se resuelve al MISMO tipo
-  // efectivo que su instrumento equivalente directo (fn_actividad_nota_
-  // calificar_rubrica_bulk/_cotejo_bulk/_escala_bulk ya aceptan OTRO+método
-  // sin cambios, confirmado en la cabecera de V241 — solo faltaba que el
-  // FRONT lo supiera).
+  // "Otro" con método se califica como su instrumento equivalente.
   const efectivo = resolverInstrumentoEfectivo(instrumento)
   if (efectivo.tipo === "RUBRICA") {
-    // Solo criterios que siguen activos en la rúbrica actual — mismo
-    // filtro que `buildCalificarCeldaInput`/`instrumentoCompletitud`, por
-    // si el instrumento cambió entre que se cargó este form y se guardó.
+    // Solo criterios activos: el instrumento pudo cambiar desde que se cargó el form.
     const criteriosActivos = new Set(efectivo.definicion.map((c) => c.pk))
     return value
       .filter((n) => n.nivelId != null && criteriosActivos.has(n.criterioId))
@@ -107,9 +95,7 @@ export function buildBulkInputs(
     const criteriosGenerales = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
 
     if (criteriosGenerales.length > 1) {
-      // 2+ criterios generales (V472): un valor por criterio, el mismo
-      // juego para todos los estudiantes en un solo request
-      // (`calificar-bulk/escala` con CRITERIOS, V484).
+      // Varios criterios generales: un valor por criterio en un solo request.
       const criterios = criteriosGenerales
         .map((_, index) => {
           const n = notaDe(value, index)
@@ -128,9 +114,7 @@ export function buildBulkInputs(
       if (nivelId == null) return []
       return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
     }
-    // Escala NUMÉRICA (sin niveles cualitativos): `calificar-bulk/escala`
-    // acepta VALOR_NUMERICO en vez de PK_NIVEL (fn_actividad_nota_calificar_
-    // escala_bulk, V227).
+    // Escala numérica: va VALOR_NUMERICO en vez de PK_NIVEL.
     const valorNumerico = value[0]?.valor
     if (valorNumerico == null) return []
     return [{ ...base, tipo: "ESCALA_VALORACION" as const, valorNumerico }]
@@ -140,15 +124,7 @@ export function buildBulkInputs(
   return []
 }
 
-/**
- * Pantalla completa de calificación en bulk para UNA actividad. Autocontenida:
- * arma el form según el instrumento real de la actividad
- * (`InstrumentoGradingFields`) y al guardar dispara un `PUT
- * .../calificar-bulk/<tipo>` por cada criterio/ítem llenado, contra los
- * estudiantes tildados — reemplaza el `PlaneadorPlanillaPage` mientras está
- * abierta, se llega acá desde el botón del header de una columna de la
- * grilla y se vuelve con la flecha.
- */
+/** Calificación en bloque de una actividad: un PUT por criterio/ítem contra los estudiantes tildados. */
 export function CalificarActividadBulk({
   actividadId,
   titulo,
@@ -224,9 +200,7 @@ export function CalificarActividadBulk({
   }
 
   const completitud = instrumentoCompletitud(instrumento, nota)
-  // Por tipo EFECTIVO (resuelve "Otro" con método al instrumento
-  // equivalente) — un "Otro" que delega en RUBRICA/LISTA_COTEJO sí tiene
-  // bulk; ver `instrumentoSinBulk` para qué queda afuera.
+  // Por tipo efectivo: "Otro" con método sí tiene bulk (ver `instrumentoSinBulk`).
   const efectivoBulk = resolverInstrumentoEfectivo(instrumento)
   const escalaSinBulk = instrumentoSinBulk(efectivoBulk)
 
@@ -239,7 +213,7 @@ export function CalificarActividadBulk({
       await Promise.all(inputs.map((input) => bulkMutation.mutateAsync(input)))
       // Regla 55: quien ya tenía nota queda en solicitud; la primera se aplica.
       const matriculas = new Set(
-        estudiantes.filter((e) => efectivos.includes(e.id)).map((e) => e.matriculaId),
+        estudiantes.filter((e) => seleccionados.has(e.id) && !bloqueados.has(e.id)).map((e) => e.matriculaId),
       )
       const conSolicitud =
         periodoCerrado &&

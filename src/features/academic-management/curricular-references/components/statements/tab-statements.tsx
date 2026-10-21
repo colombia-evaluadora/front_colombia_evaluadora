@@ -56,7 +56,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
   const [search, setSearch] = useState("")
   const [evidenceSearchOpen, setEvidenceSearchOpen] = useState(false)
   const [evidenceSearch, setEvidenceSearch] = useState("")
-  const [selectedStatementId, setSelectedStatementId] = useState<number | null>(null)
+  const [pickedStatementId, setSelectedStatementId] = useState<number | null>(null)
   const [statementDialog, setStatementDialog] = useState<{ open: boolean; statement: CurricularStatement | null }>(
     { open: false, statement: null },
   )
@@ -70,11 +70,10 @@ export function TabStatements({ reference }: TabStatementsProps) {
   // Grado (Regla 12): solo se muestra si el referente ofrece grados.
   const { data: grades = [], isPending: isGradesPending } = useCurricularReferenceGradesQuery(reference.id)
   const hasGrades = grades.length > 0
-  const [gradeId, setGradeId] = useState<number | undefined>(undefined)
-
-  useEffect(() => {
-    setGradeId((prev) => (prev !== undefined && grades.some((grade) => grade.id === prev) ? prev : grades[0]?.id))
-  }, [grades])
+  const [pickedGradeId, setGradeId] = useState<number | undefined>(undefined)
+  // Si el elegido ya no está entre los grados, cae al primero.
+  const gradeId =
+    pickedGradeId !== undefined && grades.some((grade) => grade.id === pickedGradeId) ? pickedGradeId : grades[0]?.id
 
   // `undefined` = aún sin grado elegido (o cargando): no consulta.
   const statementsGradeId = isGradesPending ? undefined : hasGrades ? gradeId : null
@@ -91,11 +90,10 @@ export function TabStatements({ reference }: TabStatementsProps) {
       (!onlyUnassigned || statement.areaId === null),
   )
 
-  useEffect(() => {
-    if (filteredStatements.some((statement) => statement.id === selectedStatementId)) return
-    setSelectedStatementId(filteredStatements[0]?.id ?? null)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statements, areaId, onlyUnassigned, statementsGradeId, search])
+  // Si el elegido quedó fuera del filtro, se toma el primero visible.
+  const selectedStatementId = filteredStatements.some((statement) => statement.id === pickedStatementId)
+    ? pickedStatementId
+    : (filteredStatements[0]?.id ?? null)
 
   const { data: evidences = [], isPending: isEvidencesPending } = useCurricularEvidencesQuery(
     selectedStatementId,
