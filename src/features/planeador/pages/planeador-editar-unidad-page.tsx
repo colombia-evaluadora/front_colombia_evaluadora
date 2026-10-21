@@ -56,6 +56,7 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { planeadorUnidadEditarRoute } from "@/router"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { esAjena } from "@/features/planeador/lib/docente-dueno"
 
 /** Actividades sin peso para el método destino (Ponderado→ponderacion, Suma→notaMaxima; 0/null = sin capturar). */
 function actividadesSinPeso(
@@ -129,10 +130,11 @@ function EditarUnidadPageContent({
   const navigate = useNavigate()
   const { puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
-    if (!isLoadingPermiso && !puedeEditar) {
+    // Una unidad compartida de un colega no se edita (Regla 25).
+    if ((!isLoadingPermiso && !puedeEditar) || esAjena(unidad)) {
       navigate({ to: paths.app.planeadorUnidades.getHref(), replace: true })
     }
-  }, [isLoadingPermiso, puedeEditar, navigate])
+  }, [isLoadingPermiso, puedeEditar, unidad, navigate])
 
   // unidad.enunciadosDba llega vacío (endpoint aparte); se precargan desde acá.
   const { data: referente, isPending: referentePending } = useUnidadReferenteQuery(unidad?.id)
