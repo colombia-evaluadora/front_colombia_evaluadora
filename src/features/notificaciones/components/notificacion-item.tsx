@@ -1,65 +1,88 @@
-import type { ReactNode } from "react"
-
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Notificacion } from "@/features/notificaciones/api/types"
 import { CATEGORIA_ICONS, CATEGORIA_LABELS } from "@/features/notificaciones/api/ui-mappings"
-import { formatActores } from "@/features/notificaciones/lib/deep-link"
-import { tiempoRelativo } from "@/features/notificaciones/lib/agrupar-por-dia"
+import { horaDelDia, tiempoRelativo } from "@/features/notificaciones/lib/agrupar-por-dia"
+import { tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 
 interface NotificacionItemProps {
   notificacion: Notificacion
   onOpen: (notificacion: Notificacion) => void
-  /** Acciones por fila (solo en la página); van fuera del botón principal. */
-  actions?: ReactNode
+  /**
+   * `compact` (campana): una línea, hora relativa. Sin él (página, donde las
+   * filas ya van agrupadas por día) se muestra la hora exacta: dos acciones
+   * iguales con un minuto de diferencia no deben verse "a la vez".
+   */
   compact?: boolean
 }
 
-/** Entrada de la bandeja: compartida por la campana y la página. */
-export function NotificacionItem({ notificacion: n, onOpen, actions, compact = false }: NotificacionItemProps) {
+/** Contenido clicable de una entrada de la bandeja: compartido por la campana y la página. */
+export function NotificacionItem({
+  notificacion: n,
+  onOpen,
+  compact = false,
+}: NotificacionItemProps) {
   const Icono = CATEGORIA_ICONS[n.categoria] ?? CATEGORIA_ICONS.SISTEMA
-  const actores = formatActores(n.actores, n.conteo)
+  const titulo = tituloNotificacion(n)
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onOpen(n)}
       className={cn(
-        "group/notif flex items-start gap-2 hover:bg-muted/50 focus-within:bg-muted/50",
-        !n.leida && "bg-blue-22/40",
+        "flex w-full min-w-0 items-start gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+        compact ? "px-4 py-2.5" : "py-0.5",
       )}
     >
-      <button
-        type="button"
-        onClick={() => onOpen(n)}
+      <span
         className={cn(
-          "flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none",
-          compact ? "px-4 py-2" : "px-4 py-3",
+          "grid size-8 shrink-0 place-items-center rounded-full",
+          n.leida ? "bg-muted text-muted-foreground" : "bg-blue-22 text-blue",
         )}
       >
-        <span
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"
-          title={CATEGORIA_LABELS[n.categoria]}
-        >
-          <Icono aria-hidden className="size-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-baseline gap-2">
-            <span className={cn("min-w-0 flex-1 text-sm", compact && "truncate", !n.leida && "font-semibold")}>
-              {actores ? `${actores}: ` : ""}
-              {n.titulo}
-            </span>
-            <time dateTime={n.creadaEn} className="shrink-0 text-xs text-muted-foreground">
-              {tiempoRelativo(n.creadaEn)}
-            </time>
+        <Icono aria-hidden className="size-4" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex items-baseline gap-2">
+          <span
+            className={cn(
+              "min-w-0 flex-1 text-sm",
+              compact ? "truncate" : "whitespace-normal",
+              n.leida ? "text-foreground" : "font-semibold",
+            )}
+          >
+            {titulo}
           </span>
-          {n.cuerpo && (
-            <span className={cn("block text-sm text-muted-foreground", compact ? "truncate" : "line-clamp-2")}>
-              {n.cuerpo}
-            </span>
-          )}
-          <span className="sr-only">{n.leida ? "Leída" : "No leída"}</span>
+          <time
+            dateTime={n.creadaEn}
+            className="shrink-0 text-xs text-muted-foreground tabular-nums"
+          >
+            {compact ? tiempoRelativo(n.creadaEn) : horaDelDia(n.creadaEn)}
+          </time>
         </span>
-        {!n.leida && <span aria-hidden className="mt-2 size-2 shrink-0 rounded-full bg-blue" />}
-      </button>
-      {actions && <div className="flex shrink-0 items-center gap-1 py-3 pr-3">{actions}</div>}
-    </div>
+        {n.cuerpo && (
+          <span
+            className={cn(
+              "text-sm text-muted-foreground",
+              compact ? "truncate" : "line-clamp-2 whitespace-normal",
+            )}
+          >
+            {n.cuerpo}
+          </span>
+        )}
+        <span className="flex flex-wrap items-center gap-1 pt-0.5">
+          <Badge variant="soft" color="muted">
+            {CATEGORIA_LABELS[n.categoria]}
+          </Badge>
+          {n.leida ? (
+            <span className="sr-only">Leída</span>
+          ) : (
+            <Badge variant="soft" color="info">
+              Sin leer
+            </Badge>
+          )}
+        </span>
+      </span>
+    </button>
   )
 }
