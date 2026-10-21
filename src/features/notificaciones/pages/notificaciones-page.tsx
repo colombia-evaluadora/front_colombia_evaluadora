@@ -1,3 +1,5 @@
+"use no memo"
+
 import type { ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -17,9 +19,13 @@ import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { ArchiveIcon, ChatReadIcon, ChatUnreadIcon, CheckIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ACTIONS_CELL_CLASS, actionsOverlayClass, actionsSpacerCell } from "@/components/table-row-actions"
 import { getErrorMessage } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -128,25 +134,9 @@ function NotificacionesContent() {
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
-        {lista.isPending ? (
-          <div className="grid place-items-center py-16">
-            <Spinner />
-          </div>
-        ) : lista.isError && items.length === 0 ? (
-          status === "offline" ? (
-            <OfflineEmptyState kind="sinDatosGuardados" />
-          ) : (
-            <Empty className="py-16">
-              <EmptyHeader>
-                <EmptyTitle>No se pudieron cargar las notificaciones</EmptyTitle>
-                <EmptyDescription>{getErrorMessage(lista.error)}</EmptyDescription>
-              </EmptyHeader>
-              <Button variant="outline" onClick={() => void lista.refetch()}>
-                Reintentar
-              </Button>
-            </Empty>
-          )
-        ) : items.length === 0 ? (
+        {lista.isError && items.length === 0 && status === "offline" ? (
+          <OfflineEmptyState kind="sinDatosGuardados" />
+        ) : !lista.isPending && !lista.isError && items.length === 0 ? (
           <Empty className="py-16">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -161,25 +151,54 @@ function NotificacionesContent() {
             </EmptyHeader>
           </Empty>
         ) : (
+          // Misma anatomía que `DataTable`: filas `group/row`, esqueletos al
+          // cargar, error con "Reintentar" y columna de acciones en overlay al
+          // hover (`table-row-actions`). No usa `DataTable` porque la bandeja
+          // pagina por cursor ("Cargar más") y agrupa por día (D-2.3).
           <div className="flex flex-col gap-4 py-4">
-            {grupos.map((grupo) => (
-              <section key={grupo.dia} aria-labelledby={`notif-dia-${grupo.dia}`}>
-                <h2 id={`notif-dia-${grupo.dia}`} className="px-4 pb-1 text-xs font-semibold uppercase text-muted-foreground">
-                  {grupo.etiqueta}
-                </h2>
-                <ul className="divide-y rounded-md border">
-                  {grupo.items.map((n) => (
-                    <li key={n.id}>
-                      <NotificacionItem notificacion={n} onOpen={abrir} actions={acciones(n)} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+            <Table containerClassName="border">
+              <TableBody>
+                {lista.isPending ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={3}>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : lista.isError && items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      {getErrorMessage(lista.error)}{" "}
+                      <Button size="sm" variant="link" onClick={() => void lista.refetch()}>
+                        Reintentar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  grupos.map((grupo) => (
+                    <GrupoDia key={grupo.dia} dia={grupo.dia} etiqueta={grupo.etiqueta}>
+                      {grupo.items.map((n) => (
+                        <TableRow key={n.id} className={cn("group/row", !n.leida && "bg-blue-22/40")}>
+                          <TableCell className="whitespace-normal">
+                            <NotificacionItem notificacion={n} onOpen={abrir} />
+                          </TableCell>
+                          {actionsSpacerCell}
+                          <TableCell className={ACTIONS_CELL_CLASS}>
+                            <div className={actionsOverlayClass(false, "background")}>{acciones(n)}</div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </GrupoDia>
+                  ))
+                )}
+              </TableBody>
+            </Table>
             {lista.hasNextPage && (
               <div className="flex justify-center">
                 <Button
                   variant="outline"
+                  color="neutral"
                   disabled={lista.isFetchingNextPage || status === "offline"}
                   onClick={() => void lista.fetchNextPage()}
                 >
@@ -226,5 +245,19 @@ function AccionFila({
       </TooltipTrigger>
       <TooltipContent>{tooltip ?? label}</TooltipContent>
     </Tooltip>
+  )
+}
+
+/** Encabezado de día con la apariencia del `TableHeader` del sistema. */
+function GrupoDia({ dia, etiqueta, children }: { dia: string; etiqueta: string; children: ReactNode }) {
+  return (
+    <>
+      <TableRow className="bg-muted/50 hover:bg-muted/50">
+        <TableHead id={`notif-dia-${dia}`} colSpan={3} scope="colgroup" className="h-9 text-foreground">
+          {etiqueta}
+        </TableHead>
+      </TableRow>
+      {children}
+    </>
   )
 }

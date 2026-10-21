@@ -42,3 +42,12 @@ export function tiempoRelativo(iso: string): string {
     return ""
   }
 }
+
+/** "14:05": hora local de una entrada en la página (ya agrupada por día). */
+export function horaDelDia(iso: string): string {
+  try {
+    return format(parseISO(iso), "HH:mm")
+  } catch {
+    return ""
+  }
+}

@@ -5,7 +5,7 @@ import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema
 import { toNotificacion } from "@/features/notificaciones/api/query/use-notificaciones-query"
 import { toPreferenciasPayload } from "@/features/notificaciones/api/mutations/update-preferencias"
 import { agruparPorDia, etiquetaDia } from "@/features/notificaciones/lib/agrupar-por-dia"
-import { DEEP_LINK_FALLBACK, formatActores, formatContador, safeDeepLink } from "@/features/notificaciones/lib/deep-link"
+import { DEEP_LINK_FALLBACK, formatActores, formatContador, safeDeepLink, tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 
 describe("safeDeepLink", () => {
   it("acepta rutas internas /app/ con query", () => {
@@ -105,5 +105,19 @@ describe("schemas", () => {
       tipos: [{ tipo: "CHAT_MENCION", push: true, email: false }],
       horario_silencioso: { activo: true, desde: "22:00", hasta: "06:00", dias: [1, 3] },
     })
+  })
+})
+
+describe("tituloNotificacion", () => {
+  it("no antepone el actor en las confirmaciones de acciones propias (APP_ACCION)", () => {
+    expect(
+      tituloNotificacion({ tipo: "APP_ACCION", titulo: "Áreas oficiales: crear el área X", actores: ["Laura"], conteo: 1 }),
+    ).toBe("Áreas oficiales: crear el área X")
+  })
+
+  it("antepone los actores cuando son otras personas", () => {
+    expect(tituloNotificacion({ tipo: "CHAT_MENSAJE", titulo: "te escribió", actores: ["Ana", "Luis"], conteo: 3 })).toBe(
+      "Ana y 2 más: te escribió",
+    )
   })
 })
