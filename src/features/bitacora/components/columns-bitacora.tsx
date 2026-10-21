@@ -117,8 +117,16 @@ export function createBitacoraColumns({
       accessorFn: (e) => e.accion,
       meta: { label: "Acción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Acción" />,
-      cell: ({ row }) => <AccionBadge accion={row.original.accion} />,
-      size: 140,
+      // La descripción (app.etiqueta) dice qué se hizo en palabras: "Agregar a Ana al grupo Feria".
+      cell: ({ row }) => (
+        <span className="flex flex-col items-start gap-1">
+          <AccionBadge accion={row.original.accion} />
+          {row.original.descripcion && (
+            <span className="max-w-64 text-xs whitespace-normal text-muted-foreground">{row.original.descripcion}</span>
+          )}
+        </span>
+      ),
+      size: 220,
     },
     {
       id: "cambio",
