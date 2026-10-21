@@ -24,10 +24,18 @@ async function exportBoletin(input: ExportBoletinInput): Promise<ExportResult> {
       FK_TPERIODO_EVALUACION: input.periodoId,
       FK_TMATRICULAS: input.matriculaIds,
     },
+    // El back omite a quien no tiene el período consolidado (Regla 81); si no
+    // queda nadie, el PDF sale en blanco y no se descarga.
+    omitirVacio: true,
   })
   if (result.status === "error") return result
   if (result.filas === 0) {
-    return { status: "ok", message: "No hay boletines para generar con lo seleccionado." }
+    return {
+      status: "error",
+      message: input.esPreescolar
+        ? "No se generó el boletín: no hay estudiantes de preescolar en lo seleccionado."
+        : "No se generó el boletín: lo seleccionado no tiene notas consolidadas en el período.",
+    }
   }
   const n = input.matriculaIds.length
   return {
