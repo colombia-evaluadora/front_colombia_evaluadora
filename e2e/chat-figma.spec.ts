@@ -78,7 +78,7 @@ test.describe("escritorio", () => {
     await expect(modal.getByRole("heading", { name: "Añadir personas a 02-docentes-general" })).toBeVisible()
     await modal.getByLabel("Buscar en el foro").fill("Darlene")
     await expect(modal.getByRole("button", { name: "Bloquear a Darlene Robertson" })).toBeVisible()
-    await expect(modal.getByRole("button", { name: "Eliminar a Darlene Robertson del canal" })).toBeVisible()
+    await expect(modal.getByRole("button", { name: "Eliminar a Darlene Robertson del foro" })).toBeVisible()
     await expect(modal.getByRole("button", { name: /Bloquear a Marta/ })).toHaveCount(0)
     await captura(page, "app-f4-modal-miembros")
     await page.keyboard.press("Escape")
