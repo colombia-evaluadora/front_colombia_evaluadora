@@ -103,10 +103,10 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await openAccountMenu(page)
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
+  await dialog.getByRole("button", { name: /^Preparar (todo|selección)$/ }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   await shot(page, "f1-a-preparado")
-  await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 
   // Throttle del persister (1 s).
   await expect.poll(async () => (await persistedRows(page)).length, { timeout: 30_000 }).toBeGreaterThan(0)
@@ -277,6 +277,8 @@ test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el 
   await page.goto("/app/planeador/planilla")
   await page.getByRole("button", { name: "Preparar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
+  // Los selectores van dentro de "Opciones" (solo para quien tiene grupos).
+  await dialog.getByRole("button", { name: "Opciones" }).click()
   const grupos = dialog.getByRole("group", { name: "Grupos" })
   await expect(grupos.getByRole("checkbox").first()).toBeVisible({ timeout: 30_000 })
   await expect(dialog.getByRole("group", { name: "Asignaturas" }).getByRole("checkbox").first()).toBeVisible()
@@ -288,10 +290,10 @@ test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el 
     await grupos.getByRole("checkbox").first().click()
   }
   await dialog.getByRole("checkbox", { name: "Incluir archivos" }).click()
-  await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
+  await dialog.getByRole("button", { name: /^Preparar (todo|selección)$/ }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   await shot(page, "f1-k-preparar-seleccion")
-  await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 
   // La planilla elegida quedó persistida (se lee de IndexedDB, no de memoria).
   await expect

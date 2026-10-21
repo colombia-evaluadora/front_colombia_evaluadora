@@ -11,22 +11,16 @@
  * actividades, unidades o grupos nuevos.
  */
 import type { QueryClient } from "@tanstack/react-query"
-import { hashKey } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
-import { fullYearSelection } from "@/components/offline/prepare-offline-plan"
 import {
   isPreparing,
   isStorageNearlyFull,
   prepareStore,
-  runPrepare,
   type PrepareSnapshot,
 } from "@/features/offline/lib/prepare-engine"
-import {
-  buildPrepareTasks,
-  cachedOfflineTasks,
-  fetchPrepareOptions,
-} from "@/features/offline/lib/prepare-tasks"
+import { fetchPrepareOptions } from "@/features/offline/lib/prepare-tasks"
+import { startPrepareJob } from "@/features/offline/lib/prepare-job"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
 import { isSyncing } from "@/lib/offline/outbox/engine"
@@ -112,12 +106,13 @@ export async function maybeAutoPrepare(
     if (!autoPrepareDue({ lastPrepareAt, now, reason })) return null
     // Dentro de la cuota: con el almacenamiento casi lleno no se agrega más.
     if (await isStorageNearlyFull()) return null
+    // Mismo trabajo de fondo que "Preparar" a mano (progreso y Cancelar en
+    // el header). Si las opciones no cargan, la próxima revisión reintenta.
     const options = await fetchPrepareOptions()
-    const selection = fullYearSelection(options.grupos, options.asignaturas, options.periodos)
-    const tasks = buildPrepareTasks(queryClient, { options, selection, incluirArchivos: false, roles })
-    const seeded = new Set(tasks.map((task) => hashKey(task.queryKey)))
-    return await runPrepare(queryClient, [...tasks, ...cachedOfflineTasks(queryClient, seeded)], {
+    return await startPrepareJob(queryClient, {
+      roles,
       origin: "auto",
+      options,
       resume: true,
       // La primera vez se baja todo; después, solo lo que envejeció.
       staleTime: lastPrepareAt == null ? 0 : AUTO_PREPARE_FRESH_MS,

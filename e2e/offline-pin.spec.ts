@@ -29,9 +29,9 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
   await dialog.getByLabel("Confirmar PIN").fill("246810")
   await dialog.getByRole("button", { name: "Crear PIN" }).click()
   await expect(dialog.getByText(/cifrados con tu PIN/)).toBeVisible({ timeout: 30_000 })
-  await dialog.getByRole("button", { name: "Preparar", exact: true }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
-  await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
+  await dialog.getByRole("button", { name: /^Preparar (todo|selección)$/ }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   await page.waitForTimeout(2_000)
 
   // En disco no hay texto en claro de las queries.
