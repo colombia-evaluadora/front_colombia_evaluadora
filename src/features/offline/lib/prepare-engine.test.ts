@@ -2,8 +2,14 @@ import "fake-indexeddb/auto"
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { QueryClient } from "@tanstack/react-query"
+import { AxiosError, type AxiosResponse } from "axios"
 
-import { __resetConnectivityForTests } from "@/lib/offline/connectivity"
+import {
+  __connectivityEventsForTests,
+  __resetConnectivityForTests,
+  __setConnectivityForTests,
+  connectivityStore,
+} from "@/lib/offline/connectivity"
 import { __closeDbForTests, DB_NAME } from "@/lib/offline/db"
 import {
   __resetPrepareForTests,
@@ -105,10 +111,70 @@ describe("motor de Preparar", () => {
     vi.unstubAllGlobals()
   })
 
+  it("un 500 o un timeout de UN elemento no corta la corrida: queda 'parcial', con el detalle, y Reintentar lo repite", async () => {
+    const http500 = new AxiosError("Request failed with status code 500", "ERR_BAD_RESPONSE", undefined, undefined, {
+      status: 500,
+    } as AxiosResponse)
+    const timeout = new AxiosError("timeout of 20000ms exceeded", "ECONNABORTED")
+    const despues = vi.fn(async () => undefined)
+    let planillaOk = false
+    const planilla = vi.fn(async () => {
+      if (!planillaOk) throw http500
+    })
+    const client = new QueryClient()
+    const result = await runPrepare(
+      client,
+      [
+        { queryKey: ["planeador", "planilla", { grupoId: 12, periodoId: 3 }], run: planilla },
+        task("lenta", () => Promise.reject(timeout)),
+        task("despues", despues),
+      ],
+      { origin: "manual" },
+    )
+    expect(despues).toHaveBeenCalledOnce()
+    expect(result.lastOutcome).toBe("parcial")
+    expect(result.failedDetails).toEqual([
+      { label: "Planeador › Planilla (grupo 12, periodo 3)", message: "el servidor respondió con error 500" },
+      { label: "Lenta", message: "el servidor tardó demasiado en responder" },
+    ])
+    // La red sigue "online": el diálogo deja Reintentar habilitado.
+    expect(connectivityStore.getState().status).toBe("online")
+
+    planillaOk = true
+    const retry = await runPrepare(client, result.failed, { origin: "manual" })
+    expect(planilla).toHaveBeenCalledTimes(2)
+    expect(retry.failed.map((t) => t.queryKey[0])).toEqual(["lenta"])
+  })
+
+  it("sin red confirmada se PAUSA y sigue sola cuando vuelve (repite lo que falló por la red)", async () => {
+    const red = new AxiosError("Network Error", "ERR_NETWORK")
+    let intentos = 0
+    const segunda = vi.fn(async () => {
+      intentos++
+      if (intentos === 1) {
+        // El heartbeat confirma que se cortó justo durante esta request.
+        __connectivityEventsForTests.handleOffline()
+        throw red
+      }
+    })
+    const tercera = vi.fn(async () => undefined)
+    const corrida = runPrepare(new QueryClient(), [task("a", async () => undefined), task("b", segunda), task("c", tercera)], {
+      origin: "manual",
+    })
+    await vi.waitFor(() => expect(prepareStore.getSnapshot().paused).toBe(true))
+    expect(tercera).not.toHaveBeenCalled()
+    // El heartbeat confirma que volvió (avisa a los suscriptores).
+    __setConnectivityForTests("online")
+    const result = await corrida
+    expect(segunda).toHaveBeenCalledTimes(2)
+    expect(tercera).toHaveBeenCalledOnce()
+    expect(result).toMatchObject({ lastOutcome: "ok", failed: [], paused: false })
+  })
+
   it("se corta sin red y no marca la preparación como hecha", async () => {
     __resetConnectivityForTests("offline")
     const run = vi.fn(async () => undefined)
-    const result = await runPrepare(new QueryClient(), [task("x", run)], { origin: "auto" })
+    const result = await runPrepare(new QueryClient(), [task("x", run)], { origin: "auto", maxPauseMs: 0 })
     expect(run).not.toHaveBeenCalled()
     expect(result.lastOutcome).toBe("sin-conexion")
     expect(result.lastPrepareAt).toBeNull()
