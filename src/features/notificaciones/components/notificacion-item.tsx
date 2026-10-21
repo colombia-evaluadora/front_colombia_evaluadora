@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Notificacion } from "@/features/notificaciones/api/types"
-import { CATEGORIA_ICONS, CATEGORIA_LABELS } from "@/features/notificaciones/api/ui-mappings"
+import { CATEGORIA_ICONS } from "@/features/notificaciones/api/ui-mappings"
 import { horaDelDia, tiempoRelativo } from "@/features/notificaciones/lib/agrupar-por-dia"
 import { tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 
@@ -70,18 +70,17 @@ export function NotificacionItem({
             {n.cuerpo}
           </span>
         )}
-        <span className="flex flex-wrap items-center gap-1 pt-0.5">
-          <Badge variant="soft" color="muted">
-            {CATEGORIA_LABELS[n.categoria]}
-          </Badge>
-          {n.leida ? (
-            <span className="sr-only">Leída</span>
-          ) : (
+        {/* La categoría no se muestra por fila: casi todo caía en "Sistema" y no
+            aportaba; sigue disponible como filtro del buscador. */}
+        {n.leida ? (
+          <span className="sr-only">Leída</span>
+        ) : (
+          <span className="flex pt-0.5">
             <Badge variant="soft" color="info">
               Sin leer
             </Badge>
-          )}
-        </span>
+          </span>
+        )}
       </span>
     </button>
   )
