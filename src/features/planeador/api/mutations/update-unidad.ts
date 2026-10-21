@@ -7,6 +7,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 /** Todo menos `criterios`/`actividades`: esas listas se editan aparte, desde
  *  las pestañas Rúbricas/Actividades del panel. */
@@ -126,6 +127,8 @@ export function useUpdateUnidad({ mutationConfig }: UseUpdateUnidadOptions = {})
     onSuccess: (data, variables, ...rest) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

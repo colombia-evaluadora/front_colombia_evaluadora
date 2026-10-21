@@ -1,6 +1,7 @@
 import { z } from "zod"
 
-import { maxLength, minLength, required } from "@/lib/forms/messages"
+import { invalidSafeText, maxLength, minLength, required } from "@/lib/forms/messages"
+import { SAFE_TEXT_PATTERN } from "@/lib/text-input"
 
 /** Search params de la pantalla: búsqueda por nombre, filtros y paginación. */
 export const areasOficialesSearchSchema = z.object({
@@ -23,7 +24,8 @@ export const areaOficialFormSchema = z.object({
     .trim()
     .min(1, required("El nombre"))
     .min(3, minLength(3, "El nombre"))
-    .max(100, maxLength(100, "El nombre")),
+    .max(100, maxLength(100, "El nombre"))
+    .regex(SAFE_TEXT_PATTERN, invalidSafeText("El nombre")),
   niveles: z.array(z.number()).min(1, "Seleccione al menos un nivel educativo."),
   habilitada: z.boolean(),
 })

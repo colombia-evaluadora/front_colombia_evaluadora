@@ -1,6 +1,7 @@
 import { z } from "zod"
 
-import { maxLength, minLength, required } from "@/lib/forms/messages"
+import { invalidSafeText, maxLength, minLength, required } from "@/lib/forms/messages"
+import { SAFE_TEXT_PATTERN } from "@/lib/text-input"
 
 /** Search params de la pantalla: solo paginación y orden (sin búsqueda ni filtros, Sección 5). */
 export const criteriosPrioridadSearchSchema = z.object({
@@ -35,11 +36,13 @@ export function criterioFormSchema(esUnoDe: (pkRegla: number) => boolean) {
         .trim()
         .min(1, required("El nombre"))
         .min(4, minLength(4, "El nombre"))
-        .max(80, maxLength(80, "El nombre")),
+        .max(80, maxLength(80, "El nombre"))
+        .regex(SAFE_TEXT_PATTERN, invalidSafeText("El nombre")),
       descripcion: z
         .string()
         .trim()
         .max(300, maxLength(300, "La descripción"))
+        .regex(SAFE_TEXT_PATTERN, invalidSafeText("La descripción"))
         .refine((v) => v === "" || v.length >= 10, minLength(10, "La descripción")),
       bloque: z.string().min(1, required("El bloque")),
       campo: z.number().min(1, required("El campo")),

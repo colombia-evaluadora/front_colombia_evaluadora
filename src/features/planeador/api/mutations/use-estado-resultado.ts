@@ -8,6 +8,7 @@ import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { refrescarBloqueoEdicion } from "@/features/planeador/api/mutations/invalidar-calificaciones"
+import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 /**
  * Regla 62: marca No presentó o lo quita (vuelve a Pendiente):
@@ -38,6 +39,8 @@ registerOutboxHandler<EstadoResultadoInput>({
     planeadorKeys.actividad.detalle(p.actividadId),
     planeadorKeys.planilla.calificaciones.all,
     planeadorKeys.actividades.all,
+    // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+    ["informes"],
   ],
   describe: (p) => ({
     titulo: p.estado === "NO_PRESENTO" ? "Marcar No presentó" : "Quitar No presentó",
@@ -66,6 +69,8 @@ export function useEstadoResultadoMutation(
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
       // Regla 37: "No presentó" bloquea la edición como una nota.
       refrescarBloqueoEdicion(queryClient, input.actividadId)
+      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+      invalidarInformes(queryClient)
       options.mutationConfig?.onSuccess?.(...args)
     },
   })

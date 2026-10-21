@@ -72,6 +72,9 @@ registerOutboxHandler<ObservarPayload>({
     // El detalle (y lo que cuelga) trae el bloqueo de la Regla 37; los listados, el lápiz.
     p.actividadId != null ? planeadorKeys.actividad.detalle(p.actividadId) : planeadorKeys.actividad.all,
     planeadorKeys.actividades.all,
+    // La observación cuenta como "ya calificó" en la alerta de planillas
+    // pendientes de Informes (preescolar no pone notas): igual que calificar-celda.
+    ["informes"],
   ],
   rebase: (p, conflict) => ({ ...p, baseVersion: conflict.serverVersion ?? null }),
   describe: (p) => ({
@@ -119,6 +122,8 @@ export function useObservarEstudianteMutation({
       invalidarCalificacionesActividad(queryClient, variables.actividadId)
       // Regla 37: el primer resultado bloquea la edición (lápiz, panel, edición).
       refrescarBloqueoEdicion(queryClient, variables.actividadId)
+      // Alertas de Informes: una observación saca la planilla de "pendientes".
+      queryClient.invalidateQueries({ queryKey: ["informes"] })
       onSuccess?.(result, variables, ...rest)
     },
     ...restConfig,

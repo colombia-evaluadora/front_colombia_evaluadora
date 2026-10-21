@@ -201,13 +201,25 @@ function CeldaPromedio({ fila }: { fila: FilaInforme }) {
       </Tooltip>
     )
   }
-  const sinConsolidar = fila.promedioGuardado == null
+  if (esResumenProyectado(fila)) return <SinResumen />
+  return <span>{formatNota(fila.promedioGuardado)}</span>
+}
+
+/**
+ * Período sin consolidar: las notas por asignatura se muestran proyectadas,
+ * pero el promedio, el puesto y las aprobadas/reprobadas que salen de ellas
+ * no (pedido de revisión). El back los sigue calculando
+ * (`promedioProyectado`, `puesto`, `aprobadas`, `reprobadas`): si vuelven a
+ * pedirlos, basta con quitar esta condición.
+ */
+function esResumenProyectado(fila: FilaInforme) {
+  return fila.modoPeriodo === "real" && fila.promedioGuardado == null
+}
+
+function SinResumen() {
   return (
-    <span
-      className={cn(sinConsolidar && "text-muted-foreground italic")}
-      title={sinConsolidar ? "Promedio proyectado, sin consolidar" : undefined}
-    >
-      {formatNota(sinConsolidar ? fila.promedioProyectado : fila.promedioGuardado)}
+    <span className="text-muted-foreground" title="Período sin consolidar">
+      --
     </span>
   )
 }
@@ -356,6 +368,8 @@ export function GradesTable({
                       <div key={fila.periodoId} className="px-3 py-1.5">
                         {columna.key === "promedio" ? (
                           <CeldaPromedio fila={fila} />
+                        ) : esResumenProyectado(fila) ? (
+                          <SinResumen />
                         ) : (
                           <span>{valorResumen(fila, columna.key)}</span>
                         )}

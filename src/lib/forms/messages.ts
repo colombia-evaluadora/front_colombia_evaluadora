@@ -67,6 +67,14 @@ export function invalidEmail(): string {
   return "Formato de correo electrónico inválido."
 }
 
+/**
+ * Para `SAFE_TEXT_PATTERN` (`text-input.ts`); mismo texto que el back (V327).
+ * `invalidSafeText("El nombre")` → "El nombre solo admite letras, números, espacios y . , ' ( ) & # / -"
+ */
+export function invalidSafeText(subject: string): string {
+  return `${subject} solo admite letras, números, espacios y . , ' ( ) & # / -`
+}
+
 export function invalidDate(): string {
   return "Ingresa una fecha válida."
 }
