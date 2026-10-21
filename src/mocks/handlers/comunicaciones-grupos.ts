@@ -1,9 +1,10 @@
 import { delay, http, HttpResponse } from "msw"
 
 import type { Conversacion, Mensaje, Miembro } from "@/features/comunicaciones/chat/api/types"
-import { conversaciones, mensajes, nuevoMensaje, personas, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
+import { conversaciones, mensajes, nuevoMensaje, personas, politicaChat, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
 import { notificacionesDb } from "@/mocks/db/notificaciones"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
+import { publish } from "@/mocks/realtime/server"
 
 /**
  * Grupos del chat (`TIPO: "GRUPO"`) con varias personas reales, como comms-service: cada
@@ -85,9 +86,56 @@ function aMiembro(m: MiembroGrupo): Miembro {
   return { id: m.id, nombre: m.nombre, rol: m.admin ? "Administrador" : "Miembro", enLinea: false, bloqueado: false, esAdmin: m.admin }
 }
 
+/** Mensaje SISTEMA ("X se ha unido a…"), difundido en vivo como comms-service. */
 function sistema(conversacionId: number, autor: { id: number; nombre: string }, texto: string) {
   const m = nuevoMensaje(conversacionId, texto, null, {}, { ...autor, enLinea: false })
   m.sistema = true
+  publish(`canal:${conversacionId}`, "mensaje.creado", { ...m, esPropio: false })
+}
+
+/** La lista de participantes cambió: quien tenga el grupo abierto la vuelve a pedir. */
+function miembrosActualizados(conversacionId: number) {
+  publish(`canal:${conversacionId}`, "miembros.actualizados", { conversacionId })
+}
+
+/**
+ * Aviso de membresía en la campana (CHAT_GRUPO_AGREGADO / QUITADO / SALIDA) para quien tenga
+ * cuenta en el mock, también en vivo (`notification.created` en su tópico).
+ */
+function avisoMembresia(
+  personaId: number,
+  tipo: "CHAT_GRUPO_AGREGADO" | "CHAT_GRUPO_QUITADO" | "CHAT_GRUPO_SALIDA",
+  titulo: string,
+  cuerpo: string,
+  deep_link: string,
+  actor: string,
+) {
+  const usuario = correoDe(personaId)
+  if (!usuario) return
+  const fila = {
+    id: `chat-${tipo}-${personaId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    tipo,
+    categoria: "CHAT" as const,
+    titulo,
+    cuerpo_corto: cuerpo,
+    deep_link,
+    prioridad: "NORMAL" as const,
+    creada_en: new Date().toISOString(),
+    leida_en: null,
+    actores: [actor],
+    conteo: null,
+    archivada: false,
+    usuario,
+  }
+  notificacionesDb.unshift(fila)
+  publish(`user:${usuario}`, "notification.created", fila)
+}
+
+/** La conversación aparece (o cambia) en vivo en la lista de esa persona. */
+function publicarEnLista(c: Conversacion, personaId: number) {
+  const usuario = correoDe(personaId)
+  const vista = vistaGrupo(c, personaId)
+  if (usuario && vista) publish(`user:${usuario}`, "conversacion.actualizada", vista)
 }
 
 /** Aviso CHAT_MENSAJE agrupado: una entrada viva por conversación y persona. */
@@ -158,7 +206,11 @@ export const comunicacionesGruposHandlers = [
       { id: yo.id, nombre: yo.nombre, admin: true, desde: ++reloj, silenciado: false },
       ...invitados.map((p) => ({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })),
     ])
-    for (const p of invitados) sistema(c.id, p, `se ha unido a ${nombre}.`)
+    for (const p of invitados) {
+      sistema(c.id, p, `se ha unido a ${nombre}.`)
+      publicarEnLista(c, p.id)
+      avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${nombre}`, `${yo.nombre} te agregó al grupo ${nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
+    }
     return HttpResponse.json({ rows: [vistaGrupo(c, yo.id)] })
   }),
 
@@ -176,14 +228,20 @@ export const comunicacionesGruposHandlers = [
     if (!c) return undefined
     await delay(150)
     const lista = miembrosGrupo.get(c.id) ?? []
-    if (!lista.find((m) => m.id === personaDe(request).id)?.admin) {
+    const yo = personaDe(request)
+    // Política del mock: `agregar` ADMIN (como el default de comms-service) o TODOS.
+    const yoMiembro = lista.find((m) => m.id === yo.id)
+    if (!yoMiembro || (!yoMiembro.admin && politicaChat.grupos?.agregar !== "TODOS")) {
       return error("Solo quien administra el grupo puede hacerlo.", 403)
     }
     const body = (await request.json()) as { MIEMBROS?: number[] }
     for (const p of personas.filter((x) => body.MIEMBROS?.includes(x.id) && !lista.some((m) => m.id === x.id))) {
       lista.push({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })
       sistema(c.id, p, `se ha unido a ${c.nombre}.`)
+      publicarEnLista(c, p.id)
+      avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${c.nombre}`, `${yo.nombre} te agregó al grupo ${c.nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
     }
+    miembrosActualizados(c.id)
     return HttpResponse.json({ rows: lista.map(aMiembro) })
   }),
 
@@ -202,6 +260,7 @@ export const comunicacionesGruposHandlers = [
       return error("Debe quedar al menos un administrador.", 409)
     }
     m.admin = admin
+    miembrosActualizados(c.id)
     return HttpResponse.json({ rows: [aMiembro(m)] })
   }),
 
@@ -217,6 +276,11 @@ export const comunicacionesGruposHandlers = [
     if (i < 0) return error("La persona ya no está en el grupo.", 404)
     const [m] = lista.splice(i, 1)
     sistema(c.id, m, `ya no está en ${c.nombre}.`)
+    miembrosActualizados(c.id)
+    // A quien quitaron: sale de su lista en vivo y le queda el aviso en la campana.
+    const correo = correoDe(m.id)
+    if (correo) publish(`user:${correo}`, "conversacion.eliminada", { id: c.id, motivo: "QUITADO" })
+    avisoMembresia(m.id, "CHAT_GRUPO_QUITADO", `Te quitaron de ${c.nombre}`, `${yo.nombre} te quitó del grupo ${c.nombre}.`, "/app/comunicaciones/chat", yo.nombre)
     return HttpResponse.json({ rows: [aMiembro(m)] })
   }),
 
@@ -234,6 +298,10 @@ export const comunicacionesGruposHandlers = [
     // Sucesión: el último administrador se fue → el miembro más antiguo administra.
     if (salio.admin && lista.length > 0 && !lista.some((m) => m.admin)) {
       lista.reduce((a, b) => (a.desde <= b.desde ? a : b)).admin = true
+    }
+    miembrosActualizados(c.id)
+    for (const a of lista.filter((m) => m.admin)) {
+      avisoMembresia(a.id, "CHAT_GRUPO_SALIDA", `${salio.nombre} salió de ${c.nombre}`, `Ya no participa en el grupo ${c.nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, salio.nombre)
     }
     return HttpResponse.json({ rows: [antes] })
   }),

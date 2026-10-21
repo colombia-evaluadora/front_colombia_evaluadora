@@ -27,6 +27,10 @@ import {
   useEliminarMiembro,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/features/auth/hooks/use-auth"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { puedeAgregarParticipantes } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 
 const POR_PAGINA = 6
@@ -46,7 +50,10 @@ export function MiembrosDialog({
   onClose: () => void
 }) {
   const [seleccion, setSeleccion] = useState<Persona[]>([])
-  const [porEliminar, setPorEliminar] = useState<Miembro | null>(null)
+  // Quitar: uno (botón ✕ de la fila) o varios (casillas + "Quitar seleccionados").
+  const [porEliminar, setPorEliminar] = useState<Miembro[]>([])
+  const [marcados, setMarcados] = useState<Set<number>>(new Set())
+  const [quitando, setQuitando] = useState(false)
   const [pagina, setPagina] = useState(0)
   const miembros = useMiembrosQuery(open ? c.id : undefined)
   const [consulta, setConsulta] = useState("")
@@ -59,6 +66,12 @@ export function MiembrosDialog({
   const rol = useCambiarRolMiembro(c.id)
   const error = agregar.error ?? bloquear.error ?? eliminar.error ?? rol.error
   const esAdmin = c.esAdmin ?? !!c.esCreador
+  const { politica } = useChatAccess()
+  const { user } = useAuth()
+  // Con `comms.politica.grupos.agregar=TODOS` cualquier miembro de un grupo añade participantes.
+  const puedeAgregar = puedeAgregarParticipantes(politica, { tipo: c.tipo, esAdmin })
+  // "grupo" o "foro" en los textos (los CANAL del chat se llaman foros).
+  const donde = c.tipo === "GRUPO" ? "grupo" : "foro"
 
   const todos = miembros.data ?? []
   const lista = todos
@@ -78,6 +91,7 @@ export function MiembrosDialog({
     setSeleccion([])
     setConsulta("")
     setPagina(0)
+    setMarcados(new Set())
     onClose()
   }
 
@@ -89,7 +103,7 @@ export function MiembrosDialog({
           <DialogTitle className="truncate">Participantes de {c.nombre}</DialogTitle>
         </DialogHeader>
 
-        {esAdmin && (
+        {puedeAgregar && (
         <div className="flex items-start gap-2">
           <div className="relative min-w-0 flex-1">
             <span className="pointer-events-none absolute -top-2.5 left-3 z-10 bg-popover px-1 text-sm font-medium">
@@ -117,9 +131,9 @@ export function MiembrosDialog({
                     {p.correo && <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>}
                   </span>
                   {enGrupo.has(p.id) ? (
-                    <span className="shrink-0 rounded-full bg-green-22 px-2 py-0.5 text-xs text-green">En el grupo</span>
+                    <span className="shrink-0 rounded-full bg-green-22 px-2 py-0.5 text-xs text-green">En el {donde}</span>
                   ) : (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">No está en el grupo</span>
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">No está en el {donde}</span>
                   )}
                 </span>
               )}
@@ -129,8 +143,8 @@ export function MiembrosDialog({
           <Button
             type="button"
             size="icon"
-            aria-label="Añadir al canal"
-            title="Añadir al canal"
+            aria-label={`Añadir al ${donde}`}
+            title={`Añadir al ${donde}`}
             disabled={agregar.isPending}
             aria-busy={agregar.isPending}
             onClick={() => agregar.mutate(seleccion.map((p) => p.id), { onSuccess: () => setSeleccion([]) })}
@@ -164,21 +178,49 @@ export function MiembrosDialog({
             </p>
           ) : (
             <>
+              {esAdmin && marcados.size > 0 && (
+                <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2 text-sm">
+                  <span className="tabular-nums">
+                    {marcados.size === 1 ? "1 persona seleccionada" : `${marcados.size} personas seleccionadas`}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="soft"
+                    color="destructive"
+                    onClick={() => setPorEliminar(todos.filter((m) => marcados.has(m.id)))}
+                  >
+                    <XIcon data-icon="inline-start" />
+                    Quitar seleccionados
+                  </Button>
+                </div>
+              )}
               <ul className="divide-y">
                 {visibles.map((m) => (
                   <FilaMiembro
                     key={m.id}
                     miembro={m}
-                    gestionar={esAdmin}
-                    ocupado={bloquear.isPending || eliminar.isPending || rol.isPending}
+                    donde={donde}
+                    // Nadie se bloquea ni se quita a sí mismo (para irse está "Salir").
+                    gestionar={esAdmin && m.id !== user?.userId}
+                    marcado={marcados.has(m.id)}
+                    onMarcar={(v) =>
+                      setMarcados((prev) => {
+                        const next = new Set(prev)
+                        if (v) next.add(m.id)
+                        else next.delete(m.id)
+                        return next
+                      })
+                    }
+                    ocupado={bloquear.isPending || eliminar.isPending || rol.isPending || quitando}
                     onAdmin={() => rol.mutate({ id: m.id, admin: !m.esAdmin })}
                     onBloquear={() => bloquear.mutate({ id: m.id, bloqueado: !m.bloqueado })}
-                    onEliminar={() => setPorEliminar(m)}
+                    onEliminar={() => setPorEliminar([m])}
                   />
                 ))}
               </ul>
               {lista.length === 0 && (
-                <p className="p-4 text-center text-sm text-muted-foreground">Aún no hay nadie en el canal.</p>
+                <p className="p-4 text-center text-sm text-muted-foreground">Aún no hay nadie en el {donde}.</p>
               )}
               {paginas > 1 && (
                 <nav aria-label="Páginas de miembros" className="flex items-center justify-center gap-2 border-t p-3 text-sm">
@@ -220,23 +262,42 @@ export function MiembrosDialog({
       </DialogContent>
     </Dialog>
 
-      <AlertDialog open={!!porEliminar} onOpenChange={(o) => !o && !eliminar.isPending && setPorEliminar(null)}>
+      <AlertDialog open={porEliminar.length > 0} onOpenChange={(o) => !o && !quitando && setPorEliminar([])}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar a {porEliminar?.nombre} del canal?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {porEliminar.length === 1
+                ? `¿Eliminar a ${porEliminar[0].nombre} del ${donde}?`
+                : `¿Eliminar a ${porEliminar.length} personas del ${donde}?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Dejará de ver los mensajes de {c.nombre}. Puedes volver a añadirla desde el buscador.
+              {porEliminar.length === 1 ? "Dejará" : "Dejarán"} de ver los mensajes de {c.nombre} y
+              {porEliminar.length === 1 ? " recibirá" : " recibirán"} un aviso. Puedes volver a añadirlas desde el
+              buscador.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
+            <AlertDialogCancel variant="fill" color="neutral" disabled={quitando}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
-              disabled={eliminar.isPending}
-              aria-busy={eliminar.isPending}
-              onClick={() => porEliminar && eliminar.mutate(porEliminar.id, { onSuccess: () => setPorEliminar(null) })}
+              disabled={quitando}
+              aria-busy={quitando}
+              onClick={async () => {
+                // Uno por uno (comms-service no tiene baja por lote): si una falla, se detiene y el
+                // error queda a la vista; las anteriores ya salieron.
+                setQuitando(true)
+                try {
+                  for (const m of porEliminar) await eliminar.mutateAsync(m.id)
+                  setMarcados(new Set())
+                  setPorEliminar([])
+                } catch {
+                  setPorEliminar([])
+                } finally {
+                  setQuitando(false)
+                }
+              }}
             >
               Eliminar
             </AlertDialogAction>
@@ -249,14 +310,20 @@ export function MiembrosDialog({
 
 function FilaMiembro({
   miembro: m,
+  donde,
   gestionar,
+  marcado,
+  onMarcar,
   ocupado,
   onAdmin,
   onBloquear,
   onEliminar,
 }: {
   miembro: Miembro
+  donde: string
   gestionar: boolean
+  marcado: boolean
+  onMarcar: (v: boolean) => void
   ocupado: boolean
   onAdmin: () => void
   onBloquear: () => void
@@ -264,6 +331,14 @@ function FilaMiembro({
 }) {
   return (
     <li className="flex items-center gap-3 px-3 py-2">
+      {gestionar && (
+        <Checkbox
+          checked={marcado}
+          onCheckedChange={(v) => onMarcar(!!v)}
+          disabled={ocupado}
+          aria-label={`Seleccionar a ${m.nombre}`}
+        />
+      )}
       <span className={cn("flex min-w-0 flex-1 items-center gap-3", m.bloqueado && "opacity-45")}>
         <AvatarPersona nombre={m.nombre} enLinea={m.enLinea} />
         <span className="min-w-0 leading-tight">
@@ -308,8 +383,8 @@ function FilaMiembro({
         type="button"
         onClick={onEliminar}
         disabled={ocupado}
-        aria-label={`Eliminar a ${m.nombre} del canal`}
-        title="Eliminar del canal"
+        aria-label={`Eliminar a ${m.nombre} del ${donde}`}
+        title={`Eliminar del ${donde}`}
         className={cn(ACCION, "bg-muted/60 text-muted-foreground hover:bg-red-22 hover:text-red")}
       >
         <XIcon className="size-4" />
