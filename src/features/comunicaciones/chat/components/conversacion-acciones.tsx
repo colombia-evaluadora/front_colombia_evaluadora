@@ -316,7 +316,7 @@ export function ConversacionAcciones({
                 { id: c.id, nombre: limpio },
                 {
                   onSuccess: () => {
-                    notify("Canal actualizado.")
+                    notify(c.tipo === "GRUPO" ? "Grupo actualizado." : "Foro actualizado.")
                     cerrar()
                   },
                   onError,
@@ -326,11 +326,11 @@ export function ConversacionAcciones({
             className="space-y-4"
           >
             <DialogHeader>
-              <DialogTitle>Editar canal</DialogTitle>
+              <DialogTitle>{c.tipo === "GRUPO" ? "Editar grupo" : "Editar foro"}</DialogTitle>
               <DialogDescription>El nuevo nombre lo verán todos los miembros.</DialogDescription>
             </DialogHeader>
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium">Nombre del canal</span>
+              <span className="font-medium">{c.tipo === "GRUPO" ? "Nombre del grupo" : "Nombre del foro"}</span>
               <Input
                 autoFocus
                 value={nombre}
@@ -364,7 +364,7 @@ export function ConversacionAcciones({
         open={dialogo === "eliminar"}
         onClose={cerrar}
         titulo={`¿Eliminar ${c.nombre}?`}
-        accion="Eliminar canal"
+        accion={c.tipo === "GRUPO" ? "Eliminar grupo" : "Eliminar foro"}
         pendiente={eliminar.isPending}
         onConfirmar={() =>
           eliminar.mutate(c.id, {
@@ -377,7 +377,7 @@ export function ConversacionAcciones({
           })
         }
       >
-        Se borrarán el canal y sus mensajes para todos los miembros. Esta acción no se puede
+        Se borrarán {c.tipo === "GRUPO" ? "el grupo" : "el foro"} y sus mensajes para todos los miembros. Esta acción no se puede
         deshacer.
       </Confirmacion>
 

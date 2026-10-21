@@ -123,7 +123,14 @@ function ChatContent() {
       (esEstudiante && activa.categoria === "ANUNCIO"))
 
   // Tiempo real: bandeja personal, presencia y eventos del canal abierto.
-  useChatTiempoRealUsuario()
+  // Si lo quitan (o se borra) la conversación abierta, se vuelve a la lista con un aviso.
+  useChatTiempoRealUsuario((e) => {
+    if (e.id === canal) navigate({ search: (prev) => ({ ...prev, canal: undefined, mensaje: undefined }) })
+    const nombre = e.nombre ?? "una conversación"
+    notify(e.motivo === "QUITADO" ? `Te quitaron de ${nombre}.` : `${nombre} ya no está disponible.`, {
+      variant: "warning",
+    })
+  })
   const escribiendo = useChatTiempoRealCanal(activa?.id)
   const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
   const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)

@@ -60,19 +60,56 @@ const esMensajes = (q: { queryKey: readonly unknown[] }) => q.queryKey.at(-1) ==
  * (`notification.*` en el mismo tópico) las atiende
  * `features/notificaciones/hooks/use-notificaciones-tiempo-real.ts`.
  */
-export function useChatTiempoRealUsuario() {
+export interface ConversacionEliminada {
+  id: number
+  // Nombre que tenía en la lista (para el aviso); null si no estaba cargada.
+  nombre: string | null
+  // QUITADO: un administrador sacó al usuario; ELIMINADA: se borró la conversación.
+  motivo: string | null
+}
+
+/**
+ * Evento de la bandeja personal sobre la lista de conversaciones (puro, para probarlo):
+ * - `conversacion.actualizada` de una conversación conocida la reemplaza; de una desconocida
+ *   (lo acaban de agregar a un grupo o foro) pide la lista otra vez, así aparece en vivo.
+ * - `conversacion.eliminada` la quita de la lista y devuelve lo que hace falta para avisar.
+ */
+export function aplicarEventoUsuario(
+  queryClient: QueryClient,
+  e: Pick<RealtimeEvent, "event" | "data">,
+): ConversacionEliminada | null {
+  if (e.event === "conversacion.actualizada") {
+    const c = e.data as Conversacion
+    const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
+    if (lista && !lista.some((x) => x.id === c.id)) {
+      void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+      return null
+    }
+    queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+      prev?.map((x) => (x.id === c.id ? c : x)),
+    )
+    return null
+  }
+  if (e.event === "conversacion.eliminada") {
+    const { id, motivo } = e.data as { id: number; motivo?: string }
+    const nombre = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.find((x) => x.id === id)?.nombre
+    queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) => prev?.filter((x) => x.id !== id))
+    queryClient.removeQueries({ queryKey: chatKeys.mensajes(id) })
+    queryClient.removeQueries({ queryKey: chatKeys.miembros(id) })
+    return { id, nombre: nombre ?? null, motivo: motivo ?? null }
+  }
+  return null
+}
+
+export function useChatTiempoRealUsuario(onEliminada?: (c: ConversacionEliminada) => void) {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
   useRealtimeTopic(
     user ? topicoUsuario(user) : null,
     (e) => {
-      if (e.event === "conversacion.actualizada") {
-        const c = e.data as Conversacion
-        queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
-          prev?.some((x) => x.id === c.id) ? prev.map((x) => (x.id === c.id ? c : x)) : prev,
-        )
-      }
+      const eliminada = aplicarEventoUsuario(queryClient, e)
+      if (eliminada) onEliminada?.(eliminada)
     },
     () => void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
   )
@@ -118,6 +155,12 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined) {
         const { id } = e.data as { id: number }
         queryClient.setQueryData<Mensaje[]>(key, (prev) => prev?.filter((x) => x.id !== id))
         void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
+        return
+      }
+      case "miembros.actualizados": {
+        // Alta, baja, bloqueo o rol en la conversación abierta: lista de participantes y totales.
+        void queryClient.invalidateQueries({ queryKey: chatKeys.miembros(conversacionId ?? "none") })
+        void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
         return
       }
       case "escribiendo": {
