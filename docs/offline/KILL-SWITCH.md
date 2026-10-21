@@ -53,3 +53,16 @@ Workers Static Assets publica **solo** los archivos del deploy actual: tras un d
 
 - Con el SW instalado, la pestaña vieja sigue resolviendo sus chunks lazy **desde el precache** de su versión hasta que el usuario pulsa "Actualizar" (el precache nuevo se instala aparte y `cleanupOutdatedCaches` solo borra cuando el SW nuevo se activa).
 - Sin SW (primer uso o kill-switch), el comportamiento es el de siempre: un chunk lazy viejo puede fallar y el error boundary pide recargar.
+
+## Navegaciones que nunca fallan (incidente ERR_FAILED en testv2)
+
+Síntoma: Chrome mostraba "No se puede acceder a este sitio web · ERR_FAILED" al abrir `/login` aunque el servidor respondía 200. Causa: el SW respondía las navegaciones con `createHandlerBoundToURL("/index.html")`, que **tira** si `/index.html` falta en el precache (instalación a medias, activación de otra versión, Cache API limpiada); la promesa de `respondWith` rechazaba y el navegador no mostraba nada.
+
+Desde el fix (`src/sw/sw.ts`, `handleNavigation`), toda navegación (salvo `/api`):
+
+1. va a la **red** con timeout de 3,5 s (sin red, `fetch` falla al instante: offline no espera);
+2. sin red, timeout o 5xx → `index.html` del **precache** (`matchPrecache`);
+3. si falta → cualquier `index.html`/`/` que quede en la Cache API, y se pide `registration.update()` (auto-reparación: reinstala un precache completo; no se desregistra ni recarga para no entrar en bucles sin red);
+4. si no hay nada → página **inline** "No se pudo cargar Colombia Evaluadora. Revisa tu conexión y vuelve a intentar" con botón Reintentar (503).
+
+El handler nunca rechaza. La ruta de navegación se registra antes que la de precache para que `/` tampoco pase por la estrategia de precache. E2E: `e2e/pwa/navigation-fallback.spec.ts`. Si aun así un SW instalado quedara roto, aplica el nivel 3.
