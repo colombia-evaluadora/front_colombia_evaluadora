@@ -57,10 +57,7 @@ import {
 import { planeadorUnidadEditarRoute } from "@/router"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 
-/** Actividades vinculadas sin peso capturado para el método de cálculo
- *  destino — "Ponderado" mira `ponderacion`, "Suma de puntos" mira
- *  `notaMaxima` (0/`null` cuentan como "sin capturar"). "Promedio simple"
- *  no usa ninguna columna de peso, así que no aplica (siempre `[]`). */
+/** Actividades sin peso para el método destino (Ponderado→ponderacion, Suma→notaMaxima; 0/null = sin capturar). */
 function actividadesSinPeso(
   actividades: UnidadActividad[],
   metodoDestino: UnidadDraft["metodoCalculo"],
@@ -72,12 +69,7 @@ function actividadesSinPeso(
 
 const FORM_ID = "editar-unidad-form"
 
-/**
- * Edición de "Información general" de una unidad temática en una ruta
- * aparte (no un modal — ver el mismo criterio en
- * `planeador-editar-actividad-page.tsx`). Criterios y actividades
- * vinculadas se siguen editando desde el panel de detalle, no acá.
- */
+/** Edición en ruta aparte (no modal); criterios y actividades se editan en el panel de detalle. */
 export function PlaneadorEditarUnidadPage() {
   const navigate = useNavigate()
   const { unidadId } = useParams({ strict: false }) as { unidadId?: string }
@@ -121,18 +113,10 @@ function EditarUnidadPageContent({
   onClose: (instrumento: string) => void
 }) {
   const [draft, setDraft] = useState<UnidadDraft | null>(null)
-  // Foto del borrador ANTES de que el docente toque nada — la misma que se
-  // arma en el efecto de abajo, junto con `draft` — para saber si "hay
-  // cambios" (footer sticky, ver `TableScreenFooter` más abajo). Comparar
-  // contra `draftFromUnidad(unidad)` a secas daría un falso "dirty" apenas
-  // carga: ese helper siempre deja `enunciadosDba` vacío (ver su
-  // comentario), así que la precarga de abajo ya lo "ensucia" sin que el
-  // docente haya hecho nada.
+  // Foto inicial del borrador para "dirty": draftFromUnidad deja enunciadosDba vacío y daría falso dirty.
   const [initialDraft, setInitialDraft] = useState<UnidadDraft | null>(null)
   const { notify } = useNotify()
-  // `?instrumento=` es el rótulo de la pestaña desde la que se entró (ver
-  // `planeador-unidades-page.tsx`); sin él (URL directa) se resuelve por el
-  // referente real de la unidad.
+  // ?instrumento= = pestaña de origen; sin él se resuelve por el referente de la unidad.
   const search = useSearch({ from: planeadorUnidadEditarRoute.id })
   const instrumento = useRotuloUnidad(unidad, search.instrumento)
   const instrumentoLower = rotuloEnMinuscula(instrumento)
@@ -141,9 +125,7 @@ function EditarUnidadPageContent({
   const rotuloActividadLower = rotuloEnMinuscula(rotuloActividad)
   const rotuloActividadGenero = terminacionRotulo(rotuloActividad)
 
-  // Mismo guard de permiso que `planeador-editar-actividad-page.tsx`: sin
-  // "editar" en Planeador, redirige al listado apenas se sabe que no hay
-  // permiso.
+  // Sin "editar" en Planeador redirige al listado.
   const navigate = useNavigate()
   const { puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
@@ -152,20 +134,10 @@ function EditarUnidadPageContent({
     }
   }, [isLoadingPermiso, puedeEditar, navigate])
 
-  // `unidad.enunciadosDba` (del detalle) siempre llega vacío contra el
-  // backend real (viven en un endpoint aparte — ver el comentario de
-  // `UnidadTematica.enunciadosDba`); los que la unidad YA tiene relacionados
-  // salen de acá, para precargar el picker de "Derechos Básicos de
-  // Aprendizaje" con el borrador inicial.
+  // unidad.enunciadosDba llega vacío (endpoint aparte); se precargan desde acá.
   const { data: referente, isPending: referentePending } = useUnidadReferenteQuery(unidad?.id)
 
-  // Regla pedida: si el docente cambia el método de cálculo de "Promedio
-  // simple" (donde ninguna actividad tiene peso propio) a "Ponderado" o
-  // "Suma de puntos" (donde SÍ lo tiene), y ya hay actividades vinculadas
-  // sin ese peso capturado, se avisa ANTES de guardar — si no, el docente
-  // se entera recién al reabrir cada actividad una por una y encontrarlas
-  // en 0/sin puntaje. Reusa `useUnidadActividadesQuery`: el panel de
-  // detalle ya consulta este mismo endpoint, no hace falta una query nueva.
+  // Avisar antes de guardar si al pasar de Promedio simple a Ponderado/Suma hay actividades sin peso.
   const { data: actividadesVinculadas = [], isPending: actividadesPending } = useUnidadActividadesQuery(unidad?.id)
   const [confirmacionCambioMetodo, setConfirmacionCambioMetodo] = useState<{
     unidadId: number
@@ -173,8 +145,7 @@ function EditarUnidadPageContent({
     sinPeso: UnidadActividad[]
   } | null>(null)
 
-  // Saga de un paso (Fase 3 offline): sin red queda en la outbox y al
-  // sincronizar verifica que la unidad no haya cambiado (D-F3-4).
+  // Saga de un paso (Fase 3 offline): al sincronizar verifica que la unidad no cambió (D-F3-4).
   const escritura = useOfflineWritable("Necesitas conexión para editar unidades en este equipo.")
   const updateMutation = useEditarUnidadSaga(unidad, {
     onQueued: () => {
@@ -188,14 +159,7 @@ function EditarUnidadPageContent({
         })
         return
       }
-      // `onClose` navega de vuelta al listado de unidades — un `notify()`
-      // acá se perdería con el `NoticeProvider` de esta pantalla al
-      // desmontarse.
-      // Regla 28: si el criterio de cálculo cambió con actividades ya
-      // vinculadas, el backend ya convirtió su peso/puntaje — se avisa
-      // cuáles, en vez de que el docente lo descubra reabriéndolas una
-      // por una. Un solo aviso por pantalla (`queueNotice`), así que se
-      // agrega al mismo mensaje de éxito en vez de perderlo.
+      // notify() se perdería al desmontar; Regla 28: se anexan las actividades convertidas al mismo aviso.
       const avisoConversion =
         result.actividadesAfectadas.length > 0
           ? ` Se convirtió el peso/puntaje de: ${result.actividadesAfectadas.map((a) => a.titulo).join(", ")}.`
@@ -203,17 +167,13 @@ function EditarUnidadPageContent({
       queueNotice(`${mensajeUnidadGuardada("actualizado", instrumento)}${avisoConversion}`)
       onClose(instrumento)
     },
-    // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
-    // `error` de la mutación y mostraba siempre este texto quemado.
+    // Usar el error real de la mutación, no un texto quemado.
     onError: (mensaje: string) => {
       notify(mensaje, { variant: "error" })
     },
   })
 
-  // `draft`/`initialDraft` arrancan en `null` y se completan juntos apenas
-  // llega `unidad` (y `referente`, para no perder la precarga de
-  // enunciados) — así el form no se monta hasta tener datos reales, y el
-  // footer no arranca "dirty" antes de tiempo.
+  // draft/initialDraft se llenan juntos con unidad y referente para no arrancar dirty.
   const current = draft
 
   useEffect(() => {
@@ -238,6 +198,7 @@ function EditarUnidadPageContent({
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorUnidades.getHref()} search={{ instrumento }} />}
             >
               Cerrar
@@ -267,11 +228,7 @@ function EditarUnidadPageContent({
             onSubmit={(e) => {
               e.preventDefault()
               const data = draftToPayload(current)
-              // Método ANTERIOR = el que trae `unidad` (lo que ya está
-              // guardado, de antes de que el docente tocara nada) — NO
-              // `initialDraft.metodoCalculo`, que es lo mismo pero por
-              // claridad se compara contra la fuente real. Método NUEVO =
-              // lo que el docente eligió en el form (`current`).
+              // Método anterior = el guardado en unidad; nuevo = el del form.
               const metodoAnterior = unidad.metodoCalculo
               const metodoNuevo = current.metodoCalculo
               const cambiaDesdePromedioSimple =
@@ -284,10 +241,7 @@ function EditarUnidadPageContent({
                   return
                 }
               }
-              // `ENUNCIADOS` en el PUT (sso V492) reemplaza la lista
-              // completa en una sola llamada — agregados y quitados del
-              // picker de "Derechos Básicos de Aprendizaje" viajan juntos
-              // en `useUpdateUnidad`, no hace falta desvincular aparte.
+              // ENUNCIADOS en el PUT (sso V492) reemplaza la lista completa; no hace falta desvincular aparte.
               updateMutation.mutate({ unidadId: unidad.id, data })
             }}
           >
@@ -334,11 +288,7 @@ function EditarUnidadPageContent({
         )}
       </TableScreenFooter>
 
-      {/* Alerta del cambio de método de cálculo (Regla pedida, ver el
-          comentario de `actividadesVinculadas` más arriba): se abre
-          programáticamente desde el submit, no desde un trigger — por eso
-          no lleva `AlertDialogTrigger`, mismo patrón que otros diálogos
-          controlados del repo. */}
+      {/* Diálogo controlado: se abre desde el submit, sin AlertDialogTrigger. */}
       <AlertDialog
         open={confirmacionCambioMetodo != null}
         onOpenChange={(open) => {

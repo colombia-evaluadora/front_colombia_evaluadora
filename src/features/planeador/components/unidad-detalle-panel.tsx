@@ -55,34 +55,14 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 type PanelTab = "general" | "rubricas" | "actividades"
 
-/**
- * La pestaña "Rúbricas" no aplica a una unidad de enfoque formativo: el
- * seguimiento formativo no califica por niveles de desempeño, así que no
- * hay nada que definir ahí — se saca en vez de mostrarla deshabilitada
- * (misma idea que "¿Es evaluación sumativa?" en el form de Actividad,
- * que se bloquea en "No" para el mismo tipo de unidad).
- *
- * Recibe `esFormativo` ya resuelto (no lee `unidad.enfoquePedagogico`): ese
- * campo viene hardcodeado en `"Evaluativo"` para toda unidad real
- * (`toUnidadTematica` no tiene de dónde sacarlo) — el enfoque de verdad se
- * deriva en vivo por Grado+Asignatura, ver `UnidadTabs` más abajo.
- */
+/** Sin "Rúbricas" en unidades formativas. Recibe `esFormativo` ya resuelto: `enfoquePedagogico` viene fijo en "Evaluativo". */
 interface PanelTabDef {
   value: PanelTab
   label: string
   Icon: React.ComponentType<{ className?: string; "data-icon"?: string }>
 }
 
-// Mismos íconos que `UnidadFormTabs` (alta/edición de unidad) para que las
-// pestañas se vean iguales en las dos pantallas.
-//
-// `instrumentoLabel` (pedido explícito): la pestaña decía siempre "Rúbricas"
-// aunque las actividades vinculadas calificaran con Lista de cotejo o Escala
-// de valoración — pasa a "Criterios en {instrumento}" cuando TODAS las
-// actividades vinculadas comparten el mismo `instrumento_evaluacion` (ver
-// `resolverInstrumentoUnico`); con ninguna vinculada, o con varias que usan
-// instrumentos distintos, no hay un único rótulo que mostrar y se cae al
-// genérico "Rúbricas" de siempre.
+// Mismos íconos que `UnidadFormTabs`. "Criterios en {instrumento}" solo si todas las vinculadas comparten instrumento.
 function getVisibleTabs(
   esFormativo: boolean,
   instrumentoLabel: string | undefined,
@@ -103,52 +83,24 @@ function getVisibleTabs(
   return tabs
 }
 
-/** Único `instrumento_evaluacion` real entre las actividades ya vinculadas a
- *  la unidad, o `undefined` si no hay ninguna vinculada (todavía) o si hay
- *  más de uno distinto (ahí no hay un solo instrumento que titular). */
+/** Instrumento único entre las vinculadas, o `undefined` si no hay o hay varios. */
 function resolverInstrumentoUnico(actividades: UnidadActividad[]): string | undefined {
   const distintos = new Set(actividades.map((a) => a.instrumento).filter(Boolean))
   return distintos.size === 1 ? [...distintos][0] : undefined
 }
 
-/**
- * Caja del contenido de cada pestaña. Es el mismo panel que usan las solapas
- * del diálogo de grado: sin borde superior —lo dibuja la lista de pestañas— y
- * con la esquina superior izquierda a escuadra, que es donde se apoya la
- * primera solapa.
- *
- * `data-tabs-filled` lo publica `Tabs` cuando las pestañas ocupan todo el
- * ancho: ahí la de la derecha también se apoya en el borde y el radio sobra.
- *
- * `min-w-0`: sin esto el ancho mínimo de la tabla de rúbricas se propaga hacia
- * arriba y desborda el panel en vez de dejar que `Table` scrollee en
- * horizontal.
- */
+/** Caja de cada pestaña; `min-w-0` evita que la tabla de rúbricas desborde el panel. */
 const PANEL =
   "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
 interface UnidadDetallePanelProps {
   unidadId: string
-  /** Rótulo de la pestaña activa ("Unidad temática"/"Proyecto pedagógico"/…)
-   *  que ya resolvió la página. Sin él, cada sección lo resuelve por el
-   *  referente de la unidad (`useRotuloUnidad`). */
+  /** Rótulo ya resuelto por la página; si falta se usa `useRotuloUnidad`. */
   rotuloUnidad?: string
-  /** Llamado cuando la unidad abierta se elimina — la página reselecciona
-   *  otra en el rail (esta ya no existe). */
   onDeleted?: () => void
 }
 
-/**
- * Las dos tablas del panel usan `useDataTable` + `DataTable`, igual que las
- * del plan académico: así heredan el encabezado ordenable, los estados de
- * carga/error/vacío y —vía la columna `actions`— el overlay de botones que se
- * revela al pasar el puntero por la fila, en vez de reimplementarlo todo.
- *
- * La diferencia es de dónde salen las filas: acá ya vienen dentro de la
- * unidad, no de una consulta paginada. Como `useDataTable` declara
- * `manualSorting`, el orden lo aplica este hook sobre el array en memoria —
- * es el equivalente local de lo que en las otras pantallas hace el backend.
- */
+/** Las filas vienen en la unidad (no paginadas): el orden se aplica en memoria por el `manualSorting`. */
 function useSortedRows<T>(rows: T[]) {
   const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -170,7 +122,6 @@ function useSortedRows<T>(rows: T[]) {
   return { sorted, sorting, setSorting }
 }
 
-/** Cabecera de una pestaña: título, bajada opcional y su acción a la derecha. */
 function TabHeader({
   title,
   description,
@@ -182,18 +133,11 @@ function TabHeader({
   title: string
   description?: string
   actionLabel?: string
-  /** Sin esto (y sin `action`) el botón queda `disabled` — mismo criterio
-   *  que el resto de la app para las acciones que todavía no tienen flujo
-   *  propio. */
+  /** Sin esto (ni `action`) el botón queda `disabled`. */
   onAction?: () => void
-  /** Reemplaza el botón por defecto con un nodo propio — para acciones que
-   *  abren un `Popover` autocontenido (ej. `DialogAgregarActividad`) en vez
-   *  de un `onClick` simple: ahí el trigger y el contenido viven juntos, no
-   *  se puede armar con `actionLabel`/`onAction`. */
+  /** Nodo propio para acciones con `Popover` autocontenido. */
   action?: React.ReactNode
-  /** Modo solo lectura: oculta el botón por completo (a diferencia de
-   *  `!onAction`, que lo deja visible mas deshabilitado — acá no hay
-   *  permiso, no un flujo pendiente). */
+  /** Solo lectura: oculta el botón (sin permiso, no flujo pendiente). */
   hideAction?: boolean
 }) {
   return (
@@ -262,9 +206,7 @@ function ResumenItem({
   value: string
 }) {
   return (
-    // `px-6` contra la separatriz (`divide-x` del padre no deja hueco por su
-    // cuenta) y sin padding en los extremos, para que la fila no se despegue
-    // de los bordes de la caja.
+    // `divide-x` no deja hueco solo; sin padding en los extremos.
     <div className="min-w-0 md:px-6 md:first:pl-0 md:last:pr-0">
       <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
         <Icon className="size-4 shrink-0" />
@@ -275,8 +217,6 @@ function ResumenItem({
   )
 }
 
-/** "esta unidad temática"/"este proyecto pedagógico" — en minúscula, para
- *  mitad de frase; `capitalizar` para arrancar una oración con él. */
 function conDemostrativo(rotuloUnidad: string): string {
   return `${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()}`
 }
@@ -287,42 +227,18 @@ function capitalizar(texto: string): string {
 
 function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: UnidadTematica; rotuloUnidad?: string }) {
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
-  // `unidad.enfoquePedagogico` SIEMPRE llega "Evaluativo" desde este listado
-  // (el backend real no guarda un enfoque propio por unidad, ver el
-  // comentario de `toUnidadTematica` en `use-unidades-query.ts`) — hay que
-  // derivarlo en vivo. `useUnidadReferenteQuery` (por `unidad.id`, la unidad
-  // YA existe acá), no `useReferenteCurricularQuery(unidad.gradoId,
-  // unidad.asignaturaId)`: esos ids casi nunca vienen del backend real (ver
-  // el comentario de `UnidadTematica.gradoId`), así que esa query quedaba
-  // deshabilitada para la mayoría de las unidades reales y `esFormativa`
-  // caía siempre al default `false` (mismo bug ya corregido en
-  // `Actividades`/`DialogAgregarActividad`/`UnidadTabs`, acá en un cuarto
-  // lugar).
+  // `enfoquePedagogico` siempre llega "Evaluativo": se deriva por `useUnidadReferenteQuery` (grado/asignatura casi nunca vienen).
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
-  // El form de edición (`UnidadInfoGeneralFields`) ya resuelve este rótulo
-  // dinámico ("Dimensión" en Preescolar, "Asignatura" en el resto, o lo que
-  // el referente haya personalizado) — este panel de SOLO LECTURA lo tenía
-  // hardcodeado en "Asignatura" siempre. Se resuelve por `unidadReferente.id`
-  // (ya disponible acá, sin pedir grado/asignatura de nuevo) y, si el
-  // referente no personalizó nada, cae a "Dimensión"/"Asignatura" según
-  // `esFormativa` — en este dominio, Formativo es sinónimo de Preescolar
-  // (ver el comentario de `fn_actividad_es_formativa`).
+  // Rótulo dinámico "Dimensión"/"Asignatura" (Formativo = Preescolar, ver `fn_actividad_es_formativa`).
   const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
   const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
-  // Rótulo real (Regla 13) — nunca "actividad" fijo. Siempre en singular: el
-  // texto no es un dato controlado (puede traer cualquier palabra desde el
-  // referente curricular) y concatenar "s" a mano rompe con cualquiera que
-  // no termine en consonante simple (ver "Actividads").
+  // Regla 13: rótulo real, siempre en singular (concatenar "s" rompe, ej. "Actividads").
   const rotuloActividadLower = (unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK).toLowerCase()
 
   return (
     <div className="flex flex-col gap-6">
-      {/* `referenteVigente === false`: el referente curricular que esta
-          unidad guarda ya no está activo (lo desactivaron en el catálogo) —
-          no puede ofrecer enunciados/evidencias hasta que se le asigne uno
-          vigente (ver el comentario de `UnidadTematica.referenteVigente`).
-          `undefined` (mock, o backend viejo) no muestra nada. */}
+      {/* Referente desactivado en el catálogo; `undefined` no muestra nada. */}
       {unidad.referenteVigente === false && (
         <div className="border-orange bg-orange-22 text-orange flex items-start gap-2 rounded-md border p-3 text-sm">
           <WarningIcon className="size-4 shrink-0 translate-y-0.5" aria-hidden="true" />
@@ -333,18 +249,12 @@ function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: 
         </div>
       )}
 
-      {/* `divide-x` en vez de bordes por columna: dibuja las separatrices
-          entre columnas sin una línea suelta al final de la fila. */}
+      {/* `divide-x`: separatrices sin línea suelta al final. */}
       <div className="divide-border grid gap-6 md:grid-cols-3 md:gap-0 md:divide-x">
         <Columna title="Descripción" className="md:pr-6">
           <p className="text-muted-foreground text-sm">{unidad.descripcion}</p>
         </Columna>
-        {/* Sin "de la unidad": el rótulo del instrumento real (Unidad
-            temática / Proyecto pedagógico) exigiría concordar el artículo
-            con él ("de la unidad" vs "del proyecto"), mismo problema de
-            género que ya se evitó en `CrearUnidadPopover` quitando el
-            artículo del todo — acá directo se saca el sufijo, igual que ya
-            está "Contenidos" al lado. */}
+        {/* Sin "de la unidad" para no concordar género con el rótulo. */}
         <Columna title="Objetivos" className="md:px-6">
           <BulletList items={unidad.objetivos} />
         </Columna>
@@ -354,16 +264,7 @@ function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: 
       </div>
 
       <div className="bg-muted/10 rounded-md border p-4">
-        {/* Una unidad de enfoque Formativo no admite actividades sumativas
-            (mismo bloqueo que ya aplica `UnidadAsociadaSection` en el form de
-            Actividad, y el mismo `enfoqueDerivado !== "Formativo"` que ya
-            oculta este bloque en la edición, `UnidadInfoGeneralFields`) —
-            sin actividades sumativas no hay nada que "calcular" a partir de
-            ellas, así que el método de cálculo no aplica y no tiene sentido
-            mostrarlo acá tampoco. Antes el panel de VER lo mostraba siempre,
-            aunque `UnidadDraft.metodoCalculo` para una unidad Formativa
-            siga trayendo el default ("Ponderado") sin que el docente lo haya
-            elegido. */}
+        {/* Formativa: sin actividades sumativas, el método de cálculo no aplica. */}
         {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
@@ -400,39 +301,18 @@ function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: 
   )
 }
 
-/**
- * Exportado (no solo usado acá adentro): las páginas de alta/edición de
- * unidad (`planeador-editar-unidad-page.tsx`) reusan esta misma pestaña
- * tal cual, para no mantener dos editores de criterios distintos.
- */
+/** Exportado: lo reusa `planeador-editar-unidad-page.tsx`. */
 export function Rubricas({
   unidad,
   instrumentoLabel,
   rotuloUnidad: rotuloConocido,
 }: {
   unidad: UnidadTematica
-  /** Rótulo de la unidad ya resuelto por el caller (ver `UnidadDetallePanel`). */
   rotuloUnidad?: string
-  /** Ver `resolverInstrumentoUnico`/`getVisibleTabs`: mismo rótulo que ya
-   *  resuelve la pestaña, pasado por el caller (`UnidadTabs`) para no volver
-   *  a pedir las actividades vinculadas acá adentro. `undefined` cuando no
-   *  hay un único instrumento que mostrar (sin actividades vinculadas, o con
-   *  varias que usan instrumentos distintos) — ahí el título se queda en el
-   *  genérico "Criterios" (sin "de la unidad", mismo motivo que
-   *  "Actividades"/"Objetivos"). Opcional: `planeador-editar-unidad-
-   *  page.tsx` reusa este componente ANTES de que la unidad tenga
-   *  actividades vinculadas (alta), donde no aplica. */
+  /** Instrumento único ya resuelto por `UnidadTabs`; `undefined` → título genérico "Criterios". */
   instrumentoLabel?: string
 }) {
-  // Nombres (y cantidad) reales de los niveles de desempeño de la unidad —
-  // MISMA query que `DialogAgregarCriterio` (`GET /planeador/unidades/:id/
-  // valoraciones`, confirmado real), para que la tabla y el modal de alta
-  // queden con la MISMA cantidad de columnas/campos. Antes la tabla sacaba
-  // sus nombres de `useNivelesDesempenoNombres` (derivado por nivel
-  // educativo, con default fijo de 4 bandas) mientras el modal ya usaba
-  // esta query por unidad — cuando la escala real de la unidad no
-  // coincidía con ese derivado (más o menos bandas, nombres distintos), la
-  // tabla mostraba menos columnas que niveles tenía cada criterio guardado.
+  // Misma query que `DialogAgregarCriterio` para que tabla y modal tengan las mismas columnas.
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
   const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
@@ -440,16 +320,13 @@ export function Rubricas({
     () => createUnidadCriteriosColumns(nombresNiveles),
     [nombresNiveles],
   )
-  // `GET /planeador/unidades/:id/criterios` (real) — no se lee `unidad.criterios`
-  // del detalle: ese campo queda siempre vacío contra el backend real (viven
-  // en este endpoint aparte, mismo criterio que `Actividades` más abajo).
+  // `unidad.criterios` llega vacío del backend real: viven en este endpoint.
   const { data: criterios = [], isPending, isError, error, refetch } = useUnidadCriteriosQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const { puedeCrear } = usePlaneadorSoloLectura()
 
-  // Sin `Pagination`: los criterios vienen enteros en una sola llamada y son
-  // pocos, así que entran todos en una sola página.
+  // Sin `Pagination`: son pocos y vienen enteros.
   const { table } = useDataTable({
     columns,
     data: sorted,
@@ -487,45 +364,28 @@ export function Rubricas({
   )
 }
 
-/** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
+/** Exportado igual que `Rubricas`. */
 export function Actividades({
   unidad,
   rotuloUnidad: rotuloConocido,
 }: {
   unidad: UnidadTematica
-  /** Rótulo de la unidad ya resuelto por el caller (ver `UnidadDetallePanel`). */
   rotuloUnidad?: string
 }) {
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
-  // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
-  // del detalle: ese campo queda siempre vacío contra el backend real
-  // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
+  // `unidad.actividades` llega vacío del backend real: viven en este endpoint.
   const { data: actividadesVinculadas = [], isPending, isError, error, refetch } = useUnidadActividadesQuery(unidad.id)
-  // Suma de TODAS las ponderaciones ya vinculadas — el tope de cada fila al
-  // editar en línea sale de acá (ver `createUnidadActividadesColumns`), no
-  // de un `100` fijo por fila.
+  // Tope de cada fila al editar en línea.
   const totalPonderacion = React.useMemo(
     () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
     [actividadesVinculadas],
   )
-  // `unidad.enfoquePedagogico` NO sirve acá: el backend real no guarda un
-  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
-  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
-  // "(%)" visible en unidades Formativas de verdad (reportado en vivo,
-  // "Exploramos y contamos nuestras experiencias", Preescolar). El
-  // referente REAL de esta unidad ya guardada sale de
-  // `useUnidadReferenteQuery` (por `unidad.id`, no por grado/asignatura).
+  // `enfoquePedagogico` siempre llega "Evaluativo": se usa `useUnidadReferenteQuery`.
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
   const { puedeEditar, puedeEliminar } = usePlaneadorSoloLectura()
   const { sedeId, anio, jornadaId, funcionario } = usePlaneadorDocenteScope()
-  // El instrumento FIJADO en la unidad (`unidad.instrumento`, sso V488)
-  // manda — es un dato explícito del docente, no una inferencia. Solo si la
-  // unidad no lo fijó (todas las anteriores a V488, o el docente lo dejó sin
-  // elegir) se cae al viejo criterio de `resolverInstrumentoUnico`: único
-  // instrumento entre las actividades YA vinculadas (`undefined` en
-  // Formativa, sin vinculadas todavía, o con varias distintas). Mismo
-  // criterio en la pestaña "Rúbricas" (`UnidadTabs`, más abajo).
+  // Manda `unidad.instrumento` (sso V488); si no, el instrumento único de las vinculadas.
   const instrumentoLabel = React.useMemo(
     () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
     [unidad.instrumento, actividadesVinculadas],
@@ -574,26 +434,8 @@ export function Actividades({
     columnVisibilityStorageKey: "unidad-detalle-panel-actividades-column-visibility",
   })
 
-  // Pedido explícito: título y descripción decían siempre "Actividades de
-  // la unidad"/"su peso dentro de la unidad" sin importar nada — mismo
-  // criterio que ya usa "Rúbricas" (`getVisibleTabs`/`resolverInstrumentoUnico`):
-  // con un único instrumento entre las actividades vinculadas, "Actividades
-  // en {instrumento}" / "Actividades vinculadas en {instrumento}." — más
-  // preciso que el peso/método de cálculo, que es un dato aparte (una misma
-  // unidad Rúbrica puede ser Ponderada o Promediada). Sin instrumento único
-  // (Formativa —nunca lo tiene—, sin actividades vinculadas todavía, o con
-  // varias que usan instrumentos distintos) se cae al genérico de siempre,
-  // con el método de cálculo como pista (`esFormativa` manda antes que
-  // `metodoCalculo`, igual que la columna de peso/el banner de abajo).
-  // Pedido explícito: sin instrumento único, generico simple ("Actividades"/
-  // "Las actividades vinculadas.") — nada de "de la unidad"/"a la unidad"
-  // (mismo motivo que "Objetivos", ver `Columna` más abajo) ni de variar
-  // por método de cálculo, que termina siendo ruido cuando ni siquiera hay
-  // un instrumento que mostrar.
-  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
-  // V488/V511) — nunca el literal "Actividades" fijo, y siempre en
-  // singular: el texto no es un dato controlado (ver el comentario de
-  // `rotuloActividadLower` más arriba).
+  // Con instrumento único: "Actividades en {instrumento}"; si no, genérico simple.
+  // Regla 13 (sso V488/V511): rótulo real, siempre en singular.
   const rotuloActividadLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
   const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLabel.toLowerCase())
@@ -611,14 +453,7 @@ export function Actividades({
         description={descripcionActividades}
         action={<DialogAgregarActividad unidad={unidad} rotuloUnidad={rotuloUnidad} />}
       />
-      {/* Formativa: SIN banner — no hay nada de calificación que aclarar (la
-          unidad se observa, no se califica; "Promedio simple" abajo es un
-          aviso sobre cálculo de nota, y acá ese cálculo directamente no
-          aplica). "Promedio simple" no lleva peso por actividad (ni %, ni
-          puntaje) — sin la columna, la tabla podía leerse como si algo
-          faltara por cargar; el banner aclara que es el método el que lo
-          decide. Mismo criterio en el popover "Vincular actividad"
-          (`DialogAgregarActividad`). */}
+      {/* Formativa sin banner (no se califica); "Promedio simple" aclara por qué no hay columna de peso. */}
       {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
         <div className="border-blue-stroke bg-blue-22 text-blue mb-4 flex items-start gap-3 rounded-md border p-3 text-sm">
           <InfoIcon className="size-5 shrink-0" />
@@ -641,26 +476,8 @@ export function Actividades({
   )
 }
 
-/**
- * Envuelve `Tabs` para poder correr el `useEffect` que corrige la pestaña
- * seleccionada cuando la unidad activa cambia a una sin "Rúbricas" (por
- * ejemplo, el usuario tenía esa pestaña abierta en una unidad Evaluativo
- * y hace click en una unidad Formativo en la lista de la izquierda):
- * sin esto, `Tabs` quedaría con un `value` que no matchea ningún
- * `TabsTrigger` visible y no se vería ningún contenido.
- *
- * El enfoque (¿es Formativo?) sale de `useUnidadReferenteQuery` (por
- * `unidad.id`, la unidad YA existe acá) en vez de `useReferenteCurricularQuery
- * (unidad.gradoId, unidad.asignaturaId)`: esos ids casi nunca vienen del
- * backend real (solo cuando el docente los ELIGIÓ en el form de edición, ver
- * el comentario de `UnidadTematica.gradoId`), así que esa query quedaba
- * deshabilitada para la mayoría de las unidades reales y `esFormativo` caía
- * siempre al default `false` — la pestaña "Rúbricas" se mostraba igual en
- * unidades Formativas de verdad (mismo bug que ya se corrigió en
- * `Actividades`/`DialogAgregarActividad`, acá en un tercer lugar).
- * Tampoco leer `unidad.enfoquePedagogico`: viene hardcodeado en
- * `"Evaluativo"` para toda unidad real (el backend no lo guarda por unidad).
- */
+/** Corrige la pestaña si la nueva unidad no tiene "Rúbricas". El enfoque sale de `useUnidadReferenteQuery`
+ * (grado/asignatura casi nunca vienen y `enfoquePedagogico` es fijo). */
 function UnidadTabs({
   unidad,
   rotuloUnidad,
@@ -674,17 +491,13 @@ function UnidadTabs({
 }) {
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativo = unidadReferente?.esFormativo ?? false
-  // `unidad.instrumento` (fijado por el docente, sso V488) manda; solo si no
-  // lo fijó se cae al instrumento único entre las actividades ya vinculadas
-  // — ver `resolverInstrumentoUnico` y el comentario de `getVisibleTabs`.
+  // Manda `unidad.instrumento` (sso V488); si no, `resolverInstrumentoUnico`.
   const { data: actividadesVinculadas = [] } = useUnidadActividadesQuery(unidad.id)
   const instrumentoLabel = React.useMemo(
     () => unidad.instrumento || resolverInstrumentoUnico(actividadesVinculadas),
     [unidad.instrumento, actividadesVinculadas],
   )
-  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
-  // V488/V511) — nunca el literal "Actividades" fijo. Siempre en singular,
-  // mismo motivo que `rotuloActividadLower` más arriba.
+  // Regla 13 (sso V488/V511): rótulo real, en singular.
   const rotuloActividadLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const visibleTabs = React.useMemo(
     () => getVisibleTabs(esFormativo, instrumentoLabel, rotuloActividadLabel),
@@ -725,14 +538,7 @@ function UnidadTabs({
   )
 }
 
-/**
- * Detalle de una unidad temática como panel embebido: ocupa la columna
- * derecha de la pestaña "Unidad temática".
- *
- * Las tres pestañas internas son estado local y no rutas —a diferencia de las
- * dos vistas del Planeador—: son secciones del mismo recurso, no pantallas
- * distintas, y no aportan nada como URL enlazable.
- */
+/** Detalle de unidad como panel embebido; las pestañas son estado local, no rutas. */
 export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onDeleted }: UnidadDetallePanelProps) {
   const { data: unidad, isPending, isError, error, refetch } = useUnidadDetalleQuery(Number(unidadId))
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
@@ -748,8 +554,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
         </h2>
         {unidad && (
           <div className="flex shrink-0 items-center gap-0.5">
-            {/* Página aparte, no modal — mismo criterio que "Editar" de
-                Actividad (`planeador-editar-actividad-page.tsx`). */}
+            {/* Página aparte, no modal, como "Editar" de Actividad. */}
             {puedeEditar && (
               <Tooltip>
                 <TooltipTrigger
@@ -760,6 +565,7 @@ export function UnidadDetallePanel({ unidadId, rotuloUnidad: rotuloConocido, onD
                       size="icon-sm"
                       aria-label="Editar"
                       disabled={soloEnLinea.disabled}
+                      nativeButton={soloEnLinea.disabled}
                       render={
                         soloEnLinea.disabled ? undefined : <Link
                           to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))}

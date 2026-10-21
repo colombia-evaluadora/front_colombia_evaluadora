@@ -599,6 +599,7 @@ function RecursoItem({
                 size="icon-sm"
                 type="button"
                 aria-label="Ver recurso"
+                nativeButton={!(recurso.url || recurso.archivoId !== undefined)}
                 render={
                   // Un material guardado no tiene `url`: se previsualiza por `archivoId`.
                   recurso.url || recurso.archivoId !== undefined

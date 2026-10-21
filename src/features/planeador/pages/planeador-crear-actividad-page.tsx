@@ -35,15 +35,7 @@ import {
 
 const FORM_ID = "crear-actividad-form"
 
-/**
- * Alta de una actividad en una ruta aparte — mismo patrón que la edición
- * (`planeador-editar-actividad-page.tsx`): mismo `<TableScreen>`, mismo
- * `EditarActividadForm` (que ahora acepta un `onSubmit` justo para este
- * caso: la edición todavía no tiene `useUpdateActividad`, pero el alta ya
- * manda la actividad completa a `useCreateActividad`), y el mismo criterio
- * de footer sticky: el aviso + "Guardar" solo aparecen cuando hay cambios
- * sin guardar (`isDirty`, vía `onDirtyChange` del form).
- */
+/** Alta de actividad: reusa `EditarActividadForm` con `onSubmit` propio; "Guardar" solo con cambios (`isDirty`). */
 export function PlaneadorCrearActividadPage() {
   return (
     <NoticeProvider>
@@ -57,13 +49,7 @@ function PlaneadorCrearActividadPageContent() {
   const { notify } = useNotify()
   const [isDirty, setIsDirty] = useState(false)
 
-  // Sin permiso de "crear" en Planeador, esta pantalla no debería ni poder
-  // verse: se redirige de una al listado apenas se sabe que no hay permiso
-  // (mientras `isLoadingPermiso` es `true` no se puede afirmar nada todavía,
-  // ver `useMenuPermission`). Es la primera pantalla del feature con un
-  // guard de PERMISO a nivel de página (el router solo gatea por sesión,
-  // ver CLAUDE.md) — los puntos de entrada (botones "Nueva actividad") ya
-  // estaban ocultos, esto cubre a quien llega por URL directa.
+  // El router solo gatea por sesión: sin "crear" (ya cargado) se redirige, cubre la entrada por URL directa.
   const { puedeCrear, puedeEditar, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
   useEffect(() => {
     if (!isLoadingPermiso && !puedeCrear) {
@@ -71,55 +57,28 @@ function PlaneadorCrearActividadPageContent() {
     }
   }, [isLoadingPermiso, puedeCrear, navigate])
 
-  // `unidadId` llega cuando se abre esta pantalla desde "Agregar actividad"
-  // dentro de una Unidad temática (`DialogAgregarActividad`); `fechaInicio`/
-  // `fechaCierre` cuando se abre desde un clic en una celda del calendario
-  // mensual (`PlaneadorMonthGrid` vía `planeador-page.tsx`) — ver
-  // `planeadorActividadCrearSearchSchema`. `strict: false` porque esta
-  // página también se monta sin ningún search (desde "Nueva actividad" del
-  // listado general).
+  // `unidadId` viene de "Agregar actividad" en una unidad; fechas, del calendario. `strict: false`: puede no haber search.
   const { unidadId, fechaInicio, fechaCierre, rotulo } = useSearch({ strict: false }) as {
     unidadId?: string
     fechaInicio?: string
     fechaCierre?: string
     rotulo?: string
   }
-  // Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
-  // (`planeador-tabs.tsx`/`planeador-page.tsx`) — acota Grado/Asignatura a
-  // esa pestaña, mismo criterio que `tab` en `planeador-crear-unidad-page.tsx`.
-  // Con un solo rótulo disponible, se usa igual aunque `?rotulo=` no haya
-  // llegado (entrada directa por URL, sin pasar por el botón): no hay
-  // ambigüedad que resolver, y saltear el acotamiento ahí dejaba el alta
-  // viendo todo el catálogo del docente en vez de solo lo de esa pestaña.
+  // Pestaña de rótulo que acota Grado/Asignatura; con un solo rótulo se usa aunque falte `?rotulo=`.
   const { data: actividadTabs } = useActividadesTabsQuery()
   const tabDesdeAgregar: ActividadTab | undefined =
     actividadTabs?.find((t) => t.rotulo === rotulo) ??
     (actividadTabs?.length === 1 ? actividadTabs[0] : undefined)
-  // Mismo listado que ya usa `EditarActividadForm` para "Unidad temática
-  // asociada" — se reusa acá solo para resolver `grado`/`asignatura` (los
-  // NOMBRES; `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del
-  // backend real, ver su comentario) de la unidad que se preselecciona.
+  // Resuelve los NOMBRES de grado/asignatura de la unidad preseleccionada (los ids casi nunca vienen del backend).
   const { data: unidadesResult, isPending: isPendingUnidades } = useUnidadesQuery()
   const unidadPreseleccionada: UnidadTematica | undefined = unidadId
     ? unidadesResult?.rows.find((u) => String(u.id) === unidadId)
     : undefined
-  // Sin `unidadId` en la URL no hace falta esperar nada — el form arranca
-  // en blanco de una, como siempre. CON `unidadId`, hay que esperar a que
-  // el listado cargue antes de armar la actividad inicial: si se monta
-  // `EditarActividadForm` antes, `useForm({ defaultValues })` ya leyó un
-  // `actividad` sin la unidad (se lee UNA sola vez al montar).
+  // Con `unidadId` se espera el listado: `defaultValues` se lee una sola vez al montar.
   const esperandoPreseleccion = Boolean(unidadId) && isPendingUnidades
 
-  // Guardado como saga (Fase 3 offline, `features/planeador/offline`): los
-  // mismos pasos y en el mismo orden de siempre —actividad → materiales →
-  // instrumento → adaptaciones → criterios—, pero cada uno con su
-  // `Idempotency-Key` fija. Con red se envían desde acá; sin red (o si la red
-  // se cae a mitad) lo que falta queda en la outbox y se reanuda solo.
-  //
-  // Los fallos de los pasos posteriores NO se avisan con `notify()`:
-  // `handleSubmit` navega apenas termina y el `NoticeProvider` de esta
-  // pantalla se desmonta con el aviso adentro (bug de QA "no sale mensaje de
-  // error"). Se juntan y viajan con `queueNotice()` a la pantalla de destino.
+  // Saga offline con `Idempotency-Key` por paso; sin red lo pendiente queda en la outbox.
+  // Fallos posteriores van por `queueNotice()`: `notify()` se pierde al navegar (bug de QA).
   const [guardando, setGuardando] = useState(false)
   const escritura = useOfflineWritable("Necesitas conexión para crear actividades en este equipo.")
 
@@ -143,8 +102,7 @@ function PlaneadorCrearActividadPageContent() {
     }
     const [creada] = run.outcomes
     if (!creada?.ok) {
-      // El motivo real lo manda el backend (una validación del planeador es
-      // accionable: qué instrumento no aplica, qué unidad lo impide).
+      // El motivo del backend es accionable (qué instrumento o unidad lo impide).
       notify(getErrorMessage(creada?.error), { variant: "error" })
       return
     }
@@ -164,16 +122,12 @@ function PlaneadorCrearActividadPageContent() {
       )
     }
 
-    // `queueNotice`, no `notify`: `navigate` desmonta esta pantalla y su
-    // `NoticeProvider`; el aviso lo muestra el de la pantalla de destino.
+    // `queueNotice`: `navigate` desmonta este `NoticeProvider`.
     if (fallos.length > 0) {
       queueNotice(`La actividad se creó, pero no se pudo guardar ${fallos.join("; ni ")}. Revísala y vuelve a guardar.`, {
         variant: "error",
       })
-      // Con algo pendiente se lleva al docente a EDITAR la actividad recién
-      // creada (si tiene permiso), donde puede corregirlo y volver a guardar
-      // — no al listado, donde tendría que buscarla primero. Volver a este
-      // form de alta crearía una actividad duplicada.
+      // A editar la recién creada: volver al alta la duplicaría.
       if (puedeEditar) {
         navigate({ to: paths.app.planeadorActividadEditar.getHref(String(id)) })
         return
@@ -193,6 +147,7 @@ function PlaneadorCrearActividadPageContent() {
               color="neutral"
               size="sm"
               variant="fill"
+              nativeButton={false}
               render={<Link to={paths.app.planeadorActividades.getHref()} />}
             >
               Cerrar
@@ -254,14 +209,7 @@ function PlaneadorCrearActividadPageContent() {
   )
 }
 
-/**
- * Separado de `PlaneadorCrearActividadPageContent` solo para que el
- * `useState` de más abajo (lazy initializer, corre UNA sola vez al montar)
- * lea `unidadPreseleccionada` YA resuelta: el padre no monta este
- * componente hasta que `esperandoPreseleccion` es `false` (ver su
- * `TableScreenBody`), así que acá siempre llega con el valor final —
- * nunca con el `undefined` transitorio de mientras carga.
- */
+/** Separado para que el `useState` lazy lea `unidadPreseleccionada` ya resuelta (se monta tras `esperandoPreseleccion`). */
 function CrearActividadForm({
   unidadPreseleccionada,
   fechaInicio,
@@ -272,12 +220,10 @@ function CrearActividadForm({
   onSubmit,
 }: {
   unidadPreseleccionada: UnidadTematica | undefined
-  /** `yyyy-MM-dd` — llega desde un clic en el calendario mensual (ver
-   *  `onDayClick` en `planeador-page.tsx`). */
+  /** `yyyy-MM-dd`, desde el calendario mensual. */
   fechaInicio?: string
   fechaCierre?: string
-  /** Pestaña de Rótulo de Ejecución desde la que se abrió "Nueva actividad"
-   *  (`?rotulo=`) — acota Grado/Asignatura en `AsignaturaGradoSection`. */
+  /** Pestaña de `?rotulo=`: acota Grado/Asignatura. */
   tab?: ActividadTab
   formId: string
   onDirtyChange: (dirty: boolean) => void
@@ -286,18 +232,7 @@ function CrearActividadForm({
   const [actividad] = useState(() => {
     let base = crearActividadVacia()
     if (unidadPreseleccionada) {
-      // `grado`/`asignatura` (los NOMBRES) y la unidad misma siempre viajan.
-      // `gradoId`/`asignaturaId` viajan TAMBIÉN de una cuando la unidad ya
-      // los trae (`UnidadTematica.gradoId`/`.asignaturaId`, no siempre
-      // presentes — ver su comentario) — así el form no depende del cruce
-      // por NOMBRE contra el catálogo del docente (`AsignaturaGradoSection`)
-      // para saber a qué grado/asignatura pertenece: sin esto, "¿es
-      // formativa?"/instrumento/niveles quedaban esperando ese cruce
-      // asíncrono aunque la unidad ya lo determinara sin ambigüedad, y si el
-      // nombre no calzaba exacto contra el catálogo (mayúsculas, espacios)
-      // el cruce nunca resolvía. Si la unidad no trae los ids, se sigue
-      // cayendo al cruce por nombre (sin cambios ahí, solo más robusto, ver
-      // su comentario en `AsignaturaGradoSection`).
+      // Con ids de la unidad se evita el cruce por nombre (asíncrono y frágil); sin ids, se cae a ese cruce.
       base = {
         ...base,
         grado: unidadPreseleccionada.grado,
