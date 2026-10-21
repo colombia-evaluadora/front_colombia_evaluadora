@@ -128,6 +128,29 @@ describe("connectivityStore", () => {
     expect(connectivityStore.getState().status).toBe("offline")
   })
 
+  it("un heartbeat que falla justo después de una respuesta OK de la API no cuenta (hilo ocupado, no red)", async () => {
+    replies = [fail, fail]
+    connectivityStore.reportSuccess()
+    connectivityStore.start()
+    await advance(0)
+    expect(connectivityStore.getState().status).toBe("online")
+  })
+
+  it("si el timeout del heartbeat dispara tarde (hilo bloqueado) da un margen en vez de abortar", async () => {
+    let soltar: (r: Response) => void = () => undefined
+    replies = [() => new Promise<Response>((resolve) => (soltar = resolve))]
+    connectivityStore.start()
+    await advance(0)
+    // El hilo estuvo bloqueado: el reloj avanza 15 s sin correr timers.
+    vi.setSystemTime(Date.now() + 15_000)
+    await advance(10_000)
+    // El timer disparó 15 s tarde → margen de 2 s; la respuesta llega dentro.
+    soltar(json({ status: "ok" }))
+    await advance(0)
+    // Respondió (no se abortó): a lo sumo "lento", nunca una falla de red.
+    expect(connectivityStore.getState()).toMatchObject({ status: "degraded", reason: "slow" })
+  })
+
   it("offline → online exige 2 heartbeats OK separados 3 s", async () => {
     connectivityStore.start()
     await advance(0)

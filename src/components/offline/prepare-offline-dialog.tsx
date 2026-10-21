@@ -37,6 +37,7 @@ import {
 } from "@/features/offline/lib/prepare-engine"
 import { buildPrepareTasks, cachedOfflineTasks, fetchPrepareOptions } from "@/features/offline/lib/prepare-tasks"
 import { isAutoPrepareEnabled, setAutoPrepareEnabled } from "@/features/offline/lib/auto-prepare"
+import { failedCountText } from "@/features/offline/lib/prepare-labels"
 
 const FRESHNESS_CLASS: Record<PrepareFreshness, string> = {
   fresca: "text-green",
@@ -292,7 +293,9 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
             >
               <span>
                 {running
-                  ? `${snapshot.origin === "auto" ? "Guardando datos automáticamente" : "Descargando"} ${snapshot.done} de ${snapshot.total}…`
+                  ? snapshot.paused
+                    ? `En pausa: esperando conexión (${snapshot.done} de ${snapshot.total}). Seguirá sola cuando vuelva.`
+                    : `${snapshot.origin === "auto" ? "Guardando datos automáticamente" : "Descargando"} ${snapshot.done} de ${snapshot.total}…`
                   : null}
               </span>
             </Progress>
@@ -305,7 +308,19 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
             </p>
           )}
           {terminada && fallidas.length > 0 && (
-            <p className="text-red">No se pudieron descargar {fallidas.length} elementos.</p>
+            <div role="alert" className="flex flex-col gap-1 text-red">
+              <p>{failedCountText(fallidas.length)} Lo demás quedó guardado; puedes reintentar solo lo que falló.</p>
+              <details className="text-xs">
+                <summary className="cursor-pointer">Ver qué falló</summary>
+                <ul className="mt-1 flex list-disc flex-col gap-0.5 pl-4 break-words">
+                  {snapshot.failedDetails.map((f, i) => (
+                    <li key={i}>
+                      {f.label}: {f.message}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
           )}
           {terminada && snapshot.lastOutcome === "sin-conexion" && (
             <p className="text-red">Se cortó la conexión: lo descargado quedó guardado. Continúa cuando vuelva.</p>
@@ -332,7 +347,7 @@ export function PrepareOfflineDialog({ open, onOpenChange }: { open: boolean; on
             Cerrar
           </Button>
           {terminada && fallidas.length > 0 ? (
-            <Button disabled={disabled} onClick={() => void correr(fallidas)}>
+            <Button disabled={running || onlineOnly.disabled} onClick={() => void correr(fallidas)}>
               Reintentar
             </Button>
           ) : (
