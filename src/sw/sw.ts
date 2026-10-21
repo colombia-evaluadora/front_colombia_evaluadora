@@ -6,7 +6,8 @@
  * Qué hace:
  *   - precachea todo `dist/` (shell + chunks lazy) con el manifest que inyecta
  *     `vite-plugin-pwa` (`injectManifest`);
- *   - responde las NAVEGACIONES con `index.html` del precache, salvo `/api`.
+ *   - responde las NAVEGACIONES (salvo `/api`) red-primero con timeout y
+ *     fallback a `index.html` del precache o a una página inline: nunca rechaza.
  *
  * Qué NO hace, a propósito:
  *   - no registra ninguna ruta para `/api/*`: esas requests ni siquiera las
@@ -22,21 +23,136 @@
  */
 import {
   cleanupOutdatedCaches,
-  createHandlerBoundToURL,
+  getCacheKeyForURL,
+  matchPrecache,
   precacheAndRoute,
 } from "workbox-precaching"
 import { NavigationRoute, registerRoute } from "workbox-routing"
 
 declare const self: ServiceWorkerGlobalScope
 
-precacheAndRoute(self.__WB_MANIFEST)
-cleanupOutdatedCaches()
+// ---- Navegaciones: NetworkFirst con timeout y fallback que NUNCA rechaza ----
+//
+// Antes se usaba `createHandlerBoundToURL("/index.html")`, que TIRA si
+// `/index.html` no está en el precache (lo borró la activación de otra
+// versión, una instalación a medias, el usuario limpió la Cache API…). La
+// promesa de `respondWith` rechazaba y Chrome mostraba "No se puede acceder a
+// este sitio web · ERR_FAILED" aunque el servidor respondiera 200 (incidente
+// en testv2). Ahora:
+//   1. red con timeout corto (`index.html` va `no-cache`: online siempre se
+//      quiere el más nuevo);
+//   2. sin red / timeout / 5xx → `index.html` del precache;
+//   3. sin precache → cualquier `index.html` que quede en otra cache;
+//   4. nada → página mínima inline con botón de reintentar.
+// Sin red de verdad `fetch` falla al instante, así que offline el shell sale
+// del cache sin esperar el timeout.
 
+const NAVIGATION_TIMEOUT_MS = 3500
+
+const OFFLINE_FALLBACK_HTML = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Colombia Evaluadora</title>
+<style>body{font-family:system-ui,sans-serif;display:flex;min-height:100vh;margin:0;align-items:center;justify-content:center;background:#fff;color:#1f2937;padding:16px;box-sizing:border-box}
+main{max-width:28rem;text-align:center}button{margin-top:16px;padding:10px 20px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-size:1rem;cursor:pointer}
+@media (prefers-color-scheme:dark){body{background:#111827;color:#f3f4f6}}</style></head>
+<body><main><h1 style="font-size:1.25rem">No se pudo cargar Colombia Evaluadora</h1>
+<p>Revisa tu conexión y vuelve a intentar.</p>
+<button type="button" onclick="location.reload()">Reintentar</button></main></body></html>`
+
+function fetchWithTimeout(request: Request, ms: number): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms)
+    fetch(request).then(
+      (response) => {
+        clearTimeout(timer)
+        resolve(response)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
+let selfHealScheduled = false
+
+/**
+ * El precache perdió `index.html`: la instalación quedó corrupta. Se pide un
+ * `update()` para que el navegador reinstale el SW si hay uno nuevo (la
+ * instalación es atómica). No se desregistra ni se recarga desde acá: sin red
+ * eso es un bucle de recargas; la navegación ya se resolvió por red o con la
+ * página inline. Si hiciera falta forzarlo, está el kill-switch (nivel 3).
+ */
+function scheduleSelfHeal() {
+  if (selfHealScheduled) return
+  selfHealScheduled = true
+  void self.registration.update().catch(() => undefined)
+}
+
+async function cachedShell(): Promise<Response | undefined> {
+  try {
+    const precached = await matchPrecache("/index.html")
+    if (precached) return precached
+  } catch {
+    // Cache API inaccesible: se sigue con el resto de los fallbacks.
+  }
+  scheduleSelfHeal()
+  try {
+    const key = getCacheKeyForURL("/index.html")
+    return (
+      (key ? await caches.match(key, { ignoreSearch: true }) : undefined) ??
+      (await caches.match("/index.html", { ignoreSearch: true })) ??
+      (await caches.match("/", { ignoreSearch: true }))
+    )
+  } catch {
+    return undefined
+  }
+}
+
+function inlineFallback(): Response {
+  return new Response(OFFLINE_FALLBACK_HTML, {
+    status: 503,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+  })
+}
+
+async function handleNavigation({ request }: { request: Request }): Promise<Response> {
+  let network: Response | undefined
+  try {
+    network = await fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS)
+    if (network.status < 500) return network
+  } catch {
+    // sin red o timeout
+  }
+  try {
+    const shell = await cachedShell()
+    if (shell) return shell
+  } catch {
+    // nunca rechazar
+  }
+  return network ?? inlineFallback()
+}
+
+// Se registra ANTES que `precacheAndRoute`: Workbox usa la primera ruta que
+// matchea y la ruta de precache también atiende `/` (directoryIndex) con una
+// estrategia que rechaza si falta la entrada y no hay red.
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL("/index.html"), {
+  new NavigationRoute(handleNavigation, {
     denylist: [/^\/api(\/|$)/],
   }),
 )
+
+// `precacheAndRoute` instala atómicamente (baja todo a una cache temporal y solo
+// la promueve si TODO llegó; si falla una entrada, la instalación falla y sigue
+// el SW anterior). La limpieza de entradas viejas y `cleanupOutdatedCaches`
+// corren en `activate`, que solo ocurre tras "Actualizar" (SKIP_WAITING) o al
+// cerrar todas las pestañas; "Actualizar" recarga la página, así ninguna
+// pestaña vieja sigue pidiendo chunks de un precache ya limpiado. Y aunque el
+// precache quede incompleto, las navegaciones caen al fallback de arriba.
+precacheAndRoute(self.__WB_MANIFEST)
+cleanupOutdatedCaches()
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") void self.skipWaiting()
