@@ -82,6 +82,29 @@ describe("motor de Preparar", () => {
     expect(otra).not.toHaveBeenCalled()
   })
 
+  it("al reanudar, no salta una tarea del checkpoint cuyo dato ya no está en el cache", async () => {
+    // Checkpoint de una corrida anterior (otro usuario, o datos borrados al
+    // cerrar sesión): dice que la lista ya se bajó, pero el cache está vacío.
+    const store = new Map<string, string>()
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    })
+    localStorage.setItem(
+      "ce-offline-prepare-checkpoint",
+      JSON.stringify({ startedAt: Date.now(), done: ['["lista"]', '["con-dato"]'] }),
+    )
+    const client = new QueryClient()
+    client.setQueryData(["con-dato"], 1)
+    const lista = vi.fn(async () => undefined)
+    const conDato = vi.fn(async () => undefined)
+    await runPrepare(client, [task("lista", lista), task("con-dato", conDato)], { origin: "manual", resume: true })
+    expect(lista).toHaveBeenCalledOnce()
+    expect(conDato).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it("se corta sin red y no marca la preparación como hecha", async () => {
     __resetConnectivityForTests("offline")
     const run = vi.fn(async () => undefined)

@@ -23,7 +23,7 @@ export const authUsers: (User & {
     // `AuthUser.isSuperAdmin`.
     id: "3",
     email: "laura.martinez.1786561207@example.com",
-    password: "LauraSuper2026!",
+    password: "password",
     name: "Laura Martínez",
     role: "ADMIN",
     roles: ["ADMIN", "CEVAL-SUPER_ADMINISTRADOR"],
