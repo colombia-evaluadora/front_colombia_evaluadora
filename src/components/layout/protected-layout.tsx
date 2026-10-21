@@ -40,9 +40,16 @@ export function ProtectedLayout() {
             <AppBreadcrumb />
           </div>
 
-          <div className="flex items-center gap-2">
-            <ModeToggle />
-            <ColorThemeToggle />
+          {/*
+            A 360 px los íconos no entraban (la página quedaba 100 px más ancha
+            y se desplazaba a la derecha al abrir un menú o un diálogo). En
+            móvil se ocultan los selectores de tema y se aprietan los espacios.
+          */}
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <div className="hidden items-center gap-2 sm:flex">
+              <ModeToggle />
+              <ColorThemeToggle />
+            </div>
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
             <OfflineDataStatus />

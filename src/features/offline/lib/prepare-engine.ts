@@ -43,7 +43,7 @@ export interface PrepareTask {
 }
 
 export type PrepareOrigin = "manual" | "auto"
-export type PrepareOutcome = "ok" | "parcial" | "sin-espacio" | "sin-conexion"
+export type PrepareOutcome = "ok" | "parcial" | "sin-espacio" | "sin-conexion" | "cancelada"
 
 export interface PrepareSnapshot {
   running: boolean
@@ -61,6 +61,11 @@ export interface PrepareSnapshot {
   lastPrepareAt: number | null
   lastOutcome: PrepareOutcome | null
   archivoBytes: number | null
+  /**
+   * Hay una corrida en OTRA pestaña (Web Locks + BroadcastChannel): esta solo
+   * muestra su progreso. `null` si no.
+   */
+  remote: { origin: PrepareOrigin; done: number; total: number } | null
 }
 
 export interface PrepareFailure {
@@ -80,16 +85,98 @@ const INITIAL: PrepareSnapshot = {
   lastPrepareAt: null,
   lastOutcome: null,
   archivoBytes: null,
+  remote: null,
 }
 
 let snapshot: PrepareSnapshot = INITIAL
 let loadedFor: string | null = null
 let current: Promise<PrepareSnapshot> | null = null
+let cancelRequested = false
+/** Despierta una pausa por falta de red (lo usa "Cancelar"). */
+let wakePause: (() => void) | null = null
 const listeners = new Set<() => void>()
 
 function set(patch: Partial<PrepareSnapshot>) {
   snapshot = { ...snapshot, ...patch }
   for (const listener of listeners) listener()
+  if (current && snapshot.running && ("done" in patch || "total" in patch)) broadcastProgress()
+}
+
+// ---- Una sola corrida para todo el equipo (entre pestañas) ------------------
+//
+// Igual que el outbox (`ce-outbox`): la pestaña que toma el Web Lock
+// `ce-offline-prepare` corre; las demás no arrancan otra y muestran el
+// progreso que ésta difunde por `BroadcastChannel`. "Cancelar" desde otra
+// pestaña viaja por el mismo canal.
+
+const LOCK_NAME = "ce-offline-prepare"
+const CHANNEL_NAME = "ce-offline-prepare"
+
+type PrepareMessage =
+  | { type: "progress"; origin: PrepareOrigin; done: number; total: number }
+  | { type: "done"; lastPrepareAt: number | null }
+  | { type: "cancel" }
+
+let channel: BroadcastChannel | null = null
+let lastBroadcast = 0
+
+function getChannel(): BroadcastChannel | null {
+  if (channel || typeof BroadcastChannel === "undefined") return channel
+  channel = new BroadcastChannel(CHANNEL_NAME)
+  channel.onmessage = (event: MessageEvent<PrepareMessage>) => {
+    const msg = event.data
+    if (msg.type === "cancel") {
+      if (current) cancelPrepare()
+    } else if (msg.type === "progress") {
+      if (!current) set({ remote: { origin: msg.origin, done: msg.done, total: msg.total } })
+    } else if (msg.type === "done") {
+      set({ remote: null, lastPrepareAt: msg.lastPrepareAt ?? snapshot.lastPrepareAt })
+    }
+  }
+  return channel
+}
+
+function post(msg: PrepareMessage) {
+  try {
+    getChannel()?.postMessage(msg)
+  } catch {
+    // Canal cerrado: las otras pestañas se enteran al recargar.
+  }
+}
+
+function broadcastProgress() {
+  // Como mucho ~4 mensajes por segundo: el progreso no necesita más.
+  const now = Date.now()
+  if (now - lastBroadcast < 250 && snapshot.done !== snapshot.total) return
+  lastBroadcast = now
+  post({ type: "progress", origin: snapshot.origin ?? "manual", done: snapshot.done, total: snapshot.total })
+}
+
+/** Engancha el canal (para ver el progreso de otra pestaña sin correr nada). */
+export function listenPrepareChannel(): void {
+  getChannel()
+}
+
+async function withPrepareLock<T>(fn: () => Promise<T>): Promise<{ acquired: boolean; value?: T }> {
+  const locks = typeof navigator !== "undefined" ? (navigator as Navigator & { locks?: LockManager }).locks : undefined
+  if (!locks?.request) return { acquired: true, value: await fn() }
+  let result: { acquired: boolean; value?: T } = { acquired: false }
+  await locks.request(LOCK_NAME, { ifAvailable: true }, async (lock) => {
+    if (!lock) return
+    result = { acquired: true, value: await fn() }
+  })
+  return result
+}
+
+/**
+ * Corta la corrida en curso (en esta pestaña o en otra). Lo hecho queda en el
+ * punto de control: "Continuar" sigue desde ahí.
+ */
+export function cancelPrepare(): void {
+  if (current) {
+    cancelRequested = true
+    wakePause?.()
+  } else if (snapshot.remote) post({ type: "cancel" })
 }
 
 export const prepareStore = {
@@ -178,7 +265,19 @@ export async function isStorageNearlyFull(): Promise<boolean> {
   }
 }
 
-/** Cede el hilo entre tareas en segundo plano para no trabar la pantalla. */
+/**
+ * Cede el hilo entre tareas: la corrida va en segundo plano y la pantalla que
+ * el docente está usando tiene prioridad (clics, tipeo, navegación). Con
+ * `scheduler.yield` la cola sigue enseguida; sin él, un `setTimeout` deja
+ * pasar los eventos pendientes.
+ */
+export function yieldToMain(): Promise<void> {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler
+  if (scheduler?.yield) return scheduler.yield()
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/** Cede el hilo hasta que el navegador esté ocioso (autopreparación). */
 function idle(): Promise<void> {
   return new Promise((resolve) => {
     const ric = (globalThis as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number })
@@ -203,9 +302,9 @@ export interface RunPrepareOptions {
 /** Pausa máxima esperando la red: después queda reanudable con "Continuar". */
 export const PREPARE_MAX_PAUSE_MS = 10 * 60 * 1000
 
-/** ¿Hay una corrida en curso (manual o automática)? */
+/** ¿Hay una corrida en curso (manual o automática, en esta pestaña u otra)? */
 export function isPreparing(): boolean {
-  return current != null
+  return current != null || snapshot.remote != null
 }
 
 /** Espera a que el heartbeat diga que hay red (o se agote `maxMs`). */
@@ -216,8 +315,11 @@ function waitForConnection(maxMs: number): Promise<boolean> {
     const done = (ok: boolean) => {
       clearTimeout(timer)
       unsubscribe()
+      wakePause = null
       resolve(ok)
     }
+    // "Cancelar" corta también la espera.
+    wakePause = () => done(false)
     const timer = setTimeout(() => done(false), maxMs)
     const unsubscribe = connectivityStore.subscribe((s) => {
       if (s.status !== "offline") done(true)
@@ -253,10 +355,22 @@ export function runPrepare(
   options: RunPrepareOptions,
 ): Promise<PrepareSnapshot> {
   if (current != null) return current
-  current = execute(queryClient, initial, options).finally(() => {
-    current = null
-  })
-  return current
+  // Otra pestaña ya está preparando: no se arranca otra.
+  if (snapshot.remote != null) return Promise.resolve(snapshot)
+  getChannel()
+  cancelRequested = false
+  const run: Promise<PrepareSnapshot> = withPrepareLock(() => execute(queryClient, initial, options))
+    .then(({ acquired, value }) => {
+      if (!acquired) return snapshot
+      post({ type: "done", lastPrepareAt: snapshot.lastPrepareAt })
+      return value ?? snapshot
+    })
+    .finally(() => {
+      current = null
+      cancelRequested = false
+    })
+  current = run
+  return run
 }
 
 async function execute(
@@ -286,25 +400,36 @@ async function execute(
     paused: false,
     lastOutcome: null,
     archivoBytes: null,
+    remote: null,
   })
 
   let outcome: PrepareOutcome = "ok"
   for (let i = 0; i < queue.length; i++) {
+    // Serie (concurrencia 1) y cediendo el hilo antes de cada tarea: la red
+    // escolar no se satura y la pantalla sigue respondiendo. El cifrado y la
+    // escritura en IndexedDB ya van agrupados por el persister (throttle 1 s).
+    if (origin === "auto") await idle()
+    else await yieldToMain()
+    if (cancelRequested) {
+      outcome = "cancelada"
+      break
+    }
     if (connectivityStore.getState().status === "offline") {
       set({ paused: true })
       const volvio = await waitForConnection(maxPauseMs)
       set({ paused: false })
+      if (cancelRequested) {
+        outcome = "cancelada"
+        break
+      }
       if (!volvio) {
         outcome = "sin-conexion"
         break
       }
     }
-    if (origin === "auto") {
-      await idle()
-      if (i % 25 === 0 && (await isStorageNearlyFull())) {
-        outcome = "sin-espacio"
-        break
-      }
+    if (origin === "auto" && i % 25 === 0 && (await isStorageNearlyFull())) {
+      outcome = "sin-espacio"
+      break
     }
     const task = queue[i]
     const hash = hashKey(task.queryKey)
@@ -369,9 +494,17 @@ async function execute(
   return snapshot
 }
 
+/** Progreso de la corrida (de esta pestaña o de otra), 0-100. */
+export function preparePercent(s: PrepareSnapshot): number {
+  const { done, total } = s.remote ?? s
+  return total ? Math.round((done / total) * 100) : 0
+}
+
 /** Solo para tests. */
 export function __resetPrepareForTests() {
   snapshot = INITIAL
   loadedFor = null
   current = null
+  cancelRequested = false
+  lastBroadcast = 0
 }
