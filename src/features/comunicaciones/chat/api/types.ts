@@ -2,8 +2,10 @@
 
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
-// FORO: canal de foros (publicaciones con hilos); vive en `/app/comunicaciones/foros`, no en el chat.
-export type TipoConversacion = "CANAL" | "DIRECTO" | "FORO"
+// CANAL: en la UI del chat se llama "Foro" (con nombre único y actividades).
+// GRUPO: conversación de un grupo de personas (sin nombre único ni actividades).
+// FORO: foro con hilos (publicaciones); vive en `/app/comunicaciones/foros`, no en el chat.
+export type TipoConversacion = "CANAL" | "DIRECTO" | "FORO" | "GRUPO"
 
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"
@@ -28,6 +30,8 @@ export interface Conversacion {
   esCreador?: boolean
   // Menciones pendientes (badge "@" en la lista, como Discord).
   menciones?: number
+  // El usuario administra el grupo o foro (comms-service): añade, quita y nombra administradores.
+  esAdmin?: boolean
 }
 
 export interface AutorMensaje {
@@ -298,6 +302,7 @@ export interface Miembro {
   perfil?: PerfilChat
   enLinea: boolean
   bloqueado: boolean
+  esAdmin?: boolean
 }
 
 // Votación rápida: una pregunta de dos opciones que se cierra sola al vencer el tiempo.
@@ -332,4 +337,18 @@ export interface Votante {
   nombre: string
   documento: string
   numero: number
+}
+
+// Bandeja "Enviados": DIRECTO/CANAL son mensajes; el resto, actividades publicadas.
+export type TipoEnviado = "DIRECTO" | "CANAL" | "COMUNICADO" | "ENCUESTA" | "ELECCION" | "EVALUACION"
+
+export interface Enviado {
+  clave: string
+  tipo: TipoEnviado
+  conversacionId: number
+  conversacionNombre: string
+  // null en actividades: se abre el canal.
+  mensajeId: number | null
+  texto: string
+  fecha: string
 }

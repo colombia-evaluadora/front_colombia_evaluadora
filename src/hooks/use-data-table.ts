@@ -70,6 +70,11 @@ export function useDataTable<TData>({
   const onColumnVisibilityChange = (updater: Updater<VisibilityState>) => {
     setColumnVisibility((current) => {
       const next = typeof updater === "function" ? updater(current) : updater
+      // Siempre queda al menos una columna de datos visible: la tabla nunca queda vacía.
+      const datos = table
+        .getAllLeafColumns()
+        .filter((c) => c.accessorFn !== undefined && c.getCanHide())
+      if (datos.length > 0 && datos.every((c) => next[c.id] === false)) return current
       if (columnVisibilityStorageKey) {
         try {
           localStorage.setItem(columnVisibilityStorageKey, JSON.stringify(next))

@@ -67,6 +67,19 @@ const TIPOS: TipoFixture[] = [
     agrupable: true,
   },
   {
+    tipo: "CHAT_MENSAJE",
+    categoria: "CHAT",
+    etiqueta: "Mensajes nuevos en grupos y foros",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: true,
+    email: false,
+    titulo: () => `Nuevos mensajes en ${faker.helpers.arrayElement(["Proyecto feria", "docentes-general"])}`,
+    cuerpo: () => faker.lorem.sentence(),
+    deepLink: () => `/app/comunicaciones/chat?canal=${faker.number.int({ min: 2, max: 4 })}`,
+    agrupable: true,
+  },
+  {
     tipo: "CHAT_REACCION",
     categoria: "CHAT",
     etiqueta: "Reacciones a tus mensajes",
@@ -140,6 +153,20 @@ const TIPOS: TipoFixture[] = [
     deepLink: () => "/app/planeador/actividades",
   },
   {
+    // Confirmación de una acción propia (sso V590): la etiqueta de la escritura.
+    // Solo bandeja por defecto (sin push): espejo de CatalogoTipos del backend.
+    tipo: "APP_ACCION",
+    categoria: "SISTEMA",
+    etiqueta: "Confirmaciones de tus acciones",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: false,
+    email: false,
+    titulo: () => "Creación de la sede Norte",
+    cuerpo: () => "Hiciste este cambio desde la pantalla de sedes.",
+    deepLink: () => "/app/establecimiento-educativo/sedes",
+  },
+  {
     tipo: "SISTEMA_MANTENIMIENTO",
     categoria: "SISTEMA",
     etiqueta: "Avisos de la institución",
@@ -179,7 +206,8 @@ function crearNotificacion(minutosAtras: number): NotificacionRow {
 }
 
 /** Bandeja del usuario, ordenada por `creada_en` desc (orden del cursor). */
-export const notificacionesDb: (NotificacionRow & { archivada: boolean })[] = (() => {
+// `usuario` (correo): solo la ve esa persona (avisos del chat multiusuario); sin él, cualquiera.
+export const notificacionesDb: (NotificacionRow & { archivada: boolean; usuario?: string })[] = (() => {
   let minutos = 2
   return Array.from({ length: 75 }, () => {
     const row = crearNotificacion(minutos)

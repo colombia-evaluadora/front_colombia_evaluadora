@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
+import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * `GET /planeador/unidades/:id/actividades` (real —
@@ -29,6 +30,11 @@ interface UnidadActividadRow {
   /** V479 — puntaje (`TACTIVIDAD.NOTA_MAXIMA`) que el docente edita a mano
    *  en unidades "Suma de puntos"; de acá el backend deriva `ponderacion`. */
   nota_maxima: number | null
+  /** Regla 37 (sso V492.4): `editable` 'S'/'N' y el motivo cuando es 'N'.
+   *  Opcionales: sin ellos la fila se trata como editable y el backend
+   *  sigue rechazando el cambio con su motivo. */
+  editable?: "S" | "N" | null
+  motivo_no_editable?: string | null
 }
 
 function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
@@ -46,10 +52,11 @@ function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
     grupo: row.grupo ?? "",
     ponderacion: row.ponderacion ?? 0,
     notaMaxima: row.nota_maxima,
+    motivoNoEditable: motivoNoEditableDeFila(row),
   }
 }
 
-async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad[]> {
+export async function fetchUnidadActividades(unidadId: number): Promise<UnidadActividad[]> {
   const rows = await evalCol.getRows<UnidadActividadRow>(
     `/planeador/unidades/${unidadId}/actividades?size=100&offset=0`,
   )

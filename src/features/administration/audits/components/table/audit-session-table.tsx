@@ -1,7 +1,5 @@
 "use no memo"
 
-import { Link } from "@tanstack/react-router"
-
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -10,11 +8,10 @@ import {
   TableScreenActions,
   TableScreenBody,
   TableScreenHeader,
-  TableScreenTabs,
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { paths } from "@/config/paths"
+import { AuditViewTabs } from "@/features/administration/audits/components/audit-view-tabs"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useAuditsQuery } from "@/features/administration/audits/api/query/use-audits-query"
@@ -27,11 +24,6 @@ import { ExportSelectedAuditSessionDialog } from "@/features/administration/audi
 import { ExportAuditSessionDialog } from "@/features/administration/audits/components/dialogs/dialog-export-audit-session"
 import { ClearSelectionAuditSessionDialog } from "@/features/administration/audits/components/dialogs/dialog-clear-selection-audit-session"
 import { AuditSessionStatsCards } from "@/features/administration/audits/components/stats/audit-session-stats-cards"
-
-const viewLinks = [
-  { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },
-  { label: "Por tablas", to: paths.app.auditoriaTablas.getHref() },
-]
 
 export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -63,20 +55,7 @@ export function AuditSessionDataTable() {
       <TableScreenHeader>
         <TableScreenTitle>Sesiones de auditoría</TableScreenTitle>
 
-        <TableScreenTabs>
-          <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
-            {viewLinks.map((view) => (
-              <Link
-                key={view.to}
-                to={view.to}
-                activeProps={{ "data-active": "true" }}
-                className="-mb-px rounded-t-lg border border-border border-b-border bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground data-active:border-b-card data-active:bg-card data-active:text-foreground"
-              >
-                {view.label}
-              </Link>
-            ))}
-          </nav>
-        </TableScreenTabs>
+        <AuditViewTabs />
         <TableScreenToolbar>
           <SearchAuditSession
             activeFilterCount={activeFilterCount}

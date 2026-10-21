@@ -24,6 +24,13 @@ export default defineConfig({
     url: `http://localhost:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { VITE_APP_ENABLE_API_MOCKING: "active", VITE_APP_OFFLINE: "full", VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com" },
+    // Autopreparación apagada por defecto en los E2E: cada spec decide cuándo
+    // preparar (los de la app instalada la prenden con `ce-offline-auto-prepare`).
+    env: {
+      VITE_APP_ENABLE_API_MOCKING: "active",
+      VITE_APP_OFFLINE: "full",
+      VITE_APP_OFFLINE_PILOT: "docente@example.com,admin@example.com,user@example.com",
+      VITE_APP_OFFLINE_AUTO_PREPARE: "off",
+    },
   },
 })

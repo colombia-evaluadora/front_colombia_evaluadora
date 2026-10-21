@@ -76,6 +76,8 @@ export const cambiosPendientesQueryKey = (params: AlertasParams) =>
  *  períodos ya terminados: dentro del plazo no hay nada pendiente. */
 export function usePlanillasPendientesQuery(params: AlertasParams) {
   return useQuery({
+    // Alerta del momento (cuenta planillas sin consolidar): sin red no aplica.
+    meta: { offlineOptional: true },
     queryKey: planillasPendientesQueryKey(params),
     queryFn: async () =>
       (await evalCol.postRows<AlertaRow>("/informes/planillas-pendientes", body(params))).map(
@@ -90,6 +92,7 @@ export function usePlanillasPendientesQuery(params: AlertasParams) {
  *  asignaturas ya consolidadas: sin consolidar no hay nada que aprobar. */
 export function useCambiosPendientesQuery(params: AlertasParams) {
   return useQuery({
+    meta: { offlineOptional: true },
     queryKey: cambiosPendientesQueryKey(params),
     queryFn: async () =>
       (await evalCol.postRows<AlertaRow>("/informes/cambios-pendientes", body(params))).map(

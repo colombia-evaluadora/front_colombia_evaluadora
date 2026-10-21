@@ -105,7 +105,8 @@ function ChatContent() {
   const eleccion = eleccionQuery.data
   const { esEstudiante, puedeMencionarMasivo } = useChatAccess()
   // El estudiante vota mientras la elección sigue abierta; al cerrar ve los resultados.
-  const votaEstudiante = esEstudiante && (!eleccion || estadoEleccion(eleccion) !== "FINALIZADA")
+  // Vota quien no la creó (estudiante o funcionario habilitado); el servidor valida el censo.
+  const votaEstudiante = !!eleccion && !eleccion.esCreador && estadoEleccion(eleccion) !== "FINALIZADA"
   const esEncuesta = activa?.categoria === "ENCUESTA"
   const encuestaQuery = useEncuestaQuery(esEncuesta ? activa.id : undefined)
   const encuesta = encuestaQuery.data
@@ -211,7 +212,15 @@ function ChatContent() {
           {vista === "archivos" ? (
             <ArchivosView onVolver={() => seleccionar(undefined)} />
           ) : vista === "borradores" ? (
-            <BorradoresView onVolver={() => seleccionar(undefined)} onEditar={editarBorrador} />
+            <BorradoresView
+              onVolver={() => seleccionar(undefined)}
+              onEditar={editarBorrador}
+              onAbrirEnviado={(e) =>
+                navigate({
+                  search: (prev) => ({ ...prev, canal: e.conversacionId, vista: undefined, mensaje: e.mensajeId ?? undefined }),
+                })
+              }
+            />
           ) : activa ? (
             <>
               <ChatHeader
@@ -319,7 +328,7 @@ function ChatContent() {
               </p>
               {soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  En este canal no se pueden enviar mensajes.
+                  En este foro no se pueden enviar mensajes.
                 </p>
               ) : (
               <ChatComposer
@@ -372,7 +381,7 @@ function ChatContent() {
                 <ChatCircleTextIcon aria-hidden className="mx-auto size-10 text-muted-foreground" />
                 <p className="font-medium">Elige una conversación</p>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona un canal o un mensaje directo de la lista para ver y responder
+                  Selecciona un foro, un grupo o un mensaje directo de la lista para ver y responder
                   mensajes.
                 </p>
               </div>

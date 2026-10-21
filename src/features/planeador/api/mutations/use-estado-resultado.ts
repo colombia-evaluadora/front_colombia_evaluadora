@@ -7,6 +7,7 @@ import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { refrescarBloqueoEdicion } from "@/features/planeador/api/mutations/invalidar-calificaciones"
 import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
 
 /**
@@ -32,9 +33,13 @@ registerOutboxHandler<EstadoResultadoInput>({
       { ESTADO: input.estado },
       { headers: outboxHeaders(ctx), background: ctx.background },
     ),
+  // El detalle (y lo que cuelga) trae el bloqueo de la Regla 37 —"No
+  // presentó" cuenta como resultado—; los listados, el lápiz.
   invalidates: (p) => [
-    planeadorKeys.actividad.calificaciones(p.actividadId),
+    planeadorKeys.actividad.detalle(p.actividadId),
     planeadorKeys.planilla.calificaciones.all,
+    planeadorKeys.actividades.all,
+    // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
     ["informes"],
   ],
   describe: (p) => ({
@@ -62,6 +67,8 @@ export function useEstadoResultadoMutation(
       const [, input] = args
       queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.calificaciones(input.actividadId) })
       queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.calificaciones.all })
+      // Regla 37: "No presentó" bloquea la edición como una nota.
+      refrescarBloqueoEdicion(queryClient, input.actividadId)
       // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
       invalidarInformes(queryClient)
       options.mutationConfig?.onSuccess?.(...args)

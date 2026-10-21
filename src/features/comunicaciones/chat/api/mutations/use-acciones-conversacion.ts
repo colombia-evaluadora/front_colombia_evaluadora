@@ -90,15 +90,19 @@ export function useCrearCanal() {
       nombre,
       categoria,
       miembros = [],
+      tipo,
     }: {
       nombre: string
       categoria: CategoriaCanal
       miembros?: number[]
+      // GRUPO: conversación de un grupo de personas; sin tipo, un foro (CANAL).
+      tipo?: "CANAL" | "GRUPO"
     }) =>
       evalCol.postRow<Conversacion>("/comunicaciones/conversaciones", {
         NOMBRE: nombre,
         CATEGORIA: categoria,
         MIEMBROS: miembros,
+        ...(tipo ? { TIPO: tipo } : {}),
       }),
     onSuccess: invalidar,
   })

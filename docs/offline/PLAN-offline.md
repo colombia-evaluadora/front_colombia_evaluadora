@@ -1021,6 +1021,12 @@ Reporte de testv2: sin red, lo no preparado quedaba en skeleton/spinner para sie
 - Componentes compartidos: `useOfflineStall` (1,5 s sin red), `DataTable`, `Skeleton`, `Spinner`, `LoadingLabel`, `Select`, `ComboboxField`; banner con "Parte de esta pantalla no está guardada en este equipo" (`lib/offline/missing-data.ts`).
 - E2E `e2e/offline-sin-preparar.spec.ts`: todas las rutas no administrativas sin Preparar, sin indicadores de carga a los 3 s y con aviso claro.
 
+#### Guardar todo en el equipo (2026-10)
+Pedido: que el docente tenga TODO en el equipo para meses sin red. Detalle en [AUDITORIA-RUTAS.md](AUDITORIA-RUTAS.md#guardar-todo-en-el-equipo-preparar-autopreparación-y-app-instalada) y `openspec/changes/add-offline-meses-pwa` (D-6 ampliado, D-12, D-14):
+- "Preparar todo el año" cubre las listas con filtros de cada pantalla con sus mismas keys (`features/offline/lib/prepare-tasks.ts`) y un motor compartido (`prepare-engine.ts`): una corrida a la vez, tareas opcionales para lo que depende del rol, reanudable.
+- Autopreparación incremental en segundo plano en equipos personales (al entrar, cada 4 h, dentro de la cuota) y "Datos guardados: hace X" en el header.
+- App instalada = equipo personal (sin checkbox ni piloto; respeta el kill-switch), todo el año al primer ingreso con progreso, `persist()` automático; cerrar sesión bloquea (contraseña verificada en el equipo o PIN) y borrar es una acción aparte con doble confirmación si hay pendientes.
+
 ### 11.6 Kill-switch y rollback
 - **Flag remoto**: `GET /api/eval-col/config/offline` (o el `ENV_FILE` del deploy, `VITE_APP_OFFLINE` = `off|read|full`) consultado al arrancar online y guardado en `meta.killSwitch`. `off` → no se persiste, la outbox solo envía (no acepta encolar offline), se muestra solo banner.
 - **Flag por feature**: `meta.offline` y handlers se registran solo si `offlineFeatures.includes("planilla")` etc.

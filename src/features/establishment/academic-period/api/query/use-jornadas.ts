@@ -6,7 +6,7 @@ import { academicPeriodKeys } from "@/features/establishment/academic-period/api
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
 // Catálogo genérico de TLISTA_VALOR (`GET /eval-col/select/JORNADA`).
-async function fetchJornadas(): Promise<Jornada[]> {
+export async function fetchJornadas(): Promise<Jornada[]> {
   const rows = await fetchSelectCategory("JORNADA")
   return rows.map((row) => ({ id: row.pk_lista_valor, name: row.nombre }))
 }

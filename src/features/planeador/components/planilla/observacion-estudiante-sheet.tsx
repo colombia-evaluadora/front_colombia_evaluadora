@@ -371,7 +371,7 @@ export function ObservacionEstudianteSheet({
                   ) : (
                     <EvidenciaDocumento evidencia={evidencia} />
                   )}
-                  {estudiante && (
+                  {estudiante && esEvidenciaImagen(evidencia.nombre) && (
                     <EvidenciaFavoritoButton
                       pkTactividadEstudiante={estudiante.id}
                       pkTactividadSoporte={evidencia.pk}

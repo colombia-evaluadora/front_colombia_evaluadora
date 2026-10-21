@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PlusIcon, ProhibitIcon, XIcon } from "@/components/ui/icons"
+import { PlusIcon, ProhibitIcon, StarIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,7 @@ import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/cha
 import {
   useAgregarMiembros,
   useBloquearMiembro,
+  useCambiarRolMiembro,
   useEliminarMiembro,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
@@ -33,7 +34,8 @@ const POR_PAGINA = 6
 const ACCION =
   "grid size-8 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50"
 
-// Miembros del canal: el buscador añade personas; en la lista se bloquea (no puede escribir) o se elimina.
+// Participantes del grupo o foro. Solo quien administra (`esAdmin`) añade, bloquea, quita y
+// nombra administradores; los demás ven la lista. Reglas en comms-service (pendiente Natalia).
 export function MiembrosDialog({
   conversacion: c,
   open,
@@ -54,7 +56,9 @@ export function MiembrosDialog({
   const agregar = useAgregarMiembros(c.id)
   const bloquear = useBloquearMiembro(c.id)
   const eliminar = useEliminarMiembro(c.id)
-  const error = agregar.error ?? bloquear.error ?? eliminar.error
+  const rol = useCambiarRolMiembro(c.id)
+  const error = agregar.error ?? bloquear.error ?? eliminar.error ?? rol.error
+  const esAdmin = c.esAdmin ?? !!c.esCreador
 
   const todos = miembros.data ?? []
   const lista = todos
@@ -82,9 +86,10 @@ export function MiembrosDialog({
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="truncate">Añadir personas a {c.nombre}</DialogTitle>
+          <DialogTitle className="truncate">Participantes de {c.nombre}</DialogTitle>
         </DialogHeader>
 
+        {esAdmin && (
         <div className="flex items-start gap-2">
           <div className="relative min-w-0 flex-1">
             <span className="pointer-events-none absolute -top-2.5 left-3 z-10 bg-popover px-1 text-sm font-medium">
@@ -135,6 +140,7 @@ export function MiembrosDialog({
           </Button>
           )}
         </div>
+        )}
 
         {error && (
           <p role="alert" className="text-sm text-red">
@@ -163,7 +169,9 @@ export function MiembrosDialog({
                   <FilaMiembro
                     key={m.id}
                     miembro={m}
-                    ocupado={bloquear.isPending || eliminar.isPending}
+                    gestionar={esAdmin}
+                    ocupado={bloquear.isPending || eliminar.isPending || rol.isPending}
+                    onAdmin={() => rol.mutate({ id: m.id, admin: !m.esAdmin })}
                     onBloquear={() => bloquear.mutate({ id: m.id, bloqueado: !m.bloqueado })}
                     onEliminar={() => setPorEliminar(m)}
                   />
@@ -241,12 +249,16 @@ export function MiembrosDialog({
 
 function FilaMiembro({
   miembro: m,
+  gestionar,
   ocupado,
+  onAdmin,
   onBloquear,
   onEliminar,
 }: {
   miembro: Miembro
+  gestionar: boolean
   ocupado: boolean
+  onAdmin: () => void
   onBloquear: () => void
   onEliminar: () => void
 }) {
@@ -262,6 +274,22 @@ function FilaMiembro({
           </span>
         </span>
       </span>
+      {gestionar && (
+      <>
+      <button
+        type="button"
+        onClick={onAdmin}
+        disabled={ocupado}
+        aria-pressed={!!m.esAdmin}
+        aria-label={m.esAdmin ? `Quitar administración a ${m.nombre}` : `Hacer administrador a ${m.nombre}`}
+        title={m.esAdmin ? "Quitar administración" : "Hacer administrador"}
+        className={cn(
+          ACCION,
+          m.esAdmin ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <StarIcon className="size-4" />
+      </button>
       <button
         type="button"
         onClick={onBloquear}
@@ -286,6 +314,8 @@ function FilaMiembro({
       >
         <XIcon className="size-4" />
       </button>
+      </>
+      )}
     </li>
   )
 }

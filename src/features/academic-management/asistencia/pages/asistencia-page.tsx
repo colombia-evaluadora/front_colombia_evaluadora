@@ -36,20 +36,8 @@ import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic
 import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { DatosDelBadge } from "@/components/offline/datos-del-badge"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
+import { fechaResumen, toIsoDate } from "@/features/academic-management/asistencia/lib/fechas"
 
-function toIsoDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-}
-
-/**
- * Fecha para el resumen de horas: el lunes de la semana del día, sin salir de su
- * mes. fn_asistencia_resumen_horas (V140) solo usa la fecha para el año, el mes
- * y la semana, así que cambiar de día dentro de la misma semana no la consulta de nuevo.
- */
-function fechaResumen(date: Date) {
-  const lunes = new Date(date.getFullYear(), date.getMonth(), date.getDate() - ((date.getDay() + 6) % 7))
-  return toIsoDate(lunes.getMonth() === date.getMonth() ? lunes : new Date(date.getFullYear(), date.getMonth(), 1))
-}
 
 function fromIsoDate(fecha: string | undefined): Date {
   if (!fecha) return new Date()

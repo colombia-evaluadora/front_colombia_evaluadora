@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 /**
  * `GET /planeador/docentes?sede=<pk>&periodo=<pk>` — docentes cuyo planeador
@@ -30,7 +31,7 @@ const toPlaneadorDocente = (row: PlaneadorDocenteRow): PlaneadorDocente => ({
   identificacion: row.identificacion ?? "",
 })
 
-async function fetchPlaneadorDocentes(sede?: number, periodo?: number): Promise<PlaneadorDocente[]> {
+export async function fetchPlaneadorDocentes(sede?: number, periodo?: number): Promise<PlaneadorDocente[]> {
   const query = new URLSearchParams()
   if (sede != null) query.set("sede", String(sede))
   if (periodo != null) query.set("periodo", String(periodo))
@@ -49,6 +50,9 @@ export function usePlaneadorDocentesQuery({
   enabled?: boolean
 }) {
   return useQuery({
+    // Rector/Coordinador lo ven en el aviso de lectura del Planeador: se
+    // guarda para que sin red la pantalla no quede incompleta.
+    meta: proveedorMeta(),
     queryKey: planeadorKeys.docentes(sede, periodo),
     queryFn: () => fetchPlaneadorDocentes(sede, periodo),
     enabled,

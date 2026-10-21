@@ -1,4 +1,5 @@
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { MENSAJE_ACTIVIDAD_NO_EDITABLE } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * Seed determinista del Planeador. 12 actividades con fechas distribuidas
@@ -943,4 +944,29 @@ export function nombreArchivoMaterial(pk: number): string {
 /** `null` si ese id no se subió en esta sesión — no hay bytes que servir. */
 export function urlArchivoMaterial(pk: number): string | null {
   return archivosMaterial.get(pk)?.url ?? null
+}
+
+// ── Regla 37 (sso `fn_actividad_motivo_no_editable`) ─────────────────────────
+// Con un resultado (nota, observación, "No presentó") o siendo base de una
+// recuperación, la actividad ya no se edita: el real responde 409 en todas
+// sus escrituras y lo expone en el detalle y los listados. El seed no tiene
+// filas de resultado por actividad: cuenta `evaluados` del seed más lo que se
+// califique u observe en la sesión (planilla/panel).
+const conResultadoEnSesion = new Set<number>()
+
+export function registrarResultadoMock(actividadId: number): void {
+  conResultadoEnSesion.add(actividadId)
+}
+
+export const MENSAJE_BASE_RECUPERACION_MOCK =
+  "No puedes editar esta actividad porque es la base de una recuperación."
+
+export function motivoNoEditableMock(actividadId: number): string | undefined {
+  const actividad = planeadorDb.find((row) => row.id === actividadId)
+  if (!actividad) return undefined
+  if (actividad.evaluados > 0 || conResultadoEnSesion.has(actividadId)) return MENSAJE_ACTIVIDAD_NO_EDITABLE
+  if (planeadorDb.some((row) => row.esRecuperacion && row.recuperacionActividadId === actividadId)) {
+    return MENSAJE_BASE_RECUPERACION_MOCK
+  }
+  return undefined
 }

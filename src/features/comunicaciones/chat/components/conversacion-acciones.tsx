@@ -106,8 +106,10 @@ export function ConversacionAcciones({
   const cerrarEleccion = useCerrarEleccion()
 
   const { puedeGestionar } = useChatAccess()
-  const esCanal = c.tipo === "CANAL"
-  const gestionaCanal = esCanal && puedeGestionar
+  // Foros (CANAL) y grupos se administran igual: solo quien administra (`esAdmin`).
+  const esCanal = c.tipo === "CANAL" || c.tipo === "GRUPO"
+  const gestionaCanal = esCanal && (c.esAdmin ?? puedeGestionar)
+  const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
@@ -264,7 +266,7 @@ export function ConversacionAcciones({
               <DropdownMenuSeparator />
               <DropdownMenuItem className={ITEM} onClick={() => setDialogo("salir")}>
                 <SignOutIcon />
-                Salir de grupo
+                Salir {destinoSalir}
               </DropdownMenuItem>
             </>
           )}
@@ -383,7 +385,7 @@ export function ConversacionAcciones({
         open={dialogo === "salir"}
         onClose={cerrar}
         titulo={`¿Salir de ${c.nombre}?`}
-        accion="Salir de grupo"
+        accion={`Salir ${destinoSalir}`}
         pendiente={salir.isPending}
         onConfirmar={() =>
           salir.mutate(c.id, {
@@ -396,8 +398,9 @@ export function ConversacionAcciones({
           })
         }
       >
-        Dejarás de recibir sus mensajes. Para volver, un administrador del canal tendrá que
-        agregarte de nuevo.
+        Dejarás de recibir sus mensajes. Para volver, un administrador tendrá que agregarte de
+        nuevo. Si eres el último administrador, la persona más antigua del {c.tipo === "GRUPO" ? "grupo" : "foro"} pasará a
+        administrarlo.
       </Confirmacion>
     </div>
   )

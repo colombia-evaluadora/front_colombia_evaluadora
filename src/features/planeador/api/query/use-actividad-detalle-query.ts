@@ -21,7 +21,7 @@ import {
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
-import { MENSAJE_ACTIVIDAD_NO_EDITABLE } from "@/features/planeador/lib/actividad-editable"
+import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
 
 // Fila real del detalle: `unidad`/`fk_tunidad` vienen null si la actividad es huérfana.
 // No trae el instrumento: vive en `GET .../actividades/:id/instrumento`.
@@ -408,9 +408,7 @@ function toActividadDetalle(
     // `es_propia` no se mapea a propósito: la solo lectura la decide `usePlaneadorSoloLectura`.
     docenteId: row.fk_tfuncionario_docente ?? undefined,
     docenteNombre: row.docente_nombre?.trim() || undefined,
-    motivoNoEditable:
-      row.motivo_no_editable?.trim() ||
-      (row.editable === "N" ? MENSAJE_ACTIVIDAD_NO_EDITABLE : undefined),
+    motivoNoEditable: motivoNoEditableDeFila(row),
   }
 }
 
@@ -530,7 +528,18 @@ export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
   void queryClient.prefetchQuery(actividadDetalleQueryOptions(id, queryClient))
 }
 
-export function useActividadDetalleQuery(id: number | undefined) {
+export function useActividadDetalleQuery(
+  id: number | undefined,
+  options: {
+    /**
+     * Pide el detalle al servidor al montar aunque el de la caché esté
+     * fresco. Lo usa la pantalla de edición: el bloqueo de la Regla 37
+     * (`motivoNoEditable`) cambia con la primera calificación, que no
+     * invalida este detalle si se hizo desde otra pantalla u otro equipo.
+     */
+    siempreAlMontar?: boolean
+  } = {},
+) {
   const queryClient = useQueryClient()
   return useQuery({
     meta: estudiantesMeta(),
@@ -538,5 +547,6 @@ export function useActividadDetalleQuery(id: number | undefined) {
     queryFn: () => fetchActividadDetalle(id!, queryClient),
     enabled: id !== undefined,
     staleTime: 1000 * 60,
+    ...(options.siempreAlMontar ? { refetchOnMount: "always" as const } : {}),
   })
 }

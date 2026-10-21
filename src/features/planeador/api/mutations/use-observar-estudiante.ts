@@ -7,7 +7,10 @@ import { runOrQueue } from "@/lib/offline/outbox/engine"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarCalificacionesActividad } from "@/features/planeador/api/mutations/invalidar-calificaciones"
+import {
+  invalidarCalificacionesActividad,
+  refrescarBloqueoEdicion,
+} from "@/features/planeador/api/mutations/invalidar-calificaciones"
 
 export interface ObservarEstudianteInput {
   pkTactividadEstudiante: number
@@ -66,7 +69,9 @@ registerOutboxHandler<ObservarPayload>({
   invalidates: (p) => [
     planeadorKeys.planilla.calificaciones.all,
     planeadorKeys.actividadEstudiante.nota(p.pkTactividadEstudiante),
-    p.actividadId != null ? planeadorKeys.actividad.calificaciones(p.actividadId) : ["planeador", "actividad"],
+    // El detalle (y lo que cuelga) trae el bloqueo de la Regla 37; los listados, el lápiz.
+    p.actividadId != null ? planeadorKeys.actividad.detalle(p.actividadId) : planeadorKeys.actividad.all,
+    planeadorKeys.actividades.all,
     // La observación cuenta como "ya calificó" en la alerta de planillas
     // pendientes de Informes (preescolar no pone notas): igual que calificar-celda.
     ["informes"],
@@ -115,6 +120,8 @@ export function useObservarEstudianteMutation({
         queryKey: planeadorKeys.actividadEstudiante.nota(variables.pkTactividadEstudiante),
       })
       invalidarCalificacionesActividad(queryClient, variables.actividadId)
+      // Regla 37: el primer resultado bloquea la edición (lápiz, panel, edición).
+      refrescarBloqueoEdicion(queryClient, variables.actividadId)
       // Alertas de Informes: una observación saca la planilla de "pendientes".
       queryClient.invalidateQueries({ queryKey: ["informes"] })
       onSuccess?.(result, variables, ...rest)

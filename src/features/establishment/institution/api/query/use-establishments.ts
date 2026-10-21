@@ -53,7 +53,7 @@ function toEstablishment(row: RealEstablishmentRow): Establishment {
     }
 }
 
-async function fetchEstablishments(
+export async function fetchEstablishments(
     params: EstablishmentsQueryRequest
 ): Promise<EstablishmentsQueryResponse> {
     if (env.ENABLE_API_MOCKING) {

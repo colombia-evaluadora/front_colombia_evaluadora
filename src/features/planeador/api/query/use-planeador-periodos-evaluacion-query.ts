@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface PlaneadorPeriodoEvaluacionRow {
   pk_tperiodo_evaluacion: number
@@ -57,6 +58,10 @@ export async function fetchPeriodosEvaluacion(): Promise<PlaneadorPeriodoEvaluac
 
 export function usePlaneadorPeriodosEvaluacionQuery() {
   return useQuery({
+    // Proveedor de la Planilla y de "Preparar" (offline): sin `meta` acá, la
+    // pantalla le borraba a la query el `meta` con el que se la preparó y
+    // sus refetch dejaban de guardarse en el equipo.
+    meta: proveedorMeta(),
     queryKey: planeadorKeys.periodosEvaluacion(),
     queryFn: fetchPeriodosEvaluacion,
     staleTime: 1000 * 60,

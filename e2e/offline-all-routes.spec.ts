@@ -31,7 +31,7 @@ const RUTAS_SOLO_EN_LINEA = ["/app/cobertura/matricula", "/app/establecimiento-e
 const VACIO = "Esta sección necesita conexión"
 
 test("ninguna ruta no administrativa muestra el empty state sin red tras preparar", async ({ page }) => {
-  test.setTimeout(300_000)
+  test.setTimeout(600_000)
   await page.goto("/login")
   await page.evaluate(
     () =>
@@ -51,26 +51,50 @@ test("ninguna ruta no administrativa muestra el empty state sin red tras prepara
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
   await dialog.getByRole("button", { name: "Preparar todo el año" }).click()
-  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 90_000 })
+  await expect(dialog.getByText(/Listo\. Este equipo puede usarse sin conexión\./)).toBeVisible({ timeout: 300_000 })
   await dialog.getByRole("button", { name: "Cerrar", exact: true }).first().click()
 
   await page.evaluate(() => sessionStorage.setItem("msw:fault", "network"))
   await page.reload()
   // Garantiza que de verdad estamos en modo sin conexión (si no, la prueba
   // pasaría trivialmente).
-  await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole("status").filter({ hasText: /sin conexión/i }).first()).toBeVisible({ timeout: 60_000 })
   // Navegación SPA: Vite dev no sirve módulos nuevos con la red "caída" del
   // lado de la API, pero la página ya cargada sí navega.
-  const ir = (p: string) =>
-    page.evaluate((path) => {
+  const ir = async (p: string) => {
+    await page.evaluate((path) => {
       history.pushState({}, "", path)
       dispatchEvent(new PopStateEvent("popstate"))
     }, p)
+    // Espera a que el router termine (en Vite dev el primer acceso compila).
+    await page.waitForFunction(
+      () => {
+        const router = (window as unknown as { __ceRouter?: { state: { status: string; location: { href: string }; resolvedLocation?: { href: string } } } }).__ceRouter
+        if (!router) return true
+        return router.state.status === "idle" && router.state.resolvedLocation?.href === router.state.location.href
+      },
+      null,
+      { timeout: 60_000, polling: 100 },
+    )
+  }
 
   for (const ruta of RUTAS_NO_ADMIN) {
     await ir(ruta)
     await page.waitForTimeout(2_000)
     await expect(page.getByText(VACIO), `${ruta} no debe pedir conexión`).toHaveCount(0)
+    // Tras "Preparar todo el año" la vista por defecto tiene TODO guardado: el
+    // banner no debe decir que falta algo (prueba que Preparar usa las mismas
+    // keys que cada pantalla, incluidas las listas con filtros).
+    const faltan = await page.evaluate(() => {
+      const client = (window as unknown as { __ceQueryClient?: { getQueryCache(): { getAll(): { queryKey: unknown; meta?: { offlineOptional?: boolean }; state: { data: unknown }; isActive(): boolean }[] } } }).__ceQueryClient
+      if (!client) return []
+      return client
+        .getQueryCache()
+        .getAll()
+        .filter((q) => q.state.data === undefined && q.isActive() && !q.meta?.offlineOptional)
+        .map((q) => JSON.stringify(q.queryKey).slice(0, 90))
+    })
+    expect.soft(faltan, `${ruta}: todo lo de la vista por defecto quedó guardado`).toEqual([])
   }
   // `/app` sin red aterriza en una pantalla que funciona offline.
   await ir("/app")

@@ -21,7 +21,7 @@ interface ZonaRow {
 
 // Zonas válidas para una sede: nunca "Urbana y Rural"; con EE se acotan a su
 // zona (misma regla que valida `fn_sed_crear`).
-async function fetchZonasSede(establishmentId: number | null): Promise<CatalogItem[]> {
+export async function fetchZonasSede(establishmentId: number | null): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     // El mock no conoce la zona del EE; solo quita "Urbana y Rural".
     const zonas = await getCatalog<CatalogItem>(CATALOGS.ZONES)

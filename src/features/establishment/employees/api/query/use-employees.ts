@@ -85,10 +85,11 @@ async function fetchEmployees(params: EmployeesQueryRequest): Promise<EmployeesQ
 
 export const employeesQueryKey = (params: UseEmployeesQueryParams) => employeeKeys.lista(params)
 
-export function useEmployeesQuery(params: UseEmployeesQueryParams) {
+export function useEmployeesQuery(params: UseEmployeesQueryParams, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: employeesQueryKey(params),
     queryFn: () => fetchEmployees(params),
     placeholderData: (previous) => previous,
+    enabled,
   })
 }
