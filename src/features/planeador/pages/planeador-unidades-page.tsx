@@ -49,16 +49,7 @@ import { esAjena } from "@/features/planeador/lib/docente-dueno"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
-/**
- * Pestaña "Unidad temática" del Planeador. Mismo esqueleto que la de
- * Actividades —rail de cards a la izquierda, detalle a la derecha— pero sobre
- * el modelo de unidades y sin calendario: la unidad no es un evento de un día,
- * así que la columna derecha muestra siempre el detalle.
- *
- * El `NoticeProvider` envuelve un `...Content` interno: tiene que ser
- * ANCESTRO de quien llama `useNotify` (los errores del selector de docente y
- * de las consultas van al aviso de la página).
- */
+/** Sin calendario: la unidad no es evento de un día. NoticeProvider debe ser ancestro de useNotify. */
 export function PlaneadorUnidadesPage() {
   return (
     <NoticeProvider>
@@ -71,11 +62,9 @@ function PlaneadorUnidadesPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorUnidadesRoute.id })
   const { puedeCrear } = usePlaneadorSoloLectura()
-  // Crear/editar/ceder/eliminar unidades necesita red (Fase 1 es solo lectura).
-  // Fase 3: con la outbox habilitada, crear/editar unidades queda activo sin red.
+  // Fase 3: con outbox, crear/editar unidades funciona sin red.
   const soloEnLinea = useOfflineWritable()
-  // Sede/Año/Jornada/Docente del filtro avanzado, ver `planeador-page.tsx`:
-  // los hooks de consulta leen el alcance de la URL.
+  // Los hooks de consulta leen el alcance (sede/año/jornada/docente) de la URL.
   const scope = usePlaneadorDocenteScope()
   const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
 
@@ -84,46 +73,26 @@ function PlaneadorUnidadesPageContent() {
   const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     useUnidadesFilters()
 
-  // Sin `?dia=`: a diferencia de la pestaña "Actividades", esta lista todas
-  // las unidades del docente, no solo las que tienen alguna actividad
-  // vigente hoy — paginar por día activo acá ocultaba unidades enteras sin
-  // ningún aviso (colección Postman `planeador-delta-cambios`, punto (g);
-  // el parámetro se había copiado del listado de actividades).
+  // Sin `?dia=`: filtrar por día ocultaba unidades enteras (Postman `planeador-delta-cambios`, punto g).
   const { data: instrumentoOptions = [] } = useInstrumentoFiltroOptions()
   const { data: unidadesResult, isPending, isError, error, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
-  // La pestaña "Unidad temática" puede ser varias (una por referente
-  // curricular/nivel educativo, `GET /planeador/unidades/tabs` — ver
-  // `planeador-tabs.tsx`): con más de una, el listado se acota a los
-  // grados de la pestaña activa (`?instrumento=`). Con una sola (el caso
-  // más común, un docente de un solo nivel) no hay nada que acotar.
+  // Con más de una pestaña (una por referente), se acota a los grados de la activa (`?instrumento=`).
   const { data: unidadTabs = [], error: errorTabs } = useUnidadesTabsQuery()
-  // El rail pinta su propio error; las pestañas no (p. ej. 42501 por un
-  // docente fuera del alcance), así que van al aviso de la página.
+  // Errores de pestañas (p. ej. 42501) van al aviso; el rail pinta los suyos.
   useNotificarErrores([errorTabs])
   const tabActiva =
     unidadTabs.length > 1
       ? (unidadTabs.find((t) => t.instrumento === search.instrumento) ?? unidadTabs[0])
       : undefined
 
-  // "Agregar unidad" no sirve para todos los docentes: el rótulo de esta
-  // pestaña varía por referente curricular (`instrumento` — "Unidad
-  // temática" en Primaria, "Proyecto pedagógico" en Preescolar, ver
-  // `planeador-tabs.tsx`), así que el botón usa el mismo nombre que la
-  // pestaña activa en vez de "unidad" fijo.
-  //
-  // `rotuloUnidad` conserva la mayúscula original (cards, panel y buscador
-  // lo reciben así); `tabLabel` es la versión en minúscula para embeberla a
-  // mitad de frase.
+  // El rótulo varía por referente ("Unidad temática"/"Proyecto pedagógico"); `tabLabel` es la versión en minúscula.
   const rotuloUnidad = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? UNIDAD_TAB_FALLBACK
   const tabLabel = rotuloUnidad.toLowerCase()
   const tabLabelPlural = pluralizarRotulo(tabLabel)
   const exportarLabel = `Exportar ${tabLabelPlural} filtrad${terminacionRotulo(rotuloUnidad)}s`
-  // Mismo instrumento que decide el rótulo del botón, para que
-  // `planeador-crear-unidad-page.tsx` sepa desde el primer render (sin
-  // esperar a que el docente elija un Grado) qué instrumento está creando y
-  // pueda acotar sus `<Select>` de Grado/Asignatura a los de esa pestaña.
+  // Viaja al crear para acotar Grado/Asignatura desde el primer render.
   const instrumentoActivo = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento
 
   const filtered = (() => {
@@ -131,9 +100,7 @@ function PlaneadorUnidadesPageContent() {
       tabActiva && tabActiva.gradoIds.length > 0
         ? unidades.filter((u) => u.gradoId != null && tabActiva.gradoIds.includes(u.gradoId))
         : unidades
-    // "Estado" e "Instrumento" del popover: `/planeador/unidades` no los
-    // recibe, pero el listado ya llega completo (hasta 500) con `status` e
-    // `instrumentoId` (sso V488), así que se filtra acá.
+    // Estado/Instrumento no los recibe el backend; el listado llega completo (hasta 500, sso V488).
     const porFiltros = porInstrumento.filter(
       (u) =>
         (!filters.estado || u.status === filters.estado) &&
@@ -146,17 +113,13 @@ function PlaneadorUnidadesPageContent() {
     )
   })()
 
-  // Export PDF/Excel: estado, instrumento, búsqueda y pestaña se filtran acá
-  // (el listado no los recibe), así que la lista visible viaja como `IDS`, con
-  // el mismo alcance que `GET /planeador/unidades`.
+  // La lista se filtra en front, así que el export viaja como `IDS`.
   const exportFilters = {
     FUNCIONARIO: scope.funcionario,
     SEDE: scope.sedeId,
     PERIODO: scope.periodoId,
     IDS: filtered.map((u) => u.id),
   }
-  // Encabezados con los rótulos de la pestaña: la unidad ("Proyecto
-  // pedagógico") y sus actividades, del mismo referente ("Experiencias").
   const { data: actividadTabs = [] } = useActividadesTabsQuery()
   const referenteActivo = tabActiva?.referenteId ?? unidadTabs[0]?.referenteId ?? null
   const rotuloActividad =
@@ -165,13 +128,10 @@ function PlaneadorUnidadesPageContent() {
   const rotulosExport = { unidad: rotuloUnidad, actividades: pluralizarRotulo(rotuloActividad) }
 
 
-  // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
-  // no está en la lista filtrada— se cae a la primera, para que la columna
-  // derecha nunca quede vacía.
+  // Sin unidad válida en la URL se cae a la primera para no dejar el panel vacío.
   const unidadIdNum = filtered.find((u) => String(u.id) === search.unidad)?.id ?? filtered[0]?.id
   const unidadId = unidadIdNum !== undefined ? String(unidadIdNum) : undefined
-  // Unidad de otro docente (Coordinador viendo toda su sede): el panel
-  // queda en solo lectura.
+  // Unidad de otro docente (Coordinador): panel en solo lectura.
   const unidadAbiertaAjena = esAjena(filtered.find((u) => String(u.id) === unidadId))
 
   const setUnidadId = (next: string) =>
@@ -198,13 +158,8 @@ function PlaneadorUnidadesPageContent() {
             instrumentoOptions={instrumentoOptions}
             rotuloUnidad={rotuloUnidad}
           />
-          {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
-              con su "…" van pegados como un control partido y el exportar va
-              al lado, así todas las acciones del listado quedan juntas. */}
           <TableScreenActions>
-            {/* El rótulo sale del referente curricular (400 caracteres
-                posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
-                recorte, uno largo estiraba la barra entera fuera de pantalla. */}
+            {/* Rótulo de hasta 400 caracteres: sin `min-w-0` + tope estiraba la barra fuera de pantalla. */}
             {puedeCrear && (
               <Button
                 color="primary"
@@ -241,15 +196,9 @@ function PlaneadorUnidadesPageContent() {
       <TableScreenBody>
           <>
             <PlaneadorLecturaBanner className="mb-4" />
-            {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
-            `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
-            que una tabla ancha empuja la columna en vez de scrollear dentro de
-            su propio contenedor y desborda la pantalla. */}
+            {/* `minmax(0,1fr)` y no `1fr`: `1fr` no baja del ancho mínimo y una tabla ancha desborda. */}
             <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
-              {/* Rail izquierda. Mismo mecanismo que en la pestaña de Actividades:
-              el contenido se saca del flujo desde `md` para que la altura de
-              la fila la fije la columna derecha y la lista scrollee por dentro
-              en vez de estirar la página. */}
+              {/* Fuera del flujo desde `md`: la altura la fija la columna derecha y el rail scrollea por dentro. */}
               <section aria-label={`Listado de ${tabLabelPlural}`} className="relative min-h-0">
                 <div className="flex flex-col gap-3 md:absolute md:inset-0">
                   <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto">
@@ -293,16 +242,11 @@ function PlaneadorUnidadesPageContent() {
                                 onEdit={() =>
                                   navigate({
                                     to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
-                                    // Viaja para la miga de pan de la edición
-                                    // (`planeadorUnidadEditarRoute`), que no
-                                    // tiene de dónde más sacar el rótulo.
+                                    // Para la miga de pan de la edición, que no tiene otra fuente del rótulo.
                                     search: { instrumento: rotuloUnidad },
                                   })
                                 }
-                                // Si la unidad borrada era la abierta en el panel,
-                                // limpiamos `?unidad=` — mismo criterio que
-                                // `onDeleted` del panel (cae a la primera de la
-                                // lista filtrada).
+                                // Si se borró la abierta, limpiar `?unidad=` (cae a la primera).
                                 onDeleted={() => {
                                   if (unidadId === String(unidad.id)) {
                                     navigate({
@@ -322,9 +266,7 @@ function PlaneadorUnidadesPageContent() {
                 </div>
               </section>
 
-              {/* Detalle. Se acota a la ventana y scrollea por dentro: si creciera
-              libre arrastraría el alto de la fila —y con él el del rail, que
-              se mide contra esa misma fila. */}
+              {/* Scroll interno: si creciera libre arrastraría el alto de la fila y del rail. */}
               <section
                 aria-label={`Detalle ${deArticuloRotulo(rotuloUnidad)} ${tabLabel}`}
                 className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"

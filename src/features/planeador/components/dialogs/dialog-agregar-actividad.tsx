@@ -42,57 +42,19 @@ import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeado
 
 interface DialogAgregarActividadProps {
   unidad: UnidadTematica
-  /** Rótulo de la unidad ya resuelto por el panel (el de la pestaña activa)
-   *  — gana sobre la resolución por referente de acá abajo, para que el
-   *  popover diga lo mismo que el resto del panel. */
+  /** Rótulo de la unidad del panel; gana sobre el resuelto por referente para que coincidan. */
   rotuloUnidad?: string
 }
 
 /**
- * Popover "Vincular actividad" de la pestaña Actividades — mismo patrón que
- * `CrearUnidadPopover` (`form-editar-actividad.tsx`): autocontenido, con su
- * propio trigger y estado de apertura, en vez de un `Dialog` controlado
- * desde el caller (`TabHeader` ya no necesita `dialogOpen`/`setDialogOpen`).
- *
- * Lista las "actividades disponibles" reales para esta unidad
- * (`GET /unidades/:id/actividades-disponibles`, `useUnidadActividadesDisponiblesQuery`)
- * — huérfanas de la misma asignatura y (vía su grupo) del mismo grado que
- * la unidad; el backend ya las devuelve sin las que estén vinculadas, así
- * que acá no hace falta filtrar de nuevo. `search` viaja al servidor
- * (parámetro `search` del endpoint), no se filtra en el cliente.
- *
- * El campo de peso CAMBIA según `metodoCalculo` (pedido explícito, antes se
- * veía siempre igual sin importar el método):
- *   - "Ponderado": input de "(%)" — el docente reparte el 100% a mano.
- *   - "Suma de puntos": input de "Puntaje" (`TACTIVIDAD.NOTA_MAXIMA`) — sin
- *     tope, el backend deriva el % de forma proporcional sobre el total del
- *     grupo (`fn_unidad_ponderacion_recalcular_sumatoria`). El vínculo en sí
- *     NO acepta puntaje (`fn_unidad_actividad_vincular` solo conoce
- *     PONDERACION): se vincula primero con `omitirPonderacion` y, si el
- *     docente tipeó un puntaje, se guarda con un segundo request
- *     (`useUpdatePuntajeActividadUnidad`, el mismo PUT que ya usa la
- *     columna "Puntaje" de la tabla).
- *   - "Promedio simple": sin input — cada actividad vinculada pesa lo
- *     mismo, no hay nada que repartir. El botón "Vincular" queda siempre
- *     visible (a diferencia de los otros dos modos, donde permanece oculto
- *     hasta que se tipea un valor mayor a 0: no tiene sentido vincular con
- *     un peso/puntaje en blanco).
- * `porcentajeDisponible` viene YA CALCULADO por fila por el backend
- * (`fn_unidad_ponderacion_disponible`, sso V223), no hace falta pedirlo
- * aparte (1.5). Es el tope REAL: lo que queda del 100% de esta unidad en el
- * grupo de esa actividad (bucket (unidad, grupo) del trigger
- * `tr_tactividad_ponderacion_unidad`). Otras unidades de la misma
- * asignatura/grado NO cuentan: cada unidad reparte su propio 100% por grupo.
+ * Popover "Vincular actividad". En Suma de puntos el puntaje va en un 2º request (`fn_unidad_actividad_vincular` no lo acepta).
+ * `porcentajeDisponible` llega por fila (`fn_unidad_ponderacion_disponible`, V223): tope por (unidad, grupo).
  */
 export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarActividadProps) {
   const { puedeCrear } = usePlaneadorSoloLectura()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  // Borrador de peso por actividad — vive acá, no en el form de la fila:
-  // cada tecleo no debe disparar nada hasta que se confirma con "Vincular".
-  // Mismo estado sirve para "(%)" (Ponderado) y "Puntaje" (Suma de puntos):
-  // nunca coexisten, el método de la unidad decide cuál se está tipeando.
-  // Se limpia por completo al cerrar el popover.
+  // Borrador de peso/puntaje: no dispara nada hasta "Vincular"; se limpia al cerrar.
   const [pesos, setPesos] = useState<Record<string, string>>({})
 
   const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
@@ -101,57 +63,29 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
   const soloEnLinea = useOnlineOnly()
   const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
 
-  // Formativa: no hay calificación en absoluto —las actividades se
-  // observan, no se califican— así que ningún peso/puntaje aplica sin
-  // importar qué `metodoCalculo` tenga guardado la unidad (campo sin uso
-  // real en Formativo). Reportado en vivo: una unidad formativa seguía
-  // pidiendo "(%)" al vincular, como si calificara.
-  //
-  // `unidad.enfoquePedagogico` NO sirve: el backend real no guarda un
-  // enfoque propio por unidad y `useUnidadesQuery` siempre lo manda
-  // "Evaluativo" (ver el comentario de `toUnidadTematica`) — usarlo dejaba
-  // el "(%)" visible en unidades Formativas de verdad. El referente REAL
-  // sale de `useUnidadReferenteQuery` (por `unidad.id`).
+  // Formativa no califica: sin peso. Se usa el referente real; `unidad.enfoquePedagogico` siempre llega "Evaluativo".
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)
   const esFormativa = unidadReferente?.esFormativo ?? false
   const esPonderado = !esFormativa && unidad.metodoCalculo === "Ponderado"
   const esSumatoria = !esFormativa && unidad.metodoCalculo === "Suma de puntos"
   const pideValor = esPonderado || esSumatoria
 
-  // Rótulo real del instrumento ("Unidad temática"/"Proyecto pedagógico"/…)
-  // — mismo criterio que `UnidadFichaYEvidencias`/`CrearUnidadPopover`
-  // (`form-editar-actividad.tsx`): nunca "unidad"/"unidad temática" fijo en
-  // el copy, varía por nivel educativo. Se resuelve por `referente.id`, no
-  // por grado a secas, para no discrepar del `nivel1Etiqueta`/
-  // `nivel2Etiqueta` de ESTE MISMO referente ya cargado arriba.
+  // El rótulo del instrumento varía por nivel; se resuelve por `referente.id` para coincidir con sus etiquetas.
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const instrumentoLabel =
     rotuloUnidad || instrumentoLabelFromReferente(unidadReferente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
   const instrumentoLabelLower = instrumentoLabel.toLowerCase()
-  // "la unidad temática"/"el proyecto pedagógico" — mismo helper que ya
-  // resuelve el género de este rótulo en `mensajeUnidadGuardada`, en vez de
-  // reinventar la regla acá. `demostrativo`/`deInstrumento` son variantes
-  // del mismo artículo para las otras posiciones donde aparece en el copy
-  // de abajo ("Esta/Este …", "dentro de la/del …" — "de el" no contrae
-  // solo, hace falta la forma "del" a mano).
+  // Artículos del rótulo para el copy; "del" va a mano porque "de el" no contrae.
   const articulo = articuloDefinido(instrumentoLabel)
   const instrumentoConArticulo = `${articulo} ${instrumentoLabelLower}`
   const demostrativo = articulo === "el" ? "Este" : "Esta"
   const deInstrumento = articulo === "el" ? "del" : "de la"
 
-  // Rótulo real de "actividad" para el grado de esta unidad (Regla 13, sso
-  // V488/V511) — nunca el literal fijo. Mismo helper de género que ya usa
-  // el instrumento (`articuloDefinido`): el indefinido es su misma
-  // terminación ("el" → "un", "la" → "una").
+  // Rótulo de "actividad" por grado (Regla 13, V488/V511); el indefinido sale del mismo género.
   const rotuloLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
   const rotuloLabelLower = rotuloEnMinuscula(rotuloLabel)
   const rotuloIndefinido = articuloDefinido(rotuloLabel) === "el" ? "un" : "una"
-  // Terminación de género para participios/pronombres ("creado"/"creada",
-  // "vincularlo"/"vincularla") — nunca se pluraliza el rótulo (no es un
-  // dato controlado: un referente puede traer cualquier texto, y
-  // concatenar "s" a mano rompe con cualquiera que no termine en
-  // consonante simple, ver "Actividads"). Las frases de acá se redactan
-  // siempre en singular.
+  // Solo género, nunca plural: el rótulo es texto libre (ver "Actividads").
   const rotuloGenero = rotuloIndefinido === "un" ? "o" : "a"
   const rotuloNingun = rotuloGenero === "o" ? "ningún" : "ninguna"
 
@@ -177,8 +111,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
       {
         onSuccess: (data) => {
           if (data.status === "error") return
-          // Suma de puntos: el vínculo no acepta el puntaje (ver el
-          // docstring de arriba) — se guarda aparte, ya vinculada.
+          // Suma de puntos: el puntaje se guarda aparte, ya vinculada.
           if (esSumatoria && valor > 0) updatePuntaje.mutate({ actividadId, puntaje: valor })
           setPesos((prev) => {
             const next = { ...prev }
@@ -213,21 +146,14 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
         align="end"
         side="bottom"
         sideOffset={8}
-        // Bastante más ancho que el default (`w-72`): esto es una tabla
-        // completa, no un mini-form como `CrearUnidadPopover`.
+        // Más ancho que el default: es una tabla completa.
         className="flex max-h-[70vh] w-[min(46rem,90vw)] flex-col overflow-hidden"
       >
         <PopoverHeader className="shrink-0">
           <PopoverTitle>Vincular {rotuloLabelLower}</PopoverTitle>
         </PopoverHeader>
 
-        {/* Único bloque con scroll: título queda fijo afuera — así una
-            lista larga de actividades no empuja el resto del popover fuera
-            de la pantalla. El scroll vive en ESTE div (solo
-            `overflow-y-auto` + `min-h-0`); el `<table>` de adentro se mide
-            raro si comparte el mismo flex container que lo recorta — por
-            eso el contenido va en un div de bloque aparte, no directamente
-            acá. */}
+        {/* Único bloque con scroll; la tabla va en un div aparte porque se mide mal dentro del flex que recorta. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4">
             <div className="flex items-end justify-between gap-4">
@@ -244,12 +170,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                   />
                 </div>
               </Field>
-              {/* Crear una actividad nueva DESDE esta unidad: abre el alta
-                  (misma ruta que "Nueva actividad" del listado general) con
-                  Grado, Asignatura y la unidad misma ya preseleccionados —
-                  ver `unidadId` en `planeadorActividadCrearSearchSchema` y
-                  el efecto de resolución en `AsignaturaGradoSection`
-                  (`form-editar-actividad.tsx`). */}
+              {/* Abre el alta con grado, asignatura y unidad preseleccionados (`unidadId`). */}
               <Button
                 variant="fill"
                 color="primary"
@@ -275,29 +196,13 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
               {rotuloGenero} con {instrumentoConArticulo}.
             </p>
 
-            {/* `table-fixed` + un ancho por columna: sin esto, "Instrumento"
-                (nombres largos, ej. "Escala de valoración") y "Disponible
-                para asignar: X%" (con `whitespace-nowrap` por default de
-                `TableCell`) empujaban la tabla más ancha que el popover y
-                aparecía scroll horizontal — quedaba la columna Actividad
-                cortada apenas se scrolleaba para ver el %. Con ancho fijo,
-                el contenido largo envuelve (`whitespace-normal` en cada
-                celda) en vez de desbordar. El input de "(%)" y el
-                "Disponible para asignar"/botón "Vincular" van en columnas
-                SEPARADAS (la segunda con header vacío): compartir celda
-                hacía que el texto largo se envolviera debajo del input y
-                empujara la fila más alta de lo necesario. */}
+            {/* `table-fixed` con anchos por columna: evita scroll horizontal, el contenido largo envuelve. */}
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[28%]">{rotuloLabel}</TableHead>
                   <TableHead className="w-[13%]">Tipo</TableHead>
-                  {/* Formativa: no hay instrumento de evaluación en absoluto
-                      (se observa, no se califica) — mismo criterio que ya
-                      aplica `createUnidadActividadesColumns` en la tabla de
-                      "Actividades" del panel (`columns-unidad-actividades.tsx`),
-                      donde esta columna también se oculta. Acá quedaba
-                      siempre vacía en una unidad formativa. */}
+                  {/* Formativa no tiene instrumento: columna oculta, igual que en la tabla del panel. */}
                   {!esFormativa && <TableHead className="w-[18%]">Instrumento</TableHead>}
                   <TableHead className="w-[11%]">Grupo</TableHead>
                   {pideValor && (
@@ -305,11 +210,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                       <TableHead className="w-[10%] text-right">
                         {esPonderado ? "(%)" : "(Σ)"}
                       </TableHead>
-                      {/* Header vacío a propósito: esta columna solo muestra
-                          "Disponible para asignar" o el botón "Vincular" —
-                          ninguno de los dos es un encabezado real. Separarla
-                          del input evita que el texto largo se envuelva
-                          DEBAJO del input y lo empuje de su columna. */}
+                      {/* Header vacío: la columna solo muestra el disponible o el botón "Vincular". */}
                       <TableHead className="w-[20%]" />
                     </>
                   )}
@@ -335,8 +236,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                     return (
                       <TableRow key={actividad.id}>
                         <TableCell className="font-semibold whitespace-normal">
-                          {/* Máximo 2 líneas — un nombre largo desalineaba la
-                              fila entera contra las columnas de al lado. */}
+                          {/* Máximo 2 líneas para no desalinear la fila. */}
                           <span className="line-clamp-2" title={actividad.nombre}>
                             {actividad.nombre}
                           </span>
@@ -353,19 +253,13 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                                 variant="outlined"
                                 type="number"
                                 min={0}
-                                // Suma de puntos no tiene tope: el % lo deriva
-                                // el backend de forma proporcional, no hay
-                                // "100% de la unidad" que repartir a mano.
+                                // Suma de puntos no tiene tope: el % lo deriva el backend.
                                 max={esPonderado ? disponible : undefined}
                                 placeholder="0"
                                 value={peso}
                                 onChange={(e) => {
                                   const raw = e.target.value
-                                  // Recorta al disponible SOLO en Ponderado:
-                                  // sin esto se podía tipear (o pegar) un %
-                                  // que sumado al resto de la unidad pasara
-                                  // de 100 — `max` del input HTML no bloquea
-                                  // el tecleo, solo marca `:invalid`.
+                                  // Recorta al disponible solo en Ponderado: `max` del input no bloquea el tecleo.
                                   const clamped =
                                     raw === ""
                                       ? ""
@@ -380,19 +274,9 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                                 className="ml-auto w-16 text-right"
                               />
                             </TableCell>
-                            {/* Columna aparte (header vacío) para no envolver
-                                el texto largo DEBAJO del input de arriba —
-                                antes compartían celda y la fila crecía más
-                                de lo que el input necesitaba. */}
+                            {/* Columna aparte para que el texto no envuelva debajo del input. */}
                             <TableCell className="whitespace-normal">
-                              {/* El botón "Vincular" solo aparece con un
-                                  valor tipeado — sin eso, vincular no tiene
-                                  sentido (quedaría en 0%/sin puntaje,
-                                  indistinguible de "no vinculada"). Mientras
-                                  tanto, en Ponderado se ve el disponible
-                                  restante, para que el docente sepa cuánto le
-                                  queda por repartir (en Suma de puntos no hay
-                                  tope que mostrar). */}
+                              {/* "Vincular" solo con valor tipeado (en 0 no se distingue de no vinculada); si no, en Ponderado se ve el disponible. */}
                               {tienePeso ? (
                                 <Button
                                   variant="outline"
@@ -459,12 +343,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
                 </p>
               </div>
             )}
-            {/* Mismo aviso que la tabla de "Actividades" (ver
-                `UnidadDetallePanel`): con "Promedio simple" no hay nada que
-                repartir, así que acá también hace falta aclararlo — sin
-                columna de peso, el popover podía leerse como que algo
-                faltaba por cargar. Formativa: SIN banner — nada de
-                calificación que aclarar acá tampoco. */}
+            {/* Aviso de "Promedio simple" como en `UnidadDetallePanel`; en Formativa no aplica. */}
             {!esFormativa && unidad.metodoCalculo === "Promedio simple" && (
               <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-3 rounded-md border p-3 text-sm">
                 <InfoIcon className="size-5 shrink-0" />

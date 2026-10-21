@@ -22,8 +22,7 @@ const ACCIONES = [
   { id: "aprobar", label: "Aprobar", Icon: ClipboardCheckIcon },
 ] as const
 
-// "Marcar" se muestra como "Registrar resultados". "Aprobar" nunca convive con formativa (se filtra más abajo),
-// así que queda fijo en "Calificar múltiple".
+// "Marcar" se muestra como "Registrar resultados"; "Aprobar" nunca aplica a formativa.
 function labelFor(id: string, label: string): string {
   if (id === "marcar") return "Registrar resultados"
   if (id === "aprobar") return "Calificar múltiple"
@@ -32,44 +31,17 @@ function labelFor(id: string, label: string): string {
 
 interface ActividadDetallePanelProps {
   actividadId: number
-  /** Vista activa del panel: "info" muestra las secciones de detalle;
-   * "grades" muestra la tabla de calificaciones con notas por criterio
-   * (chulito "Marcar"); "approval" muestra la aprobación bulk por
-   * estudiante con instrumento/Diseño/Modalidad (clipboard-check
-   * "Aprobar"). El click en la card activa "info". */
+  /** "info" detalle, "grades" calificaciones (Marcar), "approval" aprobación bulk (Aprobar). */
   mode: "info" | "grades" | "approval"
   /** Cierra el panel y devuelve el calendario a la columna derecha. */
   onClose: () => void
-  /** Cambia el panel a la vista de calificaciones (`mode="grades"`).
-   * Lo dispara el chulito (Marcar) del propio panel. */
+  /** Pasa a `mode="grades"` (chulito Marcar). */
   onShowGrades: () => void
-  /** Cambia el panel a la vista de aprobación (`mode="approval"`).
-   * Lo dispara el clipboard-check (Aprobar) del propio panel. */
+  /** Pasa a `mode="approval"` (Aprobar). */
   onShowApproval: () => void
 }
 
-/**
- * Detalle de una actividad como panel embebido: ocupa el lugar del calendario
- * en la columna derecha del Planeador cuando hay una card seleccionada.
- *
- * Trae su propia consulta en vez de recibir la actividad ya resuelta: el
- * listado devuelve la actividad "de tarjeta" (nombre, fechas, unidad) y el
- * detalle tiene secciones que solo llegan por `/detalle/:id`.
- *
- * Tiene tres vistas según de dónde se llegó:
- * - `mode="info"` (click en la card): las secciones informativas
- *   (Identificación, Programación, Materiales, Recursos, Evaluación,
- *   Rúbrica, Observaciones, Adaptaciones) — read-only.
- * - `mode="grades"` (chulito "Marcar" de la card): la tabla de
- *   calificaciones con asistencia y notas por criterio.
- * - `mode="approval"` (clipboard-check "Aprobar" de la card): la
- *   aprobación bulk por estudiante con instrumento / Diseño / Modalidad.
- *
- * Las acciones del header siguen el mismo patrón que la card: Editar
- * (link al form), Marcar (cambia el modo del panel), Aprobar (idem) y
- * Eliminar (`DialogDeleteActividad`, cierra el panel al terminar OK). El
- * export por actividad vive solo en la card.
- */
+/** Detalle embebido en lugar del calendario; consulta `/detalle/:id` porque el listado no trae todas las secciones. */
 export function ActividadDetallePanel({
   actividadId,
   mode,
@@ -83,16 +55,8 @@ export function ActividadDetallePanel({
   )
   const { data: actividad, isPending, isError, error, refetch } = useActividadDetalleQuery(actividadId)
   const { puedeEditar, puedeVer, soloLectura, viendoOtroDocente } = usePlaneadorSoloLectura()
-  // En solo lectura (Coordinador): el mismo link abre la actividad completa
-  // sin poder editarla (ver `PlaneadorEditarActividadPage`), y no se
-  // muestran las acciones que modifican (calificar, eliminar).
-  //
-  // Mirando el planeador de OTRO docente no hay link ni siquiera de "Ver":
-  // la pantalla de edición no conoce el `?docente=` y para un Super Admin
-  // (que sí puede editar lo propio) abriría el formulario editable. Este
-  // panel ya muestra el detalle completo.
-  // Regla 37: con calificaciones u observaciones (o siendo base de una
-  // recuperación) el mismo link abre la actividad en solo lectura.
+  // Solo lectura (Coordinador o Regla 37): el link abre sin editar. Planeador de otro docente: sin link,
+  // la edición no conoce `?docente=` y a un Super Admin le abriría el form editable.
   const bloqueoEdicion = motivoNoEditable(actividad)
   const editable = puedeEditar && !bloqueoEdicion
   const accionEditar = editable ? "Editar" : puedeEditar || (puedeVer && !viendoOtroDocente) ? "Ver" : null
@@ -103,12 +67,7 @@ export function ActividadDetallePanel({
       : accionEditar
 
   return (
-    // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
-    // columna con `max-h`, no `h` — un `height: 100%` acá no siempre
-    // resuelve contra eso (necesita un alto definido, no una cota), y
-    // `flex-1` sí funciona igual de bien. Fuera de un contenedor flex
-    // (mobile, sin el `md:flex` del padre) `flex-1` no hace nada, así que
-    // no hace falta condicionarlo a `md:`.
+    // `flex-1` y no `h-full`: el padre acota con `max-h`, contra el que `height: 100%` no resuelve.
     <div className="flex min-h-0 flex-1 flex-col rounded-md border bg-card">
       <div className="bg-muted/10 flex items-center justify-between gap-2 border-b p-3">
         <div className="flex min-w-0 items-center gap-2">
@@ -142,12 +101,7 @@ export function ActividadDetallePanel({
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          {/* Editar navega a la ruta de edición propia. El nombre de la
-              actividad se suma al label ("Editar {nombre}") — mismo
-              criterio que `ActividadCard`: "Editar" a secas no distingue
-              nada cuando el panel puede reabrirse con cualquier actividad.
-              Mientras carga (`actividad` todavía `undefined`) cae al label
-              a secas. */}
+          {/* Label con el nombre para distinguir la actividad; mientras carga queda "Editar". */}
           {accionEditar && (
             <Tooltip>
               <TooltipTrigger
@@ -169,12 +123,9 @@ export function ActividadDetallePanel({
           )}
           {ACCIONES.filter(
             (a) =>
-              // Paréntesis explícitos: sin ellos el `||` dejaba pasar
-              // Marcar/Aprobar en solo lectura apenas cargaba una actividad
-              // no formativa.
+              // Paréntesis explícitos: sin ellos el `||` mostraba Marcar/Aprobar en solo lectura.
               !soloLectura &&
-              // "Aprobar" (bulk) no aplica en preescolar: "Marcar" ya cubre
-              // observación + asistencia de a un estudiante por vez.
+              // "Aprobar" no aplica en preescolar: "Marcar" ya cubre observación + asistencia.
               (a.id !== "aprobar" || !actividad || !esActividadFormativa(actividad)),
           ).map(({ id, label, Icon }) => {
             const handler =
@@ -205,22 +156,14 @@ export function ActividadDetallePanel({
               </Tooltip>
             )
           })}
-          {/* Eliminar: el `AlertDialog` del delete vive adentro de
-              `DialogDeleteActividad` — mismo criterio que `ActividadCard`.
-              Solo se monta con la actividad ya cargada (necesita el
-              `nombre` para el texto de confirmación); mientras carga no
-              hay nada que borrar todavía. Al terminar OK, `onClose` cierra
-              el panel y el Planeador vuelve a mostrar el calendario —
-              mismo criterio que usa `planeador-page.tsx` cuando se borra
-              desde la card. */}
+          {/* Solo con la actividad cargada (el dialog necesita el nombre); al terminar, `onClose` vuelve al calendario. */}
           {actividad && (
             <DialogDeleteActividad actividad={actividad} onDeleted={onClose} />
           )}
         </div>
       </div>
 
-      {/* Mismo patrón que el rail: el header queda fijo y solo scrollea el
-          contenido, con la scrollbar delgada de las tablas. */}
+      {/* Header fijo; solo scrollea el contenido. */}
       <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto p-3">
         {isPending && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
@@ -259,9 +202,7 @@ export function ActividadDetallePanel({
         )}
       </div>
 
-      {/* Validación del coordinador: pie del panel, FUERA del contenedor que
-          scrollea. Como sticky dentro del scroll quedaba un hueco debajo (el
-          `p-3`) por el que se asomaba el contenido. */}
+      {/* Fuera del scroll: como sticky dejaba un hueco por el que asomaba el contenido. */}
       {actividad && !((mode === "grades" || mode === "approval") && !soloLectura) && (
         <ValidacionCoordinadorFooter
           className="static rounded-b-md"

@@ -43,11 +43,7 @@ function RecursoPreviewCargando() {
   )
 }
 
-/** Enlace que no se pudo previsualizar inline (sitio web genérico, o un
- *  link de Drive/Dropbox sin nombre de archivo reconocible): en vez de
- *  forzar un iframe a un sitio arbitrario, se ofrece abrirlo en pestaña
- *  nueva — mismo criterio que el botón "ojito" tenía antes de esta
- *  página, pero acompañado de contexto (de dónde viene el enlace). */
+/** Enlace no previsualizable inline: se ofrece abrirlo en pestaña nueva en vez de forzar un iframe. */
 function EnlaceExterno({ url }: { url: string }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-md border border-dashed py-16 text-center text-sm">
@@ -75,18 +71,7 @@ function EnlaceExterno({ url }: { url: string }) {
   )
 }
 
-/**
- * Un archivo local (`blob:`) que ya no se puede leer, o uno cuyo códec este
- * navegador no soporta. Son dos causas distintas con el mismo síntoma —el
- * elemento dispara `error` y no suena/no se ve nada—, así que el mensaje
- * nombra las dos en vez de adivinar.
- *
- * El caso del blob perdido es real y fácil de provocar: la vista previa es
- * una ruta aparte y el archivo vive en memoria de ESTA pestaña, así que
- * recargar la página o abrir el enlace en otra pestaña lo deja sin bytes.
- * Sin este aviso, el usuario ve un reproductor mudo y no sabe si el problema
- * es su archivo.
- */
+/** Blob perdido (recarga/otra pestaña) o códec no soportado: mismo síntoma, el mensaje nombra ambos. */
 function MedioNoReproducible({
   url,
   nombre,
@@ -141,12 +126,7 @@ function YoutubePreview({ videoId }: { videoId: string }) {
   )
 }
 
-/**
- * Video. Se usa `<video>` nativo y no `ReactPlayer` cuando la fuente es un
- * archivo propio: el player está para las plataformas (YouTube y compañía) y
- * para un `blob:` solo agrega una capa que no aporta nada. El nativo además
- * da el evento `error`, que es lo que deja avisar cuando el códec no va.
- */
+/** `<video>` nativo para archivos propios: da el evento `error` para avisar si el códec falla. */
 function VideoPreview({ url, nombre }: { url: string; nombre?: string }) {
   const [error, setError] = useState(false)
   if (error) return <MedioNoReproducible url={url} nombre={nombre} />
@@ -155,9 +135,7 @@ function VideoPreview({ url, nombre }: { url: string; nombre?: string }) {
       <video
         src={url}
         controls
-        // `metadata` y no `auto`: con un video grande, precargarlo entero
-        // para una vista previa que capaz nadie reproduce es tráfico
-        // regalado. Alcanza para pintar la duración y el primer cuadro.
+        // `metadata`: evita precargar el video entero solo para la vista previa.
         preload="metadata"
         className="h-full w-full"
         onError={() => setError(true)}
@@ -168,11 +146,7 @@ function VideoPreview({ url, nombre }: { url: string; nombre?: string }) {
   )
 }
 
-/**
- * Audio. No tiene "lienzo" que mostrar, así que la caja la ocupan el nombre
- * del archivo y la barra de reproducción — un `<audio>` suelto en el medio de
- * una pantalla vacía se lee como si algo hubiera fallado.
- */
+/** Audio: nombre + barra, para que no parezca una pantalla vacía rota. */
 function AudioPreview({ url, nombre }: { url: string; nombre?: string }) {
   const [error, setError] = useState(false)
   if (error) return <MedioNoReproducible url={url} nombre={nombre} />
@@ -208,13 +182,7 @@ function ImagePreview({ url, nombre }: { url: string; nombre?: string }) {
   )
 }
 
-/** Botón de escape para las vistas que viven dentro de un iframe.
- *
- *  Un iframe hacia otro dominio no avisa cuando lo rechazan: si el servidor
- *  manda `X-Frame-Options` o el archivo es privado, el marco queda en blanco
- *  y no hay evento que lo delate (leer su contenido sería cruzar el origen).
- *  Por eso el enlace se ofrece siempre, no como reacción a un error que no
- *  podemos detectar. */
+/** Enlace siempre visible: un iframe rechazado (X-Frame-Options) queda en blanco sin evento detectable. */
 function AbrirAparte({ url, etiqueta }: { url: string; etiqueta: string }) {
   return (
     <div className="mt-2 flex justify-end">
@@ -233,29 +201,8 @@ function AbrirAparte({ url, etiqueta }: { url: string; etiqueta: string }) {
   )
 }
 
-/**
- * PDF: el browser lo renderiza nativamente dentro del iframe si el servidor
- * lo expone con `Content-Type: application/pdf`. Si no, el iframe queda en
- * blanco o muestra el error del browser — preferible a un placeholder que
- * mienta sobre el contenido.
- *
- * La URL firmada de un archivo ya guardado (`fetchArchivoViewUrl`) trae
- * `X-Frame-Options: DENY` — es un header parejo del api-gateway, pensado
- * para bloquear que OTRO sitio embeba nuestros endpoints, pero de paso
- * bloquea que NOSOTROS la metamos en un `<iframe>`, aunque sea del mismo
- * origen: el navegador la rechaza (`ERR_BLOCKED_BY_RESPONSE`, "rechazó la
- * conexión"). No pasa con `<img>`/`<audio>`/`<video>` porque `X-Frame-
- * Options` solo se evalúa al FRAMEAR, y confirmado en producción: el
- * archivo se descarga bien (200, `Content-Type: application/pdf`), el
- * problema es puntual del `<iframe>`.
- *
- * La salida no es tocar el header (es del gateway, compartido con todos los
- * endpoints) sino no dejar que el iframe dispare esa petición: se trae el
- * PDF con `fetch` (sin el chequeo de framing, es una descarga normal) y se
- * arma un `blob:` local para el `src` del iframe — un archivo YA elegido en
- * el formulario llega así de entrada, así que ese caso no necesita el
- * fetch.
- */
+/** PDF: la URL firmada trae `X-Frame-Options: DENY` del gateway, así que se baja con `fetch`
+ * y se sirve como `blob:` al iframe. */
 function PdfPreview({ url }: { url: string }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -303,20 +250,7 @@ function PdfPreview({ url }: { url: string }) {
   )
 }
 
-/**
- * Visor del propio repositorio (Google Drive, Docs) embebido.
- *
- * Es lo que resuelve el caso que no se puede resolver de otra forma: un
- * enlace de Drive no dice si del otro lado hay un PDF, una foto, un video o
- * un audio, y su visor sí lo sabe. Delegar le pasa los cuatro casos a quien
- * tiene la información.
- *
- * No lleva `sandbox`. Un visor de Drive necesita scripts y su propio origen
- * para andar, y `allow-scripts` + `allow-same-origin` juntos dejan al marco
- * quitarse el sandbox solo, así que la restricción sería más declarativa que
- * real — y a cambio arriesga dejarlo en blanco. Es el mismo trato que el
- * embebido de YouTube de más arriba.
- */
+/** Visor de Drive embebido: sabe qué tipo hay detrás del enlace. Sin `sandbox` (lo necesita para andar). */
 function EmbedPreview({
   url,
   proveedor,
@@ -333,8 +267,7 @@ function EmbedPreview({
           src={url}
           title={`Vista previa en ${proveedor}`}
           className="h-[80vh] w-full"
-          // `allow` es lo que habilita que el reproductor de Drive pueda
-          // sonar y ponerse en pantalla completa desde adentro del marco.
+          // Permite sonido y pantalla completa dentro del marco.
           allow="autoplay; encrypted-media; fullscreen"
         />
       </div>
@@ -343,10 +276,7 @@ function EmbedPreview({
   )
 }
 
-/** .docx / .doc: mammoth los parsea client-side (sin MS Office online, sin
- *  servicios externos) y devuelve HTML ya saneado (sólo deja p/h1-h6/ul/ol/
- *  table). El import dinámico evita que el bundle de mammoth entre al
- *  initial load: solo se carga cuando realmente hay un docx para ver. */
+/** .docx vía mammoth client-side; import dinámico para no cargarlo en el bundle inicial. */
 function DocxPreview({ url }: { url: string }) {
   const [html, setHtml] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -378,9 +308,7 @@ function DocxPreview({ url }: { url: string }) {
 
   if (error) return <EnlaceExterno url={url} />
   if (html === null) return <RecursoPreviewCargando />
-  // mammoth sanitiza el HTML antes de devolverlo (sólo deja los tags que
-  // sabe mapear desde .docx); no se expone dangerouslySetInnerHTML a HTML
-  // externo no controlado.
+  // mammoth ya devuelve HTML saneado.
   return (
     <div className="mx-auto w-full max-w-4xl rounded-md border bg-card p-6">
       <div
@@ -391,25 +319,10 @@ function DocxPreview({ url }: { url: string }) {
   )
 }
 
-/**
- * Plataforma de video o audio que `react-player` ya sabe embeber: Vimeo,
- * Twitch, Wistia, Spotify, TikTok, streams HLS/DASH.
- *
- * La lista no se escribe acá a mano: se le pregunta a la librería con
- * `ReactPlayer.canPlay`, que es la misma función con la que decide internamente
- * qué reproductor usar. Escribir nuestra propia lista de dominios significaría
- * mantenerla sincronizada con la suya para siempre, y quedar cortos cada vez
- * que agreguen una plataforma.
- *
- * La consulta vive en el componente y no en `resolveRecursoPreview` a
- * propósito: ese archivo es lógica pura y lo importa también el formulario
- * (por `RECURSO_ARCHIVO_ACCEPT`), así que meterle un import de `react-player`
- * arrastraría el reproductor entero al bundle de una pantalla que no lo usa.
- */
+/** Plataformas que `ReactPlayer.canPlay` sabe embeber. Vive aquí y no en `resolveRecursoPreview`
+ * para no arrastrar react-player al bundle del formulario. */
 function puedeReactPlayer(url: string): boolean {
-  // `canPlay` está declarado como opcional en los tipos de react-player v3
-  // (`Partial<{...}>`), así que se comprueba antes de llamarlo en vez de
-  // confiar en que siempre viene.
+  // `canPlay` es opcional en los tipos de react-player v3.
   return typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(url)
 }
 
@@ -421,11 +334,7 @@ function PlataformaPreview({ url }: { url: string }) {
   )
 }
 
-/** Sitio web genérico / link sin extensión reconocible: pedimos un PNG de
- *  la página al servicio de Microlink. Si la API no puede (intranets, links
- *  detrás de login), caemos al componente `<Microlink>` que muestra una
- *  card con metadata, y si tampoco puede, su `fallback` da "abrir en
- *  pestaña nueva". */
+/** Web genérica: screenshot de Microlink, con fallback a la card `<Microlink>`. */
 function WebPreview({ url }: { url: string }) {
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -464,22 +373,8 @@ function WebPreview({ url }: { url: string }) {
   )
 }
 
-/**
- * Un material de tipo "Archivo" YA GUARDADO, que se pide por su
- * `PK_TARCHIVO`.
- *
- * No se puede apuntar un `<img>`/`<video>` directo al archivo: esas etiquetas
- * no mandan el header `Authorization`, así que el backend tiene un paso
- * previo — se acuña un token de un solo archivo y de vida corta, y la URL que
- * vuelve ya lo lleva en el query-string. `useArchivoViewUrl` lo resuelve y lo
- * renueva antes de que expire; es el mismo mecanismo que ya usan matrícula y
- * asistencia para sus imágenes.
- *
- * El TIPO no sale de esa URL sino del nombre del archivo, que el detalle
- * completa desde `GET .../materiales/archivos` (V427). Por eso el resolver
- * recibe la URL ya firmada junto con el nombre: la URL no tiene extensión en
- * el path, igual que un blob.
- */
+/** Archivo ya guardado (`PK_TARCHIVO`): URL con token de vista vía `useArchivoViewUrl`; el tipo sale
+ * del nombre (V427) porque la URL no tiene extensión. */
 function ArchivoGuardadoPreview({
   archivoId,
   nombre,
@@ -500,8 +395,7 @@ function ArchivoGuardadoPreview({
     )
   }
 
-  // Sin nombre no hay extensión y no hay forma de saber qué renderizar. Pasa
-  // con materiales guardados antes de que el detalle trajera los nombres.
+  // Materiales guardados antes de que el detalle trajera nombres.
   const resuelto = resolveRecursoPreview(url, nombre)
   if (!resuelto) {
     return (
@@ -531,42 +425,12 @@ function ArchivoGuardadoPreview({
 
 /* ───── componente principal ────────────────────────────────────────── */
 
-/**
- * Previsualización de un recurso según su URL/tipo:
- * - YouTube  → reproductor embebido (`react-player`)
- * - Video    → `<video controls>` para `.mp4`/`.webm`/`.mov`/`.m4v`
- * - Audio    → `<audio controls>` para `.mp3`/`.wav`/`.ogg`/`.m4a`…
- * - Imagen   → `<img>` plano
- * - PDF      → `<iframe>` (el browser lo renderiza nativo)
- * - .docx    → `mammoth.convertToHtml` (parseo client-side, sin MS Office)
- * - Drive    → el visor del propio repositorio, embebido (ver `EmbedPreview`)
- * - Plataforma → `react-player`, para lo que esa librería ya sabe embeber
- * - Web      → screenshot vía `fetchFromApi`, con fallback a `<Microlink>`
- *
- * Los recursos tipo "Archivo" pasan por el mismo camino que el resto. Antes
- * se descartaban de entrada con un estado vacío que decía que no había bytes
- * que mostrar, y eso ya no es cierto: el form guarda el archivo elegido como
- * `blob:` URL y su nombre en `fuente` (ver `RecursoForm`), que es
- * exactamente lo que `resolveRecursoPreview` necesita para decidir el tipo
- * — el `blob:` no trae extensión en el path, pero el nombre sí.
- *
- * Esos bytes viven en la memoria de ESTA pestaña, así que el enlace sirve
- * mientras no se recargue: si se pierden, el elemento dispara `error` y se
- * muestra `MedioNoReproducible`, que lo explica en vez de dejar un
- * reproductor mudo.
- */
+/** Previsualización según URL/tipo. Los `blob:` solo viven en esta pestaña; si se pierden se muestra `MedioNoReproducible`. */
 export function RecursoPreview({ recurso }: { recurso: Recurso }) {
   const url = recurso.url.trim()
-  // Para un archivo local, `fuente` es el nombre original; para un enlace, la
-  // etiqueta que tipeó el usuario. En los dos casos es el mejor rótulo que
-  // hay para el reproductor.
   const nombre = recurso.fuente?.trim() || undefined
 
-  // Un archivo ya guardado se resuelve por su id, no por la url: el detalle
-  // no devuelve ninguna (el binario vive detrás de un token de vista). Se
-  // comprueba ANTES que `url` porque un recurso recién reemplazado en el
-  // formulario puede tener las dos cosas, y ahí manda el blob: es lo que el
-  // usuario acaba de elegir.
+  // Va antes que `url`: si el recurso se reemplazó en el form, manda el blob recién elegido.
   if (recurso.archivoId !== undefined && !url.startsWith("blob:")) {
     return <ArchivoGuardadoPreview archivoId={recurso.archivoId} nombre={nombre} />
   }
@@ -584,15 +448,11 @@ export function RecursoPreview({ recurso }: { recurso: Recurso }) {
     )
   }
 
-  // `fuente` es el nombre del archivo (cuando es un blob URL local) o la
-  // etiqueta que el usuario tipeó; lo pasamos al resolver para que pueda
-  // detectar la extensión de archivos locales.
+  // `fuente` da la extensión de archivos locales.
   const resolved = resolveRecursoPreview(url, recurso.fuente)
 
   if (!resolved) {
-    // Un archivo local cuyo nombre no dice nada reconocible (sin extensión,
-    // o una que no está en las listas) no se puede clasificar a ciegas: no
-    // hay URL que pedirle al servidor ni tipo que adivinar sin leer bytes.
+    // Archivo local sin extensión reconocible: no se puede clasificar.
     return recurso.tipo === "Archivo" ? (
       <RecursoPreviewVacio
         titulo={nombre || "Archivo sin nombre"}
@@ -626,10 +486,7 @@ export function RecursoPreview({ recurso }: { recurso: Recurso }) {
     if (ft === ".pdf") {
       return <PdfPreview url={resolved.value} />
     }
-    // Otros formatos que `resolveRecursoPreview` conoce (csv, xls, …) no se
-    // renderizan inline. Para un enlace se cae al screenshot; para un archivo
-    // local NO, porque un `blob:` no es una página que Microlink pueda ir a
-    // visitar — pedírselo sería garantizar un error con otro nombre.
+    // Otros formatos: enlace → screenshot; blob local no, Microlink no puede visitarlo.
     if (resolved.value.startsWith("blob:")) {
       return (
         <RecursoPreviewVacio
@@ -649,10 +506,7 @@ export function RecursoPreview({ recurso }: { recurso: Recurso }) {
       />
     )
   }
-  // "web": no se reconoció nada por la URL. Antes del screenshot se le
-  // pregunta a react-player, que cubre plataformas (Vimeo, Spotify, Twitch…)
-  // cuyas URLs tampoco tienen extensión y que hasta ahora terminaban como una
-  // captura de pantalla en vez de un reproductor.
+  // Antes del screenshot se prueba react-player (Vimeo, Spotify, Twitch…).
   if (puedeReactPlayer(resolved.value)) {
     return <PlataformaPreview url={resolved.value} />
   }

@@ -80,15 +80,7 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { DatosDelBadge } from "@/components/offline/datos-del-badge"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 
-/**
- * Página principal del Planeador. Layout 2-columnas:
- *   izquierda  → strip "Hoy" + lista vertical de cards (filtradas por URL).
- *   derecha    → grilla mensual con badges por día.
- *
- * El estado de la página vive en la URL (`?buscar=…&filtro=…`) salvo
- * `displayMonth` (mes que se está viendo en el calendario), que es local
- * porque no aporta nada persistirlo entre sesiones.
- */
+/** Página del Planeador: rail + calendario; el estado vive en la URL salvo `displayMonth` (no vale persistirlo). */
 export function PlaneadorPage() {
   return (
     <NoticeProvider>
@@ -104,17 +96,12 @@ function PlaneadorPageContent() {
   const search = useSearch({ from: planeadorRoute.id })
   const { notify } = useNotify()
   const { puedeCrear, viendoOtroDocente } = usePlaneadorSoloLectura()
-  // Sede/Año/Jornada/Docente del filtro avanzado (Super Admin, Rector,
-  // Coordinador). Los hooks de consulta ya leen el alcance de la URL por su
-  // cuenta (ver `usePlaneadorDocenteScope`); acá solo se decide qué mostrar.
+  // Alcance del filtro avanzado; los hooks ya lo leen de la URL (`usePlaneadorDocenteScope`).
   const scope = usePlaneadorDocenteScope()
-  // Nombre del docente en cada card/evento solo cuando la vista mezcla
-  // varios (Coordinador con "Todos los docentes de mi sede").
+  // Nombre del docente solo si la vista mezcla varios (Coordinador, toda la sede).
   const mostrarDocente = scope.puedeElegirDocente && scope.funcionario == null
 
-  // Búsqueda y filtros avanzados, todos en la URL. Ver
-  // `use-planeador-filters`. Cambiar sede/año/jornada/docente borra la
-  // pestaña de rótulo y la actividad abierta (eran del alcance anterior).
+  // Cambiar el alcance borra la pestaña y la actividad abierta (eran del alcance anterior).
   const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     usePlaneadorFilters()
   const buscar = filters.buscar
@@ -122,13 +109,9 @@ function PlaneadorPageContent() {
   // `filtro` = `pk_lista_valor` del instrumento (ver `useInstrumentoFiltroOptions`).
   const instrumento = filters.filtro && Number.isFinite(Number(filters.filtro)) ? Number(filters.filtro) : undefined
   const estadosQuery = estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined
-  // Actividad abierta en el panel derecho. `undefined` => se muestra el
-  // calendario.
+  // `undefined` => se muestra el calendario.
   const actividadId = search.actividad ?? undefined
-  // Cambiar de actividad (o cerrar el panel) resetea `modo` a "info": el
-  // modo vive suelto en la URL, no por actividad, así que sin este reset
-  // seleccionar otra card conservaría "grades"/"approval" de la anterior.
-  // `setMode` pisa este `undefined` con el modo pedido en el mismo navigate.
+  // Cambiar de actividad resetea `modo` (vive suelto en la URL); `setMode` lo pisa en el mismo navigate.
   const setActividadId = (next: string | undefined) =>
     navigate({
       to: planeadorRoute.id,
@@ -136,10 +119,7 @@ function PlaneadorPageContent() {
       replace: true,
     })
 
-  // Día activo de la barra "Hoy | MARTES 16 | < >" del rail (`?dia=`,
-  // paginado por día activo de `GET /actividades/mias` — colección Postman
-  // `planeador-guia-completa`, 4.1/8.3). Vive en la URL, no en estado local,
-  // por el mismo motivo que `actividadId`. Ausente en la URL == hoy.
+  // Día activo del rail (`?dia=`, paginado de `/actividades/mias`); ausente == hoy.
   const dia = search.dia ?? todayDateOnly()
   const setDia = (next: string) =>
     navigate({
@@ -152,15 +132,10 @@ function PlaneadorPageContent() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Modo del panel de detalle de la actividad abierta (`?modo=`), en la URL
-  // por el mismo motivo que `actividadId`/`dia`: enlazable y sobrevive al
-  // refresh. Ausente == "info".
+  // `?modo=` en la URL: enlazable y sobrevive al refresh; ausente == "info".
   const panelMode: "info" | "grades" | "approval" = search.modo ?? "info"
 
-  // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
-  // desde la card (Marcar / Aprobar) como desde los mismos botones del
-  // header del panel — así el comportamiento es idéntico sin importar
-  // desde dónde se disparen.
+  // Mismo comportamiento desde la card y desde el header del panel.
   function setMode(actividadId: string, mode: "grades" | "approval") {
     navigate({
       to: planeadorRoute.id,
@@ -169,33 +144,24 @@ function PlaneadorPageContent() {
     })
   }
 
-  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) para el filtro
-  // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
+  // Catálogo `INSTRUMENTO_EVALUACION` para el filtro "Instrumento".
   const { data: instrumentoOptions = [] } = useInstrumentoFiltroOptions()
 
   const mesDesde = toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1))
   const mesHasta = toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0))
 
-  // Pestaña de Rótulo de Ejecución activa (`?rotulo=`, `planeador-tabs.tsx`)
-  // — SIEMPRE se resuelve, aunque el docente tenga un solo rótulo: ese único
-  // rótulo no necesariamente cubre todo el catálogo del docente (puede dictar
-  // grados que no entran en ningún `TDOCENTE_ASIGNATURA` resuelto acá), así
-  // que saltear el filtro con una sola pestaña dejaba el alta sin acotar.
+  // `?rotulo=` siempre se resuelve: un único rótulo no cubre todo el catálogo del docente.
   const { data: actividadTabs = [], error: errorTabs } = useActividadesTabsQuery()
   const tabActiva = actividadTabs.find((t) => t.rotulo === search.rotulo) ?? actividadTabs[0]
 
-  // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
-  // derivar stats/calendario/listado en el cliente (ver colección
-  // Postman `planeador-pantalla-principal`).
+  // 3 endpoints reales en vez de traer todo con `size=500` y derivar en el cliente.
   const { data: statsCounts, error: errorStats } = useActividadesStatsQuery({
     search: buscar || undefined,
     instrumento,
     gradoAsignaturaPares: tabActiva?.pares,
   })
 
-  // Con un "Estado" elegido las tarjetas de los demás estados van en 0: el
-  // rail y el calendario solo muestran ese estado, y cada tarjeta ES un
-  // estado (no se manda `estados` a `/stats`, se apaga acá).
+  // Con un "Estado" elegido las demás tarjetas van en 0 (no se manda `estados` a `/stats`).
   const conteosBase = statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }
   const conteosVisibles = estado
     ? (Object.fromEntries(
@@ -212,15 +178,11 @@ function PlaneadorPageContent() {
       instrumento,
       gradoAsignaturaPares: tabActiva?.pares,
     })
-  // Botón "Nueva {rótulo}" — género correcto vía `articuloDefinido` (mismo
-  // helper que ya resuelve "un"/"una" en `dialog-agregar-actividad.tsx`):
-  // un rótulo configurado a futuro puede ser masculino ("Proyecto") o
-  // femenino, nunca se asume "Nueva" a secas.
+  // Género vía `articuloDefinido`: un rótulo futuro puede ser masculino ("Proyecto").
   const nuevoRotuloLabel = tabActiva?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
   const nuevoGenero = articuloDefinido(nuevoRotuloLabel) === "el" ? "o" : "a"
 
-  // `search`/`estados`/`instrumento` filtran del lado del servidor, igual
-  // que en el calendario y las tarjetas de arriba.
+  // `search`/`estados`/`instrumento` se filtran en el servidor.
   const {
     data: miasResult,
     isPending,
@@ -239,12 +201,9 @@ function PlaneadorPageContent() {
     gradoAsignaturaPares: tabActiva?.pares,
   })
   const filtered = miasResult?.rows ?? []
-  // El rail pinta su propio error; pestañas, resumen y calendario no, así
-  // que un rechazo (p. ej. 42501 por un docente fuera del alcance) va al
-  // aviso de la página.
+  // Pestañas, resumen y calendario no pintan su error (p. ej. 42501): va al aviso de la página.
   useNotificarErrores([errorTabs, errorStats, errorCalendario])
-  // ¿La actividad abierta en el panel es de otro docente? Se busca en lo
-  // que ya está cargado (rail y calendario): el detalle no trae el dueño.
+  // El detalle no trae el dueño: se busca en lo ya cargado (rail y calendario).
   const actividadAbiertaAjena = actividadId
     ? esAjena(
         filtered.find((a) => String(a.id) === actividadId) ??
@@ -254,12 +213,7 @@ function PlaneadorPageContent() {
   const diaAnterior = miasResult?.diaAnterior ?? null
   const diaSiguiente = miasResult?.diaSiguiente ?? null
 
-  // El rail pagina por día (`?dia=`): al cambiar un filtro (o el alcance/la
-  // pestaña) el día activo puede quedar vacío aunque haya actividades que
-  // cumplen en otros días, y el rail se veía en blanco hasta que el usuario
-  // movía las flechas. Una vez por combinación de filtros, si la respuesta
-  // (real, no el placeholder de la anterior) llega vacía, se salta al día
-  // ocupado más cercano que ella misma informa.
+  // Si tras cambiar filtros el día activo llega vacío, salta una vez al día ocupado más cercano que informa la respuesta.
   const firmaFiltros = JSON.stringify([
     buscar,
     estadosQuery,
@@ -278,12 +232,7 @@ function PlaneadorPageContent() {
     if (destino && destino !== dia) setDia(destino)
   })
 
-  // Los filtros de `/actividades/mias` de arriba, en la forma del reporte
-  // `planeador-actividades` (ver `export-actividades.ts`), SIN `dia`: el
-  // export lleva todas las actividades del usuario que cumplen la búsqueda,
-  // el estado y la pestaña, no solo las del día que muestra el rail. También
-  // el alcance (docente elegido, sede/año/jornada) y el instrumento: sin
-  // ellos el archivo traía actividades que la pantalla no mostraba.
+  // Filtros del reporte `planeador-actividades` sin `dia`, con alcance e instrumento (sin ellos traía actividades no visibles).
   const exportFilters = {
       SEARCH: buscar || undefined,
       ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
@@ -293,10 +242,7 @@ function PlaneadorPageContent() {
       PERIODO: scope.periodoId,
       INSTRUMENTO: instrumento,
     }
-  // Encabezados del PDF/Excel: el reporte trae fijos "Actividad" y "Unidad
-  // tematica"; la pestaña sabe cómo se llaman de verdad. La unidad sale del
-  // referente de la pestaña (su "Rótulo de secuencia"), con el mismo
-  // resolvedor que el resto del planeador.
+  // Encabezados reales de la pestaña: el reporte trae fijos "Actividad"/"Unidad tematica".
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const rotulosExport = tabActiva
     ? {
@@ -305,24 +251,8 @@ function PlaneadorPageContent() {
       }
     : undefined
 
-  // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
-  // actividades (colección Postman
-  // `planeador-actividades-exportar-importar`), aparte del export PDF/Excel
-  // que ya cubre `DialogExportActividades`.
-  //
-  // "Exportar todo" exporta TODAS las actividades del docente, no las del
-  // rail. Antes mandaba `filtered`, que es lo que se está viendo — y eso va
-  // acotado por `dia` (el día activo, por defecto hoy), por `search` y por
-  // `estados`, además de paginado de a 50. El resultado era que el botón
-  // decía "todo" y exportaba las vigentes de un día: con un docente de
-  // prueba de 20 actividades, un día cualquiera devolvía 8 y con texto en el
-  // buscador llegó a devolver 1.
-  //
-  // El endpoint exige al menos un filtro y no admite "exportar todo" sin
-  // acotar, así que se sigue mandando `IDS`; lo que cambia es de dónde
-  // salen: de una consulta aparte sin ninguno de esos filtros. El backend no
-  // recorta nada por su cuenta (no tiene parámetro de fecha) — devuelve
-  // exactamente las que se le nombran.
+  // "Exportar todo" (JSON): TODAS las actividades del docente, no `filtered` (acotado por día/búsqueda/estado y paginado).
+  // El endpoint exige filtro: se mandan `IDS` de una consulta aparte sin filtros.
   const [importarOpen, setImportarOpen] = React.useState(false)
   const [exportandoTodo, setExportandoTodo] = React.useState(false)
   const exportarJson = useExportarActividadesJson({
@@ -360,30 +290,13 @@ function PlaneadorPageContent() {
     }
   }
 
-  // Map day-of-month → actividades, para las filas de la grilla. El
-  // endpoint devuelve por SOLAPAMIENTO (una actividad que sigue abierta
-  // aparece también en el mes donde arrancó) — por eso NO se planta cada
-  // actividad una sola vez con la `fecha` que resuelve el backend (inicio, o
-  // `fecha_desde` si el inicio cae afuera): visto mes por mes, esa ancla
-  // hacía que la MISMA actividad se plotara en DOS MESES distintos —una vez
-  // por su inicio, otra por el "sigue abierta" del mes siguiente— y se
-  // contara doble al mirar los dos meses.
-  //
-  // Acá cada actividad se planta en HASTA DOS celdas — su inicio y su cierre
-  // (pedido explícito: antes solo se veía la fecha de cierre) — pero cada
-  // una se valida CONTRA EL MES VISIBLE por separado, así que no reintroduce
-  // el bug de arriba: una actividad que arrancó el mes pasado y cierra este
-  // mes solo aparece bajo su día de cierre (su inicio no cae en este mes);
-  // una que arranca y cierra en el mismo mes aparece en las dos celdas de
-  // ESTE mes, nunca en otro.
+  // Cada actividad va en su celda de inicio y de cierre, validadas por separado contra el mes visible:
+  // el endpoint devuelve por solapamiento y anclar por `fecha` la duplicaba en dos meses.
   const events = (() => {
     const map = new Map<number, DayEvent[]>()
     function plantar(day: number, a: (typeof calendarioActividades)[number]) {
       const list = map.get(day) ?? []
-      // `gradoGrupo` es el "601" del prototipo (grado+grupo, ya resuelto por
-      // el backend) — antes se mostraba el `pk_tactividad` acá por error
-      // ("34 | MATEMA…" en vez de "601 | MATEMA…"); se cae a él solo si el
-      // backend todavía no manda `grado_grupo` para esta fila.
+      // `gradoGrupo` ("601"); se cae al id solo si el backend aún no manda `grado_grupo`.
       list.push({
         id: a.id,
         code: a.gradoGrupo ?? String(a.id).slice(-3),
@@ -397,8 +310,7 @@ function PlaneadorPageContent() {
         const inicio = parseLocalDate(a.fechaInicio)
         if (inicio) plantar(inicio.getDate(), a)
       }
-      // Actividad de un solo día (inicio === cierre): no se duplica en la
-      // misma celda.
+      // Un solo día: no se duplica en la misma celda.
       if (
         a.fechaCierre !== a.fechaInicio &&
         a.fechaCierre >= mesDesde &&
@@ -419,8 +331,7 @@ function PlaneadorPageContent() {
         <PlaneadorTabs />
 
         <TableScreenToolbar>
-          {/* Fila propia (`w-full`) arriba del buscador; no se renderiza
-              para un docente. */}
+          {/* Fila propia (`w-full`) arriba del buscador; no se renderiza para un docente. */}
 
           <SearchPlaneador
             activeFilterCount={activeFilterCount}
@@ -430,14 +341,7 @@ function PlaneadorPageContent() {
             instrumentoOptions={instrumentoOptions}
           />
 
-          {/* Las acciones de la pantalla van junto al buscador, no en el
-              título: es donde las tiene el resto de los listados.
-
-              "Nueva actividad" y su "…" van pegados como un solo control
-              partido —el primero se redondea a la izquierda, el segundo a la
-              derecha, y se les quita el borde donde se tocan—; el `div` con
-              `gap-0` neutraliza el espacio que `<TableScreenActions>` agrega
-              entre hijos. */}
+          {/* Acciones junto al buscador; "Nueva" y "…" forman un control partido (`gap-0` anula el gap de `TableScreenActions`). */}
             <TableScreenActions>
               <div className="flex gap-0">
                 {puedeCrear && (
@@ -473,14 +377,9 @@ function PlaneadorPageContent() {
                   >
                     <DotsThreeIcon />
                   </DropdownMenuTrigger>
-                  {/* "Recargar" apunta a `refetch` del query. "Exportar todo"
-                    e "Importar" son el intercambio JSON de actividades —
-                    ver el comentario junto a `exportarJson` más arriba—,
-                    no el export PDF/Excel del botón de al lado. */}
+                  {/* "Exportar todo"/"Importar" son el intercambio JSON (ver `exportarJson`), no el PDF/Excel. */}
                   <DropdownMenuContent align="end">
-                    {/* La planilla no acepta `?docente=` (fuera del alcance del
-                      selector): abrirla desde el planeador de otro docente
-                      mostraría la del usuario, así que no se ofrece. */}
+                    {/* La planilla no acepta `?docente=`: mostraría la del usuario. */}
                     {!viendoOtroDocente && (
                       <DropdownMenuItem
                         render={<Link to={paths.app.planeadorPlanilla.getHref()} />}
@@ -503,16 +402,8 @@ function PlaneadorPageContent() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              {/* El export general reusa el mismo diálogo que el listado de
-                Cobertura (`DialogExportActividades`): los mismos criterios
-                que ya filtran el rail viajan como `filters` (SEARCH/ESTADOS/
-                DIA) al reporte real, y el backend reporta cuántas filas
-                salieron. El trigger que el diálogo trae adentro reemplaza al
-                `<Button>` de export que estaba disabled. */}
-              {/* El reporte `planeador-actividades` filtra del lado del servidor
-                por el usuario del token y todavía no recibe el docente:
-                exportar mirando a otro docente bajaría las actividades
-                equivocadas, así que se oculta hasta que lo soporte. */}
+              {/* Mismo diálogo que Cobertura: los filtros del rail viajan al reporte real. */}
+              {/* El reporte filtra por el usuario del token y aún no recibe el docente: se oculta al ver a otro. */}
               {scope.funcionario == null && (
                 <DialogExportActividades
                   rows={filtered}
@@ -520,9 +411,7 @@ function PlaneadorPageContent() {
                   rotulos={rotulosExport}
                 />
               )}
-              {/* Controlado desde acá y no con su propio `DialogTrigger`: el
-                que lo abre es un `DropdownMenuItem`, y un diálogo anidado
-                dentro del menú se desmonta apenas el menú cierra. */}
+              {/* Controlado acá: un diálogo anidado en el menú se desmonta al cerrarse el menú. */}
               <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
             </TableScreenActions>
         </TableScreenToolbar>
@@ -532,42 +421,20 @@ function PlaneadorPageContent() {
       <TableScreenBody>
           <>
             <PlaneadorLecturaBanner className="mb-4" />
-            {/* Cards de resumen por estado. Salen de `/actividades/stats` con los
-            mismos filtros del buscador que el rail y el calendario (texto,
-            instrumento, alcance y pestaña); con un estado elegido, las demás
-            van en 0 (ver `conteosVisibles`). */}
+            {/* Resumen de `/actividades/stats` con los filtros del buscador (ver `conteosVisibles`). */}
             <div className="mb-6">
               <PlaneadorSummaryCards
                 counts={conteosVisibles}
               />
             </div>
 
-            {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
-            `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
-            que una tabla ancha empuja la columna en vez de scrollear dentro de
-            su propio contenedor y desborda la pantalla. */}
+            {/* `minmax(0,1fr)` y no `1fr`: `1fr` no baja del mínimo del contenido y una tabla ancha desborda. */}
             <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
-              {/* Rail izquierda. La lista crece con la cantidad de actividades y hacía scrollear
-              la página entera, dejando al calendario —mucho más corto— con un
-              vacío enorme al lado. Un `flex-1` no alcanza para acotarla: el
-              `<main>` del layout crece con el documento, así que ningún
-              ancestro define una altura contra la cual medir.
-
-              La referencia real es el calendario, que es quien fija el alto de
-              la fila de la grilla. Desde `md` el contenido del rail se saca
-              del flujo (`absolute inset-0`): así deja de aportar altura
-              intrínseca —la fila la decide el calendario solo— y a la vez
-              queda estirado a esa altura, que es contra lo que el `flex-1` de
-              la lista puede medir. Bajo `md` (una sola columna) vuelve al
-              flujo normal y la lista se muestra completa. */}
+              {/* Rail: desde `md` sale del flujo (`absolute inset-0`) para que el calendario fije el alto de la fila
+                y la lista mida contra él; bajo `md` vuelve al flujo. */}
               <section aria-label="Listado de actividades" className="relative min-h-0">
                 <div className="flex flex-col gap-3 md:absolute md:inset-0">
-                  {/* Header del rail: chip "Hoy" a la izquierda, el día al centro y
-                las dos flechas a la derecha. El `Button` del DS ya trae el
-                tamaño más chico en h-7/size-7 (xs/icon-xs); acá no encaja —el
-                rail mide 180/210 px de ancho y cada px cuenta—, así que sólo
-                se achica con className (h-6/size-6) en vez de reconstruir el
-                estilo a mano. */}
+                  {/* El rail mide 180/210 px: los botones se achican por className (h-6/size-6) bajo el xs del DS. */}
                   <div className="flex items-center justify-between gap-0.5">
                     <Button
                       variant="soft"
@@ -657,15 +524,13 @@ function PlaneadorPageContent() {
                     {!isPending && !isError && filtered.length > 0 && (
                       <ul className="flex flex-col gap-2">
                         {filtered.map((actividad) => (
-                          // Precarga el detalle al apuntar/enfocar la card: el
-                          // clic llega con el viaje (o parte) ya hecho.
+                          // Precarga el detalle al apuntar/enfocar la card.
                           <li
                             key={actividad.id}
                             onPointerEnter={() => prefetchActividadDetalle(queryClient, actividad.id)}
                             onFocus={() => prefetchActividadDetalle(queryClient, actividad.id)}
                           >
-                            {/* Actividad de otro docente (Coordinador viendo toda
-                            su sede): la card queda en solo lectura. */}
+                            {/* Actividad de otro docente (Coordinador): solo lectura. */}
                             <PlaneadorSoloLecturaScope activo={esAjena(actividad)}>
                               <ActividadCard
                                 actividad={actividad}
@@ -681,10 +546,7 @@ function PlaneadorPageContent() {
                                     ),
                                   })
                                 }
-                                // Si la actividad que se borró era la abierta en
-                                // el panel, cerramos el panel: sin actividadId
-                                // la página vuelve a mostrar el calendario en la
-                                // columna derecha (mismo path que `onClose`).
+                                // Si se borró la abierta, se cierra el panel (mismo path que `onClose`).
                                 onDeleted={() => {
                                   if (actividadId === String(actividad.id)) {
                                     setActividadId(undefined)
@@ -700,32 +562,8 @@ function PlaneadorPageContent() {
                 </div>
               </section>
 
-              {/* Columna derecha: calendario por defecto, detalle de la actividad
-              cuando hay una seleccionada. Siempre acotada a la ventana (antes
-              solo pasaba con el detalle abierto): un mes de 6 semanas puede
-              ser más alto que el viewport, y sin este tope la página entera
-              terminaba scrolleando para mostrarlo completo —eso arrastraba
-              el header "Hoy" del rail (que no tiene su propio scroll, solo
-              la lista de abajo lo tiene) hasta quedar semi-tapado por el
-              `TableScreenHeader` sticky a mitad de scroll. Con el tope, si el
-              mes no entra, scrollea POR DENTRO de esta columna en vez de
-              arrastrar toda la página.
-
-              `max-h` + `flex flex-col`, no `h` a secas: un `height` fijo
-              obliga a la columna a medir SIEMPRE ese alto, aunque el
-              calendario (que tiene un contenido casi constante, ~6 semanas)
-              o el panel de detalle midan MENOS —eso dejaba un hueco en
-              blanco debajo del contenido real y, encima, empujaba la PÁGINA
-              entera más alta que el viewport (scroll de la página con un
-              tramo en blanco al fondo, en vez de contenerse). Con `max-h`,
-              la columna solo crece hasta el tope cuando el contenido de
-              verdad lo necesita; si es más corto, se achica con él. El hijo
-              que antes usaba `h-full` para heredar ese alto fijo ahora usa
-              `flex-1 min-h-0` (ver `ActividadDetallePanel` y el `div` de
-              abajo): con `max-h` en el padre, un `height: 100%` no siempre
-              resuelve (necesita un alto DEFINIDO, no una cota), `flex-1` sí
-              funciona igual de bien contra un contenedor acotado por
-              `max-height`. */}
+              {/* Acotada a la ventana: un mes largo scrollea por dentro sin arrastrar el header del rail. `max-h` (no `h`)
+                evita el hueco en blanco; por eso el hijo usa `flex-1 min-h-0` y no `h-full`. */}
               <section
                 aria-label={actividadId ? "Detalle de la actividad" : "Calendario del planeador"}
                 className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
@@ -748,12 +586,7 @@ function PlaneadorPageContent() {
                       onMonthChange={(next) =>
                         setDisplayMonth(new Date(next.getFullYear(), next.getMonth(), 1))
                       }
-                      // Click en un día del calendario: abre el alta de
-                      // Actividad con ESE día como fecha de inicio Y cierre —
-                      // el docente puede cambiarlas después, es solo un punto
-                      // de partida (mismo criterio que `unidadId` en
-                      // `planeadorActividadCrearSearchSchema`). Sin permiso de
-                      // crear (p. ej. el Coordinador) el día no es clickeable.
+                      // Día clickeado = inicio y cierre de la nueva actividad; sin permiso de crear no es clickeable.
                       onDayClick={
                         puedeCrear
                           ? (date) => {
@@ -769,10 +602,7 @@ function PlaneadorPageContent() {
                             }
                           : undefined
                       }
-                      // Click en una actividad ya listada en la celda: abre ESA
-                      // actividad (mismo panel que `onSelect` de la fila en la
-                      // lista, más arriba) en vez de crear una nueva en esa
-                      // fecha.
+                      // Abre la actividad de la celda en vez de crear una nueva.
                       onEventClick={(id) => setActividadId(String(id))}
                       onEventHover={(id) => prefetchActividadDetalle(queryClient, id)}
                     />
