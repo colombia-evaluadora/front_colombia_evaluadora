@@ -48,7 +48,10 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
 
   function handleVer() {
     if (archivoLocal) {
-      window.open(URL.createObjectURL(archivoLocal), "_blank", "noopener,noreferrer")
+      const objectUrl = URL.createObjectURL(archivoLocal)
+      window.open(objectUrl, "_blank", "noopener,noreferrer")
+      // La pestaña ya cargó el archivo: se libera después para no acumular blobs.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
     } else if (url) {
       window.open(url, "_blank", "noopener,noreferrer")
     }
