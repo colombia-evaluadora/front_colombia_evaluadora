@@ -1032,6 +1032,7 @@ Pedido: que el docente tenga TODO en el equipo para meses sin red. Detalle en [A
 - **Flag por feature**: `meta.offline` y handlers se registran solo si `offlineFeatures.includes("planilla")` etc.
 - **SW autodesregistrable**: build de emergencia con `sw.ts` que hace `self.registration.unregister()` + borra caches + `clients.navigate` (patrón "kill switch SW"); se despliega con `wrangler deploy` normal. Nunca se borra IndexedDB desde el kill-switch (preserva la outbox); la app sin SW sigue sincronizando.
 - Rollback de Worker: `wrangler rollback` (CLAUDE.md §9) **no** deshace el SW instalado → por eso el SW se publica con `Cache-Control: no-cache` en `/sw.js` y el kill-switch es el camino.
+- **Navegaciones a prueba de precache roto** (incidente ERR_FAILED en testv2): el SW responde navegaciones red-primero (timeout 3,5 s) → `index.html` del precache → cualquier `index.html` cacheado (+ `registration.update()`) → página inline en español con Reintentar. El handler nunca rechaza; detalle en `docs/offline/KILL-SWITCH.md` y e2e en `e2e/pwa/navigation-fallback.spec.ts`.
 
 ### 11.7 Estimación
 | Fase | Front | Backend |
