@@ -344,6 +344,7 @@ export function CrearEvaluacionDialog({
             <SelectorVotantes
               titulo="Estudiantes que la presentan"
               mensajeInvalido="Selecciona al menos un estudiante."
+              accion="para presentarla"
               seleccion={participantes}
               onCambio={setParticipantes}
               invalido={intentado && participantes.size === 0}

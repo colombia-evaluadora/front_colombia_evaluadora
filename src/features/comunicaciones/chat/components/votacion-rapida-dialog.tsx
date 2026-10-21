@@ -94,7 +94,7 @@ export function VotacionRapidaDialog({
           <form.Field name="tipo">
             {(f) => (
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
-                <legend className="px-1 text-sm font-medium">Tipo de respuesta</legend>
+                <legend className="px-1 text-sm font-medium">Tipos de respuesta</legend>
                 <RadioGroup
                   value={f.state.value}
                   onValueChange={(t) => f.handleChange(t as TipoVotacionRapida)}

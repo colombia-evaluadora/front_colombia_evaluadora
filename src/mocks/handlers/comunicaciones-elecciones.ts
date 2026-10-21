@@ -126,7 +126,9 @@ export const comunicacionesEleccionesHandlers = [
     await delay(200)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
     if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
-    simularVotos(e)
+    // Solo la elección de ejemplo recibe votos simulados; una recién creada queda en cero (se
+    // puede editar hasta el primer voto, como en comms-service).
+    if (e.conversacionId === 5) simularVotos(e)
     const user = usuarioDe(request)
     const esEstudiante = user?.roles.includes("CEVAL-ESTUDIANTE") ?? false
     return HttpResponse.json({

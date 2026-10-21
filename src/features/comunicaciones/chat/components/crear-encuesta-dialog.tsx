@@ -27,7 +27,9 @@ import {
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
-import { diaMinimo, errorCierre, isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 const datosSchema = z
   .object({
@@ -170,34 +172,37 @@ export function CrearEncuestaDialog({
               <datos.AppField name="descripcion">
                 {(f) => <f.TextareaField label="Descripción" maxLength={500} />}
               </datos.AppField>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <datos.AppField name="fechaInicio">
-                  {(f) => <f.DateField label="Fecha inicio" required mode="datetime" minDate={new Date()} />}
-                </datos.AppField>
-                {/* El día mínimo del cierre sigue a la fecha de inicio. */}
-                <datos.Subscribe selector={(st) => st.values.fechaInicio}>
-                  {(inicio) => (
-                    <datos.AppField
-                      name="fechaCierre"
-                      // Se valida al momento, también cuando cambia el inicio.
-                      validators={{
-                        onChangeListenTo: ["fechaInicio"],
-                        onChange: ({ value, fieldApi }) =>
-                          errorCierre(fieldApi.form.getFieldValue("fechaInicio"), value),
-                      }}
-                    >
-                      {(f) => (
-                        <f.DateField
-                          label="Fecha final" required
-                          mode="datetime"
-                          minDate={diaMinimo(inicio)}
-                          description="Al llegar esta fecha se cierran las respuestas."
-                        />
-                      )}
-                    </datos.AppField>
-                  )}
-                </datos.Subscribe>
-              </div>
+              {/* Un solo campo "Fecha" de inicio a final, como el diseño (3849:72675): abre al empezar el
+                  primer día y cierra al terminar el último. */}
+              <datos.Subscribe selector={(st) => [st.values.fechaInicio, st.values.fechaCierre] as const}>
+                {([inicio, cierre]) => (
+                  <datos.Field name="fechaInicio">
+                    {(f) => {
+                      const error = f.state.meta.errors[0] ?? datos.getFieldMeta("fechaCierre")?.errors[0]
+                      const mensaje = typeof error === "string" ? error : error?.message
+                      return (
+                        <Field variant="outlined" data-invalid={!!mensaje || undefined}>
+                          <FieldLabel>
+                            Fecha<span aria-hidden className="text-red">*</span>
+                          </FieldLabel>
+                          <DateRangeField
+                            value={{ startDate: inicio?.slice(0, 10) ?? "", endDate: cierre?.slice(0, 10) ?? "" }}
+                            onChange={({ startDate, endDate }) => {
+                              f.handleChange(`${startDate}T00:00`)
+                              datos.setFieldValue("fechaCierre", `${endDate}T23:59`)
+                            }}
+                          />
+                          {mensaje ? (
+                            <FieldError>{mensaje}</FieldError>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Las respuestas se cierran al terminar el último día.</p>
+                          )}
+                        </Field>
+                      )
+                    }}
+                  </datos.Field>
+                )}
+              </datos.Subscribe>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Resultados</legend>
                 <div role="radiogroup" className="flex flex-wrap gap-x-6 gap-y-2">
@@ -231,6 +236,7 @@ export function CrearEncuestaDialog({
               <SelectorVotantes
                 titulo="Participantes"
                 mensajeInvalido="Selecciona al menos una persona que responda la encuesta."
+                accion="para responder"
                 seleccion={participantes}
                 onCambio={setParticipantes}
                 invalido={intentado && participantes.size === 0}

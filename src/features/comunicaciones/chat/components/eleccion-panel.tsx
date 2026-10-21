@@ -120,7 +120,7 @@ export function EleccionResultados({
       className="mb-4 rounded-xl border bg-card p-3 md:p-4"
     >
       {finalizada && !e.esCreador && (
-        <h3 className="mb-1 font-semibold">
+        <h3 className="mb-1 text-[15px] leading-snug font-semibold">
           Resultados finales{e.yaVoto ? " · Tu voto quedó registrado (es secreto)" : ""}
         </h3>
       )}
@@ -205,7 +205,7 @@ function FilaCandidato({ fila, color }: { fila: FilaResultado; color: string }) 
         </>
       )}
       <div className="min-w-0 flex-1">
-        <h4 className="truncate font-semibold">{c ? c.nombre : "Voto en blanco"}</h4>
+        <h4 className="truncate text-[15px] leading-snug font-semibold">{c ? c.nombre : "Voto en blanco"}</h4>
         {c?.lema && (
           <p className={cn("truncate text-sm", fila.ganador ? "opacity-90" : "text-muted-foreground")}>
             {c.lema}

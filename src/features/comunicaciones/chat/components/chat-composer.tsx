@@ -393,7 +393,8 @@ export function ChatComposer({
           )}
           <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivo={elegirArchivo} />
           <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivo={elegirArchivo} />
-          <Herramienta etiqueta="Formato de texto" pendiente>
+          {/* Aa muestra la barra de formato (diseño 3729:38181): sale con el foco en el editor. */}
+          <Herramienta etiqueta="Mostrar formato de texto" onClick={() => areaRef.current?.focus()}>
             <TextAaIcon className="size-5" />
           </Herramienta>
           <SelectorEmoji

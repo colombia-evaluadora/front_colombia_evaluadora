@@ -309,7 +309,7 @@ function RespuestaPregunta({
   return (
     <article>
       <header className="mb-1.5 flex items-start gap-3">
-        <h3 className="flex-1 font-medium">
+        <h3 className="flex-1 text-[15px] leading-snug font-medium">
           {numero}. {p.texto}
         </h3>
         <div className="flex shrink-0 items-center gap-1.5 text-xs">
