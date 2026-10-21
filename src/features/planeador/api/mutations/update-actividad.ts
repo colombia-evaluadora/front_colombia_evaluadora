@@ -19,33 +19,8 @@ interface UpdateActividadInput {
 }
 
 /**
- * `PUT /planeador/actividades/:id` (confirmado real) — igual que en unidad,
- * el PUT es parcial: campo ausente preserva el valor actual. Por eso
- * `FK_TGRUPO`/`FK_TASIGNATURA` solo se mandan si el docente re-eligió
- * grado/grupo/asignatura en este form (`gradoId`/`grupoId`/`asignaturaId`
- * resueltos) — si no los tocó, se omiten.
- *
- * No toca `FK_TUNIDAD`: reasignar la unidad de la actividad se resuelve
- * ANTES de llamar a este mutation, en `handleSubmit` de
- * `planeador-editar-actividad-page.tsx`, contra las rutas dedicadas
- * (`useLinkActividadUnidad`/`useUnlinkActividadUnidad`) — son las únicas que
- * conocen la `ponderacion` que exige esa unidad. Mandar `FK_TUNIDAD` acá
- * también duplicaba la escritura y el backend terminaba validando la
- * `PONDERACION` de esta actividad (el peso en la nota final, campo
- * distinto) contra la unidad recién vinculada, con 400 de por medio.
- *
- * Tampoco toca "Estudiantes": `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO`
- * tienen su propio endpoint suelto (`PUT .../estudiantes`, ver
- * `set-estudiantes-actividad.ts`) documentado junto con evidencias/
- * criterios/materiales/adaptaciones como "cambios puntuales" — antes se
- * mandaba `FK_TMATRICULAS` acá mismo, pero por ese camino nunca se podía
- * mandar `ASIGNAR_TODO_EL_GRUPO` (no había forma de volver una actividad a
- * "todo el grupo" después de haberla puntualizado).
- *
- * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
- * materiales ni adaptaciones (rutas de reemplazo completo aparte, iguales
- * que `FK_TMATRICULAS` arriba). SÍ manda `EVIDENCIAS`/`CRITERIOS` — ver más
- * abajo.
+ * PUT parcial: campo ausente preserva el valor. No manda `FK_TUNIDAD` (lo resuelven link/unlink, que
+ * validan la ponderación) ni estudiantes (`PUT .../estudiantes`), materiales o adaptaciones.
  */
 export async function updateActividad({ actividadId, data }: UpdateActividadInput, req?: WriteRequest): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -58,89 +33,52 @@ export async function updateActividad({ actividadId, data }: UpdateActividadInpu
     FECHA_INICIO: data.fechaInicio,
     FECHA_CIERRE: data.fechaCierre,
     MATERIAL_REQUERIDO: data.materiales,
-    // Mismo arreglo que `create-actividad.ts`: "Seguimiento" se capturaba
-    // pero nunca viajaba en el PUT. `REQUIERE_VALIDACION_COORDINADOR` sigue
-    // la misma convención "S"/"N" que `GENERA_EVIDENCIAS` — confirmado real
-    // (V246/V496.4, cast a `academico_test.bool_sn`).
+    // Convención "S"/"N": el backend castea a `bool_sn`.
     GENERA_EVIDENCIAS: data.generaEvidencias ? "S" : "N",
     REQUIERE_VALIDACION_COORDINADOR: data.requiereValidacion ? "S" : "N",
     OBSERVACIONES_DOCENTE: data.observaciones,
   }
-  // Mismo arreglo que `create-actividad.ts`: se capturaban en el form pero
-  // nunca viajaban en el PUT.
+  const [tipoActividadId, tipoEvidenciaId, modalidadId, instrumentoId, recuperacion] = await Promise.all([
+    resolveTipoActividadId(data.tipo),
+    data.tipoEvidencia ? resolveTipoEvidenciaId(data.tipoEvidencia) : undefined,
+    data.modalidad ? resolveModalidadId(data.modalidad) : undefined,
+    data.esEvaluativa ? resolveInstrumentoEvaluacionId(data.instrumento) : undefined,
+    data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino ? toRecuperacionBody(data) : undefined,
+  ])
   if (data.duracionEstimada) body.DURACION_ESTIMADA = Number(data.duracionEstimada)
   if (data.semana) body.SEMANA_CRONOGRAMA = data.semana
-  // `FK_TLV_TIPO_EVIDENCIA`: mismo arreglo (y mismo criterio best-effort)
-  // que `create-actividad.ts` — ver `use-tipo-evidencia-catalog.ts`.
+  // Catálogos best-effort: si no resuelven, se omite el campo.
   if (data.tipoEvidencia) {
-    const tipoEvidenciaId = await resolveTipoEvidenciaId(data.tipoEvidencia)
     if (tipoEvidenciaId != null) body.FK_TLV_TIPO_EVIDENCIA = tipoEvidenciaId
   }
-  // Ver el comentario de `resolveModalidadId`: categoría sin confirmar
-  // contra el backend real, best-effort.
   if (data.modalidad) {
-    const modalidadId = await resolveModalidadId(data.modalidad)
     if (modalidadId != null) body.FK_TLV_MODALIDAD = modalidadId
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
-  const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
-  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`
-  // y el mismo branch en `create-actividad.ts`): `NOTA_MAXIMA` cuando la
-  // unidad calcula por "Suma de puntos", `PONDERACION` cuando calcula por
-  // "Ponderado" — el form ya deja cargado solo el que corresponde.
+  // `NOTA_MAXIMA` y `PONDERACION` son excluyentes; el form deja solo uno.
   if (data.esEvaluativa && data.notaMaxima != null) body.NOTA_MAXIMA = data.notaMaxima
   else if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
-  // Necesario ANTES de poder (re)definir la estructura del instrumento
-  // (`PUT .../instrumento`, `update-instrumento-actividad.ts`): ese endpoint
-  // exige que `TACTIVIDAD.FK_TLV_INSTRUMENTO_EVALUACION` ya coincida con lo
-  // que se está definiendo (400/22023 si no calza).
+  // Debe ir antes de `PUT .../instrumento`: ese endpoint exige que el instrumento ya coincida (400/22023).
   if (data.esEvaluativa) {
-    const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
-  // `REQUIERE_ARCHIVO`/`REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO` — mismo
-  // nombre confirmado que `create-actividad.ts` (ver su comentario), solo
-  // aplican con el instrumento personalizado ("Otro").
+  // Solo el instrumento personalizado ("Otro") tiene estos campos.
   if (data.instrumento === "Otro") {
     const { instrumentoPersonalizado } = data
     body.REQUIERE_ARCHIVO = instrumentoPersonalizado.requiereArchivo ? "S" : "N"
     body.REQUIERE_TEXTO = instrumentoPersonalizado.requiereRespuestaTexto ? "S" : "N"
     if (instrumentoPersonalizado.descripcion) body.DESCRIPCION_INSTRUMENTO = instrumentoPersonalizado.descripcion
   }
-  // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
-  // normal) son excluyentes — mismo contrato que `p_recuperacion`/
-  // `p_quitar_recuperacion` de `fn_actividad_actualizar` (confirmado por
-  // lectura directa de sso V496.2/V496.3/V496.4: `QUITAR_RECUPERACION` SÍ
-  // está en `param_types` como `BOOLEAN`, con `COALESCE(...,FALSE)`, y
-  // `fn_actividad_recuperacion_configurar_interno` trata `p_config IS NULL`
-  // como un revert idempotente — no falla si la actividad no era una
-  // recuperación). El comentario anterior ("mandarlo rompía el PUT
-  // general") describía una versión vieja del backend, de antes de que
-  // V496.x terminara de exponer el parámetro — confirmado ya no aplica.
-  // `recuperacionDestino` solo llega lleno si el backend ya expone los
-  // catálogos (`campos_disponibles.recuperacion`, ver `RecuperacionSection`).
+  // `RECUPERACION` y `QUITAR_RECUPERACION` son excluyentes; sin `recuperacionDestino` no se configura.
   if (data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino) {
-    body.RECUPERACION = await toRecuperacionBody(data)
+    body.RECUPERACION = recuperacion
   } else if (!data.esRecuperacion) {
-    // El docente apagó el switch "Es una recuperación" (o la actividad
-    // nunca lo fue): se manda SIEMPRE que no se esté configurando una en
-    // esta misma llamada (mutuamente excluyentes, ver arriba) — es
-    // idempotente en el backend, así que no hace daño mandarlo también
-    // sobre una actividad que nunca fue recuperación.
+    // Idempotente en el backend: seguro aunque la actividad nunca haya sido recuperación.
     body.QUITAR_RECUPERACION = true
   }
-  // `EVIDENCIAS`/`CRITERIOS`: reemplazo COMPLETO en el mismo PUT (contrato
-  // confirmado, igual que `ENUNCIADOS` en `update-unidad.ts`). Antes se
-  // mandaba solo lo NUEVO, una evidencia/criterio por request
-  // (`useAgregarEvidenciaActividad`/`useAgregarCriterioUnidadActividad`,
-  // ver `planeador-editar-actividad-page.tsx`) porque no había endpoint
-  // confirmado para desvincular uno ya marcado — el checklist del form los
-  // dejaba tildados y deshabilitados sin forma de destildarlos. Con
-  // reemplazo completo alcanza con mandar la lista final tal cual quedó en
-  // el form; solo tiene sentido si la actividad sigue vinculada a una
-  // unidad (mismo guard que `create-actividad.ts`).
+  // Reemplazo completo de evidencias/criterios; solo aplica si sigue vinculada a una unidad.
   if (data.unidad.id !== 0) {
     body.EVIDENCIAS = data.evidenciasIds
     body.CRITERIOS = data.criteriosUnidadIds
@@ -159,8 +97,6 @@ export function useUpdateActividad({ mutationConfig }: UseUpdateActividadOptions
   return useMutation({
     mutationFn: (input: UpdateActividadInput) => updateActividad(input),
     onSuccess: (data, variables, ...rest) => {
-      // Refresca el detalle Y el rail/calendario/stats — no solo el listado
-      // legado (ver el comentario del helper).
       invalidarListadosActividades(queryClient, { detalleId: variables.actividadId })
       onSuccess?.(data, variables, ...rest)
     },

@@ -490,9 +490,10 @@ export async function fetchActividadDetalle(id: number, queryClient: QueryClient
       esFormativa: Boolean(mock.unidad?.id) && !mock.esEvaluativa,
     }
   }
-  const [[tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions], nombresArchivo] = await Promise.all([
+  const [[tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions], nombresArchivo, recuperacion] = await Promise.all([
     catalogosPromise!,
     archivosPromise!,
+    resolverRecuperacionValores(first as ActividadDetalleRow),
   ])
   const actividad = toActividadDetalle(
     first as ActividadDetalleRow,
@@ -500,7 +501,7 @@ export async function fetchActividadDetalle(id: number, queryClient: QueryClient
     tipoAdaptacionOptions,
     aplicaAOptions,
   )
-  Object.assign(actividad, await resolverRecuperacionValores(first as ActividadDetalleRow))
+  Object.assign(actividad, recuperacion)
   // Sin el nombre, un material guardado se ve como fila en blanco.
   return {
     ...actividad,
