@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -26,18 +25,13 @@ import { useLogout, useUser } from "@/lib/auth"
 import { useCreate } from "@/features/establishment/employees/api/mutations/use-create"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
 import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
-import { useUpdate } from "@/features/establishment/employees/api/mutations/use-update"
+import { useSaveEmployeeChanges } from "@/features/establishment/employees/api/mutations/save-employee-changes"
 import {
   correoCambio,
   useReactivarPorCambioDeCorreo,
   type CambioCorreoInput,
 } from "@/features/establishment/employees/api/mutations/use-reactivar-por-cambio-de-correo"
 import { registerFuncionario } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
-import {
-  toCrearItem,
-  updateEmployeePermissions,
-  type PermissionSyncItem,
-} from "@/features/establishment/employees/api/mutations/update-permissions"
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
 import {
   useSedeJornadasActivasQuery,
@@ -55,8 +49,7 @@ import { createAdditionalInfoFromEmployee, type EmployeeAdditionalInfoValue } fr
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { toEmailInput } from "@/lib/text-input"
-import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
-import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import {
   computePersonErrors,
   createPermissionDraft,
@@ -66,6 +59,7 @@ import {
 } from "@/features/establishment/employees/components/dialogs/dialog-manage/schema"
 import {
   buildDraftSnapshot,
+  buildEmployeeDataSnapshot,
   buildEmployeeStatus,
   createEmptyPerson,
   createInitialAdditionalInfo,
@@ -99,7 +93,6 @@ function ManageEmployeeDialogContent({
   notifyPage,
 }: ManageEmployeeDialogProps & { notifyPage: ReturnType<typeof useNotify>["notify"] }) {
   const { notify, dismiss } = useNotify()
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { data: currentUser } = useUser()
   // El `sub` del JWT es el correo: cambiar el propio obliga a cerrar sesión.
@@ -139,15 +132,40 @@ function ManageEmployeeDialogContent({
   const personMatchSnapshotRef = useRef<Partial<Person> | null>(null)
   // PK_TSEDE_USUARIO al cargar, para el diff de permisos.
   const originalPermissionIdsRef = useRef<Set<number>>(new Set())
-  const [isSavingPermissions, setIsSavingPermissions] = useState(false)
   // Correo original, para saber si cambió al guardar.
   const originalEmailRef = useRef<string | undefined>(undefined)
-  // Lo lee `onSuccess`: si cambió el correo propio, avisa cierre de sesión.
-  const selfEmailJustChangedRef = useRef(false)
+  // Línea base de lo PERSISTIDO (borrador completo, ficha sola y permisos):
+  // decide el botón Guardar, la confirmación al descartar y qué requests
+  // manda `saveEmployeeChanges`.
   const cleanSnapshotRef = useRef<string | null>(null)
+  const cleanEmployeeDataSnapshotRef = useRef<string | null>(null)
+  const cleanPermissionsSnapshotRef = useRef<string>(JSON.stringify([]))
+  // Línea base de cada sub-diálogo (lo confirmado en el borrador, aunque
+  // todavía no esté guardado): "Cancelar" ahí vuelve a esto.
   const permissionsSnapshotRef = useRef<string>(JSON.stringify([]))
   const additionalInfoSnapshotRef = useRef<string>(JSON.stringify(createInitialAdditionalInfo()))
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
+  /** Fija lo recién cargado/guardado como línea base de todo el diálogo. */
+  function markClean(
+    nextPerson: Person,
+    nextAdditionalInfo: EmployeeAdditionalInfoValue,
+    nextPermissions: Permission[],
+  ) {
+    cleanSnapshotRef.current = buildDraftSnapshot(nextPerson, nextAdditionalInfo, nextPermissions)
+    cleanEmployeeDataSnapshotRef.current = buildEmployeeDataSnapshot(nextPerson, nextAdditionalInfo)
+    cleanPermissionsSnapshotRef.current = JSON.stringify(nextPermissions)
+    permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
+    additionalInfoSnapshotRef.current = JSON.stringify(nextAdditionalInfo)
+  }
+
+  function resetCleanSnapshots() {
+    cleanSnapshotRef.current = null
+    cleanEmployeeDataSnapshotRef.current = null
+    cleanPermissionsSnapshotRef.current = JSON.stringify([])
+    permissionsSnapshotRef.current = JSON.stringify([])
+    additionalInfoSnapshotRef.current = JSON.stringify(createInitialAdditionalInfo())
+  }
 
 
   /** id efectivo: el de la URL o el creado en esta sesión. */
@@ -230,9 +248,7 @@ function ManageEmployeeDialogContent({
     // el ícono de editar, sin pedir un Guardar que no aplica.
     setPermissionsSaved(employee.permissions.length > 0)
     setAdditionalInfoSaved(hasAdditionalInfoData(loadedAdditionalInfo))
-    cleanSnapshotRef.current = buildDraftSnapshot(loadedPerson, loadedAdditionalInfo, employee.permissions)
-    permissionsSnapshotRef.current = JSON.stringify(employee.permissions)
-    additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
+    markClean(loadedPerson, loadedAdditionalInfo, employee.permissions)
   }
 
   // Deshace la carga de un match por documento sin tocar `person`.
@@ -246,9 +262,7 @@ function ManageEmployeeDialogContent({
     setPermissionsSaved(false)
     setAdditionalInfoSaved(false)
     originalPermissionIdsRef.current = new Set()
-    cleanSnapshotRef.current = null
-    permissionsSnapshotRef.current = JSON.stringify([])
-    additionalInfoSnapshotRef.current = JSON.stringify(createInitialAdditionalInfo())
+    resetCleanSnapshots()
   }
 
   function resetDraft() {
@@ -268,16 +282,30 @@ function ManageEmployeeDialogContent({
     setMatchedFuncionarioId(null)
     personMatchSnapshotRef.current = null
     originalPermissionIdsRef.current = new Set()
-    cleanSnapshotRef.current = null
-    permissionsSnapshotRef.current = JSON.stringify([])
-    additionalInfoSnapshotRef.current = JSON.stringify(createInitialAdditionalInfo())
+    resetCleanSnapshots()
   }
 
-  function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen && !isEditMode) {
+  function closeDialog() {
+    if (!isEditMode) {
       resetDraft()
     }
-    onOpenChange(nextOpen)
+    onOpenChange(false)
+  }
+
+  // Cancelar, Escape u overlay: con cambios sin guardar (incluidos los que
+  // solo se confirmaron en Permisos o Información complementaria) pide
+  // confirmación antes de descartarlos.
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      onOpenChange(true)
+      return
+    }
+    if (isSavingMain) return
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    closeDialog()
   }
 
   useEffect(() => {
@@ -333,99 +361,37 @@ function ManageEmployeeDialogContent({
   })
 
   const reactivarMutation = useReactivarPorCambioDeCorreo()
-  // Se arma en `handleMainSave` (modo edición, correo realmente cambiado) y
-  // lo consume el `onSuccess` de `updateMutation`.
-  const emailChangeRef = useRef<CambioCorreoInput | null>(null)
 
-  const updateMutation = useUpdate({
-    mutationConfig: {
-      onSuccess: async (result) => {
-        if (result.status === "error") {
-          emailChangeRef.current = null
-          notify(result.message, { variant: "error" })
-          return
-        }
+  // Guardado único de la edición: PATCH de la ficha + PUT de permisos, cada
+  // uno solo si cambió. Los mensajes los arma `handleMainSave`.
+  const saveMutation = useSaveEmployeeChanges()
 
-        // Correo propio cambiado: el aviso de cierre reemplaza al normal; luego se reenvía la activación.
-        const cambioCorreo = emailChangeRef.current
-        emailChangeRef.current = null
-        let activacionMsg: string | null = null
-        if (cambioCorreo) {
-          try {
-            await reactivarMutation.mutateAsync(cambioCorreo)
-            activacionMsg = `Se envió el correo de activación a ${cambioCorreo.correoNuevo}.`
-          } catch (error) {
-            selfEmailJustChangedRef.current = false
-            notifyPage(
-              `${SUCCESS_MESSAGES.employee.updated} No fue posible enviar el correo de activación: ${
-                getErrorMessage(error) || "error desconocido"
-              }`,
-              { variant: "error" },
-            )
-            onOpenChange(false)
-            return
-          }
-        }
-
-        if (selfEmailJustChangedRef.current) {
-          selfEmailJustChangedRef.current = false
-          setSelfEmailChangedDialogOpen(true)
-          return
-        }
-
-        // En creación también pasa por PUT: se distingue el mensaje y el aviso de invitación.
-        const invitation = isEditMode ? null : invitationNoticeRef.current
-        if (invitation && !activacionMsg) {
-          notifyPage(invitation.message, { variant: invitation.variant })
-          onOpenChange(false)
-          return
-        }
-        const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
-        notifyPage(activacionMsg ? `${base} ${activacionMsg}` : base)
-        onOpenChange(false)
-      },
-      onError: (error) => {
-        notify(getErrorMessage(error) || "No fue posible actualizar el funcionario.", {
-          variant: "error",
-        })
-      },
-    },
-  })
-
-  const updateAdditionalInfoMutation = useUpdate({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-
-        notify("Información complementaria actualizada.")
-        additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
-        if (person) {
-          cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
-        }
-        setAdditionalInfoSaved(true)
-        setAdditionalInfoDialogOpen(false)
-      },
-      onError: (error) => {
-        notify(getErrorMessage(error) || "No fue posible actualizar la información complementaria.", {
-          variant: "error",
-        })
-      },
-    },
-  })
-
+  // `isRegistering` cubre el alta real (`registerFuncionario` no es mutation).
+  const [isRegistering, setIsRegistering] = useState(false)
   const isSavingMain =
+    isRegistering ||
     createPersonMutation.isPending ||
     createMutation.isPending ||
-    updateMutation.isPending
+    saveMutation.isPending ||
+    reactivarMutation.isPending
 
   const hasUnsavedChanges =
     cleanSnapshotRef.current === null ||
     photo !== null ||
     photoRemoved ||
     (person !== null && buildDraftSnapshot(person, additionalInfo, permissions) !== cleanSnapshotRef.current)
+
+  // Para la confirmación al cerrar: en un alta sin guardar todavía se compara
+  // contra el borrador vacío (si no, abrir y cerrar sin tocar nada pediría
+  // confirmación); en edición, antes de que cargue el detalle, `person` sigue
+  // vacío y tampoco cuenta como cambio.
+  const isDirty =
+    photo !== null ||
+    photoRemoved ||
+    (person !== null &&
+      buildDraftSnapshot(person, additionalInfo, permissions) !==
+        (cleanSnapshotRef.current ??
+          buildDraftSnapshot(createEmptyPerson(), createInitialAdditionalInfo(), [])))
 
   const hasPermissionsChanges = JSON.stringify(permissions) !== permissionsSnapshotRef.current
   const hasAdditionalInfoChanges = JSON.stringify(additionalInfo) !== additionalInfoSnapshotRef.current
@@ -453,6 +419,7 @@ function ManageEmployeeDialogContent({
 
       if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
         // Real: /register/cval/funcionario crea TUSUARIO + TFUNCIONARIO (V51 REV5).
+        setIsRegistering(true)
         try {
           const registered = await registerFuncionario(persistedPerson, photo)
           persistedPerson = { ...persistedPerson, id: registered.pkFuncionario }
@@ -483,7 +450,7 @@ function ManageEmployeeDialogContent({
           setPerson(persistedPerson)
           setCreatedEmployeeId(registered.pkFuncionario)
           // No se invalida `["employees"]` hasta asignar permisos; se actualiza el snapshot.
-          cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+          markClean(persistedPerson, additionalInfo, permissions)
           setUploadedPhoto(photo)
           setPhoto(null)
           setPhotoRemoved(false)
@@ -499,6 +466,8 @@ function ManageEmployeeDialogContent({
           notify(getErrorMessage(error) || "No fue posible registrar el funcionario.", {
             variant: "error",
           })
+        } finally {
+          setIsRegistering(false)
         }
         return
       }
@@ -541,7 +510,7 @@ function ManageEmployeeDialogContent({
 
       // Las siguientes llamadas pasan por PUT.
       setCreatedEmployeeId(result.employee.id ?? null)
-      cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+      markClean(persistedPerson, additionalInfo, permissions)
       setUploadedPhoto(photo)
       setPhoto(null)
       setPhotoRemoved(false)
@@ -553,25 +522,125 @@ function ManageEmployeeDialogContent({
       return
     }
 
-    // Editar con PUT; el correo se compara sin mayúsculas.
-    selfEmailJustChangedRef.current = Boolean(
-      isEditMode &&
+    // Editar: UN solo guardado (PATCH de la ficha si cambió + PUT de permisos
+    // si cambiaron, ver `saveEmployeeChanges`). El correo se compara sin mayúsculas.
+    const employeeDataChanged =
+      photo !== null ||
+      photoRemoved ||
+      buildEmployeeDataSnapshot(persistedPerson, additionalInfo) !== cleanEmployeeDataSnapshotRef.current
+    const selfEmailChanged = Boolean(
+      employeeDataChanged &&
+        isEditMode &&
         currentUser?.email &&
         originalEmailRef.current &&
         toEmailInput(originalEmailRef.current).toLowerCase() === toEmailInput(currentUser.email).toLowerCase() &&
         toEmailInput(persistedPerson.email).toLowerCase() !== toEmailInput(originalEmailRef.current).toLowerCase(),
     )
-    emailChangeRef.current =
-      isEditMode && correoCambio(originalEmailRef.current, persistedPerson.email)
+    const cambioCorreo: CambioCorreoInput | null =
+      employeeDataChanged && isEditMode && correoCambio(originalEmailRef.current, persistedPerson.email)
         ? { correoAnterior: toEmailInput(originalEmailRef.current ?? ""), correoNuevo: toEmailInput(persistedPerson.email) }
         : null
-    await updateMutation.mutateAsync({
-      employeeId: activeEmployeeId,
-      values: payload,
-      foto: photo,
-      removePhoto: photoRemoved,
-    })
-    setPhotoRemoved(false)
+
+    let result: Awaited<ReturnType<typeof saveMutation.mutateAsync>>
+    try {
+      result = await saveMutation.mutateAsync({
+        employeeId: activeEmployeeId,
+        values: payload,
+        employeeDataChanged,
+        originalPermissionIds: originalPermissionIdsRef.current,
+        permissionsChanged: JSON.stringify(permissions) !== cleanPermissionsSnapshotRef.current,
+        foto: photo,
+        removePhoto: photoRemoved,
+      })
+    } catch (error) {
+      // Falló el PATCH (o el PUT en mock): no se guardó nada.
+      notify(getErrorMessage(error) || "No fue posible actualizar el funcionario.", { variant: "error" })
+      return
+    }
+
+    if (result.status === "error") {
+      notify(result.message, { variant: "error" })
+      return
+    }
+
+    // Lo que ya quedó persistido pasa a ser la nueva línea base (si falla el
+    // PUT de permisos, reintentar no vuelve a mandar el PATCH ni el correo).
+    const nextPermissions = result.permissions?.permissions ?? permissions
+    if (result.permissions) {
+      setPermissions(nextPermissions)
+      originalPermissionIdsRef.current = result.permissions.originalPermissionIds
+    }
+    const permissionsFullySaved = !result.permissionsError && !(result.permissions?.failures.length)
+    setPerson(persistedPerson)
+    cleanEmployeeDataSnapshotRef.current = buildEmployeeDataSnapshot(persistedPerson, additionalInfo)
+    if (permissionsFullySaved) {
+      markClean(persistedPerson, additionalInfo, nextPermissions)
+    } else {
+      // Los permisos siguen pendientes: la base conserva los permisos de antes
+      // para que el diálogo quede sucio (Guardar visible) y se pueda reintentar.
+      cleanSnapshotRef.current = buildDraftSnapshot(
+        persistedPerson,
+        additionalInfo,
+        JSON.parse(cleanPermissionsSnapshotRef.current),
+      )
+      additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
+      permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
+    }
+    if (result.patched) {
+      originalEmailRef.current = persistedPerson.email
+      if (photo) setUploadedPhoto(photo)
+      setPhoto(null)
+      setPhotoRemoved(false)
+    }
+
+    // El cambio de correo se notifica una sola vez, después del guardado.
+    let activacionMsg: string | null = null
+    let activacionError: string | null = null
+    if (cambioCorreo) {
+      try {
+        await reactivarMutation.mutateAsync(cambioCorreo)
+        activacionMsg = `Se envió el correo de activación a ${cambioCorreo.correoNuevo}.`
+      } catch (error) {
+        activacionError = `No fue posible enviar el correo de activación: ${
+          getErrorMessage(error) || "error desconocido"
+        }`
+      }
+    }
+
+    // Correo propio cambiado: el aviso de cierre de sesión reemplaza al normal.
+    if (selfEmailChanged) {
+      setSelfEmailChangedDialogOpen(true)
+      return
+    }
+
+    if (!permissionsFullySaved) {
+      const failures = result.permissions?.failures ?? []
+      const detalle = result.permissionsError
+        ? getErrorMessage(result.permissionsError) || "No fue posible actualizar los permisos."
+        : `No se pudieron guardar ${failures.length} permiso(s): ${failures.join(", ")}.`
+      const mensaje = [result.patched ? "Datos del funcionario guardados." : null, detalle, activacionError]
+        .filter(Boolean)
+        .join(" ")
+      notify(mensaje, { variant: "error" })
+      return
+    }
+
+    if (activacionError) {
+      notifyPage(`${SUCCESS_MESSAGES.employee.updated} ${activacionError}`, { variant: "error" })
+      onOpenChange(false)
+      return
+    }
+
+    // En creación también pasa por acá: se distingue el mensaje y el aviso de invitación.
+    const invitation = isEditMode ? null : invitationNoticeRef.current
+    if (invitation && !activacionMsg) {
+      notifyPage(invitation.message, { variant: invitation.variant })
+      onOpenChange(false)
+      return
+    }
+    const base = isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created
+    notifyPage(activacionMsg ? `${base} ${activacionMsg}` : base)
+    onOpenChange(false)
   }
 
   /** "Entendido" (o cierre): cierra sesión, no hay cancelar real. */
@@ -650,78 +719,17 @@ function ManageEmployeeDialogContent({
     notify(`Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`)
   }
 
-  /** Mock: confirma el borrador. Real: diff altas/bajas a PUT /funcionario/:ID/permisos. */
+  /**
+   * Solo confirma el borrador: no llama a la API. Las altas/bajas viajan en el
+   * PUT /funcionario/:ID/permisos que manda "Guardar" (`saveEmployeeChanges`).
+   * `cleanSnapshotRef` no se toca, así el diálogo principal sigue sucio (botón
+   * Guardar visible y confirmación al descartar).
+   */
   async function closePermissionsDialog() {
-    if (env.ENABLE_API_MOCKING || !activeEmployeeId) {
-      setPermissionsSaved(true)
-      setPermissionsDialogOpen(false)
-      permissionsSnapshotRef.current = JSON.stringify(permissions)
-      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
-      notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
-      return
-    }
-
-    const currentIds = new Set(
-      permissions.map((permission) => permission.id).filter((id): id is number => id !== undefined),
-    )
-    const toDelete = [...originalPermissionIdsRef.current].filter((id) => !currentIds.has(id))
-    const toCreate = permissions.filter((permission) => permission.id === undefined)
-
-    if (toDelete.length === 0 && toCreate.length === 0) {
-      setPermissionsSaved(true)
-      setPermissionsDialogOpen(false)
-      permissionsSnapshotRef.current = JSON.stringify(permissions)
-      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
-      return
-    }
-
-    setIsSavingPermissions(true)
-    try {
-      const items: PermissionSyncItem[] = [
-        ...toDelete.map((id): PermissionSyncItem => ({ accion: "eliminar", id })),
-        ...toCreate.map(toCrearItem),
-      ]
-      const results = await updateEmployeePermissions(activeEmployeeId, items)
-
-      // Una fila por ítem, en el mismo orden: `status` "error:..." si esa fila falló.
-      const fallo = (index: number) => results[index]?.status?.startsWith("error:") ?? true
-      const fallidas = results.filter((row) => row.status?.startsWith("error:")).map((row) => row.status.slice(6).replaceAll("_", " "))
-      const deletesFallidos = toDelete.filter((_, i) => fallo(i))
-      // Las altas exitosas quedan con su `id`; las fallidas siguen sin `id` y se reintentan.
-      const createdIds: number[] = []
-      let createIndex = toDelete.length
-      const nextPermissions = permissions.map((permission) => {
-        if (permission.id !== undefined) return permission
-        const index = createIndex
-        createIndex += 1
-        if (fallo(index)) return permission
-        createdIds.push(results[index].id)
-        return { ...permission, id: results[index].id }
-      })
-      setPermissions(nextPermissions)
-      originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds, ...deletesFallidos])
-      permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
-      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
-      void queryClient.invalidateQueries({ queryKey: employeeKeys.all })
-      void queryClient.invalidateQueries({ queryKey: academicPeriodKeys.assignmentTeachers.all })
-
-      if (fallidas.length > 0) {
-        notify(`No se pudieron guardar ${fallidas.length} permiso(s): ${fallidas.join(", ")}.`, {
-          variant: "error",
-        })
-        return
-      }
-
-      setPermissionsSaved(true)
-      setPermissionsDialogOpen(false)
-      notify("Permisos actualizados.")
-    } catch (error) {
-      notify(getErrorMessage(error) || "No fue posible actualizar los permisos.", {
-        variant: "error",
-      })
-    } finally {
-      setIsSavingPermissions(false)
-    }
+    setPermissionsSaved(true)
+    setPermissionsDialogOpen(false)
+    permissionsSnapshotRef.current = JSON.stringify(permissions)
+    notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   function handlePermissionsDialogOpenChange(nextOpen: boolean) {
@@ -734,33 +742,16 @@ function ManageEmployeeDialogContent({
     setPermissionsDialogOpen(nextOpen)
   }
 
+  /**
+   * Solo confirma el borrador: no llama a la API. Antes mandaba su propio PATCH
+   * y "Guardar" otro (dos escrituras y dos notificaciones APP_ACCION por una
+   * misma edición); ahora todo sale en el único PATCH de `handleMainSave`.
+   */
   async function closeAdditionalInfoDialog() {
-    if (env.ENABLE_API_MOCKING || !activeEmployeeId || !person) {
-      setAdditionalInfoSaved(true)
-      setAdditionalInfoDialogOpen(false)
-      additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
-      notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
-      return
-    }
-
-    await updateAdditionalInfoMutation.mutateAsync({
-      employeeId: activeEmployeeId,
-      values: {
-        id: activeEmployeeId,
-        person,
-        employeeClass: additionalInfo.employeeClass,
-        educationLevel: additionalInfo.educationLevel,
-        grade: additionalInfo.grade,
-        highestEducationLevel: additionalInfo.highestEducationLevel,
-        fundingSource: additionalInfo.fundingSource,
-        functionalPosition: additionalInfo.functionalPosition,
-        employmentType: additionalInfo.employmentType,
-        address: additionalInfo.address,
-        permissions,
-        status: buildEmployeeStatus(permissions),
-      },
-      foto: null,
-    })
+    setAdditionalInfoSaved(true)
+    setAdditionalInfoDialogOpen(false)
+    additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
+    notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   function handleAdditionalInfoDialogOpenChange(nextOpen: boolean) {
@@ -917,7 +908,7 @@ function ManageEmployeeDialogContent({
         onRemove={removePermission}
         hasChanges={hasPermissionsChanges}
         onSave={closePermissionsDialog}
-        isSaving={isSavingPermissions}
+        isSaving={false}
       />
 
       <AdditionalInfoDialog
@@ -927,7 +918,16 @@ function ManageEmployeeDialogContent({
         onChange={setAdditionalInfo}
         hasChanges={hasAdditionalInfoChanges}
         onSave={closeAdditionalInfoDialog}
-        isSaving={updateAdditionalInfoMutation.isPending}
+        isSaving={false}
+      />
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          closeDialog()
+        }}
       />
 
       {/* Bloqueante a propósito: no hay "Cancelar" — ver el comentario de
