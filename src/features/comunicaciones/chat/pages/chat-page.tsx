@@ -45,7 +45,12 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { ArchivosView } from "@/features/comunicaciones/chat/components/archivos-view"
 import { BorradoresView } from "@/features/comunicaciones/chat/components/borradores-view"
-import { useGuardarBorrador } from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
+import {
+  useGuardarBorrador,
+  useProgramarMensaje,
+} from "@/features/comunicaciones/chat/api/mutations/use-acciones-borrador"
+import { fechaProgramada } from "@/features/comunicaciones/chat/lib/programacion"
+import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { Borrador, CategoriaCanal, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
@@ -169,6 +174,7 @@ function ChatContent() {
   const [agotados, setAgotados] = useState<Set<number>>(() => new Set())
   const marcarLeido = useMarcarLeido()
   const guardarBorrador = useGuardarBorrador()
+  const programarMensaje = useProgramarMensaje()
 
   const seleccionar = (id: number | undefined) => {
     setBusqueda("")
@@ -236,6 +242,7 @@ function ChatContent() {
             <BorradoresView
               onVolver={() => seleccionar(undefined)}
               onEditar={editarBorrador}
+              onAbrirConversacion={(id) => seleccionar(id)}
               onAbrirEnviado={(e) =>
                 navigate({
                   search: (prev) => ({ ...prev, canal: e.conversacionId, vista: undefined, mensaje: e.mensajeId ?? undefined }),
@@ -361,6 +368,18 @@ function ChatContent() {
                 key={`${activa.id}-${borradorActivo?.id ?? "nuevo"}`}
                 textoInicial={borradorActivo?.texto ?? ""}
                 onGuardarBorrador={(texto) => guardarBorrador.mutate({ conversacionId: activa.id, texto })}
+                onProgramar={
+                  CHAT_FUNCIONES.borradores
+                    ? (texto, programadoPara) =>
+                        programarMensaje
+                          .mutateAsync({ conversacionId: activa.id, texto, programadoPara })
+                          .then((b) => {
+                            // El borrador del canal pasó a ser el programado.
+                            setBorrador(null)
+                            notify(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}.`)
+                          })
+                    : undefined
+                }
                 destino={activa.tipo === "CANAL" ? `#${activa.nombre}` : activa.nombre}
                 enviando={enviar.isPending}
                 miembros={miembrosQuery.data ?? []}

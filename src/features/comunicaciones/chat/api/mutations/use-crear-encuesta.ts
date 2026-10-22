@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { conBorrador } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 import type {
   Conversacion,
   Encuesta,
@@ -24,6 +25,7 @@ export interface CrearEncuestaInput {
   // Ids (users) de quienes responden; comms-service los vuelve miembros del canal.
   participantes: number[]
   preguntas: PreguntaNueva[]
+  borradorId?: number | null
 }
 
 const cuerpoEncuesta = (v: Omit<CrearEncuestaInput, "participantes">) => ({
@@ -44,7 +46,7 @@ async function crearEncuesta(v: CrearEncuestaInput) {
   return evalCol.postRow<Conversacion>("/comunicaciones/encuestas", {
     ...cuerpoEncuesta(v),
     PARTICIPANTES: v.participantes,
-  })
+  }, conBorrador(v.borradorId))
 }
 
 /**
@@ -67,7 +69,11 @@ export function useCrearEncuesta() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: crearEncuesta,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ]),
   })
 }
 

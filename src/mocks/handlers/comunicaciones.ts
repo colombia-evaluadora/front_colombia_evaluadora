@@ -43,11 +43,59 @@ import {
   publicarMensajeCreado,
   publicarMensajeEliminado,
   simularRespuesta,
+  topicUsuario,
 } from "@/mocks/realtime/chat"
+import { publish } from "@/mocks/realtime/server"
+import { bogotaAInstante, MARGEN_MINIMO_MS, MAXIMO_MS } from "@/features/comunicaciones/chat/lib/programacion"
 
 // Mock del chat de comunicaciones; el backend aún no existe.
 // `*` delante: también matchea con `msw/node` en los tests (URL absoluta).
 const URL = (path: string) => `*/api/eval-col/comunicaciones/${path}`
+
+// ── mensajes programados (comms-service: estado PROGRAMADO de tborrador + job de envío) ──
+
+/** `yyyy-MM-ddTHH:mm` (hora de Bogotá) o ISO → instante; NaN si no se entiende. */
+function instanteProgramado(valor: unknown) {
+  if (typeof valor !== "string") return Number.NaN
+  const local = bogotaAInstante(valor)
+  return Number.isNaN(local) ? Date.parse(valor) : local
+}
+
+function errorProgramado(t: number) {
+  const ahora = Date.now()
+  if (Number.isNaN(t)) return "La fecha de envío no es válida."
+  if (t < ahora + MARGEN_MINIMO_MS) return "La hora de envío debe ser posterior a la actual."
+  if (t > ahora + MAXIMO_MS) return "Solo se puede programar hasta un año hacia adelante."
+  return null
+}
+
+/**
+ * Envía los programados cuya hora llegó, cada uno una sola vez: el estado pasa a ENVIADO antes
+ * de crear el mensaje (comms-service lo reclama con un UPDATE condicionado en la misma
+ * transacción). Avisa en vivo con `borradores.actualizados`, como el backend.
+ */
+export function enviarProgramadosVencidos(ahora = Date.now()) {
+  let enviados = 0
+  for (const b of borradores) {
+    if (b.estado !== "PROGRAMADO" || !b.programadoPara || Date.parse(b.programadoPara) > ahora) continue
+    b.estado = "ENVIADO"
+    const m = nuevoMensaje(b.conversacionId, b.texto)
+    b.fecha = m.fecha
+    publicarMensajeCreado(m)
+    enviados++
+    publish(topicUsuario(USUARIO_ACTUAL.id), "borradores.actualizados", { id: b.id, conversacionId: b.conversacionId })
+  }
+  return enviados
+}
+
+// "Job" del mock: revisa cada 2 s (el de comms-service, cada 15 s). En consola (y en los E2E),
+// `__programadosMock.adelantar(ms)` corre el job como si hubiera pasado ese tiempo.
+if (typeof window !== "undefined") {
+  setInterval(() => enviarProgramadosVencidos(), 2_000)
+  Object.assign(window, {
+    __programadosMock: { adelantar: (ms: number) => enviarProgramadosVencidos(Date.now() + ms) },
+  })
+}
 
 /** `CLIENT_MESSAGE_ID` → id del mensaje creado (reintentos idempotentes). */
 const enviadosPorCliente = new Map<string, number>()
@@ -575,16 +623,83 @@ export const comunicacionesArchivosHandlers = [
 
   http.get(URL("borradores"), async () => {
     await delay(250)
+    enviarProgramadosVencidos()
     return HttpResponse.json({ rows: borradores })
+  }),
+
+  // Programar lo escrito en el editor: el borrador vivo del canal pasa a PROGRAMADO.
+  http.post(URL("conversaciones/:id/programados"), async ({ params, request }) => {
+    await delay(200)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const body = (await request.json()) as { TEXTO?: string; PROGRAMADO_PARA?: string }
+    const texto = body.TEXTO?.trim() ?? ""
+    if (!texto) return HttpResponse.json({ message: "Escribe el mensaje." }, { status: 400 })
+    const t = instanteProgramado(body.PROGRAMADO_PARA)
+    const error = errorProgramado(t)
+    if (error) return HttpResponse.json({ message: error }, { status: 400 })
+    const programadoPara = new Date(t).toISOString()
+    const vivo = borradores.find((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
+    if (vivo) {
+      Object.assign(vivo, { texto, estado: "PROGRAMADO", fecha: programadoPara, programadoPara })
+      return HttpResponse.json({ rows: [vivo] })
+    }
+    const b = {
+      id: Math.max(0, ...borradores.map((x) => x.id)) + 1,
+      conversacionId: conv.id,
+      conversacionNombre: conv.nombre,
+      texto,
+      estado: "PROGRAMADO" as const,
+      fecha: programadoPara,
+      programadoPara,
+    }
+    borradores.push(b)
+    return HttpResponse.json({ rows: [b] })
+  }),
+
+  http.patch(URL("borradores/:id/programar"), async ({ params, request }) => {
+    await delay(200)
+    const b = borradores.find((x) => x.id === Number(params.id))
+    if (!b) return HttpResponse.json({ message: "El borrador no existe." }, { status: 404 })
+    if (b.estado === "ENVIADO") return HttpResponse.json({ message: "Ese mensaje ya se envió." }, { status: 409 })
+    const body = (await request.json()) as { TEXTO?: string; PROGRAMADO_PARA?: string }
+    const texto = body.TEXTO === undefined ? b.texto : body.TEXTO.trim()
+    if (!texto) return HttpResponse.json({ message: "Escribe el mensaje." }, { status: 400 })
+    const t = instanteProgramado(body.PROGRAMADO_PARA)
+    const error = errorProgramado(t)
+    if (error) return HttpResponse.json({ message: error }, { status: 400 })
+    const programadoPara = new Date(t).toISOString()
+    Object.assign(b, { texto, estado: "PROGRAMADO", fecha: programadoPara, programadoPara })
+    return HttpResponse.json({ rows: [b] })
+  }),
+
+  // Cancelar el envío: vuelve a Borradores (uno vivo por canal, como el índice único de V575).
+  http.patch(URL("borradores/:id/cancelar"), async ({ params }) => {
+    await delay(150)
+    const b = borradores.find((x) => x.id === Number(params.id))
+    if (!b) return HttpResponse.json({ message: "El borrador no existe." }, { status: 404 })
+    if (b.estado !== "PROGRAMADO") {
+      return HttpResponse.json({ message: "Ese mensaje ya no está programado." }, { status: 409 })
+    }
+    if (borradores.some((x) => x.conversacionId === b.conversacionId && x.estado === "BORRADOR")) {
+      return HttpResponse.json(
+        { message: `Ya tienes un borrador en #${b.conversacionNombre}: envíalo o elimínalo antes de cancelar.` },
+        { status: 409 },
+      )
+    }
+    Object.assign(b, { estado: "BORRADOR", fecha: new Date().toISOString(), programadoPara: null })
+    return HttpResponse.json({ rows: [b] })
   }),
 
   http.patch(URL("borradores/:id/enviar"), async ({ params }) => {
     await delay(200)
     const b = borradores.find((x) => x.id === Number(params.id))
     if (!b) return HttpResponse.json({ message: "El borrador no existe." }, { status: 404 })
-    nuevoMensaje(b.conversacionId, b.texto)
+    if (b.estado === "ENVIADO") return HttpResponse.json({ message: "Ese mensaje ya se envió." }, { status: 409 })
     b.estado = "ENVIADO"
-    b.fecha = new Date().toISOString()
+    const m = nuevoMensaje(b.conversacionId, b.texto)
+    b.fecha = m.fecha
+    publicarMensajeCreado(m)
     return HttpResponse.json({ rows: [b] })
   }),
 

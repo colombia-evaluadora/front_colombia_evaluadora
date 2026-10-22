@@ -202,6 +202,24 @@ export interface Borrador {
   estado: EstadoBorrador
   // Última edición, hora programada o envío, según el estado.
   fecha: string
+  // Hora de envío programada (ISO); null si nunca se programó.
+  programadoPara?: string | null
+}
+
+// Borradores de actividades (comms-service, `tborrador_actividad`): el estado del
+// diálogo de creación tal cual, para retomarlo desde "Borradores y enviados".
+export type TipoBorradorActividad = "COMUNICADO" | "ENCUESTA" | "ELECCION" | "EVALUACION"
+
+export interface BorradorActividad {
+  id: number
+  tipo: TipoBorradorActividad
+  titulo: string
+  // Actividad publicada que se está editando; null si es una nueva.
+  conversacionId: number | null
+  // Solo lo trae el detalle (`GET /borradores-actividad/:id`).
+  datos: Record<string, unknown> | null
+  fecha: string
+  creado: string
 }
 
 export type TipoPregunta = "MULTIPLE" | "UNICA" | "REDACCION" | "SI_NO"

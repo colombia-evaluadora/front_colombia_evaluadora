@@ -75,6 +75,8 @@ export interface ConversacionEliminada {
  * - `conversacion.actualizada` de una conversación conocida la reemplaza; de una desconocida
  *   (lo acaban de agregar a un grupo o foro) pide la lista otra vez, así aparece en vivo.
  * - `conversacion.eliminada` la quita de la lista y devuelve lo que hace falta para avisar.
+ * - `borradores.actualizados` (comms-service envió un mensaje programado o cambió un borrador)
+ *   vuelve a pedir Borradores y Enviados.
  */
 export function aplicarEventoUsuario(
   queryClient: QueryClient,
@@ -95,6 +97,13 @@ export function aplicarEventoUsuario(
   // Te invitaron a un grupo, aceptaste o rechazaste en otra sesión, o te retiraron la invitación.
   if (e.event === "invitaciones.actualizadas") {
     void queryClient.invalidateQueries({ queryKey: chatKeys.invitaciones })
+    return null
+  }
+  if (e.event === "borradores.actualizados") {
+    void queryClient.invalidateQueries({ queryKey: chatKeys.borradores })
+    void queryClient.invalidateQueries({ queryKey: [...chatKeys.all, "enviados"] })
+    const { conversacionId } = (e.data ?? {}) as { conversacionId?: number }
+    if (conversacionId) void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(conversacionId) })
     return null
   }
   if (e.event === "conversacion.eliminada") {

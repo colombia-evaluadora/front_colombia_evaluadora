@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,12 @@ import {
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { diaMinimo, errorCierre, isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import {
+  useAutoguardadoActividad,
+  useEliminarBorradorActividad,
+} from "@/features/comunicaciones/chat/api/mutations/use-borrador-actividad"
+import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-autoguardado"
+import { datosDe, hayContenido, idsDe, preguntasGuardables, revivirPreguntas } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 
 // 0 = sin límite / ilimitados; -1 = sin elegir.
 const SIN_ELEGIR = -1
@@ -82,6 +89,7 @@ export function CrearEvaluacionDialog({
   onClose,
   onCreada,
   editar,
+  borrador,
 }: {
   open: boolean
   onClose: () => void
@@ -89,11 +97,15 @@ export function CrearEvaluacionDialog({
   // "Editar Evaluación" (diseño 4062:67466): mismos pasos; los participantes no cambian. Quien la
   // abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Evaluacion
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => (editar?.preguntas ?? []).map(aPreguntaLocal))
-  const [participantes, setParticipantes] = useState<Set<number>>(new Set())
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() =>
+    editar ? editar.preguntas.map(aPreguntaLocal) : revivirPreguntas(borrador?.datos?.preguntas),
+  )
+  const [participantes, setParticipantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.participantes))
   const [tope, setTope] = useState(false)
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
@@ -113,7 +125,7 @@ export function CrearEvaluacionDialog({
           intentos: editar.intentos ?? 0,
           mostrarResultados: editar.mostrarResultados,
         }
-      : DATOS_INICIALES,
+      : datosDe(borrador?.datos, DATOS_INICIALES),
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "EVALUACION")])
@@ -143,8 +155,21 @@ export function CrearEvaluacionDialog({
     setTope(true)
   }
 
+  // Actividad nueva: lo escrito se autoguarda como borrador (comms-service).
+  const valores = useStore(datos.store, (s) => s.values)
+  const autoguardado = useAutoguardadoActividad({
+    tipo: "EVALUACION",
+    habilitado: open && !editar,
+    titulo: valores.nombre,
+    datos: { ...valores, preguntas: preguntasGuardables(preguntas), participantes: [...participantes] },
+    conContenido: hayContenido(valores.nombre, valores.descripcion, ...preguntas.map((p) => p.texto), participantes),
+    borradorInicial: borrador?.id,
+  })
+  const eliminarBorrador = useEliminarBorradorActividad()
+
   const reiniciar = () => {
-    datos.reset()
+    autoguardado.reiniciar()
+    datos.reset(DATOS_INICIALES)
     setPreguntas([])
     setParticipantes(new Set())
     setIntentado(false)
@@ -153,13 +178,20 @@ export function CrearEvaluacionDialog({
     onClose()
   }
 
-  const intentarCerrar = () => {
+  const intentarCerrar = async () => {
     if (crear.isPending) return
+    if (!editar) {
+      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+      const id = await autoguardado.guardarYa()
+      if (id) notify("La evaluación quedó guardada en Borradores y enviados.")
+      reiniciar()
+      return
+    }
     if (datos.state.isDirty || preguntas.some((p) => p.texto.trim())) setDescartar(true)
     else reiniciar()
   }
 
-  const crearEvaluacion = () => {
+  const crearEvaluacion = async () => {
     setIntentado(true)
     if (preguntas.some((p) => errorPregunta(p, "EVALUACION")) || !cuadra) return
     if (!editar && participantes.size === 0) return
@@ -189,8 +221,9 @@ export function CrearEvaluacionDialog({
       })
       return
     }
+    const borradorId = await autoguardado.guardarYa()
     crearNueva.mutate(
-      { ...cuerpo, participantes: [...participantes] },
+      { ...cuerpo, participantes: [...participantes], borradorId },
       {
         onSuccess: (canal) => {
           notify(`Se creó la evaluación ${canal.nombre}.`)
@@ -203,7 +236,7 @@ export function CrearEvaluacionDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
+      <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Evaluación" : "Crear una Evaluación"}</DialogTitle>
@@ -357,6 +390,15 @@ export function CrearEvaluacionDialog({
             </p>
           )}
 
+          {!editar && (
+            <BarraBorrador
+              estado={autoguardado.estado}
+              hayBorrador={!!autoguardado.borradorId}
+              onDescartar={() => setDescartar(true)}
+              deshabilitado={crear.isPending}
+            />
+          )}
+
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
               <Button type="submit" form="evaluacion-datos" className="sm:ml-auto">
@@ -372,7 +414,7 @@ export function CrearEvaluacionDialog({
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    onClick={crearEvaluacion}
+                    onClick={() => void crearEvaluacion()}
                     disabled={preguntas.length === 0 || crear.isPending}
                     aria-busy={crear.isPending}
                   >
@@ -382,7 +424,7 @@ export function CrearEvaluacionDialog({
                   <Button
                     type="button"
                     color="neutral"
-                    onClick={intentarCerrar}
+                    onClick={() => void intentarCerrar()}
                     disabled={crear.isPending}
                   >
                     <XIcon data-icon="inline-start" />
@@ -400,6 +442,12 @@ export function CrearEvaluacionDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
+          if (!editar && autoguardado.borradorId) {
+            eliminarBorrador.mutate(autoguardado.borradorId, {
+              onSuccess: () => notify("Borrador descartado."),
+              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+            })
+          }
           reiniciar()
         }}
       />
