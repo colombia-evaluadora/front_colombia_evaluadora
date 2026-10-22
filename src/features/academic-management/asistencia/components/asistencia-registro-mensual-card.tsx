@@ -1,11 +1,17 @@
-import { RadialBar, RadialBarChart, PolarAngleAxis } from "recharts"
+import { lazy, Suspense } from "react"
 
-import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { CalendarBlankIcon, CheckCircleFillIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 import type { ResumenHoras } from "@/features/academic-management/asistencia/api/types/asistencia"
+
+// Recharts solo se descarga al pintar el gráfico.
+const AsistenciaRegistroGauge = lazy(() =>
+  import("@/features/academic-management/asistencia/components/asistencia-registro-gauge").then((m) => ({
+    default: m.AsistenciaRegistroGauge,
+  })),
+)
 
 interface AsistenciaRegistroMensualCardProps {
   resumen: ResumenHoras | undefined
@@ -13,10 +19,6 @@ interface AsistenciaRegistroMensualCardProps {
 
 const numberFormatter = new Intl.NumberFormat("es-CO")
 const percentFormatter = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 })
-
-const gaugeChartConfig = {
-  registro: { label: "Registradas", color: "var(--green)" },
-} satisfies ChartConfig
 
 const DESGLOSE = [
   { key: "registradas_mes" as const, label: "Completadas", color: "var(--green)" },
@@ -38,7 +40,6 @@ export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMen
     ? resumen.registradas_mes + resumen.retrasadas_mes + resumen.pendientes_mes
     : 0
   const pct = total > 0 ? (resumen!.registradas_mes / total) * 100 : 0
-  const gaugeData = [{ value: pct, fill: "var(--green)" }]
   const maxDesglose = resumen
     ? Math.max(resumen.registradas_mes, resumen.retrasadas_mes, resumen.pendientes_mes, 1)
     : 1
@@ -57,19 +58,9 @@ export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMen
           <Skeleton className="size-32 rounded-full" />
         ) : (
           <div className="relative flex size-32 items-center justify-center">
-            <ChartContainer config={gaugeChartConfig} className="aspect-square size-32">
-              <RadialBarChart
-                data={gaugeData}
-                innerRadius="72%"
-                outerRadius="100%"
-                startAngle={225}
-                endAngle={-45}
-                barSize={14}
-              >
-                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                <RadialBar dataKey="value" background={{ fill: "var(--muted)" }} cornerRadius={999} />
-              </RadialBarChart>
-            </ChartContainer>
+            <Suspense fallback={<Skeleton className="size-32 rounded-full" />}>
+              <AsistenciaRegistroGauge pct={pct} />
+            </Suspense>
             <span className="pointer-events-none absolute text-3xl font-bold tabular-nums">
               {percentFormatter.format(pct)}%
             </span>

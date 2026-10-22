@@ -132,8 +132,6 @@ export function AddEstablishmentPage() {
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // `null` en edición = conservar el escudo guardado.
   const [shield, setShield] = useState<File | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [invalidFields, setInvalidFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
   // La foto va en el multipart del funcionario, no del establecimiento.
   const [photos, setPhotos] = useState<Record<string, File | null>>({
@@ -152,8 +150,6 @@ export function AddEstablishmentPage() {
   useEffect(() => {
     if (!isEditMode) {
       setFormValues(createInitialEstablishmentValues())
-      setFieldErrors({})
-      setInvalidFields([])
       setHasSubmitted(false)
       setPrincipalEmployee(null)
       setSecretaryEmployee(null)
@@ -165,8 +161,6 @@ export function AddEstablishmentPage() {
     if (establishmentQuery.data?.status === "ok") {
       const existing = establishmentQuery.data.establishment
       setFormValues(existing)
-      setFieldErrors({})
-      setInvalidFields([])
       setHasSubmitted(false)
       setPrincipalEmployee(establishmentQuery.data.principalEmployee)
       setSecretaryEmployee(establishmentQuery.data.secretaryEmployee)
@@ -175,12 +169,10 @@ export function AddEstablishmentPage() {
     }
   }, [establishmentQuery.data, isEditMode])
 
-  useEffect(() => {
-    if (!hasSubmitted) return
-    const validation = validateEstablishmentForm(formValues, { logo: shield, photos })
-    setFieldErrors(validation.fieldErrors)
-    setInvalidFields(validation.invalidFields)
-  }, [formValues, shield, photos, hasSubmitted])
+  // Tras el primer intento de guardar se revalida en cada cambio.
+  const validacionVisible = hasSubmitted ? validateEstablishmentForm(formValues, { logo: shield, photos }) : null
+  const fieldErrors = validacionVisible?.fieldErrors ?? {}
+  const invalidFields = validacionVisible?.invalidFields ?? []
 
   // Sin `onSuccess`: `handleSubmit` invita a rector/secretaria antes de navegar.
   const createMutation = useCreate({
@@ -395,8 +387,6 @@ export function AddEstablishmentPage() {
     setHasSubmitted(true)
 
     const validation = validateEstablishmentForm(formValues, { logo: shield, photos })
-    setFieldErrors(validation.fieldErrors)
-    setInvalidFields(validation.invalidFields)
 
     if (validation.errors.length > 0) {
       notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })

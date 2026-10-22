@@ -15,33 +15,11 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { toRecuperacionBody } from "@/features/planeador/api/mutations/recuperacion-body"
 
 /**
- * `POST /planeador/actividades` (confirmado real, colección Postman
- * `planeador-guia-completa`). Obligatorios reales: TITULO, FK_TASIGNATURA,
- * FK_TLV_TIPO_ACTIVIDAD, FK_TLV_JERARQUIA. La UNIDAD es opcional
- * (`FK_TUNIDAD`) — sin ella la actividad nace "huérfana".
- *
- * `FK_TLV_JERARQUIA` queda fijo en 439 ("Actividad"): "Criterio" (440) solo
- * tiene sentido dentro del referente curricular (enunciados/evidencias),
- * que todavía no está cableado en el front — cuando se aborde esa fase, acá
- * se agrega el select de las dos opciones.
- *
- * Fuera de alcance por ahora (necesitan sus propios endpoints — 4.8/4.9 —
- * y el segundo depende del referente): ADAPTACIONES, CRITERIOS.
- * `MATERIALES` tampoco viaja acá: tiene su propia ruta de reemplazo
- * completo (`useUpdateMaterialesActividad`, `update-materiales-actividad.ts`)
- * que el caller llama DESPUÉS de crear, ya con el id real (mismo criterio
- * que `EVIDENCIAS` nuevas al editar en `planeador-editar-actividad-page.tsx`).
- * `ASIGNAR_TODO_EL_GRUPO`/`FK_TMATRICULAS` (asignación de estudiantes): ver
- * `Actividad.matriculasIds` — el campo "Estudiantes" del form.
- *
- * `EVIDENCIAS` (ids de nivel 2 del referente curricular de la unidad, ver
- * `use-unidad-referente-query.ts`) SÍ viaja acá — confirmado por la
- * colección Postman `planeador-flujo-unidad-actividad`, paso 7, que la
- * manda directo en este mismo body junto con `FK_TUNIDAD`.
+ * `FK_TLV_JERARQUIA` fijo en 439 ("Actividad"); 440 ("Criterio") llega con el referente curricular.
+ * Materiales, adaptaciones y criterios van por sus rutas propias, después de crear con el id real.
  */
 interface CreateActividadResponse {
-  /** PK real de la actividad recién creada — lo necesita el caller para
-   *  guardar los materiales de apoyo en un segundo paso (ver arriba). */
+  /** PK de la actividad creada; el caller la usa para guardar materiales. */
   id: number
 }
 
@@ -53,68 +31,48 @@ export async function createActividad(actividad: Actividad, req?: WriteRequest):
   if (actividad.gradoId == null || actividad.grupoId == null || actividad.asignaturaId == null) {
     throw new Error("Elegí grado, grupo y asignatura antes de guardar.")
   }
-  const tipoActividadId = await resolveTipoActividadId(actividad.tipo)
+  const [tipoActividadId, tipoEvidenciaId, modalidadId, instrumentoId, recuperacion] = await Promise.all([
+    resolveTipoActividadId(actividad.tipo),
+    actividad.tipoEvidencia ? resolveTipoEvidenciaId(actividad.tipoEvidencia) : undefined,
+    actividad.modalidad ? resolveModalidadId(actividad.modalidad) : undefined,
+    actividad.esEvaluativa ? resolveInstrumentoEvaluacionId(actividad.instrumento) : undefined,
+    actividad.esEvaluativa && actividad.esRecuperacion && actividad.recuperacionDestino ? toRecuperacionBody(actividad) : undefined,
+  ])
   const body: Record<string, unknown> = {
     TITULO: actividad.nombre,
     DESCRIPCION: actividad.descripcion ?? "",
     FK_TASIGNATURA: actividad.asignaturaId,
     FK_TGRUPO: actividad.grupoId,
     FK_TLV_TIPO_ACTIVIDAD: tipoActividadId,
-    // 439 = "Actividad" (TIPO_JERARQUIA_ACTIVIDAD) — ver nota arriba.
+    // 439 = "Actividad" (TIPO_JERARQUIA_ACTIVIDAD).
     FK_TLV_JERARQUIA: 439,
     ES_EVALUATIVA: actividad.esEvaluativa ? "S" : "N",
     FECHA_INICIO: actividad.fechaInicio,
     FECHA_CIERRE: actividad.fechaCierre,
     MATERIAL_REQUERIDO: actividad.materiales,
-    // "Seguimiento" (`generaEvidencias`/`observaciones`) se capturaba en el
-    // form pero nunca viajaba acá — mismo hueco que Programación arriba.
-    // `GENERA_EVIDENCIAS`/`REQUIERE_VALIDACION_COORDINADOR` siguen la
-    // convención "S"/"N" de `ES_EVALUATIVA` — confirmado real (V246/V496.4:
-    // `BODY.REQUIERE_VALIDACION_COORDINADOR` cast a `academico_test.bool_sn`,
-    // default 'N').
+    // Convención "S"/"N": el backend castea a `bool_sn`.
     GENERA_EVIDENCIAS: actividad.generaEvidencias ? "S" : "N",
     REQUIERE_VALIDACION_COORDINADOR: actividad.requiereValidacion ? "S" : "N",
     OBSERVACIONES_DOCENTE: actividad.observaciones,
   }
-  // `FK_TLV_TIPO_EVIDENCIA`: igual que `resolveModalidadId`, best-effort —
-  // si `actividad.tipoEvidencia` no matchea ningún `nombre` de la categoría
-  // real `TIPO_EVIDENCIA` (confirmado real, V224/V496.1, ver
-  // `use-tipo-evidencia-catalog.ts`), no se manda nada en vez de arriesgar
-  // un valor que el backend rechace.
+  // Catálogos best-effort: si no resuelven, se omite el campo en vez de arriesgar un valor rechazado.
   if (actividad.tipoEvidencia) {
-    const tipoEvidenciaId = await resolveTipoEvidenciaId(actividad.tipoEvidencia)
     if (tipoEvidenciaId != null) body.FK_TLV_TIPO_EVIDENCIA = tipoEvidenciaId
   }
-  // `REQUIERE_ARCHIVO`/`REQUIERE_TEXTO`/`DESCRIPCION_INSTRUMENTO` SÍ tienen
-  // nombre confirmado (`campos_disponibles.evaluacion.instrumentosPermitidos
-  // [valor=OTRO].campos`, `GET /planeador/actividades/configuracion`): solo
-  // aplican con el instrumento personalizado ("Otro") — los otros tres
-  // instrumentos no tienen esta ficha.
+  // Solo el instrumento personalizado ("Otro") tiene estos campos.
   if (actividad.instrumento === "Otro") {
     const { instrumentoPersonalizado } = actividad
     body.REQUIERE_ARCHIVO = instrumentoPersonalizado.requiereArchivo ? "S" : "N"
     body.REQUIERE_TEXTO = instrumentoPersonalizado.requiereRespuestaTexto ? "S" : "N"
     if (instrumentoPersonalizado.descripcion) body.DESCRIPCION_INSTRUMENTO = instrumentoPersonalizado.descripcion
   }
-  // "Duración estimada"/"Semana del cronograma" (sección Programación) se
-  // capturaban en el form pero nunca viajaban acá — se perdían en silencio
-  // al guardar. `DURACION_ESTIMADA` es siempre un número (el form ya lo
-  // sanitiza a solo dígitos, `toPositiveDigitsInput`); `SEMANA_CRONOGRAMA`
-  // se manda tal cual porque admite tanto un número suelto como un rango
-  // ("10-12", `toDigitsOrRangeInput`).
+  // `SEMANA_CRONOGRAMA` va tal cual: admite número o rango ("10-12").
   if (actividad.duracionEstimada) body.DURACION_ESTIMADA = Number(actividad.duracionEstimada)
   if (actividad.semana) body.SEMANA_CRONOGRAMA = actividad.semana
-  // `resolveModalidadId` es best-effort — ver su propio comentario: la
-  // categoría `TLISTA_VALOR` que resuelve no está confirmada contra el
-  // backend real, así que puede no resolver nada (`undefined`) sin que eso
-  // sea un error.
   if (actividad.modalidad) {
-    const modalidadId = await resolveModalidadId(actividad.modalidad)
     if (modalidadId != null) body.FK_TLV_MODALIDAD = modalidadId
   }
-  // "Estudiantes" (mutuamente excluyentes, ver el comentario de
-  // `Actividad.matriculasIds`): sin ninguno elegido a mano, todo el grupo
-  // — mismo comportamiento que antes de que existiera este campo.
+  // Mutuamente excluyentes: sin estudiantes elegidos se asigna todo el grupo.
   if (actividad.matriculasIds.length > 0) {
     body.FK_TMATRICULAS = actividad.matriculasIds
   } else {
@@ -126,41 +84,22 @@ export async function createActividad(actividad: Actividad, req?: WriteRequest):
       body.EVIDENCIAS = actividad.evidenciasIds
     }
   }
-  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`):
-  // `PONDERACION` cuando la unidad calcula por "Ponderado", `NOTA_MAXIMA`
-  // cuando calcula por "Suma de puntos" — con "Promedio simple" ninguno de
-  // los dos se manda. El form ya solo deja cargado el que corresponde (ver
-  // el `onValueChange` de "Unidad temática asociada" en
-  // `form-editar-actividad.tsx`), así que acá alcanza con mirar cuál trae
-  // valor.
+  // `PONDERACION` y `NOTA_MAXIMA` son excluyentes (según el cálculo de la unidad); el form deja solo uno.
   if (actividad.esEvaluativa && actividad.notaMaxima != null) {
     body.NOTA_MAXIMA = actividad.notaMaxima
   } else if (actividad.esEvaluativa && actividad.ponderacion > 0) {
     body.PONDERACION = actividad.ponderacion
   }
-  // Necesario ANTES de poder definir la estructura del instrumento
-  // (`PUT .../instrumento`, `update-instrumento-actividad.ts`): ese endpoint
-  // exige que `TACTIVIDAD.FK_TLV_INSTRUMENTO_EVALUACION` ya coincida con lo
-  // que se está definiendo (400/22023 si no calza).
+  // Debe ir antes de `PUT .../instrumento`: ese endpoint exige que el instrumento ya coincida (400/22023).
   if (actividad.esEvaluativa) {
-    const instrumentoId = await resolveInstrumentoEvaluacionId(actividad.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
-  // `RECUPERACION` (JSONB) — `fn_actividad_recuperacion_configurar` exige
-  // `fkActividadRecuperar` sii `destino: "ACTIVIDAD"` y `valorPonderacion`
-  // (0-100) sii `tipoCalculo: "PONDERADO"`; el form ya solo deja esos
-  // campos cargados cuando corresponde (ver `RecuperacionSection`).
-  // `recuperacionDestino` solo se llena si el backend ya expone los
-  // catálogos (`campos_disponibles.recuperacion`, todavía no desplegado en
-  // producción a la fecha de este comentario) — sin este chequeo, prender
-  // el toggle sin esos catálogos mandaría un `RECUPERACION` a medio llenar
-  // que el backend rechazaría.
+  // El backend exige `fkActividadRecuperar`/`valorPonderacion` según destino/cálculo; sin
+  // `recuperacionDestino` (catálogos no expuestos) se omite para no mandar un JSONB incompleto.
   if (actividad.esEvaluativa && actividad.esRecuperacion && actividad.recuperacionDestino) {
-    body.RECUPERACION = await toRecuperacionBody(actividad)
+    body.RECUPERACION = recuperacion
   }
-  // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
-  // primer (y único) campo de la fila (mismo contrato que `POST /unidades`,
-  // confirmado en la colección Postman `planeador-flujo-unidad-actividad`).
+  // El motor devuelve `{rows:[{<función>: pk}]}`: el pk es el único campo de la fila.
   const row = await evalCol.postRow<Record<string, number>>("/planeador/actividades", body, writeConfig(req))
   const [pk] = Object.values(row)
   if (pk == null) throw new Error("La creación de la actividad no devolvió su identificador.")
@@ -178,9 +117,6 @@ export function useCreateActividad({ mutationConfig }: UseCreateActividadOptions
   return useMutation({
     mutationFn: (actividad: Actividad) => createActividad(actividad),
     onSuccess: (...args) => {
-      // Refresca rail, calendario y cards de resumen para que la nueva
-      // actividad aparezca al volver al Planeador — no solo el listado
-      // legado (ver el comentario del helper).
       invalidarListadosActividades(queryClient)
       onSuccess?.(...args)
     },

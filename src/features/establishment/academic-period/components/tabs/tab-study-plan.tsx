@@ -10,7 +10,7 @@ import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
 import { getErrorMessage } from "@/lib/api-client"
-import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { useGradeSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
 import { DeleteSelectedStudyPlanItemsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-study-plan-items"
@@ -44,7 +44,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar, isFormat
     setPageIndex(0)
   }
 
-  const subjectLabel = useStudyPlanSubjectLabel(gradeId, Boolean(isPreescolar))
+  const subjectLabel = useGradeSubjectLabel(gradeId, Boolean(isPreescolar))
 
   const columns = useMemo(
     () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar, isFormativo, subjectLabel }),

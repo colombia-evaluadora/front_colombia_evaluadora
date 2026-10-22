@@ -26,11 +26,16 @@ export function AppSidebar() {
             <img
               src={icon}
               alt="Colombia Evaluadora"
+              width={380}
+              height={380}
               className="hidden size-8 shrink-0 rounded-lg group-data-[collapsible=icon]:block"
             />
             <img
               src={logo}
               alt="Colombia Evaluadora"
+              // Proporción del viewBox: reserva el ancho antes de cargar (CLS).
+              width={1500}
+              height={413}
               className="h-13 w-auto shrink-0 group-data-[collapsible=icon]:hidden"
             />
           </Link>

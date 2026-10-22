@@ -24,5 +24,7 @@ export function useEstablishmentsOptionsQuery(enabled = true) {
     queryFn: fetchEstablishmentsOptions,
     select: (result) => result.rows,
     enabled,
+    // Crear/editar/eliminar EE invalidan `establishmentKeys.all`.
+    staleTime: 1000 * 60 * 5,
   })
 }

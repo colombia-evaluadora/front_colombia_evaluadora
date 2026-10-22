@@ -14,5 +14,7 @@ export function useMenuCatalogQuery() {
   return useQuery({
     queryKey: roleMenuKeys.menus.catalogo,
     queryFn: fetchMenuCatalog,
+    // Las mutaciones de menús invalidan `menus.all`, de la que cuelga esta clave.
+    staleTime: Infinity,
   })
 }
