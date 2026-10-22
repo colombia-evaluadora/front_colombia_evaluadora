@@ -65,7 +65,9 @@ describe("marcaEdicion", () => {
   it("prefijo con la hora de la edición", () => {
     expect(marcaEdicion({ editado: false })).toBeNull()
     expect(marcaEdicion({ editado: true })).toBe("Editado")
-    expect(marcaEdicion({ editado: true, editadoEn: "2026-01-01T12:33:00" })).toBe("Editado 12:33 PM")
+    expect(marcaEdicion({ editado: true, editadoEn: "2026-01-01T12:33:00" })).toBe(
+      "Editado 12:33 PM",
+    )
   })
 })
 
@@ -80,7 +82,12 @@ describe("haceCuanto", () => {
 
 describe("mensajesFijados", () => {
   it("solo fijados vivos, el más reciente primero", () => {
-    const lista = [base({ id: 1, fijado: true }), base({ id: 2 }), base({ id: 3, fijado: true }), base({ id: 4, fijado: true, eliminado: true })]
+    const lista = [
+      base({ id: 1, fijado: true }),
+      base({ id: 2 }),
+      base({ id: 3, fijado: true }),
+      base({ id: 4, fijado: true, eliminado: true }),
+    ]
     expect(mensajesFijados(lista).map((m) => m.id)).toEqual([3, 1])
   })
 })
@@ -97,7 +104,9 @@ describe("votacionModificada", () => {
   it("solo a quien vota, mientras esté abierta y sin haber vuelto a votar", () => {
     expect(votacionModificada(base({ editado: true, esPropio: false }), v, true)).toBe(true)
     expect(votacionModificada(base({ editado: true, esPropio: true }), v, true)).toBe(false)
-    expect(votacionModificada(base({ editado: true, esPropio: false }), { ...v, miVoto: 1 }, true)).toBe(false)
+    expect(
+      votacionModificada(base({ editado: true, esPropio: false }), { ...v, miVoto: 1 }, true),
+    ).toBe(false)
     expect(votacionModificada(base({ editado: true, esPropio: false }), v, false)).toBe(false)
     expect(votacionModificada(base({ esPropio: false }), v, true)).toBe(false)
   })
@@ -106,7 +115,13 @@ describe("votacionModificada", () => {
 describe("agregarReciente", () => {
   it("la última primero, sin repetir y máximo 5", () => {
     expect(agregarReciente(["601", "802"], "802")).toEqual(["802", "601"])
-    expect(agregarReciente(["a1", "b2", "c3", "d4", "e5"], "f6")).toEqual(["f6", "a1", "b2", "c3", "d4"])
+    expect(agregarReciente(["a1", "b2", "c3", "d4", "e5"], "f6")).toEqual([
+      "f6",
+      "a1",
+      "b2",
+      "c3",
+      "d4",
+    ])
     expect(agregarReciente(["601"], " x ")).toEqual(["601"])
   })
 })

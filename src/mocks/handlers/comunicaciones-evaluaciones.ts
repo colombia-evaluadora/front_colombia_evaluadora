@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
+import { consumirBorradorActividad } from "@/mocks/handlers/comunicaciones-borradores-actividad"
 
 import type {
   Conversacion,
@@ -191,6 +192,7 @@ export const comunicacionesEvaluacionesHandlers = [
       esCreador: true,
     }
     conversaciones.push(canal)
+    consumirBorradorActividad(request)
     evaluaciones.push({
       conversacionId: canal.id,
       nombre,

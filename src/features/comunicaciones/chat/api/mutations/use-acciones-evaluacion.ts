@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { conBorrador } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type {
   Conversacion,
@@ -29,6 +30,7 @@ export interface CrearEvaluacionInput {
   preguntas: PreguntaEvaluacionNueva[]
   // Ids (users) de quienes la presentan; comms-service los vuelve miembros del canal.
   participantes: number[]
+  borradorId?: number | null
 }
 
 const sn = (v: boolean) => (v ? "S" : "N")
@@ -58,8 +60,12 @@ export function useCrearEvaluacion() {
       evalCol.postRow<Conversacion>("/comunicaciones/evaluaciones", {
         ...cuerpoEvaluacion(v),
         PARTICIPANTES: v.participantes,
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+      }, conBorrador(v.borradorId)),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ]),
   })
 }
 

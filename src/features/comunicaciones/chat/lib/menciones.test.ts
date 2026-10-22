@@ -27,7 +27,9 @@ describe("menciones", () => {
   })
 
   it("sugiere por palabra sin tildes y masivas solo con permiso", () => {
-    expect(sugerenciasMencion("lu", miembros, false).map((s) => s.nombre)).toEqual(["Marta Lucía Ríos"])
+    expect(sugerenciasMencion("lu", miembros, false).map((s) => s.nombre)).toEqual([
+      "Marta Lucía Ríos",
+    ])
     expect(sugerenciasMencion("to", miembros, true).map((s) => s.tipo)).toEqual(["TODOS"])
     expect(sugerenciasMencion("to", miembros, false)).toEqual([])
   })

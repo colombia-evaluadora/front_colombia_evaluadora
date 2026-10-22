@@ -30,10 +30,16 @@ describe("personalizarMensaje", () => {
   })
 
   it("meMenciona con mención directa o masiva, nunca en mensajes propios", () => {
-    const directa = { ...base, menciones: [{ tipo: "USUARIO" as const, usuarioId: 1, nombre: "Ana" }] }
+    const directa = {
+      ...base,
+      menciones: [{ tipo: "USUARIO" as const, usuarioId: 1, nombre: "Ana" }],
+    }
     expect(personalizarMensaje(directa, 1).meMenciona).toBe(true)
     expect(personalizarMensaje(directa, 2).meMenciona).toBe(false)
-    const masiva = { ...base, menciones: [{ tipo: "TODOS" as const, usuarioId: null, nombre: "todos" }] }
+    const masiva = {
+      ...base,
+      menciones: [{ tipo: "TODOS" as const, usuarioId: null, nombre: "todos" }],
+    }
     expect(personalizarMensaje(masiva, 2).meMenciona).toBe(true)
     expect(personalizarMensaje(masiva, 7).meMenciona).toBe(false)
   })

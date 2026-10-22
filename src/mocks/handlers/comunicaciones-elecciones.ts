@@ -1,5 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
-import { notificarEleccionAbierta } from "@/mocks/db/comunicaciones-notificaciones-puente"
+import { consumirBorradorActividad } from "@/mocks/handlers/comunicaciones-borradores-actividad"
+import { notificarEleccionAbierta, notificarResultados } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { conversaciones } from "@/mocks/db/comunicaciones"
@@ -121,6 +122,8 @@ export const comunicacionesEleccionesHandlers = [
     }
     e.cerradaManualmente = true
     conv.actividadAbierta = false
+    // comms-service avisa una vez a los participantes que ya hay resultados.
+    notificarResultados(e.conversacionId, "ELECCION", e.nombre)
     return HttpResponse.json({ rows: [conv] })
   }),
 
@@ -131,6 +134,8 @@ export const comunicacionesEleccionesHandlers = [
     // Solo la elección de ejemplo recibe votos simulados; una recién creada queda en cero (se
     // puede editar hasta el primer voto, como en comms-service).
     if (e.conversacionId === 5) simularVotos(e)
+    // Cerró por fecha: el aviso de resultados sale una vez (comms-service lo revisa con su job).
+    if (eleccionCerrada(e)) notificarResultados(e.conversacionId, "ELECCION", e.nombre)
     const user = usuarioDe(request)
     const esEstudiante = user?.roles.includes("CEVAL-ESTUDIANTE") ?? false
     return HttpResponse.json({
@@ -168,6 +173,7 @@ export const comunicacionesEleccionesHandlers = [
       esCreador: true,
     }
     conversaciones.push(canal)
+    consumirBorradorActividad(request)
     // Campana única: el aviso "entra a votar" va a la bandeja general.
     notificarEleccionAbierta(canal.id, nombre)
     elecciones.push({

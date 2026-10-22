@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
+import { consumirBorradorActividad } from "@/mocks/handlers/comunicaciones-borradores-actividad"
 
 import type { Audiencia, Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { conversaciones } from "@/mocks/db/comunicaciones"
@@ -79,6 +80,7 @@ export const comunicacionesComunicadosHandlers = [
       esCreador: true,
     }
     conversaciones.push(canal)
+    consumirBorradorActividad(request)
     comunicados.push({
       conversacionId: canal.id,
       titulo,

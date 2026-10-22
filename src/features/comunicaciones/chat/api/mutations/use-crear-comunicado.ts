@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { conBorrador } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 import type { Audiencia, Comunicado, Conversacion } from "@/features/comunicaciones/chat/api/types"
 
 export interface CrearComunicadoInput {
@@ -10,6 +11,8 @@ export interface CrearComunicadoInput {
   audiencia: Audiencia[]
   publicarEn: string
   contenidoHtml: string
+  // Borrador del que sale (se elimina al publicar).
+  borradorId?: number | null
 }
 
 const cuerpoComunicado = (v: CrearComunicadoInput) => ({
@@ -25,8 +28,12 @@ export function useCrearComunicado() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (v: CrearComunicadoInput) =>
-      evalCol.postRow<Conversacion>("/comunicaciones/comunicados", cuerpoComunicado(v)),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+      evalCol.postRow<Conversacion>("/comunicaciones/comunicados", cuerpoComunicado(v), conBorrador(v.borradorId)),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ]),
   })
 }
 

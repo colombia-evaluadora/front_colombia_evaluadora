@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,12 @@ import { SelectorVotantes } from "@/features/comunicaciones/chat/components/sele
 import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  useAutoguardadoActividad,
+  useEliminarBorradorActividad,
+} from "@/features/comunicaciones/chat/api/mutations/use-borrador-actividad"
+import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-autoguardado"
+import { datosDe, hayContenido, idsDe, preguntasGuardables, revivirPreguntas } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 
 const datosSchema = z
   .object({
@@ -51,6 +58,7 @@ export function CrearEncuestaDialog({
   onClose,
   onCreada,
   editar,
+  borrador,
 }: {
   open: boolean
   onClose: () => void
@@ -58,12 +66,18 @@ export function CrearEncuestaDialog({
   // "Editar Encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
   // abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Encuesta
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [resultados, setResultados] = useState<VisibilidadResultados>(editar?.resultados ?? "PUBLICOS")
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => (editar?.preguntas ?? []).map(aPreguntaLocal))
-  const [participantes, setParticipantes] = useState<Set<number>>(new Set())
+  const [resultados, setResultados] = useState<VisibilidadResultados>(
+    editar?.resultados ?? (borrador?.datos?.resultados === "ADMIN" ? "ADMIN" : "PUBLICOS"),
+  )
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() =>
+    editar ? editar.preguntas.map(aPreguntaLocal) : revivirPreguntas(borrador?.datos?.preguntas),
+  )
+  const [participantes, setParticipantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.participantes))
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crearNueva = useCrearEncuesta()
@@ -78,7 +92,7 @@ export function CrearEncuestaDialog({
           fechaInicio: isoALocal(editar.fechaInicio),
           fechaCierre: isoALocal(editar.fechaCierre),
         }
-      : DATOS_INICIALES,
+      : datosDe(borrador?.datos, DATOS_INICIALES),
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "ENCUESTA")])
@@ -86,8 +100,21 @@ export function CrearEncuestaDialog({
     },
   })
 
+  // Actividad nueva: lo escrito se autoguarda como borrador (comms-service).
+  const valores = useStore(datos.store, (s) => s.values)
+  const autoguardado = useAutoguardadoActividad({
+    tipo: "ENCUESTA",
+    habilitado: open && !editar,
+    titulo: valores.nombre,
+    datos: { ...valores, resultados, preguntas: preguntasGuardables(preguntas), participantes: [...participantes] },
+    conContenido: hayContenido(valores.nombre, valores.descripcion, ...preguntas.map((p) => p.texto), participantes),
+    borradorInicial: borrador?.id,
+  })
+  const eliminarBorrador = useEliminarBorradorActividad()
+
   const reiniciar = () => {
-    datos.reset()
+    autoguardado.reiniciar()
+    datos.reset(DATOS_INICIALES)
     setResultados("PUBLICOS")
     setPreguntas([])
     setParticipantes(new Set())
@@ -97,13 +124,20 @@ export function CrearEncuestaDialog({
     onClose()
   }
 
-  const intentarCerrar = () => {
+  const intentarCerrar = async () => {
     if (crear.isPending) return
+    if (!editar) {
+      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+      const id = await autoguardado.guardarYa()
+      if (id) notify("La encuesta quedó guardada en Borradores y enviados.")
+      reiniciar()
+      return
+    }
     if (datos.state.isDirty || preguntas.some((p) => p.texto.trim())) setDescartar(true)
     else reiniciar()
   }
 
-  const crearEncuesta = () => {
+  const crearEncuesta = async () => {
     setIntentado(true)
     if (preguntas.length === 0 || preguntas.some((p) => errorPregunta(p, "ENCUESTA"))) return
     if (!editar && participantes.size === 0) return
@@ -129,8 +163,9 @@ export function CrearEncuestaDialog({
       })
       return
     }
+    const borradorId = await autoguardado.guardarYa()
     crearNueva.mutate(
-      { ...cuerpo, participantes: [...participantes] },
+      { ...cuerpo, participantes: [...participantes], borradorId },
       {
         onSuccess: (canal) => {
           notify(`Se creó la encuesta ${canal.nombre}.`)
@@ -143,7 +178,7 @@ export function CrearEncuestaDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
+      <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
@@ -251,6 +286,15 @@ export function CrearEncuestaDialog({
             </p>
           )}
 
+          {!editar && (
+            <BarraBorrador
+              estado={autoguardado.estado}
+              hayBorrador={!!autoguardado.borradorId}
+              onDescartar={() => setDescartar(true)}
+              deshabilitado={crear.isPending}
+            />
+          )}
+
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
               <Button type="submit" form="encuesta-datos" className="sm:ml-auto">
@@ -266,7 +310,7 @@ export function CrearEncuestaDialog({
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    onClick={crearEncuesta}
+                    onClick={() => void crearEncuesta()}
                     disabled={preguntas.length === 0 || crear.isPending}
                     aria-busy={crear.isPending}
                   >
@@ -276,7 +320,7 @@ export function CrearEncuestaDialog({
                   <Button
                     type="button"
                     color="neutral"
-                    onClick={intentarCerrar}
+                    onClick={() => void intentarCerrar()}
                     disabled={crear.isPending}
                   >
                     <XIcon data-icon="inline-start" />
@@ -294,6 +338,12 @@ export function CrearEncuestaDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
+          if (!editar && autoguardado.borradorId) {
+            eliminarBorrador.mutate(autoguardado.borradorId, {
+              onSuccess: () => notify("Borrador descartado."),
+              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+            })
+          }
           reiniciar()
         }}
       />
