@@ -85,3 +85,12 @@ export function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
     ? "ACTIVE"
     : "SUSPENDED"
 }
+
+/**
+ * Snapshot de la ficha sola (persona + información complementaria), sin
+ * permisos: decide si "Guardar" necesita el PATCH del funcionario. Los permisos
+ * van por su propio PUT y no deben forzar un PATCH (ni su notificación).
+ */
+export function buildEmployeeDataSnapshot(person: Person, additionalInfo: EmployeeAdditionalInfoValue): string {
+  return buildDraftSnapshot(person, additionalInfo, [])
+}
