@@ -27,5 +27,7 @@ export function useAreasOficialesOpcionesQuery({ nivel }: { nivel?: number } = {
     meta: proveedorMeta(),
     queryKey: areaOficialKeys.opciones(nivel ?? "todos"),
     queryFn: () => fetchAreasOficialesOpciones(nivel),
+    // Las mutaciones de áreas oficiales invalidan `areaOficialKeys.all`.
+    staleTime: 1000 * 60 * 5,
   })
 }

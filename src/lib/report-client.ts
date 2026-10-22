@@ -52,6 +52,12 @@ interface ReportInput {
   columnLabels?: Record<string, string>
   /** Query params de la URL (ej. `nivel` del boletín). */
   params?: Record<string, string>
+  /**
+   * Con 0 filas no se guarda el archivo. Un listado vacío se descarga igual
+   * (dice "sin registros"), pero un boletín vacío es un PDF en blanco: la
+   * plantilla usa `NoPages` y el servicio responde 200 igual.
+   */
+  omitirVacio?: boolean
 }
 
 const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
@@ -62,7 +68,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
 /** Pide el reporte, dispara la descarga y devuelve `{ status, message }`. */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting, columns, filtersLabel, columnLabels, params }: ReportInput,
+  { format, filters, sorting, columns, filtersLabel, columnLabels, params, omitirVacio }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // Genérico explícito: la augmentación global de axios en `api-client` lo retipa.
@@ -79,10 +85,11 @@ export async function downloadReport(
     const filas = Number(response.headers["x-report-rows"])
     const nombre = nombreDeArchivo(response.headers["content-disposition"]) ?? `${key}.${format === "pdf" ? "pdf" : "xlsx"}`
 
-    guardar(blob, nombre)
+    const vacio = Number.isFinite(filas) && filas === 0
+    if (!(vacio && omitirVacio)) guardar(blob, nombre)
 
-    // Vacío se descarga igual, pero se avisa.
-    if (Number.isFinite(filas) && filas === 0) {
+    // Vacío se descarga igual (salvo `omitirVacio`), pero se avisa.
+    if (vacio) {
       return { status: "ok", message: "No hay registros que coincidan con los filtros.", filas }
     }
 
