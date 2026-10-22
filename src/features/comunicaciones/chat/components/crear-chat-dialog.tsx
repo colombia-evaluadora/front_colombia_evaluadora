@@ -18,11 +18,22 @@ import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { useCrearForo } from "@/features/comunicaciones/foros/api/mutations/use-acciones-foro"
+import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
+import { useResolverSeleccion } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
+import { SelectorGrupal } from "@/features/comunicaciones/chat/components/selector-grupal"
+import { ConfirmarAltaDialog } from "@/features/comunicaciones/chat/components/confirmar-alta-dialog"
+import {
+  aCuerpoSeleccion,
+  haySeleccionGrupal,
+  resumenSeleccion,
+  SELECCION_VACIA,
+  type SeleccionGrupal,
+} from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 const AYUDA =
   "Los foros son el lugar donde se producen las conversaciones sobre un tema. Usa un nombre que sea fácil de encontrar y comprender."
 const AYUDA_GRUPO =
-  "Un grupo reúne a las personas que elijas para conversar. Quien lo crea lo administra: puede añadir, quitar y nombrar administradores."
+  "Un grupo reúne a las personas que elijas para conversar. Solo quien lo crea lo gestiona: es quien añade y quita participantes."
 
 // Nombres estilo canal: minúsculas y guiones en lugar de espacios.
 const aNombreCanal = (v: string) => v.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "")
@@ -50,8 +61,14 @@ export function CrearChatDialog({
   const esForo = tipo === "FORO"
   const crear = esForo ? crearForo : crearCanal
   const [consulta, setConsulta] = useState("")
-  const personas = usePersonasQuery(open && paso === 2, consulta)
+  const personas = usePersonasQuery(open && paso === 2, consulta, { paraGrupo: esGrupo })
   const limpio = nombre.trim().replace(/-+$/, "")
+  // Grupo: además de personas sueltas, grados, grupos académicos o roles (se confirma el conteo).
+  const [grupal, setGrupal] = useState<SeleccionGrupal>(SELECCION_VACIA)
+  const [confirmacion, setConfirmacion] = useState<ResolucionSeleccion | null>(null)
+  const resolver = useResolverSeleccion()
+  const conGrupal = esGrupo && haySeleccionGrupal(grupal)
+  const error = crear.error ?? resolver.error
 
   const cerrar = () => {
     if (crear.isPending) return
@@ -59,7 +76,10 @@ export function CrearChatDialog({
     setNombre("")
     setMiembros([])
     setConsulta("")
+    setGrupal(SELECCION_VACIA)
+    setConfirmacion(null)
     crear.reset()
+    resolver.reset()
     onClose()
   }
 
@@ -72,11 +92,25 @@ export function CrearChatDialog({
   const crearChat = (conMiembros: Persona[]) => {
     const ids = conMiembros.map((p) => p.id)
     if (esForo) crearForo.mutate({ nombre: limpio, miembros: ids }, { onSuccess: creado })
-    else
+    else {
+      const { GRADOS, GRUPOS, ROLES } = aCuerpoSeleccion(grupal)
       crearCanal.mutate(
-        { nombre: limpio, categoria: "GENERAL", miembros: ids, tipo: esGrupo ? "GRUPO" : undefined },
+        {
+          nombre: limpio,
+          categoria: "GENERAL",
+          miembros: ids,
+          tipo: esGrupo ? "GRUPO" : undefined,
+          grupal: conGrupal ? { GRADOS, GRUPOS, ROLES } : undefined,
+        },
         { onSuccess: creado },
       )
+    }
+  }
+
+  // Con grado, grupo o rol: primero el conteo que resuelve el servidor, luego se crea.
+  const agregar = () => {
+    if (!conGrupal) return crearChat(miembros)
+    resolver.mutate({ cuerpo: aCuerpoSeleccion(grupal, miembros) }, { onSuccess: setConfirmacion })
   }
 
   return (
@@ -130,15 +164,20 @@ export function CrearChatDialog({
               {esForo
                 ? "Las personas que añadas verán las publicaciones del foro y podrán participar según la política de la institución."
                 : esGrupo
-                  ? "Añade al menos una persona. Verán los mensajes del grupo y podrán escribir en él."
+                  ? "Añade al menos una persona. Verán todo el historial del grupo y podrán escribir en él."
                   : "Las personas que añadas verán el historial del foro y podrán escribir en él."}
             </p>
+            {esGrupo && (
+              <div className="pt-3">
+                <SelectorGrupal enabled={open && paso === 2} value={grupal} onChange={setGrupal} />
+              </div>
+            )}
           </div>
         )}
 
-        {crear.isError && (
+        {error && (
           <p role="alert" className="text-sm text-red">
-            {getErrorMessage(crear.error)}
+            {getErrorMessage(error)}
           </p>
         )}
 
@@ -160,15 +199,26 @@ export function CrearChatDialog({
           ) : (
             <Button
               type="button"
-              onClick={() => crearChat(miembros)}
-              disabled={crear.isPending || miembros.length === 0}
-              aria-busy={crear.isPending}
+              onClick={agregar}
+              disabled={crear.isPending || resolver.isPending || (miembros.length === 0 && !conGrupal)}
+              aria-busy={crear.isPending || resolver.isPending}
             >
               Agregar
             </Button>
           )}
         </DialogFooter>
       </DialogContent>
+      <ConfirmarAltaDialog
+        resolucion={confirmacion}
+        resumen={resumenSeleccion(grupal, miembros.length)}
+        grupo={limpio}
+        pendiente={crear.isPending}
+        onCancelar={() => setConfirmacion(null)}
+        onConfirmar={() => {
+          setConfirmacion(null)
+          crearChat(miembros)
+        }}
+      />
     </Dialog>
   )
 }
