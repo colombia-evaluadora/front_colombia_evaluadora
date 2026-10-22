@@ -13,7 +13,7 @@ import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/updat
 import type { Actividad, Adaptacion, InstrumentoPermitido, Recurso } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { adaptacionesConEstudiantesDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
-import { fingerprintActividad, fingerprintUnidad } from "@/features/planeador/offline/fingerprint"
+import { fingerprintActividad, fingerprintUnidad, versionCheckOf } from "@/features/planeador/offline/fingerprint"
 import { SAGA_KINDS } from "@/features/planeador/offline/saga-handlers"
 
 export const SAGA_LABELS = {
@@ -140,7 +140,8 @@ export async function buildEditarActividadSaga(
 ): Promise<SagaInput & { sagaId: string }> {
   const sagaId = crypto.randomUUID()
   const actividadId = actividad.id
-  const check = { baseFingerprint: fingerprintActividad(actividad) }
+  // Versión del servidor (BE-3B); la huella solo si el detalle no la trae.
+  const check = versionCheckOf(actividad.version, () => fingerprintActividad(actividad))
   const steps: SagaStepInput[] = []
   const unidadAnteriorId = actividad.unidad.id
   const unidadNuevaId = values.unidad.id
@@ -241,7 +242,7 @@ export function buildEditarUnidadSaga(unidad: UnidadTematica, data: UnidadInfoGe
       {
         kind: SAGA_KINDS.unidadEditar,
         label: SAGA_LABELS.unidadEditar,
-        payload: { unidadId: unidad.id, data, check: { baseFingerprint: fingerprintUnidad(unidad) } },
+        payload: { unidadId: unidad.id, data, check: versionCheckOf(unidad.version, () => fingerprintUnidad(unidad)) },
       },
     ],
   }

@@ -65,7 +65,11 @@ const faultHandlers = [
     return HttpResponse.json({ rows: [{ calificacion: 100, solicitudes_pendientes: [] }] })
   }),
   http.post("/api/eval-col/planeador/unidades", () => planeadorWritesFault()),
-  http.put("/api/eval-col/planeador/unidades/:id", () => planeadorWritesFault()),
+  // `x-msw-otra-persona`: el E2E de conflicto por VERSION simula la edición de
+  // otra persona sin red en este equipo (la escritura "del servidor" sí pasa).
+  http.put("/api/eval-col/planeador/unidades/:id", ({ request }) =>
+    request.headers.get("x-msw-otra-persona") ? undefined : planeadorWritesFault(),
+  ),
   http.post("/api/eval-col/planeador/actividades", () => planeadorWritesFault()),
   http.put("/api/eval-col/planeador/actividades/:id", () => planeadorWritesFault()),
 ]

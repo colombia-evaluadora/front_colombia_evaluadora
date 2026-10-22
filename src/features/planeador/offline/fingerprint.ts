@@ -1,10 +1,10 @@
 /**
- * Huella de la versión del servidor de una actividad/unidad (Fase 3,
- * D-F3-4). `TACTIVIDAD`/`TUNIDAD` no tienen columna de versión (BE-3B sigue
- * pendiente de aprobación del cambio de esquema), así que la concurrencia
- * optimista de una edición encolada compara una huella de los campos que el
- * docente edita: la que vio al abrir el formulario contra la del detalle
- * actual al sincronizar. Solo campos estables — nada derivado de la fecha de
+ * Huella de una actividad/unidad (Fase 3, D-F3-4 original). Desde BE-3B la
+ * concurrencia optimista usa la columna `VERSION` del servidor
+ * (`versionCheckOf` en `saga-handlers.ts`); la huella queda de respaldo para
+ * ediciones encoladas antes del cambio y para un detalle que no traiga
+ * `version` (backend anterior o mock): compara los campos que el docente
+ * edita, la que vio al abrir el formulario contra la del detalle actual. Solo campos estables — nada derivado de la fecha de
  * hoy (`status`) ni conteos que cambian al calificar (eso lo cubre la regla
  * 37 aparte).
  */
@@ -56,4 +56,37 @@ export function fingerprintUnidad(u: UnidadTematica): string {
       asignaturaId: u.asignaturaId ?? null,
     }),
   )
+}
+
+/**
+ * Verificación contra la versión del servidor (primer paso de una edición
+ * encolada). Desde BE-3B (`TACTIVIDAD.VERSION`/`TUNIDAD.VERSION`) manda
+ * `baseVersion`; la huella FNV queda solo para ops encoladas antes del cambio
+ * o un detalle sin `version` (backend anterior).
+ */
+export interface VersionCheck {
+  /** `version` del detalle que vio el docente al abrir el formulario. */
+  baseVersion?: number | null
+  /** Legado (D-F3-4 original): huella de los campos editables. */
+  baseFingerprint?: string
+}
+
+/** El check de un detalle: versión del servidor si la trae, si no la huella. */
+export function versionCheckOf(version: number | null | undefined, fingerprint: () => string): VersionCheck {
+  return version != null ? { baseVersion: version } : { baseFingerprint: fingerprint() }
+}
+
+/** ¿Cambió el detalle respecto del check? Devuelve la versión actual a guardar si hubo conflicto. */
+export function versionMismatch(
+  check: VersionCheck,
+  actual: { version?: number | null },
+  fingerprint: () => string,
+): string | null {
+  if (check.baseVersion != null && actual.version != null) {
+    return actual.version !== check.baseVersion ? String(actual.version) : null
+  }
+  // Check viejo (huella) o servidor sin `version`: se compara la huella.
+  const huella = fingerprint()
+  if (check.baseFingerprint != null) return huella !== check.baseFingerprint ? huella : null
+  return null
 }
