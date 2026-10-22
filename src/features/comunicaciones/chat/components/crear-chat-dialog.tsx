@@ -129,9 +129,12 @@ export function CrearChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Una sola columna que no crece con el contenido: sin esto la grilla toma el min-content del
+          hijo más ancho (chips largos, la fila de una invitación con sus botones) y todo el
+          formulario se sale por la derecha del panel (QA acudiente, "Añadir personas a…"). */}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="truncate">
+          <DialogTitle className="truncate pr-8">
             {paso === 1 ? (esGrupo ? "Crear un grupo" : "Crear un foro") : `Añadir personas a ${limpio}`}
           </DialogTitle>
         </DialogHeader>

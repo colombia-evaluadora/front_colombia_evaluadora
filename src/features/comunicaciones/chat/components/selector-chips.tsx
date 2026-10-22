@@ -13,7 +13,7 @@ import { CaretDownIcon, CheckIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 const CHIP =
-  "inline-flex h-7 items-center rounded-full border bg-muted/40 px-3 text-sm font-normal text-muted-foreground"
+  "inline-flex h-7 max-w-full min-w-0 items-center rounded-full border bg-muted/40 px-3 text-sm font-normal text-muted-foreground"
 
 // Selección múltiple con chips. Muestra `visibles` chips y el resto como "+N"
 // para que el campo no crezca. El popup es claro, como los menús del chat
@@ -84,7 +84,7 @@ export function SelectorChips<T>({
         ref={anchor}
         aria-invalid={invalido || undefined}
         className={cn(
-          "min-h-11 gap-2 rounded-lg border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
+          "min-h-11 w-full min-w-0 gap-2 rounded-lg border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
           invalido && "border-red",
         )}
       >
@@ -92,8 +92,9 @@ export function SelectorChips<T>({
           {() => (
             <>
               {mostrados.map((item) => (
-                <ComboboxChip key={getId(item)} className={CHIP} aria-label={getLabel(item)}>
-                  {getLabel(item)}
+                <ComboboxChip key={getId(item)} className={CHIP} aria-label={getLabel(item)} title={getLabel(item)}>
+                  {/* Un nombre largo se recorta en vez de salirse de la columna. */}
+                  <span className="min-w-0 truncate">{getLabel(item)}</span>
                 </ComboboxChip>
               ))}
               {resto.length > 0 && (

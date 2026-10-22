@@ -307,6 +307,16 @@ function PrepareStatus({
           </AlertDescription>
         </Alert>
       )
+    case "sesion":
+      return (
+        <Alert>
+          <CloudSyncIcon />
+          <AlertTitle>Preparación detenida: se cerró la sesión</AlertTitle>
+          <AlertDescription>
+            Lo descargado quedó guardado. Usa "Continuar" para seguir desde ahí.
+          </AlertDescription>
+        </Alert>
+      )
     default:
       return null
   }
@@ -349,7 +359,7 @@ export function PrepareOfflineDialog({
 
   const options = useQuery({
     queryKey: ["offline", "prepare-options"],
-    queryFn: fetchPrepareOptions,
+    queryFn: () => fetchPrepareOptions(queryClient),
     enabled: open && !shared && !onlineOnly.disabled,
     staleTime: 60_000,
   })

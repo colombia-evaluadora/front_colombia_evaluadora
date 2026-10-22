@@ -2,8 +2,18 @@ import { lockVault } from "@/lib/offline/vault"
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, hasAuthToken, isNetworkError, NetworkSessionError, setAuthToken } from "@/lib/api-client"
+import {
+  api,
+  beginLogout,
+  finishLogout,
+  hasAuthToken,
+  isNetworkError,
+  NetworkSessionError,
+  refreshAccessToken,
+  setAuthToken,
+} from "@/lib/api-client"
 import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
+import { publishRefreshedToken } from "@/lib/auth-refresh-coordination"
 import { paths } from "@/config/paths"
 import { env } from "@/config/env"
 import { connectivityStore } from "@/lib/offline/connectivity"
@@ -67,7 +77,9 @@ export async function getUser(): Promise<AuthUser | null> {
         return deviceUser
       }
     }
-    const { token }: AuthResponse = await api.post("/auth/refresh")
+    // Single-flight con la revalidación de 401/403 (ver `refreshAccessToken`):
+    // dos refresh con la misma cookie hacen que auth-center revoque la sesión.
+    const token = await refreshAccessToken()
     setAuthToken(token)
     return toAuthUserFromToken(token)
   } catch (error) {
@@ -97,6 +109,11 @@ export interface LogoutOptions {
  * sola en el servidor). Un error HTTP real sí se propaga.
  */
 const logout = async (_options?: LogoutOptions): Promise<void> => {
+  // Lo de fondo (Preparar, outbox, polling, tiempo real) se corta YA: sin
+  // esto seguía disparando requests con el token viejo mientras el logout
+  // viajaba y después, cada una un 401 (QA). Solo salen la baja de Web Push
+  // y `/auth/logout`.
+  beginLogout()
   // Web Push (D-4.4): la suscripción de este navegador se borra ANTES del
   // logout, mientras el token todavía sirve para el `DELETE`. En un equipo
   // compartido el siguiente usuario no debe recibir los avisos del anterior.
@@ -108,7 +125,11 @@ const logout = async (_options?: LogoutOptions): Promise<void> => {
   try {
     await api.post("/auth/logout")
   } catch (error) {
-    if (!isNetworkError(error)) throw error
+    if (!isNetworkError(error)) {
+      // El servidor rechazó el logout: la sesión sigue, se reabre.
+      finishLogout({ failed: true })
+      throw error
+    }
   }
 }
 
@@ -223,6 +244,8 @@ export function useLogout({
           await deleteDeviceToken(sub).catch(() => undefined)
         }
         setAuthToken(null)
+        // Las otras pestañas no deben reusar un token de esta sesión.
+        publishRefreshedToken(null)
         // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
         stopRealtime()
         // Full clear, not just the user key — otherwise cached protected data
@@ -232,6 +255,7 @@ export function useLogout({
         lastAuthedUser = null
       } finally {
         loggingOut = false
+        finishLogout()
       }
       mutationConfig?.onSuccess?.(...args)
     },

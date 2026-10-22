@@ -153,9 +153,12 @@ export function MiembrosDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Una sola columna que no crece con el contenido: sin esto la grilla toma el min-content del
+          hijo más ancho (chips largos, la fila de una invitación con sus botones) y todo el
+          formulario se sale por la derecha del panel (QA acudiente, "Añadir personas a…"). */}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="truncate">
+          <DialogTitle className="truncate pr-8">
             {puedeAgregar ? `Añadir personas a ${c.nombre}` : `Participantes de ${c.nombre}`}
           </DialogTitle>
         </DialogHeader>
@@ -449,14 +452,16 @@ function FilaMiembro({
   if (m.estado && m.estado !== "ACTIVO") {
     const pendiente = m.estado === "INVITADO"
     return (
-      <li className="flex items-center gap-3 px-3 py-2">
-        <span className="flex min-w-0 flex-1 items-center gap-3 opacity-80">
+      <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+        <span className="flex min-w-0 flex-1 basis-40 items-center gap-3 opacity-80">
           <AvatarPersona nombre={m.nombre} />
           <span className="min-w-0 leading-tight">
             <span className="block truncate">{m.nombre}</span>
             <span className="block truncate text-sm text-muted-foreground">Acudiente</span>
           </span>
         </span>
+        {/* Estado y acciones van juntos: en pantallas angostas bajan a otra línea. */}
+        <span className="ml-auto flex shrink-0 items-center gap-2">
         <Badge variant="soft" color={pendiente ? "info" : "warning"}>
           {pendiente ? "Invitación pendiente" : "Invitación rechazada"}
         </Badge>
@@ -477,6 +482,7 @@ function FilaMiembro({
             <XIcon className="size-4" />
           </button>
         )}
+        </span>
       </li>
     )
   }

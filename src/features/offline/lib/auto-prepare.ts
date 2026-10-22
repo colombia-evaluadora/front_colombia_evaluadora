@@ -21,6 +21,7 @@ import {
 } from "@/features/offline/lib/prepare-engine"
 import { fetchPrepareOptions } from "@/features/offline/lib/prepare-tasks"
 import { startPrepareJob } from "@/features/offline/lib/prepare-job"
+import { hasAuthToken, isSessionEnded } from "@/lib/api-client"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
 import { isSyncing } from "@/lib/offline/outbox/engine"
@@ -78,6 +79,9 @@ export function autoPrepareDue({
 /** Condiciones del equipo para correr sola (sin mirar el reloj). */
 export function canAutoPrepare(): boolean {
   return (
+    // Sin sesión válida (logout, vencida) no arranca: espera al próximo login.
+    hasAuthToken() &&
+    !isSessionEnded() &&
     getOfflineMode() !== "off" &&
     getDeviceMode() === "personal" &&
     isAutoPrepareEnabled() &&
@@ -106,7 +110,7 @@ export async function maybeAutoPrepare(
     if (await isStorageNearlyFull()) return null
     // Mismo trabajo de fondo que "Preparar" a mano (progreso y Cancelar en
     // el header). Si las opciones no cargan, la próxima revisión reintenta.
-    const options = await fetchPrepareOptions()
+    const options = await fetchPrepareOptions(queryClient)
     return await startPrepareJob(queryClient, {
       roles,
       origin: "auto",

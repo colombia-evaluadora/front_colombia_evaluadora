@@ -108,6 +108,12 @@ export function classifyError(error: unknown, attempts: number): ClassifiedError
     const status = Axios.isAxiosError(error) ? error.response?.status : undefined
     return { kind: "retry", error: { code: status ? "server-unavailable" : "network", status, message: "Sin conexión con el servidor." } }
   }
+  // Cancelada por `endSession` (logout o sesión vencida, `api-client.ts`): la
+  // op no llegó al servidor (o se cortó en vuelo). No es un error del dato: se
+  // pausa como un 401 y sale con el próximo inicio de sesión.
+  if (Axios.isCancel(error)) {
+    return { kind: "auth", error: { code: "auth", message: "La sesión terminó." } }
+  }
   if (!Axios.isAxiosError(error) || !error.response) {
     return { kind: "fatal", error: { code: "client", message: error instanceof Error ? error.message : String(error) } }
   }

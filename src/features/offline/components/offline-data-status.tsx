@@ -79,6 +79,8 @@ function useCompletionToast(snapshot: PrepareSnapshot, onDetails: () => void) {
       case "cancelada":
         toast.info("Preparación cancelada. Lo descargado quedó guardado.")
         break
+      // "sesion": se cerró o venció la sesión. Sin toast: la persona va a
+      // /login y el diálogo muestra "detenida: sesión" al volver.
     }
   }, [snapshot, onDetails])
 }
