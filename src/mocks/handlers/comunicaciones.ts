@@ -26,6 +26,7 @@ import {
 } from "@/mocks/db/comunicaciones"
 import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { registrarArchivoMaterial } from "@/mocks/db/planeador"
+import { esAcudienteMock } from "@/mocks/db/comunicaciones-seleccion"
 import {
   extraerMenciones,
 } from "@/features/comunicaciones/chat/lib/menciones"
@@ -159,11 +160,13 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: [politicaChat] })
   }),
 
-  // `paraGrupo=true`: el buscador de un grupo no ofrece acudientes (irán por invitación).
-  http.get(URL("personas"), async ({ request }) => {
+  // El buscador de un grupo también ofrece acudientes: entran por invitación. Un e2e puede tratar
+  // a una cuenta como acudiente (`esAcudienteMock`).
+  http.get(URL("personas"), async () => {
     await delay(200)
-    const paraGrupo = new globalThis.URL(request.url).searchParams.get("paraGrupo") === "true"
-    return HttpResponse.json({ rows: paraGrupo ? personas.filter((p) => p.perfil !== "ACUDIENTE") : personas })
+    return HttpResponse.json({
+      rows: personas.map((p) => (esAcudienteMock(p.id) ? { ...p, perfil: "ACUDIENTE" as const } : p)),
+    })
   }),
 
   http.post(URL("conversaciones"), async ({ request }) => {

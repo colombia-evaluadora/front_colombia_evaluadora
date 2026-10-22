@@ -3,7 +3,8 @@ import { expect, test, type Page } from "@playwright/test"
 // Decisiones de Natalia sobre los grupos del chat, sobre MSW (`comunicaciones-grupos.ts` +
 // `db/comunicaciones-seleccion.ts`), en la MISMA pestaña y sin recargar:
 // - en el selector de personas se agrega también por grupo académico y rol, con confirmación
-//   del conteo ("Se agregarán 13 personas") y sin acudientes (nota visible);
+//   del conteo ("Se agregarán 13 personas y se invitará a 1 acudiente"): de los grupos académicos
+//   se eligen estudiantes, acudientes o ambos, y los acudientes reciben una invitación;
 // - solo quien crea el grupo lo gestiona: no existe "Hacer administrador", y un miembro no ve
 //   el buscador ni las acciones de quitar.
 const CHAT = "/app/comunicaciones/chat"
@@ -62,15 +63,16 @@ test("alta masiva por grupo y rol con confirmación; solo el creador gestiona", 
   await page.getByRole("button", { name: "Crear grupo" }).click()
   await page.getByPlaceholder("Por ejemplo, Proyecto feria de ciencias").fill(GRUPO)
   await page.getByRole("button", { name: "Siguiente" }).click()
-  await expect(page.getByText("Los acudientes no se agregan por ahora")).toBeVisible()
+  await expect(page.getByText(/Los acudientes reciben una invitación \(una sola/)).toBeVisible()
   await elegir(page, "Grupos académicos", "601", /Sexto 601/)
   await elegir(page, "Roles", "Doc", /Docente/)
+  await page.getByText("Estudiantes y acudientes", { exact: true }).click()
   await page.getByRole("button", { name: "Agregar", exact: true }).click()
 
-  // 2. Confirmación con el conteo que resolvió el servidor (sin duplicados ni acudientes).
+  // 2. Confirmación con el conteo que resolvió el servidor (sin duplicados; el acudiente, invitado).
   const confirmar = page.getByRole("alertdialog")
-  await expect(confirmar.getByRole("heading", { name: "Se agregarán 13 personas." })).toBeVisible()
-  await expect(confirmar.getByText(/Grupo Sexto 601 · Sede principal, rol Docente/)).toBeVisible()
+  await expect(confirmar.getByRole("heading", { name: "Se agregarán 13 personas y se invitará a 1 acudiente." })).toBeVisible()
+  await expect(confirmar.getByText(/Grupo Sexto 601 · Sede principal, rol Docente, estudiantes y acudientes/)).toBeVisible()
   await confirmar.getByRole("button", { name: "Agregar" }).click()
   await expect(page.getByRole("heading", { level: 2, name: GRUPO })).toBeVisible()
   await expect(page.getByText(`agregó a 13 personas a ${GRUPO}`)).toBeVisible()

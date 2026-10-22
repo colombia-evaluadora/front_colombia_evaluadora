@@ -21,6 +21,8 @@ export interface CrearEleccionInput {
   fechaCierre: string | null
   jornadaId: number
   verResultadosEnVivo: boolean
+  // "Permitir comentarios": los participantes escriben en el canal de la elección.
+  permiteComentarios?: boolean
   // Ids de las personas habilitadas para votar.
   votantes: number[]
   candidatos: CandidatoNuevo[]
@@ -39,6 +41,7 @@ async function cuerpoEleccion(v: Omit<CrearEleccionInput, "votantes">) {
     FECHA_CIERRE: v.fechaCierre,
     FK_JORNADA: v.jornadaId,
     VER_RESULTADOS: v.verResultadosEnVivo ? "S" : "N",
+    COMENTARIOS: v.permiteComentarios ? "S" : "N",
     CANDIDATOS: v.candidatos.map((c, i) => ({
       NOMBRE: c.nombre,
       NUMERO: c.numero,

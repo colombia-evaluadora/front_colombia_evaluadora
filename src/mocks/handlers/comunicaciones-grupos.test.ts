@@ -6,9 +6,11 @@ import type {
   Mensaje,
   Miembro,
   OpcionesSeleccion,
+  Invitacion,
   Persona,
   ResolucionSeleccion,
 } from "@/features/comunicaciones/chat/api/types"
+import { forzarAcudientesMock } from "@/mocks/db/comunicaciones-seleccion"
 import { comunicacionesHandlers } from "@/mocks/handlers/comunicaciones"
 import { comunicacionesGruposHandlers } from "@/mocks/handlers/comunicaciones-grupos"
 import { authUsers, createMockAccessToken } from "@/mocks/db/auth"
@@ -83,18 +85,20 @@ describe("grupos del chat (mock multiusuario)", () => {
     expect(miembros.map((m) => [m.id, m.esAdmin])).toEqual([[2, true]])
   })
 
-  it("decisiones de Natalia: alta por grado/grupo/rol sin duplicados ni acudientes, solo el creador gestiona", async () => {
+  it("decisiones de Natalia: alta por grado/grupo/rol sin duplicados, acudientes por invitación, solo el creador gestiona", async () => {
     // Opciones del selector grupal.
     const [opciones] = (await llamar<OpcionesSeleccion>(ADMIN, "GET", "/grupos/seleccion/opciones")).rows
     expect(opciones.grupos.map((g) => g.etiqueta)).toContain("Sexto 601")
     expect(opciones.roles.map((r) => r.valor)).toContain("Docente")
 
-    // Vista previa: Sexto 601 (5 + Sofía) + rol Docente (7) + a mano Sofía (repetida) y el acudiente (9).
+    // Vista previa: Sexto 601 (5 + Sofía) + rol Docente (7) + a mano Sofía (repetida) y el acudiente (9),
+    // que va por invitación.
     const cuerpo = { GRADOS: [], GRUPOS: [601], ROLES: ["Docente"], USUARIOS: [10, 9] }
     const [previa] = (await llamar<ResolucionSeleccion>(ADMIN, "POST", "/grupos/seleccion/resolver", cuerpo)).rows
-    expect(previa.total).toBe(13)
-    expect(previa.personas.some((p) => p.id === 9)).toBe(false)
-    expect(new Set(previa.personas.map((p) => p.id)).size).toBe(13)
+    expect(previa.total).toBe(14)
+    expect(previa.invitaciones).toBe(1)
+    expect(previa.personas.find((p) => p.id === 9)?.perfil).toBe("ACUDIENTE")
+    expect(new Set(previa.personas.map((p) => p.id)).size).toBe(14)
 
     // Crear con la misma selección: un solo mensaje de sistema agregado y un aviso por persona.
     const g = (await llamar<Conversacion>(ADMIN, "POST", "/conversaciones", {
@@ -110,14 +114,17 @@ describe("grupos del chat (mock multiusuario)", () => {
     const [otra] = (await llamar<ResolucionSeleccion>(ADMIN, "POST", "/grupos/seleccion/resolver", {
       ...cuerpo, FK_CONVERSACION: g.id,
     })).rows
-    expect([otra.total, otra.yaEnElGrupo]).toEqual([0, 13])
-    expect((await llamar<Miembro>(ADMIN, "POST", `/conversaciones/${g.id}/miembros/masivo`, cuerpo)).rows).toHaveLength(14)
+    expect([otra.total, otra.yaEnElGrupo]).toEqual([0, 14])
+    // 14 miembros + la invitación pendiente del acudiente (solo la ve quien gestiona).
+    const tras = (await llamar<Miembro>(ADMIN, "POST", `/conversaciones/${g.id}/miembros/masivo`, cuerpo)).rows
+    expect(tras).toHaveLength(15)
+    expect(tras.find((m) => m.id === 9)?.estado).toBe("INVITADO")
 
     // b) Quien entra después ve todo el historial.
     await llamar(ADMIN, "POST", `/conversaciones/${g.id}/mensajes`, { TEXTO: "Bienvenidos" })
     await llamar(ADMIN, "POST", `/conversaciones/${g.id}/miembros/masivo`, { GRADOS: ["Séptimo"] })
     const deSeptimo = (await llamar<Miembro>(ADMIN, "GET", `/conversaciones/${g.id}/miembros`)).rows
-    expect(deSeptimo).toHaveLength(17)
+    expect(deSeptimo).toHaveLength(18)
 
     // Solo el creador gestiona: un miembro no agrega, no quita, no nombra; ni el creador nombra.
     expect((await llamar(DOCENTE, "POST", `/conversaciones/${g.id}/miembros/masivo`, { GRADOS: ["Sexto"] })).status).toBe(403)
@@ -136,8 +143,39 @@ describe("grupos del chat (mock multiusuario)", () => {
       expect.arrayContaining(["Bienvenidos", "Soy Marta"]),
     )
 
-    // El buscador de un grupo no ofrece acudientes.
+    // El buscador de un grupo ofrece acudientes (entran por invitación).
     const buscador = (await llamar<Persona>(ADMIN, "GET", "/personas?paraGrupo=true")).rows
-    expect(buscador.some((p) => p.perfil === "ACUDIENTE")).toBe(false)
+    expect(buscador.some((p) => p.perfil === "ACUDIENTE")).toBe(true)
+  })
+
+  it("invitación: la cuenta tratada como acudiente no ve el grupo hasta aceptar; modos de escritura", async () => {
+    forzarAcudientesMock([2])
+    try {
+      const g = (await llamar<Conversacion>(ADMIN, "POST", "/conversaciones", {
+        NOMBRE: "Padres 601", TIPO: "GRUPO", CATEGORIA: "GENERAL", MIEMBROS: [2, 3], MODO: "SOLO_LECTURA",
+      })).rows[0]
+      expect(g.totalMiembros).toBe(2)
+      expect(g.modo).toBe("SOLO_LECTURA")
+      expect((await llamar(DOCENTE, "GET", `/conversaciones/${g.id}/mensajes`)).status).toBe(404)
+      const pendientes = (await llamar<Invitacion>(DOCENTE, "GET", "/invitaciones")).rows
+      expect(pendientes.map((i) => i.conversacionId)).toContain(g.id)
+      expect(notificacionesDb.some((n) => n.tipo === "CHAT_GRUPO_INVITACION" && n.usuario === "docente@example.com")).toBe(true)
+
+      // Solo lectura: la miembro (Marta, docente) no escribe; quien gestiona sí.
+      const negado = await llamar(USER, "POST", `/conversaciones/${g.id}/mensajes`, { TEXTO: "hola" })
+      expect(negado.status).toBe(403)
+      expect(negado.message).toMatch(/solo lectura/)
+
+      const aceptada = (await llamar<Conversacion>(DOCENTE, "PATCH", `/conversaciones/${g.id}/invitacion/aceptar`)).rows[0]
+      expect(aceptada.totalMiembros).toBe(3)
+      expect((await llamar(DOCENTE, "GET", `/conversaciones/${g.id}/mensajes`)).status).toBe(200)
+
+      // Moderado con Acudientes: ahora la invitada (acudiente) escribe.
+      await llamar(ADMIN, "PATCH", `/conversaciones/${g.id}`, { MODO: "MODERADO", ROLES_ESCRITURA: ["ACUDIENTE"] })
+      expect((await llamar(DOCENTE, "POST", `/conversaciones/${g.id}/mensajes`, { TEXTO: "Gracias" })).status).toBe(200)
+      expect((await llamar(USER, "POST", `/conversaciones/${g.id}/mensajes`, { TEXTO: "yo no" })).status).toBe(403)
+    } finally {
+      forzarAcudientesMock(null)
+    }
   })
 })

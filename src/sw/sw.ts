@@ -199,6 +199,22 @@ function safeDeepLink(url: string | undefined): string {
   }
 }
 
+/**
+ * Invitación a un grupo (CHAT_GRUPO_INVITACION, acudientes): el aviso ofrece Aceptar / Rechazar.
+ * El SW no tiene sesión, así que el botón solo abre el chat con `accion=` y la pestaña responde.
+ */
+const TIPO_INVITACION = "CHAT_GRUPO_INVITACION"
+const ACCIONES_INVITACION = [
+  { action: "aceptar", title: "Aceptar" },
+  { action: "rechazar", title: "Rechazar" },
+]
+
+/** Deep link con la acción del botón (`aceptar` / `rechazar`); sin acción, el mismo. */
+function conAccionInvitacion(url: string, action: string | undefined): string {
+  if (action !== "aceptar" && action !== "rechazar") return url
+  return `${url}${url.includes("?") ? "&" : "?"}accion=${action}`
+}
+
 async function postToClients(message: Record<string, unknown>) {
   const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true })
   for (const client of clients) client.postMessage(message)
@@ -211,11 +227,14 @@ self.addEventListener("push", (event) => {
   const url = safeDeepLink(payload.url)
   event.waitUntil(
     (async () => {
+      const invitacion = payload.tipo === TIPO_INVITACION
       await self.registration.showNotification(PUSH_TITULO, {
-        body: PUSH_CUERPO,
+        body: invitacion ? "Te invitaron a un grupo" : PUSH_CUERPO,
         tag: id,
         icon: "/favicon.svg",
         data: { id, url },
+        // `actions` no está en todos los tipos de NotificationOptions del DOM.
+        ...(invitacion ? ({ actions: ACCIONES_INVITACION } as NotificationOptions) : {}),
       })
       await postToClients({ type: "PUSH_RECEIVED", id, tipo: payload.tipo })
       // Badge del ícono instalado (no soportado en todos lados).
@@ -228,7 +247,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close()
   const { id, url } = (event.notification.data ?? {}) as { id?: string; url?: string }
-  const target = safeDeepLink(url)
+  const target = conAccionInvitacion(safeDeepLink(url), event.action)
   event.waitUntil(
     (async () => {
       const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true })

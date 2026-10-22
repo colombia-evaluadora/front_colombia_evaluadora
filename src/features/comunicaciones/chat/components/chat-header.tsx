@@ -11,6 +11,8 @@ import { BuscadorMensajes } from "@/features/comunicaciones/chat/components/busc
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import { ETIQUETA_PERFIL } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
+import { resumenModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
 
 interface ChatHeaderProps {
   conversacion: Conversacion
@@ -46,6 +48,8 @@ export function ChatHeader({
 
       {directo ? (
         <EncabezadoDirecto conversacion={c} />
+      ) : c.tipo === "GRUPO" && (c.imagenArchivoId != null || c.descripcion || resumenModo(c)) ? (
+        <EncabezadoGrupo conversacion={c} />
       ) : (
         <h2 className="flex min-w-0 flex-1 items-center gap-2 text-lg font-semibold">
           <Icono aria-hidden className="size-5 shrink-0" />
@@ -88,6 +92,43 @@ export function ChatHeader({
 
       <ConversacionAcciones conversacion={c} variante="encabezado" activa onSalida={onVolver} />
     </header>
+  )
+}
+
+/**
+ * Grupo con imagen, descripción o modo de escritura: la imagen (si la hay) en lugar del ícono y,
+ * debajo del nombre, la descripción o quién escribe ("Solo lectura", "Moderado: Docentes").
+ */
+function EncabezadoGrupo({ conversacion: c }: { conversacion: Conversacion }) {
+  const Icono = ICONO_CATEGORIA[c.categoria]
+  const modo = resumenModo(c)
+  const subtitulo = [c.descripcion, modo].filter(Boolean).join(" · ")
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-3">
+      {c.imagenArchivoId != null ? (
+        <ArchivoImage
+          archivoId={c.imagenArchivoId}
+          alt={`Imagen de ${c.nombre}`}
+          className="size-10 shrink-0 rounded-full object-cover"
+          fallback={<Icono aria-hidden className="size-5 shrink-0" />}
+        />
+      ) : (
+        <Icono aria-hidden className="size-5 shrink-0" />
+      )}
+      <div className="min-w-0 leading-tight">
+        <h2 className="flex items-center gap-2 text-lg leading-tight font-semibold">
+          <span className="truncate">{c.nombre}</span>
+          {c.silenciadoHasta && (
+            <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 text-muted-foreground" />
+          )}
+        </h2>
+        {subtitulo && (
+          <p className="truncate text-sm text-muted-foreground" title={subtitulo}>
+            {subtitulo}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 

@@ -1,11 +1,18 @@
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { useOpcionesSeleccionQuery } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
-import { etiquetaOpcion, type SeleccionGrupal } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  etiquetaOpcion,
+  OPCIONES_PARA,
+  type ParaSeleccion,
+  type SeleccionGrupal,
+} from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 // Agregar a un grupo por grado, grupo académico (601, 802-A) o rol (todos los docentes), además del
 // buscador de personas. Las opciones son de los establecimientos de quien crea el grupo
-// (comms-service); los miembros se resuelven en el servidor al confirmar.
+// (comms-service); los miembros se resuelven en el servidor al confirmar. De los grados y grupos se
+// eligen sus estudiantes, sus acudientes (por invitación, una por acudiente) o ambos.
 export function SelectorGrupal({
   enabled,
   value,
@@ -62,8 +69,26 @@ export function SelectorGrupal({
           />
         </div>
       )}
+      {value.grados.length + value.grupos.length > 0 && (
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-medium">De los grados y grupos, agregar a</legend>
+          <RadioGroup
+            value={value.para ?? "ESTUDIANTES"}
+            onValueChange={(v) => onChange({ ...value, para: v as ParaSeleccion })}
+            className="flex flex-wrap gap-x-5 gap-y-2"
+          >
+            {OPCIONES_PARA.map((o) => (
+              <label key={o.valor} className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value={o.valor} />
+                {o.etiqueta}
+              </label>
+            ))}
+          </RadioGroup>
+        </fieldset>
+      )}
       <p className="text-xs text-muted-foreground">
-        Los acudientes no se agregan por ahora: podrán unirse más adelante por invitación.
+        Los acudientes reciben una invitación (una sola aunque tengan varios hijos) y entran al grupo
+        solo si la aceptan.
       </p>
     </fieldset>
   )

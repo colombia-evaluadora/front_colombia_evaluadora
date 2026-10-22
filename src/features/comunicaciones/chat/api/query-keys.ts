@@ -4,6 +4,8 @@ const conversacion = (id: number | "none") => [...all, "conversacion", id] as co
 export const chatKeys = {
   all,
   conversaciones: [...all, "conversaciones"] as const,
+  // Invitaciones pendientes a grupos (acudientes).
+  invitaciones: [...all, "invitaciones"] as const,
   conversacion,
   mensajes: (id: number | "none") => [...conversacion(id), "mensajes"] as const,
   archivos: [...all, "archivos"] as const,

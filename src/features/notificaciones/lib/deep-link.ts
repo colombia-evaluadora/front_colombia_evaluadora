@@ -1,3 +1,6 @@
+/** Invitación a un grupo del chat (acudientes): la notificación ofrece Aceptar / Rechazar. */
+export const TIPO_INVITACION_GRUPO = "CHAT_GRUPO_INVITACION"
+
 /** Destino cuando el deep link no es válido (spec "Deep link externo"). */
 export const DEEP_LINK_FALLBACK = "/app/notificaciones"
 

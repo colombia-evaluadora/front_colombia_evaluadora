@@ -92,6 +92,11 @@ export function aplicarEventoUsuario(
     )
     return null
   }
+  // Te invitaron a un grupo, aceptaste o rechazaste en otra sesión, o te retiraron la invitación.
+  if (e.event === "invitaciones.actualizadas") {
+    void queryClient.invalidateQueries({ queryKey: chatKeys.invitaciones })
+    return null
+  }
   if (e.event === "conversacion.eliminada") {
     const { id, motivo } = e.data as { id: number; motivo?: string }
     const nombre = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.find((x) => x.id === id)?.nombre

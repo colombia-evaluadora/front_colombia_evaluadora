@@ -5,8 +5,8 @@ import { personas, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
 /**
  * Alta masiva en grupos (comms-service `/comunicaciones/grupos/seleccion/*`): grados, grupos
  * académicos y cargos de un colegio de mentira. Los estudiantes viven aquí (no en `personas`) para
- * no cambiar el buscador de los demás mocks; Sofía (10) está en Sexto 601. Los acudientes (9)
- * nunca se agregan: irán por invitación.
+ * no cambiar el buscador de los demás mocks; Sofía (10) está en Sexto 601 y su acudiente es Luis (9).
+ * Los acudientes entran por invitación (aceptan o rechazan): ver `esAcudienteMock`.
  */
 interface EstudianteMock extends Persona {
   grado: string
@@ -78,24 +78,58 @@ export const opcionesSeleccion: OpcionesSeleccion = {
   roles: Object.entries(ROLES).map(([valor, ids]) => ({ valor, etiqueta: valor, total: ids.length })),
 }
 
+/** Acudientes de las matrículas de cada curso (pk_tgrupo → personas). */
+const ACUDIENTES_CURSO: Record<number, number[]> = { 601: [9] }
+
+/**
+ * Clave de localStorage para que un e2e trate a una cuenta del mock (p. ej. la docente, 2) como
+ * acudiente: no hay usuario acudiente con login en el mock ni en testv2.
+ */
+export const CLAVE_ACUDIENTES_MOCK = "ce-mock-acudientes"
+
+let forzados: number[] | null = null
+
+/** Para tests unitarios (sin localStorage en Node): `null` vuelve a leer localStorage. */
+export function forzarAcudientesMock(ids: number[] | null) {
+  forzados = ids
+}
+
+function acudientesForzados(): number[] {
+  if (forzados) return forzados
+  try {
+    return (globalThis.localStorage?.getItem(CLAVE_ACUDIENTES_MOCK) ?? "")
+      .split(",")
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n > 0)
+  } catch {
+    return []
+  }
+}
+
+/** Entra a un grupo por invitación (perfil ACUDIENTE, o forzado por el e2e). */
+export function esAcudienteMock(id: number): boolean {
+  return acudientesForzados().includes(id) || personaChat(id)?.perfil === "ACUDIENTE"
+}
+
 /** Persona del chat por id: el directorio del mock o un estudiante de la selección. */
 export function personaChat(id: number): Persona | undefined {
   return personas.find((p) => p.id === id) ?? estudiantesSeleccion.find((e) => e.id === id)
 }
 
 /**
- * Quiénes entran por la selección (sin duplicados, sin `yo` ni acudientes), como
- * `ChatService.miembrosDeSeleccion`: personas sueltas + grados + grupos + cargos.
+ * Quiénes entran por la selección (sin duplicados ni `yo`), como `ChatService.miembrosDeSeleccion`:
+ * personas sueltas + grados y grupos (sus estudiantes y/o acudientes según `PARA`) + cargos. Los
+ * acudientes de la salida se invitan (ver `esAcudienteMock`).
  */
 export function resolverSeleccion(cuerpo: Partial<CuerpoSeleccion>, yo: number): number[] {
   const ids = new Set<number>(cuerpo.USUARIOS ?? [])
+  const para = cuerpo.PARA ?? "ESTUDIANTES"
   for (const c of CURSOS) {
-    if (cuerpo.GRADOS?.includes(c.grado) || cuerpo.GRUPOS?.includes(c.grupo)) enCurso(c.grupo).forEach((i) => ids.add(i))
+    if (!(cuerpo.GRADOS?.includes(c.grado) || cuerpo.GRUPOS?.includes(c.grupo))) continue
+    if (para !== "ACUDIENTES") enCurso(c.grupo).forEach((i) => ids.add(i))
+    if (para !== "ESTUDIANTES") (ACUDIENTES_CURSO[c.grupo] ?? []).forEach((i) => ids.add(i))
   }
   for (const r of cuerpo.ROLES ?? []) (ROLES[r] ?? []).forEach((i) => ids.add(i))
   ids.delete(yo)
-  return [...ids].filter((i) => {
-    const p = personaChat(i)
-    return p && p.perfil !== "ACUDIENTE"
-  })
+  return [...ids].filter((i) => !!personaChat(i))
 }

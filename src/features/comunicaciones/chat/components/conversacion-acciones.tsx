@@ -1,4 +1,5 @@
 import { EditarActividad } from "@/features/comunicaciones/chat/components/editar-actividad"
+import { EditarGrupoDialog } from "@/features/comunicaciones/chat/components/editar-grupo-dialog"
 import { ETIQUETA_EDITAR, esActividadEditable } from "@/features/comunicaciones/chat/lib/actividad-editable"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
@@ -116,7 +117,7 @@ export function ConversacionAcciones({
   const cerrar = () => setDialogo(null)
 
   // Elección, encuesta, evaluación o comunicado propios: el lápiz abre "Editar …" con todos sus
-  // datos; los foros y grupos solo se renombran.
+  // datos; un grupo, "Editar grupo" (descripción, imagen y quién escribe); un foro solo se renombra.
   const actividadEditable = esActividadEditable(c)
   const abrirRenombrar = () => {
     if (actividadEditable) {
@@ -322,7 +323,12 @@ export function ConversacionAcciones({
 
       <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
 
-      <Dialog open={dialogo === "renombrar"} onOpenChange={(open) => !open && cerrar()}>
+      {/* Grupo: nombre, descripción, imagen y quién escribe; foro: solo el nombre. */}
+      {c.tipo === "GRUPO" && (
+        <EditarGrupoDialog conversacion={c} open={dialogo === "renombrar"} onClose={cerrar} />
+      )}
+
+      <Dialog open={dialogo === "renombrar" && c.tipo !== "GRUPO"} onOpenChange={(open) => !open && cerrar()}>
         <DialogContent>
           <form
             onSubmit={(e) => {
