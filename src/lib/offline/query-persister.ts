@@ -279,6 +279,32 @@ function cancelPendingWrites() {
 
 const encoder = new TextEncoder()
 
+/**
+ * JSON pierde los `Date`: `JSON.stringify` los vuelve texto ISO y al restaurar
+ * el dato llega como string, así que `fechaInicio.toLocaleDateString()` revienta
+ * (pantalla "Algo salió mal" al abrir una actividad con datos guardados). Se
+ * marcan al guardar y se reconstruyen al leer. Filas guardadas antes de este
+ * cambio traen las fechas como texto: se corrigen solas al refrescar la query.
+ */
+const DATE_TAG = "__ce_date__"
+
+export function stringifyPersisted(value: unknown): string {
+  return JSON.stringify(value, function (this: Record<string, unknown>, key, v) {
+    const raw = this[key]
+    return raw instanceof Date ? { [DATE_TAG]: Number.isNaN(raw.getTime()) ? null : raw.toISOString() } : v
+  })
+}
+
+export function parsePersisted(json: string): unknown {
+  return JSON.parse(json, (_key, v) => {
+    if (v && typeof v === "object" && !Array.isArray(v) && DATE_TAG in v && Object.keys(v).length === 1) {
+      const iso = (v as Record<string, unknown>)[DATE_TAG]
+      return typeof iso === "string" ? new Date(iso) : null
+    }
+    return v
+  })
+}
+
 function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | null {
   const meta = query.meta as OfflineQueryMeta | undefined
   const offline = meta?.offline
@@ -286,7 +312,7 @@ function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | 
   const data = meta.persistSelect ? meta.persistSelect(query.state.data) : query.state.data
   let json: string
   try {
-    json = JSON.stringify(data)
+    json = stringifyPersisted(data)
   } catch {
     return null
   }
@@ -491,7 +517,7 @@ export async function restoreUserQueries(
       queryHash: row.queryHash,
       queryKey: row.queryKey,
       state: {
-        data: JSON.parse(opened.get(row) as string) as unknown,
+        data: parsePersisted(opened.get(row) as string),
         dataUpdateCount: 1,
         dataUpdatedAt: effectiveUpdatedAt(row),
         error: null,

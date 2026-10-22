@@ -65,7 +65,7 @@ export function ProgramacionSection({ form, disabled }: { form: FormActividad; d
 
   // Contexto de la ventana de fechas, para que el docente sepa de dónde salen los topes.
   const periodoLabel = programacion?.periodoAcademico
-    ? `${programacion.periodoAcademico.nombre} (${programacion.periodoAcademico.fechaInicio?.toLocaleDateString("es-CO") ?? "…"} – ${programacion.periodoAcademico.fechaFin?.toLocaleDateString("es-CO") ?? "…"})`
+    ? `${programacion.periodoAcademico.nombre} (${fechaCorta(programacion.periodoAcademico.fechaInicio) ?? "…"} – ${fechaCorta(programacion.periodoAcademico.fechaFin) ?? "…"})`
     : null
   const intensidadLabel = programacion?.intensidadHoraria
     ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
@@ -283,4 +283,11 @@ export function ProgramacionSection({ form, disabled }: { form: FormActividad; d
       </div>
     </Card>
   )
+}
+
+/** Tolera fechas que lleguen como texto (copias guardadas sin conexión antiguas). */
+function fechaCorta(value: Date | string | null | undefined): string | undefined {
+  if (!value) return undefined
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? undefined : date.toLocaleDateString("es-CO")
 }
