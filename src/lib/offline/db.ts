@@ -57,6 +57,13 @@ export interface PersistedQueryRow {
   ttl: number
   /** Bytes aproximados de `data` (UTF-8). */
   size: number
+  /**
+   * Lecturas con su `ETag` que dieron este dato (JSON de `RecordedRequest[]`,
+   * cifrado igual que `data`). Preparar las repite con `If-None-Match` para
+   * saber si la query cambió sin bajarla (`conditional-requests.ts`). Campo
+   * opcional del valor: no hace falta subir `DB_VERSION`.
+   */
+  validators?: string
 }
 
 export interface OutboxRowShape {

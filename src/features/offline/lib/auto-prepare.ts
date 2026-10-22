@@ -6,9 +6,9 @@
  * vuelve la red (D-12: "guardar todo"), y la primera vez prepara todo el año
  * mostrando el progreso.
  *
- * Incremental = `staleTime` > 0 en cada tarea: lo bajado hace menos de
- * `AUTO_PREPARE_FRESH_MS` no se vuelve a pedir; las listas sí, para descubrir
- * actividades, unidades o grupos nuevos.
+ * Incremental: cada tarea tiene su ventana de frescura (`prepare-freshness.ts`:
+ * catálogos 1 día, datos de grupo 4 h, planilla y asistencia siempre pero con
+ * `If-None-Match`); solo se baja (y se reescribe) lo que cambió.
  */
 import type { QueryClient } from "@tanstack/react-query"
 
@@ -31,8 +31,6 @@ import { isVaultLocked } from "@/lib/offline/vault"
 export const AUTO_PREPARE_INTERVAL_MS = 4 * 60 * 60 * 1000
 /** Al volver la red en la app instalada, si lo último tiene más que esto. */
 export const AUTO_PREPARE_RECONNECT_MIN_MS = 30 * 60 * 1000
-/** Lo bajado hace menos que esto no se vuelve a pedir en la corrida incremental. */
-export const AUTO_PREPARE_FRESH_MS = 2 * 60 * 60 * 1000
 /** Espera al entrar: primero carga la pantalla que el docente abrió. */
 export const AUTO_PREPARE_FIRST_DELAY_MS = 5_000
 /** Cada cuánto se revisa si ya toca (la corrida solo arranca si toca). */
@@ -114,8 +112,6 @@ export async function maybeAutoPrepare(
       origin: "auto",
       options,
       resume: true,
-      // La primera vez se baja todo; después, solo lo que envejeció.
-      staleTime: lastPrepareAt == null ? 0 : AUTO_PREPARE_FRESH_MS,
     })
   } catch {
     return null

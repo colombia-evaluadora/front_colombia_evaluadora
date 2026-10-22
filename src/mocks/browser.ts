@@ -1,6 +1,7 @@
-import { http, HttpResponse } from "msw"
+import { getResponse, http, HttpResponse } from "msw"
 import { setupWorker } from "msw/browser"
 import { handlers } from "@/mocks/handlers"
+import { hashString } from "@/lib/offline/content-hash"
 
 /**
  * Fallas de red simuladas para los E2E de resiliencia (`e2e/`). MSW responde
@@ -69,4 +70,36 @@ const faultHandlers = [
   http.put("/api/eval-col/planeador/actividades/:id", () => planeadorWritesFault()),
 ]
 
-export const worker = setupWorker(...faultHandlers, ...handlers)
+/**
+ * Lecturas condicionales como el backend real (query-service, sso): toda
+ * lectura JSON (GET, o POST sin `Idempotency-Key`) que responde 200 lleva
+ * `ETag` = hash del cuerpo, y si la request trae ese mismo valor en
+ * `If-None-Match` responde 304 sin cuerpo. Envuelve a los handlers de dominio
+ * (`getResponse`) en vez de tocar cada uno. Los E2E cuentan los 304 de la
+ * segunda preparación (`e2e/offline-prepare-incremental.spec.ts`).
+ */
+function etagMatches(header: string | null, etag: string): boolean {
+  if (!header) return false
+  const strip = (v: string) => v.trim().replace(/^W\//, "")
+  return header.split(",").some((v) => strip(v) === strip(etag) || v.trim() === "*")
+}
+
+const etagHandler = http.all("/api/*", async ({ request }) => {
+  const method = request.method.toUpperCase()
+  if (method !== "GET" && !(method === "POST" && !request.headers.has("Idempotency-Key"))) return
+  const response = await getResponse(handlers, request)
+  if (!response) return
+  const type = response.headers.get("content-type") ?? ""
+  // Passthrough, streams (SSE), binarios y errores: tal cual.
+  if (response.status !== 200 || !type.includes("json") || response.headers.has("x-msw-intention")) return response
+  const body = await response.text()
+  const etag = `"${hashString(body)}"`
+  const headers = new Headers(response.headers)
+  headers.set("ETag", etag)
+  if (etagMatches(request.headers.get("If-None-Match"), etag)) {
+    return new HttpResponse(null, { status: 304, headers: { ETag: etag } })
+  }
+  return new HttpResponse(body, { status: 200, headers })
+})
+
+export const worker = setupWorker(...faultHandlers, etagHandler, ...handlers)

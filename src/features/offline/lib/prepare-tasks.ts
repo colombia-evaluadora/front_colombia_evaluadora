@@ -36,6 +36,7 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query"
 import type { PlanillaTarget, PrepareSelection } from "@/components/offline/prepare-offline-plan"
 import { buildPlanillaTargets } from "@/components/offline/prepare-offline-plan"
 import type { PrepareContext, PrepareTask } from "@/features/offline/lib/prepare-engine"
+import { prepareQuery } from "@/features/offline/lib/prepare-query"
 import { cacheArchivo } from "@/lib/offline/file-cache"
 import {
   TTL_OFFLINE,
@@ -199,7 +200,10 @@ interface SeedOptions<T> {
   then?: (data: T) => PrepareTask[]
 }
 
-/** Pide una query con la key/fn/meta de la pantalla. */
+/**
+ * Pide una query con la key/fn/meta de la pantalla. Lo fresco no se pide y lo
+ * que el servidor confirma sin cambios (304) no se baja (`prepareQuery`).
+ */
 export function seed<T>(
   queryKey: QueryKey,
   queryFn: () => Promise<T>,
@@ -208,10 +212,15 @@ export function seed<T>(
 ): PrepareTask {
   return {
     queryKey,
+    meta,
     optional,
     expands: then != null,
     run: async (queryClient: QueryClient, ctx: PrepareContext) => {
-      const data = await queryClient.fetchQuery({ queryKey, queryFn, meta, staleTime: ctx.staleTime })
+      const data = await prepareQuery(queryClient, ctx, {
+        queryKey,
+        meta,
+        fetch: () => queryClient.fetchQuery({ queryKey, queryFn, meta, staleTime: 0 }),
+      })
       return then?.(data as T)
     },
   }
@@ -340,14 +349,22 @@ function actividadesTasks(meses: { anio: number; mes: number }[], hoy: string): 
       expands: true,
       run: async () => {
         const actividades = await fetchTodasLasActividadesMias()
-        return actividades.map(
-          (actividad): PrepareTask => ({
-            queryKey: planeadorKeys.actividad.detalle(actividad.id),
+        return actividades.map((actividad): PrepareTask => {
+          const queryKey = planeadorKeys.actividad.detalle(actividad.id)
+          const meta = estudiantesMeta()
+          return {
+            queryKey,
+            meta,
             run: async (client, ctx) => {
-              await client.fetchQuery({ ...actividadDetalleQueryOptions(actividad.id, client), staleTime: ctx.staleTime })
+              const options = actividadDetalleQueryOptions(actividad.id, client)
+              await prepareQuery(client, ctx, {
+                queryKey,
+                meta,
+                fetch: () => client.fetchQuery({ ...options, staleTime: 0 }),
+              })
             },
-          }),
-        )
+          }
+        })
       },
     },
   ]
@@ -655,18 +672,25 @@ function comunicacionesTasks(): PrepareTask[] {
 
 function notificacionesTasks(): PrepareTask[] {
   const lista = notificacionesListaQueryKey({})
+  const meta = offlineMeta(TTL_OFFLINE.detalle)
   return [
     {
       queryKey: lista,
+      meta,
       optional: true,
       run: async (queryClient, ctx) => {
-        await queryClient.fetchInfiniteQuery({
+        await prepareQuery(queryClient, ctx, {
           queryKey: lista,
-          queryFn: ({ pageParam }) => fetchNotificaciones({}, pageParam),
-          initialPageParam: null as string | null,
-          getNextPageParam: (last: { nextCursor: string | null }) => last.nextCursor,
-          meta: offlineMeta(TTL_OFFLINE.detalle),
-          staleTime: ctx.staleTime,
+          meta,
+          fetch: () =>
+            queryClient.fetchInfiniteQuery({
+              queryKey: lista,
+              queryFn: ({ pageParam }) => fetchNotificaciones({}, pageParam),
+              initialPageParam: null as string | null,
+              getNextPageParam: (last: { nextCursor: string | null }) => last.nextCursor,
+              meta,
+              staleTime: 0,
+            }),
         })
       },
     },
@@ -778,9 +802,15 @@ export function cachedOfflineTasks(queryClient: QueryClient, seeded: Set<string>
     .findAll({ predicate: (query) => Boolean(query.meta?.offline) && !seeded.has(query.queryHash) && Boolean(query.options.queryFn) })
     .map((query) => ({
       queryKey: query.queryKey,
+      meta: query.meta,
       optional: true,
-      run: async (client: QueryClient) => {
-        await client.refetchQueries({ queryKey: query.queryKey, exact: true, type: "all" }, { throwOnError: true })
+      run: async (client: QueryClient, ctx: PrepareContext) => {
+        await prepareQuery(client, ctx, {
+          queryKey: query.queryKey,
+          meta: query.meta,
+          fetch: () =>
+            client.refetchQueries({ queryKey: query.queryKey, exact: true, type: "all" }, { throwOnError: true }),
+        })
       },
     }))
 }
