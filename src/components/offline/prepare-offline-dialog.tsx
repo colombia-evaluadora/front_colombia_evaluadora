@@ -42,6 +42,7 @@ import {
   hasResumableCheckpoint,
   prepareStore,
   preparePercent,
+  type PrepareRunStats,
   type PrepareSnapshot,
 } from "@/features/offline/lib/prepare-engine"
 import { fetchPrepareOptions } from "@/features/offline/lib/prepare-tasks"
@@ -181,6 +182,31 @@ export function PrepareFailedList({ snapshot }: { snapshot: PrepareSnapshot }) {
   )
 }
 
+/**
+ * Qué hizo la última corrida: cuánto se actualizó y cuánto ya estaba al día
+ * (no se bajó ni se reescribió). Los `data-*` los lee el E2E incremental.
+ */
+function PrepareRunSummary({ stats }: { stats: PrepareRunStats }) {
+  const alDia = stats.fresh + stats.notModified
+  const segundos = Math.max(1, Math.round(stats.durationMs / 1000))
+  return (
+    <p
+      className="text-xs text-muted-foreground"
+      data-slot="prepare-run-summary"
+      data-written={stats.rowsWritten}
+      data-unchanged={stats.rowsUnchanged}
+      data-fresh={stats.fresh}
+      data-not-modified={stats.notModified}
+      data-fetched={stats.fetched}
+      data-conditional={stats.conditionalRequests}
+      data-duration-ms={stats.durationMs}
+    >
+      {stats.force ? "Se volvió a bajar todo" : `${alDia} ya estaban al día`} ·{" "}
+      {stats.rowsWritten === 1 ? "1 dato actualizado" : `${stats.rowsWritten} datos actualizados`} · {segundos} s
+    </p>
+  )
+}
+
 /** Estado de la corrida en curso o de la última (dentro del diálogo). */
 function PrepareStatus({
   snapshot,
@@ -314,6 +340,7 @@ export function PrepareOfflineDialog({
     prepareStore.getSnapshot,
   )
   const [incluirArchivos, setIncluirArchivos] = useState(false)
+  const [forzar, setForzar] = useState(false)
   const [autoPrepare, setAutoPrepare] = useState(isAutoPrepareEnabled)
   // `null` = sin tocar: rige "todo el año" (todos los grupos, asignaturas y periodos).
   const [grupos, setGrupos] = useState<Set<number> | null>(null)
@@ -356,7 +383,8 @@ export function PrepareOfflineDialog({
         ? { grupos: gruposSel, asignaturas: asignaturasSel, periodos: periodosSel }
         : undefined,
       incluirArchivos,
-      resume: reanudable,
+      resume: reanudable && !forzar,
+      force: forzar,
     })
     toast.info(BACKGROUND_TOAST)
     onOpenChange(false)
@@ -368,7 +396,9 @@ export function PrepareOfflineDialog({
     onOpenChange(false)
   }
 
-  const primaryLabel = reanudable
+  const primaryLabel = forzar
+    ? "Forzar todo"
+    : reanudable
     ? "Continuar"
     : personalizada
       ? "Preparar selección"
@@ -411,6 +441,10 @@ export function PrepareOfflineDialog({
               onRetry={reintentar}
               retryDisabled={onlineOnly.disabled || enCurso}
             />
+          )}
+
+          {!shared && !enCurso && snapshot.lastRunStats && (
+            <PrepareRunSummary stats={snapshot.lastRunStats} />
           )}
 
           {!shared && !enCurso && lastPrepare && (
@@ -509,6 +543,13 @@ export function PrepareOfflineDialog({
                       onChange={setIncluirArchivos}
                     />
                   )}
+                  <OptionCheckbox
+                    label="Forzar todo"
+                    hint="Vuelve a descargar todo aunque ya esté al día. Úsalo solo si algo se ve desactualizado: tarda varios minutos."
+                    checked={forzar}
+                    disabled={disabled}
+                    onChange={setForzar}
+                  />
                   <OptionCheckbox
                     label="Guardar datos automáticamente"
                     hint="Con conexión, este equipo vuelve a preparar todo el año cada pocas horas (solo lo que cambió y sin pasarse del espacio disponible)."

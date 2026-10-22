@@ -10,9 +10,13 @@
  * tarea puede devolver tareas nuevas (una lista devuelve el detalle de cada
  * elemento): se agregan al final y suman al total.
  *
- * Incremental: la autopreparación pasa `staleTime` > 0 y no vuelve a bajar lo
- * que se refrescó hace poco (TanStack devuelve lo que ya tiene). "Preparar" a
- * mano pasa 0: baja todo de nuevo.
+ * Incremental (`add-offline-preparar-incremental`): cada query tiene una
+ * ventana de frescura (`prepare-freshness.ts`); dentro de ella no se pide. Pasada,
+ * se sondea con `If-None-Match` y solo se baja si el servidor dice que cambió
+ * (`prepare-query.ts`); lo que llega igual no se reescribe (`query-persister`).
+ * Los sondeos de las tareas que vienen se lanzan por adelantado, unos pocos en
+ * paralelo (son 304 sin cuerpo); las descargas siguen en serie.
+ * "Forzar todo" (`force`) ignora todo eso y baja todo de nuevo.
  */
 import { hashKey, type QueryClient, type QueryKey } from "@tanstack/react-query"
 
@@ -23,18 +27,65 @@ import { isNetworkError } from "@/lib/network-error"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { describePrepareKey } from "@/features/offline/lib/prepare-labels"
 import { getMeta, isIndexedDbAvailable, setMeta } from "@/lib/offline/db"
-import { getActivePersistUser } from "@/lib/offline/query-persister"
+import {
+  flushPersistQueue,
+  getActivePersistUser,
+  getPersistStats,
+  getQueryValidators,
+  resetPersistStats,
+  type OfflineQueryMeta,
+} from "@/lib/offline/query-persister"
+import {
+  getConditionalStats,
+  probeValidators,
+  resetConditionalStats,
+  type ProbeVerdict,
+} from "@/lib/offline/conditional-requests"
+import { decidePrepare } from "@/features/offline/lib/prepare-query"
 import { QUOTA_WARN_RATIO } from "@/lib/offline/storage-status"
 
 export interface PrepareContext {
   /** Bytes de archivos guardados en la corrida (se muestran al terminar). */
   stats: { archivoBytes: number }
-  /** 0 = bajar todo; > 0 = no volver a bajar lo más nuevo que esto. */
+  /** Mínimo de frescura (ms) para toda tarea, además de la ventana de cada una. */
   staleTime: number
+  /** "Forzar todo": sin ventanas ni sondeos. */
+  force: boolean
+  /** Qué pasó con cada query de la corrida. */
+  counters: PrepareCounters
+  /** Sondeos lanzados por adelantado, por `queryHash`. */
+  probes: Map<string, Promise<ProbeVerdict>>
+  /** Sondeos lanzados que todavía no respondieron. */
+  probesInFlight: number
+  /** Queries ya resueltas en esta corrida: si otra tarea las repite, no se vuelven a pedir. */
+  seen: Set<string>
+}
+
+export interface PrepareCounters {
+  /** Dentro de su ventana: no se pidió nada. */
+  fresh: number
+  /** El servidor respondió 304 a todas sus lecturas: no se bajó. */
+  notModified: number
+  /** Se bajó con su `queryFn` (nueva, cambiada o sin validadores). */
+  fetched: number
+}
+
+/** Números de la última corrida (se muestran en el diálogo y los usa el E2E). */
+export interface PrepareRunStats extends PrepareCounters {
+  durationMs: number
+  force: boolean
+  /** Requests enviadas con `If-None-Match` / cuántas volvieron 304. */
+  conditionalRequests: number
+  notModifiedRequests: number
+  /** Filas cifradas y escritas en IndexedDB / queries que llegaron iguales. */
+  rowsWritten: number
+  rowsUnchanged: number
 }
 
 export interface PrepareTask {
   queryKey: QueryKey
+  /** `meta` de la query (decide la ventana de frescura). */
+  meta?: OfflineQueryMeta
   run: (queryClient: QueryClient, ctx: PrepareContext) => Promise<PrepareTask[] | void>
   /** Si falla no cuenta como error (depende del rol, dato accesorio). */
   optional?: boolean
@@ -61,6 +112,8 @@ export interface PrepareSnapshot {
   lastPrepareAt: number | null
   lastOutcome: PrepareOutcome | null
   archivoBytes: number | null
+  /** Números de la última corrida de esta pestaña (o `null`). */
+  lastRunStats: PrepareRunStats | null
   /**
    * Hay una corrida en OTRA pestaña (Web Locks + BroadcastChannel): esta solo
    * muestra su progreso. `null` si no.
@@ -85,6 +138,7 @@ const INITIAL: PrepareSnapshot = {
   lastPrepareAt: null,
   lastOutcome: null,
   archivoBytes: null,
+  lastRunStats: null,
   remote: null,
 }
 
@@ -297,7 +351,16 @@ export interface RunPrepareOptions {
   staleTime?: number
   /** Cuánto se espera a que vuelva la red antes de dejarla "sin conexión". */
   maxPauseMs?: number
+  /** "Forzar todo": ignora ventanas y sondeos. */
+  force?: boolean
 }
+
+/**
+ * Sondeos condicionales en vuelo a la vez (son 304 sin cuerpo) y cuántas
+ * tareas hacia adelante se miran para lanzarlos.
+ */
+export const PROBE_CONCURRENCY = { manual: 8, auto: 3 } as const
+const PROBE_SCAN_AHEAD = 60
 
 /** Pausa máxima esperando la red: después queda reanudable con "Continuar". */
 export const PREPARE_MAX_PAUSE_MS = 10 * 60 * 1000
@@ -376,10 +439,22 @@ export function runPrepare(
 async function execute(
   queryClient: QueryClient,
   initial: PrepareTask[],
-  { origin, resume = false, staleTime = 0, maxPauseMs = PREPARE_MAX_PAUSE_MS }: RunPrepareOptions,
+  { origin, resume = false, staleTime = 0, maxPauseMs = PREPARE_MAX_PAUSE_MS, force = false }: RunPrepareOptions,
 ): Promise<PrepareSnapshot> {
   const queue = [...initial]
-  const ctx: PrepareContext = { stats: { archivoBytes: 0 }, staleTime }
+  const startedAt = Date.now()
+  const ctx: PrepareContext = {
+    stats: { archivoBytes: 0 },
+    staleTime,
+    force,
+    counters: { fresh: 0, notModified: 0, fetched: 0 },
+    probes: new Map(),
+    probesInFlight: 0,
+    seen: new Set(),
+  }
+  resetConditionalStats()
+  resetPersistStats()
+  const concurrency = PROBE_CONCURRENCY[origin]
   const failed: PrepareTask[] = []
   const failedDetails: PrepareFailure[] = []
   // Tareas ya reintentadas tras una pausa por falta de red (una vez cada una).
@@ -433,6 +508,7 @@ async function execute(
     }
     const task = queue[i]
     const hash = hashKey(task.queryKey)
+    if (!force) launchProbes(queryClient, ctx, queue, i, concurrency)
     // Las tareas que expanden a otras (listas) se repiten siempre: sus hijas
     // sí se saltan si ya estaban.
     // Solo se salta si el dato SIGUE en el cache: el checkpoint vive en
@@ -486,6 +562,23 @@ async function execute(
   }
 
   if (outcome === "ok" && failed.length > 0) outcome = "parcial"
+  // Sondeos que quedaron sin usar (tareas salteadas o corrida cortada).
+  ctx.probes.clear()
+  // Lo pendiente del persister se escribe ya: los números de la corrida
+  // tienen que incluirlo.
+  await flushPersistQueue().catch(() => undefined)
+  const conditional = getConditionalStats()
+  const persist = getPersistStats()
+  const lastRunStats: PrepareRunStats = {
+    ...ctx.counters,
+    durationMs: Date.now() - startedAt,
+    force,
+    conditionalRequests: conditional.conditional,
+    notModifiedRequests: conditional.notModified,
+    rowsWritten: persist.written,
+    rowsUnchanged: persist.unchanged,
+  }
+  console.info("[offline] preparar terminó", JSON.stringify(lastRunStats))
   // Una corrida que llegó al final cuenta como "datos guardados" aunque
   // fallaran algunos elementos (el diálogo ofrece reintentarlos); una cortada
   // por la red o el espacio no.
@@ -498,8 +591,38 @@ async function execute(
     failedDetails,
     lastOutcome: outcome,
     archivoBytes: ctx.stats.archivoBytes > 0 ? ctx.stats.archivoBytes : null,
+    lastRunStats,
   })
   return snapshot
+}
+
+/**
+ * Lanza por adelantado el sondeo condicional de las próximas tareas que lo
+ * necesitan (hasta `concurrency` en vuelo). La tarea lo toma al llegar su
+ * turno (`prepareQuery`); mientras tanto las descargas siguen en serie.
+ */
+function launchProbes(
+  queryClient: QueryClient,
+  ctx: PrepareContext,
+  queue: PrepareTask[],
+  from: number,
+  concurrency: number,
+) {
+  for (let j = from; j < queue.length && j < from + PROBE_SCAN_AHEAD; j++) {
+    if (ctx.probesInFlight >= concurrency) return
+    const next = queue[j]
+    if (next.queryKey[0] === "offline") continue
+    const hash = hashKey(next.queryKey)
+    if (ctx.probes.has(hash) || ctx.seen.has(hash)) continue
+    if (decidePrepare(queryClient, ctx, next.queryKey, next.meta) !== "probe") continue
+    ctx.probesInFlight++
+    const probe = probeValidators(getQueryValidators(hash, queryClient.getQueryData(next.queryKey)) ?? []).finally(() => {
+      ctx.probesInFlight--
+    })
+    // Un sondeo que nadie toma no deja un rechazo sin manejar (nunca tira).
+    probe.catch(() => undefined)
+    ctx.probes.set(hash, probe)
+  }
 }
 
 /** Progreso de la corrida (de esta pestaña o de otra), 0-100. */
