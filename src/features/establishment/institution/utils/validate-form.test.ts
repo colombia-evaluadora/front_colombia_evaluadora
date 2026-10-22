@@ -253,4 +253,15 @@ describe("validateEstablishmentForm", () => {
 
     expect(validateEstablishmentForm(values).errors).toEqual([])
   })
+
+  it("con el panel de directivos en solo lectura no valida rector ni secretaria", () => {
+    // Rector vacío y secretaria con un nombre que hoy no pasa: nada de eso se guarda.
+    const values = createValues({
+      principal: createEmptyPerson(),
+      secretary: { ...createPerson(), firstName: "JUAN2" },
+    })
+
+    expect(validateEstablishmentForm(values).invalidFields).toContain("principal.documentType")
+    expect(validateEstablishmentForm(values, {}, { validarDirectivos: false }).errors).toEqual([])
+  })
 })
