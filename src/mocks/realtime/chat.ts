@@ -108,7 +108,17 @@ export function publicarMensajeActualizado(m: Mensaje) {
 }
 
 export function publicarMensajeEliminado(m: Mensaje) {
-  publish(topicCanal(m.conversacionId), "mensaje.eliminado", { id: m.id, conversacionId: m.conversacionId })
+  publish(topicCanal(m.conversacionId), "mensaje.eliminado", {
+    id: m.id,
+    conversacionId: m.conversacionId,
+    eliminadoEn: m.eliminadoEn,
+  })
+}
+
+/** Confirmación de lectura (comms-service `conversacion.lectura`): los demás leyeron hasta `id`. */
+export function publicarLectura(conv: Conversacion, id: number) {
+  conv.leidoHasta = Math.max(conv.leidoHasta ?? 0, id)
+  publish(topicCanal(conv.id), "conversacion.lectura", { conversacionId: conv.id, leidoHasta: conv.leidoHasta })
 }
 
 // ---- Simulación -------------------------------------------------------------
@@ -142,6 +152,8 @@ export function simularRespuesta(conv: Conversacion, original: Mensaje) {
         ? { id: mencionado.usuarioId as number, nombre: mencionado.nombre }
         : undefined
   if (!otro) return
+  // La otra persona lee el mensaje (✓✓) y empieza a escribir.
+  setTimeout(() => publicarLectura(conv, original.id), 500)
   escribirComo(conv, otro, 700)
   escribirComo(conv, otro, 2_200)
   setTimeout(() => {

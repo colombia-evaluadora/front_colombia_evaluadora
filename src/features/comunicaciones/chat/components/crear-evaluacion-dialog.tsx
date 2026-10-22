@@ -17,16 +17,17 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
-import type { MostrarResultados } from "@/features/comunicaciones/chat/api/types"
-import { useCrearEvaluacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-evaluacion"
+import type { Evaluacion, MostrarResultados } from "@/features/comunicaciones/chat/api/types"
+import { useCrearEvaluacion, useEditarEvaluacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-evaluacion"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import {
+  aPreguntaLocal,
   errorPregunta,
   nuevaPregunta,
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
-import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { diaMinimo, errorCierre, isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 // 0 = sin límite / ilimitados; -1 = sin elegir.
 const SIN_ELEGIR = -1
@@ -80,22 +81,39 @@ export function CrearEvaluacionDialog({
   open,
   onClose,
   onCreada,
+  editar,
 }: {
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
+  // "Editar Evaluación" (diseño 4062:67466): mismos pasos; los participantes no cambian. Quien la
+  // abre la monta con `key` para que los valores iniciales se lean una vez.
+  editar?: Evaluacion
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => (editar?.preguntas ?? []).map(aPreguntaLocal))
   const [participantes, setParticipantes] = useState<Set<number>>(new Set())
   const [tope, setTope] = useState(false)
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
-  const crear = useCrearEvaluacion()
+  const crearNueva = useCrearEvaluacion()
+  const editarEvaluacion = useEditarEvaluacion(editar?.conversacionId ?? 0)
+  const crear = editar ? editarEvaluacion : crearNueva
 
   const datos = useAppForm({
-    defaultValues: DATOS_INICIALES,
+    defaultValues: editar
+      ? {
+          nombre: editar.nombre,
+          descripcion: editar.descripcion,
+          fechaInicio: isoALocal(editar.fechaInicio),
+          fechaCierre: isoALocal(editar.fechaCierre),
+          tiempoLimiteMin: editar.tiempoLimiteMin ?? 0,
+          puntajeTotal: editar.puntajeTotal,
+          intentos: editar.intentos ?? 0,
+          mostrarResultados: editar.mostrarResultados,
+        }
+      : DATOS_INICIALES,
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "EVALUACION")])
@@ -144,26 +162,35 @@ export function CrearEvaluacionDialog({
   const crearEvaluacion = () => {
     setIntentado(true)
     if (preguntas.some((p) => errorPregunta(p, "EVALUACION")) || !cuadra) return
-    if (participantes.size === 0) return
+    if (!editar && participantes.size === 0) return
     const v = datos.state.values
-    crear.mutate(
-      {
-        nombre: v.nombre.trim(),
-        descripcion: v.descripcion.trim(),
-        fechaInicio: aIso(v.fechaInicio),
-        fechaCierre: aIso(v.fechaCierre),
-        tiempoLimiteMin: v.tiempoLimiteMin || null,
-        puntajeTotal: v.puntajeTotal,
-        intentos: v.intentos || null,
-        mostrarResultados: v.mostrarResultados,
-        participantes: [...participantes],
-        preguntas: preguntas.map((p) => ({
-          tipo: p.tipo,
-          texto: p.texto.trim(),
-          puntos: Number(p.puntos),
-          opciones: p.opciones.map((o) => ({ texto: o.texto.trim(), correcta: o.correcta })),
-        })),
-      },
+    const cuerpo = {
+      nombre: v.nombre.trim(),
+      descripcion: v.descripcion.trim(),
+      fechaInicio: aIso(v.fechaInicio),
+      fechaCierre: aIso(v.fechaCierre),
+      tiempoLimiteMin: v.tiempoLimiteMin || null,
+      puntajeTotal: v.puntajeTotal,
+      intentos: v.intentos || null,
+      mostrarResultados: v.mostrarResultados,
+      preguntas: preguntas.map((p) => ({
+        tipo: p.tipo,
+        texto: p.texto.trim(),
+        puntos: Number(p.puntos),
+        opciones: p.opciones.map((o) => ({ texto: o.texto.trim(), correcta: o.correcta })),
+      })),
+    }
+    if (editar) {
+      editarEvaluacion.mutate(cuerpo, {
+        onSuccess: (e) => {
+          notify(`Se guardaron los cambios de ${e.nombre}.`)
+          reiniciar()
+        },
+      })
+      return
+    }
+    crearNueva.mutate(
+      { ...cuerpo, participantes: [...participantes] },
       {
         onSuccess: (canal) => {
           notify(`Se creó la evaluación ${canal.nombre}.`)
@@ -179,7 +206,7 @@ export function CrearEvaluacionDialog({
       <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Crear una Evaluación</DialogTitle>
+            <DialogTitle>{editar ? "Editar Evaluación" : "Crear una Evaluación"}</DialogTitle>
           </DialogHeader>
 
           {paso === 1 ? (
@@ -312,11 +339,12 @@ export function CrearEvaluacionDialog({
               }
             />
           )}
-          {paso === 2 && (
-            // Quiénes la presentan: entran al canal y reciben el aviso al abrir.
+          {paso === 2 && !editar && (
+            // Quiénes la presentan: entran al canal y reciben el aviso al abrir. Al editar no cambian.
             <SelectorVotantes
               titulo="Estudiantes que la presentan"
               mensajeInvalido="Selecciona al menos un estudiante."
+              accion="para presentarla"
               seleccion={participantes}
               onCambio={setParticipantes}
               invalido={intentado && participantes.size === 0}
@@ -348,7 +376,7 @@ export function CrearEvaluacionDialog({
                     disabled={preguntas.length === 0 || crear.isPending}
                     aria-busy={crear.isPending}
                   >
-                    Crear
+                    {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button

@@ -57,6 +57,8 @@ import {
 } from "@/features/comunicaciones/chat/api/use-chat-tiempo-real"
 import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 import { realtimeEnabled } from "@/lib/realtime"
+import { FijadosBarra } from "@/features/comunicaciones/chat/components/fijados-barra"
+import { puedeVerEliminados } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { useRealtimeStatus } from "@/lib/realtime/use-realtime"
 import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
@@ -103,7 +105,7 @@ function ChatContent() {
   const esEleccion = activa?.categoria === "VOTACION"
   const eleccionQuery = useEleccionQuery(esEleccion ? activa.id : undefined)
   const eleccion = eleccionQuery.data
-  const { esEstudiante, puedeMencionarMasivo } = useChatAccess()
+  const { esEstudiante, puedeMencionarMasivo, perfil } = useChatAccess()
   // El estudiante vota mientras la elección sigue abierta; al cerrar ve los resultados.
   // Vota quien no la creó (estudiante o funcionario habilitado); el servidor valida el censo.
   const votaEstudiante = !!eleccion && !eleccion.esCreador && estadoEleccion(eleccion) !== "FINALIZADA"
@@ -131,7 +133,7 @@ function ChatContent() {
       variant: "warning",
     })
   })
-  const escribiendo = useChatTiempoRealCanal(activa?.id)
+  const escribiendo = useChatTiempoRealCanal(activa?.id, puedeVerEliminados(activa, perfil))
   const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
   const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)
 
@@ -238,6 +240,7 @@ function ChatContent() {
                 onIrAMensaje={irAMensaje}
                 onVolver={() => seleccionar(undefined)}
               />
+              {!esComunicado && <FijadosBarra mensajes={mensajesQuery.data ?? []} onIr={irAMensaje} />}
               {eleccion && <EleccionEstado eleccion={eleccion} />}
               {encuesta && <EncuestaEstado encuesta={encuesta} />}
               {evaluacion && <EvaluacionEstado evaluacion={evaluacion} />}
@@ -257,6 +260,7 @@ function ChatContent() {
                 onRetry={() => void mensajesQuery.refetch()}
                 destacado={destacado}
                 nombreConversacion={activa.nombre}
+                conversacion={activa}
                 primerNoLeidoId={marca?.conversacionId === activa.id ? (marca.id ?? undefined) : undefined}
                 onResponder={soloLectura ? undefined : setRespondiendo}
                 onIrAMensaje={irAMensaje}
@@ -286,6 +290,7 @@ function ChatContent() {
                   activa.categoria === "GENERAL" && activa.creadoPor ? (
                     <CanalBienvenida
                       key={activa.id}
+                      tipo={activa.tipo === "GRUPO" ? "grupo" : "foro"}
                       canal={{
                         conversacionId: activa.id,
                         nombre: activa.nombre,
@@ -330,9 +335,7 @@ function ChatContent() {
                   )
                 }
               />
-              <p aria-live="polite" className="h-5 shrink-0 truncate px-5 text-xs text-muted-foreground">
-                {textoEscribiendo(escribiendo)}
-              </p>
+              <Escribiendo nombres={escribiendo} />
               {soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   En este foro no se pueden enviar mensajes.
@@ -419,5 +422,31 @@ function EstadoConexion() {
       <span aria-hidden className={cn("size-2 rounded-full", estado.color)} />
       {estado.texto}
     </span>
+  )
+}
+
+/**
+ * "Escribiendo…" (diseño 3729:39466): burbuja con tres puntos bajo el último mensaje y el nombre.
+ * La región `aria-live` se mantiene montada para que el lector de pantalla anuncie el cambio.
+ */
+function Escribiendo({ nombres }: { nombres: string[] }) {
+  const texto = textoEscribiendo(nombres)
+  return (
+    <div aria-live="polite" className="flex h-7 shrink-0 items-center gap-2 px-3 text-xs text-muted-foreground md:px-5">
+      {texto && (
+        <>
+          <span aria-hidden className="flex h-6 items-center gap-1 rounded-lg bg-muted/60 px-2.5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70 motion-reduce:animate-none"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </span>
+          <span className="truncate">{texto}</span>
+        </>
+      )}
+    </div>
   )
 }

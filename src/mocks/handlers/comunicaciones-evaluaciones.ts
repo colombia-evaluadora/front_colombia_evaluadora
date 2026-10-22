@@ -52,6 +52,43 @@ interface CrearEvaluacionBody {
 
 
 export const comunicacionesEvaluacionesHandlers = [
+  // "Editar Evaluación": como comms-service, solo antes de la primera entrega.
+  http.patch(URL("conversaciones/:id/evaluacion"), async ({ params, request }) => {
+    await delay(250)
+    const e = evaluaciones.find((x) => x.conversacionId === Number(params.id))
+    if (!e) return HttpResponse.json({ message: "Este canal no tiene una evaluación." }, { status: 404 })
+    if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
+      return HttpResponse.json({ message: "Solo quien creó la evaluación puede editarla." }, { status: 403 })
+    }
+    if ((entregas.get(e.conversacionId) ?? []).length > 0) return HttpResponse.json({ message: "La evaluación ya tiene entregas: no se puede editar." }, { status: 409 })
+    const body = (await request.json()) as CrearEvaluacionBody
+    const nombre = body.NOMBRE?.trim()
+    const preguntas = body.PREGUNTAS ?? []
+    if (!nombre || preguntas.length === 0) {
+      return HttpResponse.json({ message: "Completa el nombre y agrega preguntas." }, { status: 400 })
+    }
+    Object.assign(e, {
+      nombre,
+      descripcion: body.DESCRIPCION ?? "",
+      fechaInicio: body.FECHA_INICIO ?? null,
+      fechaCierre: body.FECHA_CIERRE ?? null,
+      tiempoLimiteMin: body.TIEMPO_LIMITE_MIN ?? null,
+      puntajeTotal: body.PUNTAJE_TOTAL ?? 0,
+      intentos: body.INTENTOS ?? null,
+      mostrarResultados: body.MOSTRAR_RESULTADOS ?? "AL_CIERRE",
+      preguntas: preguntas.map((p) => ({
+        id: siguienteId++,
+        tipo: p.TIPO,
+        texto: p.TEXTO,
+        puntos: p.PUNTOS,
+        opciones: p.OPCIONES.map((o) => ({ id: siguienteId++, texto: o.TEXTO, correcta: o.CORRECTA === "S" })),
+      })),
+    })
+    const conv = conversaciones.find((c) => c.id === e.conversacionId)
+    if (conv) conv.nombre = nombre
+    return HttpResponse.json({ rows: [e] })
+  }),
+
   http.get(URL("conversaciones/:id/evaluacion/entregas"), async ({ params }) => {
     await delay(250)
     return HttpResponse.json({ rows: entregas.get(Number(params.id)) ?? [] })
@@ -150,6 +187,8 @@ export const comunicacionesEvaluacionesHandlers = [
       miembrosDestacados: ["Andrés Gómez"],
       silenciadoHasta: null,
       archivada: false,
+      creadoPor: "Andrés Gómez",
+      esCreador: true,
     }
     conversaciones.push(canal)
     evaluaciones.push({

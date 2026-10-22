@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -16,6 +17,27 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
+import { useArchivarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
+import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+
+const CLAVE_RECIENTES = "chat-busquedas-recientes"
+
+function leerRecientes(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAVE_RECIENTES) ?? "[]")
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []
+  } catch {
+    return []
+  }
+}
+
+function guardarRecientes(lista: string[]) {
+  try {
+    localStorage.setItem(CLAVE_RECIENTES, JSON.stringify(lista))
+  } catch {
+    // Sin almacenamiento solo duran hasta recargar.
+  }
+}
 import {
   StackIcon,
   CaretDownFillIcon,
@@ -27,6 +49,9 @@ import {
   PlusIcon,
   UserIcon,
   UsersThreeIcon,
+  ArchiveIcon,
+  UnarchiveIcon,
+  ClockCounterClockwiseIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -59,6 +84,15 @@ export function ChatSidebar({
   const { notify } = useNotify()
   const [texto, setTexto] = useState("")
   const [crearGrupo, setCrearGrupo] = useState(false)
+  // Búsquedas recientes (diseño 4501:66442): por navegador, solo una comodidad.
+  const [recientes, setRecientes] = useState<string[]>(leerRecientes)
+  const [enfocado, setEnfocado] = useState(false)
+  const recordar = () => {
+    const nuevas = agregarReciente(recientes, texto)
+    setRecientes(nuevas)
+    guardarRecientes(nuevas)
+  }
+  const verRecientes = enfocado && !texto && recientes.length > 0
   const t = texto.trim().toLowerCase()
   // El buscador (en lugar del nombre del establecimiento) filtra la lista en el lugar y,
   // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
@@ -85,14 +119,17 @@ export function ChatSidebar({
       key={c.id}
       conversacion={c}
       activa={c.id === activaId}
-      onClick={() => onSeleccionar(c.id)}
+      onClick={() => {
+        if (t) recordar()
+        onSeleccionar(c.id)
+      }}
       onSalida={() => onSeleccionar(undefined)}
     />
   )
 
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
-      <div className="flex h-16 shrink-0 items-center border-b px-3">
+      <div className="relative flex h-16 shrink-0 items-center border-b px-3">
         <label className="flex h-10 w-full items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>
@@ -100,7 +137,12 @@ export function ChatSidebar({
             type="search"
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setTexto("")}
+            onFocus={() => setEnfocado(true)}
+            onBlur={() => setEnfocado(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setTexto("")
+              if (e.key === "Enter") recordar()
+            }}
             placeholder="Buscar conversaciones y personas"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
@@ -115,9 +157,50 @@ export function ChatSidebar({
             </button>
           )}
         </label>
+        {verRecientes && (
+          <div className="absolute inset-x-3 top-full z-30 -mt-2 overflow-hidden rounded-lg border bg-popover py-2 text-popover-foreground shadow-md">
+            <p className="px-4 pb-1 text-xs text-muted-foreground">Búsquedas recientes</p>
+            <ul aria-label="Búsquedas recientes">
+              {recientes.map((r) => (
+                <li key={r}>
+                  <button
+                    type="button"
+                    // Sin esto el blur del input cierra la lista antes del clic.
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setTexto(r)}
+                    className="flex h-9 w-full items-center gap-3 px-4 text-left text-sm hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                  >
+                    <ClockCounterClockwiseIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{r}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
+          {/* Archivados arriba, con contador y desarchivar por fila (diseño 4742:72681). */}
+          {archivadas.length > 0 && (
+            <Seccion
+              titulo="Archivados"
+              icono={ArchiveIcon}
+              contador={archivadas.length}
+              inicialAbierta={false}
+            >
+              {archivadas.map((c) => (
+                <ItemConversacion
+                  key={c.id}
+                  conversacion={c}
+                  activa={c.id === activaId}
+                  onClick={() => onSeleccionar(c.id)}
+                  onSalida={() => onSeleccionar(undefined)}
+                  desarchivar
+                />
+              ))}
+            </Seccion>
+          )}
           <ul className="border-b px-2 pb-2">
             <AccesoVista
               icono={PaperPlaneTiltIcon}
@@ -175,6 +258,7 @@ export function ChatSidebar({
                       onClick={() =>
                         abrirDirecto.mutate(p.id, {
                           onSuccess: (c) => {
+                            recordar()
                             setTexto("")
                             onSeleccionar(c.id)
                           },
@@ -220,11 +304,6 @@ export function ChatSidebar({
             >
               {foros.map(item)}
             </Seccion>
-            {archivadas.length > 0 && (
-              <Seccion titulo={`Archivados (${archivadas.length})`} inicialAbierta={false}>
-                {archivadas.map(item)}
-              </Seccion>
-            )}
           </>
         )}
       </nav>
@@ -274,10 +353,14 @@ function AccesoVista({
 function Seccion({
   titulo,
   accion,
+  icono: Icono,
+  contador,
   inicialAbierta = true,
   children,
 }: {
   titulo: string
+  icono?: Icon
+  contador?: number
   // Control junto al título ("+" de Canales): a mano aunque la lista sea larga.
   accion?: ReactNode
   inicialAbierta?: boolean
@@ -297,7 +380,13 @@ function Seccion({
             aria-hidden
             className={cn("size-5 transition-transform", !abierta && "-rotate-90")}
           />
-          {titulo}
+          {Icono && <Icono aria-hidden className="size-5" />}
+          <span className="flex-1 text-left">{titulo}</span>
+          {contador != null && (
+            <span className="grid h-5 min-w-5 place-items-center rounded-full border px-1.5 text-xs font-medium tabular-nums">
+              {contador}
+            </span>
+          )}
         </button>
         {accion}
       </h3>
@@ -315,12 +404,17 @@ function ItemConversacion({
   activa,
   onClick,
   onSalida,
+  desarchivar = false,
 }: {
   conversacion: Conversacion
   activa: boolean
   onClick: () => void
   onSalida: () => void
+  // Fila de "Archivados": botón para devolverla a su sección.
+  desarchivar?: boolean
 }) {
+  const archivar = useArchivarConversacion()
+  const { notify } = useNotify()
   const Icono = c.tipo === "GRUPO" ? UsersThreeIcon : ICONO_CATEGORIA[c.categoria]
   const conPendientes = c.noLeidos > 0 && !activa
   return (
@@ -346,6 +440,14 @@ function ItemConversacion({
           >
             C
           </span>
+        ) : c.tipo === "DIRECTO" ? (
+          // Mensaje directo: iniciales de la persona (diseño 4516:68095).
+          <span
+            aria-hidden
+            className="grid size-5 shrink-0 place-items-center rounded-full bg-navy-22 text-[9px] font-semibold text-navy"
+          >
+            {iniciales(c.nombre)}
+          </span>
         ) : (
           <Icono
             aria-hidden
@@ -357,8 +459,14 @@ function ItemConversacion({
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />
         )}
         {/* Menciones y reacciones quedan fuera de la UI (card de diseño); solo el contador de no leídos. */}
+        {/* Mensaje directo sin leer: badge naranja lleno (diseño 4456:65817); foros y grupos, contador. */}
         {conPendientes && (
-          <span className="grid h-5 min-w-5 place-items-center rounded-full border px-1.5 text-xs font-medium">
+          <span
+            className={cn(
+              "grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-medium",
+              c.tipo === "DIRECTO" ? "bg-orange text-orange-foreground" : "border",
+            )}
+          >
             <span className="sr-only">Mensajes sin leer: </span>
             {c.noLeidos}
           </span>
@@ -373,18 +481,41 @@ function ItemConversacion({
         )}
       </button>
 
-      {/* Acciones al pasar el mouse o con foco; tapan los indicadores de la derecha. */}
+      {desarchivar && (
+        <button
+          type="button"
+          aria-label={`Desarchivar ${c.nombre}`}
+          title="Desarchivar"
+          disabled={archivar.isPending}
+          onClick={() =>
+            archivar.mutate(
+              { id: c.id, archivar: false },
+              {
+                onSuccess: () => notify(`${c.nombre} salió de Archivados.`),
+                onError: (e) => notify(getErrorMessage(e), { variant: "error" }),
+              },
+            )
+          }
+          className="mr-1 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+        >
+          <UnarchiveIcon className="size-4.5" />
+        </button>
+      )}
+      {/* Acciones al pasar el mouse o con foco de teclado (no al hacer clic: la fila elegida solo
+          muestra el nombre, como en el diseño); tapan los indicadores de la derecha. */}
+      {!desarchivar && (
       <ConversacionAcciones
         conversacion={c}
         variante="fila"
         activa={activa}
         onSalida={onSalida}
         className={cn(
-          "absolute inset-y-0 right-0 rounded-r-lg pr-1 pl-2 opacity-0 transition-opacity group-focus-within/fila:opacity-100 group-hover/fila:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100",
+          "pointer-events-none absolute inset-y-0 right-0 rounded-r-lg pr-1 pl-2 opacity-0 transition-opacity group-hover/fila:pointer-events-auto group-hover/fila:opacity-100 group-has-[:focus-visible]/fila:pointer-events-auto group-has-[:focus-visible]/fila:opacity-100 has-data-popup-open:pointer-events-auto has-data-popup-open:opacity-100",
           // Mismo tono que la fila (muted/50) pero opaco, para tapar los indicadores.
           activa ? "bg-primary" : "bg-chat-panel bg-linear-to-r from-muted/50 to-muted/50",
         )}
       />
+      )}
     </li>
   )
 }

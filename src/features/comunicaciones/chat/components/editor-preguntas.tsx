@@ -253,7 +253,7 @@ function EditorPregunta({
                 onClick={() => marcar(o.clave)}
                 className={cn(
                   "grid size-5 shrink-0 place-items-center border text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
-                  unaSola ? "rounded-full" : "rounded-sm",
+                  unaSola ? "rounded-full" : "rounded-[4px]",
                   o.correcta ? "border-green bg-green" : "hover:border-primary",
                 )}
               >
@@ -262,7 +262,7 @@ function EditorPregunta({
             ) : (
               <span
                 aria-hidden
-                className={cn("size-4 shrink-0 border", unaSola ? "rounded-full" : "rounded-sm")}
+                className={cn("size-4 shrink-0 border", unaSola ? "rounded-full" : "rounded-[4px]")}
               />
             )}
             {fijas ? (

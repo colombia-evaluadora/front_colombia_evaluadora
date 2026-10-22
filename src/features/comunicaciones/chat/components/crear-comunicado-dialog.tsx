@@ -15,13 +15,16 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
-import type { Audiencia } from "@/features/comunicaciones/chat/api/types"
+import type { Audiencia, Comunicado } from "@/features/comunicaciones/chat/api/types"
 import { AUDIENCIAS } from "@/features/comunicaciones/chat/api/ui-mappings"
-import { useCrearComunicado } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
+import {
+  useCrearComunicado,
+  useEditarComunicado,
+} from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { EditorTexto } from "@/features/comunicaciones/chat/components/editor-texto"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { htmlSeguro, htmlVacio } from "@/features/comunicaciones/chat/lib/html-seguro"
-import { ahoraLocal } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { ahoraLocal, isoALocal } from "@/features/comunicaciones/chat/lib/fechas-canal"
 
 
 const datosSchema = z.object({
@@ -41,26 +44,41 @@ export function CrearComunicadoDialog({
   open,
   onClose,
   onCreado,
+  editar,
 }: {
   open: boolean
   onClose: () => void
   onCreado: (conversacionId: number) => void
+  // "Editar Comunicado" (diseño 4062:67938). Ya publicado, la audiencia y la fecha no cambian.
+  // Quien lo abre lo monta con `key` para que los valores iniciales se lean una vez.
+  editar?: Comunicado
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [html, setHtml] = useState("")
+  const [html, setHtml] = useState(editar?.contenidoHtml ?? "")
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
-  const crear = useCrearComunicado()
+  const crearNuevo = useCrearComunicado()
+  const editarComunicado = useEditarComunicado(editar?.conversacionId ?? 0)
+  const crear = editar ? editarComunicado : crearNuevo
   const contenidoVacio = htmlVacio(html)
+  // Ya publicado: solo se corrigen título, descripción y contenido.
+  const publicado = !!editar && new Date(editar.publicarEn) <= new Date()
 
   const datos = useAppForm({
-    defaultValues: {
-      titulo: "",
-      descripcion: "",
-      audiencia: [],
-      publicarEn: ahoraLocal(),
-    } as Datos,
+    defaultValues: (editar
+      ? {
+          titulo: editar.titulo,
+          descripcion: editar.descripcion,
+          audiencia: editar.audiencia,
+          publicarEn: isoALocal(editar.publicarEn),
+        }
+      : {
+          titulo: "",
+          descripcion: "",
+          audiencia: [],
+          publicarEn: ahoraLocal(),
+        }) as Datos,
     validators: { onSubmit: datosSchema },
     onSubmit: () => setPaso(2),
   })
@@ -84,14 +102,25 @@ export function CrearComunicadoDialog({
     setIntentado(true)
     if (contenidoVacio) return
     const v = datos.state.values
-    crear.mutate(
-      {
-        titulo: v.titulo.trim(),
-        descripcion: v.descripcion.trim(),
-        audiencia: v.audiencia as Audiencia[],
-        publicarEn: new Date(v.publicarEn as string).toISOString(),
-        contenidoHtml: htmlSeguro(html),
-      },
+    const cuerpo = {
+      titulo: v.titulo.trim(),
+      descripcion: v.descripcion.trim(),
+      audiencia: v.audiencia as Audiencia[],
+      // Ya publicado se reenvía la fecha original exacta (el backend rechaza cambiarla).
+      publicarEn: publicado && editar ? editar.publicarEn : new Date(v.publicarEn as string).toISOString(),
+      contenidoHtml: htmlSeguro(html),
+    }
+    if (editar) {
+      editarComunicado.mutate(cuerpo, {
+        onSuccess: (c) => {
+          notify(`Se guardaron los cambios de ${c.titulo}.`)
+          reiniciar()
+        },
+      })
+      return
+    }
+    crearNuevo.mutate(
+      cuerpo,
       {
         onSuccess: (canal) => {
           const programado = new Date(v.publicarEn as string) > new Date()
@@ -112,7 +141,7 @@ export function CrearComunicadoDialog({
       <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Crear un Comunicado</DialogTitle>
+            <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
           </DialogHeader>
 
           {paso === 1 ? (
@@ -155,6 +184,7 @@ export function CrearComunicadoDialog({
                         visibles={3}
                         conFlecha
                         invalido={invalido}
+                        deshabilitado={publicado ? () => true : undefined}
                         ariaLabel="Audiencia"
                         placeholder="Elige quién recibe el comunicado"
                       />
@@ -173,8 +203,13 @@ export function CrearComunicadoDialog({
                     label="Fecha y hora de publicación"
                     required
                     mode="datetime"
-                    minDate={new Date()}
-                    description="Si eliges una fecha futura, el comunicado queda programado."
+                    minDate={publicado ? undefined : new Date()}
+                    disabled={publicado}
+                    description={
+                      publicado
+                        ? "Ya se publicó: la audiencia y la fecha no se pueden cambiar."
+                        : "Si eliges una fecha futura, el comunicado queda programado."
+                    }
                   />
                 )}
               </datos.AppField>
@@ -215,7 +250,7 @@ export function CrearComunicadoDialog({
                     disabled={crear.isPending}
                     aria-busy={crear.isPending}
                   >
-                    Crear
+                    {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button

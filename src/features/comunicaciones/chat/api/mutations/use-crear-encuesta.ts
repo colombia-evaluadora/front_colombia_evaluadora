@@ -26,20 +26,40 @@ export interface CrearEncuestaInput {
   preguntas: PreguntaNueva[]
 }
 
-async function crearEncuesta(v: CrearEncuestaInput) {
-  return evalCol.postRow<Conversacion>("/comunicaciones/encuestas", {
+const cuerpoEncuesta = (v: Omit<CrearEncuestaInput, "participantes">) => ({
     NOMBRE: v.nombre,
     DESCRIPCION: v.descripcion,
     FECHA_INICIO: v.fechaInicio,
     FECHA_CIERRE: v.fechaCierre,
     RESULTADOS: v.resultados,
-    PARTICIPANTES: v.participantes,
     PREGUNTAS: v.preguntas.map((p, i) => ({
       ORDEN: i + 1,
       TIPO: p.tipo,
       TEXTO: p.texto,
       OPCIONES: p.opciones,
     })),
+})
+
+async function crearEncuesta(v: CrearEncuestaInput) {
+  return evalCol.postRow<Conversacion>("/comunicaciones/encuestas", {
+    ...cuerpoEncuesta(v),
+    PARTICIPANTES: v.participantes,
+  })
+}
+
+/**
+ * "Editar Encuesta" (diseño 4060:63421): comms-service lo permite a quien la creó y mientras nadie
+ * la haya respondido (409 si no). Los participantes no cambian.
+ */
+export function useEditarEncuesta(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (v: Omit<CrearEncuestaInput, "participantes">) =>
+      evalCol.patchRow<Encuesta>(`/comunicaciones/conversaciones/${conversacionId}/encuesta`, cuerpoEncuesta(v)),
+    onSuccess: (encuesta) => {
+      queryClient.setQueryData(chatKeys.encuesta(conversacionId), encuesta)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+    },
   })
 }
 

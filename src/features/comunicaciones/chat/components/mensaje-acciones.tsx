@@ -29,6 +29,15 @@ import { decodificarMenciones, mencionadosEn } from "@/features/comunicaciones/c
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 
+/**
+ * Barra flotante de acciones de un mensaje: con mouse sale al pasar por encima (`hover:` de
+ * Tailwind v4 solo aplica en dispositivos con hover) y con teclado al tener foco; en táctil, con el
+ * botón ⋮ o la pulsación larga (`data-acciones="abiertas"` en la burbuja, ver `chat-messages`).
+ * Oculta no recibe toques: antes quedaba siempre visible en móvil y tapaba el texto.
+ */
+export const BARRA_ACCIONES =
+  "pointer-events-none absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 opacity-0 shadow-sm transition-opacity group-focus-within/mensaje:pointer-events-auto group-focus-within/mensaje:opacity-100 group-hover/mensaje:pointer-events-auto group-hover/mensaje:opacity-100 group-data-[acciones=abiertas]/mensaje:pointer-events-auto group-data-[acciones=abiertas]/mensaje:opacity-100 has-data-popup-open:pointer-events-auto has-data-popup-open:opacity-100"
+
 // Barra flotante de un mensaje propio: reaccionar, responder (`extra`), editar, fijar y eliminar.
 export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra?: ReactNode }) {
   const { notify } = useNotify()
@@ -44,7 +53,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
 
   return (
     <>
-      <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
+      <div className={BARRA_ACCIONES}>
         {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
         {extra}
         <Accion etiqueta="Editar mensaje" onClick={() => setEditando(true)}>
@@ -110,19 +119,19 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
       <AlertDialog open={eliminando} onOpenChange={(o) => !o && !eliminar.isPending && setEliminando(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este mensaje?</AlertDialogTitle>
+            <AlertDialogTitle>¿Deseas eliminar este mensaje?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se borrará para todos los miembros
-              {m.adjunto && !m.adjunto.eliminadoEn ? ", junto con el archivo adjunto" : ""}. Esta
-              acción no se puede deshacer.
+              El mensaje dejará de ser visible para los participantes
+              {m.adjunto && !m.adjunto.eliminadoEn ? ", junto con el archivo adjunto" : ""}, pero el
+              coordinador podrá consultarlo por control y trazabilidad.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {/* Sí / No como en el diseño (4491:66303). */}
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
-              Cancelar
+              No
             </AlertDialogCancel>
             <AlertDialogAction
-              color="destructive"
               disabled={eliminar.isPending}
               aria-busy={eliminar.isPending}
               onClick={() =>
@@ -135,7 +144,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
                 })
               }
             >
-              Eliminar mensaje
+              Sí
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
