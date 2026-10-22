@@ -36,6 +36,7 @@ export function ProgramarMensajeDialog({
   guardando,
   error,
   onConfirmar,
+  titulo,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -47,6 +48,8 @@ export function ProgramarMensajeDialog({
   guardando: boolean
   error?: string | null
   onConfirmar: (v: { texto?: string; programadoPara: string }) => void
+  // Título propio (el atajo "/programar" con el compositor vacío pide aquí el texto).
+  titulo?: string
 }) {
   const [cuando, setCuando] = useState(() =>
     programadoPara ? instanteABogota(programadoPara) : sugerenciaProgramacion(),
@@ -68,7 +71,7 @@ export function ProgramarMensajeDialog({
     <Dialog open={open} onOpenChange={(o) => !guardando && onOpenChange(o)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{editaTexto ? "Editar mensaje programado" : "Programar envío"}</DialogTitle>
+          <DialogTitle>{titulo ?? (editaTexto ? "Editar mensaje programado" : "Programar envío")}</DialogTitle>
           <DialogDescription>
             El mensaje se enviará a {destino} en la fecha y hora que elijas (hora de Colombia).
           </DialogDescription>

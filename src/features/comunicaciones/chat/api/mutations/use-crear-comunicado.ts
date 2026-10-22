@@ -45,10 +45,18 @@ export function useEditarComunicado(conversacionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (v: CrearComunicadoInput) =>
-      evalCol.patchRow<Comunicado>(`/comunicaciones/conversaciones/${conversacionId}/comunicado`, cuerpoComunicado(v)),
+      evalCol.patchRow<Comunicado>(
+        `/comunicaciones/conversaciones/${conversacionId}/comunicado`,
+        cuerpoComunicado(v),
+        conBorrador(v.borradorId),
+      ),
     onSuccess: (c) => {
       queryClient.setQueryData(chatKeys.comunicado(conversacionId), c)
-      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ])
     },
   })
 }

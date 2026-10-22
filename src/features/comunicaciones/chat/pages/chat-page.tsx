@@ -1,3 +1,4 @@
+import { cerrarFrase } from "@/lib/frase"
 import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -69,6 +70,8 @@ import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import { useResponderInvitacionEnlazada } from "@/features/comunicaciones/chat/hooks/use-responder-invitacion-enlazada"
+import { useSincronizarBot } from "@/features/comunicaciones/chat/api/mutations/use-sincronizar-bot"
+import { useDialogosAtajos } from "@/features/comunicaciones/chat/components/dialogos-atajos"
 
 const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
@@ -96,6 +99,8 @@ function ChatContent() {
   const [marca, setMarca] = useState<{ conversacionId: number; noLeidos: number; id?: number | null }>()
 
   const conversacionesQuery = useConversacionesQuery()
+  // Colevabot: su conversación y el resumen de lo pendiente (una vez al abrir el chat).
+  useSincronizarBot(conversacionesQuery.isSuccess)
   const conversaciones = conversacionesQuery.data ?? []
   const queryClient = useQueryClient()
   const { data: borradores = [] } = useBorradoresQuery()
@@ -128,7 +133,9 @@ function ChatContent() {
   const soloLectura =
     !!activa &&
     ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
-      (esEstudiante && activa.categoria === "ANUNCIO"))
+      (esEstudiante && activa.categoria === "ANUNCIO") ||
+      // Colevabot solo publica tarjetas: su DM no tiene compositor (diseño 4428:64360).
+      activa.esBot)
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
   // responde 403 igual si lo intenta).
   const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
@@ -151,6 +158,8 @@ function ChatContent() {
   const escribiendo = useChatTiempoRealCanal(activa?.id, puedeVerEliminados(activa, perfil))
   const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
   const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)
+  // Atajos "/" del compositor (crear actividades y votación rápida).
+  const atajos = useDialogosAtajos({ conversacion: activa, onCreado: (id) => seleccionar(id) })
 
   if (activa && marca?.conversacionId !== activa.id) {
     setMarca({ conversacionId: activa.id, noLeidos: activa.noLeidos })
@@ -353,8 +362,9 @@ function ChatContent() {
                   )
                 }
               />
+              {atajos.dialogos}
               <Escribiendo nombres={escribiendo} />
-              {soloLectura ? (
+              {activa.esBot ? null : soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   {esEleccion ? "Los comentarios están deshabilitados en esta elección." : "En este foro no se pueden enviar mensajes."}
                 </p>
@@ -375,7 +385,7 @@ function ChatContent() {
                           .then((b) => {
                             // El borrador del canal pasó a ser el programado.
                             setBorrador(null)
-                            notify(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}.`)
+                            notify(cerrarFrase(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}`))
                           })
                     : undefined
                 }
@@ -391,6 +401,7 @@ function ChatContent() {
                 }
                 onCancelarRespuesta={() => setRespondiendo(null)}
                 onEscribiendo={avisarEscribiendo}
+                onAtajo={atajos.acciones}
                 onEnviar={(texto, archivo) =>
                   enviar
                     .mutateAsync({

@@ -23,6 +23,7 @@ import {
   contenidoDocumentos,
   politicaChat,
   USUARIO_ACTUAL,
+  conVistaPrevia,
 } from "@/mocks/db/comunicaciones"
 import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { registrarArchivoMaterial } from "@/mocks/db/planeador"
@@ -191,11 +192,20 @@ export const comunicacionesHandlers = [
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       const rows = conversaciones
         .filter((c) => c.esBot || c.categoria === "VOTACION" || c.categoria === "EXAMEN" || c.categoria === "ENCUESTA")
-        .map((c) => ({ ...c, esCreador: false }))
+        .map((c) => conVistaPrevia({ ...c, esCreador: false }))
       return HttpResponse.json({ rows })
     }
     // Los grupos solo para sus miembros, con `esAdmin` de quien pide.
-    return HttpResponse.json({ rows: filtrarGrupos(conversaciones, request) })
+    return HttpResponse.json({ rows: filtrarGrupos(conversaciones, request).map((c) => conVistaPrevia(c)) })
+  }),
+
+  // Colevabot (comms-service BotService): asegura su conversación y devuelve su fila. Las tarjetas
+  // del mock ya están en `mensajes` (bienvenida y una solicitud de aprobación).
+  http.post(URL("bot/sincronizar"), async () => {
+    await delay(150)
+    const bot = conversaciones.find((c) => c.esBot)
+    if (!bot) return HttpResponse.json({ message: "Sin Colevabot" }, { status: 404 })
+    return HttpResponse.json({ rows: [conVistaPrevia(bot)] })
   }),
 
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).

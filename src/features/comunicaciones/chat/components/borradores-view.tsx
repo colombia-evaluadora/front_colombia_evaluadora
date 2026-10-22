@@ -1,3 +1,4 @@
+import { cerrarFrase } from "@/lib/frase"
 import { useState, type ReactNode } from "react"
 
 import {
@@ -53,6 +54,7 @@ import { EnviadosLista } from "@/features/comunicaciones/chat/components/enviado
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
 import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
 import { CrearComunicadoDialog } from "@/features/comunicaciones/chat/components/crear-comunicado-dialog"
+import { EditarActividad } from "@/features/comunicaciones/chat/components/editar-actividad"
 import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/crear-eleccion-dialog"
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components/crear-evaluacion-dialog"
@@ -301,7 +303,7 @@ export function BorradoresView({
               {
                 onSuccess: (b) => {
                   notify(
-                    `Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}.`,
+                    cerrarFrase(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}`),
                   )
                   programar.reset()
                   setProgramando(null)
@@ -513,6 +515,17 @@ function RetomarBorradorActividad({
     onCerrar()
   }
   if (!data) return null
+  // Cambios sin guardar de una actividad publicada: se retoman en su diálogo de edición.
+  if (data.conversacionId) {
+    return (
+      <EditarActividad
+        open
+        conversacion={{ id: data.conversacionId, categoria: CATEGORIA_TIPO_BORRADOR[data.tipo] }}
+        borradorId={data.id}
+        onClose={onCerrar}
+      />
+    )
+  }
   const props = { open: true, onClose: onCerrar, borrador: { id: data.id, datos: data.datos } }
   switch (data.tipo) {
     case "COMUNICADO":

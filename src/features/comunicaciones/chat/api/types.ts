@@ -41,6 +41,34 @@ export interface Conversacion {
   modo?: ModoGrupo
   // Perfiles que escriben en un grupo MODERADO (además de quien lo gestiona).
   rolesEscritura?: PerfilChat[]
+  // Vista previa de la lista (diseño 4516:68095): último mensaje visible, en texto plano recortado
+  // por comms-service. Null si la conversación no tiene mensajes. Llega también en vivo con
+  // `conversacion.actualizada`.
+  ultimoMensaje?: UltimoMensaje | null
+}
+
+export type TipoUltimoMensaje = "NORMAL" | "SISTEMA" | "BOT"
+
+export interface UltimoMensaje {
+  texto: string
+  autor: string
+  esPropio: boolean
+  enviadoEn: string
+  tipo: TipoUltimoMensaje
+}
+
+/**
+ * Tarjeta de Colevabot (diseño 4428:64360): encabezado ("NUEVA SOLICITUD DE APROBACIÓN"), título,
+ * campos "Etiqueta: valor" y acciones que abren pantallas de la app (`/app/...`). La publica
+ * comms-service en la conversación `esBot` del usuario.
+ */
+export interface TarjetaBot {
+  clave: string | null
+  encabezado: string | null
+  titulo: string
+  descripcion: string | null
+  campos: { etiqueta: string; valor: string }[]
+  acciones: { etiqueta: string; url: string }[]
 }
 
 // ABIERTO: todos escriben; SOLO_LECTURA: solo quien gestiona; MODERADO: quien gestiona y los perfiles elegidos.
@@ -106,6 +134,8 @@ export interface Mensaje {
   eliminadoEn?: string | null
   // Última edición (marca "Editado HH:MM").
   editadoEn?: string | null
+  // Tarjeta de Colevabot: se pinta como tarjeta estructurada; `texto` es su título.
+  bot?: TarjetaBot | null
 }
 
 export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"

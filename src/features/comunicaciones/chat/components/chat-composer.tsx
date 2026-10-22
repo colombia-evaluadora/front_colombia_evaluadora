@@ -28,10 +28,16 @@ import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
 import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
 import {
+  consultaAtajo,
+  filtrarAtajos,
+  type AtajoComposer,
+  type IdAtajo,
+} from "@/features/comunicaciones/chat/lib/atajos-composer"
+import { MenuAtajos } from "@/features/comunicaciones/chat/components/menu-atajos"
+import {
   SmileyIcon,
   TextAaIcon,
   AtIcon,
-  MicrophoneIcon,
   CodeBlockIcon,
   QuotesIcon,
   CodeIcon,
@@ -41,7 +47,6 @@ import {
   ListBulletsIcon,
   TextBIcon,
   TextStrikethroughIcon,
-  VideoCameraIcon,
 } from "@/components/ui/icons"
 import {
   alternarBloque,
@@ -89,7 +94,12 @@ interface ChatComposerProps {
   // "Programar envío": manda el texto a la hora elegida (`yyyy-MM-ddTHH:mm`, hora de Bogotá).
   // Solo texto: un adjunto se envía en el momento.
   onProgramar?: (texto: string, programadoPara: string) => Promise<unknown>
+  // Atajos "/" que abre la página (crear actividades, votación rápida); los que faltan no se
+  // ofrecen. "Adjuntar" y "Programar envío" los resuelve el propio compositor.
+  onAtajo?: AccionesAtajo
 }
+
+export type AccionesAtajo = Partial<Record<Exclude<IdAtajo, "adjuntar" | "programar">, () => void>>
 
 export function ChatComposer({
   destino,
@@ -107,6 +117,7 @@ export function ChatComposer({
   onEscribiendo,
   onGuardarBorrador,
   onProgramar,
+  onAtajo,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
@@ -136,20 +147,74 @@ export function ChatComposer({
   // La barra de formato se ve mientras el editor (o la propia barra) tiene el foco.
   const [enfocado, setEnfocado] = useState(false)
   const listo = (texto.trim().length > 0 || !!archivo) && !enviando
-  const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null } | null>(null)
+  // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
+  const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
+    null,
+  )
   const programable = !edicion && !!onProgramar && texto.trim().length > 0 && !archivo && !enviando
-  const confirmarProgramacion = async ({ programadoPara }: { programadoPara: string }) => {
+  const confirmarProgramacion = async ({ programadoPara, texto: delDialogo }: { texto?: string; programadoPara: string }) => {
     if (!onProgramar) return
-    setProgramar({ guardando: true, error: null })
+    setProgramar((p) => ({ guardando: true, error: null, conTexto: p?.conTexto }))
     try {
-      await onProgramar(codificarMenciones(texto.trim(), elegidos), programadoPara)
-      setTexto("")
-      setElegidos([])
-      setConsulta(null)
+      await onProgramar(delDialogo ?? codificarMenciones(texto.trim(), elegidos), programadoPara)
+      if (delDialogo === undefined) {
+        setTexto("")
+        setElegidos([])
+        setConsulta(null)
+      }
       setProgramar(null)
     } catch (error) {
-      setProgramar({ guardando: false, error: getErrorMessage(error) })
+      setProgramar((p) => ({ guardando: false, error: getErrorMessage(error), conTexto: p?.conTexto }))
     }
+  }
+
+  // Atajos "/": con el botón se listan todos; escribiendo "/…" al inicio se filtran.
+  const disponibles = new Set<IdAtajo>(
+    edicion
+      ? []
+      : [
+          ...(Object.keys(onAtajo ?? {}) as IdAtajo[]),
+          "adjuntar",
+          ...(onProgramar ? (["programar"] as const) : []),
+        ],
+  )
+  const [menuAtajos, setMenuAtajos] = useState(false)
+  const [atajoActivo, setAtajoActivo] = useState(0)
+  const consultaEscrita = disponibles.size > 0 ? consultaAtajo(texto) : null
+  const atajos = menuAtajos
+    ? filtrarAtajos("", disponibles)
+    : consultaEscrita !== null
+      ? filtrarAtajos(consultaEscrita, disponibles)
+      : []
+  const atajosAbiertos = atajos.length > 0
+  const atajosId = useId()
+
+  const elegirAtajo = (a: AtajoComposer) => {
+    // El comando escrito ("/encuesta") no queda en el mensaje.
+    const escrito = consultaEscrita !== null
+    const restante = escrito ? "" : texto
+    if (escrito) setTexto("")
+    setMenuAtajos(false)
+    setAtajoActivo(0)
+    if (a.id === "adjuntar") docRef.current?.click()
+    else if (a.id === "programar") {
+      setProgramar({ guardando: false, error: null, conTexto: !restante.trim() || !!archivo })
+    } else onAtajo?.[a.id]?.()
+  }
+
+  const navegarAtajos = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!atajosAbiertos) return false
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const paso = e.key === "ArrowDown" ? 1 : -1
+      setAtajoActivo((i) => (i + paso + atajos.length) % atajos.length)
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      elegirAtajo(atajos[atajoActivo] ?? atajos[0])
+    } else if (e.key === "Escape") {
+      setMenuAtajos(false)
+      if (consultaEscrita !== null) setTexto("")
+    } else return false
+    e.preventDefault()
+    return true
   }
   const listaId = useId()
   // Personas elegidas en el autocompletado: al enviar `@Nombre` pasa a `<@id>`.
@@ -284,6 +349,16 @@ export function ChatComposer({
           ))}
         </ul>
       )}
+      {atajosAbiertos && (
+        <MenuAtajos
+          id={atajosId}
+          atajos={atajos}
+          activo={atajoActivo}
+          onActivar={setAtajoActivo}
+          onElegir={elegirAtajo}
+          sinTexto={consultaEscrita !== null || !texto.trim()}
+        />
+      )}
       {respondiendoA && (
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-1.5 text-xs">
           <span className="min-w-0 flex-1 truncate">
@@ -363,17 +438,24 @@ export function ChatComposer({
           value={texto}
           maxLength={MAX_CARACTERES}
           role="combobox"
-          aria-expanded={abiertas}
-          aria-controls={abiertas ? listaId : undefined}
+          aria-expanded={abiertas || atajosAbiertos}
+          aria-controls={abiertas ? listaId : atajosAbiertos ? atajosId : undefined}
           aria-autocomplete="list"
-          aria-activedescendant={abiertas ? `${listaId}-${activa}` : undefined}
+          aria-activedescendant={
+            abiertas ? `${listaId}-${activa}` : atajosAbiertos ? `${atajosId}-${atajoActivo}` : undefined
+          }
           onChange={(e) => {
             setTexto(e.target.value)
+            setAtajoActivo(0)
             actualizarConsulta(e.target.value, e.target.selectionStart)
             if (e.target.value) onEscribiendo?.()
           }}
-          onBlur={() => setConsulta(null)}
+          onBlur={() => {
+            setConsulta(null)
+            setMenuAtajos(false)
+          }}
           onKeyDown={(e) => {
+            if (navegarAtajos(e)) return
             if (navegarSugerencias(e)) return
             if (e.key === "Escape" && respondiendoA) {
               onCancelarRespuesta?.()
@@ -432,13 +514,36 @@ export function ChatComposer({
               <AtIcon className="size-5" />
             </Herramienta>
           )}
-          <Separador className="max-sm:hidden" />
-          <Herramienta etiqueta="Grabar video" pendiente className="max-sm:hidden">
-            <VideoCameraIcon className="size-5" />
-          </Herramienta>
-          <Herramienta etiqueta="Grabar audio" pendiente className="max-sm:hidden">
-            <MicrophoneIcon className="size-5" />
-          </Herramienta>
+          {/* Sin grabar video ni audio: llamadas y grabaciones quedaron fuera del alcance. */}
+          {disponibles.size > 0 && (
+            <>
+              <Separador />
+              {/* Botón «/» de atajos (diseños 3846:66590 y 4485:66928); también se abre escribiendo "/". */}
+              <button
+                type="button"
+                aria-label="Atajos"
+                title="Atajos (escribe / al inicio del mensaje)"
+                aria-haspopup="listbox"
+                aria-expanded={atajosAbiertos}
+                aria-controls={atajosAbiertos ? atajosId : undefined}
+                // mousedown: no quitar el foco al editor (el menú se maneja con el teclado desde ahí).
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setMenuAtajos((v) => !v)
+                  setAtajoActivo(0)
+                  areaRef.current?.focus()
+                }}
+                className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none aria-expanded:bg-muted/50 aria-expanded:text-foreground"
+              >
+                <span
+                  aria-hidden
+                  className="grid size-5 place-items-center rounded-[5px] border-[1.5px] border-current text-xs leading-none font-semibold"
+                >
+                  /
+                </span>
+              </button>
+            </>
+          )}
 
           {!edicion && onProgramar && (
             <Herramienta
@@ -474,6 +579,9 @@ export function ChatComposer({
           destino={destino}
           guardando={programar.guardando}
           error={programar.error}
+          // Desde "/programar" sin texto: el mensaje se escribe en el diálogo.
+          textoInicial={programar.conTexto ? "" : undefined}
+          titulo={programar.conTexto ? "Programar un mensaje" : undefined}
           onConfirmar={(v) => void confirmarProgramacion(v)}
         />
       )}

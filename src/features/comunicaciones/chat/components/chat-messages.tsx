@@ -21,6 +21,7 @@ import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/t
 import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
+import { TarjetaBotMensaje } from "@/features/comunicaciones/chat/components/tarjeta-bot"
 import {
   BotonReaccionar,
   ReaccionesMensaje,
@@ -344,6 +345,9 @@ function MensajeItem({
   }
 
   if (m.eliminado) return <MensajeEliminado mensaje={m} />
+
+  // Colevabot: tarjeta estructurada, sin acciones de mensaje (no se responde ni se edita).
+  if (m.bot) return <TarjetaBotMensaje mensaje={m} tarjeta={m.bot} />
 
   if (m.votacion) {
     return (
