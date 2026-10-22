@@ -146,7 +146,9 @@ export async function buildEditarActividadSaga(
   const unidadAnteriorId = actividad.unidad.id
   const unidadNuevaId = values.unidad.id
   if (unidadNuevaId !== unidadAnteriorId) {
-    const esPonderado = unidades.find((u) => u.id === unidadNuevaId)?.metodoCalculo === "Ponderado"
+    // Formativa (p. ej. preescolar) no lleva peso: un 0 guardado hace fallar el PUT de la actividad.
+    const esPonderado =
+      values.esEvaluativa && unidades.find((u) => u.id === unidadNuevaId)?.metodoCalculo === "Ponderado"
     steps.push({
       kind: SAGA_KINDS.actividadUnidad,
       label: SAGA_LABELS.unidad,
