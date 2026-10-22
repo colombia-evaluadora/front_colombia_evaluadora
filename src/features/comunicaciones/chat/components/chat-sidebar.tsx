@@ -19,6 +19,7 @@ import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { useArchivarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { InvitacionesSeccion } from "@/features/comunicaciones/chat/components/invitaciones-seccion"
 
 const CLAVE_RECIENTES = "chat-busquedas-recientes"
 
@@ -64,6 +65,8 @@ interface ChatSidebarProps {
   vista: VistaChat | undefined
   onVista: (vista: VistaChat) => void
   onSeleccionar: (id: number | undefined) => void
+  // Invitación resaltada (`?invitacion=` del deep link de la notificación).
+  invitacionDestacada?: number
   className?: string
 }
 
@@ -76,6 +79,7 @@ export function ChatSidebar({
   vista,
   onVista,
   onSeleccionar,
+  invitacionDestacada,
   className,
 }: ChatSidebarProps) {
   const { data: borradores = [] } = useBorradoresQuery()
@@ -181,6 +185,7 @@ export function ChatSidebar({
       </div>
 
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
+          <InvitacionesSeccion destacada={invitacionDestacada} onAceptada={onSeleccionar} />
           {/* Archivados arriba, con contador y desarchivar por fila (diseño 4742:72681). */}
           {archivadas.length > 0 && (
             <Seccion

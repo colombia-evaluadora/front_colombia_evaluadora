@@ -31,6 +31,7 @@ export function ConfirmarAltaDialog({
   onCancelar: () => void
 }) {
   const total = resolucion?.total ?? 0
+  const invitaciones = resolucion?.invitaciones ?? 0
   const ya = textoYaEnElGrupo(resolucion?.yaEnElGrupo ?? 0)
   const muestra = resolucion?.personas.slice(0, MUESTRA) ?? []
   const resto = total - muestra.length
@@ -39,12 +40,15 @@ export function ConfirmarAltaDialog({
     <AlertDialog open={resolucion !== null} onOpenChange={(o) => !o && !pendiente && onCancelar()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{textoConfirmacion(total)}</AlertDialogTitle>
+          <AlertDialogTitle>{textoConfirmacion(total, invitaciones)}</AlertDialogTitle>
           <AlertDialogDescription>
             {resumen ? `${resumen}. ` : ""}
-            {total > 0
-              ? `Verán todo el historial de ${grupo} y recibirán un aviso.`
-              : "Todas las personas elegidas ya están en el grupo o no se pueden agregar."}
+            {total > invitaciones && `Verán todo el historial de ${grupo} y recibirán un aviso.`}
+            {invitaciones > 0 &&
+              ` ${invitaciones === 1 ? "El acudiente recibe" : "Los acudientes reciben"} una invitación y ${
+                invitaciones === 1 ? "entra" : "entran"
+              } al grupo solo si la aceptan.`}
+            {total === 0 && "Todas las personas elegidas ya están en el grupo o no se pueden agregar."}
             {ya && ` ${ya}`}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -53,6 +57,7 @@ export function ConfirmarAltaDialog({
             {muestra.map((p) => (
               <li key={p.id} className="truncate">
                 {p.nombre}
+                {p.perfil === "ACUDIENTE" && <span className="text-muted-foreground"> · invitación</span>}
               </li>
             ))}
             {resto > 0 && <li className="text-muted-foreground">y {resto === 1 ? "1 persona más" : `${resto} personas más`}</li>}
@@ -63,7 +68,7 @@ export function ConfirmarAltaDialog({
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction disabled={pendiente || total === 0} aria-busy={pendiente} onClick={onConfirmar}>
-            Agregar
+            {total > 0 && total === invitaciones ? "Invitar" : "Agregar"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

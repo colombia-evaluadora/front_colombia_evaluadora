@@ -14,6 +14,10 @@ import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PlusIcon, ProhibitIcon, StarIcon, XIcon } from "@/components/ui/icons"
+import { Badge } from "@/components/ui/badge"
+import { EtiquetaInvitacion } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
+import { resumenModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -118,6 +122,8 @@ export function MiembrosDialog({
   const donde = c.tipo === "GRUPO" ? "grupo" : "foro"
 
   const todos = miembros.data ?? []
+  // Invitaciones (acudientes): solo las ve quien gestiona; no son miembros ni cuentan.
+  const invitados = new Map(todos.filter((m) => m.estado && m.estado !== "ACTIVO").map((m) => [m.id, m.estado]))
   // Buscar en la lista de participantes (diseño 4567:68583), para todos los miembros.
   const [filtro, setFiltro] = useState("")
   const f = filtro.trim()
@@ -154,6 +160,22 @@ export function MiembrosDialog({
           </DialogTitle>
         </DialogHeader>
 
+        {esGrupo && (c.imagenArchivoId != null || c.descripcion || resumenModo(c)) && (
+          <section aria-label="Información del grupo" className="flex items-start gap-3 rounded-lg bg-muted/40 p-3">
+            {c.imagenArchivoId != null && (
+              <ArchivoImage
+                archivoId={c.imagenArchivoId}
+                alt={`Imagen de ${c.nombre}`}
+                className="size-14 shrink-0 rounded-lg object-cover"
+              />
+            )}
+            <div className="min-w-0 space-y-1 text-sm">
+              {c.descripcion && <p className="whitespace-pre-line">{c.descripcion}</p>}
+              <p className="text-muted-foreground">Quién escribe: {resumenModo(c) ?? "todos los miembros"}</p>
+            </div>
+          </section>
+        )}
+
         {puedeAgregar && (
         <div className="flex items-start gap-2">
           <div className="relative min-w-0 flex-1">
@@ -174,15 +196,20 @@ export function MiembrosDialog({
               placeholder="P. ej.: Natalia o pedro@iesimonbolivar.edu.co"
               vacio={null}
               soloConConsulta
-              deshabilitado={(p) => enGrupo.has(p.id)}
+              // Quien rechazó la invitación se puede volver a invitar.
+              deshabilitado={(p) => enGrupo.has(p.id) && invitados.get(p.id) !== "RECHAZADO"}
               renderItem={(p) => (
                 <span className="flex items-center gap-3">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{p.nombre}</span>
                     {p.correo && <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>}
                   </span>
-                  {enGrupo.has(p.id) ? (
+                  {invitados.get(p.id) === "INVITADO" ? (
+                    <span className="shrink-0 rounded-full bg-blue-22 px-2 py-0.5 text-xs text-blue">Invitación pendiente</span>
+                  ) : enGrupo.has(p.id) && !invitados.has(p.id) ? (
                     <span className="shrink-0 rounded-full bg-green-22 px-2 py-0.5 text-xs text-green">En el {donde}</span>
+                  ) : esGrupo && p.perfil === "ACUDIENTE" ? (
+                    <EtiquetaInvitacion perfil={p.perfil} />
                   ) : (
                     <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">No está en el {donde}</span>
                   )}
@@ -283,7 +310,9 @@ export function MiembrosDialog({
                     ocupado={bloquear.isPending || eliminar.isPending || rol.isPending || quitando}
                     onAdmin={() => rol.mutate({ id: m.id, admin: !m.esAdmin })}
                     onBloquear={() => bloquear.mutate({ id: m.id, bloqueado: !m.bloqueado })}
-                    onEliminar={() => setPorEliminar([m])}
+                    // Una invitación se retira sin confirmar (no deja mensaje en el grupo).
+                    onEliminar={() => (invitados.has(m.id) ? eliminar.mutate(m.id) : setPorEliminar([m]))}
+                    onReinvitar={() => agregar.mutate([m.id])}
                   />
                 ))}
               </ul>
@@ -403,6 +432,7 @@ function FilaMiembro({
   onAdmin,
   onBloquear,
   onEliminar,
+  onReinvitar,
 }: {
   miembro: Miembro
   donde: string
@@ -414,7 +444,42 @@ function FilaMiembro({
   onAdmin: () => void
   onBloquear: () => void
   onEliminar: () => void
+  onReinvitar: () => void
 }) {
+  if (m.estado && m.estado !== "ACTIVO") {
+    const pendiente = m.estado === "INVITADO"
+    return (
+      <li className="flex items-center gap-3 px-3 py-2">
+        <span className="flex min-w-0 flex-1 items-center gap-3 opacity-80">
+          <AvatarPersona nombre={m.nombre} />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate">{m.nombre}</span>
+            <span className="block truncate text-sm text-muted-foreground">Acudiente</span>
+          </span>
+        </span>
+        <Badge variant="soft" color={pendiente ? "info" : "warning"}>
+          {pendiente ? "Invitación pendiente" : "Invitación rechazada"}
+        </Badge>
+        {gestionar && !pendiente && (
+          <Button type="button" size="sm" variant="ghost" disabled={ocupado} onClick={onReinvitar}>
+            Volver a invitar
+          </Button>
+        )}
+        {gestionar && (
+          <button
+            type="button"
+            onClick={onEliminar}
+            disabled={ocupado}
+            aria-label={`Retirar la invitación de ${m.nombre}`}
+            title="Retirar invitación"
+            className={cn(ACCION, "bg-muted/60 text-muted-foreground hover:bg-red-22 hover:text-red")}
+          >
+            <XIcon className="size-4" />
+          </button>
+        )}
+      </li>
+    )
+  }
   return (
     <li className="flex items-center gap-3 px-3 py-2">
       {gestionar && (

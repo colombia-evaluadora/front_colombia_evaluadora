@@ -28,8 +28,8 @@ export function normalizarBusqueda(s: string) {
 }
 
 // Sin texto (o con menos de MIN_CARACTERES) trae la primera página del directorio.
-// `paraGrupo`: el buscador de un grupo no ofrece acudientes (irán por invitación; comms-service
-// tampoco los agrega).
+// `paraGrupo`: el buscador de un grupo. Ofrece también acudientes: comms-service los invita (entran
+// solo si aceptan) y la UI los marca con "Acudiente · por invitación".
 export function usePersonasQuery(enabled = true, texto = "", { paraGrupo = false }: { paraGrupo?: boolean } = {}) {
   const debounced = useDebounced(texto.trim())
   const q = debounced.length >= MIN_CARACTERES ? debounced : ""
@@ -39,8 +39,7 @@ export function usePersonasQuery(enabled = true, texto = "", { paraGrupo = false
       const params = new URLSearchParams({ limite: String(LIMITE) })
       if (q) params.set("q", q)
       if (paraGrupo) params.set("paraGrupo", "true")
-      const rows = await evalCol.getRows<Persona>(`/comunicaciones/personas?${params}`)
-      return paraGrupo ? rows.filter((p) => p.perfil !== "ACUDIENTE") : rows
+      return evalCol.getRows<Persona>(`/comunicaciones/personas?${params}`)
     },
     enabled,
     staleTime: 5 * 60_000,

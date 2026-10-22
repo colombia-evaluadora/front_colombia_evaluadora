@@ -5,9 +5,13 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type {
   CategoriaCanal,
   Conversacion,
+  ModoGrupo,
   SilencioDuracion,
 } from "@/features/comunicaciones/chat/api/types"
 import type { CuerpoSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
+import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
+import { cuerpoModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
+import { patchMultipart } from "@/lib/files"
 
 const base = (id: number) => `/comunicaciones/conversaciones/${id}`
 
@@ -67,6 +71,48 @@ export function useRenombrarConversacion() {
   })
 }
 
+/** Datos de un grupo que gestiona quien lo crea: descripción, modo de escritura e imagen. */
+export interface OpcionesGrupo {
+  descripcion: string
+  modo: ModoGrupo
+  rolesEscritura: PerfilChat[]
+  // `undefined`: no se toca; `null`: se quita; `File`: se sube por file-service.
+  imagen?: File | null
+}
+
+/**
+ * Imagen del grupo: multipart por file-service (`IMAGEN` → `pk_tarchivo`) al mismo PATCH de
+ * comms-service; para quitarla, JSON `{ IMAGEN: null }` directo.
+ */
+export async function guardarImagenGrupo(id: number, imagen: File | null) {
+  const ruta = `${base(id)}/imagen`
+  if (!imagen) return evalCol.patchRow<Conversacion>(ruta, { IMAGEN: null })
+  const crudo = await patchMultipart<string | { rows: Conversacion[] } | Conversacion[]>(`/eval-col${ruta}`, {}, {
+    IMAGEN: imagen,
+  })
+  const body = typeof crudo === "string" ? (JSON.parse(crudo) as { rows: Conversacion[] }) : crudo
+  const [c] = Array.isArray(body) ? body : (body?.rows ?? [])
+  if (!c) throw new Error("La respuesta no trajo el grupo.")
+  return c
+}
+
+/** Editar un grupo: nombre, descripción (vacía la quita), modo y perfiles; luego la imagen. */
+export function useEditarGrupo() {
+  const invalidar = useInvalidarConversaciones()
+  return useMutation({
+    mutationFn: async ({ id, nombre, opciones }: { id: number; nombre: string; opciones: OpcionesGrupo }) => {
+      let c = await evalCol.patchRow<Conversacion>(base(id), {
+        NOMBRE: nombre,
+        DESCRIPCION: opciones.descripcion.trim(),
+        ...cuerpoModo(opciones.modo, opciones.rolesEscritura),
+      })
+      if (opciones.imagen !== undefined) c = await guardarImagenGrupo(id, opciones.imagen)
+      return c
+    },
+    onSuccess: invalidar,
+  })
+}
+
 // Sin DELETE en eval-col: la baja es un PATCH.
 export function useEliminarConversacion() {
   const invalidar = useInvalidarConversaciones()
@@ -99,12 +145,13 @@ export function useSalirConversacion() {
 export function useCrearCanal() {
   const invalidar = useInvalidarConversaciones()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       nombre,
       categoria,
       miembros = [],
       tipo,
       grupal,
+      opciones,
     }: {
       nombre: string
       categoria: CategoriaCanal
@@ -112,15 +159,24 @@ export function useCrearCanal() {
       // GRUPO: conversación de un grupo de personas; sin tipo, un foro (CANAL).
       tipo?: "CANAL" | "GRUPO"
       // Solo GRUPO: grados, grupos académicos y cargos que comms-service resuelve en el servidor.
-      grupal?: Pick<CuerpoSeleccion, "GRADOS" | "GRUPOS" | "ROLES">
-    }) =>
-      evalCol.postRow<Conversacion>("/comunicaciones/conversaciones", {
+      grupal?: Pick<CuerpoSeleccion, "GRADOS" | "GRUPOS" | "ROLES" | "PARA">
+      // Solo GRUPO: descripción, modo de escritura e imagen (se sube después de crearlo).
+      opciones?: OpcionesGrupo
+    }) => {
+      const c = await evalCol.postRow<Conversacion>("/comunicaciones/conversaciones", {
         NOMBRE: nombre,
         CATEGORIA: categoria,
         MIEMBROS: miembros,
         ...(tipo ? { TIPO: tipo } : {}),
         ...(grupal ?? {}),
-      }),
+        ...(opciones
+          ? { DESCRIPCION: opciones.descripcion.trim() || null, ...cuerpoModo(opciones.modo, opciones.rolesEscritura) }
+          : {}),
+      })
+      // La imagen va aparte (file-service); si falla, el grupo ya existe y se puede poner al editarlo.
+      if (opciones?.imagen) return guardarImagenGrupo(c.id, opciones.imagen)
+      return c
+    },
     onSuccess: invalidar,
   })
 }

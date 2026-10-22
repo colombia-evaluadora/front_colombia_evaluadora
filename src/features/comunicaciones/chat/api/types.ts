@@ -35,6 +35,30 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Grupos: descripción e imagen (`pk_tarchivo`, se ve con token de vista) opcionales.
+  descripcion?: string | null
+  imagenArchivoId?: number | null
+  // Quién escribe en un grupo (decisión de Natalia): ver `lib/modo-grupo.ts`.
+  modo?: ModoGrupo
+  // Perfiles que escriben en un grupo MODERADO (además de quien lo gestiona).
+  rolesEscritura?: PerfilChat[]
+}
+
+// ABIERTO: todos escriben; SOLO_LECTURA: solo quien gestiona; MODERADO: quien gestiona y los perfiles elegidos.
+export type ModoGrupo = "ABIERTO" | "SOLO_LECTURA" | "MODERADO"
+
+// Membresía: los acudientes entran a un grupo solo si aceptan la invitación.
+export type EstadoMiembro = "ACTIVO" | "INVITADO" | "RECHAZADO"
+
+/** Invitación pendiente a un grupo (`GET /comunicaciones/invitaciones`). */
+export interface Invitacion {
+  conversacionId: number
+  nombre: string
+  descripcion: string | null
+  imagenArchivoId: number | null
+  invitadoPor: string | null
+  invitadoEn: string | null
+  totalMiembros: number
 }
 
 export interface AutorMensaje {
@@ -164,6 +188,8 @@ export interface Eleccion {
   vieronCanal: number
   creadoPor: string
   esCreador: boolean
+  // "Permitir comentarios" (paso 1): los participantes escriben en el canal de la elección.
+  permiteComentarios?: boolean
 }
 
 export type EstadoBorrador = "BORRADOR" | "PROGRAMADO" | "ENVIADO"
@@ -312,6 +338,8 @@ export interface Miembro {
   enLinea: boolean
   bloqueado: boolean
   esAdmin?: boolean
+  // INVITADO / RECHAZADO: invitaciones que solo ve quien gestiona el grupo (no son miembros).
+  estado?: EstadoMiembro
 }
 
 // Votación rápida: una pregunta de dos opciones que se cierra sola al vencer el tiempo.
@@ -372,6 +400,8 @@ export interface ResolucionSeleccion {
   personas: Persona[]
   total: number
   yaEnElGrupo: number
+  // De `personas`, cuántas son acudientes: reciben una invitación en lugar de entrar directo.
+  invitaciones?: number
 }
 
 // Bandeja "Enviados": DIRECTO/CANAL son mensajes; el resto, actividades publicadas.
