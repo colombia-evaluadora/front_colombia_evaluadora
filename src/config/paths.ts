@@ -277,6 +277,11 @@ export const paths = {
       path: "sincronizar",
       getHref: () => "/app/sincronizar",
     },
+    // "Mis dispositivos" (credencial del equipo, D-3/D-8). Fuera del menú del backend.
+    misDispositivos: {
+      path: "mis-dispositivos",
+      getHref: () => "/app/mis-dispositivos",
+    },
     // Destino del guard de `/app`; lleva `?desde=<ruta pedida>`.
     sinAcceso: {
       path: "sin-acceso",

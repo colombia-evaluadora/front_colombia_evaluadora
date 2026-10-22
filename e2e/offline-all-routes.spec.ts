@@ -26,7 +26,12 @@ const RUTAS_NO_ADMIN = [
   "/app/pendientes",
 ]
 
-const RUTAS_SOLO_EN_LINEA = ["/app/cobertura/matricula", "/app/establecimiento-educativo/funcionarios"]
+const RUTAS_SOLO_EN_LINEA = [
+  "/app/cobertura/matricula",
+  "/app/establecimiento-educativo/funcionarios",
+  // Registrar o revocar equipos necesita el servidor.
+  "/app/mis-dispositivos",
+]
 
 const VACIO = "Esta sección necesita conexión"
 

@@ -10,6 +10,7 @@
  * sincronizar): acá no se pregunta nada.
  */
 import { deleteMeta, isIndexedDbAvailable } from "@/lib/offline/db"
+import { deleteDeviceToken } from "@/lib/offline/device-token"
 import { deleteLocalCredential } from "@/lib/offline/local-credential"
 import { clearOutbox } from "@/lib/offline/outbox/store"
 import { clearUserData } from "@/lib/offline/query-persister"
@@ -23,6 +24,9 @@ export async function wipeDeviceData(sub: string): Promise<void> {
   await clearUserData(sub)
   await destroyVault(sub)
   await deleteLocalCredential(sub)
+  // Credencial del equipo (token, clave local e id): sin ella el equipo ya no
+  // puede sincronizar a nombre del usuario.
+  await deleteDeviceToken(sub, { forgetId: true })
   if (isIndexedDbAvailable()) {
     for (const key of userMetaKeys(sub)) await deleteMeta(key).catch(() => undefined)
   }

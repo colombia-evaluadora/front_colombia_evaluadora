@@ -19,6 +19,7 @@ const RUTAS_ADMIN_SIN_ADMINISTRACION = [
   "/app/sin-acceso",
   "/app/pendientes",
   "/app/sincronizar",
+  "/app/mis-dispositivos",
   "/app/planeador/actividades",
   "/app/planeador/actividades/agregar",
   "/app/planeador/actividades/1/editar",
@@ -76,6 +77,7 @@ const RUTAS_DOCENTE = [
   "/app/notificaciones/preferencias",
   "/app/pendientes",
   "/app/sincronizar",
+  "/app/mis-dispositivos",
 ]
 
 /** Indicadores de carga visibles (skeleton, spinner, pulso, aria-busy). */

@@ -32,9 +32,11 @@ import {
   verifyLocalCredential,
 } from "@/lib/offline/local-credential"
 import { hasVault } from "@/lib/offline/vault"
+import { ensureDeviceAccessToken, reconcileDevice, tryDeviceSession } from "@/lib/offline/device-session"
+import { deleteDeviceToken } from "@/lib/offline/device-token"
 import { configureOutbox, isSyncing, startOutbox, syncNow } from "@/lib/offline/outbox/engine"
 import { notifySyncIdle, setSyncInProgressProbe } from "@/lib/offline/sw-update"
-import { outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
+import { getOutboxUser, outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
 import { toast } from "sonner"
 import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
@@ -51,8 +53,20 @@ const USER_QUERY_KEY = ["auth-user"]
 // `NetworkSessionError` para que el guard reintente y, si persiste, muestre
 // el error recuperable en vez de mandar a /login (recargar offline te
 // deslogueaba aunque la cookie siguiera viva).
+//
+// En un equipo personal registrado va PRIMERO el token del equipo
+// (`device-session.ts`): su access token trae `did` y es el único con el que
+// el backend acepta `X-Client-Captured-At`. Si no hay o no sirve, la cookie.
 export async function getUser(): Promise<AuthUser | null> {
   try {
+    const deviceToken = await tryDeviceSession()
+    if (deviceToken) {
+      const deviceUser = toAuthUserFromToken(deviceToken)
+      if (deviceUser) {
+        setAuthToken(deviceToken)
+        return deviceUser
+      }
+    }
     const { token }: AuthResponse = await api.post("/auth/refresh")
     setAuthToken(token)
     return toAuthUserFromToken(token)
@@ -203,7 +217,11 @@ export function useLogout({
         // pendientes decide conservar o descartar antes de llamar al logout.
         await setOutboxUser(null)
         if (sub && keep) await lockDeviceSession(sub).catch(() => undefined)
-        else if (sub) await clearUserData(sub).catch(() => undefined)
+        else if (sub) {
+          await clearUserData(sub).catch(() => undefined)
+          // Equipo que no conserva datos: tampoco conserva la credencial del equipo.
+          await deleteDeviceToken(sub).catch(() => undefined)
+        }
         setAuthToken(null)
         // El socket de tiempo real no debe sobrevivir al usuario (spec: Logout).
         stopRealtime()
@@ -248,6 +266,8 @@ async function onOnlineAuthenticated(queryClient: QueryClient, user: AuthUser) {
     const pendientes = outboxStore.getSummary().total
     if (pendientes > 0) toast.info(`Tienes ${pendientes} cambios guardados de una sesión anterior. Sincronizando…`)
     void syncNow()
+    // Estado del equipo (revocado / borrado remoto) y alta si es personal.
+    void reconcileDevice(user.id)
     await saveOnlineSession({
       sub: user.id,
       name: user.name,
@@ -383,6 +403,13 @@ async function revalidateOfflineUser(queryClient: QueryClient) {
  * el banner pide iniciar sesión); red → "network".
  */
 async function ensureOutboxAuth(force?: boolean): Promise<"ok" | "unauth" | "network"> {
+  // Equipo registrado: el lote sale con un access token del equipo (`did`), y
+  // el canje es además el chequeo de revocación de cada sincronización.
+  try {
+    if (await ensureDeviceAccessToken(getOutboxUser(), force)) return "ok"
+  } catch {
+    // Red: sigue el camino de siempre (que también la detecta).
+  }
   if (hasAuthToken() && !force) return "ok"
   try {
     return (await getUser()) ? "ok" : "unauth"
