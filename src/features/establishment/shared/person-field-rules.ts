@@ -68,9 +68,12 @@ export const NOMBRE = /^\p{L}+(?:[ '’-]\p{L}+)*$/u
 const MIN_LETRAS_NOMBRE = 2
 
 /** Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`. */
-export function toNombreInput(value: string): string {
-  return value.replace(/[^\p{L}\s'’-]/gu, "").toUpperCase()
+export function limpiarNombre(value: string): string {
+  return value.replace(/[^\p{L}\s'’-]/gu, "")
 }
+
+/** `limpiarNombre` en mayúsculas, como escriben los nombres establecimiento y funcionarios. */
+export const toNombreInput = (value: string) => limpiarNombre(value).toUpperCase()
 
 export const MENSAJES = {
   documento: "El documento debe tener entre 3 y 15 dígitos, sin puntos ni espacios.",

@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { invalidEmail, maxLength, minLength, required } from "@/lib/forms/messages"
+import { validarNombrePersona } from "@/features/establishment/shared/person-field-rules"
 
 /**
  * Search params de la pantalla: búsqueda (nombre, documento o correo), estado,
@@ -28,18 +29,21 @@ export interface SuperadministradorFormValues {
   activo: boolean
 }
 
-const LETRAS = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$/
-
-// 3 a 40 y no 50 como dice la Sección 7: es el largo de las columnas de
-// TUSUARIO (una vista las fija); el back valida lo mismo (V322).
+// La misma regla de nombres que establecimiento y funcionarios
+// (`validarNombrePersona`): letras de cualquier alfabeto unidas por espacio,
+// apóstrofo o guion, con al menos 2 letras. Hasta 40 y no 50 como dice la
+// Sección 7: es el largo de las columnas de TUSUARIO (una vista las fija); el
+// back valida lo mismo (V322).
 const nombre = (sujeto: string, obligatorio: boolean) =>
   z
     .string()
     .trim()
     .refine((v) => !obligatorio || v !== "", required(sujeto))
-    .refine((v) => v === "" || v.length >= 3, minLength(3, sujeto))
     .refine((v) => v.length <= 40, maxLength(40, sujeto))
-    .refine((v) => v === "" || LETRAS.test(v), `${sujeto} solo admite letras y espacios.`)
+    .superRefine((v, ctx) => {
+      const message = validarNombrePersona(v, sujeto)
+      if (message) ctx.addIssue({ code: "custom", message })
+    })
 
 /** Mismas reglas que `fn_superadmin_validar_*` (V322). `esNumerico(pkTipo)`: solo dígitos (CC). */
 export function superadministradorFormSchema(esNumerico: (pkTipo: number) => boolean) {

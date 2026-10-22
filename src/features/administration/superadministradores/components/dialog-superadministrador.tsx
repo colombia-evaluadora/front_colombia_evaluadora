@@ -20,7 +20,8 @@ import { Switch } from "@/components/ui/switch"
 import { getErrorMessage } from "@/lib/api-client"
 import { FormDisabledProvider, useAppForm, useFieldContext } from "@/lib/forms"
 import { SUCCESS_MESSAGES, superadministradorSaveNotice } from "@/lib/success-messages"
-import { toDigitsOnly, toEmailInput, toLettersOnly } from "@/lib/text-input"
+import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
+import { limpiarNombre } from "@/features/establishment/shared/person-field-rules"
 import { cn } from "@/lib/utils"
 
 import { useEstadoSuperadministrador } from "@/features/administration/superadministradores/api/mutations/estado-superadministrador"
@@ -347,7 +348,7 @@ function SuperadministradorForm({
                     label="Primer nombre"
                     required
                     maxLength={40}
-                    transform={(v) => toLettersOnly(v, 40)}
+                    transform={(v) => limpiarNombre(v).slice(0, 40)}
                   />
                 )}
               </form.AppField>
@@ -356,7 +357,7 @@ function SuperadministradorForm({
                   <f.TextField
                     label="Segundo nombre"
                     maxLength={40}
-                    transform={(v) => toLettersOnly(v, 40)}
+                    transform={(v) => limpiarNombre(v).slice(0, 40)}
                   />
                 )}
               </form.AppField>
@@ -366,7 +367,7 @@ function SuperadministradorForm({
                     label="Primer apellido"
                     required
                     maxLength={40}
-                    transform={(v) => toLettersOnly(v, 40)}
+                    transform={(v) => limpiarNombre(v).slice(0, 40)}
                   />
                 )}
               </form.AppField>
@@ -375,7 +376,7 @@ function SuperadministradorForm({
                   <f.TextField
                     label="Segundo apellido"
                     maxLength={40}
-                    transform={(v) => toLettersOnly(v, 40)}
+                    transform={(v) => limpiarNombre(v).slice(0, 40)}
                   />
                 )}
               </form.AppField>
