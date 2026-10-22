@@ -421,9 +421,13 @@ export function ConversacionAcciones({
           })
         }
       >
-        Dejarás de recibir sus mensajes. Para volver, un administrador tendrá que agregarte de
-        nuevo. Si eres el último administrador, la persona más antigua del {c.tipo === "GRUPO" ? "grupo" : "foro"} pasará a
-        administrarlo.
+        {/* Un grupo no tiene sucesión (decisión de Natalia, comms-service `salir`): si sale quien lo
+            creó, el grupo sigue pero nadie puede agregar ni quitar participantes. */}
+        {c.tipo === "GRUPO" && c.esAdmin
+          ? "Eres quien creó el grupo. Si sales, el grupo seguirá y sus miembros podrán seguir conversando, pero quedará sin administrador: nadie podrá agregar ni quitar participantes, y tú no podrás volver."
+          : c.tipo === "GRUPO"
+            ? "Dejarás de recibir sus mensajes. Para volver, quien creó el grupo tendrá que agregarte de nuevo."
+            : "Dejarás de recibir sus mensajes. Para volver, un administrador tendrá que agregarte de nuevo. Si eres el último administrador, la persona más antigua del foro pasará a administrarlo."}
       </Confirmacion>
     </div>
   )

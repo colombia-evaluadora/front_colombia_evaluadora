@@ -49,7 +49,7 @@ export interface PoliticaChat {
 export interface PoliticaGrupos {
   crear: PerfilChat[]
   agregar: "ADMIN" | "TODOS"
-  /** Si sale quien gestiona, lo hereda el miembro más antiguo (PENDIENTE DE CONFIRMAR CON NATALIA). */
+  /** Foros: si sale el último administrador, lo hereda el miembro más antiguo. Un grupo no hereda (Natalia). */
   sucesionAlMasAntiguo: boolean
   /**
    * Decisión de Natalia: `false` (default) = un grupo lo gestiona solo quien lo creó y no se nombran
