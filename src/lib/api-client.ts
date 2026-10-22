@@ -9,6 +9,11 @@ import { noteServerTime } from "@/lib/offline/clock"
 import { noteServerMessage } from "@/lib/server-message"
 import { connectivityStore, isOfflineNow } from "@/lib/offline/connectivity"
 import {
+  conditionalErrorInterceptor,
+  conditionalResponseInterceptor,
+  installConditionalRequests,
+} from "@/lib/offline/conditional-requests"
+import {
   NETWORK_ERROR_MESSAGE,
   OFFLINE_NO_DATA_FULL_MESSAGE,
   OFFLINE_SESSION_MESSAGE,
@@ -305,18 +310,26 @@ export function idempotencyKeyInterceptor(config: InternalAxiosRequestConfig) {
   return config
 }
 
-api.interceptors.request.use(authRequestInterceptor)
-api.interceptors.request.use(idempotencyKeyInterceptor)
-api.interceptors.request.use((config) => {
+function clientVersionInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) config.headers["X-Client-Version"] = APP_VERSION
   return config
-})
+}
+
+api.interceptors.request.use(authRequestInterceptor)
+api.interceptors.request.use(idempotencyKeyInterceptor)
+api.interceptors.request.use(clientVersionInterceptor)
+// Preparar incremental: graba los ETag de las lecturas y reusa la respuesta
+// 200 de un sondeo condicional (`lib/offline/conditional-requests.ts`). El
+// cliente de sondeo lleva el mismo Bearer y versión que `api`.
+installConditionalRequests(api, [authRequestInterceptor, clientVersionInterceptor])
 // Fase 3: un id temporal `tmp:<uuid>` de una saga offline nunca llega al
 // backend; si se escapara (bug de remapeo) la request falla acá, antes de salir.
 api.interceptors.request.use((config) => {
   assertNoTmpIds(config)
   return config
 })
+// Antes del que desenvuelve: necesita los headers (`ETag`) y la config.
+api.interceptors.response.use(conditionalResponseInterceptor, conditionalErrorInterceptor)
 api.interceptors.response.use(
   // El response interceptor desenvuelve `response.data` — todas las llamadas
   // a `api.*` (incluyendo `api.query`) resuelven con el body directo.

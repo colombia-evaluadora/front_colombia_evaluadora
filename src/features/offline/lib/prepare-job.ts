@@ -32,6 +32,8 @@ export interface StartPrepareJobOptions {
   incluirArchivos?: boolean
   resume?: boolean
   staleTime?: number
+  /** "Forzar todo": ignora ventanas de frescura y sondeos (ETag). */
+  force?: boolean
 }
 
 /**
@@ -49,6 +51,7 @@ export async function startPrepareJob(
     incluirArchivos = false,
     resume = false,
     staleTime,
+    force = false,
   }: StartPrepareJobOptions,
 ): Promise<PrepareSnapshot> {
   if (isPreparing()) return prepareStore.getSnapshot()
@@ -68,6 +71,7 @@ export async function startPrepareJob(
     origin,
     resume,
     staleTime,
+    force,
   })
 }
 
