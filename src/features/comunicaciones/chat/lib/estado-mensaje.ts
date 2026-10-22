@@ -5,14 +5,15 @@ import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
 /**
- * Quién ve el original de un mensaje borrado ("Visible para el coordinador"). Misma regla que
+ * Quién ve el original de un mensaje borrado: solo un directivo (coordinador, rector) miembro de la
+ * conversación, de cualquier tipo, también un directo (decisión de Natalia). Administrar un foro o
+ * crear un grupo no da el permiso, y al autor siempre le llega como eliminado. Misma regla que
  * `ChatService.puedeVerEliminados` de comms-service, que es quien la aplica: el front solo la usa
  * para saber si, ante el evento en vivo `mensaje.eliminado`, vale la pena volver a pedir el
  * historial (el evento no trae el texto).
  */
-export function puedeVerEliminados(c: Pick<Conversacion, "tipo" | "esAdmin"> | undefined, perfil: PerfilChat) {
-  if (!c || c.tipo === "DIRECTO") return false
-  return !!c.esAdmin || perfil === "DIRECTIVO"
+export function puedeVerEliminados(c: Pick<Conversacion, "tipo"> | undefined, perfil: PerfilChat) {
+  return !!c && perfil === "DIRECTIVO"
 }
 
 /** Aplica el evento `mensaje.eliminado`: queda el aviso, sin nada del contenido original. */

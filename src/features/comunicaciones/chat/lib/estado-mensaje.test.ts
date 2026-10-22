@@ -26,12 +26,17 @@ const base = (extra: Partial<Mensaje> = {}): Mensaje => ({
 })
 
 describe("puedeVerEliminados", () => {
-  it("administrador o directivo en foros y grupos; nadie en un DM", () => {
-    expect(puedeVerEliminados({ tipo: "CANAL", esAdmin: true }, "DOCENTE")).toBe(true)
-    expect(puedeVerEliminados({ tipo: "GRUPO", esAdmin: false }, "DIRECTIVO")).toBe(true)
-    expect(puedeVerEliminados({ tipo: "CANAL", esAdmin: false }, "DOCENTE")).toBe(false)
-    expect(puedeVerEliminados({ tipo: "DIRECTO", esAdmin: true }, "DIRECTIVO")).toBe(false)
+  it("solo el directivo miembro, en cualquier conversación (también un DM)", () => {
+    expect(puedeVerEliminados({ tipo: "GRUPO" }, "DIRECTIVO")).toBe(true)
+    expect(puedeVerEliminados({ tipo: "CANAL" }, "DIRECTIVO")).toBe(true)
+    expect(puedeVerEliminados({ tipo: "DIRECTO" }, "DIRECTIVO")).toBe(true)
     expect(puedeVerEliminados(undefined, "DIRECTIVO")).toBe(false)
+  })
+
+  it("administrar un foro o crear un grupo no da el permiso", () => {
+    expect(puedeVerEliminados({ tipo: "CANAL" }, "DOCENTE")).toBe(false)
+    expect(puedeVerEliminados({ tipo: "GRUPO" }, "DOCENTE")).toBe(false)
+    expect(puedeVerEliminados({ tipo: "DIRECTO" }, "ESTUDIANTE")).toBe(false)
   })
 })
 

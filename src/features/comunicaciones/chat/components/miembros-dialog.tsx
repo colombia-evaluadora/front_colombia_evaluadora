@@ -57,7 +57,7 @@ const ACCION =
   "grid size-8 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50"
 
 // Participantes del grupo o foro. Solo quien administra (`esAdmin`) añade, bloquea y quita; los
-// demás ven la lista. Un grupo lo gestiona solo quien lo creó (o quien lo heredó al salir) y no se
+// demás ven la lista. Un grupo lo gestiona solo quien lo creó (sin sucesión: si sale, nadie lo gestiona) y no se
 // nombran administradores adicionales (decisión de Natalia, `politica.grupos.administradoresAdicionales`);
 // en un grupo se agrega también por grado, grupo académico o rol, con confirmación del conteo.
 export function MiembrosDialog({

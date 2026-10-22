@@ -282,8 +282,9 @@ function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectu
   )
 }
 
-// Aviso de un mensaje borrado (diseño 4490:66032). Quien modera (administrador o directivo)
-// recibe además el original del servidor y lo ve debajo del aviso; los demás, solo el aviso.
+// Aviso de un mensaje borrado (diseño 4490:66032). Solo un coordinador o rector miembro de la
+// conversación recibe el original del servidor (comms-service `puedeVerEliminados`, decisión de
+// Natalia) y lo ve debajo del aviso; el autor y los demás, solo "Este mensaje fue eliminado".
 function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
   const original = m.texto.trim() !== "" || !!m.adjunto
   return (
@@ -299,10 +300,12 @@ function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
           <TrashIcon aria-hidden className="size-4 shrink-0 text-orange" />
           Este mensaje fue eliminado.
         </p>
-        <p className="flex items-center gap-1.5 italic">
-          <LockIcon aria-hidden className="size-4 shrink-0 text-orange" />
-          Visible para el coordinador.
-        </p>
+        {original && (
+          <p className="flex items-center gap-1.5 italic">
+            <LockIcon aria-hidden className="size-4 shrink-0 text-orange" />
+            Visible solo para coordinación y rectoría.
+          </p>
+        )}
         {original && (
           <div className="mt-2 border-t border-orange-stroke pt-2">
             <p className="mb-1 text-xs text-muted-foreground">Mensaje original</p>
