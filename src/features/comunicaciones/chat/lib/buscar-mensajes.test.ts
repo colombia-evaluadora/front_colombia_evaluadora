@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
-import {
-  buscarMensajes,
-  resaltar,
-  textoPlano,
-} from "@/features/comunicaciones/chat/lib/buscar-mensajes"
+import { buscarMensajes, resaltar, textoPlano } from "@/features/comunicaciones/chat/lib/buscar-mensajes"
 
 const m = (id: number, texto: string, fecha: string, sistema = false) =>
   ({ id, texto, fecha, sistema }) as Mensaje

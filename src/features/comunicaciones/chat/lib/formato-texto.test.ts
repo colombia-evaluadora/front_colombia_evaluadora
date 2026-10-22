@@ -39,9 +39,7 @@ describe("alternarBloque", () => {
 
 describe("alternarBloqueCodigo", () => {
   it("rodea con cercas", () => {
-    expect(alternarBloqueCodigo({ texto: "x = 1", inicio: 0, fin: 5 }).texto).toBe(
-      "```\nx = 1\n```",
-    )
+    expect(alternarBloqueCodigo({ texto: "x = 1", inicio: 0, fin: 5 }).texto).toBe("```\nx = 1\n```")
   })
 })
 
