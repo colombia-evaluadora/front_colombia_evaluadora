@@ -21,6 +21,11 @@ import {
 } from "@/lib/offline/offline-messages"
 import { assertNoTmpIds } from "@/lib/offline/outbox/tmp-id"
 import { queryClient } from "@/lib/query-client"
+import {
+  publishRefreshedToken,
+  takeRecentSharedToken,
+  withCrossTabLock,
+} from "@/lib/auth-refresh-coordination"
 import type { AuthResponse } from "@/types/api"
 
 export { isNetworkError, NetworkSessionError } from "@/lib/network-error"
@@ -34,6 +39,15 @@ declare module "axios" {
     // redirigir a /login ante un 401 — la cola se pausa, conserva las ops y el
     // banner pide iniciar sesión (`lib/offline/outbox/processor.ts`).
     background?: boolean
+    // Reintento único tras renovar el access token por un 401/403: si vuelve
+    // a fallar con el token recién emitido, el error es de verdad y no se
+    // pide otro refresh (ver `refreshAccessToken`).
+    _authRetried?: boolean
+    // Lectura de "Preparar sin conexión" (la marca `setPrepareRequestScope`).
+    // Va además con `background`: sin toasts ni redirecciones; un 401 solo
+    // intenta renovar el token (single-flight) y, si no se puede, el motor
+    // de preparación se detiene ("detenida: sesión").
+    prepare?: boolean
   }
   export interface AxiosInstance {
     // El response interceptor de abajo desenvuelve `response.data` en runtime
@@ -83,7 +97,17 @@ export function hasAuthToken(): boolean {
 }
 
 export function setAuthToken(token: string | null) {
+  // Mientras se cierra la sesión nadie la vuelve a abrir (un `getUser` del
+  // tiempo real o de la outbox que llegara justo en ese momento).
+  if (token != null && logoutInProgress) return
   authToken = token
+  if (token != null) sessionEnded = null
+  // Sin sesión se olvida lo aprendido de la anterior: otro usuario puede
+  // tener permisos distintos sobre los mismos endpoints.
+  if (token == null) {
+    forbiddenEndpoints.clear()
+    lastRefresh = null
+  }
 }
 
 /**
@@ -92,6 +116,211 @@ export function setAuthToken(token: string | null) {
  */
 export function getAuthToken(): string | null {
   return authToken
+}
+
+// ---- Refresh de sesión: uno solo a la vez ------------------------------------
+
+/**
+ * auth-center rota el refresh token en cada `POST /auth/refresh` y, si ve la
+ * misma cookie dos veces, responde `401 refresh_token_reuse` y REVOCA la
+ * sesión entera. Con la revalidación de 403 de #565 cada request rechazada
+ * pedía su propio refresh: tres 403 en paralelo (el preparar sin conexión de
+ * un acudiente, que no tiene planeador) eran tres refresh con la misma cookie
+ * → 200, 401, 401 → a /login, y así cada ~6 s hasta que el servidor mataba la
+ * sesión (QA testv2, acudiente).
+ *
+ * Por eso TODO refresh por cookie pasa por acá: la revalidación de 401/403,
+ * `getUser()` (guard, tiempo real, asistente, outbox). Comparten una sola
+ * promesa en vuelo, y entre pestañas un lock de Web Locks + el token
+ * difundido por `BroadcastChannel` (`auth-refresh-coordination.ts`).
+ */
+let refreshInFlight: Promise<string> | null = null
+let lastRefresh: { token: string; at: number } | null = null
+
+/**
+ * Un 403 con un token emitido hace menos que esto no es "sesión vieja": la
+ * sesión se acaba de validar, así que es "no tenés permiso" y no se vuelve a
+ * pedir refresh por él.
+ */
+export const REFRESH_COOLDOWN_MS = 30_000
+/** Edad máxima del token que otra pestaña acaba de rotar para reusarlo. */
+const SHARED_TOKEN_MAX_AGE_MS = 5_000
+
+/**
+ * Endpoints (método + path sin query) que respondieron 403 con un token
+ * recién validado: el 403 es real. No se revalida más por ellos mientras
+ * dure la sesión (si no, un 403 legítimo que se repite cada pocos segundos
+ * rotaría la cookie cada pocos segundos).
+ */
+const forbiddenEndpoints = new Set<string>()
+
+function endpointKey(config: InternalAxiosRequestConfig | undefined): string {
+  const method = (config?.method ?? "get").toUpperCase()
+  const path = (config?.url ?? "").split("?", 1)[0]
+  return `${method} ${path}`
+}
+
+function bearerOf(config: InternalAxiosRequestConfig | undefined): string | null {
+  const headers = config?.headers as { get?: (name: string) => unknown; Authorization?: unknown } | undefined
+  const value = headers?.get?.("Authorization") ?? headers?.Authorization
+  return typeof value === "string" && value.startsWith("Bearer ") ? value.slice(7) : null
+}
+
+/**
+ * Pide un access token nuevo con la cookie `sso_refresh` y lo deja en
+ * memoria. Single-flight: los llamadores concurrentes reciben la misma
+ * promesa (y, entre pestañas, se serializan). Los errores se propagan tal
+ * cual (401 = sin sesión; red = no se sabe).
+ */
+export function refreshAccessToken(): Promise<string> {
+  if (logoutInProgress) return Promise.reject(new Axios.CanceledError("Se está cerrando la sesión"))
+  if (!refreshInFlight) {
+    refreshInFlight = withCrossTabLock("ceval:auth-refresh", async () => {
+      // Otra pestaña rotó mientras esta esperaba el lock: su token sirve y
+      // rotar de nuevo enseguida no aporta nada.
+      const shared = takeRecentSharedToken(SHARED_TOKEN_MAX_AGE_MS)
+      if (shared) return shared
+      const { token }: AuthResponse = await api.post("/auth/refresh")
+      publishRefreshedToken(token)
+      return token
+    })
+      .then((token) => {
+        setAuthToken(token)
+        lastRefresh = { token, at: Date.now() }
+        return token
+      })
+      .finally(() => {
+        refreshInFlight = null
+      })
+  }
+  return refreshInFlight
+}
+
+// ---- Fin de sesión: nada más sale con el token viejo --------------------------
+
+/**
+ * Al cerrar sesión (o vencerse) los procesos de fondo seguían disparando
+ * requests con el token viejo: "Preparar" seguía con sus tareas y cada una
+ * respondía 401 —decenas de 401 en la red y varios "Tu sesión no es válida"
+ * apilados (QA). Ahora:
+ * - `endSession` aborta TODAS las requests en vuelo (cada una lleva la señal
+ *   de la sesión, `sessionRequestInterceptor`) y avisa a quien escuche
+ *   (`onSessionEnd`: el motor de preparación se detiene);
+ * - mientras la sesión está terminada, toda request que no sea pública/de
+ *   login se cancela antes de salir (`CanceledError`, sin toast);
+ * - la sesión se reabre sola con el próximo token (login, refresh, equipo).
+ */
+export type SessionEndReason = "logout" | "expired"
+
+let sessionEnded: SessionEndReason | null = null
+let logoutInProgress = false
+let sessionController = new AbortController()
+const sessionEndListeners = new Set<(reason: SessionEndReason) => void>()
+
+/** Endpoints que sí pueden salir con la sesión terminada (login, refresh, logout). */
+function allowedWithoutSession(url: string): boolean {
+  return (
+    url.startsWith("/auth/logout") ||
+    // La baja de la suscripción Web Push va justo antes del logout, con el
+    // token todavía válido (ver `logout` en `auth.ts`).
+    (logoutInProgress && url.startsWith("/notificaciones/push/suscripciones")) ||
+    UNAUTHENTICATED_ENDPOINTS.some((endpoint) => url.startsWith(endpoint)) ||
+    PUBLIC_ENDPOINTS.some((endpoint) => url.startsWith(endpoint))
+  )
+}
+
+export function isSessionEnded(): boolean {
+  return sessionEnded != null
+}
+
+export function onSessionEnd(listener: (reason: SessionEndReason) => void): () => void {
+  sessionEndListeners.add(listener)
+  return () => {
+    sessionEndListeners.delete(listener)
+  }
+}
+
+export function endSession(reason: SessionEndReason): void {
+  if (sessionEnded != null) return
+  sessionEnded = reason
+  const controller = sessionController
+  sessionController = new AbortController()
+  controller.abort()
+  for (const listener of [...sessionEndListeners]) {
+    try {
+      listener(reason)
+    } catch (error) {
+      console.warn("[auth] onSessionEnd", error)
+    }
+  }
+}
+
+/**
+ * Logout: corta lo de fondo ANTES de `POST /auth/logout` (que sí sale) y no
+ * deja que nada reabra la sesión hasta `finishLogout`.
+ */
+export function beginLogout(): void {
+  logoutInProgress = true
+  endSession("logout")
+}
+
+/** Fin del logout. `failed`: el servidor lo rechazó y la sesión sigue viva. */
+export function finishLogout({ failed = false }: { failed?: boolean } = {}): void {
+  logoutInProgress = false
+  if (failed && authToken != null) sessionEnded = null
+}
+
+/**
+ * Señal de la sesión en cada request (combinada con la propia, si trae) y
+ * bloqueo de lo que intente salir con la sesión terminada.
+ */
+export function sessionRequestInterceptor(config: InternalAxiosRequestConfig) {
+  if (sessionEnded != null && !allowedWithoutSession(config.url ?? "")) {
+    throw new Axios.CanceledError("La sesión terminó", undefined, config)
+  }
+  const sessionSignal = sessionController.signal
+  const own = config.signal as AbortSignal | undefined
+  if (!own) config.signal = sessionSignal
+  else if (typeof AbortSignal.any === "function") config.signal = AbortSignal.any([own, sessionSignal])
+  return config
+}
+
+// ---- Lecturas de "Preparar sin conexión" -------------------------------------
+
+/**
+ * Las tareas de Preparar usan las mismas funciones de lectura que las
+ * pantallas (la regla de oro de `prepare-tasks.ts`), así que no se les puede
+ * pasar un flag por parámetro. El motor prende este alcance mientras corre
+ * (como la grabación de `conditional-requests`) y las LECTURAS que salen en
+ * ese lapso van con `background` + `prepare`: sin toasts ni redirecciones.
+ * Una lectura de una pantalla abierta al mismo tiempo también queda marcada:
+ * pierde el toast de error, pero la pantalla ya muestra su estado de error.
+ * Las escrituras nunca se marcan (su error sí tiene que verse).
+ */
+let prepareScopeDepth = 0
+
+export function setPrepareRequestScope(active: boolean): void {
+  prepareScopeDepth = Math.max(0, prepareScopeDepth + (active ? 1 : -1))
+}
+
+function prepareScopeInterceptor(config: InternalAxiosRequestConfig) {
+  if (prepareScopeDepth > 0 && config.background == null && isReadRequest(config)) {
+    config.background = true
+    config.prepare = true
+  }
+  return config
+}
+
+/** Solo tests. */
+export function __resetAuthRefreshForTests() {
+  sessionEnded = null
+  logoutInProgress = false
+  sessionController = new AbortController()
+  prepareScopeDepth = 0
+  refreshInFlight = null
+  lastRefresh = null
+  forbiddenEndpoints.clear()
+  isHandlingExpiredSession = false
 }
 
 /**
@@ -145,6 +374,9 @@ export function authRequestInterceptor(config: InternalAxiosRequestConfig) {
 }
 
 let isHandlingExpiredSession = false
+
+/** Id fijo del toast de sesión inválida: sonner lo reemplaza en vez de apilarlo. */
+export const SESSION_TOAST_ID = "sesion-invalida"
 
 // Endpoints que se llaman *sin* sesión: los de recuperación de contraseña /
 // usuario y el chequeo de sesión. Un 401 acá no significa "se venció tu
@@ -329,10 +561,14 @@ function clientVersionInterceptor(config: InternalAxiosRequestConfig) {
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.request.use(idempotencyKeyInterceptor)
 api.interceptors.request.use(clientVersionInterceptor)
+api.interceptors.request.use(prepareScopeInterceptor)
+// Registrado al final = corre PRIMERO (axios aplica los de request en orden
+// inverso): una request con la sesión terminada no llega a armarse.
+api.interceptors.request.use(sessionRequestInterceptor)
 // Preparar incremental: graba los ETag de las lecturas y reusa la respuesta
 // 200 de un sondeo condicional (`lib/offline/conditional-requests.ts`). El
 // cliente de sondeo lleva el mismo Bearer y versión que `api`.
-installConditionalRequests(api, [authRequestInterceptor, clientVersionInterceptor])
+installConditionalRequests(api, [sessionRequestInterceptor, authRequestInterceptor, clientVersionInterceptor])
 // Fase 3: un id temporal `tmp:<uuid>` de una saga offline nunca llega al
 // backend; si se escapara (bug de remapeo) la request falla acá, antes de salir.
 api.interceptors.request.use((config) => {
@@ -375,7 +611,21 @@ api.interceptors.response.use(
     // recuperación, que corren sin sesión.
     // La outbox clasifica sus propios errores (§6.4): nada de toasts,
     // revalidaciones ni redirecciones por cada op que falla.
-    if (error.config?.background) return Promise.reject(error)
+    if (error.config?.background) {
+      // Una lectura de Preparar con el access token vencido: se renueva una
+      // vez (el mismo refresh single-flight de todos) y se reintenta. Si no
+      // hay sesión, el motor se detiene con el 401; nunca toast ni redirect.
+      const cfg = error.config as InternalAxiosRequestConfig
+      if (cfg.prepare && !cfg._authRetried && error.response?.status === 401 && sessionEnded == null) {
+        try {
+          await refreshAccessToken()
+          return api.request({ ...cfg, _authRetried: true })
+        } catch {
+          return Promise.reject(error)
+        }
+      }
+      return Promise.reject(error)
+    }
 
     const requestUrl = error.config?.url ?? ""
     const isPublicEndpoint = PUBLIC_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
@@ -414,17 +664,49 @@ api.interceptors.response.use(
     // nunca llega hasta acá) ni mientras ya se está resolviendo una sesión
     // vencida (evita pedir el refresh una vez por cada request que venía
     // en vuelo).
+    //
+    // El refresh es UNO solo para toda la app (`refreshAccessToken`) y nunca
+    // se repite sin necesidad: auth-center revoca la sesión si ve la misma
+    // cookie dos veces. Antes de pedirlo:
+    // - si la request salió con un token que ya no es el actual (otro
+    //   refresh terminó mientras viajaba), se reintenta con el actual;
+    // - si el token actual se emitió hace menos de `REFRESH_COOLDOWN_MS`, o el
+    //   endpoint ya respondió 403 con un token fresco, el 403 es real;
+    // - si ya se reintentó con un token nuevo y sigue en 403, también.
+    // Lo mismo vale para un 401 (token vencido): se renueva una vez y se
+    // reintenta; si el refresh dice que no hay sesión, recién ahí se cierra.
     const isForbidden = error.response?.status === 403
-    if (isForbidden && !onLoginPage && !isPublicEndpoint && !isProbe && !isHandlingExpiredSession) {
-      try {
-        const { token }: AuthResponse = await api.post("/auth/refresh")
-        setAuthToken(token)
-      } catch (refreshError) {
-        // Si el refresh falló por red no sabemos si la sesión sigue viva:
-        // se rechaza la request original conservando sesión y cache. El
-        // interceptor ya reportó `degraded` al procesar el refresh fallido.
-        if (isNetworkError(refreshError)) return Promise.reject(error)
-        isExpiredSession = true
+    const config = error.config as InternalAxiosRequestConfig | undefined
+    const canRevalidate =
+      (isForbidden || isExpiredSession) && config != null && !onLoginPage && !isPublicEndpoint && !isProbe
+    if (canRevalidate && !isHandlingExpiredSession) {
+      const endpoint = endpointKey(config)
+      if (config._authRetried) {
+        if (isForbidden) forbiddenEndpoints.add(endpoint)
+      } else if (!(isForbidden && forbiddenEndpoints.has(endpoint))) {
+        const sentToken = bearerOf(config)
+        const tokenChanged = authToken != null && sentToken !== authToken
+        const justRefreshed =
+          lastRefresh != null && lastRefresh.token === authToken && Date.now() - lastRefresh.at < REFRESH_COOLDOWN_MS
+        let retryWith: string | null = tokenChanged ? authToken : null
+        if (!retryWith && isForbidden && justRefreshed) {
+          forbiddenEndpoints.add(endpoint)
+        } else if (!retryWith) {
+          try {
+            retryWith = await refreshAccessToken()
+          } catch (refreshError) {
+            // Si el refresh falló por red no sabemos si la sesión sigue viva:
+            // se rechaza la request original conservando sesión y cache. El
+            // interceptor ya reportó `degraded` al procesar el refresh fallido.
+            // Un 429 o un 5xx tampoco dicen que la sesión murió.
+            const refreshStatus = (refreshError as { response?: { status?: number } })?.response?.status
+            if (isNetworkError(refreshError) || refreshStatus === 429 || (refreshStatus ?? 0) >= 500) {
+              return Promise.reject(error)
+            }
+            isExpiredSession = true
+          }
+        }
+        if (retryWith) return api.request({ ...config, _authRetried: true })
       }
     }
 
@@ -437,11 +719,17 @@ api.interceptors.response.use(
     }
 
     if (!isProbe && !suppressGlobalErrorToast && !isExpiredSession) {
-      toast.error(getErrorMessage(error))
+      // "Tu sesión no es válida" una sola vez: con el mismo `id` sonner
+      // reemplaza el toast en vez de apilar uno por request (p. ej. en /login,
+      // donde un 401 no dispara el cierre de sesión).
+      const status = error.response?.status
+      if (status === 401) toast.error(getErrorMessage(error), { id: SESSION_TOAST_ID })
+      else toast.error(getErrorMessage(error))
     }
 
     if (isExpiredSession) {
       isHandlingExpiredSession = true
+      endSession("expired")
       setAuthToken(null)
       queryClient.clear()
       const redirectTo = window.location.pathname

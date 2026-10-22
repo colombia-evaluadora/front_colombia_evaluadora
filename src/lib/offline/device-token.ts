@@ -24,6 +24,7 @@
 import Axios from "axios"
 
 import { api, isNetworkError } from "@/lib/api-client"
+import { withCrossTabLock } from "@/lib/auth-refresh-coordination"
 import { deleteMeta, getMeta, isIndexedDbAvailable, setMeta } from "@/lib/offline/db"
 import { hasVault, isEncrypted, openString, sealString, vaultStore } from "@/lib/offline/vault"
 
@@ -213,6 +214,7 @@ interface DeviceRefreshResponse {
 
 // Un solo canje a la vez: dos canjes simultáneos con el mismo token rotarían
 // dos veces y el segundo quedaría con un token que el servidor ya no reconoce.
+// Entre pestañas, Web Locks: la que espera lee el token ya rotado de IndexedDB.
 let inflight: Promise<DeviceRefreshResult> | null = null
 
 /**
@@ -223,7 +225,7 @@ let inflight: Promise<DeviceRefreshResult> | null = null
  */
 export function deviceRefresh(sub: string): Promise<DeviceRefreshResult> {
   if (!inflight) {
-    inflight = doDeviceRefresh(sub).finally(() => {
+    inflight = withCrossTabLock("ceval:device-refresh", () => doDeviceRefresh(sub)).finally(() => {
       inflight = null
     })
   }

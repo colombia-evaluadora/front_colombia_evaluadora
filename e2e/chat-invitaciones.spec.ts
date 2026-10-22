@@ -134,6 +134,17 @@ test("invitaciones de acudientes, modos de escritura, descripción e imagen del 
   await tarjeta.getByRole("button", { name: "Rechazar" }).click()
   await expect(tarjeta).toHaveCount(0)
   await expect(enLista(page, OTRO)).toHaveCount(0)
+  // El aviso sale aunque la tarjeta se desmonte al responder (QA acudiente: no salía).
+  await expect(page.getByText(`Rechazaste la invitación a ${OTRO}.`)).toBeVisible()
+
+  // 4b. "Aceptar" desde la TARJETA de la sección: abre el grupo y avisa "Te uniste a…".
+  const CUARTO = `Cuarto ${GRUPO}`
+  await como(page, "admin@example.com", "POST", "conversaciones", { NOMBRE: CUARTO, TIPO: "GRUPO", MIEMBROS: [2, 3] })
+  const tarjeta4 = page.getByRole("listitem", { name: `Invitación a ${CUARTO}` })
+  await expect(tarjeta4).toBeVisible({ timeout: 15_000 })
+  await tarjeta4.getByRole("button", { name: "Aceptar" }).click()
+  await expect(page.getByText(`Te uniste a ${CUARTO}.`)).toBeVisible()
+  await expect(page.getByRole("heading", { level: 2, name: CUARTO })).toBeVisible({ timeout: 15_000 })
 
   // 5. Botón "Aceptar" del push: el SW manda PUSH_CLICKED con `accion=aceptar` y la pestaña (que
   // tiene la sesión) navega y responde. Sin recargar: el mock vive en memoria de la página.

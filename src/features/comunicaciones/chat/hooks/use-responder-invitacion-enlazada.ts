@@ -18,8 +18,20 @@ export function useResponderInvitacionEnlazada(
   { onAceptada, onFin }: { onAceptada: (conversacionId: number) => void; onFin: () => void },
 ) {
   const { notify } = useNotify()
-  const aceptar = useAceptarInvitacion()
-  const rechazar = useRechazarInvitacion()
+  // Avisos en el hook (ver `useAceptarInvitacion`): sacar la invitación del cache puede
+  // desmontar a quien llamó `mutate` antes de sus callbacks.
+  const aceptar = useAceptarInvitacion({
+    onAceptada: (c) => {
+      notify(`Te uniste a ${c.nombre}.`)
+      onAceptada(c.id)
+    },
+  })
+  const rechazar = useRechazarInvitacion({
+    onRechazada: () => {
+      notify("Rechazaste la invitación al grupo.")
+      onFin()
+    },
+  })
   const hecho = useRef<string | null>(null)
 
   useEffect(() => {
@@ -32,21 +44,9 @@ export function useResponderInvitacionEnlazada(
       onFin()
     }
     if (accion === "aceptar") {
-      aceptar.mutate(invitacion, {
-        onSuccess: (c) => {
-          notify(`Te uniste a ${c.nombre}.`)
-          onAceptada(c.id)
-        },
-        onError,
-      })
+      aceptar.mutate(invitacion, { onError })
     } else {
-      rechazar.mutate(invitacion, {
-        onSuccess: () => {
-          notify("Rechazaste la invitación al grupo.")
-          onFin()
-        },
-        onError,
-      })
+      rechazar.mutate(invitacion, { onError })
     }
   }, [invitacion, accion, aceptar, rechazar, notify, onAceptada, onFin])
 }
