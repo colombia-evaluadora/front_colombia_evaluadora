@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 import {
   AlertDialog,
@@ -51,6 +51,28 @@ function useAhora(hasta: string) {
 }
 
 const BARRA = ["bg-green", "bg-navy/70"]
+
+/**
+ * Opción elegida (aún sin votar) por id de mensaje, FUERA del árbol de React.
+ * Cuando la votación llega en vivo, la lista se re-renderiza varias veces seguidas
+ * (`mensaje.creado`, no leídos, marcar leído) y la tarjeta puede volver a
+ * montarse: con un `useState` local el primer clic se perdía (QA E2E testv2).
+ */
+const seleccionPorMensaje = new Map<number, number>()
+const oyentesSeleccion = new Set<() => void>()
+const suscribirSeleccion = (l: () => void) => {
+  oyentesSeleccion.add(l)
+  return () => oyentesSeleccion.delete(l)
+}
+
+function useSeleccionVotacion(mensajeId: number) {
+  const elegida = useSyncExternalStore(suscribirSeleccion, () => seleccionPorMensaje.get(mensajeId) ?? null)
+  const elegir = (opcionId: number) => {
+    seleccionPorMensaje.set(mensajeId, opcionId)
+    for (const l of oyentesSeleccion) l()
+  }
+  return [elegida, elegir] as const
+}
 
 export function VotacionRapidaCard({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: VotacionRapida }) {
   const restantes = segundosRestantes(v, useAhora(v.cierraEn))
@@ -109,7 +131,8 @@ export function VotacionRapidaCard({ mensaje: m, votacion: v }: { mensaje: Mensa
 }
 
 function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: VotacionRapida }) {
-  const [opcion, setOpcion] = useState<number | null>(v.miVoto)
+  const [elegida, setOpcion] = useSeleccionVotacion(m.id)
+  const opcion = v.miVoto ?? elegida
   const votar = useVotarRapido()
   const yaVoto = v.miVoto != null
 

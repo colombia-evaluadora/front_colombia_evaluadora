@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query"
+import { useEffect, useRef } from "react"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { topicoUsuario } from "@/lib/auth-mapper"
-import { useRealtimeTopic } from "@/lib/realtime/use-realtime"
+import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
 
 /**
  * Eventos de la bandeja en el tópico personal `user:<sub>` (notification-service,
@@ -36,8 +37,22 @@ export function useNotificacionesTiempoReal() {
   useRealtimeTopic(
     user && !user.offline ? topicoUsuario(user) : null,
     (e) => {
-      if (EVENTOS.has(e.event)) refrescar()
+      // Red de seguridad: casi todo aviso del chat (mensaje, agregado, quitado,
+      // salida, encuesta/elección abierta) llega junto con un
+      // `conversacion.actualizada` en este mismo tópico. Si el
+      // `notification.created` se pierde (gateway best-effort), la campana se
+      // pone al día igual.
+      if (EVENTOS.has(e.event) || e.event === "conversacion.actualizada") refrescar()
     },
     () => refrescar(),
   )
+
+  // Al reconectar el socket (deploy, red caída) pudo perderse cualquier evento.
+  const status = useRealtimeStatus()
+  const abiertoAntes = useRef(false)
+  useEffect(() => {
+    if (status !== "open") return
+    if (abiertoAntes.current) refrescar()
+    abiertoAntes.current = true
+  }, [status])
 }

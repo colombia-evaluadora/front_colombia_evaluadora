@@ -376,8 +376,14 @@ function subjectLabelTask(referenceId: number): PrepareTask {
   })
 }
 
-/** Lista de estudiantes de cada grupo elegido (form de actividad). */
-function grupoTasks(grupoIds: number[]): PrepareTask[] {
+/**
+ * Lista de estudiantes de cada grupo elegido (form de actividad). Solo quien
+ * dicta clase (docente / director de grupo): a un coordinador o rector
+ * `/planeador/estudiantes?GRUPO=` le responde 403 ("sin alcance sobre el
+ * establecimiento, sede o jornada", QA E2E testv2) aunque vea esos grupos.
+ */
+function grupoTasks(grupoIds: number[], roles: readonly string[]): PrepareTask[] {
+  if (!roles.some((r) => /DOCENTE|DIRECTOR_GRUPO/.test(r))) return []
   return grupoIds.map((grupoId) =>
     seed(planeadorKeys.matriculasGrupo(grupoId), () => fetchMatriculasGrupo(grupoId), estudiantesMeta()),
   )
@@ -677,7 +683,7 @@ function notificacionesTasks(): PrepareTask[] {
 
 const LISTA_POR_DEFECTO = { filters: {}, sorting: [], pageIndex: 0, pageSize: 10 }
 
-function establecimientoTasks(queryClient: QueryClient): PrepareTask[] {
+function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]): PrepareTask[] {
   const tasks: PrepareTask[] = []
   if (menuIncludes(queryClient, "/app/establecimiento-educativo/general")) {
     tasks.push(
@@ -689,7 +695,11 @@ function establecimientoTasks(queryClient: QueryClient): PrepareTask[] {
     tasks.push(
       seed(campusesQueryKey(LISTA_POR_DEFECTO), () => fetchCampuses(LISTA_POR_DEFECTO), proveedorMeta()),
       seed(["catalogs", CATALOGS.ZONES], () => getCatalog(CATALOGS.ZONES), catalogoMeta(), { optional: true }),
-      seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), { optional: true }),
+      // El selector de EE del form de sedes es solo del super administrador; a
+      // los demás `/establecimientos/opciones` les responde 403.
+      ...(roles.includes("CEVAL-SUPER_ADMINISTRADOR")
+        ? [seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), { optional: true })]
+        : []),
       seed(campusKeys.zonas(null), () => fetchZonasSede(null), catalogoMeta(), { optional: true }),
     )
   }
@@ -794,7 +804,7 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
 
   const tasks: PrepareTask[] = [
     ...catalogosPlaneador(),
-    ...grupoTasks([...input.selection.grupos]),
+    ...grupoTasks([...input.selection.grupos], input.roles),
     ...actividadesTasks(meses, hoy),
     ...unidadesTasks(),
     ...docentesTasks(input.roles),
@@ -807,6 +817,6 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   if (menuIncludes(queryClient, "/app/comunicaciones/chat") || menuIncludes(queryClient, "/app/comunicaciones/foros")) {
     tasks.push(...comunicacionesTasks())
   }
-  tasks.push(...establecimientoTasks(queryClient))
+  tasks.push(...establecimientoTasks(queryClient, input.roles))
   return tasks
 }

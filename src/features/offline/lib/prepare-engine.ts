@@ -468,6 +468,14 @@ async function execute(
       }
       // Deja rastro de qué key falló: sin esto un "parcial" no dice qué pantalla
       // quedó sin guardar.
+      // 403 = el usuario no tiene alcance sobre ese dato: no aplica para su rol,
+      // no es una falla de la preparación (no se reintenta ni se reporta).
+      const noAplica = Axios.isAxiosError(error) && error.response?.status === 403
+      if (noAplica) {
+        hechas.add(hash)
+        set({ done: i + 1 })
+        continue
+      }
       console.warn("[offline] preparar falló", JSON.stringify(task.queryKey), error)
       if (!task.optional) {
         failed.push(task)
