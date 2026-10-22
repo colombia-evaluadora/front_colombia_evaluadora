@@ -157,6 +157,7 @@ export function CampanaNotificaciones() {
                   <NotificacionItem
                     compact
                     notificacion={n}
+                    onAccion={() => setOpen(false)}
                     onOpen={(item) => {
                       setOpen(false)
                       abrir(item)

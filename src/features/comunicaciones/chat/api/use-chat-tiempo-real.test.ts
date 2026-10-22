@@ -84,3 +84,12 @@ describe("puedeAgregarParticipantes", () => {
     expect(puedeAgregarParticipantes({}, { tipo: "GRUPO" })).toBe(false)
   })
 })
+
+describe("invitaciones a grupos en vivo", () => {
+  it("invitaciones.actualizadas vuelve a pedir la lista de invitaciones", async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(chatKeys.invitaciones, [])
+    expect(aplicarEventoUsuario(qc, { event: "invitaciones.actualizadas", data: {} })).toBeNull()
+    expect(qc.getQueryState(chatKeys.invitaciones)?.isInvalidated).toBe(true)
+  })
+})

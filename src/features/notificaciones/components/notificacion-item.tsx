@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils"
 import type { Notificacion } from "@/features/notificaciones/api/types"
 import { CATEGORIA_ICONS } from "@/features/notificaciones/api/ui-mappings"
 import { horaDelDia, tiempoRelativo } from "@/features/notificaciones/lib/agrupar-por-dia"
-import { tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
+import { TIPO_INVITACION_GRUPO, tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
+import { InvitacionAcciones } from "@/features/notificaciones/components/invitacion-acciones"
 
 interface NotificacionItemProps {
   notificacion: Notificacion
@@ -14,6 +15,8 @@ interface NotificacionItemProps {
    * iguales con un minuto de diferencia no deben verse "a la vez".
    */
   compact?: boolean
+  /** Tras aceptar una invitación desde la notificación (la campana se cierra). */
+  onAccion?: () => void
 }
 
 /** Contenido clicable de una entrada de la bandeja: compartido por la campana y la página. */
@@ -21,11 +24,13 @@ export function NotificacionItem({
   notificacion: n,
   onOpen,
   compact = false,
+  onAccion,
 }: NotificacionItemProps) {
   const Icono = CATEGORIA_ICONS[n.categoria] ?? CATEGORIA_ICONS.SISTEMA
   const titulo = tituloNotificacion(n)
 
   return (
+    <>
     <button
       type="button"
       onClick={() => onOpen(n)}
@@ -83,5 +88,8 @@ export function NotificacionItem({
         )}
       </span>
     </button>
+    {/* Invitación a un grupo: Aceptar / Rechazar sin salir de la bandeja (fuera del botón). */}
+    {n.tipo === TIPO_INVITACION_GRUPO && <InvitacionAcciones notificacion={n} onAbrir={onAccion} />}
+    </>
   )
 }

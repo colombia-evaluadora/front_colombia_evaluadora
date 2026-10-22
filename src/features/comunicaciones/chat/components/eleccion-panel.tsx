@@ -72,6 +72,8 @@ export function EleccionEstado({ eleccion: e }: { eleccion: Eleccion }) {
           Fecha cierre: {format(new Date(e.fechaCierre), "dd/MM/yyyy h:mm a")}
         </span>
       )}
+      {/* "Permitir comentarios" (paso 1): los participantes escriben en el canal. */}
+      <span>{e.permiteComentarios ? "Comentarios habilitados" : "Sin comentarios"}</span>
       <span className="ml-auto">
         {estado === "FINALIZADA" ? (
           <span className="rounded-full bg-muted/50 px-3 py-1">

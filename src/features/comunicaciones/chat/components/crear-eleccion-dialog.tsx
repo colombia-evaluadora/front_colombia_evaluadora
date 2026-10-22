@@ -49,6 +49,8 @@ const datosSchema = z
     fechaCierre: z.string().nullable(),
     jornadaId: z.number().min(1, required("La jornada", { femenino: true })),
     verResultadosEnVivo: z.boolean(),
+    // "Comentarios" del paso 1 (diseño 3846:71356): los participantes escriben en el canal.
+    permiteComentarios: z.boolean(),
   })
   .superRefine((v, ctx) => validarRangoFechas(v, ctx))
 
@@ -61,6 +63,7 @@ const DATOS_INICIALES: Datos = {
   fechaCierre: null,
   jornadaId: 0,
   verResultadosEnVivo: false,
+  permiteComentarios: false,
 }
 
 interface CandidatoLocal extends CandidatoNuevo {
@@ -112,6 +115,7 @@ export function CrearEleccionDialog({
           fechaCierre: isoALocal(editar.fechaCierre),
           jornadaId: editar.jornadaId,
           verResultadosEnVivo: editar.verResultadosEnVivo,
+          permiteComentarios: !!editar.permiteComentarios,
         }
       : DATOS_INICIALES,
     validators: { onSubmit: datosSchema },
@@ -143,6 +147,7 @@ export function CrearEleccionDialog({
       fechaCierre: aIso(v.fechaCierre),
       jornadaId: v.jornadaId,
       verResultadosEnVivo: v.verResultadosEnVivo,
+      permiteComentarios: v.permiteComentarios,
       candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
     }
     if (editar) {
@@ -242,6 +247,9 @@ export function CrearEleccionDialog({
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   <datos.AppField name="verResultadosEnVivo">
                     {(f) => <f.CheckboxField label="Ver resultados en tiempo real" />}
+                  </datos.AppField>
+                  <datos.AppField name="permiteComentarios">
+                    {(f) => <f.CheckboxField label="Comentarios" />}
                   </datos.AppField>
                 </div>
               </fieldset>

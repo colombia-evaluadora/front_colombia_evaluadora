@@ -22,6 +22,9 @@ import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/typ
 import { useResolverSeleccion } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
 import { SelectorGrupal } from "@/features/comunicaciones/chat/components/selector-grupal"
 import { ConfirmarAltaDialog } from "@/features/comunicaciones/chat/components/confirmar-alta-dialog"
+import { OpcionesGrupoCampos } from "@/features/comunicaciones/chat/components/opciones-grupo-campos"
+import type { OpcionesGrupo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
+import { modoValido, OPCIONES_GRUPO_INICIALES } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import {
   aCuerpoSeleccion,
   haySeleccionGrupal,
@@ -34,6 +37,14 @@ const AYUDA =
   "Los foros son el lugar donde se producen las conversaciones sobre un tema. Usa un nombre que sea fácil de encontrar y comprender."
 const AYUDA_GRUPO =
   "Un grupo reúne a las personas que elijas para conversar. Solo quien lo crea lo gestiona: es quien añade y quita participantes."
+
+/** Etiqueta del perfil en el buscador de un grupo: el acudiente entra por invitación. */
+export function EtiquetaInvitacion({ perfil }: { perfil?: Persona["perfil"] }) {
+  if (perfil !== "ACUDIENTE") return null
+  return (
+    <span className="shrink-0 rounded-full bg-blue-22 px-2 py-0.5 text-xs text-blue">Acudiente · por invitación</span>
+  )
+}
 
 // Nombres estilo canal: minúsculas y guiones en lugar de espacios.
 const aNombreCanal = (v: string) => v.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "")
@@ -55,6 +66,7 @@ export function CrearChatDialog({
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [nombre, setNombre] = useState("")
+  const [opciones, setOpciones] = useState<OpcionesGrupo>(OPCIONES_GRUPO_INICIALES)
   const [miembros, setMiembros] = useState<Persona[]>([])
   const crearCanal = useCrearCanal()
   const crearForo = useCrearForo()
@@ -74,6 +86,7 @@ export function CrearChatDialog({
     if (crear.isPending) return
     setPaso(1)
     setNombre("")
+    setOpciones(OPCIONES_GRUPO_INICIALES)
     setMiembros([])
     setConsulta("")
     setGrupal(SELECCION_VACIA)
@@ -93,14 +106,15 @@ export function CrearChatDialog({
     const ids = conMiembros.map((p) => p.id)
     if (esForo) crearForo.mutate({ nombre: limpio, miembros: ids }, { onSuccess: creado })
     else {
-      const { GRADOS, GRUPOS, ROLES } = aCuerpoSeleccion(grupal)
+      const { GRADOS, GRUPOS, ROLES, PARA } = aCuerpoSeleccion(grupal)
       crearCanal.mutate(
         {
           nombre: limpio,
           categoria: "GENERAL",
           miembros: ids,
           tipo: esGrupo ? "GRUPO" : undefined,
-          grupal: conGrupal ? { GRADOS, GRUPOS, ROLES } : undefined,
+          grupal: conGrupal ? { GRADOS, GRUPOS, ROLES, PARA } : undefined,
+          opciones: esGrupo ? opciones : undefined,
         },
         { onSuccess: creado },
       )
@@ -127,9 +141,9 @@ export function CrearChatDialog({
             id="crear-chat"
             onSubmit={(e) => {
               e.preventDefault()
-              if (limpio) setPaso(2)
+              if (limpio && (!esGrupo || modoValido(opciones.modo, opciones.rolesEscritura))) setPaso(2)
             }}
-            className="space-y-1.5"
+            className="max-h-[65dvh] space-y-1.5 overflow-y-auto"
           >
             <label className="relative flex items-center gap-3 rounded-lg border px-4 pt-3.5 pb-2.5 focus-within:border-primary">
               <span className="absolute -top-2.5 left-3 bg-popover px-1 text-sm font-medium">
@@ -149,6 +163,11 @@ export function CrearChatDialog({
             <p id="crear-chat-ayuda" className="text-xs text-muted-foreground">
               {esGrupo ? AYUDA_GRUPO : AYUDA}
             </p>
+            {esGrupo && (
+              <div className="pt-3">
+                <OpcionesGrupoCampos value={opciones} onChange={setOpciones} idPrefijo="crear-grupo" />
+              </div>
+            )}
           </form>
         ) : (
           <div className="space-y-1.5">
@@ -159,12 +178,13 @@ export function CrearChatDialog({
               onConsulta={setConsulta}
               value={miembros}
               onChange={setMiembros}
+              paraGrupo={esGrupo}
             />
             <p className="text-xs text-muted-foreground">
               {esForo
                 ? "Las personas que añadas verán las publicaciones del foro y podrán participar según la política de la institución."
                 : esGrupo
-                  ? "Añade al menos una persona. Verán todo el historial del grupo y podrán escribir en él."
+                  ? "Añade al menos una persona. Verán todo el historial del grupo. Los acudientes reciben una invitación y entran solo si la aceptan."
                   : "Las personas que añadas verán el historial del foro y podrán escribir en él."}
             </p>
             {esGrupo && (
@@ -183,7 +203,11 @@ export function CrearChatDialog({
 
         <DialogFooter>
           {paso === 1 ? (
-            <Button type="submit" form="crear-chat" disabled={!limpio}>
+            <Button
+              type="submit"
+              form="crear-chat"
+              disabled={!limpio || (esGrupo && !modoValido(opciones.modo, opciones.rolesEscritura))}
+            >
               Siguiente
             </Button>
           ) : miembros.length === 0 && !esGrupo ? (
@@ -230,6 +254,7 @@ function SelectorPersonas({
   onConsulta,
   value,
   onChange,
+  paraGrupo = false,
 }: {
   personas: Persona[]
   cargando: boolean
@@ -237,6 +262,7 @@ function SelectorPersonas({
   onConsulta: (consulta: string) => void
   value: Persona[]
   onChange: (v: Persona[]) => void
+  paraGrupo?: boolean
 }) {
   return (
     <SelectorChips
@@ -259,10 +285,11 @@ function SelectorPersonas({
               {iniciales(p.nombre)}
             </AvatarFallback>
           </Avatar>
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{p.nombre}</span>
             <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>
           </span>
+          {paraGrupo && <EtiquetaInvitacion perfil={p.perfil} />}
         </span>
       )}
     />

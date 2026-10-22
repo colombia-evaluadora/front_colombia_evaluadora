@@ -62,6 +62,8 @@ import { puedeVerEliminados } from "@/features/comunicaciones/chat/lib/estado-me
 import { useRealtimeStatus } from "@/lib/realtime/use-realtime"
 import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
+import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grupo"
+import { useResponderInvitacionEnlazada } from "@/features/comunicaciones/chat/hooks/use-responder-invitacion-enlazada"
 
 const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
@@ -74,7 +76,7 @@ export function ChatPage() {
 }
 
 function ChatContent() {
-  const { canal, vista, mensaje: mensajeEnlazado } = chatRoute.useSearch()
+  const { canal, vista, mensaje: mensajeEnlazado, invitacion, accion } = chatRoute.useSearch()
   const navigate = chatRoute.useNavigate()
   const { notify } = useNotify()
   const [busqueda, setBusqueda] = useState("")
@@ -117,12 +119,21 @@ function ChatContent() {
   const evaluacion = evaluacionQuery.data
   const esComunicado = activa?.categoria === "ANUNCIO"
   const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
-  // Elecciones, encuestas y exámenes son canales sin comentarios para todos.
-  // En el comunicado el estudiante solo lee; no escribe.
+  // Elecciones, encuestas y exámenes son canales sin comentarios para todos, salvo la elección con
+  // "Permitir comentarios". En el comunicado el estudiante solo lee; no escribe.
   const soloLectura =
     !!activa &&
-    (CANALES_SIN_COMENTARIOS.includes(activa.categoria) ||
+    ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
       (esEstudiante && activa.categoria === "ANUNCIO"))
+  // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
+  // responde 403 igual si lo intenta).
+  const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
+
+  // Botón Aceptar / Rechazar del push: responde la invitación al abrir y limpia la URL.
+  useResponderInvitacionEnlazada(invitacion, accion, {
+    onAceptada: (id) => navigate({ search: (prev) => ({ ...prev, invitacion: undefined, accion: undefined, canal: id }), replace: true }),
+    onFin: () => navigate({ search: (prev) => ({ ...prev, accion: undefined }), replace: true }),
+  })
 
   // Tiempo real: bandeja personal, presencia y eventos del canal abierto.
   // Si lo quitan (o se borra) la conversación abierta, se vuelve a la lista con un aviso.
@@ -214,6 +225,7 @@ function ChatContent() {
           vista={vista}
           onVista={abrirVista}
           onSeleccionar={seleccionar}
+          invitacionDestacada={invitacion}
           className={cn("w-full md:w-72 md:shrink-0", panelAbierto && "max-md:hidden")}
         />
 
@@ -338,7 +350,11 @@ function ChatContent() {
               <Escribiendo nombres={escribiendo} />
               {soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  En este foro no se pueden enviar mensajes.
+                  {esEleccion ? "Los comentarios están deshabilitados en esta elección." : "En este foro no se pueden enviar mensajes."}
+                </p>
+              ) : sinEscritura ? (
+                <p role="status" className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
+                  {sinEscritura}
                 </p>
               ) : (
               <ChatComposer

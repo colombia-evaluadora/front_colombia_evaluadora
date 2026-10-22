@@ -29,6 +29,7 @@ interface CrearEleccionBody {
   FECHA_CIERRE?: string | null
   FK_JORNADA?: number
   VER_RESULTADOS?: "S" | "N"
+  COMENTARIOS?: "S" | "N"
   VOTANTES?: number[]
   CANDIDATOS?: Array<{ NOMBRE: string; NUMERO: string; LEMA: string; FOTO_URL: string | null }>
 }
@@ -58,6 +59,7 @@ export const comunicacionesEleccionesHandlers = [
       fechaCierre: body.FECHA_CIERRE ?? null,
       jornadaId: body.FK_JORNADA,
       verResultadosEnVivo: body.VER_RESULTADOS === "S",
+      permiteComentarios: body.COMENTARIOS === "S",
       candidatos: candidatos.map((c, i) => ({
         id: i + 1,
         nombre: c.NOMBRE,
@@ -176,6 +178,7 @@ export const comunicacionesEleccionesHandlers = [
       fechaCierre: body.FECHA_CIERRE ?? null,
       jornadaId: body.FK_JORNADA,
       verResultadosEnVivo: body.VER_RESULTADOS === "S",
+      permiteComentarios: body.COMENTARIOS === "S",
       candidatos: candidatos.map((c, i) => ({
         id: i + 1,
         nombre: c.NOMBRE,
