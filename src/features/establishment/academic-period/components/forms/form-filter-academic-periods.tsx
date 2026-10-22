@@ -16,7 +16,7 @@ import {
   type AcademicPeriodsFiltersFormInput,
   type AcademicPeriodsFiltersFormValues,
 } from "@/features/establishment/academic-period/api/schema"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useSchoolYearsQuery } from "@/features/establishment/academic-period/api/query/use-school-years"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"

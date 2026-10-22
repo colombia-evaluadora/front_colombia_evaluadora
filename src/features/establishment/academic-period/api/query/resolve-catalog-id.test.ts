@@ -11,6 +11,11 @@ const fetchSelectCategory = vi.hoisted(() => vi.fn<(categoria: string) => Promis
 
 vi.mock("@/features/establishment/academic-period/api/query/fetch-select-category", () => ({
   fetchSelectCategory,
+  selectCategoryQueryOptions: (categoria: string) => ({
+    queryKey: ["select-category", categoria],
+    queryFn: () => fetchSelectCategory(categoria),
+    staleTime: Infinity,
+  }),
 }))
 
 const row = (pk: number, nombre: string, valor: string): SelectCategoryRow => ({

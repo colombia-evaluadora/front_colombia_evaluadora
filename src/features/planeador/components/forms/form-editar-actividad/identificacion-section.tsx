@@ -10,7 +10,7 @@ import {
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
-import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/catalogos-lista-valor"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { TEXTAREA_OUTLINED } from "@/features/planeador/components/forms/form-editar-actividad/constants"
 import type { FormActividad } from "@/features/planeador/components/forms/form-editar-actividad/types"

@@ -15,7 +15,7 @@ import {
 import type { MatriculaFiltersFormInput } from "@/features/coverage/shared/api/schema"
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
-import { useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-status-options"
+import { useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 
 const SEARCH_INPUT_ID = "matricula-search"
@@ -35,8 +35,7 @@ export function SearchMatricula({
 }: SearchMatriculaProps) {
   const [open, setOpen] = useState(false)
   const [draftStatus, setDraftStatus] = useState<string>(filters.statuses[0] ?? "")
-  // Sede → Jornada → Grado → Grupo — misma cascada que "Modificar" (ver
-  // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
+  // Cascada Sede → Jornada → Grado → Grupo, igual que "Modificar".
   const [draftCampus, setDraftCampus] = useState(filters.campus)
   const [draftShift, setDraftShift] = useState(filters.shift)
   const [draftGrade, setDraftGrade] = useState(filters.grade)
@@ -50,8 +49,7 @@ export function SearchMatricula({
   })
   const { data: STATUS_OPTIONS = [] } = useMatriculaStatusOptionsQuery()
 
-  // Igual que en establecimientos: el estado se escribe dentro del input,
-  // `estado:(Activo)`. Ver `@/components/search/query-syntax`.
+  // El estado se escribe dentro del input: `estado:(Activo)`.
   const syntax: QuerySyntax<MatriculaFiltersFormInput> = {
       empty: { search: "", statuses: [], campus: "", shift: "", grade: "", group: "" },
       freeText: { key: "texto", field: "search" },
@@ -71,9 +69,7 @@ export function SearchMatricula({
     setDraftGroup(filters.group)
   }, [open, filters.statuses, filters.campus, filters.shift, filters.grade, filters.group])
 
-  // Misma cascada que "Modificar": cambiar un prerequisito limpia los
-  // campos que dependen de él, para no dejar seleccionada una combinación
-  // que ya no aplica.
+  // Cambiar un prerequisito limpia los campos que dependen de él.
   function handleDraftCampusChange(value: string) {
     setDraftCampus(value)
     setDraftShift("")

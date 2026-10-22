@@ -26,8 +26,7 @@ import { useCreateAcademicPeriod } from "@/features/establishment/academic-perio
 import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useAcademicPeriodStatusesQuery, useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import type {
   AcademicPeriodFormInput,
   AcademicPeriodFormValues,
@@ -169,10 +168,7 @@ function AcademicPeriodConfigPageContent() {
 
   const isSaving = createPeriod.isPending || updatePeriod.isPending
   const showSecondForm = saved || (isEditing && !!detail)
-  // Al editar: solo aparece si hay algo que guardar. Al agregar: siempre
-  // visible, deshabilitado hasta llenar lo obligatorio — no tiene sentido
-  // que desaparezca ahí, no hay "nada que guardar" de por medio, solo
-  // campos sin completar.
+  // Al editar, solo si hay cambios; al agregar, siempre (deshabilitado si falta algo).
   const showSaveAction = isEditing ? isFormDirty || isSaving : true
 
   const configBody = (

@@ -1,10 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
-import {
-  fetchSelectCategory,
-  type SelectCategoryRow,
-} from "@/features/establishment/academic-period/api/query/fetch-select-category"
-import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import { selectCategoryQueryOptions, type SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import type { MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
 
 export const MATRICULA_CATALOG_CATEGORIA = {
   talento: "TALENTO",
@@ -31,15 +28,22 @@ export interface MatriculaCatalogOption {
   nombre: string
 }
 
-async function fetchMatriculaCatalog(categoria: string): Promise<MatriculaCatalogOption[]> {
-  const rows = await fetchSelectCategory(categoria)
-  return rows.map((row: SelectCategoryRow) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
+function toMatriculaCatalog(rows: SelectCategoryRow[]): MatriculaCatalogOption[] {
+  return rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
 }
 
 export function useMatriculaCatalogQuery(key: MatriculaCatalogKey) {
-  return useQuery({
-    queryKey: matriculaKeys.catalogo(key),
-    queryFn: () => fetchMatriculaCatalog(MATRICULA_CATALOG_CATEGORIA[key]),
-    staleTime: Infinity,
-  })
+  return useQuery({ ...selectCategoryQueryOptions(MATRICULA_CATALOG_CATEGORIA[key]), select: toMatriculaCatalog })
+}
+
+export interface MatriculaStatusOption {
+  value: MatriculaStatus
+  label: string
+}
+
+const toMatriculaStatusOptions = (rows: SelectCategoryRow[]): MatriculaStatusOption[] =>
+  rows.map((row) => ({ value: row.nombre as MatriculaStatus, label: row.nombre }))
+
+export function useMatriculaStatusOptionsQuery() {
+  return useQuery({ ...selectCategoryQueryOptions("ESTADO_MATRICULA"), select: toMatriculaStatusOptions })
 }

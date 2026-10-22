@@ -27,7 +27,7 @@ import { AuditViewTabs } from "@/features/administration/audits/components/audit
 import { exportarBitacora } from "@/features/bitacora/api/mutations/exportar-bitacora"
 import { useBitacoraEstadoQuery } from "@/features/bitacora/api/query/use-bitacora-estado-query"
 import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useBitacoraQuery } from "@/features/bitacora/api/query/use-bitacora-query"
 import { BITACORA_MODULOS, moduloConSedeJornada, type BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
 import { createBitacoraColumns } from "@/features/bitacora/components/columns-bitacora"

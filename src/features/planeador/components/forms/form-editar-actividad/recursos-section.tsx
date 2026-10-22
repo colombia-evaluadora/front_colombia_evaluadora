@@ -23,10 +23,7 @@ import {
   XCircleIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
-import {
-  esDominioPermitido,
-  useDominioMaterialCatalog,
-} from "@/features/planeador/api/query/use-dominio-material-catalog"
+import { esDominioPermitido, useDominioMaterialCatalog } from "@/features/planeador/api/query/catalogos-lista-valor"
 import type { Actividad, Recurso } from "@/features/planeador/api/types/actividad"
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
 import { saveActividadFormDraft, type ActividadFormDraftKey } from "@/features/planeador/lib/actividad-form-draft"
@@ -68,10 +65,7 @@ export function MaterialesSection({ form, disabled }: { form: FormActividad; dis
   )
 }
 
-/**
- * Borrador del recurso en estado local: recién se commitea a `recursos` con
- * "Agregar a la lista".
- */
+/** Borrador local: pasa a `recursos` recién con "Agregar a la lista". */
 type RecursoDraft = Omit<Recurso, "id">
 
 const RECURSO_DRAFT_VACIO: RecursoDraft = {
@@ -84,10 +78,7 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
 
 const RECURSO_MAX_ITEMS = 10
 
-/**
- * Formatos permitidos en "Archivo en PC" (Regla 82): los ejecutables quedan fuera por
- * no estar en la lista. Se valida en el cliente (pedido de QA).
- */
+/** Formatos de "Archivo en PC" (Regla 82): los ejecutables quedan fuera. */
 const RECURSO_ARCHIVO_EXTENSIONES_PERMITIDAS = [
   "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
   "jpg", "jpeg", "png", "gif", "mp3", "mp4", "webm", "txt",
@@ -240,8 +231,7 @@ export function RecursosSection({
 
       {collapsed ? null : (
         <div className="flex flex-col gap-4">
-          {/* `onBlur` del contenedor: si el foco sale del bloque se agrega el borrador solo, para no
-          perderlo al ir directo al "Guardar" del form. */}
+          {/* Al salir el foco se agrega el borrador, para no perderlo al ir directo a "Guardar". */}
           {soloLectura ? null : limiteAlcanzado ? (
             <p className="text-muted-foreground text-sm">
               Alcanzaste el máximo de {RECURSO_MAX_ITEMS} materiales de apoyo por actividad. Quitá
@@ -477,7 +467,6 @@ function RecursoForm({
               disabled={disabled}
             />
           </div>
-          {/* Preview "nombre · peso" con estado de validación (pedido de QA). */}
           {draft.tipo === "Archivo" && archivoSeleccionado && !errorArchivo && (
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <CheckCircleFillIcon className="text-green size-3.5 shrink-0" />
@@ -528,7 +517,7 @@ function RecursoForm({
             disabled={disabled || Boolean(errorArchivo) || urlInvalida}
           >
             <PlusIcon data-icon="inline-start" />
-            {/* No dice "Guardar": solo agrega el borrador a la lista y se confundía con guardar la actividad. */}
+            {/* No dice "Guardar": se confundía con guardar la actividad. */}
             Agregar a la lista
           </Button>
         </div>
@@ -582,8 +571,7 @@ function RecursoItem({
         {label}
       </Badge>
 
-      {/* Overlay absoluto (no mueve el contenido al hover). Fondo con `color-mix` opaco:
-      `muted-22` lleva alfa y se transparentaba sobre el badge. */}
+      {/* Fondo opaco con `color-mix`: `muted-22` lleva alfa y se transparentaba sobre el badge. */}
       <div
         className={cn(
           "absolute inset-y-0 right-0 flex items-center gap-1 rounded-r-md bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))] pl-2 pr-3 opacity-0 transition-opacity",

@@ -41,7 +41,7 @@ import { useGradeGroupsQuery } from "@/features/establishment/academic-period/ap
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import {
   useGradosCatalogQuery,
-} from "@/features/establishment/academic-period/api/query/use-grados-catalog"
+} from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { TabGradeGroups } from "@/features/establishment/academic-period/components/tabs/tab-grade-groups"
 import {

@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { selectCategoryQueryOptions, type SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { catalogoMeta } from "@/lib/offline/query-meta"
 
 export interface TipoAsistenciaOption {
   value: TipoAsistencia
@@ -15,8 +14,7 @@ const VALORES_VALIDOS: TipoAsistencia[] = [1, 2, 3, 5, 6]
 /** Los "trajo justificación": `es_justificado` en el backend (VALOR 3 y 6). */
 export const TIPOS_JUSTIFICADOS: TipoAsistencia[] = [3, 6]
 
-export async function fetchTipoAsistenciaOptions(): Promise<TipoAsistenciaOption[]> {
-  const rows = await fetchSelectCategory("TIPO_ASISTENCIA")
+function toTipoAsistenciaOptions(rows: SelectCategoryRow[]): TipoAsistenciaOption[] {
   return rows
     .map((row) => ({ value: Number(row.valor) as TipoAsistencia, label: row.nombre }))
     .filter((opt): opt is TipoAsistenciaOption => VALORES_VALIDOS.includes(opt.value))
@@ -24,10 +22,5 @@ export async function fetchTipoAsistenciaOptions(): Promise<TipoAsistenciaOption
 }
 
 export function useTipoAsistenciaCatalogQuery() {
-  return useQuery({
-    meta: catalogoMeta(),
-    queryKey: ["tipo-asistencia", "catalogo"],
-    queryFn: fetchTipoAsistenciaOptions,
-    staleTime: Infinity,
-  })
+  return useQuery({ ...selectCategoryQueryOptions("TIPO_ASISTENCIA"), select: toTipoAsistenciaOptions })
 }

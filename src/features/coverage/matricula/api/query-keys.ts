@@ -10,13 +10,11 @@ export const matriculaKeys = {
   lista: <P>(params: P) => [...listaAll, params] as const,
   detalle: (id: number | string | undefined) => [...detalleAll, id] as const,
   campuses: () => [...all, "campuses"] as const,
-  catalogo: (key: string) => [...all, "catalog-select", key] as const,
   gradosPorPeriodo: (periodoId: number | null | undefined) => [...all, "grados-por-periodo", periodoId] as const,
   gruposPorGrado: (gradoId: number | null | undefined, shift: string | null | undefined) =>
     [...all, "grupos-por-grado", gradoId, shift] as const,
   fieldConfigAll: [...all, "field-config"] as const,
   fieldConfig: (establecimientoId: number | null = null) => [...all, "field-config", establecimientoId] as const,
-  statusOptions: () => [...all, "status-options"] as const,
   periodoResolver: (sedeId: number | null, jornadaId: number | null) =>
     [...all, "periodo-resolver", sedeId, jornadaId] as const,
 } as const

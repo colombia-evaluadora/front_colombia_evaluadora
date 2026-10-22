@@ -1,21 +1,5 @@
-/**
- * Única fuente de las query keys de `establishment/academic-period`
- * (periodos, periodos de evaluación, criterios, escalas, grados, grupos, plan
- * de estudio, áreas/asignaturas, especialidades, horario, asignaciones…).
- * Lecturas e invalidaciones se arman desde acá; nada en el feature debería
- * escribir un array literal de key.
- *
- * A diferencia de `planeadorKeys`, estas keys NO cuelgan de una raíz común:
- * nacieron planas (`["grades", params]`, `["subjects", periodoId]`…) y otros
- * features leen o invalidan algunas por su valor (p. ej. funcionarios
- * invalida `assignmentTeachers.all`). Se conservan los valores tal cual y la
- * jerarquía es por entidad: `x.all` es SIEMPRE el prefijo de todas las
- * lecturas de `x` (`x.list(params)`, `x.byPeriod(id)`…), así que invalidar
- * `x.all` refresca cualquier variante cacheada.
- *
- * Los listados que reciben `{ ...filtros, enabled }` sacan `enabled` de la
- * key: es una opción de `useQuery`, no un filtro.
- */
+// Única fuente de keys del feature. Sin raíz común: otros features usan los valores;
+// `x.all` es prefijo de todas las lecturas de `x`. `enabled` no va en la key.
 
 type WithEnabled = { enabled?: boolean }
 
@@ -136,16 +120,8 @@ export const academicPeriodKeys = {
 
   // Catálogos (una sola key, `staleTime` largo; `generalAreas` sí se invalida
   // al borrar un área/asignatura).
-  academicPeriodStatuses: () => ["academic-period-statuses"] as const,
   curriculumNodes: () => ["curriculum-nodes"] as const,
-  evaluationCriteriaOptions: () => ["evaluation-criteria-options"] as const,
-  evaluationPeriodStatuses: () => ["evaluation-period-statuses"] as const,
   generalAreas: () => ["general-areas"] as const,
-  gradosCatalog: () => ["grados-catalog"] as const,
-  jornadas: () => ["jornadas"] as const,
-  metodologias: () => ["metodologias"] as const,
-  ratingScaleTypes: () => ["rating-scale-types"] as const,
-  ratingSymbols: () => ["rating-symbols"] as const,
   sedeOptions: () => ["sedes", "options"] as const,
   teachingLevels: () => ["teaching-levels"] as const,
 } as const

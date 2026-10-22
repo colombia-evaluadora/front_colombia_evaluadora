@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { invalidateListaValor } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -27,10 +28,10 @@ export function useOrdenarValores({
     mutationFn: ordenarValores,
     ...rest,
     onSuccess: (...args) => {
-      // La respuesta ya trae la lista ordenada: se pinta sin esperar el refetch.
       const [valores, { categoria }] = args
       queryClient.setQueryData(listaValorKeys.valores(categoria), valores)
       queryClient.invalidateQueries({ queryKey: listaValorKeys.all })
+      invalidateListaValor(queryClient)
       onSuccess?.(...args)
     },
   })

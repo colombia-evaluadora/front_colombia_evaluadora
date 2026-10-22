@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { invalidateListaValor } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -62,8 +63,8 @@ export function useSaveValor({
     mutationFn: saveValor,
     ...rest,
     onSuccess: (...args) => {
-      // Todo el feature: cambia el conteo de la lista y, con el padre, sus dependencias.
       queryClient.invalidateQueries({ queryKey: listaValorKeys.all })
+      invalidateListaValor(queryClient)
       onSuccess?.(...args)
     },
   })

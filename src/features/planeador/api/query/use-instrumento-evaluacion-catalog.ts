@@ -1,24 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { selectCategoryQueryOptions, type SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { resolveCatalogId } from "@/features/establishment/academic-period/api/query/resolve-catalog-id"
 import type { InstrumentoPermitido } from "@/features/planeador/api/types/actividad"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { catalogoMeta } from "@/lib/offline/query-meta"
 
-// Catálogo global `INSTRUMENTO_EVALUACION` de `TLISTA_VALOR`
-// (`GET /eval-col/select/INSTRUMENTO_EVALUACION`) — resuelve
-// `FK_TLV_INSTRUMENTO_EVALUACION` (V226/V240, colección Postman
-// `planeador-instrumentos`). Mismo patrón que `use-grados-catalog.ts`.
-//
-// El resto del Planeador compara `instrumento` contra strings fijos
-// ("Otro", "Rúbrica", "Lista de cotejo", "Escala de valoración" — ver
-// `InstrumentoEvaluacionSection` en form-editar-actividad.tsx), así que acá
-// se resuelve por `valor` (código estable de TLISTA_VALOR) y no por
-// `nombre`: el backend real ya devuelve `nombre: "Otro (personalizado)"`
-// para `valor: "OTRO"` en vez del "Otro" que asumía el mock, y confiar en
-// el label rompía esa comparación (el form caía siempre a `RubricasSection`
-// sin mostrar la sección de instrumento personalizado).
+// Se resuelve por `valor`: el back llama "Otro (personalizado)" al que el form compara como "Otro".
 export const INSTRUMENTO_EVALUACION_POR_CODIGO: Record<string, string> = {
   RUBRICA: "Rúbrica",
   LISTA_COTEJO: "Lista de cotejo",
@@ -26,18 +12,12 @@ export const INSTRUMENTO_EVALUACION_POR_CODIGO: Record<string, string> = {
   OTRO: "Otro",
 }
 
-export async function fetchInstrumentoEvaluacionCatalog(): Promise<string[]> {
-  const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
+function toInstrumentoEvaluacionCatalog(rows: SelectCategoryRow[]): string[] {
   return rows.map((row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre)
 }
 
 export function useInstrumentoEvaluacionCatalogQuery() {
-  return useQuery({
-    meta: catalogoMeta(),
-    queryKey: planeadorKeys.catalogos.instrumentoEvaluacion(),
-    queryFn: fetchInstrumentoEvaluacionCatalog,
-    staleTime: Infinity,
-  })
+  return useQuery({ ...selectCategoryQueryOptions("INSTRUMENTO_EVALUACION"), select: toInstrumentoEvaluacionCatalog })
 }
 
 export interface InstrumentoEvaluacionOption {
@@ -45,15 +25,7 @@ export interface InstrumentoEvaluacionOption {
   nombre: string
 }
 
-/**
- * Label con el que el resto del form compara un instrumento permitido
- * (`EvaluacionSection`'s `instrumentos.filter(...)`) — se resuelve por
- * `valor` (código estable de `TLISTA_VALOR`) contra el mismo diccionario
- * que ya usa el catálogo (`INSTRUMENTO_EVALUACION_POR_CODIGO`), no por
- * `etiqueta`: el backend real manda `etiqueta: "Otro (personalizado)"`
- * para `OTRO`, pero el resto del form compara contra el literal corto
- * `"Otro"`.
- */
+/** Label con el que el form compara un instrumento permitido (por `valor`). */
 export function instrumentoPermitidoLabel(
   item: Pick<InstrumentoPermitido, "valor" | "etiqueta" | "nombre">,
 ): string {
@@ -69,22 +41,7 @@ type InstrumentoPermitidoRaw = {
   campos?: InstrumentoPermitido["campos"]
 }
 
-/**
- * `campos_disponibles.evaluacion.instrumentosPermitidos` (`fn_actividad_
- * instrumentos_permitidos`/`fn_unidad_configuracion_actividad`, confirmado
- * real contra el servidor de test, incluido el bloque `campos` de "Otro
- * (personalizado)" — ver `InstrumentoPermitido`) NO es un array de strings
- * — es un array de objetos ricos. Tolera además un array ya en forma de
- * strings (el mock viejo), para no duplicar esta función en dos shapes
- * distintas según el origen de los datos — en ese caso `campos`/`variantes`
- * quedan vacíos, sin ficha dinámica que armar.
- *
- * Desde que las tres configuraciones de `campos_disponibles` se unificaron
- * (V440), la fila trae `etiqueta` Y `nombre` con el mismo texto — se cae a
- * `nombre` cuando falte `etiqueta` (o venga de un endpoint viejo que solo
- * mande una de las dos) para no perder filas válidas por quedarse con
- * `undefined`.
- */
+/** `instrumentosPermitidos` llega como objetos; tolera strings del mock viejo. */
 export function normalizeInstrumentosPermitidos(
   rows: (string | InstrumentoPermitidoRaw)[] | undefined,
 ): InstrumentoPermitido[] {
@@ -102,32 +59,15 @@ export function normalizeInstrumentosPermitidos(
   )
 }
 
-/**
- * Resuelve `FK_TLV_INSTRUMENTO_EVALUACION` (al crear/editar la actividad) y
- * `metodoValoracion` del instrumento "Otro" (`PUT .../instrumento`, colección
- * Postman `planeador-instrumentos-tipos-completo`, 5.3 — restringido a
- * RUBRICA|LISTA_COTEJO|ESCALA_VALORACION, el front nunca pide "Otro" acá).
- */
+/** `FK_TLV_INSTRUMENTO_EVALUACION` y `metodoValoracion` del instrumento "Otro". */
 export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<number | undefined> {
   return resolveCatalogId(undefined, "INSTRUMENTO_EVALUACION", nombre, {
     normalize: (row) => INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
   })
 }
 
-/**
- * Opciones del filtro "Instrumento" del Planeador (popover y término
- * `instrumento:(…)` del buscador). `value` es el `pk_lista_valor`: es lo que
- * filtran `?instrumento=` de `/actividades/mias|calendario|stats` (sso
- * V526/V528/V530) y `UnidadTematica.instrumentoId` — el nombre no sirve,
- * porque el catálogo real dice "Otro (personalizado)" donde el front
- * muestra "Otro".
- */
-export const instrumentoFiltroOptionsQueryKey = () =>
-  [...planeadorKeys.catalogos.instrumentoEvaluacion(), "filtro"] as const
-
-/** Exportada para "Preparar sin conexión" (misma key y forma que la pantalla). */
-export async function fetchInstrumentoFiltroOptions() {
-  const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
+/** Filtro "Instrumento": `value` es el pk, que es lo que filtra `?instrumento=`. */
+function toInstrumentoFiltroOptions(rows: SelectCategoryRow[]) {
   return rows.map((row) => ({
     value: String(row.pk_lista_valor),
     label: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
@@ -135,10 +75,5 @@ export async function fetchInstrumentoFiltroOptions() {
 }
 
 export function useInstrumentoFiltroOptions() {
-  return useQuery({
-    meta: catalogoMeta(),
-    queryKey: instrumentoFiltroOptionsQueryKey(),
-    queryFn: fetchInstrumentoFiltroOptions,
-    staleTime: Infinity,
-  })
+  return useQuery({ ...selectCategoryQueryOptions("INSTRUMENTO_EVALUACION"), select: toInstrumentoFiltroOptions })
 }
