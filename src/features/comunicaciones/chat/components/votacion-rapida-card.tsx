@@ -146,7 +146,17 @@ function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: Votaci
         className="flex flex-wrap gap-x-6 gap-y-2"
       >
         {v.opciones.map((o) => (
-          <label key={o.id} className="flex items-center gap-2 text-sm">
+          <label
+            key={o.id}
+            className="flex items-center gap-2 text-sm"
+            // Se elige ya en el pointerdown: si el compositor tenía el foco, al perderlo
+            // oculta su barra de formato, el chat se reacomoda y el mouseup cae en otro
+            // lado, así el `click` nunca llegaba y el primer clic se perdía (QA E2E
+            // testv2). El teclado sigue por `onValueChange`.
+            onPointerDown={(e) => {
+              if (!yaVoto && e.button === 0) setOpcion(o.id)
+            }}
+          >
             <RadioGroupItem value={String(o.id)} />
             {o.etiqueta}
           </label>
