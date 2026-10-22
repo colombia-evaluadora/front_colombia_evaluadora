@@ -53,6 +53,23 @@ export function SagaList({ sagas }: { sagas: SagaView[] }) {
   )
 }
 
+/**
+ * Conflicto por VERSION (BE-3B): cuál editó el docente y cuál tiene hoy el
+ * servidor. "Conservar mis cambios" reenvía sobre la versión actual (pisa lo
+ * que haya cambiado otra persona en los campos que el docente editó).
+ */
+function ConflictoVersion({ op }: { op: OutboxOp }) {
+  const base = (op.payload as { check?: { baseVersion?: number | null } } | null)?.check?.baseVersion
+  const actual = op.conflict?.serverVersion
+  if (base == null || !actual || !/^[0-9]+$/.test(actual)) return null
+  return (
+    <span className="text-muted-foreground basis-full pl-7 text-xs" data-slot="saga-conflict-version">
+      Editaste la versión {base} y en el servidor ya va en la {actual}. "Conservar mis cambios" los aplica sobre la
+      versión actual; si prefieres lo del servidor, descarta lo que falta.
+    </span>
+  )
+}
+
 function SagaStep({ op }: { op: OutboxOp }) {
   const meta = sagaOf(op)
   const problema = op.status === "rejected" || op.status === "conflict" || op.status === "blocked"
@@ -73,6 +90,7 @@ function SagaStep({ op }: { op: OutboxOp }) {
       {op.status === "done" && op.resultNote && op.resultNote !== "Paso omitido por el docente." && (
         <span className="text-muted-foreground basis-full pl-7 text-xs">{op.resultNote}</span>
       )}
+      {op.status === "conflict" && <ConflictoVersion op={op} />}
       {(op.status === "rejected" || op.status === "conflict") && (
         <div className="flex basis-full flex-wrap gap-1 pl-7">
           {op.status === "conflict" ? (

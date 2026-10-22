@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { resealDeviceToken } from "@/lib/offline/device-token"
 import { resealOutbox } from "@/lib/offline/outbox/store"
 import { getActivePersistUser, resealUserQueries } from "@/lib/offline/query-persister"
 import { toDigitsOnly } from "@/lib/text-input"
@@ -41,6 +42,8 @@ export function PinSetupCard() {
       await createVault(sub, pin)
       await resealUserQueries(sub)
       await resealOutbox()
+      // El token del equipo pasa a sellarse con la DEK del PIN.
+      await resealDeviceToken(sub)
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos crear el PIN.")
     } finally {

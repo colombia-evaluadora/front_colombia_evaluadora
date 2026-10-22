@@ -259,6 +259,12 @@ export interface Adaptacion {
 
 export interface Actividad {
   id: number
+  /**
+   * Versión del servidor (`TACTIVIDAD.VERSION`, sube con cada UPDATE). La
+   * edición encolada la manda como `BASE_VERSION`: si cambió, 409
+   * `OFFLINE_CONFLICT`. `null`/ausente en listados y en el mock viejo.
+   */
+  version?: number | null
   nombre: string
   /** Descripción libre (máx. 500), viaja como `DESCRIPCION`. */
   descripcion?: string

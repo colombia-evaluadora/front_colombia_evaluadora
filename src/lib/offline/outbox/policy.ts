@@ -94,12 +94,10 @@ export function extractConflict(data: unknown): OutboxConflict {
     }
   }
   const obj = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null
-  const serverVersion =
-    typeof body.serverVersion === "string"
-      ? body.serverVersion
-      : typeof obj?.version === "string"
-        ? (obj.version as string)
-        : null
+  // La versión puede ser texto (planilla/asistencia: timestamp) o número
+  // (actividad/unidad: `VERSION` entero, BE-3B).
+  const asVersion = (v: unknown) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : null)
+  const serverVersion = asVersion(body.serverVersion) ?? asVersion(obj?.version)
   const rows = Array.isArray(obj?.rows) ? (obj.rows as OutboxConflict["rows"]) : undefined
   return { server: obj?.current ?? parsed ?? null, serverVersion, rows }
 }

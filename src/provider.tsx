@@ -8,6 +8,7 @@ import { startOfflineSupport } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { router } from "@/router"
 import { prepareStore } from "@/features/offline/lib/prepare-engine"
+import { DeviceRevokedDialog } from "@/features/offline/components/device-revoked-dialog"
 // Handlers de la outbox (Fase 2 offline) y toast de resumen de cada lote.
 import "@/features/offline/register-handlers"
 
@@ -36,6 +37,8 @@ export function AppProvider() {
             <Scripts />
           </RouterContextProvider>
           <Toaster />
+          {/* Borrado remoto del equipo (D-8): también aparece en el login. */}
+          <DeviceRevokedDialog />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

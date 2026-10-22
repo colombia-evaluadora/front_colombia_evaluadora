@@ -192,6 +192,7 @@ import {
   MdStar,
   MdStarBorder,
   MdDoneAll,
+  MdDevices,
 } from "react-icons/md"
 
 /**
@@ -272,6 +273,7 @@ export const ControlPointIcon = makeIcon(MdOutlineControlPoint)
 export const CreditCardIcon = makeIcon(MdCreditCard)
 export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
 // Manija de arrastre (los seis puntitos): marca las filas que se reordenan.
+export const DevicesIcon = makeIcon(MdDevices)
 export const DotsSixVerticalIcon = makeIcon(MdDragIndicator)
 export const DotsThreeIcon = makeIcon(MdMoreHoriz)
 export const EnvelopeIcon = makeIcon(MdOutlineEmail)

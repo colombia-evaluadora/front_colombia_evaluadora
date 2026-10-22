@@ -1,4 +1,5 @@
 import { authHandlers } from "@/mocks/handlers/auth"
+import { devicesHandlers } from "@/mocks/handlers/devices"
 import { notificacionesHandlers } from "@/mocks/handlers/notificaciones"
 import { comunicacionesGruposHandlers } from "@/mocks/handlers/comunicaciones-grupos"
 import { healthHandlers } from "@/mocks/handlers/health"
@@ -63,6 +64,7 @@ import { agenteHandlers } from "@/mocks/handlers/agente"
 
 export const handlers = [
   ...authHandlers,
+  ...devicesHandlers,
   ...agenteHandlers,
   ...healthHandlers,
   ...verificacionBoletinHandlers,

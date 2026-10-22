@@ -77,6 +77,25 @@ describe("orden real de la saga (P19)", () => {
   })
 })
 
+describe("VERSION del servidor (BE-3B)", () => {
+  it("editar: el check del primer paso usa la versión; el PUT tras vincular la unidad no la lleva", async () => {
+    const base = actividad({ unidad: { id: 0, nombre: "" }, version: 9 })
+    const values = { ...base, unidad: { id: 3, nombre: "U" } }
+    const saga = await buildEditarActividadSaga(values, { actividad: base, unidades: [{ id: 3, metodoCalculo: "Ponderado" }] })
+    expect(saga.steps[0].kind).toBe("planeador.actividad.unidad")
+    expect(saga.steps[0].payload.check).toEqual({ baseVersion: 9 })
+    expect(saga.steps[1].kind).toBe("planeador.actividad.editar")
+    expect("check" in saga.steps[1].payload).toBe(false)
+  })
+
+  it("editar sin cambiar la unidad: el PUT es el primer paso y lleva el check", async () => {
+    const base = actividad({ version: 4 })
+    const saga = await buildEditarActividadSaga({ ...base, nombre: "Otra" }, { actividad: base, unidades: [] })
+    expect(saga.steps[0].kind).toBe("planeador.actividad.editar")
+    expect(saga.steps[0].payload.check).toEqual({ baseVersion: 4 })
+  })
+})
+
 describe("huella de versión", () => {
   it("cambia con un campo editable y no con el estado derivado", () => {
     const a = actividad()

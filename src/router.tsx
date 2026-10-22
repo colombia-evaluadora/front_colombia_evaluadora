@@ -1078,6 +1078,20 @@ export const sincronizarRoute = createRoute({
   component: SincronizarPage,
 })
 
+const MisDispositivosPage = lazyRouteComponent(
+  () => import("@/features/devices/pages/mis-dispositivos-page"),
+  "MisDispositivosPage",
+)
+
+// "Mis dispositivos" (credencial del equipo). Fuera del menú, como pendientes:
+// se llega desde el menú de la cuenta. Solo en línea.
+export const misDispositivosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.misDispositivos.path,
+  staticData: { breadcrumb: [{ label: "Mis dispositivos", to: paths.app.misDispositivos.getHref() }] },
+  component: MisDispositivosPage,
+})
+
 const NotificacionesPage = lazyRouteComponent(
   () => import("@/features/notificaciones/pages/notificaciones-page"),
   "NotificacionesPage",
@@ -1177,6 +1191,7 @@ const routeTree = rootRoute.addChildren([
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,
+    misDispositivosRoute,
     notificacionesPreferenciasRoute,
   ]),
 ])

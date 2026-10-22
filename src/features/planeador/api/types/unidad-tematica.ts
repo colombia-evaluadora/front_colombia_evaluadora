@@ -105,6 +105,8 @@ export interface UnidadActividad {
 
 export interface UnidadTematica {
   id: number
+  /** Versión del servidor (`TUNIDAD.VERSION`); solo la trae el detalle. Ver `Actividad.version`. */
+  version?: number | null
   nombre: string
   /** Área/competencia — "Comunicativa", "Cognitiva"… */
   area: string

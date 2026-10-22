@@ -895,7 +895,7 @@ Formato: **Caso** → comportamiento esperado · mitigación.
 85. **Bulk de planilla con periodo cerrado** → la página hoy infiere si se creó solicitud (`calificar-actividad-bulk.tsx:239-249`) · el handler usa la misma lógica con el estado del servidor al enviar, no el cacheado.
 86. **Vista previa de nota (`/calificar/vista-previa`) offline** → no hay cálculo local · popover con "La nota se calculará al sincronizar."
 87. **Resolvers de catálogo en el guardado** (`resolveCalculoDefinitivaId`, `recuperacion-body.ts:31-40`, instrumento "Otro" `update-instrumento-actividad.ts:198-208`) → todos deben leer cache persistido; si falta, bloqueo con copy de §8.8.
-88. **Cambio de método de cálculo de unidad (Regla 28)** → el servidor reconvierte pesos de actividades que el docente puede estar editando offline · con BE-3B, las ops de ponderación/puntaje con versión vieja dan 409 → conflicto.
+88. **Cambio de método de cálculo de unidad (Regla 28)** → el servidor reconvierte pesos de actividades que el docente puede estar editando offline · con BE-3B (implementado: `VERSION` + `BASE_VERSION`), la edición encolada con versión vieja da conflicto al sincronizar (pre-chequeo del primer paso o 409 `OFFLINE_CONFLICT` del PUT).
 89. **Ponderación > 100 %** por trigger `tr_tactividad_ponderacion_unidad` → `rejected` con el `RAISE`; el clamp del front suma todos los grupos (§15) y puede no coincidir.
 90. **`blob:` URLs en el borrador de sessionStorage** → mueren al recargar o cerrar · `drafts` guarda el Blob.
 91. **Soporte de planilla aún no subido (`tmp:`) que se quita o se marca favorito** → se resuelve localmente sin red (se descarta la op de subida o se ajusta su payload).

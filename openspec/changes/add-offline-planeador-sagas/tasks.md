@@ -17,7 +17,7 @@
 - [ ] 3.2 Resolvers de catálogo desde cache persistido; bloqueo con copy si falta (los pasos se envían online, donde los resolvers funcionan)
 
 ## 4. Backend (PRs separados)
-- [ ] 4.1 BE-3 opción B: versión en `TACTIVIDAD`/`TUNIDAD` (diferido: requiere OK explícito del cambio de esquema; interino D-F3-4 por huella)
+- [x] 4.1 BE-3 opción B: `VERSION` en `TACTIVIDAD`/`TUNIDAD`, `BASE_VERSION` en los PUT y 409 `OFFLINE_CONFLICT` (D-F3-4; la huella queda para ops viejas)
 - [ ] 4.2 BE-6 limpieza de archivos huérfanos > 7 días
 
 ## 5. Pruebas

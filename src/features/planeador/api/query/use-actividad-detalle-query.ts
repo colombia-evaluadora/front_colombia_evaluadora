@@ -97,6 +97,8 @@ interface ActividadDetalleRow {
   /** Regla 37 (sso V553): `editable` 'S'/'N' y el motivo cuando es 'N'. */
   editable?: "S" | "N" | null
   motivo_no_editable?: string | null
+  /** Versión de la fila (`TACTIVIDAD.VERSION`, concurrencia optimista BE-3B). */
+  version?: number | null
 }
 
 interface EvidenciaRelacionadaRow {
@@ -335,6 +337,7 @@ function toActividadDetalle(
 ): Actividad {
   return {
     id: row.pk_tactividad,
+    version: row.version ?? null,
     nombre: row.titulo,
     descripcion: row.descripcion ?? "",
     tipo: row.tipo_actividad ?? "Otro",
