@@ -1,3 +1,4 @@
+import { format } from "date-fns"
 import { z } from "zod"
 
 /**
@@ -10,18 +11,42 @@ import { z } from "zod"
  * rechazaba el backend en la otra. Cuando eso ocurre, el usuario recibe el
  * mensaje técnico de Java en vez de uno que le diga qué corregir.
  *
- * Los nombres no se validan: hay personas con dígitos o caracteres
- * especiales en el nombre.
- *
  * Cada regla se aplica **solo si el campo tiene algo**: la obligatoriedad se
  * decide aparte, porque depende de si la persona es nueva o ya existe.
  */
 
-/** Documento: entre 3 y 15 dígitos, sin separadores. */
+/**
+ * Tipos de documento que son solo dígitos (`TLISTA_VALOR.VALOR` de
+ * TIPO_DOCUMENTO). El resto —CE, PA, PPT, PEP, SC2, CD, CCa— admite letras:
+ * un pasaporte o un permiso de extranjero no son numéricos. Un tipo sin
+ * código conocido (el detalle a veces trae solo el id) cae en la regla
+ * alfanumérica, que es la más permisiva.
+ */
+const DOCUMENTOS_NUMERICOS = new Set(["CC", "TI", "RC", "NUIP", "NIP", "NES"])
+
+export function esDocumentoNumerico(codigo: string | null | undefined): boolean {
+  return DOCUMENTOS_NUMERICOS.has((codigo ?? "").trim().toUpperCase())
+}
+
+/** Documento numérico: entre 3 y 15 dígitos, sin separadores. */
 export const DOCUMENTO = /^\d{3,15}$/
 
-/** Teléfono: hasta 10 dígitos. */
-export const TELEFONO = /^\d{1,10}$/
+/** Documento alfanumérico: letras y dígitos, al menos un dígito, sin separadores. */
+export const DOCUMENTO_ALFANUMERICO = /^(?=.*\d)[A-Za-z\d]{3,15}$/
+
+/** Lo que el input de documento deja escribir según el tipo elegido. */
+export function toDocumentoInput(value: string, codigo: string | null | undefined): string {
+  const limpio = esDocumentoNumerico(codigo)
+    ? value.replace(/\D/g, "")
+    : value.replace(/[^A-Za-z\d]/g, "").toUpperCase()
+  return limpio.slice(0, 15)
+}
+
+/**
+ * Teléfono: 7 dígitos (fijo local) o 10 (celular, o fijo con el indicativo
+ * 60X del plan de numeración vigente). Menos no marca a ningún lado.
+ */
+export const TELEFONO = /^(\d{7}|\d{10})$/
 
 /**
  * Correo. Se usa el mismo patrón que el contacto del establecimiento en vez
@@ -31,17 +56,65 @@ export const TELEFONO = /^\d{1,10}$/
  */
 export const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/**
+ * Nombres y apellidos: palabras de letras de cualquier alfabeto (tildes,
+ * diéresis, ñ, ç…) unidas por un espacio, un apóstrofo (' o ’) o un guion:
+ * `Ka'el`, `D'Angelo`, `Jean-Pierre`, `De la Cruz`. Así el símbolo nunca
+ * empieza, termina ni se repite, y no sirve para rellenar. Sin dígitos.
+ */
+export const NOMBRE = /^\p{L}+(?:[ '’-]\p{L}+)*$/u
+
+/** Letras útiles mínimas de un nombre: los símbolos no cuentan. */
+const MIN_LETRAS_NOMBRE = 2
+
+/** Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`. */
+export function toNombreInput(value: string): string {
+  return value.replace(/[^\p{L}\s'’-]/gu, "").toUpperCase()
+}
+
 export const MENSAJES = {
-  documento: "El documento debe tener entre 3 y 15 dígitos.",
-  telefono: "El teléfono no debe superar los 10 dígitos.",
+  documento: "El documento debe tener entre 3 y 15 dígitos, sin puntos ni espacios.",
+  documentoAlfanumerico:
+    "El documento debe tener entre 3 y 15 letras o números, con al menos un número y sin símbolos.",
+  telefono: "El teléfono debe tener 7 dígitos (fijo) o 10 (celular o fijo con indicativo).",
   correo: "Ingresa un correo electrónico válido.",
   menorDeEdad: "La persona debe ser mayor de edad.",
+  nombre: (campo: string) =>
+    `${campo} solo admite letras, espacios, apóstrofo y guion entre letras (ej. D'Angelo, Jean-Pierre).`,
+  nombreCorto: (campo: string) => `${campo} debe tener al menos ${MIN_LETRAS_NOMBRE} letras.`,
 } as const
 
 /** Años que se exigen para considerar mayor de edad. */
 export const EDAD_MINIMA = 18
 
 const vacio = (valor: string | null | undefined) => valor == null || valor.trim() === ""
+
+/** Mensaje de error de un nombre o apellido, o `null` si está bien (o vacío). */
+export function validarNombrePersona(valor: string | null | undefined, campo: string): string | null {
+  if (vacio(valor)) return null
+  const texto = (valor ?? "").trim().replace(/\s+/g, " ")
+  if (!NOMBRE.test(texto)) return MENSAJES.nombre(campo)
+  if ((texto.match(/\p{L}/gu)?.length ?? 0) < MIN_LETRAS_NOMBRE) return MENSAJES.nombreCorto(campo)
+  return null
+}
+
+/**
+ * Fecha (`yyyy-MM-dd`) hasta la que se es mayor de edad hoy. Se compara como
+ * texto, por día: `new Date("2008-10-22")` es medianoche UTC, y comparar
+ * instantes dejaba el resultado del cumpleaños número 18 a merced de la hora.
+ */
+export function fechaLimiteMayorDeEdad(hoy = new Date()): string {
+  const limite = new Date(hoy)
+  limite.setFullYear(limite.getFullYear() - EDAD_MINIMA)
+  return format(limite, "yyyy-MM-dd")
+}
+
+const NOMBRES = [
+  ["firstName", "El primer nombre"],
+  ["middleName", "El segundo nombre"],
+  ["lastName", "El primer apellido"],
+  ["secondLastName", "El segundo apellido"],
+] as const
 
 /**
  * Aplica las reglas de formato de una persona sobre un `ctx` de zod. No
@@ -52,6 +125,7 @@ const vacio = (valor: string | null | undefined) => valor == null || valor.trim(
  */
 export function validarFormatoPersona(
   persona: {
+    documentType?: { code?: string | null } | null
     firstName?: string | null
     middleName?: string | null
     lastName?: string | null
@@ -69,16 +143,22 @@ export function validarFormatoPersona(
     }
   }
 
-  revisar("identification", persona.identification, DOCUMENTO, MENSAJES.documento)
+  if (esDocumentoNumerico(persona.documentType?.code)) {
+    revisar("identification", persona.identification, DOCUMENTO, MENSAJES.documento)
+  } else {
+    revisar("identification", persona.identification, DOCUMENTO_ALFANUMERICO, MENSAJES.documentoAlfanumerico)
+  }
   revisar("phone", persona.phone, TELEFONO, MENSAJES.telefono)
   revisar("email", persona.email, CORREO, MENSAJES.correo)
 
-  if (!vacio(persona.birthDate)) {
-    const nacimiento = new Date(persona.birthDate as string)
-    const limite = new Date()
-    limite.setFullYear(limite.getFullYear() - EDAD_MINIMA)
+  for (const [path, campo] of NOMBRES) {
+    const message = validarNombrePersona(persona[path], campo)
+    if (message) ctx.addIssue({ code: "custom", path: [path], message })
+  }
 
-    if (Number.isNaN(nacimiento.getTime()) || nacimiento > limite) {
+  if (!vacio(persona.birthDate)) {
+    const nacimiento = (persona.birthDate as string).slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nacimiento) || nacimiento > fechaLimiteMayorDeEdad()) {
       ctx.addIssue({ code: "custom", path: ["birthDate"], message: MENSAJES.menorDeEdad })
     }
   }

@@ -19,6 +19,11 @@ import {
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
+import {
+    esDocumentoNumerico,
+    toDocumentoInput,
+    toNombreInput,
+} from "@/features/establishment/shared/person-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -174,6 +179,11 @@ export function UserDetailsForm({
     // Alta de una cuenta nueva (sin `id` ni cuenta encontrada por documento):
     // el correo es a donde llega la invitación de activación.
     const isNewAccount = !person.id && !person.accountExists
+
+    // El código del tipo sale del catálogo por id: el detalle de una persona
+    // ya guardada trae el id pero no siempre el código.
+    const documentTypeCode =
+        documentTypes.find((item) => item.id === person.documentType?.id)?.code ?? person.documentType?.code
 
     const emitChange = (patch: Partial<Person>) => {
         onChange({ ...person, ...patch })
@@ -331,17 +341,17 @@ export function UserDetailsForm({
                         id="document-number"
                         size="sm"
                         placeholder="Agregar"
-                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) puramente
-                        // numérico (RegisterUsuarioRequest la valida igual,
-                        // @Size(max=30)) — solo dígitos, sin letras. Acotado
-                        // a 15 acá.
-                        inputMode="numeric"
+                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) (@Size(max=30)
+                        // en RegisterUsuarioRequest), acotado a 15 acá. Solo
+                        // dígitos en CC, TI, RC…; letras y dígitos en pasaporte,
+                        // CE, PPT… (`esDocumentoNumerico`).
+                        inputMode={esDocumentoNumerico(documentTypeCode) ? "numeric" : "text"}
                         maxLength={15}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => {
                             isUserEditingDocument.current = true
-                            emitChange({ identification: toDigitsOnly(event.target.value, 15) })
+                            emitChange({ identification: toDocumentoInput(event.target.value, documentTypeCode) })
                         }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
@@ -355,20 +365,22 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ firstName: toNombreInput(event.target.value) })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.middleName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
                     <Input
                         id="user-second-name"
                         size="sm"
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
-                        onChange={(event) => emitChange({ middleName: event.target.value.toUpperCase() })}
+                        aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
+                        onChange={(event) => emitChange({ middleName: toNombreInput(event.target.value) })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.middleName`)}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
@@ -379,20 +391,22 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ lastName: toNombreInput(event.target.value) })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.secondLastName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
                     <Input
                         id="user-second-last-name"
                         size="sm"
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
-                        onChange={(event) => emitChange({ secondLastName: event.target.value.toUpperCase() })}
+                        aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
+                        onChange={(event) => emitChange({ secondLastName: toNombreInput(event.target.value) })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.secondLastName`)}</FieldError>
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
