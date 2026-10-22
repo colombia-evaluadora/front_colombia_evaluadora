@@ -202,11 +202,16 @@ export function DialogGenerarBoletin({
   const varios = estudiantes.length > 1
   const sinConsolidar = estudiantes.filter((e) => e.sinConsolidar)
   const soloBorrador = estudiantes.filter((e) => e.soloBorrador)
+  // Sin el período consolidado el back no imprime a nadie (Regla 81): no se
+  // piden. Si no queda ninguno no hay boletín que generar, solo "Ir a
+  // consolidar"; antes se pedía igual y bajaba un PDF en blanco.
+  const generables = estudiantes.filter((e) => !e.sinConsolidar)
+  const nadaQueGenerar = estudiantes.length > 0 && generables.length === 0
   // El reporte elige UN período y UNA plantilla por llamada: con períodos
   // distintos por estudiante (checks de la columna "Pe") o un grupo mixto
   // (transición, aulas multigrado) salen varios documentos, cada uno con su
   // plantilla, en vez de imprimir a la mitad con la equivocada.
-  const lotes = armarLotes(estudiantes)
+  const lotes = armarLotes(generables)
   const variosPeriodos = new Set(estudiantes.map((e) => e.periodoId)).size > 1
   const hayAvisos = sinConsolidar.length > 0 || soloBorrador.length > 0 || lotes.length > 1
 
@@ -220,7 +225,7 @@ export function DialogGenerarBoletin({
   }
 
   async function generar() {
-    if (!puede || grupoId == null) return
+    if (!puede || nadaQueGenerar || grupoId == null) return
     setAvisoAbierto(false)
     // Uno detrás de otro: son descargas del navegador y un error en un lote
     // no debe impedir los demás.
@@ -266,9 +271,26 @@ export function DialogGenerarBoletin({
       <AlertDialog open={avisoAbierto} onOpenChange={setAvisoAbierto}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Antes de generar el boletín</AlertDialogTitle>
+            <AlertDialogTitle>
+              {nadaQueGenerar ? "No hay boletines para generar" : "Antes de generar el boletín"}
+            </AlertDialogTitle>
             <AlertDialogDescription render={<div className="flex flex-col gap-2 text-left" />}>
-              {sinConsolidar.length > 0 && (
+              {nadaQueGenerar ? (
+                <p>
+                  {sinConsolidar.length === 1 ? (
+                    <>
+                      <strong>{sinConsolidar[0].nombre}</strong> no tiene
+                    </>
+                  ) : (
+                    <>
+                      Ninguno de los <strong>{sinConsolidar.length} estudiantes</strong> seleccionados
+                      tiene
+                    </>
+                  )}{" "}
+                  notas consolidadas {variosPeriodos ? "en el período marcado" : "en este período"}.
+                  Consolídalas para poder generar el boletín.
+                </p>
+              ) : sinConsolidar.length > 0 && (
                 <p>
                   <strong>
                     {sinConsolidar.length} estudiante{sinConsolidar.length === 1 ? "" : "s"} sin
@@ -296,7 +318,9 @@ export function DialogGenerarBoletin({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => void generar()}>Continuar</AlertDialogAction>
+            {!nadaQueGenerar && (
+              <AlertDialogAction onClick={() => void generar()}>Continuar</AlertDialogAction>
+            )}
             {sinConsolidar.length > 0 && (
               <AlertDialogCancel
                 variant="outline"
@@ -340,7 +364,9 @@ export function DialogGenerarBoletin({
             (!puede
               ? (motivoNoListo ??
                 "Selecciona uno o varios estudiantes en la tabla. Con varios períodos a la vista, marca en la columna Pe el período de cada boletín.")
-              : lotes.length > 1
+              : nadaQueGenerar
+                ? "Lo seleccionado no tiene notas consolidadas en el período: consolídalas para generar el boletín."
+                : lotes.length > 1
                 ? `Generar ${lotes.length} documentos, uno por cada período y plantilla.`
                 : varios
                   ? "Generar los boletines de los estudiantes seleccionados en un solo documento, uno detrás de otro."
