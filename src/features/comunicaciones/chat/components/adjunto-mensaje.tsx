@@ -16,10 +16,10 @@ const BOTON =
   "grid size-8 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
 
 /**
- * Tarjeta del archivo de un mensaje, compartida por el chat y los foros: miniatura
+ * Tarjeta del archivo de un mensaje del chat: miniatura
  * de la imagen, vista previa de imagen/PDF/video en un diálogo, descarga con token
  * de vista y, si `onEliminar`, quitar el archivo. Quién puede quitarlo lo decide
- * quien la usa (en el chat el autor; en un foro también la moderación).
+ * quien la usa (en el chat, el autor).
  */
 export function AdjuntoMensaje({
   mensaje: m,

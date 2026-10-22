@@ -4,8 +4,7 @@ import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-cha
 
 // CANAL: en la UI del chat se llama "Foro" (con nombre único y actividades).
 // GRUPO: conversación de un grupo de personas (sin nombre único ni actividades).
-// FORO: foro con hilos (publicaciones); vive en `/app/comunicaciones/foros`, no en el chat.
-export type TipoConversacion = "CANAL" | "DIRECTO" | "FORO" | "GRUPO"
+export type TipoConversacion = "CANAL" | "DIRECTO" | "GRUPO"
 
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"

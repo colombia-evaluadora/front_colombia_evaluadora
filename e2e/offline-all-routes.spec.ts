@@ -19,7 +19,6 @@ const RUTAS_NO_ADMIN = [
   "/app/establecimiento-educativo/general",
   "/app/establecimiento-educativo/sedes",
   "/app/establecimiento-educativo/periodos",
-  "/app/comunicaciones/foros",
   "/app/comunicaciones/chat",
   "/app/notificaciones",
   "/app/notificaciones/preferencias",
