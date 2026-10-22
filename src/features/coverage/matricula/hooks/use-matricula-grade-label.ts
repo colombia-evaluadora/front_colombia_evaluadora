@@ -1,4 +1,4 @@
-import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
+import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 
 export function useMatriculaGradeLabel(): (grade: number) => string {
   const { data: catalog } = useGradosCatalogQuery()

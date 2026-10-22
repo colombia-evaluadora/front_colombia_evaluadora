@@ -15,7 +15,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 

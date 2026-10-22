@@ -1,36 +1,5 @@
-/**
- * Qué baja "Preparar sin conexión" (plan §7.9, `add-offline-meses-pwa` D-6).
- *
- * Regla de oro: cada tarea pide la query con la MISMA key, `queryFn` y `meta`
- * que usa la pantalla en su vista por defecto (y en las variantes que se
- * pueden elegir sin red: otro mes, otro día, otra pestaña, otro grupo). Una
- * key distinta en un solo campo es otra query: sin red la pantalla no la
- * encuentra y muestra "no está guardada en este equipo".
- *
- * Por pantalla:
- * - Planeador: pestañas de rótulo; por pestaña, resumen, calendario de cada
- *   mes de los periodos elegidos y el rail por día (hoy y los días ocupados
- *   vecinos, siguiendo `dia_anterior`/`dia_siguiente`); unidades con su
- *   referente y actividades; detalle de cada actividad.
- * - Planilla: columnas + calificaciones por grupo × asignatura × periodo, su
- *   rótulo, el referente del grado y el instrumento de cada actividad.
- * - Asistencia: calendario de cada sede por mes (todas y "mis clases"),
- *   resumen semanal del mes en curso y el siguiente, y la lista de estudiantes
- *   de cada sesión de las próximas dos semanas.
- * - Informes: la cascada sede → año → jornada → periodos → grupos y el
- *   informe de cada grupo con los periodos por defecto (los mismos que elige
- *   la pantalla). Otras combinaciones de periodos se ven solo con red: son
- *   2^n y cada informe lo calcula el servidor.
- * - Referentes: todas las páginas del listado, los catálogos del filtro y el
- *   detalle de cada referente como se abre (área y grado por defecto, con las
- *   evidencias del primer enunciado). Prepararlos por área × grado pedía
- *   cientos de requests por referente.
- * - Comunicaciones, notificaciones y establecimiento (solo consulta).
- *
- * Solo se preparan las secciones que el menú del usuario incluye; lo que
- * depende del rol (y puede responder 403) va como tarea opcional: si falla no
- * cuenta como error de la preparación.
- */
+// Cada tarea usa la MISMA key, queryFn y meta que la pantalla: otra key es otra query y sin red no aparece.
+// Lo que depende del rol (puede dar 403) va como opcional.
 import type { QueryClient, QueryKey } from "@tanstack/react-query"
 
 import type { PlanillaTarget, PrepareSelection } from "@/components/offline/prepare-offline-plan"
@@ -53,16 +22,12 @@ import { canAccessPath, getMenuUrls } from "@/features/navigation/lib/route-acce
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { fetchMatriculasGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { fetchAgrupacionPlanillaOptions } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import { fetchDocenteGradoAsignatura } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { fetchDocenteGrupos } from "@/features/planeador/api/query/use-docente-grupos-query"
-import { fetchMomentosRegistro } from "@/features/planeador/api/query/use-momento-registro-catalog"
 import { fetchPeriodosEvaluacion } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
 import { fetchPlanillaCalificaciones } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
 import { fetchPlanillaColumnas } from "@/features/planeador/api/query/use-planilla-columnas-query"
 import { fetchSoportesEstudiante } from "@/features/planeador/api/query/use-soportes-estudiante-query"
-import { fetchTipoActividadCatalog } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
-import { fetchTipoAdaptacionOptions } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { fetchTodasLasActividadesMias, fetchActividadesMias } from "@/features/planeador/api/query/use-actividades-mias-query"
 import { actividadDetalleQueryOptions } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { fetchUnidadDetalle, fetchUnidades } from "@/features/planeador/api/query/use-unidades-query"
@@ -80,16 +45,9 @@ import { fetchInstrumentoActividad } from "@/features/planeador/api/query/use-in
 import { fetchRotuloActividad } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { fetchPlaneadorDocentes } from "@/features/planeador/api/query/use-planeador-docentes-query"
 import { fetchReferenteCurricular } from "@/features/planeador/api/query/use-referente-curricular-query"
-import {
-  fetchInstrumentoEvaluacionCatalog,
-  fetchInstrumentoFiltroOptions,
-  instrumentoFiltroOptionsQueryKey,
-} from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
-import { fetchDominioMaterial } from "@/features/planeador/api/query/use-dominio-material-catalog"
 // Asistencia
 import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 import { fetchSedesOpciones } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
-import { fetchTipoAsistenciaOptions } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { fetchAsistenciaCalendario } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { fetchAsistenciaResumenHoras } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
 import { fetchEstudiantesSesion } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
@@ -146,14 +104,6 @@ import {
   fetchEducationLevels,
 } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
 import {
-  evaluationTypesQueryKey,
-  fetchEvaluationTypes,
-} from "@/features/academic-management/curricular-references/api/query/use-evaluation-types"
-import {
-  fetchPedagogicalApproaches,
-  pedagogicalApproachesQueryKey,
-} from "@/features/academic-management/curricular-references/api/query/use-pedagogical-approaches"
-import {
   fetchSubjectLabelOptions,
   subjectLabelOptionsQueryKey,
 } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
@@ -182,10 +132,8 @@ import { getCatalog } from "@/features/establishment/employees/api/query/use-cat
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { fetchAcademicPeriods } from "@/features/establishment/academic-period/api/query/use-academic-periods"
 import { fetchAcademicPeriod } from "@/features/establishment/academic-period/api/query/use-academic-period"
-import { fetchAcademicPeriodStatuses } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
-import { fetchEvaluationPeriodStatuses } from "@/features/establishment/academic-period/api/query/use-evaluation-period-statuses"
 import { fetchEvaluationPeriods } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
-import { fetchJornadas } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { fetchSedePreviousPeriods } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
 
@@ -222,6 +170,12 @@ export function seed<T>(
       return then?.(data as T)
     },
   }
+}
+
+/** Categoría de `TLISTA_VALOR` con la misma key que usan las pantallas. */
+function seedListaValor(categoria: string, options?: SeedOptions<unknown>): PrepareTask {
+  const { queryKey, queryFn, meta } = selectCategoryQueryOptions(categoria)
+  return seed(queryKey, queryFn, meta, options)
 }
 
 const ROTULO_DIAS_VECINOS = 15
@@ -292,26 +246,18 @@ function catalogosPlaneador(): PrepareTask[] {
   return [
     seed(planeadorKeys.sedesOpciones(), fetchSedesOpciones, proveedorMeta()),
     seed(planeadorKeys.periodosEvaluacion(), fetchPeriodosEvaluacion, proveedorMeta()),
-    seed(["tipo-asistencia", "catalogo"], fetchTipoAsistenciaOptions, catalogoMeta()),
-    seed(planeadorKeys.catalogos.tipoActividad(), fetchTipoActividadCatalog, catalogoMeta()),
-    seed(planeadorKeys.catalogos.momentoRegistro(), fetchMomentosRegistro, catalogoMeta()),
-    seed(planeadorKeys.catalogos.agrupacionPlanilla(), fetchAgrupacionPlanillaOptions, catalogoMeta()),
-    seed(planeadorKeys.tipoAdaptacionCatalog(), fetchTipoAdaptacionOptions, catalogoMeta()),
-    seed(instrumentoFiltroOptionsQueryKey(), fetchInstrumentoFiltroOptions, catalogoMeta()),
+    seedListaValor("TIPO_ASISTENCIA"),
+    seedListaValor("TIPO_ACTIVIDAD"),
+    seedListaValor("MOMENTO_REGISTRO"),
+    seedListaValor("AGRUPACION_PLANILLA"),
+    seedListaValor("TIPO_ADAPTACION"),
     // Formulario de actividad (crear/editar sin red): instrumentos y dominios
     // permitidos de los materiales.
-    seed(planeadorKeys.catalogos.instrumentoEvaluacion(), fetchInstrumentoEvaluacionCatalog, catalogoMeta()),
-    seed(planeadorKeys.dominioMaterial("DOMINIO_MATERIAL_URL"), () => fetchDominioMaterial("DOMINIO_MATERIAL_URL"), catalogoMeta(), {
-      optional: true,
-    }),
-    seed(
-      planeadorKeys.dominioMaterial("DOMINIO_MATERIAL_REPOSITORIO"),
-      () => fetchDominioMaterial("DOMINIO_MATERIAL_REPOSITORIO"),
-      catalogoMeta(),
-      { optional: true },
-    ),
+    seedListaValor("INSTRUMENTO_EVALUACION"),
+    seedListaValor("DOMINIO_MATERIAL_URL", { optional: true }),
+    seedListaValor("DOMINIO_MATERIAL_REPOSITORIO", { optional: true }),
     // Jornadas: las usan el chat (selector de personas) y los periodos.
-    seed(academicPeriodKeys.jornadas(), fetchJornadas, proveedorMeta(), { optional: true }),
+    seedListaValor("JORNADA", { optional: true }),
     seed(planeadorKeys.docenteGrupos(), () => fetchDocenteGrupos(), offlineMeta(TTL_OFFLINE.grupo)),
     seed(planeadorKeys.docenteGradoAsignatura(), () => fetchDocenteGradoAsignatura(), offlineMeta(TTL_OFFLINE.grupo)),
   ]
@@ -408,12 +354,7 @@ function subjectLabelTask(referenceId: number): PrepareTask {
   })
 }
 
-/**
- * Lista de estudiantes de cada grupo elegido (form de actividad). Solo quien
- * dicta clase (docente / director de grupo): a un coordinador o rector
- * `/planeador/estudiantes?GRUPO=` le responde 403 ("sin alcance sobre el
- * establecimiento, sede o jornada", QA E2E testv2) aunque vea esos grupos.
- */
+/** Estudiantes por grupo: solo docente/director, a los demás el backend responde 403. */
 function grupoTasks(grupoIds: number[], roles: readonly string[]): PrepareTask[] {
   if (!roles.some((r) => /DOCENTE|DIRECTOR_GRUPO/.test(r))) return []
   return grupoIds.map((grupoId) =>
@@ -610,10 +551,7 @@ function cascadaJornada(filtros: PeriodosInformeParams): PrepareTask {
                     const params = { grupoId: grupo.grupoId, periodos: porDefecto }
                     return seed(informeGrupoQueryKey(params), () => fetchInformeGrupo(params), estudiantesMeta(), { optional: true })
                   }),
-                  // `useStudyPlanSubjectLabel(gradoActivoId)` de la pantalla de
-                  // informes pide el referente del grado del grupo activo. Los
-                  // grupos de informes (rector/coordinador) no son los de la
-                  // planilla del docente, así que no salían de `planillaTasks`.
+                  // Referente por grado: los grupos de informes no salen de `planillaTasks`.
                   ...[...new Set(grupos.map((g) => g.gradoId).filter((id): id is number => id != null))].map(
                     (gradoId) =>
                       seed(planeadorKeys.referenteCurricular(gradoId), () => fetchReferenteCurricular(gradoId, undefined), catalogoMeta(), {
@@ -639,8 +577,7 @@ function referenteDetalleTasks(id: number): PrepareTask[] {
       then: (referencia) => [
         seed(curricularReferenceGradesQueryKey(id), () => fetchCurricularReferenceGrades(id), catalogoMeta(), {
           then: (grados) => {
-            // Como abre la pestaña de enunciados: primera área y primer grado
-            // (o `null` si no hay), y el primer enunciado seleccionado.
+            // Igual que abre la pestaña: primera área, primer grado y primer enunciado.
             const areaId = referencia.areas.length > 0 ? (referencia.areas[0].id as number) : null
             const gradeId = grados.length > 0 ? grados[0].id : null
             return [
@@ -674,8 +611,8 @@ function referentesPagina(pageIndex: number): PrepareTask {
 function referentesTasks(): PrepareTask[] {
   return [
     seed(educationLevelsQueryKey(), fetchEducationLevels, catalogoMeta()),
-    seed(pedagogicalApproachesQueryKey(), fetchPedagogicalApproaches, catalogoMeta()),
-    seed(evaluationTypesQueryKey(), fetchEvaluationTypes, catalogoMeta()),
+    seedListaValor("ENFOQUE_PEDAGOGICO"),
+    seedListaValor("TIPO_EVALUACION"),
     seed(subjectLabelOptionsQueryKey(), fetchSubjectLabelOptions, catalogoMeta()),
     referentesPagina(0),
   ]
@@ -733,8 +670,7 @@ function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]
     tasks.push(
       seed(campusesQueryKey(LISTA_POR_DEFECTO), () => fetchCampuses(LISTA_POR_DEFECTO), proveedorMeta()),
       seed(["catalogs", CATALOGS.ZONES], () => getCatalog(CATALOGS.ZONES), catalogoMeta(), { optional: true }),
-      // El selector de EE del form de sedes es solo del super administrador; a
-      // los demás `/establecimientos/opciones` les responde 403.
+      // Solo super administrador; a los demás les responde 403.
       ...(roles.includes("CEVAL-SUPER_ADMINISTRADOR")
         ? [seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), { optional: true })]
         : []),
@@ -743,8 +679,8 @@ function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]
   }
   if (menuIncludes(queryClient, "/app/establecimiento-educativo/periodos")) {
     tasks.push(
-      seed(academicPeriodKeys.academicPeriodStatuses(), fetchAcademicPeriodStatuses, proveedorMeta()),
-      seed(academicPeriodKeys.evaluationPeriodStatuses(), fetchEvaluationPeriodStatuses, proveedorMeta(), { optional: true }),
+      seedListaValor("ESTADOPERIODO"),
+      seedListaValor("ESTADOPERIODOEVALUACION", { optional: true }),
       seed(academicPeriodKeys.sedeOptions(), fetchSedeOptions, proveedorMeta(), { optional: true }),
       seed(academicPeriodKeys.academicPeriods.list(LISTA_POR_DEFECTO), () => fetchAcademicPeriods(LISTA_POR_DEFECTO), proveedorMeta(), {
         then: (result) =>

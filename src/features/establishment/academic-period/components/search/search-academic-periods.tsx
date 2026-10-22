@@ -8,7 +8,7 @@ import type {
   AcademicPeriodsFiltersFormInput,
   AcademicPeriodsFiltersFormValues,
 } from "@/features/establishment/academic-period/api/schema"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { FilterAcademicPeriodsForm } from "@/features/establishment/academic-period/components/forms/form-filter-academic-periods"
 
 const FILTER_ACADEMIC_PERIODS_FORM_ID = "filter-academic-periods-form"

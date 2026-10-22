@@ -49,9 +49,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
-import { useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/use-rating-symbols"
+import { useRatingScaleTypesQuery, useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
-import { useRatingScaleTypesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scale-types"
 import type { RatingScaleType } from "@/features/establishment/academic-period/api/types/rating-scales"
 import {
   RatingSymbolSelect,

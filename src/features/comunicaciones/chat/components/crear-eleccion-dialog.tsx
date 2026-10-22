@@ -23,7 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import {
   useCrearEleccion,
   useEditarEleccion,

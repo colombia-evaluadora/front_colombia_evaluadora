@@ -5,37 +5,17 @@ import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
+import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { contenidosABody, type UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /**
- * `POST /planeador/unidades` (confirmado real, colección Postman
- * `planeador-guia-completa`). `FK_TFUNCIONARIO` YA NO se manda: el docente
- * autor se deriva del token — el campo sigue existiendo en el backend
- * (para que un coordinador cree la unidad a nombre de otro docente), pero
- * el Planeador no tiene ese caso de uso todavía.
- *
- * `FK_TGRADO`/`FK_TASIGNATURA` salen de lo que el docente eligió en el
- * `<Select>` (`useDocenteGradoAsignaturaQuery`, ver `form-unidad-info-general.tsx`)
- * — si por algún motivo quedaron sin resolver, se corta acá antes de mandar
- * un body a medias que el backend rechazaría igual.
- *
- * `FK_REFERENTE_CURRICULAR` es opcional y NO se manda: se deriva en la
- * práctica del grado → nivel de enseñanza (`GET .../referente`) — mandar
- * uno que no aplique al nivel del grado da 409 (confirmado, colección
- * Postman `planeador-flujo-unidad-actividad`, paso 4).
- *
- * `ENUNCIADOS` son los ids de los enunciados de DBA (nivel 1) que el
- * docente marcó (`useEnunciadosDbaQuery`/`ListaAgregableCajaSelect`, ver
- * `form-unidad-info-general.tsx`) — son justo los que la actividad podrá
- * usar después para ofrecer sus evidencias (nivel 2, hijas de estos).
+ * El autor sale del token. `FK_REFERENTE_CURRICULAR` no se manda: se deriva del grado
+ * y uno que no aplique al nivel da 409.
  */
 interface CreateUnidadResponse {
-  /** PK real de la unidad recién creada — lo necesita quien la crea al
-   *  vuelo desde el form de actividad (`CrearUnidadPopover`) para poder
-   *  seleccionarla de una en el `<Select>` de "Unidad temática asociada". */
+  /** PK real: `CrearUnidadPopover` la selecciona de una en el `<Select>`. */
   id: number
 }
 
@@ -57,17 +37,11 @@ export async function createUnidad(data: UnidadInfoGeneral, req?: WriteRequest):
     OBJETIVOS: data.objetivos,
     ...contenidosABody(data.contenidos),
   }
-  // NO se manda `FK_TLV_INSTRUMENTO_EVALUACION`: desde el backend real (sso
-  // V488) esa columna de `TUNIDAD` ya no existe — el instrumento de la
-  // unidad se deriva de sus actividades vinculadas (solo lectura, ver
-  // `UnidadDetallePanel`). `POST /planeador/unidades` descarta ese campo en
-  // silencio si se lo manda; se dejó de intentar por completo.
+  // Sin `FK_TLV_INSTRUMENTO_EVALUACION`: el instrumento se deriva de las actividades.
   if (data.enunciadosDba.length > 0) {
     body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
   }
-  // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
-  // primer (y único) campo de la fila (confirmado, colección Postman
-  // `planeador-flujo-unidad-actividad`, paso 4).
+  // El motor devuelve `{rows:[{<función>: pk}]}`: el pk es el único campo de la fila.
   const row = await evalCol.postRow<Record<string, number>>("/planeador/unidades", body, writeConfig(req))
   const [pk] = Object.values(row)
   if (pk == null) throw new Error("La creación de la unidad no devolvió su identificador.")
@@ -86,8 +60,7 @@ export function useCreateUnidad({ mutationConfig }: UseCreateUnidadOptions = {})
     mutationFn: (data: UnidadInfoGeneral) => createUnidad(data),
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
-      // X1: las pestañas por referente (`unidades.tabs`) viven fuera de
-      // `unidades.all`; sin alcance la key es prefijo de todas sus variantes.
+      // `unidades.tabs` vive fuera de `unidades.all`; sin alcance es prefijo de todas.
       queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
       onSuccess?.(...args)
     },
