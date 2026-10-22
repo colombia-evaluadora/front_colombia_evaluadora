@@ -1,3 +1,5 @@
+> **Retirado el 2026-10-22, sin aplicar al spec.** La pantalla `/app/comunicaciones/foros` (publicaciones con hilos, estilo Discord) no está en el Figma y se eliminó: front (ruta, página, mocks, tareas de Preparar), comms-service (`foro/*`, tópico `foro:`, política `foros`), notification-service (`FORO_MENCION`, `FORO_RESPUESTA`), file-service (adjuntos de publicaciones) y sso V585/V586/V587 (ahora borran las tablas `thilo*`/`tforo_etiqueta`, los canales `FORO`, el menú `FOROS` y los endpoints de subida). Los «Foros» del chat son canales `CANAL` y siguen igual. Se conserva solo como registro; la spec `comunicaciones-foros` no se incorpora a `openspec/specs`.
+
 # Change: Foros de comunicaciones (publicaciones con hilos, estilo Discord)
 
 ## Why

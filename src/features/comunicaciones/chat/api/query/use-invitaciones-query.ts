@@ -28,12 +28,28 @@ export function canalDeInvitacion(deepLink: string | null | undefined): number |
 const ruta = (id: number, accion: "aceptar" | "rechazar") =>
   `/comunicaciones/conversaciones/${id}/invitacion/${accion}`
 
+/**
+ * Lo que la pantalla hace al responder (avisar, abrir el grupo) va en el hook y no en
+ * `mutate(id, { onSuccess })`: el onSuccess del hook saca la invitación del cache y eso desmonta
+ * la tarjeta que llamó a `mutate`; TanStack Query no corre los callbacks de `mutate` de un
+ * observer desmontado, así que "Te uniste a…" y abrir el grupo nunca pasaban (QA acudiente).
+ * Por eso se llaman ANTES de tocar el cache.
+ */
+interface AceptarInvitacionOptions {
+  onAceptada?: (conversacion: Conversacion) => void
+}
+
+interface RechazarInvitacionOptions {
+  onRechazada?: (conversacionId: number) => void
+}
+
 /** Aceptar: el grupo aparece en la lista (ve el historial y cuenta como miembro). */
-export function useAceptarInvitacion() {
+export function useAceptarInvitacion({ onAceptada }: AceptarInvitacionOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => evalCol.patchRow<Conversacion>(ruta(id, "aceptar")),
     onSuccess: (c) => {
+      onAceptada?.(c)
       queryClient.setQueryData<Invitacion[]>(chatKeys.invitaciones, (prev) =>
         prev?.filter((i) => i.conversacionId !== c.id),
       )
@@ -46,12 +62,13 @@ export function useAceptarInvitacion() {
 }
 
 /** Rechazar: no entra; quien gestiona el grupo lo ve como "Invitación rechazada". */
-export function useRechazarInvitacion() {
+export function useRechazarInvitacion({ onRechazada }: RechazarInvitacionOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     // Devuelve las que quedan pendientes; se vuelve a pedir la lista (forma `{rows}` del servidor).
     mutationFn: (id: number) => api.patch(`/eval-col${ruta(id, "rechazar")}`),
     onSuccess: (_r, id) => {
+      onRechazada?.(id)
       queryClient.setQueryData<Invitacion[]>(chatKeys.invitaciones, (prev) =>
         prev?.filter((i) => i.conversacionId !== id),
       )

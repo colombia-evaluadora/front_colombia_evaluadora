@@ -26,7 +26,8 @@ export function SelectorGrupal({
   const datos = opciones.data
 
   return (
-    <fieldset className="space-y-3">
+    // `min-w-0`: un fieldset tiene `min-inline-size: min-content` y se estiraba con los chips.
+    <fieldset className="min-w-0 space-y-3">
       <legend className="mb-2 text-sm font-medium">O agrega por grado, grupo o rol</legend>
       {opciones.isError ? (
         <p className="text-sm text-muted-foreground">
@@ -70,7 +71,7 @@ export function SelectorGrupal({
         </div>
       )}
       {value.grados.length + value.grupos.length > 0 && (
-        <fieldset className="space-y-1.5">
+        <fieldset className="min-w-0 space-y-1.5">
           <legend className="text-sm font-medium">De los grados y grupos, agregar a</legend>
           <RadioGroup
             value={value.para ?? "ESTUDIANTES"}

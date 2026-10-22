@@ -162,8 +162,6 @@ import {
   resolvedSubjectLabelQueryKey,
 } from "@/features/academic-management/curricular-references/api/query/use-subject-label-resolution"
 // Comunicaciones y notificaciones
-import { forosKeys } from "@/features/comunicaciones/foros/api/query-keys"
-import { fetchForos } from "@/features/comunicaciones/foros/api/query/use-foros-query"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchConversaciones } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { fetchPoliticaChat } from "@/features/comunicaciones/chat/api/query/use-politica-chat-query"
@@ -269,6 +267,23 @@ function menuIncludes(queryClient: QueryClient, pathname: string): boolean {
   const menu = queryClient.getQueryData<{ url: string; items?: { url: string }[] }[]>(navigationKeys.menu)
   if (!menu) return false
   return canAccessPath(pathname, getMenuUrls(menu))
+}
+
+const PLANEADOR_PATH = "/app/planeador/actividades"
+const ASISTENCIA_PATH = "/app/asistencia"
+
+/**
+ * Qué módulos con datos de docente tiene el usuario en el menú. Un acudiente o
+ * un estudiante no tienen planeador ni asistencia: pedirles
+ * `/planeador/docentes/*` respondía 403 y cada 403 revalidaba la sesión (ver
+ * `refreshAccessToken` en `api-client.ts`). El guard de `/app` siempre deja
+ * el menú en el cache antes de montar la app, así que leerlo acá es fiable.
+ */
+export function prepareModules(queryClient: QueryClient): { planeador: boolean; asistencia: boolean } {
+  return {
+    planeador: menuIncludes(queryClient, PLANEADOR_PATH),
+    asistencia: menuIncludes(queryClient, ASISTENCIA_PATH),
+  }
 }
 
 // ---- Planeador ----------------------------------------------------------------
@@ -670,7 +685,6 @@ function referentesTasks(): PrepareTask[] {
 
 function comunicacionesTasks(): PrepareTask[] {
   return [
-    seed(forosKeys.lista, fetchForos, offlineMeta(TTL_OFFLINE.detalle)),
     seed(chatKeys.conversaciones, fetchConversaciones, offlineMeta(TTL_OFFLINE.detalle)),
     seed(chatKeys.politica, fetchPoliticaChat, catalogoMeta(), { optional: true }),
   ]
@@ -777,11 +791,16 @@ function docentesTasks(roles: readonly string[]): PrepareTask[] {
  * fuente puede fallar sola (un rector no dicta grupos): lo que falla queda
  * vacío y se prepara igual lo demás.
  */
-export async function fetchPrepareOptions(): Promise<PrepareTaskOptions> {
+export async function fetchPrepareOptions(queryClient: QueryClient): Promise<PrepareTaskOptions> {
+  const { planeador, asistencia } = prepareModules(queryClient)
+  const ninguno = Promise.resolve([] as never[])
+  // Sin planeador no hay grupos ni asignaturas de docente que elegir; los
+  // periodos además ubican los meses de la asistencia. Un 403 (rol sin
+  // alcance) queda como lista vacía: "no aplica", no un error que reintentar.
   const [grupos, pares, periodos] = await Promise.allSettled([
-    fetchDocenteGrupos(),
-    fetchDocenteGradoAsignatura(),
-    fetchPeriodosEvaluacion(),
+    planeador ? fetchDocenteGrupos() : ninguno,
+    planeador ? fetchDocenteGradoAsignatura() : ninguno,
+    planeador || asistencia ? fetchPeriodosEvaluacion() : ninguno,
   ])
   return {
     grupos:
@@ -832,21 +851,24 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   const meses = mesesDelRango(periodosElegidos, now)
   const targets = buildPlanillaTargets(input.options.grupos, input.options.asignaturas, input.selection)
 
+  const { planeador, asistencia } = prepareModules(queryClient)
   const tasks: PrepareTask[] = [
-    ...catalogosPlaneador(),
-    ...grupoTasks([...input.selection.grupos], input.roles),
-    ...actividadesTasks(meses, hoy),
-    ...unidadesTasks(),
-    ...docentesTasks(input.roles),
-    ...planillaTasks(targets, input.incluirArchivos),
-    ...asistenciaTasks(meses, now),
+    ...(planeador
+      ? [
+          ...catalogosPlaneador(),
+          ...grupoTasks([...input.selection.grupos], input.roles),
+          ...actividadesTasks(meses, hoy),
+          ...unidadesTasks(),
+          ...docentesTasks(input.roles),
+          ...planillaTasks(targets, input.incluirArchivos),
+        ]
+      : []),
+    ...(asistencia ? asistenciaTasks(meses, now) : []),
     ...notificacionesTasks(),
   ]
   if (menuIncludes(queryClient, "/app/gestion-academica/informes")) tasks.push(...informesTasks())
   if (menuIncludes(queryClient, "/app/gestion-academica/referentes-curriculares")) tasks.push(...referentesTasks())
-  if (menuIncludes(queryClient, "/app/comunicaciones/chat") || menuIncludes(queryClient, "/app/comunicaciones/foros")) {
-    tasks.push(...comunicacionesTasks())
-  }
+  if (menuIncludes(queryClient, "/app/comunicaciones/chat")) tasks.push(...comunicacionesTasks())
   tasks.push(...establecimientoTasks(queryClient, input.roles))
   return tasks
 }

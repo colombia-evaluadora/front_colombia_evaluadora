@@ -11,6 +11,7 @@ import {
   connectivityStore,
 } from "@/lib/offline/connectivity"
 import { __closeDbForTests, DB_NAME } from "@/lib/offline/db"
+import { __resetAuthRefreshForTests, endSession, setAuthToken } from "@/lib/api-client"
 import {
   __resetPrepareForTests,
   isPreparing,
@@ -24,6 +25,7 @@ function task(key: string, run: PrepareTask["run"], extra: Partial<PrepareTask> 
 }
 
 beforeEach(() => {
+  __resetAuthRefreshForTests()
   __resetPrepareForTests()
   __resetConnectivityForTests("online")
 })
@@ -178,5 +180,54 @@ describe("motor de Preparar", () => {
     expect(run).not.toHaveBeenCalled()
     expect(result.lastOutcome).toBe("sin-conexion")
     expect(result.lastPrepareAt).toBeNull()
+  })
+})
+
+describe("Preparar y el fin de la sesión", () => {
+  const http401 = () =>
+    new AxiosError("Request failed with status code 401", "ERR_BAD_REQUEST", undefined, undefined, {
+      status: 401,
+      data: {},
+      headers: {},
+      statusText: "Unauthorized",
+      config: {},
+    } as AxiosResponse)
+
+  it("el primer 401 detiene la corrida: no se pide ninguna tarea más", async () => {
+    const despues = vi.fn(async () => undefined)
+    const result = await runPrepare(
+      new QueryClient(),
+      [task("a", async () => undefined), task("b", () => Promise.reject(http401())), task("c", despues), task("d", despues)],
+      { origin: "auto" },
+    )
+    expect(despues).not.toHaveBeenCalled()
+    expect(result.lastOutcome).toBe("sesion")
+    expect(result.failed).toEqual([])
+    // No cuenta como "datos guardados": queda para "Continuar".
+    expect(result.lastPrepareAt).toBeNull()
+  })
+
+  it("logout a mitad de la corrida la corta y no deja arrancar otra", async () => {
+    setAuthToken("tok")
+    let soltar: () => void = () => undefined
+    let empezo: () => void = () => undefined
+    const arranco = new Promise<void>((resolve) => (empezo = resolve))
+    const lenta = task("lenta", () => {
+      empezo()
+      return new Promise<void>((resolve) => (soltar = resolve))
+    })
+    const despues = vi.fn(async () => undefined)
+    const run = runPrepare(new QueryClient(), [lenta, task("x", despues), task("y", despues)], { origin: "manual" })
+    await arranco
+    endSession("logout")
+    soltar()
+    const result = await run
+    expect(despues).not.toHaveBeenCalled()
+    expect(result.lastOutcome).toBe("sesion")
+    expect(isPreparing()).toBe(false)
+    // Con la sesión terminada no arranca otra (ni la automática).
+    const otra = vi.fn(async () => undefined)
+    await runPrepare(new QueryClient(), [task("z", otra)], { origin: "auto" })
+    expect(otra).not.toHaveBeenCalled()
   })
 })

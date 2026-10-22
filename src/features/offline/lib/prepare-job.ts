@@ -57,7 +57,7 @@ export async function startPrepareJob(
   if (isPreparing()) return prepareStore.getSnapshot()
   const opciones =
     options ??
-    (await fetchPrepareOptions().catch(() => ({ grupos: [], asignaturas: [], periodos: [] })))
+    (await fetchPrepareOptions(queryClient).catch(() => ({ grupos: [], asignaturas: [], periodos: [] })))
   const elegida =
     selection ?? fullYearSelection(opciones.grupos, opciones.asignaturas, opciones.periodos)
   const tasks = buildPrepareTasks(queryClient, {

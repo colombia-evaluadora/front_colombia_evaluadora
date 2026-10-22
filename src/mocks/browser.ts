@@ -21,6 +21,7 @@ import { hashString } from "@/lib/offline/content-hash"
  *   valor actual en `detail`; el resto sigue normal.
  * - `"planeador-writes"`: las escrituras de actividades y unidades del
  *   planeador (sagas de la Fase 3) fallan como `Network Error`.
+ * - `"expired"`: la sesión venció: todo responde 401 (menos login y heartbeat).
  * Sin la clave no hacen nada (`return` → sigue el handler real).
  */
 function currentFault(): string | null {
@@ -53,6 +54,14 @@ const faultHandlers = [
     const fault = currentFault()
     if (fault === "network") return HttpResponse.error()
     if (fault === "server") return HttpResponse.json({ status: "DOWN" }, { status: 503 })
+  }),
+  // `"expired"`: la sesión venció en el servidor. Toda /api/* (refresh incluido)
+  // responde 401, salvo el login y el heartbeat (E2E `sesion-prepare-logout`).
+  http.all("/api/*", ({ request }) => {
+    if (currentFault() !== "expired") return
+    const path = new URL(request.url).pathname
+    if (path.startsWith("/api/auth/login") || path.startsWith("/api/eval-col/health")) return
+    return HttpResponse.json({ error: "invalid_token" }, { status: 401 })
   }),
   http.post("/api/eval-col/asistencias/registrar", () => conflictFault()),
   http.patch("/api/eval-col/asistencias/:id", () => conflictFault()),

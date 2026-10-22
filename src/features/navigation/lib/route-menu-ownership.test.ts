@@ -27,7 +27,6 @@ const MENU = {
   referentes: "/app/gestion-academica/referentes-curriculares",
   asistencia: "/app/asistencia",
   chat: "/app/comunicaciones/chat",
-  foros: "/app/comunicaciones/foros",
 } as const
 
 const ALL_MENU_URLS = Object.values(MENU)
@@ -102,7 +101,6 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/asistencia/manual": MENU.asistencia,
 
   "/app/comunicaciones/chat": MENU.chat,
-  "/app/comunicaciones/foros": MENU.foros,
 }
 
 interface RouteLike {

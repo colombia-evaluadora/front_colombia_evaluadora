@@ -24,6 +24,7 @@ import { isCheckpointUsable, type PrepareCheckpoint } from "@/components/offline
 import Axios from "axios"
 
 import { isNetworkError } from "@/lib/network-error"
+import { isSessionEnded, onSessionEnd, setPrepareRequestScope } from "@/lib/api-client"
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { describePrepareKey } from "@/features/offline/lib/prepare-labels"
 import { getMeta, isIndexedDbAvailable, setMeta } from "@/lib/offline/db"
@@ -94,7 +95,12 @@ export interface PrepareTask {
 }
 
 export type PrepareOrigin = "manual" | "auto"
-export type PrepareOutcome = "ok" | "parcial" | "sin-espacio" | "sin-conexion" | "cancelada"
+/**
+ * `sesion`: detenida porque la sesión terminó (logout, vencida, un 401 que el
+ * refresh no pudo arreglar). Lo hecho queda en el punto de control: al volver
+ * a iniciar sesión, "Continuar" sigue desde ahí.
+ */
+export type PrepareOutcome = "ok" | "parcial" | "sin-espacio" | "sin-conexion" | "cancelada" | "sesion"
 
 export interface PrepareSnapshot {
   running: boolean
@@ -146,6 +152,8 @@ let snapshot: PrepareSnapshot = INITIAL
 let loadedFor: string | null = null
 let current: Promise<PrepareSnapshot> | null = null
 let cancelRequested = false
+/** La sesión terminó durante la corrida: se corta sin mandar nada más. */
+let sessionStopRequested = false
 /** Despierta una pausa por falta de red (lo usa "Cancelar"). */
 let wakePause: (() => void) | null = null
 const listeners = new Set<() => void>()
@@ -170,6 +178,7 @@ type PrepareMessage =
   | { type: "progress"; origin: PrepareOrigin; done: number; total: number }
   | { type: "done"; lastPrepareAt: number | null }
   | { type: "cancel" }
+  | { type: "session-ended" }
 
 let channel: BroadcastChannel | null = null
 let lastBroadcast = 0
@@ -181,6 +190,10 @@ function getChannel(): BroadcastChannel | null {
     const msg = event.data
     if (msg.type === "cancel") {
       if (current) cancelPrepare()
+    } else if (msg.type === "session-ended") {
+      // La cookie es la misma para todas las pestañas: si en una se cerró la
+      // sesión, la corrida de otra tampoco debe seguir.
+      if (current) stopForSession()
     } else if (msg.type === "progress") {
       if (!current) set({ remote: { origin: msg.origin, done: msg.done, total: msg.total } })
     } else if (msg.type === "done") {
@@ -226,6 +239,26 @@ async function withPrepareLock<T>(fn: () => Promise<T>): Promise<{ acquired: boo
  * Corta la corrida en curso (en esta pestaña o en otra). Lo hecho queda en el
  * punto de control: "Continuar" sigue desde ahí.
  */
+/** Corta la corrida en curso porque la sesión terminó (no manda nada más). */
+function stopForSession(): void {
+  sessionStopRequested = true
+  cancelRequested = true
+  wakePause?.()
+}
+
+// Logout o sesión vencida en ESTA pestaña: se corta la corrida (las requests
+// en vuelo ya las abortó `endSession`) y se avisa a las demás pestañas.
+onSessionEnd(() => {
+  if (current) stopForSession()
+  post({ type: "session-ended" })
+})
+
+/** 401 o request cancelada por fin de sesión: no tiene sentido seguir. */
+function isSessionError(error: unknown): boolean {
+  if (Axios.isCancel(error)) return isSessionEnded()
+  return Axios.isAxiosError(error) && error.response?.status === 401
+}
+
 export function cancelPrepare(): void {
   if (current) {
     cancelRequested = true
@@ -420,8 +453,11 @@ export function runPrepare(
   if (current != null) return current
   // Otra pestaña ya está preparando: no se arranca otra.
   if (snapshot.remote != null) return Promise.resolve(snapshot)
+  // Sin sesión no se prepara (logout en curso o sesión vencida).
+  if (isSessionEnded()) return Promise.resolve(snapshot)
   getChannel()
   cancelRequested = false
+  sessionStopRequested = false
   const run: Promise<PrepareSnapshot> = withPrepareLock(() => execute(queryClient, initial, options))
     .then(({ acquired, value }) => {
       if (!acquired) return snapshot
@@ -431,6 +467,7 @@ export function runPrepare(
     .finally(() => {
       current = null
       cancelRequested = false
+      sessionStopRequested = false
     })
   current = run
   return run
@@ -479,12 +516,20 @@ async function execute(
   })
 
   let outcome: PrepareOutcome = "ok"
+  // Las lecturas de esta corrida salen con `background` (sin toasts ni
+  // redirecciones) y la señal de la sesión (`api-client.ts`).
+  setPrepareRequestScope(true)
+  try {
   for (let i = 0; i < queue.length; i++) {
     // Serie (concurrencia 1) y cediendo el hilo antes de cada tarea: la red
     // escolar no se satura y la pantalla sigue respondiendo. El cifrado y la
     // escritura en IndexedDB ya van agrupados por el persister (throttle 1 s).
     if (origin === "auto") await idle()
     else await yieldToMain()
+    if (sessionStopRequested || isSessionEnded()) {
+      outcome = "sesion"
+      break
+    }
     if (cancelRequested) {
       outcome = "cancelada"
       break
@@ -494,7 +539,7 @@ async function execute(
       const volvio = await waitForConnection(maxPauseMs)
       set({ paused: false })
       if (cancelRequested) {
-        outcome = "cancelada"
+        outcome = sessionStopRequested ? "sesion" : "cancelada"
         break
       }
       if (!volvio) {
@@ -530,6 +575,13 @@ async function execute(
       hechas.add(hash)
       if (i % 10 === 0) writeCheckpoint({ ...checkpoint, done: [...hechas] })
     } catch (error) {
+      // 401 (el refresh ya no pudo renovar el token) o cancelada porque la
+      // sesión terminó: se detiene TODO, sin intentar las demás tareas (cada
+      // una sería otro 401). Queda reanudable desde el punto de control.
+      if (isSessionError(error) || sessionStopRequested) {
+        outcome = "sesion"
+        break
+      }
       // Falló por la red Y el heartbeat ya confirmó que no hay conexión: no es
       // culpa del elemento. Se repite (una vez) cuando vuelva la red; la
       // pausa la hace el chequeo del principio de la vuelta.
@@ -559,6 +611,9 @@ async function execute(
       }
     }
     set({ done: i + 1 })
+  }
+  } finally {
+    setPrepareRequestScope(false)
   }
 
   if (outcome === "ok" && failed.length > 0) outcome = "parcial"
@@ -637,5 +692,6 @@ export function __resetPrepareForTests() {
   loadedFor = null
   current = null
   cancelRequested = false
+  sessionStopRequested = false
   lastBroadcast = 0
 }

@@ -21,11 +21,28 @@ import {
 export function InvitacionAcciones({ notificacion: n, onAbrir }: { notificacion: Notificacion; onAbrir?: () => void }) {
   const canal = canalDeInvitacion(n.deepLink)
   const { data: pendientes } = useInvitacionesQuery(canal != null)
-  const aceptar = useAceptarInvitacion()
-  const rechazar = useRechazarInvitacion()
   const leida = useMarcarLeida()
   const navigate = useNavigate()
   const { notify } = useNotify()
+  const marcar = () => {
+    if (!n.leida) leida.mutate({ id: n.id, leida: true })
+  }
+  // Avisos y navegación en el hook (ver `useAceptarInvitacion`): al responder, la
+  // invitación sale del cache y quien llamó `mutate` puede desmontarse antes de sus callbacks.
+  const aceptar = useAceptarInvitacion({
+    onAceptada: (c) => {
+      marcar()
+      notify(`Te uniste a ${c.nombre}.`)
+      onAbrir?.()
+      void navigate({ href: `${paths.app.comunicacionesChat.getHref()}?canal=${c.id}` })
+    },
+  })
+  const rechazar = useRechazarInvitacion({
+    onRechazada: () => {
+      marcar()
+      notify("Rechazaste la invitación al grupo.")
+    },
+  })
   if (canal == null) return null
   const pendiente = pendientes?.some((i) => i.conversacionId === canal)
   if (!pendiente) {
@@ -33,9 +50,6 @@ export function InvitacionAcciones({ notificacion: n, onAbrir }: { notificacion:
   }
   const ocupado = aceptar.isPending || rechazar.isPending
   const onError = (e: unknown) => notify(getErrorMessage(e), { variant: "error" })
-  const marcar = () => {
-    if (!n.leida) leida.mutate({ id: n.id, leida: true })
-  }
 
   return (
     <div className="flex gap-2 px-4 pb-2.5 pl-15" role="group" aria-label={`Responder: ${n.titulo}`}>
@@ -45,15 +59,7 @@ export function InvitacionAcciones({ notificacion: n, onAbrir }: { notificacion:
         disabled={ocupado}
         aria-busy={aceptar.isPending}
         onClick={() =>
-          aceptar.mutate(canal, {
-            onSuccess: (c) => {
-              marcar()
-              notify(`Te uniste a ${c.nombre}.`)
-              onAbrir?.()
-              void navigate({ href: `${paths.app.comunicacionesChat.getHref()}?canal=${c.id}` })
-            },
-            onError,
-          })
+aceptar.mutate(canal, { onError })
         }
       >
         Aceptar
@@ -66,13 +72,7 @@ export function InvitacionAcciones({ notificacion: n, onAbrir }: { notificacion:
         disabled={ocupado}
         aria-busy={rechazar.isPending}
         onClick={() =>
-          rechazar.mutate(canal, {
-            onSuccess: () => {
-              marcar()
-              notify("Rechazaste la invitación al grupo.")
-            },
-            onError,
-          })
+rechazar.mutate(canal, { onError })
         }
       >
         Rechazar

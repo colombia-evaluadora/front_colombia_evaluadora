@@ -34,7 +34,6 @@ const SIEMPRE: readonly (readonly string[])[] = [
   ["asistencia"],
   ["notificaciones"],
   ["comunicaciones-chat"],
-  ["comunicaciones-foros"],
 ]
 
 function startsWith(queryKey: QueryKey, prefix: readonly string[]): boolean {

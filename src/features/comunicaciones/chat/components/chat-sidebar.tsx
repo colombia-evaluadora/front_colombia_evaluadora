@@ -114,7 +114,7 @@ export function ChatSidebar({
 
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
-  // En el chat los CANAL se llaman "Foros" (los foros con hilos tienen su propia pantalla).
+  // En el chat los CANAL se llaman "Foros".
   const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
   const archivadas = visibles.filter((c) => c.archivada)
 

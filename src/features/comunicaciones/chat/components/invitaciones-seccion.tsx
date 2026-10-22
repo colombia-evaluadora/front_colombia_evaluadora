@@ -59,8 +59,17 @@ function TarjetaInvitacion({
   onAceptada: (conversacionId: number) => void
 }) {
   const { notify } = useNotify()
-  const aceptar = useAceptarInvitacion()
-  const rechazar = useRechazarInvitacion()
+  // Avisos y navegación en el hook: aceptar/rechazar desmonta esta tarjeta (ver
+  // `useAceptarInvitacion`), y los callbacks de `mutate` ya no correrían.
+  const aceptar = useAceptarInvitacion({
+    onAceptada: (c) => {
+      notify(`Te uniste a ${c.nombre}.`)
+      onAceptada(c.id)
+    },
+  })
+  const rechazar = useRechazarInvitacion({
+    onRechazada: () => notify(`Rechazaste la invitación a ${i.nombre}.`),
+  })
   const ocupado = aceptar.isPending || rechazar.isPending
   const onError = (e: unknown) => notify(getErrorMessage(e), { variant: "error" })
 
@@ -98,10 +107,7 @@ function TarjetaInvitacion({
           disabled={ocupado}
           aria-busy={rechazar.isPending}
           onClick={() =>
-            rechazar.mutate(i.conversacionId, {
-              onSuccess: () => notify(`Rechazaste la invitación a ${i.nombre}.`),
-              onError,
-            })
+rechazar.mutate(i.conversacionId, { onError })
           }
         >
           Rechazar
@@ -112,13 +118,7 @@ function TarjetaInvitacion({
           disabled={ocupado}
           aria-busy={aceptar.isPending}
           onClick={() =>
-            aceptar.mutate(i.conversacionId, {
-              onSuccess: (c) => {
-                notify(`Te uniste a ${c.nombre}.`)
-                onAceptada(c.id)
-              },
-              onError,
-            })
+aceptar.mutate(i.conversacionId, { onError })
           }
         >
           Aceptar

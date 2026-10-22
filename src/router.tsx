@@ -61,7 +61,6 @@ import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
-import { forosSearchSchema } from "@/features/comunicaciones/foros/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -1040,22 +1039,6 @@ export const chatRoute = createRoute({
   component: ChatPage,
 })
 
-const ForosPage = lazyRouteComponent(() => import("@/features/comunicaciones/foros/pages/foros-page"), "ForosPage")
-
-// Foros (publicaciones con hilos) sobre canales FORO de comms-service. Menú FOROS (sso V586).
-export const forosRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.comunicacionesForos.path,
-  validateSearch: forosSearchSchema,
-  staticData: {
-    breadcrumb: [
-      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
-      { label: "Foros", to: paths.app.comunicacionesForos.getHref() },
-    ],
-  },
-  component: ForosPage,
-})
-
 const PendientesPage = lazyRouteComponent(() => import("@/features/offline/pages/pendientes-page"), "PendientesPage")
 
 // Cambios guardados sin conexión (Fase 2 offline). Fuera del menú del backend:
@@ -1187,7 +1170,6 @@ const routeTree = rootRoute.addChildren([
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,
     chatRoute,
-    forosRoute,
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,
