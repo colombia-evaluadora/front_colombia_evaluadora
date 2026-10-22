@@ -30,18 +30,32 @@ import { SelectorChips } from "@/features/comunicaciones/chat/components/selecto
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
-import { puedeAgregarParticipantes } from "@/features/comunicaciones/chat/lib/politica-chat"
+import { puedeAgregarParticipantes, puedeNombrarAdministradores } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
+import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
+import { useAgregarMiembrosMasivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
+import { useResolverSeleccion } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
+import { SelectorGrupal } from "@/features/comunicaciones/chat/components/selector-grupal"
+import { ConfirmarAltaDialog } from "@/features/comunicaciones/chat/components/confirmar-alta-dialog"
+import {
+  aCuerpoSeleccion,
+  haySeleccionGrupal,
+  resumenSeleccion,
+  SELECCION_VACIA,
+  type SeleccionGrupal,
+} from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 const POR_PAGINA = 6
 
 const ACCION =
   "grid size-8 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50"
 
-// Participantes del grupo o foro. Solo quien administra (`esAdmin`) añade, bloquea, quita y
-// nombra administradores; los demás ven la lista. Reglas en comms-service (pendiente Natalia).
+// Participantes del grupo o foro. Solo quien administra (`esAdmin`) añade, bloquea y quita; los
+// demás ven la lista. Un grupo lo gestiona solo quien lo creó (o quien lo heredó al salir) y no se
+// nombran administradores adicionales (decisión de Natalia, `politica.grupos.administradoresAdicionales`);
+// en un grupo se agrega también por grado, grupo académico o rol, con confirmación del conteo.
 export function MiembrosDialog({
   conversacion: c,
   open,
@@ -59,19 +73,47 @@ export function MiembrosDialog({
   const [pagina, setPagina] = useState(0)
   const miembros = useMiembrosQuery(open ? c.id : undefined)
   const [consulta, setConsulta] = useState("")
-  const personas = usePersonasQuery(open, consulta)
+  const esGrupo = c.tipo === "GRUPO"
+  const personas = usePersonasQuery(open, consulta, { paraGrupo: esGrupo })
   const delServidor = !personas.isPlaceholderData && consulta.trim().length >= 2
   const deBusqueda = new Set(delServidor ? (personas.data ?? []).map((p) => p.id) : [])
   const agregar = useAgregarMiembros(c.id)
+  const agregarMasivo = useAgregarMiembrosMasivo(c.id)
+  const resolver = useResolverSeleccion()
+  const [grupal, setGrupal] = useState<SeleccionGrupal>(SELECCION_VACIA)
+  const [confirmacion, setConfirmacion] = useState<ResolucionSeleccion | null>(null)
   const bloquear = useBloquearMiembro(c.id)
   const eliminar = useEliminarMiembro(c.id)
   const rol = useCambiarRolMiembro(c.id)
-  const error = agregar.error ?? bloquear.error ?? eliminar.error ?? rol.error
+  const error =
+    agregar.error ?? agregarMasivo.error ?? resolver.error ?? bloquear.error ?? eliminar.error ?? rol.error
   const esAdmin = c.esAdmin ?? !!c.esCreador
   const { politica } = useChatAccess()
   const { user } = useAuth()
   // Con `comms.politica.grupos.agregar=TODOS` cualquier miembro de un grupo añade participantes.
   const puedeAgregar = puedeAgregarParticipantes(politica, { tipo: c.tipo, esAdmin })
+  // En un grupo no hay "Hacer administrador" salvo que la política lo permita.
+  const nombraAdmins = puedeNombrarAdministradores(politica, c.tipo)
+  const conGrupal = esGrupo && haySeleccionGrupal(grupal)
+  const agregando = agregar.isPending || agregarMasivo.isPending || resolver.isPending
+  const limpiarAlta = () => {
+    setSeleccion([])
+    setGrupal(SELECCION_VACIA)
+    setConfirmacion(null)
+  }
+  const onAgregar = () => {
+    if (!conGrupal) {
+      agregar.mutate(
+        seleccion.map((p) => p.id),
+        { onSuccess: () => setSeleccion([]) },
+      )
+      return
+    }
+    resolver.mutate(
+      { cuerpo: aCuerpoSeleccion(grupal, seleccion), conversacionId: c.id },
+      { onSuccess: setConfirmacion },
+    )
+  }
   // "grupo" o "foro" en los textos (los CANAL del chat se llaman foros).
   const donde = c.tipo === "GRUPO" ? "grupo" : "foro"
 
@@ -93,7 +135,8 @@ export function MiembrosDialog({
   const visibles = lista.slice(actual * POR_PAGINA, (actual + 1) * POR_PAGINA)
 
   const cerrar = () => {
-    setSeleccion([])
+    if (agregarMasivo.isPending) return
+    limpiarAlta()
     setConsulta("")
     setFiltro("")
     setPagina(0)
@@ -147,15 +190,15 @@ export function MiembrosDialog({
               )}
             />
           </div>
-          {seleccion.length > 0 && (
+          {(seleccion.length > 0 || conGrupal) && (
           <Button
             type="button"
             size="icon"
             aria-label={`Añadir al ${donde}`}
             title={`Añadir al ${donde}`}
-            disabled={agregar.isPending}
-            aria-busy={agregar.isPending}
-            onClick={() => agregar.mutate(seleccion.map((p) => p.id), { onSuccess: () => setSeleccion([]) })}
+            disabled={agregando}
+            aria-busy={agregando}
+            onClick={onAgregar}
             className="size-11 shrink-0"
           >
             <PlusIcon className="size-6" />
@@ -163,6 +206,8 @@ export function MiembrosDialog({
           )}
         </div>
         )}
+
+        {puedeAgregar && esGrupo && <SelectorGrupal enabled={open} value={grupal} onChange={setGrupal} />}
 
         {error && (
           <p role="alert" className="text-sm text-red">
@@ -225,6 +270,7 @@ export function MiembrosDialog({
                     donde={donde}
                     // Nadie se bloquea ni se quita a sí mismo (para irse está "Salir").
                     gestionar={esAdmin && m.id !== user?.userId}
+                    nombraAdmins={nombraAdmins}
                     marcado={marcados.has(m.id)}
                     onMarcar={(v) =>
                       setMarcados((prev) => {
@@ -328,6 +374,20 @@ export function MiembrosDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfirmarAltaDialog
+        resolucion={confirmacion}
+        resumen={resumenSeleccion(grupal, seleccion.length)}
+        grupo={c.nombre}
+        pendiente={agregarMasivo.isPending}
+        onCancelar={() => setConfirmacion(null)}
+        onConfirmar={() =>
+          agregarMasivo.mutate(aCuerpoSeleccion(grupal, seleccion), {
+            onSuccess: limpiarAlta,
+            onError: () => setConfirmacion(null),
+          })
+        }
+      />
     </>
   )
 }
@@ -336,6 +396,7 @@ function FilaMiembro({
   miembro: m,
   donde,
   gestionar,
+  nombraAdmins,
   marcado,
   onMarcar,
   ocupado,
@@ -346,6 +407,7 @@ function FilaMiembro({
   miembro: Miembro
   donde: string
   gestionar: boolean
+  nombraAdmins: boolean
   marcado: boolean
   onMarcar: (v: boolean) => void
   ocupado: boolean
@@ -375,6 +437,7 @@ function FilaMiembro({
       </span>
       {gestionar && (
       <>
+      {nombraAdmins && (
       <button
         type="button"
         onClick={onAdmin}
@@ -389,6 +452,7 @@ function FilaMiembro({
       >
         <StarIcon className="size-4" />
       </button>
+      )}
       <button
         type="button"
         onClick={onBloquear}

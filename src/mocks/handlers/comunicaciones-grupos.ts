@@ -5,16 +5,20 @@ import { conversaciones, mensajes, nuevoMensaje, personas, politicaChat, USUARIO
 import { notificacionesDb } from "@/mocks/db/notificaciones"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { publish } from "@/mocks/realtime/server"
+import { opcionesSeleccion, personaChat, resolverSeleccion } from "@/mocks/db/comunicaciones-seleccion"
+import type { CuerpoSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 /**
  * Grupos del chat (`TIPO: "GRUPO"`) con varias personas reales, como comms-service: cada
  * request se atiende como quien trae el token. Así un e2e con MSW entra como admin, docente y
  * user (mismo navegador, sin recargar) y ve la misma conversación desde cada lado.
  *
- * Reglas (PENDIENTE DE CONFIRMAR CON NATALIA, igual que `comms.politica.grupos`): quien crea
- * administra; los administradores añaden, quitan y nombran administradores; cualquiera sale; si
- * sale el último administrador, lo hereda el miembro más antiguo. Cada mensaje deja a los demás
- * un aviso CHAT_MENSAJE agrupado por conversación (uno vivo que suma el conteo).
+ * Reglas (decisiones de Natalia, igual que `comms.politica.grupos`): solo quien crea el grupo lo
+ * gestiona (añade y quita); no se nombran administradores adicionales (`administradoresAdicionales`);
+ * se agrega también por grado, grupo académico o rol (`/grupos/seleccion/*`, `/miembros/masivo`),
+ * sin duplicados ni acudientes; cualquiera sale; si sale quien gestiona, lo hereda el miembro más
+ * antiguo (PENDIENTE DE CONFIRMAR). Cada mensaje deja a los demás un aviso CHAT_MENSAJE agrupado
+ * por conversación (uno vivo que suma el conteo).
  *
  * Lo que no es de un grupo cae al handler siguiente (`comunicaciones.ts`): devolver `undefined`.
  */
@@ -93,7 +97,34 @@ export function filtrarGrupos(rows: Conversacion[], request: Request) {
 const leidosPor = new Map<string, number>()
 
 function nombreDe(id: number) {
-  return id === USUARIO_ACTUAL.id ? USUARIO_ACTUAL.nombre : (personas.find((p) => p.id === id)?.nombre ?? "?")
+  return id === USUARIO_ACTUAL.id ? USUARIO_ACTUAL.nombre : (personaChat(id)?.nombre ?? "?")
+}
+
+/** Desde cuántas personas el alta deja un solo mensaje de sistema (como `AVISO_AGREGADO_DESDE`). */
+const AVISO_AGREGADO_DESDE = 6
+
+/**
+ * Alta de `ids` (ya resueltos, sin duplicados) en el grupo: mensaje(s) de sistema, aparece en su
+ * lista en vivo y un aviso CHAT_GRUPO_AGREGADO por persona.
+ */
+function agregarAlGrupo(c: Conversacion, yo: { id: number; nombre: string }, ids: number[]) {
+  const lista = miembrosGrupo.get(c.id) ?? []
+  const nuevos = ids.filter((i) => !lista.some((m) => m.id === i)).flatMap((i) => personaChat(i) ?? [])
+  for (const p of nuevos) lista.push({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })
+  miembrosGrupo.set(c.id, lista)
+  if (nuevos.length >= AVISO_AGREGADO_DESDE) sistema(c.id, yo, `agregó a ${nuevos.length} personas a ${c.nombre}.`)
+  else for (const p of nuevos) sistema(c.id, p, `se ha unido a ${c.nombre}.`)
+  for (const p of nuevos) {
+    publicarEnLista(c, p.id)
+    avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${c.nombre}`, `${yo.nombre} te agregó al grupo ${c.nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
+  }
+  return nuevos
+}
+
+/** Solo quien gestiona (creador o heredero) agrega, salvo `agregar=TODOS`. */
+function puedeAgregar(c: Conversacion, personaId: number) {
+  const yo = (miembrosGrupo.get(c.id) ?? []).find((m) => m.id === personaId)
+  return !!yo && (yo.admin || politicaChat.grupos?.agregar === "TODOS")
 }
 
 function aMiembro(m: MiembroGrupo): Miembro {
@@ -192,14 +223,19 @@ function avisar(c: Conversacion, autor: { id: number; nombre: string }, m: Mensa
 
 export const comunicacionesGruposHandlers = [
   http.post(URL("conversaciones"), async ({ request }) => {
-    const body = (await request.clone().json()) as { NOMBRE?: string; TIPO?: string; MIEMBROS?: number[] }
+    const body = (await request.clone().json()) as { NOMBRE?: string; TIPO?: string; MIEMBROS?: number[] } & Partial<
+      Omit<CuerpoSeleccion, "USUARIOS">
+    >
     if (body.TIPO !== "GRUPO") return undefined
     await delay(200)
     const nombre = body.NOMBRE?.trim()
     if (!nombre) return error("Escribe un nombre para el grupo.", 400)
     const yo = personaDe(request)
-    const invitados = personas.filter((p) => body.MIEMBROS?.includes(p.id) && p.id !== yo.id)
-    if (invitados.length === 0) return error("Agrega al menos un participante al grupo.", 400)
+    const grupal = (body.GRADOS?.length ?? 0) + (body.GRUPOS?.length ?? 0) + (body.ROLES?.length ?? 0) > 0
+    const invitados = resolverSeleccion({ ...body, USUARIOS: body.MIEMBROS }, yo.id)
+    if (invitados.length === 0) {
+      return error(grupal ? "La selección no tiene personas que se puedan agregar al grupo." : "Agrega al menos un participante al grupo.", 400)
+    }
     const c: Conversacion = {
       id: Math.max(0, ...conversaciones.map((x) => x.id)) + 1,
       nombre,
@@ -216,16 +252,45 @@ export const comunicacionesGruposHandlers = [
       esCreador: true,
     }
     conversaciones.push(c)
-    miembrosGrupo.set(c.id, [
-      { id: yo.id, nombre: yo.nombre, admin: true, desde: ++reloj, silenciado: false },
-      ...invitados.map((p) => ({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })),
-    ])
-    for (const p of invitados) {
-      sistema(c.id, p, `se ha unido a ${nombre}.`)
-      publicarEnLista(c, p.id)
-      avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${nombre}`, `${yo.nombre} te agregó al grupo ${nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
-    }
+    miembrosGrupo.set(c.id, [{ id: yo.id, nombre: yo.nombre, admin: true, desde: ++reloj, silenciado: false }])
+    agregarAlGrupo(c, yo, invitados)
     return HttpResponse.json({ rows: [vistaGrupo(c, yo.id)] })
+  }),
+
+  // Selector grupal: grados, grupos académicos y cargos del colegio (comms-service SeleccionMasivaRepository).
+  http.get(URL("grupos/seleccion/opciones"), async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [opcionesSeleccion] })
+  }),
+
+  // Vista previa del alta: quiénes entrarían y cuántos ya estaban (para "Se agregarán N personas").
+  http.post(URL("grupos/seleccion/resolver"), async ({ request }) => {
+    await delay(150)
+    const body = (await request.json()) as Partial<CuerpoSeleccion> & { FK_CONVERSACION?: number }
+    const yo = personaDe(request)
+    let actuales: number[] = []
+    if (body.FK_CONVERSACION) {
+      const c = grupo(body.FK_CONVERSACION)
+      if (!c) return error("Solo un grupo agrega por grado, grupo o rol.", 400)
+      if (!puedeAgregar(c, yo.id)) return error("Solo quien creó el grupo puede hacerlo.", 403)
+      actuales = (miembrosGrupo.get(c.id) ?? []).map((m) => m.id)
+    }
+    const elegidos = resolverSeleccion(body, yo.id)
+    const nuevos = elegidos.filter((i) => !actuales.includes(i)).flatMap((i) => personaChat(i) ?? [])
+    return HttpResponse.json({
+      rows: [{ personas: nuevos, total: nuevos.length, yaEnElGrupo: elegidos.length - nuevos.length }],
+    })
+  }),
+
+  http.post(URL("conversaciones/:id/miembros/masivo"), async ({ params, request }) => {
+    const c = grupo(params.id)
+    if (!c) return error("Solo un grupo agrega por grado, grupo o rol.", 400)
+    await delay(200)
+    const yo = personaDe(request)
+    if (!puedeAgregar(c, yo.id)) return error("Solo quien creó el grupo puede hacerlo.", 403)
+    agregarAlGrupo(c, yo, resolverSeleccion((await request.json()) as Partial<CuerpoSeleccion>, yo.id))
+    miembrosActualizados(c.id)
+    return HttpResponse.json({ rows: (miembrosGrupo.get(c.id) ?? []).map(aMiembro) })
   }),
 
   http.get(URL("conversaciones/:id/miembros"), async ({ params, request }) => {
@@ -241,22 +306,13 @@ export const comunicacionesGruposHandlers = [
     const c = grupo(params.id)
     if (!c) return undefined
     await delay(150)
-    const lista = miembrosGrupo.get(c.id) ?? []
     const yo = personaDe(request)
     // Política del mock: `agregar` ADMIN (como el default de comms-service) o TODOS.
-    const yoMiembro = lista.find((m) => m.id === yo.id)
-    if (!yoMiembro || (!yoMiembro.admin && politicaChat.grupos?.agregar !== "TODOS")) {
-      return error("Solo quien administra el grupo puede hacerlo.", 403)
-    }
+    if (!puedeAgregar(c, yo.id)) return error("Solo quien creó el grupo puede hacerlo.", 403)
     const body = (await request.json()) as { MIEMBROS?: number[] }
-    for (const p of personas.filter((x) => body.MIEMBROS?.includes(x.id) && !lista.some((m) => m.id === x.id))) {
-      lista.push({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })
-      sistema(c.id, p, `se ha unido a ${c.nombre}.`)
-      publicarEnLista(c, p.id)
-      avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${c.nombre}`, `${yo.nombre} te agregó al grupo ${c.nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
-    }
+    agregarAlGrupo(c, yo, resolverSeleccion({ USUARIOS: body.MIEMBROS }, yo.id))
     miembrosActualizados(c.id)
-    return HttpResponse.json({ rows: lista.map(aMiembro) })
+    return HttpResponse.json({ rows: (miembrosGrupo.get(c.id) ?? []).map(aMiembro) })
   }),
 
   http.patch(URL("conversaciones/:id/miembros/:miembro/rol"), async ({ params, request }) => {
@@ -265,11 +321,15 @@ export const comunicacionesGruposHandlers = [
     await delay(150)
     const lista = miembrosGrupo.get(c.id) ?? []
     if (!lista.find((m) => m.id === personaDe(request).id)?.admin) {
-      return error("Solo quien administra el grupo puede hacerlo.", 403)
+      return error("Solo quien creó el grupo puede hacerlo.", 403)
     }
     const m = lista.find((x) => x.id === Number(params.miembro))
     if (!m) return error("La persona ya no está en el grupo.", 404)
     const admin = ((await request.json()) as { ROL?: string }).ROL === "ADMIN"
+    // Sin administradores adicionales (decisión de Natalia): nombrar se rechaza.
+    if (admin && !politicaChat.grupos?.administradoresAdicionales) {
+      return error("En un grupo no se nombran administradores: lo gestiona solo quien lo creó.", 403)
+    }
     if (!admin && m.admin && lista.filter((x) => x.admin).length <= 1) {
       return error("Debe quedar al menos un administrador.", 409)
     }
@@ -284,7 +344,7 @@ export const comunicacionesGruposHandlers = [
     await delay(150)
     const lista = miembrosGrupo.get(c.id) ?? []
     const yo = personaDe(request)
-    if (!lista.find((m) => m.id === yo.id)?.admin) return error("Solo quien administra el grupo puede hacerlo.", 403)
+    if (!lista.find((m) => m.id === yo.id)?.admin) return error("Solo quien creó el grupo puede hacerlo.", 403)
     if (Number(params.miembro) === yo.id) return error("Para irte usa Salir.", 400)
     const i = lista.findIndex((x) => x.id === Number(params.miembro))
     if (i < 0) return error("La persona ya no está en el grupo.", 404)

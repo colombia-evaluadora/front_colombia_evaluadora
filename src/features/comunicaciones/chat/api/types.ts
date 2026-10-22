@@ -348,6 +348,32 @@ export interface Votante {
   numero: number
 }
 
+/**
+ * Opción del selector grupal de un grupo (comms-service `/comunicaciones/grupos/seleccion/opciones`):
+ * grado (`valor` = nombre, "Sexto"), grupo académico (`valor` = pk_tgrupo, `etiqueta` "Sexto 601",
+ * `detalle` = sede) o cargo de funcionario (`valor` = nombre, "Docente"). `total`: personas con
+ * matrícula o cargo activo en los establecimientos de quien agrega.
+ */
+export interface OpcionSeleccion {
+  valor: string
+  etiqueta: string
+  detalle?: string | null
+  total: number
+}
+
+export interface OpcionesSeleccion {
+  grados: OpcionSeleccion[]
+  grupos: OpcionSeleccion[]
+  roles: OpcionSeleccion[]
+}
+
+/** Vista previa de un alta masiva: quiénes entrarían (sin duplicados ni quien ya está). */
+export interface ResolucionSeleccion {
+  personas: Persona[]
+  total: number
+  yaEnElGrupo: number
+}
+
 // Bandeja "Enviados": DIRECTO/CANAL son mensajes; el resto, actividades publicadas.
 export type TipoEnviado = "DIRECTO" | "CANAL" | "COMUNICADO" | "ENCUESTA" | "ELECCION" | "EVALUACION"
 

@@ -159,9 +159,11 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: [politicaChat] })
   }),
 
-  http.get(URL("personas"), async () => {
+  // `paraGrupo=true`: el buscador de un grupo no ofrece acudientes (irán por invitación).
+  http.get(URL("personas"), async ({ request }) => {
     await delay(200)
-    return HttpResponse.json({ rows: personas })
+    const paraGrupo = new globalThis.URL(request.url).searchParams.get("paraGrupo") === "true"
+    return HttpResponse.json({ rows: paraGrupo ? personas.filter((p) => p.perfil !== "ACUDIENTE") : personas })
   }),
 
   http.post(URL("conversaciones"), async ({ request }) => {
