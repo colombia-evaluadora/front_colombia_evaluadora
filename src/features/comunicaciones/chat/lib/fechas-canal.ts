@@ -37,3 +37,12 @@ export function validarRangoFechas(v: Rango, ctx: z.RefinementCtx) {
   const error = errorCierre(v.fechaInicio, v.fechaCierre)
   if (error) ctx.addIssue({ code: "custom", path: ["fechaCierre"], message: error })
 }
+
+/** ISO del servidor → `yyyy-MM-dd'T'HH:mm` local de los campos de fecha (al editar una actividad). */
+export function isoALocal(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}

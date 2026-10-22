@@ -32,6 +32,9 @@ export interface Conversacion {
   menciones?: number
   // El usuario administra el grupo o foro (comms-service): añade, quita y nombra administradores.
   esAdmin?: boolean
+  // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
+  // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
+  leidoHasta?: number | null
 }
 
 export interface AutorMensaje {
@@ -74,6 +77,12 @@ export interface Mensaje {
   menciones?: Mencion[]
   // El mensaje menciona al usuario actual (directa o masivamente): se resalta.
   meMenciona?: boolean
+  // Borrado lógico: se pinta el aviso "Este mensaje fue eliminado". El texto original solo
+  // llega a quien modera la conversación (administrador o directivo); a los demás, vacío.
+  eliminado?: boolean
+  eliminadoEn?: string | null
+  // Última edición (marca "Editado HH:MM").
+  editadoEn?: string | null
 }
 
 export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"

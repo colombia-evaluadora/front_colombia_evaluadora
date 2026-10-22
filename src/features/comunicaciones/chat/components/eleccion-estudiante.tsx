@@ -64,7 +64,7 @@ function TarjetaCandidatos({ eleccion: e }: { eleccion: Eleccion }) {
 
   return (
     <section aria-labelledby="tarjeta-candidatos" className="mb-4 rounded-xl border bg-card p-4">
-      <h3 id="tarjeta-candidatos" className="font-semibold">
+      <h3 id="tarjeta-candidatos" className="text-[15px] leading-snug font-semibold">
         Tarjeta electoral
       </h3>
       <p className="mb-4 text-sm text-muted-foreground">
@@ -167,7 +167,7 @@ function VotoRegistrado({ eleccion: e }: { eleccion: Eleccion }) {
       <div className="space-y-4">
         {e.fechaCierre && (
           <section className="rounded-xl border bg-card p-4">
-            <h4 className="mb-3 flex items-center gap-2 font-medium">
+            <h4 className="mb-3 flex items-center gap-2 text-[15px] font-medium">
               <CalendarBlankIcon aria-hidden className="size-5 text-primary" />
               Cierre de la elección
             </h4>
@@ -182,7 +182,7 @@ function VotoRegistrado({ eleccion: e }: { eleccion: Eleccion }) {
           </section>
         )}
         <section className="rounded-xl border bg-card p-4">
-          <h4 className="mb-2 flex items-center gap-2 font-medium">
+          <h4 className="mb-2 flex items-center gap-2 text-[15px] font-medium">
             <TrophyIcon aria-hidden className="size-5 text-green" />
             Resultados
           </h4>

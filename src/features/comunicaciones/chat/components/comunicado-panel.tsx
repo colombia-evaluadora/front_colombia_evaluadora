@@ -70,7 +70,7 @@ export function ComunicadoPanel({
           </p>
         )}
         <header className="border-b pb-3">
-          <h3 id="comunicado-titulo" className="font-semibold">
+          <h3 id="comunicado-titulo" className="text-[15px] leading-snug font-semibold">
             {c.titulo}
           </h3>
           <dl className="text-xs text-muted-foreground">

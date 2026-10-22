@@ -73,7 +73,21 @@ export function vistaGrupo(c: Conversacion, personaId: number): Conversacion | n
 /** Lista de conversaciones del que pide: los grupos solo si es miembro. */
 export function filtrarGrupos(rows: Conversacion[], request: Request) {
   const yo = personaDe(request).id
-  return rows.flatMap((c) => (c.tipo === "GRUPO" ? (vistaGrupo(c, yo) ?? []) : [c]))
+  // Foros del mock: los creó Andrés (USUARIO_ACTUAL), que los administra; los demás son miembros.
+  return rows.flatMap((c) =>
+    c.tipo === "GRUPO"
+      ? (vistaGrupo(c, yo) ?? [])
+      : [
+          c.tipo === "CANAL"
+            ? {
+                ...c,
+                esAdmin: c.esAdmin ?? yo === USUARIO_ACTUAL.id,
+                // Las actividades del mock las creó Andrés: solo él las edita.
+                esCreador: !!c.esCreador && yo === USUARIO_ACTUAL.id,
+              }
+            : c,
+        ],
+  )
 }
 
 const leidosPor = new Map<string, number>()

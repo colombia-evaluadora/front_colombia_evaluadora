@@ -64,3 +64,21 @@ export function notificarEleccionAbierta(conversacionId: number, nombre: string,
 for (const e of elecciones) {
   if (!eleccionCerrada(e)) notificarEleccionAbierta(e.conversacionId, e.nombre, e.fechaInicio ?? undefined)
 }
+
+/** Actividad nueva (encuesta, evaluación…) → aviso en la bandeja general, como comms-service. */
+export function notificarActividad(conversacionId: number, tipo: string, titulo: string, cuerpo: string) {
+  notificacionesDb.unshift({
+    id: `chat-actividad-${conversacionId}`,
+    tipo,
+    categoria: "CHAT",
+    titulo,
+    cuerpo_corto: cuerpo,
+    deep_link: `/app/comunicaciones/chat?canal=${conversacionId}`,
+    prioridad: "NORMAL",
+    creada_en: new Date().toISOString(),
+    leida_en: null,
+    actores: null,
+    conteo: null,
+    archivada: false,
+  })
+}

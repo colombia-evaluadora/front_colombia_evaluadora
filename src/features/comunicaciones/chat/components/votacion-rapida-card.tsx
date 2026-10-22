@@ -11,7 +11,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { ClockIcon, LightningIcon, LockIcon, PencilSimpleIcon, TrashIcon } from "@/components/ui/icons"
+import {
+  ClockIcon,
+  LightningIcon,
+  LockIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+  WarningIcon,
+  XIcon,
+} from "@/components/ui/icons"
+import { haceCuanto, votacionModificada } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -46,15 +55,39 @@ const BARRA = ["bg-green", "bg-navy/70"]
 export function VotacionRapidaCard({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: VotacionRapida }) {
   const restantes = segundosRestantes(v, useAhora(v.cierraEn))
   const cerrada = restantes === 0
+  // El aviso se puede cerrar; vuelve si la votación se edita otra vez (otro cierre).
+  const [avisoCerrado, setAvisoCerrado] = useState<string | null>(null)
+  const modificada = votacionModificada(m, v, !cerrada) && avisoCerrado !== v.cierraEn
 
   return (
     <article
       aria-label={`Votación rápida: ${v.pregunta}`}
       className="w-full max-w-sm space-y-3 rounded-xl border bg-card p-4"
     >
+      {modificada && (
+        <p role="status" className="flex items-start gap-2 rounded-md border border-orange-stroke bg-orange-22 px-2.5 py-1.5 text-xs text-orange">
+          <WarningIcon aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+          <span className="flex-1">
+            La votación fue modificada y se reiniciaron los votos. Por favor vota nuevamente.
+          </span>
+          <button
+            type="button"
+            aria-label="Cerrar aviso"
+            onClick={() => setAvisoCerrado(v.cierraEn)}
+            className="grid size-5 shrink-0 place-items-center rounded hover:bg-orange/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            <XIcon className="size-3.5" />
+          </button>
+        </p>
+      )}
       <header className="flex items-center gap-2">
-        <LightningIcon aria-hidden className="size-5 text-yellow" />
-        <span className="flex-1 text-sm font-medium">Votación rápida</span>
+        <LightningIcon aria-hidden className="size-5 self-start text-yellow" />
+        <span className="flex-1 leading-tight">
+          <span className="block text-sm font-medium">Votación rápida</span>
+          {m.editado && m.editadoEn && (
+            <span className="block text-[11px] text-muted-foreground italic">Editado {haceCuanto(m.editadoEn)}</span>
+          )}
+        </span>
         {!cerrada && (
           <span
             role="timer"
@@ -190,7 +223,7 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar la votación rápida?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se quitará del chat junto con los votos que ya tenga.
+              Se quitará del chat junto con los votos que ya tenga; en su lugar queda el aviso de mensaje eliminado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {eliminar.isError && (

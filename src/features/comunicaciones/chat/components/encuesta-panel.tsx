@@ -90,7 +90,7 @@ function Indicador({ etiqueta, valor }: { etiqueta: string; valor: string }) {
 function ResultadoPregunta({ numero, pregunta: p }: { numero: number; pregunta: PreguntaEncuesta }) {
   return (
     <article>
-      <h4 className="mb-1.5 font-medium">
+      <h4 className="mb-1.5 text-[15px] leading-snug font-medium">
         {numero}. {p.texto}
       </h4>
       {p.tipo === "REDACCION" ? (

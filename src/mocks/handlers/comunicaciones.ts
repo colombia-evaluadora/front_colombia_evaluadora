@@ -5,6 +5,7 @@ import { filtrarGrupos } from "@/mocks/handlers/comunicaciones-grupos"
 
 import type {
   AdjuntoMensaje,
+  Mensaje,
   CategoriaCanal,
   SilencioDuracion,
   TipoVotacionRapida,
@@ -68,6 +69,21 @@ function mencionesDe(texto: string, conversacionId: number, request: Request) {
   const conv = buscar(String(conversacionId))
   const miembros = conv ? participantes(conv) : []
   return extraerMenciones(texto, miembros, puedeMencionarMasivo(politicaChat, perfilDe(request)))
+}
+
+/**
+ * comms-service (`ChatService.puedeVerEliminados`): el original de un mensaje borrado solo llega a
+ * quien administra el foro o grupo o a un directivo; en un DM a nadie. Los demás reciben el aviso.
+ */
+function verEliminados(conversacionId: number, request: Request) {
+  const conv = buscar(String(conversacionId))
+  if (!conv || conv.tipo === "DIRECTO") return false
+  return perfilDe(request) === "DIRECTIVO" || !!filtrarGrupos([conv], request)[0]?.esAdmin
+}
+
+export function vistaMensaje(m: Mensaje, ver: boolean): Mensaje {
+  if (!m.eliminado || ver) return m
+  return { ...m, texto: "", adjunto: null, fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
 }
 
 function hastaSilencio(duracion: SilencioDuracion) {
@@ -205,7 +221,7 @@ export const comunicacionesHandlers = [
     if (conv.tipo === "DIRECTO") {
       const rows = participantes(conv)
         .filter((p) => p.id !== USUARIO_ACTUAL.id)
-        .map((p) => ({ ...p, rol: "Docente", bloqueado: false }))
+        .map((p) => ({ ...p, rol: "Miembro", perfil: personas.find((x) => x.id === p.id)?.perfil, bloqueado: false }))
       return HttpResponse.json({ rows })
     }
     return HttpResponse.json({ rows: miembrosDe(conv.id) })
@@ -292,6 +308,7 @@ export const comunicacionesHandlers = [
       .filter((m) => m.conversacionId === conv.id && (antes == null || m.id < antes))
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
       .slice(-limite)
+      .map((m) => vistaMensaje(m, verEliminados(conv.id, request)))
     return HttpResponse.json({ rows })
   }),
 
@@ -579,7 +596,7 @@ export const comunicacionesArchivosHandlers = [
 export const comunicacionesMensajesHandlers = [
   http.post(URL("mensajes/:id/votacion/votar"), async ({ params, request }) => {
     await delay(150)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     const v = m?.votacion
     if (!v) return mensajeNoEncontrado()
     if (new Date(v.cierraEn) <= new Date()) {
@@ -596,7 +613,7 @@ export const comunicacionesMensajesHandlers = [
 
   http.patch(URL("mensajes/:id/votacion"), async ({ params, request }) => {
     await delay(150)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     const v = m?.votacion
     if (!v) return mensajeNoEncontrado()
     if (new Date(v.cierraEn) <= new Date()) {
@@ -610,12 +627,13 @@ export const comunicacionesMensajesHandlers = [
     mensajes.pop()
     m.votacion = nueva.votacion
     m.editado = true
+    m.editadoEn = new Date().toISOString()
     return HttpResponse.json({ rows: [m] })
   }),
 
   http.post(URL("mensajes/:id/reacciones"), async ({ params, request }) => {
     await delay(100)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m) return mensajeNoEncontrado()
     const body = (await request.json()) as { EMOJI?: string }
     const emoji = body.EMOJI?.trim()
@@ -639,7 +657,7 @@ export const comunicacionesMensajesHandlers = [
 
   http.patch(URL("mensajes/:id/fijar"), async ({ params, request }) => {
     await delay(120)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m) return mensajeNoEncontrado()
     const body = (await request.json()) as { FIJADO: "S" | "N" }
     m.fijado = body.FIJADO === "S"
@@ -649,20 +667,22 @@ export const comunicacionesMensajesHandlers = [
 
   http.patch(URL("mensajes/:id/adjunto/eliminar"), async ({ params }) => {
     await delay(150)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m?.adjunto) return mensajeNoEncontrado()
     m.adjunto.eliminadoEn = new Date().toISOString()
     return HttpResponse.json({ rows: [m] })
   }),
 
-  http.patch(URL("mensajes/:id/eliminar"), async ({ params }) => {
+  // Borrado lógico, como comms-service: el mensaje queda como aviso "Este mensaje fue eliminado".
+  http.patch(URL("mensajes/:id/eliminar"), async ({ params, request }) => {
     await delay(150)
-    const idx = mensajes.findIndex((x) => x.id === Number(params.id))
-    if (idx === -1) return mensajeNoEncontrado()
-    if (!mensajes[idx].esPropio) {
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    if (!m) return mensajeNoEncontrado()
+    if (!m.esPropio) {
       return HttpResponse.json({ message: "Solo puedes eliminar tus mensajes." }, { status: 403 })
     }
-    const [m] = mensajes.splice(idx, 1)
+    m.eliminado = true
+    m.eliminadoEn = new Date().toISOString()
     // Las respuestas que lo citaban muestran "Mensaje eliminado".
     for (const x of mensajes) {
       if (x.respuestaA?.id === m.id) {
@@ -671,12 +691,12 @@ export const comunicacionesMensajesHandlers = [
       }
     }
     publicarMensajeEliminado(m)
-    return HttpResponse.json({ rows: [m] })
+    return HttpResponse.json({ rows: [vistaMensaje(m, verEliminados(m.conversacionId, request))] })
   }),
 
   http.patch(URL("mensajes/:id"), async ({ params, request }) => {
     await delay(150)
-    const m = mensajes.find((x) => x.id === Number(params.id))
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m) return mensajeNoEncontrado()
     const body = (await request.json()) as { TEXTO?: string }
     const texto = body.TEXTO?.trim()
@@ -688,6 +708,7 @@ export const comunicacionesMensajesHandlers = [
     }
     m.texto = texto ?? ""
     m.editado = true
+    m.editadoEn = new Date().toISOString()
     // Editar no vuelve a notificar (como Discord): solo se recalculan las menciones.
     m.menciones = mencionesDe(m.texto, m.conversacionId, request)
     publicarMensajeActualizado(m)

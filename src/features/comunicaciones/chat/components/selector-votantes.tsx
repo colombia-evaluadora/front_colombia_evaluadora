@@ -29,12 +29,15 @@ export function SelectorVotantes({
   invalido,
   titulo = "Seleccionar estudiantes",
   mensajeInvalido = "Selecciona al menos una persona habilitada para votar.",
+  // "para votar" en elecciones; "para responder" o "para presentarla" en encuestas y evaluaciones.
+  accion = "para votar",
 }: {
   seleccion: Set<number>
   onCambio: (s: Set<number>) => void
   invalido: boolean
   titulo?: string
   mensajeInvalido?: string
+  accion?: string
 }) {
   const [filtro, setFiltro] = useState<Filtro | null>(null)
   const [abierto, setAbierto] = useState(false)
@@ -75,7 +78,7 @@ export function SelectorVotantes({
   return (
     <section className="space-y-3 rounded-lg border p-4">
       <div>
-        <h3 className="font-semibold">{titulo}</h3>
+        <h3 className="text-[15px] leading-snug font-semibold">{titulo}</h3>
         <p className="text-sm text-muted-foreground">
           Elige un grado o un tipo de funcionario para cargar el listado.
         </p>
@@ -237,7 +240,7 @@ export function SelectorVotantes({
       )}
       {seleccion.size > 0 && (
         <p className="text-sm text-muted-foreground">
-          En total: {seleccion.size} {seleccion.size === 1 ? "persona habilitada" : "personas habilitadas"} para votar.
+          En total: {seleccion.size} {seleccion.size === 1 ? "persona habilitada" : "personas habilitadas"} {accion}.
         </p>
       )}
     </section>

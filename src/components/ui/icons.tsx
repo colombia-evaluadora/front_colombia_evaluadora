@@ -191,6 +191,7 @@ import {
   MdHourglassTop,
   MdStar,
   MdStarBorder,
+  MdDoneAll,
 } from "react-icons/md"
 
 /**
@@ -435,3 +436,4 @@ export const ClipboardPasteIcon = makeIcon(MdContentPaste)
 export const HourglassIcon = makeIcon(MdHourglassTop)
 export const StarIcon = makeIcon(MdStarBorder)
 export const StarFillIcon = makeIcon(MdStar)
+export const ChecksIcon = makeIcon(MdDoneAll)

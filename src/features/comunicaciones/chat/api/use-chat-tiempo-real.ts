@@ -8,6 +8,7 @@ import { useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import type { RealtimeEvent } from "@/lib/realtime/protocol"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion, Mensaje, Miembro } from "@/features/comunicaciones/chat/api/types"
+import { comoEliminado } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 
 /**
  * Eventos en vivo del chat (contrato de `add-tiempo-real-gateway`). Siguiendo
@@ -134,7 +135,7 @@ interface Escribiendo {
  * Mensajes nuevos/editados/eliminados y "escribiendo" del canal abierto.
  * Devuelve quién está escribiendo ahora.
  */
-export function useChatTiempoRealCanal(conversacionId: number | undefined) {
+export function useChatTiempoRealCanal(conversacionId: number | undefined, verEliminados = false) {
   const queryClient = useQueryClient()
   const [escribiendo, setEscribiendo] = useState<Escribiendo[]>([])
   const key = chatKeys.mensajes(conversacionId ?? "none")
@@ -152,8 +153,13 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined) {
         return
       }
       case "mensaje.eliminado": {
-        const { id } = e.data as { id: number }
-        queryClient.setQueryData<Mensaje[]>(key, (prev) => prev?.filter((x) => x.id !== id))
+        // Borrado lógico: queda el aviso. Quien modera vuelve a pedir el historial para ver el
+        // original (el evento no trae el texto).
+        const { id, eliminadoEn } = e.data as { id: number; eliminadoEn?: string }
+        queryClient.setQueryData<Mensaje[]>(key, (prev) =>
+          prev?.map((x) => (x.id === id ? comoEliminado(x, eliminadoEn) : x)),
+        )
+        if (verEliminados) void queryClient.invalidateQueries({ queryKey: key })
         void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
         return
       }
@@ -161,6 +167,14 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined) {
         // Alta, baja, bloqueo o rol en la conversación abierta: lista de participantes y totales.
         void queryClient.invalidateQueries({ queryKey: chatKeys.miembros(conversacionId ?? "none") })
         void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+        return
+      }
+      case "conversacion.lectura": {
+        // Confirmación de lectura: alguien leyó; los mensajes propios pasan a doble check.
+        const { conversacionId: id, leidoHasta } = e.data as { conversacionId: number; leidoHasta: number }
+        queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+          prev?.map((c) => (c.id === id ? { ...c, leidoHasta: Math.max(c.leidoHasta ?? 0, leidoHasta) } : c)),
+        )
         return
       }
       case "escribiendo": {

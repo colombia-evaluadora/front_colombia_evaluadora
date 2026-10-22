@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
+import { comoEliminado } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 
 const base = (id: number) => `/comunicaciones/mensajes/${id}`
 
@@ -59,9 +60,11 @@ export function useEliminarMensaje() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => evalCol.patchRow<Mensaje>(`${base(id)}/eliminar`),
+    // Borrado lógico: comms-service devuelve el mensaje con `eliminado` (y el original solo a
+    // quien modera); queda en su lugar como aviso "Este mensaje fue eliminado".
     onSuccess: (m) => {
       queryClient.setQueryData<Mensaje[]>(chatKeys.mensajes(m.conversacionId), (prev) =>
-        prev?.filter((x) => x.id !== m.id),
+        prev?.map((x) => (x.id === m.id ? (m.eliminado ? m : comoEliminado(x, null)) : x)),
       )
       queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
     },

@@ -1,15 +1,24 @@
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
-import { Fragment, useEffect, useRef, type ReactNode } from "react"
+import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowBendUpLeftIcon, PushPinFillIcon } from "@/components/ui/icons"
+import {
+  ArrowBendUpLeftIcon,
+  CheckIcon,
+  ChecksIcon,
+  DotsThreeVerticalIcon,
+  LockIcon,
+  PushPinFillIcon,
+  TrashIcon,
+} from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useEliminarAdjunto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
-import { MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
+import { BARRA_ACCIONES, MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
-import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
+import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
 import {
@@ -31,6 +40,8 @@ interface ChatMessagesProps {
   // Mensaje elegido en el buscador: se lleva a la vista y se resalta un momento.
   destacado?: { id: number; vez: number }
   nombreConversacion: string
+  // Conversación abierta: confirmación de lectura de los mensajes propios (`leidoHasta`).
+  conversacion?: Conversacion
   // Contenido fijo al inicio del historial (p. ej. resultados de una elección).
   antes?: ReactNode
   // Botón "Cargar mensajes anteriores" (historial paginado con `?antes=`).
@@ -49,6 +60,7 @@ export function ChatMessages({
   onRetry,
   destacado,
   nombreConversacion,
+  conversacion,
   antes,
   anteriores,
   primerNoLeidoId,
@@ -138,7 +150,12 @@ export function ChatMessages({
                     CHAT_FUNCIONES.menciones && m.meMenciona && !m.esPropio && "border-l-3 border-yellow bg-yellow-22/60",
                   )}
                 >
-                  <MensajeItem mensaje={m} onResponder={onResponder} onIrAMensaje={onIrAMensaje} />
+                  <MensajeItem
+                    mensaje={m}
+                    conversacion={conversacion}
+                    onResponder={m.eliminado ? undefined : onResponder}
+                    onIrAMensaje={onIrAMensaje}
+                  />
                 </li>
               </Fragment>
             ))}
@@ -200,15 +217,117 @@ function BotonResponder({ mensaje, onResponder }: { mensaje: Mensaje; onResponde
   )
 }
 
+/**
+ * En pantallas táctiles no hay hover: la barra de acciones del mensaje se abre con el botón ⋮
+ * del encabezado de la burbuja o con una pulsación larga (menú contextual), y se cierra al tocar
+ * fuera. Con mouse o teclado sigue saliendo con hover o foco.
+ */
+function useAccionesTactiles() {
+  const [abiertas, setAbiertas] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!abiertas) return
+    const cerrar = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setAbiertas(false)
+    }
+    document.addEventListener("pointerdown", cerrar)
+    return () => document.removeEventListener("pointerdown", cerrar)
+  }, [abiertas])
+  return {
+    ref,
+    abiertas,
+    alternar: () => setAbiertas((v) => !v),
+    props: {
+      "data-acciones": abiertas ? "abiertas" : undefined,
+      onContextMenu: (e: MouseEvent) => {
+        // Pulsación larga en táctil: abre las acciones en lugar del menú del navegador.
+        if (window.matchMedia("(hover: none)").matches) {
+          e.preventDefault()
+          setAbiertas(true)
+        }
+      },
+    },
+  }
+}
+
+// Botón ⋮ que solo existe en pantallas táctiles (sin hover).
+function BotonAccionesTactil({ abiertas, onClick }: { abiertas: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={abiertas ? "Ocultar acciones del mensaje" : "Acciones del mensaje"}
+      aria-expanded={abiertas}
+      onClick={onClick}
+      className="-my-1 -mr-2 ml-1 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none [@media(hover:hover)]:hidden"
+    >
+      <DotsThreeVerticalIcon className="size-4.5" />
+    </button>
+  )
+}
+
+// ✓ enviado / ✓✓ leído por todos, abajo a la derecha de la burbuja (diseño 3731:41577).
+function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectura> }) {
+  if (!estado) return null
+  const leido = estado === "LEIDO"
+  const Icono = leido ? ChecksIcon : CheckIcon
+  return (
+    <span
+      title={leido ? "Leído" : "Enviado"}
+      data-lectura={estado}
+      className={cn("-mr-1 -mb-1 flex justify-end", leido ? "text-primary" : "text-muted-foreground")}
+    >
+      <Icono aria-hidden className="size-4" />
+      <span className="sr-only">{leido ? "Leído" : "Enviado"}</span>
+    </span>
+  )
+}
+
+// Aviso de un mensaje borrado (diseño 4490:66032). Quien modera (administrador o directivo)
+// recibe además el original del servidor y lo ve debajo del aviso; los demás, solo el aviso.
+function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
+  const original = m.texto.trim() !== "" || !!m.adjunto
+  return (
+    <div className={cn("w-fit max-w-[85%] md:max-w-[70%]", m.esPropio && "ml-auto")}>
+      <article className="rounded-xl bg-orange-22 px-4 py-3 text-sm" aria-label="Mensaje eliminado">
+        <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+          {!m.esPropio && <span className="font-medium text-foreground">{m.autor.nombre}</span>}
+          <span>
+            Eliminado <time dateTime={m.eliminadoEn ?? m.fecha}>{horaMensaje(m.eliminadoEn ?? m.fecha)}</time>
+          </span>
+        </header>
+        <p className="flex items-center gap-1.5 italic">
+          <TrashIcon aria-hidden className="size-4 shrink-0 text-orange" />
+          Este mensaje fue eliminado.
+        </p>
+        <p className="flex items-center gap-1.5 italic">
+          <LockIcon aria-hidden className="size-4 shrink-0 text-orange" />
+          Visible para el coordinador.
+        </p>
+        {original && (
+          <div className="mt-2 border-t border-orange-stroke pt-2">
+            <p className="mb-1 text-xs text-muted-foreground">Mensaje original</p>
+            {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
+            {m.adjunto && <p className="text-xs text-muted-foreground">Adjunto: {m.adjunto.nombre}</p>}
+          </div>
+        )}
+      </article>
+    </div>
+  )
+}
+
 function MensajeItem({
   mensaje: m,
+  conversacion,
   onResponder,
   onIrAMensaje,
 }: {
   mensaje: Mensaje
+  conversacion?: Conversacion
   onResponder?: (m: Mensaje) => void
   onIrAMensaje?: (id: number) => void
 }) {
+  const tactil = useAccionesTactiles()
+
   if (m.sistema) {
     return (
       <p className="text-center text-xs text-muted-foreground">
@@ -216,6 +335,8 @@ function MensajeItem({
       </p>
     )
   }
+
+  if (m.eliminado) return <MensajeEliminado mensaje={m} />
 
   if (m.votacion) {
     return (
@@ -225,31 +346,45 @@ function MensajeItem({
     )
   }
 
+  // "Editado 7:33 AM" como prefijo de la hora (diseño 4487:67998).
+  const edicion = marcaEdicion(m)
   const meta = (
     <>
-      <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
+      {edicion ? (
+        <span>
+          {edicion} · <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
+        </span>
+      ) : (
+        <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
+      )}
       {m.fijado && (
         <span className="flex items-center gap-0.5 text-primary">
           <PushPinFillIcon aria-hidden className="size-3.5" />
           Fijado
         </span>
       )}
-      {m.editado && <span className="ml-auto pl-3">(editado)</span>}
     </>
   )
 
   if (m.esPropio) {
     return (
       <div className="ml-auto w-fit max-w-[85%] min-w-40 md:max-w-[70%]">
-        <article className="group/mensaje relative rounded-xl bg-primary/10 px-4 py-3">
+        <article
+          ref={tactil.ref}
+          {...tactil.props}
+          className="group/mensaje relative rounded-xl bg-primary/10 px-4 py-3"
+        >
           <MensajeAcciones mensaje={m} extra={<BotonResponder mensaje={m} onResponder={onResponder} />} />
           <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
             <span className="sr-only">Tú, </span>
             {meta}
+            <span className="flex-1" />
+            <BotonAccionesTactil abiertas={tactil.abiertas} onClick={tactil.alternar} />
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
           {m.adjunto && <Adjunto mensaje={m} propio />}
+          <ConfirmacionLectura estado={estadoLectura(m, conversacion)} />
         </article>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
@@ -269,15 +404,22 @@ function MensajeItem({
         )}
       </Avatar>
       <div className="min-w-0">
-        <div className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3">
+        <div
+          ref={tactil.ref}
+          {...tactil.props}
+          className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3"
+        >
           {/* Los mensajes ajenos solo se pueden reaccionar y responder. */}
-          <div className="absolute -top-4 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm opacity-0 transition-opacity group-focus-within/mensaje:opacity-100 group-hover/mensaje:opacity-100 has-data-popup-open:opacity-100 max-md:opacity-100">
-            {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
-            <BotonResponder mensaje={m} onResponder={onResponder} />
-          </div>
+          {(CHAT_FUNCIONES.reacciones || onResponder) && (
+            <div className={BARRA_ACCIONES}>
+              {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
+              <BotonResponder mensaje={m} onResponder={onResponder} />
+            </div>
+          )}
           <header className="mb-1 flex items-baseline gap-2 text-xs">
             <span className="font-medium">{m.autor.nombre}</span>
             <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
+            {onResponder && <BotonAccionesTactil abiertas={tactil.abiertas} onClick={tactil.alternar} />}
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}

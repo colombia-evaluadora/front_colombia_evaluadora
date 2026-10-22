@@ -10,6 +10,8 @@ export interface CandidatoNuevo {
   numero: string
   lema: string
   foto: File | null
+  // Foto que ya tenía el candidato (al editar): se conserva si no se elige otra.
+  fotoUrl?: string | null
 }
 
 export interface CrearEleccionInput {
@@ -26,22 +28,46 @@ export interface CrearEleccionInput {
 
 // Las fotos viajan como data URL reducida (`lib/foto-candidato.ts`): una URL
 // `blob:` solo existe en esta pestaña y comms-service la rechaza.
-async function crearEleccion(v: CrearEleccionInput) {
-  const fotos = await Promise.all(v.candidatos.map((c) => (c.foto ? fotoComoDataUrl(c.foto) : null)))
-  return evalCol.postRow<Conversacion>("/comunicaciones/elecciones", {
+async function cuerpoEleccion(v: Omit<CrearEleccionInput, "votantes">) {
+  const fotos = await Promise.all(
+    v.candidatos.map((c) => (c.foto ? fotoComoDataUrl(c.foto) : (c.fotoUrl ?? null))),
+  )
+  return {
     NOMBRE: v.nombre,
     DESCRIPCION: v.descripcion,
     FECHA_INICIO: v.fechaInicio,
     FECHA_CIERRE: v.fechaCierre,
     FK_JORNADA: v.jornadaId,
     VER_RESULTADOS: v.verResultadosEnVivo ? "S" : "N",
-    VOTANTES: v.votantes,
     CANDIDATOS: v.candidatos.map((c, i) => ({
       NOMBRE: c.nombre,
       NUMERO: c.numero,
       LEMA: c.lema,
       FOTO_URL: fotos[i],
     })),
+  }
+}
+
+async function crearEleccion(v: CrearEleccionInput) {
+  return evalCol.postRow<Conversacion>("/comunicaciones/elecciones", {
+    ...(await cuerpoEleccion(v)),
+    VOTANTES: v.votantes,
+  })
+}
+
+/**
+ * "Editar Elección": comms-service lo permite a quien la creó y antes del primer voto (409 si no).
+ * El censo de votantes no cambia.
+ */
+export function useEditarEleccion(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: Omit<CrearEleccionInput, "votantes">) =>
+      evalCol.patchRow<Eleccion>(`/comunicaciones/conversaciones/${conversacionId}/eleccion`, await cuerpoEleccion(v)),
+    onSuccess: (eleccion) => {
+      queryClient.setQueryData(chatKeys.eleccion(conversacionId), eleccion)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+    },
   })
 }
 

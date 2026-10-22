@@ -16,17 +16,20 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
-import type { VisibilidadResultados } from "@/features/comunicaciones/chat/api/types"
-import { useCrearEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
+import type { Encuesta, VisibilidadResultados } from "@/features/comunicaciones/chat/api/types"
+import { useCrearEncuesta, useEditarEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
 import { OPCIONES_SI_NO } from "@/features/comunicaciones/chat/lib/encuesta"
 import {
+  aPreguntaLocal,
   errorPregunta,
   nuevaPregunta,
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
-import { diaMinimo, errorCierre, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 const datosSchema = z
   .object({
@@ -47,22 +50,35 @@ export function CrearEncuestaDialog({
   open,
   onClose,
   onCreada,
+  editar,
 }: {
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
+  // "Editar Encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
+  // abre la monta con `key` para que los valores iniciales se lean una vez.
+  editar?: Encuesta
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [resultados, setResultados] = useState<VisibilidadResultados>("PUBLICOS")
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>([])
+  const [resultados, setResultados] = useState<VisibilidadResultados>(editar?.resultados ?? "PUBLICOS")
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => (editar?.preguntas ?? []).map(aPreguntaLocal))
   const [participantes, setParticipantes] = useState<Set<number>>(new Set())
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
-  const crear = useCrearEncuesta()
+  const crearNueva = useCrearEncuesta()
+  const editarEncuesta = useEditarEncuesta(editar?.conversacionId ?? 0)
+  const crear = editar ? editarEncuesta : crearNueva
 
   const datos = useAppForm({
-    defaultValues: DATOS_INICIALES,
+    defaultValues: editar
+      ? {
+          nombre: editar.nombre,
+          descripcion: editar.descripcion,
+          fechaInicio: isoALocal(editar.fechaInicio),
+          fechaCierre: isoALocal(editar.fechaCierre),
+        }
+      : DATOS_INICIALES,
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "ENCUESTA")])
@@ -90,22 +106,31 @@ export function CrearEncuestaDialog({
   const crearEncuesta = () => {
     setIntentado(true)
     if (preguntas.length === 0 || preguntas.some((p) => errorPregunta(p, "ENCUESTA"))) return
-    if (participantes.size === 0) return
+    if (!editar && participantes.size === 0) return
     const v = datos.state.values
-    crear.mutate(
-      {
-        nombre: v.nombre.trim(),
-        descripcion: v.descripcion.trim(),
-        fechaInicio: aIso(v.fechaInicio),
-        fechaCierre: aIso(v.fechaCierre),
-        resultados,
-        participantes: [...participantes],
-        preguntas: preguntas.map((p) => ({
-          tipo: p.tipo,
-          texto: p.texto.trim(),
-          opciones: p.tipo === "SI_NO" ? OPCIONES_SI_NO : p.opciones.map((o) => o.texto.trim()),
-        })),
-      },
+    const cuerpo = {
+      nombre: v.nombre.trim(),
+      descripcion: v.descripcion.trim(),
+      fechaInicio: aIso(v.fechaInicio),
+      fechaCierre: aIso(v.fechaCierre),
+      resultados,
+      preguntas: preguntas.map((p) => ({
+        tipo: p.tipo,
+        texto: p.texto.trim(),
+        opciones: p.tipo === "SI_NO" ? OPCIONES_SI_NO : p.opciones.map((o) => o.texto.trim()),
+      })),
+    }
+    if (editar) {
+      editarEncuesta.mutate(cuerpo, {
+        onSuccess: (e) => {
+          notify(`Se guardaron los cambios de ${e.nombre}.`)
+          reiniciar()
+        },
+      })
+      return
+    }
+    crearNueva.mutate(
+      { ...cuerpo, participantes: [...participantes] },
       {
         onSuccess: (canal) => {
           notify(`Se creó la encuesta ${canal.nombre}.`)
@@ -121,7 +146,7 @@ export function CrearEncuestaDialog({
       <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Crear una Encuesta</DialogTitle>
+            <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
           </DialogHeader>
 
           {paso === 1 ? (
@@ -147,34 +172,37 @@ export function CrearEncuestaDialog({
               <datos.AppField name="descripcion">
                 {(f) => <f.TextareaField label="Descripción" maxLength={500} />}
               </datos.AppField>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <datos.AppField name="fechaInicio">
-                  {(f) => <f.DateField label="Fecha inicio" required mode="datetime" minDate={new Date()} />}
-                </datos.AppField>
-                {/* El día mínimo del cierre sigue a la fecha de inicio. */}
-                <datos.Subscribe selector={(st) => st.values.fechaInicio}>
-                  {(inicio) => (
-                    <datos.AppField
-                      name="fechaCierre"
-                      // Se valida al momento, también cuando cambia el inicio.
-                      validators={{
-                        onChangeListenTo: ["fechaInicio"],
-                        onChange: ({ value, fieldApi }) =>
-                          errorCierre(fieldApi.form.getFieldValue("fechaInicio"), value),
-                      }}
-                    >
-                      {(f) => (
-                        <f.DateField
-                          label="Fecha final" required
-                          mode="datetime"
-                          minDate={diaMinimo(inicio)}
-                          description="Al llegar esta fecha se cierran las respuestas."
-                        />
-                      )}
-                    </datos.AppField>
-                  )}
-                </datos.Subscribe>
-              </div>
+              {/* Un solo campo "Fecha" de inicio a final, como el diseño (3849:72675): abre al empezar el
+                  primer día y cierra al terminar el último. */}
+              <datos.Subscribe selector={(st) => [st.values.fechaInicio, st.values.fechaCierre] as const}>
+                {([inicio, cierre]) => (
+                  <datos.Field name="fechaInicio">
+                    {(f) => {
+                      const error = f.state.meta.errors[0] ?? datos.getFieldMeta("fechaCierre")?.errors[0]
+                      const mensaje = typeof error === "string" ? error : error?.message
+                      return (
+                        <Field variant="outlined" data-invalid={!!mensaje || undefined}>
+                          <FieldLabel>
+                            Fecha<span aria-hidden className="text-red">*</span>
+                          </FieldLabel>
+                          <DateRangeField
+                            value={{ startDate: inicio?.slice(0, 10) ?? "", endDate: cierre?.slice(0, 10) ?? "" }}
+                            onChange={({ startDate, endDate }) => {
+                              f.handleChange(`${startDate}T00:00`)
+                              datos.setFieldValue("fechaCierre", `${endDate}T23:59`)
+                            }}
+                          />
+                          {mensaje ? (
+                            <FieldError>{mensaje}</FieldError>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Las respuestas se cierran al terminar el último día.</p>
+                          )}
+                        </Field>
+                      )
+                    }}
+                  </datos.Field>
+                )}
+              </datos.Subscribe>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Resultados</legend>
                 <div role="radiogroup" className="flex flex-wrap gap-x-6 gap-y-2">
@@ -203,14 +231,17 @@ export function CrearEncuestaDialog({
                 onCambio={setPreguntas}
                 intentado={intentado}
               />
-              {/* Quiénes responden: entran al canal y reciben el aviso al abrir. */}
+              {/* Quiénes responden: entran al canal y reciben el aviso al abrir. Al editar no cambian. */}
+              {!editar && (
               <SelectorVotantes
                 titulo="Participantes"
                 mensajeInvalido="Selecciona al menos una persona que responda la encuesta."
+                accion="para responder"
                 seleccion={participantes}
                 onCambio={setParticipantes}
                 invalido={intentado && participantes.size === 0}
               />
+              )}
             </div>
           )}
 
@@ -239,7 +270,7 @@ export function CrearEncuestaDialog({
                     disabled={preguntas.length === 0 || crear.isPending}
                     aria-busy={crear.isPending}
                   >
-                    Crear
+                    {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button
