@@ -278,9 +278,20 @@ function makePersonSchema(required: boolean) {
     })
 }
 
+export interface EstablishmentFormValidationOptions {
+  /**
+   * `false` cuando el usuario no puede cambiar rector ni secretaria y el panel
+   * está en solo lectura: no se guardan, así que no se validan. Si no, un dato
+   * viejo que no cumple una regla nueva bloquearía el guardado en un campo que
+   * nadie puede tocar.
+   */
+  validarDirectivos?: boolean
+}
+
 export function validateEstablishmentForm(
   values: EstablishmentDetails,
-  files: EstablishmentFormFiles = {}
+  files: EstablishmentFormFiles = {},
+  { validarDirectivos = true }: EstablishmentFormValidationOptions = {}
 ): EstablishmentFormValidationResult {
   const errors: string[] = []
   const fieldErrors: Record<string, string> = {}
@@ -320,10 +331,14 @@ export function validateEstablishmentForm(
     )
   }
 
-  for (const [fieldPrefix, label, required] of [
-    ["principal", "Rector", true],
-    ["secretary", "Secretaria", false],
-  ] as const) {
+  const directivos = validarDirectivos
+    ? ([
+        ["principal", "Rector", true],
+        ["secretary", "Secretaria", false],
+      ] as const)
+    : []
+
+  for (const [fieldPrefix, label, required] of directivos) {
     const person = values[fieldPrefix]
 
     const photo = optionalImageFile.safeParse(files.photos?.[fieldPrefix])

@@ -54,6 +54,8 @@ interface ImageUploadFieldProps {
     onRemoveExisting?: () => void
     /** Se aplica a la caja exterior: es por acá que se le cambia el alto. */
     className?: string
+    /** Solo muestra la imagen: no carga, no reemplaza ni borra. */
+    disabled?: boolean
 }
 
 /**
@@ -79,6 +81,7 @@ export function ImageUploadField({
     existingPreview,
     onRemoveExisting,
     className,
+    disabled = false,
 }: ImageUploadFieldProps) {
     // La vista previa necesita una URL: se revoca al cambiar de archivo o al
     // desmontar para no filtrar el blob.
@@ -133,6 +136,7 @@ export function ImageUploadField({
                 onFileValidate={(file) => validateImageFile(file, rules)}
                 onFileReject={(_file, reason) => setRejection(reason)}
                 invalid={Boolean(message)}
+                disabled={disabled}
                 // `overflow-hidden`: lo que no quepa se recorta en vez de
                 // desbordarse sobre los campos vecinos.
                 className="absolute inset-0 overflow-hidden"
@@ -162,7 +166,7 @@ export function ImageUploadField({
                         >
                             {preview ? <img src={preview} alt={value.name} /> : null}
                         </AttachmentMedia>
-                        <AttachmentActions>
+                        <AttachmentActions hidden={disabled}>
                             {/* Neutral: borrar la imagen no es la acción principal
                                 de la tarjeta, y en primario competía con el resto
                                 del formulario. */}
@@ -189,7 +193,7 @@ export function ImageUploadField({
                         <div className="absolute inset-2 *:size-full *:object-contain">
                             {existingPreview}
                         </div>
-                        {onRemoveExisting ? (
+                        {onRemoveExisting && !disabled ? (
                             // Mismo ícono/posición que el botón de borrado de un
                             // archivo recién elegido (ver `AttachmentAction`
                             // arriba) — acá no hay `Attachment` de por medio
