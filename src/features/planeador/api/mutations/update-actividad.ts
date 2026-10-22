@@ -16,6 +16,12 @@ import { toRecuperacionBody } from "@/features/planeador/api/mutations/recuperac
 interface UpdateActividadInput {
   actividadId: number
   data: Actividad
+  /**
+   * Versión que vio el docente (`Actividad.version`). Con valor viaja como
+   * `BASE_VERSION` y el servidor responde 409 `OFFLINE_CONFLICT` si la
+   * actividad cambió desde entonces. `null`/ausente = sin verificación.
+   */
+  baseVersion?: number | null
 }
 
 /**
@@ -47,9 +53,13 @@ interface UpdateActividadInput {
  * que `FK_TMATRICULAS` arriba). SÍ manda `EVIDENCIAS`/`CRITERIOS` — ver más
  * abajo.
  */
-export async function updateActividad({ actividadId, data }: UpdateActividadInput, req?: WriteRequest): Promise<unknown> {
+export async function updateActividad(
+  { actividadId, data, baseVersion }: UpdateActividadInput,
+  req?: WriteRequest,
+): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
-    return api.put(`/eval-col/planeador/actividades/${actividadId}`, data, writeConfig(req))
+    const mockBody = baseVersion != null ? { ...data, BASE_VERSION: baseVersion } : data
+    return api.put(`/eval-col/planeador/actividades/${actividadId}`, mockBody, writeConfig(req))
   }
   const body: Record<string, unknown> = {
     TITULO: data.nombre,
@@ -145,6 +155,7 @@ export async function updateActividad({ actividadId, data }: UpdateActividadInpu
     body.EVIDENCIAS = data.evidenciasIds
     body.CRITERIOS = data.criteriosUnidadIds
   }
+  if (baseVersion != null) body.BASE_VERSION = baseVersion
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body, writeConfig(req))
 }
 

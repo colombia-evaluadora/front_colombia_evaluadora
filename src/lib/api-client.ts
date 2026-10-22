@@ -118,6 +118,10 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/reportes/public/",
   // Sonda de conectividad (heartbeat de `lib/offline/connectivity`).
   "/eval-col/health",
+  // Credencial del equipo (D-3): la autenticación es el token del equipo en
+  // el body; un Bearer vencido haría que el gateway rechazara el canje.
+  "/auth/device/refresh",
+  "/auth/device/wipe-ack",
 ]
 
 /**
@@ -150,6 +154,9 @@ let isHandlingExpiredSession = false
 // en un redirect duro a /login.
 const PUBLIC_ENDPOINTS = [
   "/auth/refresh",
+  // Un 401 del canje del equipo es "revocado / vencido", no sesión vencida.
+  "/auth/device/refresh",
+  "/auth/device/wipe-ack",
   // Verificación pública de boletines (QR): un 401 no es sesión vencida.
   "/reportes/public/",
   "/sso-admin/resetTokenStatus",
@@ -177,6 +184,10 @@ const PUBLIC_ENDPOINTS = [
 // hace falta alarmar con un toast por algo esperado.
 const PROBE_ENDPOINTS = [
   "/auth/refresh",
+  "/auth/device/refresh",
+  "/auth/device/wipe-ack",
+  // Estado del equipo (revocado / borrado remoto): lo resuelve device-session.
+  "/auth/devices/me",
   "/sso-admin/resetTokenStatus",
   "/coverage/reservations/catalogs",
   "/eval-col/planeador/actividad/calificaciones",

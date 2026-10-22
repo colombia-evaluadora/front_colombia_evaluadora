@@ -81,6 +81,8 @@ interface UnidadRealRow extends DocenteDuenoRow {
   dia?: string | null
   dia_anterior?: string | null
   dia_siguiente?: string | null
+  /** Versión de la fila (`TUNIDAD.VERSION`, solo el detalle; concurrencia optimista BE-3B). */
+  version?: number | null
 }
 
 /** `"Ponderar Actividades o Descriptores"` → `"Ponderado"`, etc. — el
@@ -97,6 +99,7 @@ function metodoCalculoFromLabel(label: string | undefined): MetodoCalculo {
 function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
   return {
     id: row.pk_tunidad,
+    version: row.version ?? null,
     nombre: row.nombre,
     area: row.area ?? "",
     // El backend real no guarda un "enfoque pedagógico" propio por unidad:

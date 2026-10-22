@@ -49,11 +49,28 @@ sincronización el usuario vuelve a ingresar su contraseña en línea; la outbox
 pausa en estado "auth" y **no descarta nada** hasta que hay sesión. Motivo: un
 token de meses en un equipo rural robable es peor que pedir la contraseña una
 vez con internet.
-Alternativa diseñada (follow-up si el usuario la pide): `device_token`
-(registro del equipo online, `POST /auth/devices`, hash en BD, TTL =
-`OFFLINE_MAX_DAYS`, rotación en cada uso, revocable) aceptado por
-`/auth/refresh` como segunda vía. Requiere tabla nueva → **cambio de esquema
-que necesita OK explícito** (regla del repo sso).
+**Implementado (opción B, esquema aprobado): token del equipo.**
+- Un equipo personal (app instalada o modo personal del piloto) con sesión
+  online se registra solo: `POST /auth/devices { deviceId, label }`. El
+  `deviceId` es un UUID aleatorio por (equipo, usuario) en `meta`. El servidor
+  guarda solo el hash (`academico_test.tdevice_token`) y devuelve un token de
+  180 días, deslizante en cada uso (tope absoluto 365 días).
+- Al restaurar la sesión va PRIMERO `POST /auth/device/refresh { deviceId,
+  deviceToken }` (`device-session.ts`), la cookie `sso_refresh` queda de
+  respaldo. Cada canje rota el token: el nuevo se guarda ANTES de usar el
+  access token, y hay un solo canje en vuelo. El access token del canje trae
+  `did`; es el único con el que el backend acepta `X-Client-Captured-At`, así
+  que antes de cada lote la outbox cambia un token de contraseña por uno del
+  equipo.
+- Guardado: nunca en `localStorage`/`sessionStorage`. Con PIN, sellado con la
+  DEK de la bóveda; sin PIN, cifrado con una `CryptoKey` AES-GCM NO extraíble
+  guardada en IndexedDB. Crear el PIN re-sella el token. "Cerrar sesión" en la
+  app instalada bloquea: el token del equipo no reabre la sesión sin
+  contraseña o PIN. Borrar los datos del equipo borra token, clave e id.
+- "Mis dispositivos" (`/app/mis-dispositivos`, menú de la cuenta, solo en
+  línea): equipos con último uso y vencimiento, revocar (con o sin borrado
+  remoto), "Olvidar este equipo" y, para el super administrador, los equipos
+  de otro usuario por correo.
 
 ## D-4. Desbloqueo local (diseñado, follow-up)
 Al pasar a "equipo personal" se pide un PIN (≥ 6 dígitos) o se reutiliza la
@@ -90,8 +107,14 @@ preparación" con indicador verde < 7 d, amarillo < 30 d, rojo después.
 ## D-8. Cifrado en reposo y borrado remoto (follow-up)
 Clave AES-GCM 256 derivada del PIN (PBKDF2) envolviendo una DEK aleatoria; la
 DEK cifra `data` de `queries`, `payload` de `outbox` y blobs. Sin PIN no se
-abre nada. Revocación: `GET /auth/devices/me` en cada sync; si `revoked`, se
-borra IndexedDB **después** de intentar subir lo pendiente.
+abre nada. Revocación (implementado): el canje del token responde 401
+`device_revoked` con `wipe`, y `GET /auth/devices/me` se consulta al entrar con
+red; el canje antes de cada lote de la outbox hace de chequeo por
+sincronización. Con `wipe` se muestra un aviso bloqueante con los cambios sin
+sincronizar que se perderían, se intenta subirlos si hay sesión, se borran los
+datos del usuario en el equipo, se confirma con `POST /auth/device/wipe-ack` y
+se vuelve al login. Revocado sin borrado: solo se olvida el token (y no se
+vuelve a registrar solo).
 
 ## D-9. Respaldo USB (follow-up)
 Exportar: JSON de ops pendientes + blobs, cifrado AES-GCM con la DEK,

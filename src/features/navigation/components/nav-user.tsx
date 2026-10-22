@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { CloudOffIcon, CloudSyncIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
+import { CloudOffIcon, CloudSyncIcon, DevicesIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
 import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
@@ -118,6 +118,10 @@ export function NavUser() {
           <DropdownMenuItem render={<Link to={paths.app.sincronizar.getHref()} />}>
             <CloudSyncIcon data-icon="inline-start" />
             Sincronizar ahora
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link to={paths.app.misDispositivos.getHref()} />}>
+            <DevicesIcon data-icon="inline-start" />
+            Mis dispositivos
           </DropdownMenuItem>
           {personal && (
             <DropdownMenuItem variant="destructive" onClick={() => setWipeOpen(true)}>

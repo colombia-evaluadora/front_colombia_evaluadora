@@ -104,6 +104,7 @@ usuario.
 | `/app` (índice) | Sí | Redirige al primer ítem apto offline | `getLandingNavUrl` (este PR) |
 | `/app/sin-acceso` | Sí | Página estática | — |
 | `/app/pendientes` | Sí | Lee el outbox local | — |
+| `/app/mis-dispositivos` | No | Registrar o revocar equipos necesita el servidor | `ONLINE_ONLY_PREFIXES` |
 | `/app/planeador/actividades` (+ agregar, editar) | Sí | Queries persistidas, escrituras por outbox/sagas | — |
 | `/app/planeador/unidades` (+ agregar, editar) | Sí | Ídem | — |
 | `/app/planeador/planilla` | Sí | Ídem, calificaciones por outbox | — |

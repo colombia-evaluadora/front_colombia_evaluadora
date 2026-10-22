@@ -48,6 +48,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   // Cambios sin conexión (Fase 2 offline): fuera del menú del backend.
   "/app/pendientes": ALWAYS,
   "/app/sincronizar": ALWAYS,
+  "/app/mis-dispositivos": ALWAYS,
 
   // Sin ítem de menú: bloqueada para todos.
   "/app/cobertura/reserva-de-cupo": NONE,

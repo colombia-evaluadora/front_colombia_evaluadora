@@ -19,7 +19,7 @@
 ## 3. Sesión y equipos (D-3, D-4, D-8)
 - [x] 3.1 PIN local (PBKDF2) y pantalla de desbloqueo
 - [x] 3.2 Cifrado AES-GCM de queries y payloads de la outbox (pendiente: blobs de adjuntos y Cache API de archivos)
-- [ ] 3.3 (EN ESPERA de OK de esquema) Registro/revocación de equipos y borrado remoto (requiere OK de esquema en sso)
+- [x] 3.3 Registro/revocación de equipos y borrado remoto: token del equipo de 180 días (`device-token.ts`), "Mis dispositivos" y aviso de borrado remoto (D-3/D-8)
 
 ## 4. Preparar todo y sincronizar (D-6, D-11)
 - [x] 4.1 Plan reanudable de todo el año + adjuntos con tamaño + antigüedad

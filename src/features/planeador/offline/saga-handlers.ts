@@ -16,6 +16,7 @@ import Axios from "axios"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { queryClient } from "@/lib/query-client"
+import { extractConflict, extractErrorCode } from "@/lib/offline/outbox/policy"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
 import {
   resolveId,
@@ -44,7 +45,12 @@ import { fetchUnidadDetalle } from "@/features/planeador/api/query/use-unidades-
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import type { Actividad, Adaptacion, InstrumentoPermitido, Recurso } from "@/features/planeador/api/types/actividad"
 import { motivoNoEditable } from "@/features/planeador/lib/actividad-editable"
-import { fingerprintActividad, fingerprintUnidad } from "@/features/planeador/offline/fingerprint"
+import {
+  fingerprintActividad,
+  fingerprintUnidad,
+  versionMismatch,
+  type VersionCheck,
+} from "@/features/planeador/offline/fingerprint"
 
 export const SAGA_KINDS = {
   actividadCrear: "planeador.actividad.crear",
@@ -61,11 +67,7 @@ export const SAGA_KINDS = {
 
 type Id = number | TmpId
 
-/** Verificación contra la versión del servidor (primer paso de una edición encolada). */
-export interface VersionCheck {
-  /** Huella del detalle que vio el docente al abrir el formulario. */
-  baseFingerprint: string
-}
+export type { VersionCheck }
 
 // ---- Errores propios (clasificación estable, D-F3-5) -------------------------
 
@@ -118,6 +120,15 @@ export function classifyPlaneadorStep(error: unknown): ClassifiedError | null {
     const status = error.response.status
     const data = error.response.data as { code?: string } | undefined
     const message = getErrorMessage(error)
+    // CAS por versión (BE-3B): el PUT con `BASE_VERSION` vieja. Conflicto con
+    // el motivo del backend y la versión actual (para "Conservar mis cambios").
+    if (status === 409 && extractErrorCode(data) === PLANEADOR_ERROR_CODES.conflicto) {
+      return {
+        kind: "conflict",
+        conflict: extractConflict(data),
+        error: { code: PLANEADOR_ERROR_CODES.conflicto, status, message },
+      }
+    }
     // La regla 37 llega como 409 (23503 → FK_NOT_FOUND en el query-service):
     // se mira antes de devolverle el 409 a la clasificación por defecto, que
     // lo dejaría con un código genérico. El 409 de CAS (OFFLINE_CONFLICT)
@@ -154,12 +165,12 @@ async function verificarActividad(actividadId: number, check: VersionCheck | und
   const detalle = await fetchActividadDetalle(actividadId, queryClient)
   const motivo = motivoNoEditable(detalle)
   if (motivo) throw new SagaStepRejected(PLANEADOR_ERROR_CODES.noEditable, motivo)
-  const actual = fingerprintActividad(detalle)
-  if (actual !== check.baseFingerprint) {
+  const actual = versionMismatch(check, detalle, () => fingerprintActividad(detalle))
+  if (actual != null) {
     throw new SagaStepConflict(
       "La actividad cambió en el servidor mientras estabas sin conexión.",
       actual,
-      { titulo: detalle.nombre },
+      { titulo: detalle.nombre, version: detalle.version ?? null },
     )
   }
 }
@@ -167,19 +178,26 @@ async function verificarActividad(actividadId: number, check: VersionCheck | und
 async function verificarUnidad(unidadId: number, check: VersionCheck | undefined, ctx: SendCtx) {
   if (!check || !ctx.background) return
   const detalle = await fetchUnidadDetalle(unidadId)
-  const actual = fingerprintUnidad(detalle)
-  if (actual !== check.baseFingerprint) {
+  const actual = versionMismatch(check, detalle, () => fingerprintUnidad(detalle))
+  if (actual != null) {
     throw new SagaStepConflict(
       "La unidad cambió en el servidor mientras estabas sin conexión (por ejemplo, su método de cálculo).",
       actual,
-      { nombre: detalle.nombre },
+      { nombre: detalle.nombre, version: detalle.version ?? null },
     )
   }
 }
 
-/** "Conservar el mío": la verificación pasa a compararse con la versión actual del servidor. */
-function rebaseCheck<P extends { check?: VersionCheck }>(payload: P, conflict: OutboxConflict): P {
+/**
+ * "Conservar el mío": la verificación (y el `BASE_VERSION` del PUT) pasa a
+ * compararse con la versión actual del servidor.
+ */
+export function rebaseCheck<P extends { check?: VersionCheck }>(payload: P, conflict: OutboxConflict): P {
   if (!payload.check || !conflict.serverVersion) return payload
+  const version = Number(conflict.serverVersion)
+  if (payload.check.baseVersion != null || /^[0-9]+$/.test(conflict.serverVersion)) {
+    return Number.isFinite(version) ? { ...payload, check: { baseVersion: version } } : payload
+  }
   return { ...payload, check: { baseFingerprint: conflict.serverVersion } }
 }
 
@@ -263,7 +281,9 @@ step<ActividadEditarPayload>(
   async (p, ctx) => {
     const actividadId = await resolveId(p.actividadId)
     await verificarActividad(actividadId, p.check, ctx)
-    return updateActividad({ actividadId, data: p.data }, stepRequest(ctx))
+    // `check` solo lo lleva el PRIMER paso: si antes hubo otro (vincular la
+    // unidad), ese paso ya subió la versión y el PUT no puede exigir la vieja.
+    return updateActividad({ actividadId, data: p.data, baseVersion: p.check?.baseVersion ?? null }, stepRequest(ctx))
   },
   { rebase: rebaseCheck },
 )
@@ -345,7 +365,7 @@ step<UnidadEditarPayload>(
   async (p, ctx) => {
     const unidadId = await resolveId(p.unidadId)
     await verificarUnidad(unidadId, p.check, ctx)
-    const result = await updateUnidad({ unidadId, data: p.data }, stepRequest(ctx))
+    const result = await updateUnidad({ unidadId, data: p.data, baseVersion: p.check?.baseVersion ?? null }, stepRequest(ctx))
     if (result.status === "error") throw new SagaStepRejected("http-400", result.message ?? "El servidor rechazó el cambio.")
     return result
   },

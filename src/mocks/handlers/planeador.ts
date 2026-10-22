@@ -46,6 +46,7 @@ import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date
 import { hashString } from "@/mocks/handlers/planeador/docentes"
 import { editableFila, rechazoNoEditable } from "@/mocks/handlers/_planeador-regla37"
 import { grupoIdDe } from "@/mocks/db/planilla"
+import { conflictoDeVersion, subirVersion, versionDe } from "@/mocks/db/versiones"
 
 /**
  * Emula el `grado_grupo` real (colección Postman `planeador-delta-cambios`,
@@ -856,7 +857,9 @@ export const planeadorHandlers = [
     }
     // Regla 37: el detalle real trae `motivo_no_editable`; el mock devuelve
     // el modelo del front, así que va ya como `motivoNoEditable`.
-    return HttpResponse.json({ rows: [{ ...found, motivoNoEditable: motivoNoEditableMock(id) }] })
+    return HttpResponse.json({
+      rows: [{ ...found, motivoNoEditable: motivoNoEditableMock(id), version: versionDe("actividad", id) }],
+    })
   }),
 
   // Edición parcial de la actividad — el mock, a diferencia del real, no
@@ -872,7 +875,9 @@ export const planeadorHandlers = [
     }
     const bloqueo = rechazoNoEditable(id)
     if (bloqueo) return bloqueo
-    const body = (await request.json()) as Actividad & { NOTA_MAXIMA?: number }
+    const { BASE_VERSION, ...body } = (await request.json()) as Actividad & { NOTA_MAXIMA?: number; BASE_VERSION?: number }
+    const conflicto = conflictoDeVersion("actividad", id, BASE_VERSION, { titulo: planeadorDb[index]!.nombre })
+    if (conflicto) return HttpResponse.json(conflicto, { status: 409 })
     // Edición inline del "Puntaje" (columna de la tabla de Actividades de
     // una unidad "Suma de puntos", `useUpdatePuntajeActividadUnidad`): esa
     // mutación reusa este mismo PUT con `{NOTA_MAXIMA}` — el mock replica
@@ -880,6 +885,7 @@ export const planeadorHandlers = [
     // (no `planeadorDb`, que es donde cae el resto del body).
     if (body.NOTA_MAXIMA != null) setPuntajeActividadUnidad(id, body.NOTA_MAXIMA)
     planeadorDb[index] = { ...planeadorDb[index], ...body, id }
+    subirVersion("actividad", id)
     return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
   }),
 
@@ -1311,7 +1317,14 @@ export const planeadorHandlers = [
       )
     }
     return HttpResponse.json({
-      rows: [{ ...found, gradoId: gradoIdMock(found.grado), asignaturaId: asignaturaIdMock(found.asignatura) }],
+      rows: [
+        {
+          ...found,
+          gradoId: gradoIdMock(found.grado),
+          asignaturaId: asignaturaIdMock(found.asignatura),
+          version: versionDe("unidad", id),
+        },
+      ],
     })
   }),
 
@@ -1791,8 +1804,14 @@ export const planeadorHandlers = [
   http.put(UNIDAD_UPDATE_URL, async ({ params, request }) => {
     await delay(250)
     const id = Number(params.id)
-    const body = (await request.json()) as Omit<UnidadTematica, "id" | "criterios" | "actividades">
+    const { BASE_VERSION, ...body } = (await request.json()) as Omit<UnidadTematica, "id" | "criterios" | "actividades"> & {
+      BASE_VERSION?: number
+    }
+    const previa = unidadesTematicasDb.find((row) => row.id === id)
+    const conflicto = previa ? conflictoDeVersion("unidad", id, BASE_VERSION, { nombre: previa.nombre }) : null
+    if (conflicto) return HttpResponse.json(conflicto, { status: 409 })
     const updated = updateUnidadInfoGeneral(id, body)
+    if (updated) subirVersion("unidad", id)
     if (!updated) {
       return HttpResponse.json(
         { status: "error", message: "Unidad temática no encontrada." },

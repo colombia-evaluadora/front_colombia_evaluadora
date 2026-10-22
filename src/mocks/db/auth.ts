@@ -117,7 +117,7 @@ function base64url(json: unknown): string {
  */
 const ACCESS_TOKEN_TTL_SECONDS = 60 * 60
 
-export function createMockAccessToken(user: User): string {
+export function createMockAccessToken(user: User, extra: Record<string, unknown> = {}): string {
   const header = base64url({ alg: "none", typ: "JWT" })
   const issuedAt = Math.floor(Date.now() / 1000)
   const payload = base64url({
@@ -132,6 +132,8 @@ export function createMockAccessToken(user: User): string {
     uid: 1,
     iat: issuedAt,
     exp: issuedAt + ACCESS_TOKEN_TTL_SECONDS,
+    // `did` (token del equipo, /auth/device/refresh) y otros claims opcionales.
+    ...extra,
   })
   return `${header}.${payload}.mock-signature`
 }

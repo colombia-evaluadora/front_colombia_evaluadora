@@ -37,6 +37,8 @@ export function contenidosABody(
 export interface UpdateUnidadInput {
   unidadId: number
   data: UnidadInfoGeneral
+  /** Versión que vio el docente (`UnidadTematica.version`) → `BASE_VERSION` (409 si cambió). */
+  baseVersion?: number | null
 }
 
 /** Una actividad cuyo peso (%) o puntaje se CONVIRTIÓ automáticamente al
@@ -70,11 +72,14 @@ interface UpdateUnidadRealRow {
  * resueltos) — si no los tocó, se omiten y el backend conserva lo que la
  * unidad ya tenía, en vez de mandar un id viejo/adivinado.
  */
-export async function updateUnidad({ unidadId, data }: UpdateUnidadInput, req?: WriteRequest): Promise<UpdateUnidadResponse> {
+export async function updateUnidad(
+  { unidadId, data, baseVersion }: UpdateUnidadInput,
+  req?: WriteRequest,
+): Promise<UpdateUnidadResponse> {
   if (env.ENABLE_API_MOCKING) {
     const result = await api.put<Omit<UpdateUnidadResponse, "actividadesAfectadas">>(
       `/eval-col/planeador/unidades/${unidadId}`,
-      data,
+      baseVersion != null ? { ...data, BASE_VERSION: baseVersion } : data,
       writeConfig(req),
     )
     return { ...result, actividadesAfectadas: [] }
@@ -105,6 +110,7 @@ export async function updateUnidad({ unidadId, data }: UpdateUnidadInput, req?: 
   // array (nunca `undefined`, ver `UNIDAD_DRAFT_VACIO`), así que se manda
   // tal cual: un array vacío es una desvinculación total válida.
   body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
+  if (baseVersion != null) body.BASE_VERSION = baseVersion
   const row = await api.put<UpdateUnidadRealRow>(`/eval-col/planeador/unidades/${unidadId}`, body, writeConfig(req))
   return { status: "ok", actividadesAfectadas: row.actividades_afectadas ?? [] }
 }
