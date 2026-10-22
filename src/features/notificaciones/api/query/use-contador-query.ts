@@ -23,6 +23,12 @@ export function useContadorQuery() {
     queryKey: contadorQueryKey,
     queryFn: fetchContador,
     refetchInterval: realtimeEnabled ? 5 * 60_000 : 60_000,
+    // Siempre al montar y al volver a la pestaña: lo restaurado del cache
+    // offline (IndexedDB) puede venir de la sesión anterior y la campana quedaba
+    // sin la notificación nueva (QA E2E testv2). Sin red no se dispara el fetch.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     // Contador del header: si sin red no está guardado, la pantalla abierta
     // no está "incompleta" (el banner offline no lo cuenta).
     meta: { ...offlineMeta(TTL_OFFLINE.detalle), offlineOptional: true },

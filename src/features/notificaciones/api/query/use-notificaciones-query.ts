@@ -72,6 +72,11 @@ export function useNotificacionesInfiniteQuery(
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
     placeholderData: (prev) => prev,
+    // Como el contador: siempre al montar y al enfocar, para que lo restaurado
+    // del cache offline no deje la lista sin las últimas.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     meta: offlineMeta(TTL_OFFLINE.detalle),
   })
 }

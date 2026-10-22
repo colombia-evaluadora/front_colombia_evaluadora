@@ -75,11 +75,23 @@ export function useEliminarConversacion() {
   })
 }
 
+/** Clave de la mutación de salir: el tiempo real la consulta para no pedir miembros de un canal que se deja. */
+export const SALIR_MUTATION_KEY = ["comunicaciones-chat", "salir"] as const
+
 export function useSalirConversacion() {
+  const queryClient = useQueryClient()
   const invalidar = useInvalidarConversaciones()
   return useMutation({
+    mutationKey: SALIR_MUTATION_KEY,
     mutationFn: (id: number) => evalCol.patchRow<Conversacion>(`${base(id)}/salir`),
-    onSuccess: invalidar,
+    onMutate: (id) => queryClient.cancelQueries({ queryKey: chatKeys.miembros(id) }),
+    onSuccess: (_data, id) => {
+      // Ya no es miembro: nada de esa conversación se vuelve a pedir (sería 404).
+      queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) => prev?.filter((x) => x.id !== id))
+      queryClient.removeQueries({ queryKey: chatKeys.miembros(id) })
+      queryClient.removeQueries({ queryKey: chatKeys.mensajes(id) })
+      return invalidar()
+    },
   })
 }
 
