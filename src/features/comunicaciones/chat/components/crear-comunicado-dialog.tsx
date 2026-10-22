@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,12 @@ import { EditorTexto } from "@/features/comunicaciones/chat/components/editor-te
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { htmlSeguro, htmlVacio } from "@/features/comunicaciones/chat/lib/html-seguro"
 import { ahoraLocal, isoALocal } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import {
+  useAutoguardadoActividad,
+  useEliminarBorradorActividad,
+} from "@/features/comunicaciones/chat/api/mutations/use-borrador-actividad"
+import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-autoguardado"
+import { datosDe, hayContenido } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 
 
 const datosSchema = z.object({
@@ -45,6 +52,7 @@ export function CrearComunicadoDialog({
   onClose,
   onCreado,
   editar,
+  borrador,
 }: {
   open: boolean
   onClose: () => void
@@ -52,10 +60,14 @@ export function CrearComunicadoDialog({
   // "Editar Comunicado" (diseño 4062:67938). Ya publicado, la audiencia y la fecha no cambian.
   // Quien lo abre lo monta con `key` para que los valores iniciales se lean una vez.
   editar?: Comunicado
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [html, setHtml] = useState(editar?.contenidoHtml ?? "")
+  const [html, setHtml] = useState(
+    editar?.contenidoHtml ?? (typeof borrador?.datos?.html === "string" ? borrador.datos.html : ""),
+  )
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crearNuevo = useCrearComunicado()
@@ -73,17 +85,30 @@ export function CrearComunicadoDialog({
           audiencia: editar.audiencia,
           publicarEn: isoALocal(editar.publicarEn),
         }
-      : {
+      : datosDe(borrador?.datos, {
           titulo: "",
           descripcion: "",
-          audiencia: [],
-          publicarEn: ahoraLocal(),
-        }) as Datos,
+          audiencia: [] as string[],
+          publicarEn: ahoraLocal() as string | null,
+        })) as Datos,
     validators: { onSubmit: datosSchema },
     onSubmit: () => setPaso(2),
   })
 
+  // Comunicado nuevo: lo escrito se autoguarda como borrador (comms-service).
+  const valores = useStore(datos.store, (s) => s.values)
+  const autoguardado = useAutoguardadoActividad({
+    tipo: "COMUNICADO",
+    habilitado: open && !editar,
+    titulo: valores.titulo,
+    datos: { ...valores, html },
+    conContenido: hayContenido(valores.titulo, valores.descripcion, valores.audiencia, contenidoVacio ? "" : html),
+    borradorInicial: borrador?.id,
+  })
+  const eliminarBorrador = useEliminarBorradorActividad()
+
   const reiniciar = () => {
+    autoguardado.reiniciar()
     datos.reset({ titulo: "", descripcion: "", audiencia: [], publicarEn: ahoraLocal() })
     setHtml("")
     setIntentado(false)
@@ -92,13 +117,20 @@ export function CrearComunicadoDialog({
     onClose()
   }
 
-  const intentarCerrar = () => {
+  const intentarCerrar = async () => {
     if (crear.isPending) return
+    if (!editar) {
+      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+      const id = await autoguardado.guardarYa()
+      if (id) notify("El comunicado quedó guardado en Borradores y enviados.")
+      reiniciar()
+      return
+    }
     if (datos.state.isDirty || !contenidoVacio) setDescartar(true)
     else reiniciar()
   }
 
-  const crearComunicado = () => {
+  const crearComunicado = async () => {
     setIntentado(true)
     if (contenidoVacio) return
     const v = datos.state.values
@@ -119,8 +151,9 @@ export function CrearComunicadoDialog({
       })
       return
     }
+    const borradorId = await autoguardado.guardarYa()
     crearNuevo.mutate(
-      cuerpo,
+      { ...cuerpo, borradorId },
       {
         onSuccess: (canal) => {
           const programado = new Date(v.publicarEn as string) > new Date()
@@ -138,7 +171,7 @@ export function CrearComunicadoDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
+      <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
@@ -231,6 +264,15 @@ export function CrearComunicadoDialog({
             </p>
           )}
 
+          {!editar && (
+            <BarraBorrador
+              estado={autoguardado.estado}
+              hayBorrador={!!autoguardado.borradorId}
+              onDescartar={() => setDescartar(true)}
+              deshabilitado={crear.isPending}
+            />
+          )}
+
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
               <Button type="submit" form="comunicado-datos" className="sm:ml-auto">
@@ -246,7 +288,7 @@ export function CrearComunicadoDialog({
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    onClick={crearComunicado}
+                    onClick={() => void crearComunicado()}
                     disabled={crear.isPending}
                     aria-busy={crear.isPending}
                   >
@@ -256,7 +298,7 @@ export function CrearComunicadoDialog({
                   <Button
                     type="button"
                     color="neutral"
-                    onClick={intentarCerrar}
+                    onClick={() => void intentarCerrar()}
                     disabled={crear.isPending}
                   >
                     <XIcon data-icon="inline-start" />
@@ -274,6 +316,12 @@ export function CrearComunicadoDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
+          if (!editar && autoguardado.borradorId) {
+            eliminarBorrador.mutate(autoguardado.borradorId, {
+              onSuccess: () => notify("Borrador descartado."),
+              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+            })
+          }
           reiniciar()
         }}
       />

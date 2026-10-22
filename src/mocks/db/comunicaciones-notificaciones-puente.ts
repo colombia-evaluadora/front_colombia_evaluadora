@@ -66,9 +66,16 @@ for (const e of elecciones) {
 }
 
 /** Actividad nueva (encuesta, evaluación…) → aviso en la bandeja general, como comms-service. */
-export function notificarActividad(conversacionId: number, tipo: string, titulo: string, cuerpo: string) {
+// `clave` distingue avisos de la misma actividad (apertura vs. resultados).
+export function notificarActividad(
+  conversacionId: number,
+  tipo: string,
+  titulo: string,
+  cuerpo: string,
+  clave = "actividad",
+) {
   notificacionesDb.unshift({
-    id: `chat-actividad-${conversacionId}`,
+    id: `chat-${clave}-${conversacionId}`,
     tipo,
     categoria: "CHAT",
     titulo,
@@ -81,4 +88,27 @@ export function notificarActividad(conversacionId: number, tipo: string, titulo:
     conteo: null,
     archivada: false,
   })
+}
+
+// Actividades cuyo aviso de resultados ya salió (comms-service: `resultados_notificados_en`).
+const resultadosAvisados = new Set<number>()
+
+/**
+ * "Resultados disponibles" al cerrar una elección o una encuesta (por fecha o a mano): un solo
+ * aviso por actividad. Devuelve si lo emitió (false si ya se había avisado).
+ */
+export function notificarResultados(conversacionId: number, tipo: "ELECCION" | "ENCUESTA", nombre: string) {
+  if (resultadosAvisados.has(conversacionId)) return false
+  resultadosAvisados.add(conversacionId)
+  const eleccion = tipo === "ELECCION"
+  notificarActividad(
+    conversacionId,
+    eleccion ? "CHAT_RESULTADOS_ELECCION" : "CHAT_RESULTADOS_ENCUESTA",
+    `Resultados disponibles: ${nombre}`,
+    eleccion
+      ? "La elección cerró. Entra al canal para ver los resultados."
+      : "La encuesta cerró. Entra al canal para ver los resultados.",
+    "resultados",
+  )
+  return true
 }

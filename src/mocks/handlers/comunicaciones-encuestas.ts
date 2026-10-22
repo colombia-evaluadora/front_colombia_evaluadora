@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
+import { consumirBorradorActividad } from "@/mocks/handlers/comunicaciones-borradores-actividad"
 
 import type {
   Conversacion,
@@ -11,7 +12,7 @@ import { conversaciones } from "@/mocks/db/comunicaciones"
 import { encuestas, respondieron } from "@/mocks/db/comunicaciones-encuestas"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
-import { notificarActividad } from "@/mocks/db/comunicaciones-notificaciones-puente"
+import { notificarActividad, notificarResultados } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 // En la demo la crea el administrador; el resto son las personas asignadas que la responden.
 function vistaDe(e: Encuesta, request: Request): Encuesta {
@@ -76,6 +77,8 @@ export const comunicacionesEncuestasHandlers = [
     await delay(200)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
     if (!e) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    // Cerró por fecha: el aviso de resultados sale una vez (comms-service lo revisa con su job).
+    if (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now()) notificarResultados(e.conversacionId, "ENCUESTA", e.nombre)
     return HttpResponse.json({ rows: [vistaDe(e, request)] })
   }),
 
@@ -135,6 +138,7 @@ export const comunicacionesEncuestasHandlers = [
       esCreador: true,
     }
     conversaciones.push(canal)
+    consumirBorradorActividad(request)
     // Aviso a quienes la responden (comms-service: CHAT_ENCUESTA al abrir).
     notificarActividad(canal.id, "CHAT_ENCUESTA", `Encuesta abierta: ${nombre}`, "Entra al canal y respóndela.")
     encuestas.push({

@@ -365,6 +365,7 @@ const borrador = (
   texto,
   estado,
   fecha,
+  programadoPara: estado === "PROGRAMADO" ? fecha : null,
 })
 
 const enDias = (dias: number, hora: number) => haceDias(-dias, hora, 0)

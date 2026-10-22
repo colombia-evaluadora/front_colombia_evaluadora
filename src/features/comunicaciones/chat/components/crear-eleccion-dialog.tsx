@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,19 @@ import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  useAutoguardadoActividad,
+  useEliminarBorradorActividad,
+} from "@/features/comunicaciones/chat/api/mutations/use-borrador-actividad"
+import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-autoguardado"
+import {
+  candidatosGuardables,
+  datosDe,
+  hayContenido,
+  idsDe,
+  revivirCandidatos,
+} from "@/features/comunicaciones/chat/lib/borrador-actividad"
+import { fotoComoDataUrl } from "@/features/comunicaciones/chat/lib/foto-candidato"
 
 const MIN_CANDIDATOS = 2
 
@@ -78,6 +92,7 @@ export function CrearEleccionDialog({
   onClose,
   onCreada,
   editar,
+  borrador,
 }: {
   open: boolean
   onClose: () => void
@@ -85,13 +100,15 @@ export function CrearEleccionDialog({
   // "Editar Elección" (diseño 4058:62794): mismos pasos sin el de votantes (el censo no cambia).
   // Quien la abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Eleccion
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2 | 3>(1)
-  const [votantes, setVotantes] = useState<Set<number>>(new Set())
+  const [votantes, setVotantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.votantes))
   const [votantesIntentado, setVotantesIntentado] = useState(false)
   const [candidatos, setCandidatos] = useState<CandidatoLocal[]>(() =>
-    (editar?.candidatos ?? []).map((c) => ({
+    (editar?.candidatos ?? revivirCandidatos(borrador?.datos?.candidatos)).map((c) => ({
       clave: siguienteClave++,
       nombre: c.nombre,
       numero: c.numero,
@@ -117,13 +134,26 @@ export function CrearEleccionDialog({
           verResultadosEnVivo: editar.verResultadosEnVivo,
           permiteComentarios: !!editar.permiteComentarios,
         }
-      : DATOS_INICIALES,
+      : datosDe(borrador?.datos, DATOS_INICIALES),
     validators: { onSubmit: datosSchema },
     onSubmit: () => setPaso(editar ? 3 : 2),
   })
 
+  // Actividad nueva: lo escrito se autoguarda como borrador (comms-service).
+  const valores = useStore(datos.store, (s) => s.values)
+  const autoguardado = useAutoguardadoActividad({
+    tipo: "ELECCION",
+    habilitado: open && !editar,
+    titulo: valores.nombre,
+    datos: { ...valores, candidatos: candidatosGuardables(candidatos), votantes: [...votantes] },
+    conContenido: hayContenido(valores.nombre, valores.descripcion, ...candidatos.map((c) => c.nombre), votantes),
+    borradorInicial: borrador?.id,
+  })
+  const eliminarBorrador = useEliminarBorradorActividad()
+
   const reiniciar = () => {
-    datos.reset()
+    autoguardado.reiniciar()
+    datos.reset(DATOS_INICIALES)
     setCandidatos([])
     setVotantes(new Set())
     setVotantesIntentado(false)
@@ -132,13 +162,20 @@ export function CrearEleccionDialog({
     onClose()
   }
 
-  const intentarCerrar = () => {
+  const intentarCerrar = async () => {
     if (crear.isPending) return
+    if (!editar) {
+      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+      const id = await autoguardado.guardarYa()
+      if (id) notify("La elección quedó guardada en Borradores y enviados.")
+      reiniciar()
+      return
+    }
     if (datos.state.isDirty || candidatos.length > 0 || votantes.size > 0) setDescartar(true)
     else reiniciar()
   }
 
-  const crearEleccion = () => {
+  const crearEleccion = async () => {
     const v = datos.state.values
     const cuerpo = {
       nombre: v.nombre.trim(),
@@ -159,8 +196,9 @@ export function CrearEleccionDialog({
       })
       return
     }
+    const borradorId = await autoguardado.guardarYa()
     crearNueva.mutate(
-      { ...cuerpo, votantes: [...votantes] },
+      { ...cuerpo, votantes: [...votantes], borradorId },
       {
         onSuccess: (canal) => {
           notify(`Se creó la elección ${canal.nombre}.`)
@@ -173,7 +211,7 @@ export function CrearEleccionDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => !o && intentarCerrar()}>
+      <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
@@ -270,6 +308,15 @@ export function CrearEleccionDialog({
             </p>
           )}
 
+          {!editar && (
+            <BarraBorrador
+              estado={autoguardado.estado}
+              hayBorrador={!!autoguardado.borradorId}
+              onDescartar={() => setDescartar(true)}
+              deshabilitado={crear.isPending}
+            />
+          )}
+
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
               <Button type="submit" form="eleccion-datos" className="sm:ml-auto">
@@ -293,7 +340,7 @@ export function CrearEleccionDialog({
                     Siguiente
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
-                  <Button type="button" color="neutral" onClick={intentarCerrar}>
+                  <Button type="button" color="neutral" onClick={() => void intentarCerrar()}>
                     <XIcon data-icon="inline-start" />
                     Cancelar
                   </Button>
@@ -308,7 +355,7 @@ export function CrearEleccionDialog({
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    onClick={crearEleccion}
+                    onClick={() => void crearEleccion()}
                     disabled={candidatos.length < MIN_CANDIDATOS || crear.isPending}
                     aria-busy={crear.isPending}
                     title={
@@ -323,7 +370,7 @@ export function CrearEleccionDialog({
                   <Button
                     type="button"
                     color="neutral"
-                    onClick={intentarCerrar}
+                    onClick={() => void intentarCerrar()}
                     disabled={crear.isPending}
                   >
                     <XIcon data-icon="inline-start" />
@@ -341,6 +388,12 @@ export function CrearEleccionDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
+          if (!editar && autoguardado.borradorId) {
+            eliminarBorrador.mutate(autoguardado.borradorId, {
+              onSuccess: () => notify("Borrador descartado."),
+              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+            })
+          }
           reiniciar()
         }}
       />
@@ -368,7 +421,10 @@ function PasoCandidatos({
   const form = useAppForm({
     defaultValues: { nombre: "", numero: "", lema: "" },
     validators: { onSubmit: candidatoSchema },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
+      // La foto pasa a data URL reducida al agregarla: así viaja en el borrador y en la elección.
+      let fotoUrl: string | null = null
+      if (foto) fotoUrl = await fotoComoDataUrl(foto).catch(() => null)
       onCambio([
         ...candidatos,
         {
@@ -376,7 +432,8 @@ function PasoCandidatos({
           nombre: value.nombre.trim(),
           numero: value.numero.trim(),
           lema: value.lema.trim(),
-          foto,
+          foto: fotoUrl ? null : foto,
+          fotoUrl,
         },
       ])
       form.reset()

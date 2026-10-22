@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode,
 
 import {
   CheckIcon,
+  ClockIcon,
   FileIcon,
   ImagesIcon,
   PaperPlaneTiltIcon,
@@ -24,6 +25,8 @@ import {
   validarAdjunto,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
+import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
 import {
   SmileyIcon,
   TextAaIcon,
@@ -83,6 +86,9 @@ interface ChatComposerProps {
   // Al desmontar (cambiar de canal o de vista) recibe lo que quedó escrito si
   // cambió respecto de `textoInicial`: el borrador del canal. Vacío lo descarta.
   onGuardarBorrador?: (texto: string) => void
+  // "Programar envío": manda el texto a la hora elegida (`yyyy-MM-ddTHH:mm`, hora de Bogotá).
+  // Solo texto: un adjunto se envía en el momento.
+  onProgramar?: (texto: string, programadoPara: string) => Promise<unknown>
 }
 
 export function ChatComposer({
@@ -100,6 +106,7 @@ export function ChatComposer({
   onCancelarRespuesta,
   onEscribiendo,
   onGuardarBorrador,
+  onProgramar,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
@@ -129,6 +136,21 @@ export function ChatComposer({
   // La barra de formato se ve mientras el editor (o la propia barra) tiene el foco.
   const [enfocado, setEnfocado] = useState(false)
   const listo = (texto.trim().length > 0 || !!archivo) && !enviando
+  const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null } | null>(null)
+  const programable = !edicion && !!onProgramar && texto.trim().length > 0 && !archivo && !enviando
+  const confirmarProgramacion = async ({ programadoPara }: { programadoPara: string }) => {
+    if (!onProgramar) return
+    setProgramar({ guardando: true, error: null })
+    try {
+      await onProgramar(codificarMenciones(texto.trim(), elegidos), programadoPara)
+      setTexto("")
+      setElegidos([])
+      setConsulta(null)
+      setProgramar(null)
+    } catch (error) {
+      setProgramar({ guardando: false, error: getErrorMessage(error) })
+    }
+  }
   const listaId = useId()
   // Personas elegidas en el autocompletado: al enviar `@Nombre` pasa a `<@id>`.
   const [elegidos, setElegidos] = useState<Mencionable[]>(mencionesIniciales)
@@ -227,6 +249,7 @@ export function ChatComposer({
   }
 
   return (
+    <>
     <form
       onSubmit={(e) => {
         e.preventDefault()
@@ -417,12 +440,23 @@ export function ChatComposer({
             <MicrophoneIcon className="size-5" />
           </Herramienta>
 
+          {!edicion && onProgramar && (
+            <Herramienta
+              etiqueta="Programar envío"
+              onClick={() => setProgramar({ guardando: false, error: null })}
+              deshabilitado={!programable}
+              className="ml-auto"
+            >
+              <ClockIcon className="size-5" />
+            </Herramienta>
+          )}
           <button
             type="submit"
             disabled={!listo}
             aria-label={edicion ? "Guardar cambios" : "Enviar mensaje"}
             className={cn(
-              "ml-auto grid size-9 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
+              !(!edicion && onProgramar) && "ml-auto",
+              "grid size-9 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
               edicion
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
                 : "text-primary hover:bg-primary/10 disabled:text-muted-foreground disabled:hover:bg-transparent",
@@ -433,6 +467,17 @@ export function ChatComposer({
         </div>
       </div>
     </form>
+      {programar && (
+        <ProgramarMensajeDialog
+          open
+          onOpenChange={(o) => !o && setProgramar(null)}
+          destino={destino}
+          guardando={programar.guardando}
+          error={programar.error}
+          onConfirmar={(v) => void confirmarProgramacion(v)}
+        />
+      )}
+    </>
   )
 }
 
@@ -440,6 +485,7 @@ function Herramienta({
   etiqueta,
   onClick,
   pendiente = false,
+  deshabilitado = false,
   circular = false,
   className,
   children,
@@ -447,6 +493,7 @@ function Herramienta({
   etiqueta: string
   onClick?: () => void
   pendiente?: boolean
+  deshabilitado?: boolean
   circular?: boolean
   className?: string
   children: ReactNode
@@ -455,7 +502,7 @@ function Herramienta({
     <button
       type="button"
       onClick={onClick}
-      disabled={pendiente}
+      disabled={pendiente || deshabilitado}
       aria-label={etiqueta}
       title={pendiente ? `${etiqueta}: disponible próximamente` : etiqueta}
       className={cn(

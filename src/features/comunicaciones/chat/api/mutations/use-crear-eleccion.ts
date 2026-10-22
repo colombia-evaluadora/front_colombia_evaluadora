@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { conBorrador } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 import type { Conversacion, Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { fotoComoDataUrl } from "@/features/comunicaciones/chat/lib/foto-candidato"
 
@@ -26,6 +27,7 @@ export interface CrearEleccionInput {
   // Ids de las personas habilitadas para votar.
   votantes: number[]
   candidatos: CandidatoNuevo[]
+  borradorId?: number | null
 }
 
 // Las fotos viajan como data URL reducida (`lib/foto-candidato.ts`): una URL
@@ -55,7 +57,7 @@ async function crearEleccion(v: CrearEleccionInput) {
   return evalCol.postRow<Conversacion>("/comunicaciones/elecciones", {
     ...(await cuerpoEleccion(v)),
     VOTANTES: v.votantes,
-  })
+  }, conBorrador(v.borradorId))
 }
 
 /**
@@ -78,7 +80,11 @@ export function useCrearEleccion() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: crearEleccion,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ]),
   })
 }
 

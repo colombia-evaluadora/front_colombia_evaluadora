@@ -24,6 +24,10 @@ export const chatKeys = {
   seleccionOpciones: [...all, "grupos", "seleccion", "opciones"] as const,
   votantes: (grupo: string, valor: string) => [...all, "votantes", grupo, valor] as const,
   borradores: [...all, "borradores"] as const,
+  borradoresActividad: [...all, "borradores-actividad"] as const,
+  // Fuera del prefijo de la lista: invalidarla (al autoguardar o publicar) no vuelve a pedir el
+  // detalle de un borrador abierto, que ya se eliminó al publicar.
+  borradorActividad: (id: number) => [...all, "borrador-actividad", id] as const,
   enviados: (tipo: string) => [...all, "enviados", tipo] as const,
   eleccion: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "eleccion"] as const,

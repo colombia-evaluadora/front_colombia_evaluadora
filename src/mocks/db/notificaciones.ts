@@ -225,7 +225,13 @@ const TIPOS_MEMBRESIA = [
   { tipo: "CHAT_GRUPO_SALIDA", categoria: "CHAT", etiqueta: "Alguien salió de un grupo que administras", push: false, email: false, silenciable: true },
 ] as const
 
-export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA].map((t) => ({
+// Resultados disponibles de elecciones y encuestas (comms-service avisa una vez al cerrar).
+const TIPOS_RESULTADOS = [
+  { tipo: "CHAT_RESULTADOS_ELECCION", categoria: "CHAT", etiqueta: "Resultados de elecciones", push: true, email: false, silenciable: true },
+  { tipo: "CHAT_RESULTADOS_ENCUESTA", categoria: "CHAT", etiqueta: "Resultados de encuestas", push: true, email: false, silenciable: true },
+] as const
+
+export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA, ...TIPOS_RESULTADOS].map((t) => ({
   tipo: t.tipo,
   categoria: t.categoria,
   etiqueta: t.etiqueta,
