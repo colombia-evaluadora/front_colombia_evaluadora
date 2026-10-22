@@ -329,9 +329,13 @@ function MensajeItem({
   const tactil = useAccionesTactiles()
 
   if (m.sistema) {
+    // Los avisos viejos traen el nombre dentro del texto ("Ana Ana se ha unido…"):
+    // se quita para no repetirlo. Los nuevos ya llegan sin él (comms-service).
+    const nombre = m.autor?.nombre ?? ""
+    const texto = nombre && m.texto?.startsWith(`${nombre} `) ? m.texto.slice(nombre.length + 1) : m.texto
     return (
       <p className="text-center text-xs text-muted-foreground">
-        <span className="font-medium text-foreground/80">{m.autor.nombre}</span> {m.texto}
+        <span className="font-medium text-foreground/80">{m.autor.nombre}</span> {texto}
       </p>
     )
   }

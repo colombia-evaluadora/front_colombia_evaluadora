@@ -7,6 +7,7 @@ import { realtime } from "@/lib/realtime"
 import { useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import type { RealtimeEvent } from "@/lib/realtime/protocol"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { SALIR_MUTATION_KEY } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import type { Conversacion, Mensaje, Miembro } from "@/features/comunicaciones/chat/api/types"
 import { comoEliminado } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 
@@ -165,7 +166,19 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
       }
       case "miembros.actualizados": {
         // Alta, baja, bloqueo o rol en la conversación abierta: lista de participantes y totales.
-        void queryClient.invalidateQueries({ queryKey: chatKeys.miembros(conversacionId ?? "none") })
+        // Si el aviso es por la salida propia (llega antes que la respuesta del PATCH), la
+        // lista de miembros ya no es accesible (404): solo se refresca la de conversaciones.
+        // Lo mismo si ya salió de la lista (lo quitaron: `conversacion.eliminada`).
+        const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
+        const fuera = !!lista && !lista.some((x) => x.id === conversacionId)
+        const saliendo =
+          queryClient.isMutating({
+            mutationKey: SALIR_MUTATION_KEY,
+            predicate: (m) => m.state.variables === conversacionId,
+          }) > 0
+        if (!saliendo && !fuera) {
+          void queryClient.invalidateQueries({ queryKey: chatKeys.miembros(conversacionId ?? "none") })
+        }
         void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
         return
       }
@@ -175,6 +188,17 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
           prev?.map((c) => (c.id === id ? { ...c, leidoHasta: Math.max(c.leidoHasta ?? 0, leidoHasta) } : c)),
         )
+        return
+      }
+      case "actividad.actualizada": {
+        // Alguien votó, respondió o leyó una actividad (elección, encuesta,
+        // comunicado, evaluación). El evento no trae conteos (la urna es secreta):
+        // se vuelve a pedir el detalle por REST con los permisos de quien mira,
+        // así el creador ve en vivo resultados y "Han visto N".
+        const id = conversacionId ?? "none"
+        for (const k of [chatKeys.eleccion(id), chatKeys.encuesta(id), chatKeys.comunicado(id), chatKeys.evaluacion(id)]) {
+          void queryClient.invalidateQueries({ queryKey: k })
+        }
         return
       }
       case "escribiendo": {

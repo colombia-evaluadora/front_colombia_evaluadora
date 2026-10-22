@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
@@ -16,6 +17,9 @@ interface ReservationBaseCatalogs {
 // tumbar todo el combo: `campuses`/`grades` sí tienen endpoint real y no
 // deberían perderse porque este pedazo mockeado no existe todavía.
 async function fetchReservationBaseCatalogs(): Promise<ReservationBaseCatalogs> {
+  // Con mocks apagados ni se pide: era un 404 seguro en cada pantalla de
+  // matrícula (consola del coordinador en el QA E2E de testv2).
+  if (!env.ENABLE_API_MOCKING) return { institutions: [], groups: [] }
   try {
     return await api.get("/coverage/reservations/catalogs")
   } catch {
