@@ -12,7 +12,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
-import { toSafeTextInput } from "@/lib/text-input"
+import { toDireccionInput, toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -95,7 +95,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     </ComboboxField>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.district") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-barrio">Barrio</FieldLabel>
                     <Input
                         id="establishment-barrio"
@@ -103,19 +103,21 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         // TESTABLECIMIENTO.BARRIO es VARCHAR(130).
                         maxLength={130}
                         value={value.district?.name ?? ""}
+                        aria-invalid={isInvalid("address.district")}
                         // No es un catálogo real: es texto libre con la forma de
                         // `CatalogItem` para reusar el tipo de `address`. El `id`
                         // no se lee en ningún otro lado, así que un 0 fijo alcanza.
                         onChange={(event) => {
-                            const clean = toSafeTextInput(event.target.value, 130)
+                            const clean = toTextoInput(event.target.value)
                             onChange({ ...value, district: { id: 0, code: clean, name: clean } })
                         }}
                     />
+                    <FieldError>{errorFor("address.district")}</FieldError>
                 </Field>
             </div>
 
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.address") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                     <Input
                         id="establishment-address"
@@ -123,11 +125,13 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         // TESTABLECIMIENTO.DIRECCION es VARCHAR(130).
                         maxLength={130}
                         value={value.address}
-                        onChange={(event) => onChange({ ...value, address: event.target.value })}
+                        aria-invalid={isInvalid("address.address")}
+                        onChange={(event) => onChange({ ...value, address: toDireccionInput(event.target.value) })}
                     />
+                    <FieldError>{errorFor("address.address")}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.commune") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-comuna">Comuna</FieldLabel>
                     <Input
                         id="establishment-comuna"
@@ -135,11 +139,16 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         // TESTABLECIMIENTO.COMUNA es VARCHAR(130).
                         maxLength={130}
                         value={value.commune?.name ?? ""}
-                        onChange={(event) => onChange({ ...value, commune: { id: 0, code: event.target.value, name: event.target.value } })}
+                        aria-invalid={isInvalid("address.commune")}
+                        onChange={(event) => {
+                            const clean = toTextoInput(event.target.value)
+                            onChange({ ...value, commune: { id: 0, code: clean, name: clean } })
+                        }}
                     />
+                    <FieldError>{errorFor("address.commune")}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.locality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-localidad">Localidad</FieldLabel>
                     <Input
                         id="establishment-localidad"
@@ -147,8 +156,13 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         // TESTABLECIMIENTO.LOCALIDAD es VARCHAR(130).
                         maxLength={130}
                         value={value.locality?.name ?? ""}
-                        onChange={(event) => onChange({ ...value, locality: { id: 0, code: event.target.value, name: event.target.value } })}
+                        aria-invalid={isInvalid("address.locality")}
+                        onChange={(event) => {
+                            const clean = toTextoInput(event.target.value)
+                            onChange({ ...value, locality: { id: 0, code: clean, name: clean } })
+                        }}
                     />
+                    <FieldError>{errorFor("address.locality")}</FieldError>
                 </Field>
             </div>
 

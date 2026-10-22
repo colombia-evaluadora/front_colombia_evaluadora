@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest"
+
+import {
+  toDireccionInput,
+  validarDireccion,
+  validarIdentificacionAdministrativa,
+  validarLugar,
+  validarNombreEstablecimiento,
+} from "@/features/establishment/shared/text-field-rules"
+
+// Ejemplos del caso de prueba E04HU02 (Mantis 0000694).
+describe("validarNombreEstablecimiento", () => {
+  it.each(["Institución Educativa San José", "I.E. Nº 5 (Sede A)", "Colegio O'Higgins", "Liceo Santa Fe & Cía"])(
+    "acepta %s",
+    (valor) => expect(validarNombreEstablecimiento(valor)).toBeNull(),
+  )
+
+  it.each(["++++<<<<", "\"\"\"\"", "ççççç----", "Wahucio'''''''---- ----.ccccc", "12345", "'-.'", "----"])(
+    "rechaza %s",
+    (valor) => expect(validarNombreEstablecimiento(valor)).not.toBeNull(),
+  )
+
+  it("en blanco no es asunto suyo (lo decide el obligatorio)", () => {
+    expect(validarNombreEstablecimiento("   ")).toBeNull()
+  })
+})
+
+describe("validarLugar", () => {
+  it.each(["El Prado", "Comuna 5", "5", "Localidad de Suba"])("acepta %s", (valor) =>
+    expect(validarLugar(valor, "El barrio")).toBeNull(),
+  )
+
+  it.each(["cccccccccccc----", "99998uuu+cç", "-+-+-", "..."])("rechaza %s", (valor) =>
+    expect(validarLugar(valor, "El barrio")).not.toBeNull(),
+  )
+})
+
+describe("validarDireccion", () => {
+  it.each(["CR 5 # 26D-7A", "CL 10 # 15-20", "Mz A L 27", "Km 5 vía al mar", "Calle 45BIS # 12-30"])(
+    "acepta %s",
+    (valor) => expect(validarDireccion(valor)).toBeNull(),
+  )
+
+  it.each(["`6767676ghhggh+++```", "6767676ghhggh", "12345", "## --", "Calle"])("rechaza %s", (valor) =>
+    expect(validarDireccion(valor)).not.toBeNull(),
+  )
+
+  it("el input descarta comillas invertidas y signos de más", () => {
+    expect(toDireccionInput("`6767676ghhggh+++```")).toBe("6767676ghhggh")
+  })
+})
+
+describe("validarIdentificacionAdministrativa", () => {
+  it.each(["Resolución 1234 de 2010", "0045/2019", "No. 12-A", "Res. 004 (2015)"])("acepta %s", (valor) =>
+    expect(validarIdentificacionAdministrativa(valor, "La resolución")).toBeNull(),
+  )
+
+  it.each(["ç'ç'+'+'(/)<<", "9998877/('+'+ç'ç'ç'<<<", "abc", "--12", "12//34"])("rechaza %s", (valor) =>
+    expect(validarIdentificacionAdministrativa(valor, "La resolución")).not.toBeNull(),
+  )
+})
