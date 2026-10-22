@@ -118,7 +118,6 @@ usuario.
 | `/app/establecimiento-educativo/periodos/agregar` | No | Alta de periodo: admin, valida contra servidor | Mensaje claro (empty state) |
 | `/app/establecimiento-educativo/agregar`, `editar/$id` | No | Alta/edición de EE: admin | Ídem |
 | `/app/establecimiento-educativo/funcionarios` | No | Datos personales del personal; admin | Revisable con P6 |
-| `/app/comunicaciones/foros` | Solo consulta | Foros/publicaciones persistidos | Publicar sin red: follow-up (outbox) |
 | `/app/comunicaciones/chat` | Solo consulta | Conversaciones, mensajes y comunicados persistidos (este PR) | Enviar sin red: follow-up (outbox) |
 | `/app/notificaciones` | Solo consulta | Persistidas | — |
 | `/app/notificaciones/preferencias` | Solo consulta | Persistidas (este PR); cambiar requiere red | — |

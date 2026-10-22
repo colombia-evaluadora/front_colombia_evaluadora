@@ -17,7 +17,6 @@ import type { Conversacion, Persona } from "@/features/comunicaciones/chat/api/t
 import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
-import { useCrearForo } from "@/features/comunicaciones/foros/api/mutations/use-acciones-foro"
 import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { useResolverSeleccion } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
 import { SelectorGrupal } from "@/features/comunicaciones/chat/components/selector-grupal"
@@ -49,8 +48,8 @@ export function EtiquetaInvitacion({ perfil }: { perfil?: Persona["perfil"] }) {
 // Nombres estilo canal: minúsculas y guiones en lugar de espacios.
 const aNombreCanal = (v: string) => v.toLowerCase().replace(/\s+/g, "-").replace(/^#/, "")
 
-// Crear un foro del chat (`CANAL`), un grupo (`GRUPO`, al menos una persona) o un foro con
-// hilos de la pantalla Foros (`FORO`): primero el nombre y luego las personas.
+// Crear un foro del chat (`CANAL`) o un grupo (`GRUPO`, al menos una persona): primero el
+// nombre y luego las personas.
 export function CrearChatDialog({
   open,
   onClose,
@@ -60,7 +59,7 @@ export function CrearChatDialog({
   open: boolean
   onClose: () => void
   onCreado: (id: number) => void
-  tipo?: "CANAL" | "FORO" | "GRUPO"
+  tipo?: "CANAL" | "GRUPO"
 }) {
   const esGrupo = tipo === "GRUPO"
   const { notify } = useNotify()
@@ -68,10 +67,7 @@ export function CrearChatDialog({
   const [nombre, setNombre] = useState("")
   const [opciones, setOpciones] = useState<OpcionesGrupo>(OPCIONES_GRUPO_INICIALES)
   const [miembros, setMiembros] = useState<Persona[]>([])
-  const crearCanal = useCrearCanal()
-  const crearForo = useCrearForo()
-  const esForo = tipo === "FORO"
-  const crear = esForo ? crearForo : crearCanal
+  const crear = useCrearCanal()
   const [consulta, setConsulta] = useState("")
   const personas = usePersonasQuery(open && paso === 2, consulta, { paraGrupo: esGrupo })
   const limpio = nombre.trim().replace(/-+$/, "")
@@ -97,28 +93,25 @@ export function CrearChatDialog({
   }
 
   const creado = (canal: Conversacion) => {
-    notify(esGrupo ? `Se creó el grupo ${canal.nombre}.` : esForo ? `Se creó el foro ${canal.nombre}.` : `Se creó #${canal.nombre}.`)
+    notify(esGrupo ? `Se creó el grupo ${canal.nombre}.` : `Se creó #${canal.nombre}.`)
     cerrar()
     onCreado(canal.id)
   }
 
   const crearChat = (conMiembros: Persona[]) => {
     const ids = conMiembros.map((p) => p.id)
-    if (esForo) crearForo.mutate({ nombre: limpio, miembros: ids }, { onSuccess: creado })
-    else {
-      const { GRADOS, GRUPOS, ROLES, PARA } = aCuerpoSeleccion(grupal)
-      crearCanal.mutate(
-        {
-          nombre: limpio,
-          categoria: "GENERAL",
-          miembros: ids,
-          tipo: esGrupo ? "GRUPO" : undefined,
-          grupal: conGrupal ? { GRADOS, GRUPOS, ROLES, PARA } : undefined,
-          opciones: esGrupo ? opciones : undefined,
-        },
-        { onSuccess: creado },
-      )
-    }
+    const { GRADOS, GRUPOS, ROLES, PARA } = aCuerpoSeleccion(grupal)
+    crear.mutate(
+      {
+        nombre: limpio,
+        categoria: "GENERAL",
+        miembros: ids,
+        tipo: esGrupo ? "GRUPO" : undefined,
+        grupal: conGrupal ? { GRADOS, GRUPOS, ROLES, PARA } : undefined,
+        opciones: esGrupo ? opciones : undefined,
+      },
+      { onSuccess: creado },
+    )
   }
 
   // Con grado, grupo o rol: primero el conteo que resuelve el servidor, luego se crea.
@@ -181,11 +174,9 @@ export function CrearChatDialog({
               paraGrupo={esGrupo}
             />
             <p className="text-xs text-muted-foreground">
-              {esForo
-                ? "Las personas que añadas verán las publicaciones del foro y podrán participar según la política de la institución."
-                : esGrupo
-                  ? "Añade al menos una persona. Verán todo el historial del grupo. Los acudientes reciben una invitación y entran solo si la aceptan."
-                  : "Las personas que añadas verán el historial del foro y podrán escribir en él."}
+              {esGrupo
+                ? "Añade al menos una persona. Verán todo el historial del grupo. Los acudientes reciben una invitación y entran solo si la aceptan."
+                : "Las personas que añadas verán el historial del foro y podrán escribir en él."}
             </p>
             {esGrupo && (
               <div className="pt-3">

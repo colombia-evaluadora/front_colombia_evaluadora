@@ -162,8 +162,6 @@ import {
   resolvedSubjectLabelQueryKey,
 } from "@/features/academic-management/curricular-references/api/query/use-subject-label-resolution"
 // Comunicaciones y notificaciones
-import { forosKeys } from "@/features/comunicaciones/foros/api/query-keys"
-import { fetchForos } from "@/features/comunicaciones/foros/api/query/use-foros-query"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchConversaciones } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { fetchPoliticaChat } from "@/features/comunicaciones/chat/api/query/use-politica-chat-query"
@@ -670,7 +668,6 @@ function referentesTasks(): PrepareTask[] {
 
 function comunicacionesTasks(): PrepareTask[] {
   return [
-    seed(forosKeys.lista, fetchForos, offlineMeta(TTL_OFFLINE.detalle)),
     seed(chatKeys.conversaciones, fetchConversaciones, offlineMeta(TTL_OFFLINE.detalle)),
     seed(chatKeys.politica, fetchPoliticaChat, catalogoMeta(), { optional: true }),
   ]
@@ -844,9 +841,7 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   ]
   if (menuIncludes(queryClient, "/app/gestion-academica/informes")) tasks.push(...informesTasks())
   if (menuIncludes(queryClient, "/app/gestion-academica/referentes-curriculares")) tasks.push(...referentesTasks())
-  if (menuIncludes(queryClient, "/app/comunicaciones/chat") || menuIncludes(queryClient, "/app/comunicaciones/foros")) {
-    tasks.push(...comunicacionesTasks())
-  }
+  if (menuIncludes(queryClient, "/app/comunicaciones/chat")) tasks.push(...comunicacionesTasks())
   tasks.push(...establecimientoTasks(queryClient, input.roles))
   return tasks
 }
