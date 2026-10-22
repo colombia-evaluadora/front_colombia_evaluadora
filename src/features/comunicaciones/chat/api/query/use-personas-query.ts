@@ -28,15 +28,19 @@ export function normalizarBusqueda(s: string) {
 }
 
 // Sin texto (o con menos de MIN_CARACTERES) trae la primera página del directorio.
-export function usePersonasQuery(enabled = true, texto = "") {
+// `paraGrupo`: el buscador de un grupo no ofrece acudientes (irán por invitación; comms-service
+// tampoco los agrega).
+export function usePersonasQuery(enabled = true, texto = "", { paraGrupo = false }: { paraGrupo?: boolean } = {}) {
   const debounced = useDebounced(texto.trim())
   const q = debounced.length >= MIN_CARACTERES ? debounced : ""
   return useQuery({
-    queryKey: [...chatKeys.personas, q],
-    queryFn: () => {
+    queryKey: [...chatKeys.personas, q, ...(paraGrupo ? ["grupo"] : [])],
+    queryFn: async () => {
       const params = new URLSearchParams({ limite: String(LIMITE) })
       if (q) params.set("q", q)
-      return evalCol.getRows<Persona>(`/comunicaciones/personas?${params}`)
+      if (paraGrupo) params.set("paraGrupo", "true")
+      const rows = await evalCol.getRows<Persona>(`/comunicaciones/personas?${params}`)
+      return paraGrupo ? rows.filter((p) => p.perfil !== "ACUDIENTE") : rows
     },
     enabled,
     staleTime: 5 * 60_000,

@@ -7,6 +7,7 @@ import type {
   Conversacion,
   SilencioDuracion,
 } from "@/features/comunicaciones/chat/api/types"
+import type { CuerpoSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 const base = (id: number) => `/comunicaciones/conversaciones/${id}`
 
@@ -103,18 +104,22 @@ export function useCrearCanal() {
       categoria,
       miembros = [],
       tipo,
+      grupal,
     }: {
       nombre: string
       categoria: CategoriaCanal
       miembros?: number[]
       // GRUPO: conversación de un grupo de personas; sin tipo, un foro (CANAL).
       tipo?: "CANAL" | "GRUPO"
+      // Solo GRUPO: grados, grupos académicos y cargos que comms-service resuelve en el servidor.
+      grupal?: Pick<CuerpoSeleccion, "GRADOS" | "GRUPOS" | "ROLES">
     }) =>
       evalCol.postRow<Conversacion>("/comunicaciones/conversaciones", {
         NOMBRE: nombre,
         CATEGORIA: categoria,
         MIEMBROS: miembros,
         ...(tipo ? { TIPO: tipo } : {}),
+        ...(grupal ?? {}),
       }),
     onSuccess: invalidar,
   })

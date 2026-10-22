@@ -1,0 +1,72 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
+import { textoConfirmacion, textoYaEnElGrupo } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
+
+const MUESTRA = 8
+
+// Confirmación de un alta masiva en un grupo con el conteo que resolvió comms-service
+// ("Se agregarán 32 personas") y una muestra de los nombres.
+export function ConfirmarAltaDialog({
+  resolucion,
+  resumen,
+  grupo,
+  pendiente,
+  onConfirmar,
+  onCancelar,
+}: {
+  resolucion: ResolucionSeleccion | null
+  resumen: string
+  grupo: string
+  pendiente: boolean
+  onConfirmar: () => void
+  onCancelar: () => void
+}) {
+  const total = resolucion?.total ?? 0
+  const ya = textoYaEnElGrupo(resolucion?.yaEnElGrupo ?? 0)
+  const muestra = resolucion?.personas.slice(0, MUESTRA) ?? []
+  const resto = total - muestra.length
+
+  return (
+    <AlertDialog open={resolucion !== null} onOpenChange={(o) => !o && !pendiente && onCancelar()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{textoConfirmacion(total)}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {resumen ? `${resumen}. ` : ""}
+            {total > 0
+              ? `Verán todo el historial de ${grupo} y recibirán un aviso.`
+              : "Todas las personas elegidas ya están en el grupo o no se pueden agregar."}
+            {ya && ` ${ya}`}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {muestra.length > 0 && (
+          <ul aria-label="Personas que se agregarán" className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-3 text-sm">
+            {muestra.map((p) => (
+              <li key={p.id} className="truncate">
+                {p.nombre}
+              </li>
+            ))}
+            {resto > 0 && <li className="text-muted-foreground">y {resto === 1 ? "1 persona más" : `${resto} personas más`}</li>}
+          </ul>
+        )}
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={pendiente}>
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction disabled={pendiente || total === 0} aria-busy={pendiente} onClick={onConfirmar}>
+            Agregar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}

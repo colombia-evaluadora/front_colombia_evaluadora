@@ -38,8 +38,8 @@ export interface PoliticaChat {
    */
   foros?: PoliticaForos
   /**
-   * Grupos (comms-service `comms.politica.grupos`, PENDIENTE DE CONFIRMAR CON NATALIA): quién crea y
-   * quién agrega participantes (`ADMIN` solo administradores, `TODOS` cualquier miembro).
+   * Grupos (comms-service `comms.politica.grupos`): quién crea (todos los funcionarios) y quién
+   * agrega participantes (`ADMIN` solo quien gestiona el grupo, `TODOS` cualquier miembro).
    */
   grupos?: PoliticaGrupos
   /** `true` mientras la institución no haya confirmado la política. */
@@ -49,7 +49,22 @@ export interface PoliticaChat {
 export interface PoliticaGrupos {
   crear: PerfilChat[]
   agregar: "ADMIN" | "TODOS"
+  /** Si sale quien gestiona, lo hereda el miembro más antiguo (PENDIENTE DE CONFIRMAR CON NATALIA). */
   sucesionAlMasAntiguo: boolean
+  /**
+   * Decisión de Natalia: `false` (default) = un grupo lo gestiona solo quien lo creó y no se nombran
+   * administradores adicionales (comms-service rechaza el cambio de rol). Configurable por si se
+   * confirma lo contrario (`comms.politica.grupos.administradores-adicionales`).
+   */
+  administradoresAdicionales?: boolean
+}
+
+/**
+ * Nombrar administradores ("Hacer administrador"): en un grupo solo si la política lo permite
+ * explícitamente; en los foros sí (tienen administradores).
+ */
+export function puedeNombrarAdministradores(politica: Pick<PoliticaChat, "grupos">, tipo: string): boolean {
+  return tipo !== "GRUPO" || politica.grupos?.administradoresAdicionales === true
 }
 
 /** Quién ve el buscador para añadir: el administrador; en un grupo con `agregar=TODOS`, cualquiera. */
@@ -78,7 +93,7 @@ export const POLITICA_CHAT_SUGERIDA: PoliticaChat = {
   },
   mencionesMasivas: ["DIRECTIVO", "DOCENTE"],
   // Defaults de comms-service (`comms.politica.grupos`).
-  grupos: { crear: ["DIRECTIVO", "DOCENTE"], agregar: "ADMIN", sucesionAlMasAntiguo: true },
+  grupos: { crear: ["DIRECTIVO", "DOCENTE"], agregar: "ADMIN", sucesionAlMasAntiguo: true, administradoresAdicionales: false },
   // Mismos defaults que comms-service (`comms.politica.foros`): todos participan y modera dirección.
   foros: {
     publicar: ["DIRECTIVO", "DOCENTE", "ACUDIENTE", "ESTUDIANTE"],

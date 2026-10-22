@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion, Miembro } from "@/features/comunicaciones/chat/api/types"
+import type { CuerpoSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
 const base = (id: number) => `/comunicaciones/conversaciones/${id}/miembros`
 
@@ -21,6 +22,16 @@ export function useAgregarMiembros(conversacionId: number) {
   const invalidar = useInvalidar(conversacionId)
   return useMutation({
     mutationFn: (ids: number[]) => evalCol.postRows<Miembro>(base(conversacionId), { MIEMBROS: ids }),
+    onSuccess: invalidar,
+  })
+}
+
+// Alta masiva en un grupo: grados, grupos académicos, cargos y personas sueltas que comms-service
+// resuelve en el servidor (alcance de los establecimientos, sin duplicados ni acudientes).
+export function useAgregarMiembrosMasivo(conversacionId: number) {
+  const invalidar = useInvalidar(conversacionId)
+  return useMutation({
+    mutationFn: (cuerpo: CuerpoSeleccion) => evalCol.postRows<Miembro>(`${base(conversacionId)}/masivo`, cuerpo),
     onSuccess: invalidar,
   })
 }
