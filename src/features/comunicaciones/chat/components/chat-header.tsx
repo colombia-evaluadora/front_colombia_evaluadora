@@ -107,7 +107,7 @@ function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) 
         )}
       </Avatar>
       <div className="min-w-0 leading-tight">
-        <h2 className="flex items-center gap-2 font-semibold">
+        <h2 className="flex items-center gap-2 text-lg leading-tight font-semibold">
           <span className="truncate">{c.nombre}</span>
           {c.silenciadoHasta && (
             <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 text-muted-foreground" />
