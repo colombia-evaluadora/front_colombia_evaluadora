@@ -16,6 +16,15 @@ async function captura(page: Page, nombre: string) {
 async function login(page: Page, email: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(CHAT)}`)
   await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 60_000 })
+  // El primer ingreso tras arrancar MSW a veces rebota al login: se reintenta una vez.
+  for (let intento = 0; intento < 2; intento++) {
+    if (!new URL(page.url()).pathname.startsWith("/login")) break
+    await ingresarUnaVez(page, email)
+  }
+  await page.getByRole("navigation", { name: "Conversaciones" }).waitFor({ timeout: 30_000 })
+}
+
+async function ingresarUnaVez(page: Page, email: string) {
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
@@ -23,8 +32,8 @@ async function login(page: Page, email: string) {
     await compartido.click()
   }
   await page.getByRole("button", { name: "Ingresar" }).click()
-  await page.waitForURL((url) => url.pathname === CHAT, { timeout: 30_000 })
-  await page.getByRole("navigation", { name: "Conversaciones" }).waitFor()
+  await page.waitForURL((u) => u.pathname.startsWith("/app"), { timeout: 30_000 })
+  await page.waitForTimeout(1_500)
 }
 
 const lista = (page: Page) => page.getByRole("navigation", { name: "Conversaciones" })

@@ -19,6 +19,15 @@ async function login(page: Page, email: string, primera = true) {
     await page.goto(`/login?redirectTo=${encodeURIComponent(CHAT)}`)
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 60_000 })
   }
+  // El primer ingreso tras arrancar MSW a veces rebota al login: se reintenta una vez.
+  for (let intento = 0; intento < 2; intento++) {
+    if (!new URL(page.url()).pathname.startsWith("/login")) break
+    await ingresarUnaVez(page, email)
+  }
+  await page.getByRole("navigation", { name: "Conversaciones" }).waitFor({ timeout: 30_000 })
+}
+
+async function ingresarUnaVez(page: Page, email: string) {
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
@@ -27,6 +36,8 @@ async function login(page: Page, email: string, primera = true) {
   }
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((u) => u.pathname.startsWith("/app"), { timeout: 30_000 })
+  await page.waitForTimeout(1_500)
+  if (new URL(page.url()).pathname.startsWith("/login")) return
   if (!page.url().includes(CHAT)) {
     const link = page.locator(`a[href="${CHAT}"]`).first()
     if (!(await link.isVisible().catch(() => false))) {
@@ -126,9 +137,13 @@ test("chat: composer, adjuntar, crear foro con bienvenida, menús, archivos, doc
   await lista(page).getByRole("button", { name: /^Archivos/ }).click()
   await expect(page.getByRole("heading", { level: 2, name: "Archivos" })).toBeVisible()
   await captura(page, "app-3734-39877-archivos")
-  await page.getByText("planeación_fracciones.docx").first().click()
+  await page.getByRole("button", { name: "Ver planeación_fracciones.docx" }).click()
   await page.waitForTimeout(800)
-  await captura(page, "app-3743-40482-documento")
+  await captura(page, "app-3744-41465-visor-documento")
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Editar planeación_fracciones.docx" }).click()
+  await expect(page.getByRole("toolbar", { name: "Formato del texto" })).toBeVisible()
+  await captura(page, "app-3743-40482-editor-documento")
   await page.keyboard.press("Escape")
 
   // Borradores y enviados con acciones al pasar el mouse.
@@ -322,5 +337,13 @@ test("evaluación y comunicado: crear, editar, estudiante y docente", async ({ p
   // Estudiante: examen.
   await login(page, "estudiante@example.com", false)
   await abrir(page, "Examen Matemáticas")
+  const examen = page.getByRole("form", { name: "Preguntas de Examen Matemáticas" })
+  await expect(examen).toBeVisible()
   await captura(page, "app-3866-65999-examen-estudiante")
+  // Responde y envía: ve su entrega (nota o pendiente de calificar).
+  await examen.getByRole("radio").first().click()
+  await examen.getByRole("button", { name: "Enviar" }).click()
+  await page.getByRole("alertdialog").getByRole("button", { name: "Enviar" }).click()
+  await expect(page.getByRole("region", { name: "Tu entrega" })).toBeVisible()
+  await captura(page, "app-examen-entrega-estudiante")
 })
