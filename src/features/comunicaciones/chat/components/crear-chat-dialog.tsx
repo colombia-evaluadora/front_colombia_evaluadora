@@ -9,6 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { HashIcon } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -139,23 +141,33 @@ export function CrearChatDialog({
               e.preventDefault()
               if (limpio && (!esGrupo || modoValido(opciones.modo, opciones.rolesEscritura))) setPaso(2)
             }}
-            className="max-h-[65dvh] space-y-1.5 overflow-y-auto"
+            className="max-h-[65dvh] space-y-1.5 overflow-y-auto pt-1"
           >
-            <label className="relative flex items-center gap-3 rounded-lg border px-4 pt-3.5 pb-2.5 focus-within:border-primary">
-              <span className="absolute -top-2.5 left-3 bg-popover px-1 text-sm font-medium">
+            {/* Label flotante con los componentes estándar (como el login): el `span` absoluto de
+                antes quedaba recortado por el `overflow-y-auto` del form y montado sobre el input.
+                `Field outlined` reserva el margen superior para el label; `bg-popover` lo funde con
+                el fondo del diálogo (en oscuro `background` ≠ `popover`). */}
+            <Field variant="outlined">
+              <FieldLabel htmlFor="crear-chat-nombre" className="bg-popover">
                 Nombre
-              </span>
-              {!esGrupo && <HashIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />}
-              <input
-                autoFocus
-                value={nombre}
-                maxLength={80}
-                onChange={(e) => setNombre(esGrupo ? e.target.value.replace(/^\s+/, "") : aNombreCanal(e.target.value))}
-                placeholder={esGrupo ? "Por ejemplo, Proyecto feria de ciencias" : "Por ejemplo, planificacion-presupuesto"}
-                aria-describedby="crear-chat-ayuda"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-            </label>
+              </FieldLabel>
+              <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+                {!esGrupo && (
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <HashIcon aria-hidden className="size-5 text-muted-foreground" />
+                  </InputGroupAddon>
+                )}
+                <InputGroupInput
+                  id="crear-chat-nombre"
+                  autoFocus
+                  value={nombre}
+                  maxLength={80}
+                  onChange={(e) => setNombre(esGrupo ? e.target.value.replace(/^\s+/, "") : aNombreCanal(e.target.value))}
+                  placeholder={esGrupo ? "Por ejemplo, Proyecto feria de ciencias" : "Por ejemplo, planificacion-presupuesto"}
+                  aria-describedby="crear-chat-ayuda"
+                />
+              </InputGroup>
+            </Field>
             <p id="crear-chat-ayuda" className="text-xs text-muted-foreground">
               {esGrupo ? AYUDA_GRUPO : AYUDA}
             </p>
