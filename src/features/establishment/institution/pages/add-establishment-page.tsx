@@ -119,15 +119,15 @@ export function AddEstablishmentPage() {
   const establishmentId = establishmentIdParam !== null ? Number(establishmentIdParam) : null
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
-  const { puedeCrear, puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
-  // Rector y secretaria solo los cambia el Superadministrador o el nivel
-  // territorial (V598): rector, jefe de sistema y auxiliar editan los datos del
-  // EE con ese panel en solo lectura, y no crean EE (uno nace con su rector).
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
+  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO: con
+  // Guardar se editan los datos del EE con ese panel en solo lectura, y no se
+  // crean EE (uno nace con su rector).
   const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarDirectivosQuery()
   const directivosSoloLectura = puedeGestionarDirectivos !== true
   useEffect(() => {
     if (permisoCargando || directivosCargando) return
-    if (isEditMode ? puedeEditar : puedeCrear && puedeGestionarDirectivos) return
+    if (isEditMode ? puedeEditar : puedeGestionarDirectivos) return
     navigate({
       to: isEditMode
         ? paths.app.establishments.detail.getHref(establishmentId)
@@ -135,7 +135,7 @@ export function AddEstablishmentPage() {
       search: (prev) => prev,
       replace: true,
     })
-  }, [permisoCargando, directivosCargando, isEditMode, puedeCrear, puedeEditar, puedeGestionarDirectivos, establishmentId, navigate])
+  }, [permisoCargando, directivosCargando, isEditMode, puedeEditar, puedeGestionarDirectivos, establishmentId, navigate])
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // `null` en edición = conservar el escudo guardado.
   const [shield, setShield] = useState<File | null>(null)
@@ -584,7 +584,7 @@ export function AddEstablishmentPage() {
                 <div className="space-y-4">
                   {directivosSoloLectura && !directivosCargando ? (
                     <p className="text-sm text-muted-foreground">
-                      Solo el Superadministrador o un usuario de nivel territorial puede cambiar el rector o la
+                      Solo un usuario con permiso de eliminar en Establecimiento puede cambiar el rector o la
                       secretaria del establecimiento.
                     </p>
                   ) : null}
