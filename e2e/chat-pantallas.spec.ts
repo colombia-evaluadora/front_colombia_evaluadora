@@ -241,6 +241,9 @@ test("elección: asistente, editar, votante (tarjeta, voto registrado) y resulta
   await d.getByLabel("Nombre").fill("Contralor 2026")
   await fechaHoy(d, page)
   await d.getByRole("combobox", { name: /Jornada/ }).click()
+  // Solo las jornadas del establecimiento (`/comunicaciones/elecciones/jornadas`), no el catálogo global.
+  await captura(page, "eleccion-jornadas-establecimiento")
+  await expect(page.getByRole("option")).toHaveText(["Mañana", "Tarde"])
   await page.getByRole("option").first().click()
   await captura(page, "app-3846-71356-eleccion-paso1")
   await d.getByRole("button", { name: "Siguiente", exact: true }).click()
