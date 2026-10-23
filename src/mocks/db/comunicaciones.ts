@@ -417,16 +417,16 @@ export const borradores: Borrador[] = [
 ]
 
 export const personas: Persona[] = [
-  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
   // Para probar la política de DMs (pendiente de aprobación, ver `politicaChat`).
-  { id: 9, nombre: "Luis Fernando Henao", correo: "luis.henao@correo.com", perfil: "ACUDIENTE" },
-  { id: 10, nombre: "Sofía Henao Ruiz", correo: "sofia.henao@iesimonbolivar.edu.co", perfil: "ESTUDIANTE" },
+  { id: 9, nombre: "Luis Fernando Henao", correo: "luis.henao@correo.com", perfil: "ACUDIENTE", cargo: "Acudiente" },
+  { id: 10, nombre: "Sofía Henao Ruiz", correo: "sofia.henao@iesimonbolivar.edu.co", perfil: "ESTUDIANTE", cargo: "Estudiante" },
 ]
 
 // "X se ha unido a <canal>."
@@ -476,11 +476,12 @@ export function miembrosDe(conversacionId: number): Miembro[] {
   if (!lista) {
     lista = [
       // Algunas personas del colegio quedan fuera para poder añadirlas.
-      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", perfil: "DOCENTE" as const, enLinea: i % 3 !== 2, bloqueado: false })),
+      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", cargo: "Docente", perfil: "DOCENTE" as const, enLinea: i % 3 !== 2, bloqueado: false })),
       ...EXTRA_MIEMBROS.map((nombre, i) => ({
         id: 100 + i,
         nombre,
         rol: i % 4 === 3 ? "Coordinador" : "Docente",
+        cargo: i % 4 === 3 ? "Coordinador" : "Docente",
         perfil: i % 4 === 3 ? ("DIRECTIVO" as const) : ("DOCENTE" as const),
         enLinea: i % 2 === 0,
         bloqueado: i === 0,

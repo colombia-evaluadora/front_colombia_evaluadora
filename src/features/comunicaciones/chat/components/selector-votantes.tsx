@@ -227,11 +227,16 @@ export function SelectorVotantes({
                       <Checkbox checked={marcado} onCheckedChange={(c) => cambiar([v.id], c === true)} />
                       <span className="min-w-0 flex-1 leading-tight">
                         <span className="block truncate">{v.nombre}</span>
-                        <span className="block text-xs text-muted-foreground tabular-nums">{v.documento}</span>
+                        {/* Solo nombre y rol (QA 57): sin documento. */}
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {filtro.grupo === "GRADO" ? "Estudiante" : filtro.valor}
+                        </span>
                       </span>
-                      <span className="text-sm text-muted-foreground tabular-nums">
-                        {filtro.grupo === "GRADO" ? `N.º ${String(v.numero).padStart(2, "0")}` : filtro.valor}
-                      </span>
+                      {filtro.grupo === "GRADO" && (
+                        <span className="text-sm text-muted-foreground tabular-nums">
+                          N.º {String(v.numero).padStart(2, "0")}
+                        </span>
+                      )}
                     </label>
                   </li>
                 )

@@ -228,7 +228,7 @@ export const comunicacionesHandlers = [
   http.get(URL("personas"), async () => {
     await delay(200)
     return HttpResponse.json({
-      rows: personas.map((p) => (esAcudienteMock(p.id) ? { ...p, perfil: "ACUDIENTE" as const } : p)),
+      rows: personas.map((p) => (esAcudienteMock(p.id) ? { ...p, perfil: "ACUDIENTE" as const, cargo: "Acudiente" } : p)),
     })
   }),
 
@@ -287,7 +287,7 @@ export const comunicacionesHandlers = [
     if (conv.tipo === "DIRECTO") {
       const rows = participantes(conv)
         .filter((p) => p.id !== USUARIO_ACTUAL.id)
-        .map((p) => ({ ...p, rol: "Miembro", perfil: personas.find((x) => x.id === p.id)?.perfil, bloqueado: false }))
+        .map((p) => ({ ...p, rol: "Miembro", perfil: personas.find((x) => x.id === p.id)?.perfil, cargo: personas.find((x) => x.id === p.id)?.cargo, bloqueado: false }))
       return HttpResponse.json({ rows })
     }
     return HttpResponse.json({ rows: miembrosDe(conv.id) })
