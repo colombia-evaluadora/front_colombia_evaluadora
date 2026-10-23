@@ -19,6 +19,10 @@ export const CHAT_FUNCIONES = {
   // endpoints de comms-service quedan dormidos (no se borran tablas): volver a `true` las trae.
   menciones: false,
   reacciones: false,
+  // "Activar notificaciones" de una conversación silenciada: comms-service solo expone
+  // `PATCH /conversaciones/{id}/silenciar` con DURACION 8H | 1S | SIEMPRE (otra cosa → 400) y no
+  // hay endpoint para quitar el silencio. Hasta que exista, la acción se muestra deshabilitada.
+  activarNotificaciones: false,
 } as const
 
 export const PROXIMAMENTE = "Próximamente"

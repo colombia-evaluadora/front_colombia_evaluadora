@@ -60,6 +60,9 @@ export function useEnviarMensaje({
       queryClient.setQueryData<Mensaje[]>(chatKeys.mensajes(mensaje.conversacionId), (prev) =>
         prev ? upsertMensaje(prev, mensaje) : [mensaje],
       )
+      // Con adjunto, el archivo aparece en "Archivos": se refresca su lista (`chatKeys.archivos` es
+      // la key exacta de `useArchivosQuery`). Sin esto solo se veía al recargar.
+      if (mensaje.adjunto) void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
       onSuccess?.(mensaje, ...args)
     },
   })

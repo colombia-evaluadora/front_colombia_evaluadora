@@ -161,6 +161,10 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
       case "mensaje.actualizado": {
         const m = e.data as Mensaje
         queryClient.setQueryData<Mensaje[]>(key, (prev) => upsertMensaje(prev, m))
+        // Un adjunto nuevo (de otro miembro) también entra a "Archivos".
+        if (e.event === "mensaje.creado" && m.adjunto) {
+          void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
+        }
         // Llegó el mensaje: quien lo escribió ya no está "escribiendo".
         if (e.event === "mensaje.creado") {
           setEscribiendo((prev) => prev.filter((x) => x.usuarioId !== m.autor.id))
