@@ -102,7 +102,7 @@ function toOutgoingPayload(values: Employee) {
  * Sin foto nueva se manda el JSON plano de siempre: no se pasa por
  * `file-service` al pedo, y así tampoco se pisa la foto ya guardada.
  */
-export function update(
+export async function update(
   employeeId: number,
   values: Employee,
   foto?: File | null,
@@ -111,7 +111,16 @@ export function update(
   const url = apiPath(`/establishments/employees/${employeeId}`, `/establecimientos/funcionarios/${employeeId}`)
 
   if (env.ENABLE_API_MOCKING) {
-    return api.put(url, toOutgoingPayload(values))
+    // Quitar la foto ya viaja en el JSON (`person.photoArchivoId: null`). La
+    // foto nueva va aparte, en multipart, para que el mock la guarde con un
+    // `fk_tarchivo` propio y al reabrir se vea como foto ya guardada (sin
+    // esto el caso "editar con foto guardada → quitar" no se podía probar).
+    const result = await api.put<{ status: "ok" | "error"; message: string; employee: Employee }>(
+      url,
+      toOutgoingPayload(values),
+    )
+    if (!foto || result.status !== "ok") return result
+    return patchMultipart(`/establishments/employees/${employeeId}/foto`, {}, { fkTarchivoFoto: foto })
   }
 
   if (foto) {
