@@ -280,6 +280,21 @@ export const mensajes: Mensaje[] = [
   const borrado = mensaje(3, marta, "Les comparto mi número personal para coordinar: 300 000 0000.", haceDias(0, 7, 35))
   Object.assign(borrado, { eliminado: true, eliminadoEn: haceDias(0, 7, 36) })
   mensajes.splice(mensajes.findIndex((m) => m.texto.startsWith("Les dejo la versión")), 0, borrado)
+  // Varios adjuntos (V560): el propio con dos archivos, uno ya descargado por otra persona
+  // (no se puede eliminar), y el ajeno con su id para registrar la descarga.
+  const conVersion = mensajes.find((m) => m.texto.startsWith("Les dejo la versión"))
+  if (conVersion?.adjunto) {
+    conVersion.adjunto = { ...conVersion.adjunto, id: 9001, descargado: true }
+    conVersion.adjuntos = [
+      conVersion.adjunto,
+      { nombre: "rubrica_fracciones.pdf", formato: "PDF", eliminadoEn: null, id: 9002, descargado: false, peso: 182_000 },
+    ]
+  }
+  const ajeno = mensajes.find((m) => m.texto.startsWith("Listo, ya te la adjunté"))
+  if (ajeno?.adjunto) {
+    ajeno.adjunto = { ...ajeno.adjunto, id: 9003, descargado: false }
+    ajeno.adjuntos = [ajeno.adjunto]
+  }
 }
 
 // Votación rápida nueva del usuario actual, publicada como mensaje.

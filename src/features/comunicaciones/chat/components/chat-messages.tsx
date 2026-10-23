@@ -14,14 +14,13 @@ import {
   PushPinFillIcon,
   TrashIcon,
 } from "@/components/ui/icons"
-import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
-import { useEliminarAdjunto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
+
 import { BARRA_ACCIONES, MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
 import type { AutorMensaje, Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
-import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
+import { AdjuntosMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
+import { adjuntosDe } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
 import { TarjetaBotMensaje } from "@/features/comunicaciones/chat/components/tarjeta-bot"
 import {
@@ -289,7 +288,8 @@ function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectu
 // conversación recibe el original del servidor (comms-service `puedeVerEliminados`, decisión de
 // Natalia) y lo ve debajo del aviso; el autor y los demás, solo "Este mensaje fue eliminado".
 function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
-  const original = m.texto.trim() !== "" || !!m.adjunto
+  const adjuntos = adjuntosDe(m)
+  const original = m.texto.trim() !== "" || adjuntos.length > 0
   return (
     <div className={cn("w-fit max-w-[85%] md:max-w-[70%]", m.esPropio && "ml-auto")}>
       <article className="rounded-xl bg-orange-22 px-4 py-3 text-sm" aria-label="Mensaje eliminado">
@@ -313,7 +313,11 @@ function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
           <div className="mt-2 border-t border-orange-stroke pt-2">
             <p className="mb-1 text-xs text-muted-foreground">Mensaje original</p>
             {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-            {m.adjunto && <p className="text-xs text-muted-foreground">Adjunto: {m.adjunto.nombre}</p>}
+            {adjuntos.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {adjuntos.length === 1 ? "Adjunto" : "Adjuntos"}: {adjuntos.map((a) => a.nombre).join(", ")}
+              </p>
+            )}
           </div>
         )}
       </article>
@@ -396,7 +400,7 @@ function MensajeItem({
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-          {m.adjunto && <Adjunto mensaje={m} propio />}
+          <AdjuntosMensaje mensaje={m} propio />
           <ConfirmacionLectura estado={estadoLectura(m, conversacion)} />
         </article>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
@@ -432,28 +436,11 @@ function MensajeItem({
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-          {m.adjunto && <Adjunto mensaje={m} />}
+          <AdjuntosMensaje mensaje={m} />
         </div>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
     </article>
-  )
-}
-
-// En el chat solo el autor quita su archivo.
-function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: boolean }) {
-  const { notify } = useNotify()
-  const eliminar = useEliminarAdjunto()
-  return (
-    <AdjuntoMensaje
-      mensaje={m}
-      eliminando={eliminar.isPending}
-      onEliminar={
-        propio
-          ? () => eliminar.mutate(m.id, { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) })
-          : undefined
-      }
-    />
   )
 }
 
