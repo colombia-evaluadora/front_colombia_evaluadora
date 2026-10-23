@@ -103,7 +103,7 @@ test("calificar y volver enseguida a la edición: sale bloqueada aunque el detal
 
   // Navegación del lado del cliente: el detalle de 602 queda en la caché de
   // TanStack Query, "fresco" por su staleTime de 60 s.
-  await page.getByRole("link", { name: "Cerrar" }).click()
+  await page.getByRole("button", { name: "Cerrar", exact: true }).click()
   await page.waitForURL((url) => url.pathname === "/app/planeador/actividades")
   // Que la edición se haya desmontado de verdad (el listado es un chunk lazy:
   // mientras carga, el router sigue pintando la ruta anterior).
