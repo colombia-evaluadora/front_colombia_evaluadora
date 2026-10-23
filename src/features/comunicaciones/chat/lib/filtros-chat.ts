@@ -227,3 +227,25 @@ export function resaltarPalabras(texto: string, termino: string) {
   }
   return tramos
 }
+
+/** Filtros de un favorito (cuerpo de la búsqueda guardado en el servidor) → filtros del chat. */
+export function filtrosDeCuerpo(c: Record<string, unknown> | null | undefined): FiltrosChat {
+  const texto = (v: unknown) => (typeof v === "string" ? v : "")
+  const lista = <T>(v: unknown, validos: readonly T[]) =>
+    Array.isArray(v) ? v.filter((x): x is T => validos.includes(x as T)) : []
+  return {
+    q: texto(c?.Q),
+    persona: texto(c?.PERSONA),
+    perfiles: lista(c?.PERFILES, VALORES_PERFIL),
+    grupos: Array.isArray(c?.GRUPOS) ? c.GRUPOS.filter((g): g is number => Number.isInteger(g) && g > 0) : [],
+    tipos: lista(c?.TIPOS, VALORES_TIPO),
+    desde: FECHA.test(texto(c?.DESDE)) ? texto(c?.DESDE) : "",
+    hasta: FECHA.test(texto(c?.HASTA)) ? texto(c?.HASTA) : "",
+    estados: lista(c?.ESTADOS, VALORES_ESTADO),
+  }
+}
+
+/** Mismos filtros efectivos (para marcar el favorito aplicado). */
+export function mismosFiltros(a: FiltrosChat, b: FiltrosChat) {
+  return JSON.stringify(filtrosEfectivos(a)) === JSON.stringify(filtrosEfectivos(b))
+}

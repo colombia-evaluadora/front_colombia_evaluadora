@@ -10,6 +10,8 @@ import {
   filtrosDeUrl,
   hayFiltros,
   hayFiltrosDeAutor,
+  filtrosDeCuerpo,
+  mismosFiltros,
   resaltarPalabras,
 } from "@/features/comunicaciones/chat/lib/filtros-chat"
 
@@ -74,5 +76,16 @@ describe("filtros del chat", () => {
       { texto: "viernes", coincide: true },
     ])
     expect(resaltarPalabras("hola", "")).toEqual([{ texto: "hola", coincide: false }])
+  })
+
+  it("un favorito guardado vuelve a ser los mismos filtros (y descarta lo inválido)", () => {
+    const f = { ...FILTROS_VACIOS, q: "tarea", tipos: ["GRUPO" as const], grupos: [601], desde: "2026-03-01" }
+    expect(mismosFiltros(filtrosDeCuerpo(cuerpoBusqueda(f)), f)).toBe(true)
+    expect(filtrosDeCuerpo({ TIPOS: ["OTRO", "CANAL"], GRUPOS: [1, "x", -2], DESDE: "ayer", Q: 5 })).toEqual({
+      ...FILTROS_VACIOS,
+      tipos: ["CANAL"],
+      grupos: [1],
+    })
+    expect(filtrosDeCuerpo(null)).toEqual(FILTROS_VACIOS)
   })
 })

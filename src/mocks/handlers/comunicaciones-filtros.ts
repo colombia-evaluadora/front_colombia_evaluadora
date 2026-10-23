@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import type { ResultadoMensaje } from "@/features/comunicaciones/chat/api/query/use-busqueda-chat-query"
+import type { FiltroFavorito } from "@/features/comunicaciones/chat/api/query/use-favoritos-filtro"
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { normalizarBusqueda } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { conversaciones, mensajes, miembrosDe, personas, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
@@ -22,6 +23,12 @@ function perfilDe(id: number): PerfilChat {
   if (id === USUARIO_ACTUAL.id) return "DOCENTE"
   return personas.find((p) => p.id === id)?.perfil ?? "DOCENTE"
 }
+
+const favoritos: FiltroFavorito[] = []
+let ultimoFavorito = 0
+const ordenados = () => [...favoritos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+const repetido = (nombre: string, excepto?: number) =>
+  favoritos.some((f) => f.id !== excepto && f.nombre.toLowerCase() === nombre.toLowerCase())
 
 const TIPOS = new Set(["DIRECTO", "GRUPO", "CANAL"])
 const ESTADOS = new Set(["LEIDO", "NO_LEIDO", "EDITADO", "ELIMINADO"])
@@ -165,5 +172,50 @@ export const comunicacionesFiltrosHandlers = [
         },
       ],
     })
+  }),
+
+  // Favoritos del usuario actual (en memoria). Rutas estáticas antes que las de :id.
+  http.get(URL("buscar/favoritos"), async () => {
+    await delay(120)
+    return HttpResponse.json({ rows: ordenados() })
+  }),
+
+  http.post(URL("buscar/favoritos"), async ({ request }) => {
+    await delay(200)
+    const b = ((await request.json()) ?? {}) as { NOMBRE?: string; FILTROS?: Record<string, unknown> }
+    const nombre = (b.NOMBRE ?? "").trim().replace(/\s+/g, " ")
+    if (!nombre) return HttpResponse.json({ message: "Escribe un nombre para el filtro favorito." }, { status: 400 })
+    if (!b.FILTROS || Object.keys(b.FILTROS).length === 0) {
+      return HttpResponse.json({ message: "Elige al menos un filtro para guardarlo." }, { status: 400 })
+    }
+    if (repetido(nombre)) {
+      return HttpResponse.json({ message: `Ya tienes un filtro favorito llamado «${nombre}».` }, { status: 409 })
+    }
+    const ahora = new Date().toISOString()
+    const f: FiltroFavorito = { id: ++ultimoFavorito, nombre, filtros: b.FILTROS, creadoEn: ahora, modificadoEn: ahora }
+    favoritos.push(f)
+    return HttpResponse.json({ rows: [f] })
+  }),
+
+  http.patch(URL("buscar/favoritos/:id/eliminar"), async ({ params }) => {
+    await delay(150)
+    const i = favoritos.findIndex((f) => f.id === Number(params.id))
+    if (i < 0) return HttpResponse.json({ message: "El filtro favorito ya no existe." }, { status: 404 })
+    favoritos.splice(i, 1)
+    return HttpResponse.json({ rows: ordenados() })
+  }),
+
+  http.patch(URL("buscar/favoritos/:id"), async ({ params, request }) => {
+    await delay(150)
+    const f = favoritos.find((x) => x.id === Number(params.id))
+    if (!f) return HttpResponse.json({ message: "El filtro favorito ya no existe." }, { status: 404 })
+    const b = ((await request.json()) ?? {}) as { NOMBRE?: string; FILTROS?: Record<string, unknown> }
+    const nombre = b.NOMBRE == null ? f.nombre : b.NOMBRE.trim().replace(/\s+/g, " ")
+    if (!nombre) return HttpResponse.json({ message: "Escribe un nombre para el filtro favorito." }, { status: 400 })
+    if (repetido(nombre, f.id)) {
+      return HttpResponse.json({ message: `Ya tienes un filtro favorito llamado «${nombre}».` }, { status: 409 })
+    }
+    Object.assign(f, { nombre, filtros: b.FILTROS ?? f.filtros, modificadoEn: new Date().toISOString() })
+    return HttpResponse.json({ rows: [f] })
   }),
 ]
