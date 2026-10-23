@@ -58,6 +58,7 @@ import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
 import { comunicacionesBorradoresActividadHandlers } from "@/mocks/handlers/comunicaciones-borradores-actividad"
+import { comunicacionesDisponibilidadHandlers } from "@/mocks/handlers/comunicaciones-disponibilidad"
 import { pushHandlers } from "@/mocks/handlers/notificaciones/push"
 import { realtimeHandlers } from "@/mocks/handlers/realtime"
 import { agenteHandlers } from "@/mocks/handlers/agente"
@@ -119,6 +120,7 @@ export const handlers = [
   ...comunicacionesEvaluacionesHandlers,
   ...comunicacionesComunicadosHandlers,
   ...comunicacionesBorradoresActividadHandlers,
+  ...comunicacionesDisponibilidadHandlers,
   ...pushHandlers,
   ...realtimeHandlers,
   ...comunicacionesMensajesHandlers,

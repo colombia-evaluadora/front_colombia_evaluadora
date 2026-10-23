@@ -73,6 +73,10 @@ import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grup
 import { useResponderInvitacionEnlazada } from "@/features/comunicaciones/chat/hooks/use-responder-invitacion-enlazada"
 import { useSincronizarBot } from "@/features/comunicaciones/chat/api/mutations/use-sincronizar-bot"
 import { useDialogosAtajos } from "@/features/comunicaciones/chat/components/dialogos-atajos"
+import {
+  RespuestaAutomaticaAviso,
+  SelectorDisponibilidad,
+} from "@/features/comunicaciones/chat/components/disponibilidad"
 
 const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
@@ -243,6 +247,7 @@ function ChatContent() {
       <div className="flex h-16 shrink-0 items-center border-b bg-chat-panel px-5">
         <h1 className="text-2xl font-bold">Chat</h1>
         {realtimeEnabled && <EstadoConexion />}
+        <SelectorDisponibilidad className="ml-auto" />
       </div>
       <NoticeOutlet className="mx-4 my-3 md:mx-5" />
 
@@ -393,6 +398,7 @@ function ChatContent() {
               />
               {atajos.dialogos}
               <Escribiendo nombres={escribiendo} />
+              {activa.tipo === "DIRECTO" && <RespuestaAutomaticaAviso conversacionId={activa.id} />}
               {/*
                 Card "Elecciones" (ajuste de Maldonado): la elección sin comentarios no lleva caja de
                 texto ni aviso de reemplazo (Figma 3837:43815, 4189:67308, 7127:76707). Con
