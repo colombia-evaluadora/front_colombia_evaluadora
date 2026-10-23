@@ -66,16 +66,21 @@ export function CrearEncuestaDialog({
   // "Editar Encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
   // abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Encuesta
-  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
+  // cambios sin guardar de esa edición (se aplican sobre lo publicado).
   borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [resultados, setResultados] = useState<VisibilidadResultados>(
-    editar?.resultados ?? (borrador?.datos?.resultados === "ADMIN" ? "ADMIN" : "PUBLICOS"),
+    borrador?.datos?.resultados === "ADMIN" || borrador?.datos?.resultados === "PUBLICOS"
+      ? borrador.datos.resultados
+      : (editar?.resultados ?? "PUBLICOS"),
   )
   const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() =>
-    editar ? editar.preguntas.map(aPreguntaLocal) : revivirPreguntas(borrador?.datos?.preguntas),
+    editar && !Array.isArray(borrador?.datos?.preguntas)
+      ? editar.preguntas.map(aPreguntaLocal)
+      : revivirPreguntas(borrador?.datos?.preguntas),
   )
   const [participantes, setParticipantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.participantes))
   const [intentado, setIntentado] = useState(false)
@@ -85,14 +90,17 @@ export function CrearEncuestaDialog({
   const crear = editar ? editarEncuesta : crearNueva
 
   const datos = useAppForm({
-    defaultValues: editar
-      ? {
-          nombre: editar.nombre,
-          descripcion: editar.descripcion,
-          fechaInicio: isoALocal(editar.fechaInicio),
-          fechaCierre: isoALocal(editar.fechaCierre),
-        }
-      : datosDe(borrador?.datos, DATOS_INICIALES),
+    defaultValues: datosDe(
+      borrador?.datos,
+      editar
+        ? {
+            nombre: editar.nombre,
+            descripcion: editar.descripcion,
+            fechaInicio: isoALocal(editar.fechaInicio),
+            fechaCierre: isoALocal(editar.fechaCierre),
+          }
+        : DATOS_INICIALES,
+    ),
     validators: { onSubmit: datosSchema },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "ENCUESTA")])
@@ -100,15 +108,16 @@ export function CrearEncuestaDialog({
     },
   })
 
-  // Actividad nueva: lo escrito se autoguarda como borrador (comms-service).
+  // Lo escrito se autoguarda como borrador (comms-service); al editar una publicada, atado a ella.
   const valores = useStore(datos.store, (s) => s.values)
   const autoguardado = useAutoguardadoActividad({
     tipo: "ENCUESTA",
-    habilitado: open && !editar,
+    habilitado: open,
     titulo: valores.nombre,
     datos: { ...valores, resultados, preguntas: preguntasGuardables(preguntas), participantes: [...participantes] },
     conContenido: hayContenido(valores.nombre, valores.descripcion, ...preguntas.map((p) => p.texto), participantes),
     borradorInicial: borrador?.id,
+    conversacionId: editar?.conversacionId,
   })
   const eliminarBorrador = useEliminarBorradorActividad()
 
@@ -126,15 +135,16 @@ export function CrearEncuestaDialog({
 
   const intentarCerrar = async () => {
     if (crear.isPending) return
-    if (!editar) {
-      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
-      const id = await autoguardado.guardarYa()
-      if (id) notify("La encuesta quedó guardada en Borradores y enviados.")
-      reiniciar()
-      return
+    // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+    const id = await autoguardado.guardarYa()
+    if (id) {
+      notify(
+        editar
+          ? "Tus cambios sin guardar quedaron en Borradores y enviados."
+          : "La encuesta quedó guardada en Borradores y enviados.",
+      )
     }
-    if (datos.state.isDirty || preguntas.some((p) => p.texto.trim())) setDescartar(true)
-    else reiniciar()
+    reiniciar()
   }
 
   const crearEncuesta = async () => {
@@ -155,7 +165,9 @@ export function CrearEncuestaDialog({
       })),
     }
     if (editar) {
-      editarEncuesta.mutate(cuerpo, {
+      // Guardar desde el borrador de la edición lo elimina (?borrador).
+      const borradorId = await autoguardado.guardarYa()
+      editarEncuesta.mutate({ ...cuerpo, borradorId }, {
         onSuccess: (e) => {
           notify(`Se guardaron los cambios de ${e.nombre}.`)
           reiniciar()
@@ -286,14 +298,13 @@ export function CrearEncuestaDialog({
             </p>
           )}
 
-          {!editar && (
-            <BarraBorrador
-              estado={autoguardado.estado}
-              hayBorrador={!!autoguardado.borradorId}
-              onDescartar={() => setDescartar(true)}
-              deshabilitado={crear.isPending}
-            />
-          )}
+          <BarraBorrador
+            estado={autoguardado.estado}
+            hayBorrador={!!autoguardado.borradorId}
+            onDescartar={() => setDescartar(true)}
+            deshabilitado={crear.isPending}
+            edicion={!!editar}
+          />
 
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
@@ -338,11 +349,13 @@ export function CrearEncuestaDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
-          if (!editar && autoguardado.borradorId) {
-            eliminarBorrador.mutate(autoguardado.borradorId, {
-              onSuccess: () => notify("Borrador descartado."),
-              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-            })
+          if (autoguardado.borradorId) {
+            // Promesa y no callbacks de `mutate`: al descartar, el diálogo puede desmontarse (sale de
+            // "Borradores y enviados" o cambia su `key`) y React Query no llama los callbacks por llamada.
+            eliminarBorrador
+              .mutateAsync(autoguardado.borradorId)
+              .then(() => notify("Borrador descartado."))
+              .catch((error: unknown) => notify(getErrorMessage(error), { variant: "error" }))
           }
           reiniciar()
         }}

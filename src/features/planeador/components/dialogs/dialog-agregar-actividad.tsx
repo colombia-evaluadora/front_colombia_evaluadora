@@ -61,7 +61,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
   const linkActividad = useLinkActividadUnidad()
   // Sin red no se vinculan actividades (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
-  const updatePuntaje = useUpdatePuntajeActividadUnidad({ unidadId: unidad.id })
+  const updatePuntaje = useUpdatePuntajeActividadUnidad()
 
   // Formativa no califica: sin peso. Se usa el referente real; `unidad.enfoquePedagogico` siempre llega "Evaluativo".
   const { data: unidadReferente } = useUnidadReferenteQuery(unidad.id)

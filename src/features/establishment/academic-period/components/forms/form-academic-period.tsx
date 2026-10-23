@@ -28,8 +28,7 @@ import { BreaksField } from "@/features/establishment/academic-period/components
 
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useAcademicPeriodStatusesQuery, useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
@@ -142,12 +141,8 @@ export function AcademicPeriodForm({
     currentPeriodId
   )
 
-  // El backend solo devuelve candidatos "válidos para elegir ahora" (activos,
-  // en alcance). Si el periodo ya guardado como anterior dejó de cumplir esas
-  // condiciones (p.ej. pasó a inactivo), desaparece de la lista aunque el PK
-  // siga guardado en el form — el combobox no encontraba su nombre y mostraba
-  // "No tiene" pese a tener un valor real seleccionado. Se completa acá con
-  // una consulta puntual, solo para mostrar la etiqueta.
+  // El anterior guardado puede no venir en los candidatos (p.ej. inactivo);
+  // se consulta aparte solo para mostrar su etiqueta.
   const selectedPreviousPeriodId = useSelector(
     form.store,
     (state) => state.values.previousPeriodId,
@@ -297,12 +292,7 @@ export function AcademicPeriodForm({
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
                   disabled={isCreating}
-                  // `onBlur` en el trigger disparaba `handleBlur` apenas se
-                  // abría el popup (el foco se mueve a la lista), marcando
-                  // `isTouched` — y por lo tanto el borde/mensaje en rojo—
-                  // mientras el usuario todavía estaba eligiendo una opción.
-                  // Acá se marca "tocado" recién al cerrarse el popup, sea
-                  // porque se eligió algo o porque se hizo click afuera.
+                  // Se marca tocado al cerrar el popup, no en blur (el foco pasa a la lista).
                   onOpenChange={(nextOpen) => {
                     if (!nextOpen) field.handleBlur()
                   }}

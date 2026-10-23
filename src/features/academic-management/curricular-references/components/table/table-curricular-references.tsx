@@ -30,8 +30,7 @@ import { SearchCurricularReferences } from "@/features/academic-management/curri
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
 import { ExportCurricularReferencesDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-export"
 import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
-import { usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/use-pedagogical-approaches"
-import { useEvaluationTypesQuery } from "@/features/academic-management/curricular-references/api/query/use-evaluation-types"
+import { useEvaluationTypesQuery, usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/catalogos-lista-valor"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 export function CurricularReferencesDataTable() {
@@ -127,17 +126,13 @@ export function CurricularReferencesDataTable() {
         <DataTable
           table={table}
           isPending={isPending}
-          // Sin red el refetch falla pero hay datos restaurados de IndexedDB
-          // (`catalogoMeta`, plan offline §8.7): se muestran en vez del error.
+          // Sin red se muestran los datos restaurados de IndexedDB en vez del error.
           isError={isError && !data}
           onRetry={refetch}
           // Inactivo: visible y filtrable, pero atenuado (Regla 5).
           isRowMuted={(row) => !(row.original as CurricularReference).active}
           emptyMessage="Sin resultados."
-          // El mensaje real del backend (403 -> "El usuario no tiene
-          // permisos.", getErrorMessage lo resuelve solo) en vez
-          // de un genérico fijo que no distinguía un error de permisos de
-          // uno de red.
+          // Mensaje real del backend para distinguir permisos (403) de red.
           errorMessage={error ? getErrorMessage(error) : undefined}
         />
 

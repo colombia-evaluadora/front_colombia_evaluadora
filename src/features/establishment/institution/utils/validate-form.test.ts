@@ -202,4 +202,66 @@ describe("validateEstablishmentForm", () => {
     expect(errors).not.toContain("Teléfono")
     expect(errors).not.toContain("Resolución de aprobación")
   })
+
+  it("rechaza los valores del caso de prueba en domicilio y complementaria, con su mensaje", () => {
+    const place = (name: string) => ({ id: 0, code: name, name })
+    const values = createValues({
+      principal: createPerson(),
+      basicInfo: { name: "Wahucio'''---- ----.ccccc" } as EstablishmentDetails["basicInfo"],
+      address: {
+        district: place("cccccccccccc----"),
+        address: "6767676ghhggh",
+        commune: place("..."),
+        locality: place("-+-"),
+      } as EstablishmentDetails["address"],
+      additionalInfo: {
+        approvalResolution: "çç()",
+        licenseStatus: "abc",
+        licenseDate: "2999-01-01",
+      } as EstablishmentDetails["additionalInfo"],
+    })
+
+    const { invalidFields, fieldErrors } = validateEstablishmentForm(values)
+
+    expect(invalidFields).toEqual(
+      expect.arrayContaining([
+        "basicInfo.name",
+        "address.district",
+        "address.address",
+        "address.commune",
+        "address.locality",
+        "additionalInfo.approvalResolution",
+        "additionalInfo.licenseStatus",
+        "additionalInfo.licenseDate",
+      ]),
+    )
+    expect(fieldErrors["additionalInfo.licenseDate"]).toBe("La fecha de la licencia no puede ser posterior a hoy.")
+  })
+
+  it("acepta valores válidos de domicilio y complementaria", () => {
+    const place = (name: string) => ({ id: 0, code: name, name })
+    const values = createValues({
+      principal: createPerson(),
+      address: {
+        district: place("El Prado"),
+        address: "CR 5 # 26D-7A",
+        commune: place("Comuna 5"),
+        locality: place("Suba"),
+      } as EstablishmentDetails["address"],
+      additionalInfo: { approvalResolution: "Resolución 1234 de 2010", licenseStatus: "0045/2019", licenseDate: "2019-05-02" } as EstablishmentDetails["additionalInfo"],
+    })
+
+    expect(validateEstablishmentForm(values).errors).toEqual([])
+  })
+
+  it("con el panel de directivos en solo lectura no valida rector ni secretaria", () => {
+    // Rector vacío y secretaria con un nombre que hoy no pasa: nada de eso se guarda.
+    const values = createValues({
+      principal: createEmptyPerson(),
+      secretary: { ...createPerson(), firstName: "JUAN2" },
+    })
+
+    expect(validateEstablishmentForm(values).invalidFields).toContain("principal.documentType")
+    expect(validateEstablishmentForm(values, {}, { validarDirectivos: false }).errors).toEqual([])
+  })
 })

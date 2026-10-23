@@ -2,6 +2,7 @@ import type { CitaMensaje, Conversacion, Mensaje } from "@/features/comunicacion
 import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 import {
   USUARIO_ACTUAL,
+  conVistaPrevia,
   autorDe,
   conversaciones,
   miembrosDe,
@@ -81,7 +82,7 @@ export function mensajeNeutro(m: Mensaje): Mensaje {
 }
 
 export function publicarConversacion(conv: Conversacion) {
-  publish(topicUsuario(USUARIO_ACTUAL.id), "conversacion.actualizada", conv)
+  publish(topicUsuario(USUARIO_ACTUAL.id), "conversacion.actualizada", conVistaPrevia(conv))
 }
 
 export function publicarMensajeCreado(m: Mensaje, autorRespuestaId?: number | null) {
@@ -91,6 +92,9 @@ export function publicarMensajeCreado(m: Mensaje, autorRespuestaId?: number | nu
   if (!m.esPropio) {
     conv.noLeidos += 1
     if (m.meMenciona) conv.menciones = (conv.menciones ?? 0) + 1
+    publicarConversacion(conv)
+  } else {
+    // Como comms-service: la vista previa del último mensaje también cambia para quien escribe.
     publicarConversacion(conv)
   }
   const emitidas = emitirNotificacionesChat(

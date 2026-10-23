@@ -7,7 +7,7 @@ import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { invalidarListadosActividades } from "@/features/planeador/api/query/invalidar-listados-actividades"
-import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { resolveTipoActividadId } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
 import { resolveTipoEvidenciaId } from "@/features/planeador/api/query/use-tipo-evidencia-catalog"

@@ -20,12 +20,23 @@ function useInvalidarConversaciones() {
   return () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
 }
 
+/**
+ * Silenciar por una duración o, con `NINGUNA`, activar de nuevo las notificaciones. La lista se
+ * actualiza al instante con el `silenciadoHasta` que devuelve comms-service (campana tachada y menú
+ * "Activar notificaciones"/"Silenciar"), y luego se revalida.
+ */
 export function useSilenciarConversacion() {
+  const queryClient = useQueryClient()
   const invalidar = useInvalidarConversaciones()
   return useMutation({
     mutationFn: ({ id, duracion }: { id: number; duracion: SilencioDuracion }) =>
       evalCol.patchRow<Conversacion>(`${base(id)}/silenciar`, { DURACION: duracion }),
-    onSuccess: invalidar,
+    onSuccess: (c, { id }) => {
+      queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+        prev?.map((x) => (x.id === id ? { ...x, silenciadoHasta: c?.silenciadoHasta ?? null } : x)),
+      )
+      return invalidar()
+    },
   })
 }
 

@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/combobox"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
-import { toDigitsOnly, toNitInput, toSafeTextInput } from "@/lib/text-input"
+import { toDigitsOnly, toNitInput } from "@/lib/text-input"
+import { toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface IdentificationDataFormSectionProps {
@@ -77,7 +78,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         maxLength={130}
                         value={value.name}
                         aria-invalid={isInvalid("basicInfo.name")}
-                        onChange={(event) => onChange({ ...value, name: toSafeTextInput(event.target.value, 130) })}
+                        onChange={(event) => onChange({ ...value, name: toTextoInput(event.target.value) })}
                     />
                     <FieldError>{errorFor("basicInfo.name")}</FieldError>
                 </Field>

@@ -10,8 +10,9 @@ import type {
 import type { EducationLevel } from "@/features/coverage/reservations/api/types/reservation"
 import { toPaginated } from "@/lib/pagination"
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import { listaBlancaMeta } from "@/lib/offline/query-meta"
 
-interface UseMatriculaQueryParams {
+export interface UseMatriculaQueryParams {
   filters: MatriculaQueryRequest["filters"]
   sorting: MatriculaQueryRequest["sorting"]
   pageIndex: number
@@ -101,7 +102,7 @@ function toMatricula(row: MatriculaListRow): Matricula {
   }
 }
 
-async function fetchMatricula(params: UseMatriculaQueryParams): Promise<MatriculaQueryResponse> {
+export async function fetchMatricula(params: UseMatriculaQueryParams): Promise<MatriculaQueryResponse> {
   const raw = await api.query<MatriculaListRawResponse>(
     "/eval-col/matricula/query",
     toListRequest(params),
@@ -111,10 +112,60 @@ async function fetchMatricula(params: UseMatriculaQueryParams): Promise<Matricul
   return toPaginated(backendRows, { pageSize: params.pageSize, map: toMatricula })
 }
 
+/**
+ * P6 (política de datos de menores, decidida para Cobertura): la lista de
+ * matrícula se puede CONSULTAR sin conexión, pero en el equipo solo se guardan
+ * los datos básicos. Lista blanca sobre `Matricula` (camelCase de dominio, que
+ * es lo que vive en el cache): identificación técnica (`id`), nombre,
+ * documento (tipo y número), dónde está matriculado (colegio, sede, jornada,
+ * nivel, grado, grupo), estado y fechas. Queda FUERA el acudiente
+ * (`guardian`), `hasGrades` y cualquier campo que el backend agregue mañana
+ * (salud, dirección, teléfono, correo, foto…): `selectRowFields` copia solo lo
+ * listado. `documentType` aún no viene en `/matricula/query`; está listado para
+ * que entre sin tocar la lista si el backend lo agrega.
+ *
+ * Con red, la pantalla sigue mostrando todo: el recorte aplica solo a la copia
+ * persistida (`persistSelect`).
+ */
+export const MATRICULA_OFFLINE_FIELDS = [
+  "id",
+  "documentType",
+  "documentNumber",
+  "firstName",
+  "lastName",
+  "institution",
+  "campus",
+  "shift",
+  "educationLevel",
+  "grade",
+  "group",
+  "status",
+  "enrollmentDate",
+] as const satisfies readonly (keyof Matricula | "documentType")[]
+
+export const matriculaListaMeta = () => listaBlancaMeta(MATRICULA_OFFLINE_FIELDS)
+
+/**
+ * Vista por defecto de la pantalla (sin filtros, primera página, sin orden):
+ * la baja "Preparar sin conexión" con esta misma key. El backend ya acota la
+ * lista a los periodos (sedes) del usuario (`fn_periodo_usuario_periodos`).
+ */
+export const MATRICULA_LISTA_POR_DEFECTO: UseMatriculaQueryParams = {
+  filters: {},
+  sorting: [],
+  pageIndex: 0,
+  pageSize: 10,
+}
+
 export function useMatriculaQuery(params: UseMatriculaQueryParams) {
   return useQuery({
     queryKey: matriculaKeys.lista(params),
     queryFn: () => fetchMatricula(params),
+    meta: matriculaListaMeta(),
+    // Lo restaurado del equipo es la copia recortada (sin acudiente): con red
+    // se vuelve a pedir siempre al montar, para mostrar la lista completa. Sin
+    // red el refetch se pausa y se ve lo guardado.
+    staleTime: 0,
     placeholderData: (previous) => previous,
   })
 }

@@ -29,8 +29,7 @@ import {
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
 import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
-import { usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/use-pedagogical-approaches"
-import { useEvaluationTypesQuery } from "@/features/academic-management/curricular-references/api/query/use-evaluation-types"
+import { useEvaluationTypesQuery, usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/catalogos-lista-valor"
 import { TabStatements } from "@/features/academic-management/curricular-references/components/statements/tab-statements"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
@@ -39,11 +38,7 @@ const PANEL_CLASS =
 
 function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    // `min-w-0`: como ítem de un grid de 2 columnas, sin esto el ancho
-    // default (`auto`) deja que un valor largo sin espacios (una URL, por
-    // ejemplo) empuje la columna más allá de su ancho y se monte sobre la
-    // columna vecina — `break-words` no alcanza a cortar la línea si el
-    // contenedor nunca se deja encoger.
+    // `min-w-0`: sin esto un valor largo sin espacios desborda la columna del grid.
     <div className="min-w-0">
       <p className="text-sm font-bold">{label}</p>
       <div className="text-sm break-words">{children}</div>

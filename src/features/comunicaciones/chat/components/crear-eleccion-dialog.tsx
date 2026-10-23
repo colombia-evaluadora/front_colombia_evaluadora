@@ -23,7 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import {
   useCrearEleccion,
   useEditarEleccion,
@@ -100,7 +100,8 @@ export function CrearEleccionDialog({
   // "Editar Elección" (diseño 4058:62794): mismos pasos sin el de votantes (el censo no cambia).
   // Quien la abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Eleccion
-  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
+  // cambios sin guardar de esa edición (se aplican sobre lo publicado).
   borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
@@ -108,7 +109,10 @@ export function CrearEleccionDialog({
   const [votantes, setVotantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.votantes))
   const [votantesIntentado, setVotantesIntentado] = useState(false)
   const [candidatos, setCandidatos] = useState<CandidatoLocal[]>(() =>
-    (editar?.candidatos ?? revivirCandidatos(borrador?.datos?.candidatos)).map((c) => ({
+    (editar && !Array.isArray(borrador?.datos?.candidatos)
+      ? editar.candidatos
+      : revivirCandidatos(borrador?.datos?.candidatos)
+    ).map((c) => ({
       clave: siguienteClave++,
       nombre: c.nombre,
       numero: c.numero,
@@ -118,36 +122,42 @@ export function CrearEleccionDialog({
     })),
   )
   const [descartar, setDescartar] = useState(false)
+  // Figma 7162:78097: "Crear" está habilitado aunque falten candidatos; el aviso sale al intentarlo.
+  const [faltanCandidatos, setFaltanCandidatos] = useState(false)
   const crearNueva = useCrearEleccion()
   const editarEleccion = useEditarEleccion(editar?.conversacionId ?? 0)
   const crear = editar ? editarEleccion : crearNueva
   const { data: jornadas = [] } = useJornadasQuery()
 
   const datos = useAppForm({
-    defaultValues: editar
-      ? {
-          nombre: editar.nombre,
-          descripcion: editar.descripcion,
-          fechaInicio: isoALocal(editar.fechaInicio),
-          fechaCierre: isoALocal(editar.fechaCierre),
-          jornadaId: editar.jornadaId,
-          verResultadosEnVivo: editar.verResultadosEnVivo,
-          permiteComentarios: !!editar.permiteComentarios,
-        }
-      : datosDe(borrador?.datos, DATOS_INICIALES),
+    defaultValues: datosDe(
+      borrador?.datos,
+      editar
+        ? {
+            nombre: editar.nombre,
+            descripcion: editar.descripcion,
+            fechaInicio: isoALocal(editar.fechaInicio),
+            fechaCierre: isoALocal(editar.fechaCierre),
+            jornadaId: editar.jornadaId,
+            verResultadosEnVivo: editar.verResultadosEnVivo,
+            permiteComentarios: !!editar.permiteComentarios,
+          }
+        : DATOS_INICIALES,
+    ),
     validators: { onSubmit: datosSchema },
     onSubmit: () => setPaso(editar ? 3 : 2),
   })
 
-  // Actividad nueva: lo escrito se autoguarda como borrador (comms-service).
+  // Lo escrito se autoguarda como borrador (comms-service); al editar una publicada, atado a ella.
   const valores = useStore(datos.store, (s) => s.values)
   const autoguardado = useAutoguardadoActividad({
     tipo: "ELECCION",
-    habilitado: open && !editar,
+    habilitado: open,
     titulo: valores.nombre,
     datos: { ...valores, candidatos: candidatosGuardables(candidatos), votantes: [...votantes] },
     conContenido: hayContenido(valores.nombre, valores.descripcion, ...candidatos.map((c) => c.nombre), votantes),
     borradorInicial: borrador?.id,
+    conversacionId: editar?.conversacionId,
   })
   const eliminarBorrador = useEliminarBorradorActividad()
 
@@ -157,6 +167,7 @@ export function CrearEleccionDialog({
     setCandidatos([])
     setVotantes(new Set())
     setVotantesIntentado(false)
+    setFaltanCandidatos(false)
     setPaso(1)
     crear.reset()
     onClose()
@@ -164,18 +175,23 @@ export function CrearEleccionDialog({
 
   const intentarCerrar = async () => {
     if (crear.isPending) return
-    if (!editar) {
-      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
-      const id = await autoguardado.guardarYa()
-      if (id) notify("La elección quedó guardada en Borradores y enviados.")
-      reiniciar()
-      return
+    // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+    const id = await autoguardado.guardarYa()
+    if (id) {
+      notify(
+        editar
+          ? "Tus cambios sin guardar quedaron en Borradores y enviados."
+          : "La elección quedó guardada en Borradores y enviados.",
+      )
     }
-    if (datos.state.isDirty || candidatos.length > 0 || votantes.size > 0) setDescartar(true)
-    else reiniciar()
+    reiniciar()
   }
 
   const crearEleccion = async () => {
+    if (candidatos.length < MIN_CANDIDATOS) {
+      setFaltanCandidatos(true)
+      return
+    }
     const v = datos.state.values
     const cuerpo = {
       nombre: v.nombre.trim(),
@@ -188,7 +204,9 @@ export function CrearEleccionDialog({
       candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
     }
     if (editar) {
-      editarEleccion.mutate(cuerpo, {
+      // Guardar desde el borrador de la edición lo elimina (?borrador).
+      const borradorId = await autoguardado.guardarYa()
+      editarEleccion.mutate({ ...cuerpo, borradorId }, {
         onSuccess: (e) => {
           notify(`Se guardaron los cambios de ${e.nombre}.`)
           reiniciar()
@@ -248,9 +266,8 @@ export function CrearEleccionDialog({
                       const mensaje = typeof error === "string" ? error : error?.message
                       return (
                         <Field variant="outlined" data-invalid={!!mensaje || undefined}>
-                          <FieldLabel>
-                            Fecha<span aria-hidden className="text-red">*</span>
-                          </FieldLabel>
+                          {/* Figma 3846:71356: "Fecha" sin asterisco (igual es obligatoria). */}
+                          <FieldLabel>Fecha</FieldLabel>
                           <DateRangeField
                             value={{ startDate: inicio?.slice(0, 10) ?? "", endDate: cierre?.slice(0, 10) ?? "" }}
                             onChange={({ startDate, endDate }) => {
@@ -258,11 +275,7 @@ export function CrearEleccionDialog({
                               datos.setFieldValue("fechaCierre", aCierre(endDate))
                             }}
                           />
-                          {mensaje ? (
-                            <FieldError>{mensaje}</FieldError>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">La votación cierra al terminar el último día.</p>
-                          )}
+                          {mensaje && <FieldError>{mensaje}</FieldError>}
                         </Field>
                       )
                     }}
@@ -282,12 +295,13 @@ export function CrearEleccionDialog({
               </datos.AppField>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Permitir</legend>
+                {/* En una fila, como en Figma 3846:71356. */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   <datos.AppField name="verResultadosEnVivo">
-                    {(f) => <f.CheckboxField label="Ver resultados en tiempo real" />}
+                    {(f) => <f.CheckboxField label="Ver resultados en tiempo real" className="w-auto" />}
                   </datos.AppField>
                   <datos.AppField name="permiteComentarios">
-                    {(f) => <f.CheckboxField label="Comentarios" />}
+                    {(f) => <f.CheckboxField label="Comentarios" className="w-auto" />}
                   </datos.AppField>
                 </div>
               </fieldset>
@@ -299,7 +313,14 @@ export function CrearEleccionDialog({
               invalido={votantesIntentado && votantes.size === 0}
             />
           ) : (
-            <PasoCandidatos candidatos={candidatos} onCambio={setCandidatos} />
+            <PasoCandidatos
+              candidatos={candidatos}
+              onCambio={(c) => {
+                setCandidatos(c)
+                if (c.length >= MIN_CANDIDATOS) setFaltanCandidatos(false)
+              }}
+              faltanCandidatos={faltanCandidatos}
+            />
           )}
 
           {crear.isError && (
@@ -308,12 +329,14 @@ export function CrearEleccionDialog({
             </p>
           )}
 
-          {!editar && (
+          {/* Sin nada guardado aún no ocupa espacio: el pie queda como en Figma 3846:71356. */}
+          {(autoguardado.estado !== "inactivo" || !!autoguardado.borradorId) && (
             <BarraBorrador
               estado={autoguardado.estado}
               hayBorrador={!!autoguardado.borradorId}
               onDescartar={() => setDescartar(true)}
               deshabilitado={crear.isPending}
+              edicion={!!editar}
             />
           )}
 
@@ -356,13 +379,8 @@ export function CrearEleccionDialog({
                   <Button
                     type="button"
                     onClick={() => void crearEleccion()}
-                    disabled={candidatos.length < MIN_CANDIDATOS || crear.isPending}
+                    disabled={crear.isPending}
                     aria-busy={crear.isPending}
-                    title={
-                      candidatos.length < MIN_CANDIDATOS
-                        ? `Agrega al menos ${MIN_CANDIDATOS} candidatos`
-                        : undefined
-                    }
                   >
                     {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
@@ -388,11 +406,13 @@ export function CrearEleccionDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
-          if (!editar && autoguardado.borradorId) {
-            eliminarBorrador.mutate(autoguardado.borradorId, {
-              onSuccess: () => notify("Borrador descartado."),
-              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-            })
+          if (autoguardado.borradorId) {
+            // Promesa y no callbacks de `mutate`: al descartar, el diálogo puede desmontarse (sale de
+            // "Borradores y enviados" o cambia su `key`) y React Query no llama los callbacks por llamada.
+            eliminarBorrador
+              .mutateAsync(autoguardado.borradorId)
+              .then(() => notify("Borrador descartado."))
+              .catch((error: unknown) => notify(getErrorMessage(error), { variant: "error" }))
           }
           reiniciar()
         }}
@@ -412,9 +432,11 @@ let siguienteClave = 1
 function PasoCandidatos({
   candidatos,
   onCambio,
+  faltanCandidatos,
 }: {
   candidatos: CandidatoLocal[]
   onCambio: (c: CandidatoLocal[]) => void
+  faltanCandidatos: boolean
 }) {
   const [foto, setFoto] = useState<File | null>(null)
 
@@ -462,7 +484,7 @@ function PasoCandidatos({
           />
           <div className="space-y-3">
             <form.AppField name="nombre">
-              {(f) => <f.TextField label="Nombre" required maxLength={80} />}
+              {(f) => <f.TextField label="Nombre" maxLength={80} />}
             </form.AppField>
             <form.AppField
               name="numero"
@@ -473,7 +495,7 @@ function PasoCandidatos({
                     : undefined,
               }}
             >
-              {(f) => <f.NumberField label="Número" required maxDigits={3} />}
+              {(f) => <f.NumberField label="Número" maxDigits={3} />}
             </form.AppField>
             <form.AppField name="lema">
               {(f) => <f.TextField label="Lema" maxLength={80} />}
@@ -499,8 +521,8 @@ function PasoCandidatos({
         ))}
         <li className="rounded-lg border px-4 py-3 text-sm font-semibold">Voto en blanco</li>
       </ul>
-      {candidatos.length < MIN_CANDIDATOS && (
-        <p className="text-sm text-muted-foreground">
+      {faltanCandidatos && candidatos.length < MIN_CANDIDATOS && (
+        <p role="alert" className="text-sm text-red">
           Agrega al menos {MIN_CANDIDATOS} candidatos para crear la elección.
         </p>
       )}

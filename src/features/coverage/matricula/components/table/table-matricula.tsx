@@ -15,6 +15,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 
 import { useMatriculaFilters } from "@/features/coverage/matricula/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/matricula/api/query/use-matricula-query"
@@ -85,21 +86,27 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
             <TableScreenActions>
               {hasSelection ? (
                 <>
-                  <ModificarMatriculaDialog
-                    selected={selectedRows}
-                    onRemove={deselectRow}
-                    resetSelection={resetSelection}
-                  />
+                  <OnlineOnlyAction>
+                    <ModificarMatriculaDialog
+                      selected={selectedRows}
+                      onRemove={deselectRow}
+                      resetSelection={resetSelection}
+                    />
+                  </OnlineOnlyAction>
                   <ClearSelectionDialog resetSelection={resetSelection} />
-                  <ExportSelectedMatriculaDialog
-                    selectedIds={selectedRowIds}
-                    resetSelection={resetSelection}
-                  />
+                  <OnlineOnlyAction>
+                    <ExportSelectedMatriculaDialog
+                      selectedIds={selectedRowIds}
+                      resetSelection={resetSelection}
+                    />
+                  </OnlineOnlyAction>
                 </>
               ) : (
                 <>
                   {action}
-                  <ExportMatriculaDialog filters={queryFilters} columns={exportColumns} />
+                  <OnlineOnlyAction>
+                    <ExportMatriculaDialog filters={queryFilters} columns={exportColumns} />
+                  </OnlineOnlyAction>
                 </>
               )}
             </TableScreenActions>
@@ -110,7 +117,9 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
           <DataTable
             table={table}
             isPending={isPending}
-            isError={isError}
+            // Sin red, el refetch de lo guardado en el equipo falla: se sigue
+            // mostrando la copia guardada (como en referentes curriculares).
+            isError={isError && !data}
             onRetry={refetch}
             emptyMessage="Sin resultados."
             errorMessage={error ? getErrorMessage(error) : undefined}

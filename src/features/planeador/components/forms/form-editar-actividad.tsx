@@ -9,7 +9,7 @@ import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query
 import {
   useStudyPlanSubjectLabel,
 } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
-import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { useAsistenteActividad } from "@/features/planeador/hooks/use-asistente-actividad"
 import {
   useInstrumentoEvaluacionCatalogQuery,

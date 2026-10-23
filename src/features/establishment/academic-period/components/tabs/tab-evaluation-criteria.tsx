@@ -9,7 +9,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
-import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
+import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useUpdateEvaluationCriteria } from "@/features/establishment/academic-period/api/mutations/update-evaluation-criteria"
 import {
@@ -154,22 +154,8 @@ function EvaluationCriteriaForm({
     return options?.gradingFormat.find((o) => o.key === id)?.label
   }
 
-  // "Escala de valoración" acá es el NIVEL: elegir "Preescolar" significa
-  // "usar el conjunto de valoraciones de Preescolar para todo el periodo",
-  // no una banda puntual. Por eso la opción se identifica por `lvl.id`, no
-  // por `scale.codigo` — ese codigo es el de UNA banda (`RatingScale` = una
-  // valoración, ver `groupRatingScales`), y como esa función fusiona bandas
-  // con el mismo nombre/abreviación/tipo entre niveles, ese codigo queda
-  // compartido por varios niveles a la vez.
-  //
-  // El VALOR que viaja al form (`lvl.id`) NO es lo que espera el backend:
-  //   - GET (fn_criterio_eval_obtener) devuelve grading_scale = FK_TESCALA
-  //     (el PK de la escala contenedora del nivel).
-  //   - PUT (fn_criterio_eval_actualizar, ver V95) espera p_grading_scale =
-  //     PK_TESCALA_VALORACION (el PK de UNA banda de ese nivel).
-  // Son tres espacios de id distintos — `levelIdToBandaId`/`escalaIdToLevelId`
-  // traducen entre ellos (ver V123 en postgres/migrations, que agregó
-  // FK_TESCALA a fn_escala_listar para poder armar este mapeo).
+  // La opción es el nivel (`lvl.id`): el codigo de banda se comparte entre niveles.
+  // GET trae FK_TESCALA y PUT espera PK_TESCALA_VALORACION; los mapas traducen.
   const { gradingScaleOptions, levelIdToBandaId, escalaIdToLevelId } = (() => {
     const levelNames = new Map<number, string>()
     const levelToBanda = new Map<number, number>()
@@ -215,9 +201,7 @@ function EvaluationCriteriaForm({
     },
   })
 
-  // `initialValues.gradingScale` viene del GET como el `FK_TESCALA` (escala
-  // contenedora) — se traduce al nivel que le corresponde antes de usarlo
-  // como valor del combobox (que está indexado por nivel, no por escala).
+  // El GET trae FK_TESCALA; el combobox está indexado por nivel.
   const initialLevelId = initialValues.gradingScale
     ? escalaIdToLevelId.get(Number(initialValues.gradingScale))
     : undefined
@@ -234,10 +218,7 @@ function EvaluationCriteriaForm({
     validators: { onSubmit: evaluationCriteriaSchema },
     onSubmit: ({ value }) => {
       if (academicPeriodId != null) {
-        // `value.gradingScale` es el nivel elegido en el combobox — el
-        // backend espera el PK de una banda de ese nivel
-        // (PK_TESCALA_VALORACION, ver comentario de `gradingScaleOptions`),
-        // no el id del nivel. Se traduce acá, justo antes de mandar.
+        // El backend espera el PK de una banda del nivel, no el id del nivel.
         const bandaId = value.gradingScale
           ? levelIdToBandaId.get(Number(value.gradingScale))
           : undefined

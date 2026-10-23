@@ -1,13 +1,11 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+import { fetchSelectCategory, selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { recuperacionValorDesdePk } from "@/features/planeador/api/mutations/recuperacion-body"
 import { env } from "@/config/env"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
-import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
-import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
-import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
+import { type AplicaAOption, type TipoAdaptacionOption, type TipoRecursoOption, toAplicaAOptions, toTipoAdaptacionOptions, toTipoRecursoOptions } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { normalizeInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
   defaultRecuperacionCampoDisponible,
@@ -20,7 +18,7 @@ import {
   type RecursoTipo,
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { catalogoMeta, estudiantesMeta } from "@/lib/offline/query-meta"
+import { estudiantesMeta } from "@/lib/offline/query-meta"
 import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
 
 // Fila real del detalle: `unidad`/`fk_tunidad` vienen null si la actividad es huérfana.
@@ -75,7 +73,7 @@ interface ActividadDetalleRow {
   requiere_validacion_coordinador: "S" | "N"
   observaciones_docente: string | null
   estado: string
-  /** sso V452/V511 — Regla 13, ver `Actividad.rotuloEjecucion`. */
+  /** Regla 13, ver `Actividad.rotuloEjecucion`. */
   rotulo_ejecucion?: string
   estudiantes_asignados: number
   estudiantes_evaluados: number
@@ -86,18 +84,18 @@ interface ActividadDetalleRow {
   // pk de la RELACIÓN (no del enunciado/criterio): el que exige el PATCH para quitarlos.
   evidencias: EvidenciaRelacionadaRow[] | null
   criterios: CriterioRelacionadoRow[] | null
-  // Matrículas ya asignadas (V452), mismo id que `matriculasIds`.
+  // Matrículas ya asignadas, mismo id que `matriculasIds`.
   estudiantes: EstudianteAsignadoRow[] | null
   campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
-  /** Docente dueño (V553). Opcionales: sin esas columnas solo no se muestra. */
+  /** Docente dueño; opcional: sin esas columnas no se muestra. */
   fk_tfuncionario_docente?: number | null
   docente_nombre?: string | null
-  /** Regla 37 (sso V553): `editable` 'S'/'N' y el motivo cuando es 'N'. */
+  /** Regla 37: `editable` 'S'/'N' y el motivo cuando es 'N'. */
   editable?: "S" | "N" | null
   motivo_no_editable?: string | null
-  /** Versión de la fila (`TACTIVIDAD.VERSION`, concurrencia optimista BE-3B). */
+  /** Versión de la fila para concurrencia optimista. */
   version?: number | null
 }
 
@@ -232,7 +230,7 @@ function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOpt
   }
 }
 
-/** Fila de `GET /planeador/actividades/:id/materiales/archivos` (V427). */
+/** Fila de `GET /planeador/actividades/:id/materiales/archivos`. */
 interface MaterialArchivoRow {
   pk_tactividad_material: number
   fk_tarchivo: number
@@ -260,7 +258,7 @@ function nombreConExtension(row: MaterialArchivoRow): string {
   return `${row.nombre}.${row.extension}`
 }
 
-// `estudiantes` son FK_TMATRICULA (mismo id que guarda el PUT); dejarlo en `[]` pisaba la selección.
+// `estudiantes` son FK_TMATRICULA (mismo id que guarda el PUT).
 // La clave es `especificacionTipo`, no `tipoOtro`. "archivo" lee `archivos` (hasta 3); "biblioteca", `fkTarchivo`.
 export function adaptacionFromRaw(
   raw: unknown,
@@ -419,27 +417,13 @@ function actividadDetalleUrl(id: number): string {
   return `/planeador/actividades/${id}`
 }
 
-/** Catálogos `TLISTA_VALOR` fijos, cacheados con `staleTime: Infinity`. */
+/** Catálogos `TLISTA_VALOR` del detalle. */
 function fetchCatalogosDetalle(queryClient: QueryClient) {
+  const rows = (categoria: string) => queryClient.fetchQuery(selectCategoryQueryOptions(categoria))
   return Promise.all([
-    queryClient.ensureQueryData({
-      meta: catalogoMeta(),
-      queryKey: planeadorKeys.catalogos.detalle("tipo-recurso"),
-      queryFn: fetchTipoRecursoOptions,
-      staleTime: Infinity,
-    }),
-    queryClient.ensureQueryData({
-      meta: catalogoMeta(),
-      queryKey: planeadorKeys.catalogos.detalle("tipo-adaptacion"),
-      queryFn: fetchTipoAdaptacionOptions,
-      staleTime: Infinity,
-    }),
-    queryClient.ensureQueryData({
-      meta: catalogoMeta(),
-      queryKey: planeadorKeys.catalogos.detalle("aplica-a"),
-      queryFn: fetchAplicaAOptions,
-      staleTime: Infinity,
-    }),
+    rows("TIPO_RECURSO").then(toTipoRecursoOptions),
+    rows("TIPO_ADAPTACION").then(toTipoAdaptacionOptions),
+    rows("APLICA_A").then(toAplicaAOptions),
   ])
 }
 
@@ -535,12 +519,7 @@ export function prefetchActividadDetalle(queryClient: QueryClient, id: number) {
 export function useActividadDetalleQuery(
   id: number | undefined,
   options: {
-    /**
-     * Pide el detalle al servidor al montar aunque el de la caché esté
-     * fresco. Lo usa la pantalla de edición: el bloqueo de la Regla 37
-     * (`motivoNoEditable`) cambia con la primera calificación, que no
-     * invalida este detalle si se hizo desde otra pantalla u otro equipo.
-     */
+    /** Refetch al montar aunque esté fresco: el bloqueo de la Regla 37 puede cambiar desde otro equipo. */
     siempreAlMontar?: boolean
   } = {},
 ) {

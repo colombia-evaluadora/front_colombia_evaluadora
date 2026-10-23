@@ -22,6 +22,10 @@ import { NotificacionItem } from "@/features/notificaciones/components/notificac
 import { useAbrirNotificacion } from "@/features/notificaciones/hooks/use-abrir-notificacion"
 import { formatContador, safeDeepLink } from "@/features/notificaciones/lib/deep-link"
 import { onSwPushMessage, SW_PUSH_MESSAGES } from "@/features/notificaciones/push/lib/push-client"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MensajesCampana } from "@/features/notificaciones/components/mensajes-campana"
+import { useConversacionesCampana, useTieneChat } from "@/features/notificaciones/hooks/use-mensajes-campana"
+import { noLeidosCampana } from "@/features/notificaciones/lib/mensajes-campana"
 
 /** La campana muestra las 10 más recientes (spec "Campana y página"). */
 const RECIENTES = 10
@@ -63,6 +67,16 @@ export function CampanaNotificaciones() {
   const noLeidas = contador.data ?? 0
   const recientes = (lista.data?.pages ?? []).flatMap((p) => p.items).slice(0, RECIENTES)
   const etiqueta = formatContador(noLeidas)
+  // Pestaña "Mensajes" (HU "acceder a Mensajes desde la campana"): solo con el chat en el menú.
+  const tieneChat = useTieneChat()
+  const [pestana, setPestana] = useState<"notificaciones" | "mensajes">("notificaciones")
+  const verMensajes = tieneChat && pestana === "mensajes"
+  const mensajes = useConversacionesCampana(open && tieneChat)
+  const mensajesSinLeer = noLeidosCampana(mensajes.data)
+  const irA = (href: string) => {
+    setOpen(false)
+    void navigate({ href: safeDeepLink(href) })
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -125,6 +139,28 @@ export function CampanaNotificaciones() {
           </p>
         )}
 
+        {tieneChat && (
+          <Tabs value={pestana} onValueChange={(v) => setPestana(v === "mensajes" ? "mensajes" : "notificaciones")}>
+            <TabsList className="w-full rounded-none border-b px-2">
+              <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
+              <TabsTrigger value="mensajes">
+                Mensajes
+                {mensajesSinLeer > 0 && (
+                  <Badge variant="fill" color="warning" className="ml-1 h-4.5 min-w-4.5 rounded-full px-1 tracking-normal tabular-nums">
+                    <span className="sr-only">sin leer: </span>
+                    {formatContador(mensajesSinLeer)}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {verMensajes ? (
+          <div className="max-h-96 overflow-y-auto">
+            <MensajesCampana query={mensajes} onAbrir={irA} />
+          </div>
+        ) : (
         <div className="max-h-96 overflow-y-auto">
           {lista.isPending ? (
             <div className="grid place-items-center py-8">
@@ -168,8 +204,14 @@ export function CampanaNotificaciones() {
             </ul>
           )}
         </div>
+        )}
 
         <div className="flex items-center justify-between border-t px-2 py-1">
+          {verMensajes ? (
+            <Button variant="ghost" size="sm" onClick={() => irA(paths.app.comunicacionesChat.getHref())}>
+              Ir al chat
+            </Button>
+          ) : (
           <Button
             variant="ghost"
             size="sm"
@@ -178,6 +220,7 @@ export function CampanaNotificaciones() {
           >
             Ver todas
           </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

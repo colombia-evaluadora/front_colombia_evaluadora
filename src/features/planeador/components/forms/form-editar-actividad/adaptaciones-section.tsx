@@ -24,7 +24,7 @@ import {
   useAdaptacionesReutilizablesQuery,
   type AdaptacionReutilizable,
 } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
-import { useTipoAdaptacionCatalogQuery } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
+import { useTipoAdaptacionCatalogQuery } from "@/features/planeador/api/query/catalogos-lista-valor"
 import {
   EyeIcon,
   FileUploadOutlinedIcon,
@@ -154,10 +154,7 @@ export function AdaptacionesSection({
   )
 }
 
-/**
- * Abre la plantilla ya subida en pestaña nueva. No usa `RecursoPreview`: no hay nombre
- * de archivo para adivinar el tipo, el navegador decide por el `Content-Type`.
- */
+/** Sin `RecursoPreview`: no hay nombre para adivinar el tipo, decide el `Content-Type`. */
 function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
   const { data: url, isPending } = useArchivoViewUrl(archivoId)
   if (isPending || !url) return null
@@ -176,10 +173,7 @@ function VerPlantillaAdaptacion({ archivoId }: { archivoId: number }) {
   )
 }
 
-/**
- * Regla 50: combobox con las versiones modificadas que el propio docente registró en otras
- * actividades, filtradas por el tipo elegido. Una sola página de 100, filtrado en el cliente.
- */
+/** Regla 50: plantillas del docente en otras actividades; una página de 100, filtrada en el cliente. */
 function AdaptacionBibliotecaField({
   actividadId,
   grupoId,
@@ -255,8 +249,7 @@ function AdaptacionBibliotecaField({
   )
 }
 
-// Formatos de la plantilla de adaptación (documentos, no multimedia). Se valida en el
-// cliente (pedido de QA).
+// Formatos de la plantilla de adaptación (documentos, no multimedia).
 const ADAPTACION_ARCHIVO_ACCEPT = ".pdf,.doc,.docx,.jpg,.jpeg,.png"
 const ADAPTACION_ARCHIVO_MIME_ACCEPT = [
   "application/pdf",
@@ -277,10 +270,7 @@ function esUrlValida(value: string): boolean {
   }
 }
 
-/**
- * Bloque de una adaptación curricular. `especificacionTipo`/`nombrePlantilla` validan por
- * `blur`; el checklist de estudiantes además con `submissionAttempts` (el backend rechaza la lista vacía).
- */
+/** El checklist de estudiantes valida también con `submissionAttempts`: el backend rechaza la lista vacía. */
 function AdaptacionItem({
   index,
   adaptacion,

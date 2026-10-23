@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { LISTA_VALOR_STALE_TIME } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
@@ -6,27 +7,10 @@ import { CATALOGS } from "@/lib/catalogs"
 import { unwrapRows } from "@/lib/response-envelope"
 import { catalogoMeta } from "@/lib/offline/query-meta"
 
-/**
- * Slug de catálogo: el *valor* de cualquier entrada de `CATALOGS`
- * (p. ej. `"document-types"`, `"population-genders"`). Se usa como
- * parámetro de `getCatalog` y `useCatalogQuery` para que solo se
- * puedan pedir catálogos declarados en `CATALOGS`.
- */
+/** Valor de cualquier entrada de `CATALOGS`. */
 export type CatalogSlug = (typeof CATALOGS)[keyof typeof CATALOGS]
 
-/**
- * Mensajes legibles para mostrar cuando falla la carga de un catálogo.
- *
- * La clave es la constante de `CATALOGS` (no el string crudo) para que:
- *  - el IDE autocomplete al registrar una nueva entrada,
- *  - un rename en `CATALOGS` propague el cambio aquí sin tener que
- *    recordar editar el slug a mano,
- *  - el compilador señale referencias rotas si se elimina una clave.
- *
- * Es `Partial`: no es obligatorio registrar todos los catálogos. Si uno
- * no aparece, el `Error` simplemente muestra el slug crudo, que sigue
- * siendo información útil para debugging.
- */
+/** Texto del error cuando falla la carga; si falta, se muestra el slug. */
 const catalogNames: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.DOCUMENT_TYPES]: "los tipos de documento",
   [CATALOGS.EMPLOYEE_ROLES]: "los roles de empleado",
@@ -54,23 +38,8 @@ const catalogNames: Partial<Record<CatalogSlug, string>> = {
 }
 
 /**
- * Categoría real de `academico_test.tlista_valor` (columna `CATEGORIA`)
- * detrás de cada slug de `CATALOGS` — usada solo para armar
- * `GET /select/:categoria` cuando NO se está mockeando (ver `getCatalog`
- * más abajo). El catálogo genérico real vive en dos endpoints:
- *   `GET /select`            -> lista las categorías existentes.
- *   `GET /select/:categoria` -> lista {pk_lista_valor, nombre, valor,
- *                                accion} de esa categoría.
- * Confirmado contra la base real (id_query 8 y 9).
- *
- * Deliberadamente AUSENTES de este mapeo (no son TLISTA_VALOR, tienen su
- * propia tabla real y su propio endpoint dedicado — ver V58 en el SSO):
- *   - MUNICIPALITIES  -> usar `useMunicipalitiesQuery` (útil ADEMÁS trae
- *                        el departamento anidado, que esto no podría dar).
- *   - LEGAL_TYPES     -> usar `useOwnershipTypesQuery` (TPROPIEDAD_JURIDICA).
- *   - DISABILITIES    -> usar `useDisabilityTypesQuery` (TDISCAPACIDAD).
- *   - EMPLOYEE_ROLES  -> usar `useEmployeeRolesQuery` (TROL, PK_TROL >= 9 —
- *                        1..8 son roles de sistema, no de funcionario normal).
+ * Categoría de `TLISTA_VALOR` por slug, para `GET /select/:categoria`.
+ * Municipios, propiedad jurídica, discapacidades y roles tienen endpoint propio.
  */
 const CATALOG_CATEGORIAS: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.DOCUMENT_TYPES]: "TIPO_DOCUMENTO",
@@ -85,36 +54,13 @@ const CATALOG_CATEGORIAS: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.RANGO_TARIFAS]: "RANG_TARIFA",
   [CATALOGS.IDIOMAS]: "IDIOMA",
   [CATALOGS.ZONES]: "ZONA",
-  // "Discapacidades atendidas" del establecimiento — a diferencia de
-  // DISABILITIES (TDISCAPACIDAD), esta sí es TLISTA_VALOR (ver captura con
-  // pk_lista_valor 1-4 bajo esta categoría).
-  // Ojo: el nombre real de la categoría trae el typo "DISCAPACIODAD"
-  // (así está en TLISTA_VALOR, no es error nuestro).
+  // El typo "DISCAPACIODAD" viene así de la base.
   [CATALOGS.DISABILITIES_ATTENDED]: "DISCAPACIODAD_ATENDIDA",
-  // Confirmado 1:1 con el ejemplo de payload real que se uso para diseñar
-  // este mapeo (pk_lista_valor 533="Activo", 534="Inactivo", etc.).
   [CATALOGS.ENTITY_STATUSES]: "ESTADO_ESTABLECIMIENTO",
-  // "Nivel educativo de enseñanza" del funcionario (FK_TLV_NIVEL_ESENANZA).
   [CATALOGS.EDUCATION_LEVELS]: "NIVEL_ENSENANZA",
-  // "Último nivel educativo aprobado" del funcionario (FK_TLV_NIVEL_EDUCATIVO)
-  // — antes compartía categoría con EDUCATION_LEVELS, ahora separado.
   [CATALOGS.HIGHEST_EDUCATION_LEVELS]: "ULT_NIVEL",
-  // "Grado escalafón".
   [CATALOGS.EMPLOYEE_GRADES]: "ESCALAFON",
-  // "Cargo funcional" (TFUNCIONARIO.FK_TLV_CARGO).
-  //
-  // Es CARGO, no NOMBRE_CARGO. Son dos catálogos distintos y con PKs que no
-  // se solapan (CARGO: 530-532, 589, 51850-51853 — Docente, Directivo
-  // Docente, Administrativo, Rector…; NOMBRE_CARGO: 156-163, 806 — la
-  // clasificación fina del MEN: Docente de aula, Docente con funciones de
-  // orientador, Director de núcleo…).
-  //
-  // Con NOMBRE_CARGO el select recibía 9 opciones entre las que el valor
-  // guardado nunca estaba, así que el campo se renderizaba vacío aunque el
-  // backend sí devolviera el dato (y su nombre resuelto). Los datos no dejan
-  // duda de cuál es la correcta: de los 495 funcionarios activos con este
-  // campo, 494 usan CARGO y 1 usa NOMBRE_CARGO — ese único creado desde el
-  // front, con este mismo bug.
+  // CARGO, no NOMBRE_CARGO: son catálogos distintos y el valor guardado es de CARGO.
   [CATALOGS.FUNCTIONAL_POSITIONS]: "CARGO",
 }
 
@@ -147,10 +93,6 @@ async function getRealCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
 
   const friendly = catalogNames[catalog] ?? catalog
   try {
-    // `api` (no `fetch` crudo): el interceptor de `api-client.ts` es el que
-    // agrega `Authorization: Bearer <token>` — sin él, el gateway real
-    // rechaza la petición con 403 antes de llegar a la query. `fetch()`
-    // directo nunca llevaba ese header.
     const response = (await api.get(`/eval-col/select/${categoria}`)) as unknown as
       | { rows: RealCatalogRow[] }
       | RealCatalogRow[]
@@ -169,21 +111,12 @@ export function getCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
   return env.ENABLE_API_MOCKING ? getMockCatalog<T>(catalog) : getRealCatalog<T>(catalog)
 }
 
-/**
- * Catálogo genérico: la categoría entra, sus filas salen. Nada más.
- *
- * Entre V414 y V478 aceptó además un `establishmentId` que viajaba como
- * `?ESTABLECIMIENTO=` y solo tenía efecto en la categoría ZONA. Esa regla
- * vive ahora en `useZonasSedeQuery` (`GET /establecimientos/sedes/zonas`):
- * un catálogo que usan ~15 pantallas no debería conocer un caso particular
- * de una de ellas.
- */
+/** Catálogo genérico de `TLISTA_VALOR` por categoría. */
 export function useCatalogQuery<T>(catalog: CatalogSlug) {
   return useQuery({
-    // Catálogos genéricos (estados, zonas…): sin datos personales, se guardan
-    // para que las pantallas aptas sin red no queden con filtros vacíos.
+    // Se guarda para pantallas sin red.
     meta: catalogoMeta(),
-    staleTime: Infinity,
+    staleTime: LISTA_VALOR_STALE_TIME,
     queryKey: ["catalogs", catalog],
     queryFn: () => getCatalog<T>(catalog),
   })

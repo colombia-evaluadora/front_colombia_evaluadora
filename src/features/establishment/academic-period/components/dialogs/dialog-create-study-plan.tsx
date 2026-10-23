@@ -58,7 +58,7 @@ import {
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
-import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
+import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
 import {
   studyPlanFormSchema,

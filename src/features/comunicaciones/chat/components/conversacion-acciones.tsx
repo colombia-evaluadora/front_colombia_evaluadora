@@ -62,6 +62,7 @@ import {
   ChatUnreadIcon,
   SignOutIcon,
   BellSlashIcon,
+  BellIcon,
   LightningIcon,
   XSquareIcon,
 } from "@/components/ui/icons"
@@ -194,10 +195,29 @@ export function ConversacionAcciones({
               Cerrar proceso electoral
             </DropdownMenuItem>
           )}
+          {/* Toggle según el estado real: comms-service solo devuelve `silenciadoHasta` mientras
+              el silencio está vigente. Silenciada: "Activar notificaciones" (DURACION NINGUNA) y
+              "Cambiar silencio" para otra duración. */}
+          {c.silenciadoHasta && (
+            <DropdownMenuItem
+              className={ITEM}
+              disabled={!CHAT_FUNCIONES.activarNotificaciones || silenciar.isPending}
+              onClick={() =>
+                silenciar.mutate(
+                  { id: c.id, duracion: "NINGUNA" },
+                  { onSuccess: () => notify(`Notificaciones activadas en ${c.nombre}.`), onError },
+                )
+              }
+            >
+              <BellIcon />
+              <span className="flex-1">Activar notificaciones</span>
+              {!CHAT_FUNCIONES.activarNotificaciones && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className={ITEM}>
               <BellSlashIcon />
-              Silenciar notificaciones
+              {c.silenciadoHasta ? "Cambiar silencio" : "Silenciar notificaciones"}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-36">
               {SILENCIOS.map((s) => (

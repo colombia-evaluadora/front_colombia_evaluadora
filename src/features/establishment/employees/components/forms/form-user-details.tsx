@@ -19,6 +19,11 @@ import {
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
+import {
+    esDocumentoNumerico,
+    toDocumentoInput,
+    toNombreInput,
+} from "@/features/establishment/shared/person-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -54,6 +59,11 @@ interface UserFormProps {
      * secretaria del establecimiento, que pasa `false` acá.
      */
     required?: boolean
+    /**
+     * Solo lectura: se ven los datos pero no se cambian (ni la foto). Base UI
+     * ignora `<fieldset disabled>`, por eso cada control lo recibe explícito.
+     */
+    disabled?: boolean
     /**
      * Foto recién elegida, todavía sin subir. Igual que el escudo del
      * establecimiento, vive en el padre: es él quien la manda como
@@ -126,6 +136,7 @@ export function UserDetailsForm({
     invalidFields = [], errors = {},
     showValidation = false,
     required = true,
+    disabled = false,
     photo: photoProp,
     onPhotoChange,
     onRemovePhoto,
@@ -174,6 +185,11 @@ export function UserDetailsForm({
     // Alta de una cuenta nueva (sin `id` ni cuenta encontrada por documento):
     // el correo es a donde llega la invitación de activación.
     const isNewAccount = !person.id && !person.accountExists
+
+    // El código del tipo sale del catálogo por id: el detalle de una persona
+    // ya guardada trae el id pero no siempre el código.
+    const documentTypeCode =
+        documentTypes.find((item) => item.id === person.documentType?.id)?.code ?? person.documentType?.code
 
     const emitChange = (patch: Partial<Person>) => {
         onChange({ ...person, ...patch })
@@ -267,6 +283,7 @@ export function UserDetailsForm({
                     deleteLabel="Eliminar foto"
                     error={errorFor(`${fieldPrefix}.photo`)}
                     className="md:row-span-3"
+                    disabled={disabled}
                     existingPreview={
                         person.photoArchivoId != null ? (
                             <ArchivoImage
@@ -278,7 +295,7 @@ export function UserDetailsForm({
                         ) : undefined
                     }
                     onRemoveExisting={
-                        person.photoArchivoId == null && !uploadedPhoto
+                        disabled || (person.photoArchivoId == null && !uploadedPhoto)
                             ? undefined
                             : () => {
                                   emitChange({ photoArchivoId: null })
@@ -295,6 +312,7 @@ export function UserDetailsForm({
 
                     <ComboboxField
                         id="document-type"
+                        disabled={disabled}
                         items={documentTypeLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
                         value={person.documentType?.id ?? null}
@@ -330,18 +348,19 @@ export function UserDetailsForm({
                     <Input
                         id="document-number"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
-                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) puramente
-                        // numérico (RegisterUsuarioRequest la valida igual,
-                        // @Size(max=30)) — solo dígitos, sin letras. Acotado
-                        // a 15 acá.
-                        inputMode="numeric"
+                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) (@Size(max=30)
+                        // en RegisterUsuarioRequest), acotado a 15 acá. Solo
+                        // dígitos en CC, TI, RC…; letras y dígitos en pasaporte,
+                        // CE, PPT… (`esDocumentoNumerico`).
+                        inputMode={esDocumentoNumerico(documentTypeCode) ? "numeric" : "text"}
                         maxLength={15}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => {
                             isUserEditingDocument.current = true
-                            emitChange({ identification: toDigitsOnly(event.target.value, 15) })
+                            emitChange({ identification: toDocumentoInput(event.target.value, documentTypeCode) })
                         }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
@@ -352,23 +371,27 @@ export function UserDetailsForm({
                     <Input
                         id="user-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ firstName: toNombreInput(event.target.value) })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.middleName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
                     <Input
                         id="user-second-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
-                        onChange={(event) => emitChange({ middleName: event.target.value.toUpperCase() })}
+                        aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
+                        onChange={(event) => emitChange({ middleName: toNombreInput(event.target.value) })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.middleName`)}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
@@ -376,23 +399,27 @@ export function UserDetailsForm({
                     <Input
                         id="user-last-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: event.target.value.toUpperCase() })}
+                        onChange={(event) => emitChange({ lastName: toNombreInput(event.target.value) })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.secondLastName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
                     <Input
                         id="user-second-last-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
-                        onChange={(event) => emitChange({ secondLastName: event.target.value.toUpperCase() })}
+                        aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
+                        onChange={(event) => emitChange({ secondLastName: toNombreInput(event.target.value) })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.secondLastName`)}</FieldError>
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
@@ -401,6 +428,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-email"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
@@ -419,6 +447,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-phone"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         type="tel"
                         // La columna aguanta VARCHAR(30), pero solo se opera
@@ -448,6 +477,7 @@ export function UserDetailsForm({
                         id="birth-date"
                         mode="date"
                         size="sm"
+                        disabled={disabled}
                         maxDate={getMaxBirthDate()}
                         value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
@@ -461,6 +491,7 @@ export function UserDetailsForm({
                     </FieldLabel>
                     <ComboboxField
                         id="gender-user"
+                        disabled={disabled}
                         items={genderLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
                         value={person.gender?.id ?? null}

@@ -10,7 +10,7 @@ import type {
   AcademicPeriod,
   AcademicPeriodStatus,
 } from "@/features/establishment/academic-period/api/types/academic-period"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { DeleteAcademicPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-academic-period"
 import { EditAcademicPeriodButton } from "@/features/establishment/academic-period/components/table/edit-academic-period-button"
 import { DeactivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-deactivate-reservation"
@@ -89,9 +89,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     cell: ({ row }) => <StatusCell status={row.getValue<AcademicPeriodStatus>("status")} />,
   },
   {
-    // Estado del periodo de reserva de cupos (independiente del `status`
-    // general del periodo académico). Lo entrega el backend mapeado de
-    // `RESERVA: "S"|"N"` en `use-academic-periods.ts`.
+    // Reserva de cupos (`RESERVA: "S"|"N"`), independiente del `status`.
     id: "reservationEnabled",
     accessorKey: "reservationEnabled",
     meta: { label: "Reserva de cupos" },

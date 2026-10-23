@@ -60,13 +60,14 @@ export function CrearComunicadoDialog({
   // "Editar Comunicado" (diseño 4062:67938). Ya publicado, la audiencia y la fecha no cambian.
   // Quien lo abre lo monta con `key` para que los valores iniciales se lean una vez.
   editar?: Comunicado
-  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
+  // cambios sin guardar de esa edición (se aplican sobre lo publicado).
   borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [html, setHtml] = useState(
-    editar?.contenidoHtml ?? (typeof borrador?.datos?.html === "string" ? borrador.datos.html : ""),
+    typeof borrador?.datos?.html === "string" ? borrador.datos.html : (editar?.contenidoHtml ?? ""),
   )
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
@@ -79,12 +80,12 @@ export function CrearComunicadoDialog({
 
   const datos = useAppForm({
     defaultValues: (editar
-      ? {
+      ? datosDe(borrador?.datos, {
           titulo: editar.titulo,
           descripcion: editar.descripcion,
-          audiencia: editar.audiencia,
-          publicarEn: isoALocal(editar.publicarEn),
-        }
+          audiencia: editar.audiencia as string[],
+          publicarEn: isoALocal(editar.publicarEn) as string | null,
+        })
       : datosDe(borrador?.datos, {
           titulo: "",
           descripcion: "",
@@ -95,15 +96,16 @@ export function CrearComunicadoDialog({
     onSubmit: () => setPaso(2),
   })
 
-  // Comunicado nuevo: lo escrito se autoguarda como borrador (comms-service).
+  // Lo escrito se autoguarda como borrador (comms-service); al editar uno publicado, atado a él.
   const valores = useStore(datos.store, (s) => s.values)
   const autoguardado = useAutoguardadoActividad({
     tipo: "COMUNICADO",
-    habilitado: open && !editar,
+    habilitado: open,
     titulo: valores.titulo,
     datos: { ...valores, html },
     conContenido: hayContenido(valores.titulo, valores.descripcion, valores.audiencia, contenidoVacio ? "" : html),
     borradorInicial: borrador?.id,
+    conversacionId: editar?.conversacionId,
   })
   const eliminarBorrador = useEliminarBorradorActividad()
 
@@ -119,15 +121,16 @@ export function CrearComunicadoDialog({
 
   const intentarCerrar = async () => {
     if (crear.isPending) return
-    if (!editar) {
-      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
-      const id = await autoguardado.guardarYa()
-      if (id) notify("El comunicado quedó guardado en Borradores y enviados.")
-      reiniciar()
-      return
+    // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
+    const id = await autoguardado.guardarYa()
+    if (id) {
+      notify(
+        editar
+          ? "Tus cambios sin guardar quedaron en Borradores y enviados."
+          : "El comunicado quedó guardado en Borradores y enviados.",
+      )
     }
-    if (datos.state.isDirty || !contenidoVacio) setDescartar(true)
-    else reiniciar()
+    reiniciar()
   }
 
   const crearComunicado = async () => {
@@ -143,7 +146,9 @@ export function CrearComunicadoDialog({
       contenidoHtml: htmlSeguro(html),
     }
     if (editar) {
-      editarComunicado.mutate(cuerpo, {
+      // Guardar desde el borrador de la edición lo elimina (?borrador).
+      const borradorId = await autoguardado.guardarYa()
+      editarComunicado.mutate({ ...cuerpo, borradorId }, {
         onSuccess: (c) => {
           notify(`Se guardaron los cambios de ${c.titulo}.`)
           reiniciar()
@@ -264,14 +269,13 @@ export function CrearComunicadoDialog({
             </p>
           )}
 
-          {!editar && (
-            <BarraBorrador
-              estado={autoguardado.estado}
-              hayBorrador={!!autoguardado.borradorId}
-              onDescartar={() => setDescartar(true)}
-              deshabilitado={crear.isPending}
-            />
-          )}
+          <BarraBorrador
+            estado={autoguardado.estado}
+            hayBorrador={!!autoguardado.borradorId}
+            onDescartar={() => setDescartar(true)}
+            deshabilitado={crear.isPending}
+            edicion={!!editar}
+          />
 
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
@@ -316,11 +320,13 @@ export function CrearComunicadoDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
-          if (!editar && autoguardado.borradorId) {
-            eliminarBorrador.mutate(autoguardado.borradorId, {
-              onSuccess: () => notify("Borrador descartado."),
-              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-            })
+          if (autoguardado.borradorId) {
+            // Promesa y no callbacks de `mutate`: al descartar, el diálogo puede desmontarse (sale de
+            // "Borradores y enviados" o cambia su `key`) y React Query no llama los callbacks por llamada.
+            eliminarBorrador
+              .mutateAsync(autoguardado.borradorId)
+              .then(() => notify("Borrador descartado."))
+              .catch((error: unknown) => notify(getErrorMessage(error), { variant: "error" }))
           }
           reiniciar()
         }}

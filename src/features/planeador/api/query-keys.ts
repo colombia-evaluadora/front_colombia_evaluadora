@@ -139,21 +139,8 @@ export const planeadorKeys = {
     [...all, "rotulo-actividad", gradoId, asignaturaId ?? null, anio ?? null] as const,
   materialesReutilizables: <P>(params: P) => [...all, "materiales-reutilizables", params] as const,
   adaptacionesReutilizables: <P>(params: P) => [...all, "adaptaciones-reutilizables", params] as const,
-  dominioMaterial: (categoria: string) => [...all, "dominio-material", categoria] as const,
-  tipoAdaptacionCatalog: () => [...all, "tipo-adaptacion-catalog"] as const,
   /** Lo consume Asistencia pero vive bajo `"planeador"`. */
   sedesOpciones: () => [...all, "sedes", "opciones"] as const,
-
-  /** Históricos sin prefijo `"planeador"`; nunca se invalidan. */
-  catalogos: {
-    agrupacionPlanilla: () => ["agrupacion-planilla-options"] as const,
-    instrumentoEvaluacion: () => ["instrumento-evaluacion-catalog"] as const,
-    momentoRegistro: () => ["momento-registro"] as const,
-    tipoActividad: () => ["tipo-actividad-catalog"] as const,
-    /** Los que necesita el mapeo del detalle de actividad. */
-    detalle: (catalogo: "tipo-recurso" | "tipo-adaptacion" | "aplica-a") =>
-      ["planeador-detalle-catalogo", catalogo] as const,
-  },
 } as const
 
 /** El id va en el medio: sin prefijo común, se filtra por posición. */

@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { DatePicker } from "@/components/date-picker"
@@ -16,6 +16,7 @@ import { useCatalogQuery } from "@/features/establishment/employees/api/query/us
 import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
+import { toIdentificacionInput } from "@/features/establishment/shared/text-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface ComplementaryDataFormSectionProps {
@@ -27,8 +28,10 @@ interface ComplementaryDataFormSectionProps {
     showValidation?: boolean
 }
 
-export function ComplementaryDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: ComplementaryDataFormSectionProps) {
+export function ComplementaryDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: ComplementaryDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
+    const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     
     const {data: calendarios = []} = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
     const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
@@ -65,8 +68,9 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             maxLength={130}
                             value={value.approvalResolution}
                             aria-invalid={isInvalid("additionalInfo.approvalResolution")}
-                            onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
+                            onChange={(event) => onChange({ ...value, approvalResolution: toIdentificacionInput(event.target.value) })}
                         />
+                        <FieldError>{errorFor("additionalInfo.approvalResolution")}</FieldError>
                     </Field>
 
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.teachingLanguage") ? "true" : undefined}>
@@ -245,8 +249,9 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             maxLength={130}
                             value={value.licenseStatus}
                             aria-invalid={isInvalid("additionalInfo.licenseStatus")}
-                            onChange={(event) => onChange({ ...value, licenseStatus: event.target.value })}
+                            onChange={(event) => onChange({ ...value, licenseStatus: toIdentificacionInput(event.target.value) })}
                         />
+                        <FieldError>{errorFor("additionalInfo.licenseStatus")}</FieldError>
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
@@ -270,7 +275,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             </label>
                         </RadioGroup>
                     </Field>
-                    <Field orientation="vertical" variant="outlined">
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.licenseDate") ? "true" : undefined}>
                         <FieldLabel htmlFor="license-date">
                             Fecha licencia
                         </FieldLabel>
@@ -278,9 +283,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <DatePicker
                             id="license-date"
                             mode="date"
+                            // Fecha de expedición: no puede ser futura.
+                            maxDate={new Date()}
                             value={parseDateValue(value.licenseDate)}
                             onChange={(date) => onChange({ ...value, licenseDate: formatDateValue(date) })}
                         />
+                        <FieldError>{errorFor("additionalInfo.licenseDate")}</FieldError>
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">

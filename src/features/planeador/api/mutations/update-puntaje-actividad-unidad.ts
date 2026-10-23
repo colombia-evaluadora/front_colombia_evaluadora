@@ -2,8 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarVinculoActividadUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 interface UpdatePuntajeInput {
   actividadId: number
@@ -25,7 +24,6 @@ function updatePuntajeActividadUnidad({ actividadId, puntaje }: UpdatePuntajeInp
 }
 
 interface UseUpdatePuntajeActividadUnidadOptions {
-  unidadId: number
   mutationConfig?: MutationConfig<typeof updatePuntajeActividadUnidad>
 }
 
@@ -36,20 +34,15 @@ interface UseUpdatePuntajeActividadUnidadOptions {
  * `useUpdatePonderacionActividadUnidad`, que cubre el mismo rol para
  * unidades "Ponderado".
  */
-export function useUpdatePuntajeActividadUnidad({
-  unidadId,
-  mutationConfig,
-}: UseUpdatePuntajeActividadUnidadOptions) {
+export function useUpdatePuntajeActividadUnidad({ mutationConfig }: UseUpdatePuntajeActividadUnidadOptions = {}) {
   const queryClient = useQueryClient()
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
     mutationFn: updatePuntajeActividadUnidad,
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
-      onSuccess?.(...args)
+    onSuccess: (data, variables, ...rest) => {
+      invalidarVinculoActividadUnidad(queryClient, variables.actividadId)
+      onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,
   })

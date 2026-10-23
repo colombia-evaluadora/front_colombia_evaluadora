@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { Checkbox } from "@/components/ui/checkbox"
-import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CaretRightIcon, UsersThreeIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,13 @@ const GRUPOS: [GrupoVotantes, string][] = [
   ["GRADO", "Grado"],
   ["FUNCIONARIO", "Funcionario"],
 ]
+
+// "Docente" → "docentes", "Coordinador" → "coordinadores" (contador de Figma 7162:77631).
+function plural(cargo: string, n: number) {
+  const base = cargo.toLowerCase()
+  if (n === 1) return base
+  return /[aeiouáéíóú]$/.test(base) ? `${base}s` : `${base}es`
+}
 
 interface Filtro {
   grupo: GrupoVotantes
@@ -157,6 +164,17 @@ export function SelectorVotantes({
         </PopoverContent>
       </Popover>
 
+      {!filtro && (
+        // Estado vacío de Figma 3822:41317.
+        <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/40 px-4 py-8 text-center">
+          <span aria-hidden className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
+            <UsersThreeIcon className="size-6" />
+          </span>
+          <p className="text-[15px] font-medium">Selecciona un grado o funcionario para ver el listado</p>
+          <p className="text-xs text-muted-foreground">El listado se cargará automáticamente.</p>
+        </div>
+      )}
+
       {filtro &&
         (votantes.isPending ? (
           <div className="space-y-2" aria-busy>
@@ -184,9 +202,16 @@ export function SelectorVotantes({
                 />
                 Seleccionar todos
               </label>
-              <span className="text-sm text-primary tabular-nums">
-                {marcados} de {lista.length} seleccionados
-              </span>
+              {/* Figma 7162:77597 / 77614 / 77631: "32 estudiantes" → "3 de 32 seleccionados". */}
+              {marcados > 0 ? (
+                <span className="text-xs font-medium text-primary tabular-nums">
+                  {marcados} de {lista.length} seleccionados
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {lista.length} {filtro.grupo === "GRADO" ? "estudiantes" : plural(filtro.valor, lista.length)}
+                </span>
+              )}
             </div>
             <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
               {lista.map((v) => {
@@ -205,7 +230,7 @@ export function SelectorVotantes({
                         <span className="block text-xs text-muted-foreground tabular-nums">{v.documento}</span>
                       </span>
                       <span className="text-sm text-muted-foreground tabular-nums">
-                        N.º {String(v.numero).padStart(2, "0")}
+                        {filtro.grupo === "GRADO" ? `N.º ${String(v.numero).padStart(2, "0")}` : filtro.valor}
                       </span>
                     </label>
                   </li>
@@ -220,7 +245,8 @@ export function SelectorVotantes({
           {mensajeInvalido}
         </p>
       )}
-      {resumen.size > 0 && (
+      {/* Figma solo muestra un grupo a la vez; el resumen aparece cuando se suman varios. */}
+      {resumen.size > 1 && (
         <div aria-label="Para quién" className="flex flex-wrap items-center gap-2 text-sm">
           <span className="font-medium">Para quién:</span>
           {[...resumen].map(([grupo, n]) => (
@@ -238,7 +264,7 @@ export function SelectorVotantes({
           ))}
         </div>
       )}
-      {seleccion.size > 0 && (
+      {resumen.size > 1 && (
         <p className="text-sm text-muted-foreground">
           En total: {seleccion.size} {seleccion.size === 1 ? "persona habilitada" : "personas habilitadas"} {accion}.
         </p>

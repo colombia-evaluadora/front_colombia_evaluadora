@@ -8,6 +8,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
+import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 import { EDUCATION_LEVEL_LABELS } from "@/features/coverage/shared/api/ui-mappings"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import type { Matricula, MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
@@ -165,7 +166,12 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
   },
 ]
 
-/** Ver documentos es de solo lectura acá: va con Acceso. */
+/**
+ * Ver documentos es de solo lectura acá: va con Acceso. Sin conexión (P6:
+ * lista de solo consulta) "Ver" queda activo y lleva al aviso estándar de
+ * vista solo en línea; editar, documentos, retirar, reingresar y eliminar se
+ * deshabilitan.
+ */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar, puedeEliminar } = useMenuPermission("MATRICULA")
   const row = { original: matricula }
@@ -191,6 +197,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
           <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
         </Tooltip>
         {puedeEditar && !NOT_EDITABLE_STATUSES.includes(row.original.status) && (
+          <OnlineOnlyAction>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -209,11 +216,28 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
             </TooltipTrigger>
             <TooltipContent>{`Editar ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
           </Tooltip>
+          </OnlineOnlyAction>
         )}
-        <FilesMatriculaDialog matricula={row.original} />
-        {puedeEditar ? <RetirarMatriculaDialog matricula={row.original} /> : null}
-        {puedeEditar ? <ReingresarMatriculaDialog matricula={row.original} /> : null}
-        {puedeEliminar ? <DeleteMatriculaDialog matricula={row.original} /> : null}
+        <OnlineOnlyAction>
+          <FilesMatriculaDialog matricula={row.original} />
+        </OnlineOnlyAction>
+        {/* El estado se repite acá (el diálogo también lo filtra) para no dejar
+            sin red un envoltorio vacío con tooltip. */}
+        {puedeEditar && row.original.status === "Cursando" ? (
+          <OnlineOnlyAction>
+            <RetirarMatriculaDialog matricula={row.original} />
+          </OnlineOnlyAction>
+        ) : null}
+        {puedeEditar && row.original.status === "Retirado" ? (
+          <OnlineOnlyAction>
+            <ReingresarMatriculaDialog matricula={row.original} />
+          </OnlineOnlyAction>
+        ) : null}
+        {puedeEliminar ? (
+          <OnlineOnlyAction>
+            <DeleteMatriculaDialog matricula={row.original} />
+          </OnlineOnlyAction>
+        ) : null}
       </div>
   )
 }

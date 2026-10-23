@@ -24,8 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
-import { useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/use-rating-symbols"
-import { useRatingScaleTypesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scale-types"
+import { useRatingScaleTypesQuery, useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useUpdateRatingScale } from "@/features/establishment/academic-period/api/mutations/update-rating-scale"
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"

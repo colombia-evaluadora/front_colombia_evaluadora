@@ -63,7 +63,7 @@ import {
   esEvidenciaImagen,
   extensionEvidencia,
 } from "@/features/planeador/lib/observacion"
-import { useMomentoRegistroCatalog } from "@/features/planeador/api/query/use-momento-registro-catalog"
+import { useMomentoRegistroCatalog } from "@/features/planeador/api/query/catalogos-lista-valor"
 import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
 

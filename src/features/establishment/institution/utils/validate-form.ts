@@ -6,6 +6,13 @@ import {
   TELEFONO,
   validarFormatoPersona,
 } from "@/features/establishment/shared/person-field-rules"
+import {
+  validarDireccion,
+  validarIdentificacionAdministrativa,
+  validarLugar,
+  validarNombreEstablecimiento,
+} from "@/features/establishment/shared/text-field-rules"
+import { format } from "date-fns"
 import { optionalImageFile } from "@/lib/image-file"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Person } from "@/features/establishment/employees/api/types/person"
@@ -55,6 +62,25 @@ function optionalCheck(check: (value: string) => boolean, message: string) {
   return z.string().refine((value) => isBlank(value) || check(value.trim()), { message })
 }
 
+/** Texto libre validado por una regla de `text-field-rules` (mensaje o `null`). */
+function textRule(check: (value: string) => string | null) {
+  return z.string().nullish().superRefine((value, ctx) => {
+    const message = check(value ?? "")
+    if (message) ctx.addIssue({ code: "custom", message })
+  })
+}
+
+/** Lugar con forma de `CatalogItem` (barrio, comuna, localidad): se valida su `name`. */
+function placeRule(field: string) {
+  return z
+    .object({ name: z.string().nullish() })
+    .nullish()
+    .superRefine((item, ctx) => {
+      const message = validarLugar(item?.name ?? "", field)
+      if (message) ctx.addIssue({ code: "custom", message })
+    })
+}
+
 /**
  * Ítem de catálogo obligatorio. El `select` guarda el objeto completo, así
  * que lo que se exige es que tenga `id` — no `name`: en real, lo que carga
@@ -76,7 +102,10 @@ function requiredCatalogItem(message: string) {
 
 const establishmentSchema = z.object({
   basicInfo: z.object({
-    name: requiredText("Ingresa el nombre del establecimiento."),
+    name: requiredText("Ingresa el nombre del establecimiento.").superRefine((value, ctx) => {
+      const message = validarNombreEstablecimiento(value)
+      if (message) ctx.addIssue({ code: "custom", message })
+    }),
     dane: requiredPattern(
       "Ingresa el código DANE.",
       /^\d{12}$/,
@@ -87,6 +116,25 @@ const establishmentSchema = z.object({
   }),
   address: z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
+    district: placeRule("El barrio"),
+    address: textRule(validarDireccion),
+    commune: placeRule("La comuna"),
+    locality: placeRule("La localidad"),
+  }),
+  additionalInfo: z.object({
+    approvalResolution: textRule((value) =>
+      validarIdentificacionAdministrativa(value, "La resolución de aprobación"),
+    ),
+    licenseStatus: textRule((value) =>
+      validarIdentificacionAdministrativa(value, "La licencia de funcionamiento"),
+    ),
+    // Fecha de expedición de la licencia: no puede ser posterior a hoy.
+    licenseDate: z
+      .string()
+      .nullish()
+      .refine((value) => isBlank(value) || (value ?? "").slice(0, 10) <= format(new Date(), "yyyy-MM-dd"), {
+        message: "La fecha de la licencia no puede ser posterior a hoy.",
+      }),
   }),
   contact: z.object({
     email: optionalPattern(CORREO, MENSAJES.correo),
@@ -119,9 +167,16 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "basicInfo.nit": "NIT",
   "basicInfo.ownershipType": "Propiedad jurídica",
   "address.municipality": "Municipio",
+  "address.district": "Barrio",
+  "address.address": "Dirección",
+  "address.commune": "Comuna",
+  "address.locality": "Localidad",
   "contact.email": "Correo electrónico",
   "contact.website": "Página web",
   "contact.phone": "Teléfono",
+  "additionalInfo.approvalResolution": "Resolución de aprobación",
+  "additionalInfo.licenseStatus": "Licencia de funcionamiento",
+  "additionalInfo.licenseDate": "Fecha licencia",
 }
 
 const PERSON_LABELS: Record<string, string> = {
@@ -223,9 +278,20 @@ function makePersonSchema(required: boolean) {
     })
 }
 
+export interface EstablishmentFormValidationOptions {
+  /**
+   * `false` cuando el usuario no puede cambiar rector ni secretaria y el panel
+   * está en solo lectura: no se guardan, así que no se validan. Si no, un dato
+   * viejo que no cumple una regla nueva bloquearía el guardado en un campo que
+   * nadie puede tocar.
+   */
+  validarDirectivos?: boolean
+}
+
 export function validateEstablishmentForm(
   values: EstablishmentDetails,
-  files: EstablishmentFormFiles = {}
+  files: EstablishmentFormFiles = {},
+  { validarDirectivos = true }: EstablishmentFormValidationOptions = {}
 ): EstablishmentFormValidationResult {
   const errors: string[] = []
   const fieldErrors: Record<string, string> = {}
@@ -265,10 +331,14 @@ export function validateEstablishmentForm(
     )
   }
 
-  for (const [fieldPrefix, label, required] of [
-    ["principal", "Rector", true],
-    ["secretary", "Secretaria", false],
-  ] as const) {
+  const directivos = validarDirectivos
+    ? ([
+        ["principal", "Rector", true],
+        ["secretary", "Secretaria", false],
+      ] as const)
+    : []
+
+  for (const [fieldPrefix, label, required] of directivos) {
     const person = values[fieldPrefix]
 
     const photo = optionalImageFile.safeParse(files.photos?.[fieldPrefix])

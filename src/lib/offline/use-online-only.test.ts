@@ -40,11 +40,23 @@ describe("isOnlineOnlyPath", async () => {
   const { isOnlineOnlyPath } = await import("@/lib/offline/online-only-paths")
 
   it("marca las vistas solo en línea del plan §8 y deja pasar las offline", () => {
-    expect(isOnlineOnlyPath("/app/cobertura/matricula")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/reserva-de-cupo")).toBe(true)
     expect(isOnlineOnlyPath("/app/registro-de-actividad/sesiones")).toBe(true)
     expect(isOnlineOnlyPath("/app/planeador/actividades")).toBe(false)
     expect(isOnlineOnlyPath("/app/asistencia")).toBe(false)
     expect(isOnlineOnlyPath("/app/coberturas")).toBe(false)
+  })
+
+  it("P6: deja consultar sin red solo la lista de matrícula; el resto de cobertura sigue solo en línea", () => {
+    expect(isOnlineOnlyPath("/app/cobertura/matricula")).toBe(false)
+    expect(isOnlineOnlyPath("/app/cobertura/matricula/")).toBe(false)
+    expect(isOnlineOnlyPath("/app/cobertura/matricula/detalle/5")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/matricula/detalle/5/editar")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/matricula/agregar")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/matricula/configuracion")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/pre-matricula")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/inscritos")).toBe(true)
+    expect(isOnlineOnlyPath("/app/cobertura/reserva-de-cupo")).toBe(true)
   })
 
   it("deja consultar periodos, horario y asignaciones sin red (Fase 4), pero no agregar ni el resto de establecimiento", () => {

@@ -37,9 +37,8 @@ import { useAssignmentTeachersQuery } from "@/features/establishment/academic-pe
 
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
-import { useMetodologiasQuery } from "@/features/establishment/academic-period/api/query/use-metodologias"
+import { useJornadasQuery, useMetodologiasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
 import {
   gradeGroupFormSchema,

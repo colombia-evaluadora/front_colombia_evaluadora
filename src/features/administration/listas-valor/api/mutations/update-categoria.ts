@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { invalidateListaValor } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -42,6 +43,7 @@ export function useUpdateCategoria({
     ...rest,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: listaValorKeys.all })
+      invalidateListaValor(queryClient)
       onSuccess?.(...args)
     },
   })

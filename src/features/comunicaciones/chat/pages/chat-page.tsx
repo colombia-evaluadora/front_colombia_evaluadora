@@ -1,3 +1,4 @@
+import { cerrarFrase } from "@/lib/frase"
 import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -69,6 +70,8 @@ import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import { useResponderInvitacionEnlazada } from "@/features/comunicaciones/chat/hooks/use-responder-invitacion-enlazada"
+import { useSincronizarBot } from "@/features/comunicaciones/chat/api/mutations/use-sincronizar-bot"
+import { useDialogosAtajos } from "@/features/comunicaciones/chat/components/dialogos-atajos"
 
 const CANALES_SIN_COMENTARIOS: CategoriaCanal[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
 
@@ -96,6 +99,8 @@ function ChatContent() {
   const [marca, setMarca] = useState<{ conversacionId: number; noLeidos: number; id?: number | null }>()
 
   const conversacionesQuery = useConversacionesQuery()
+  // Colevabot: su conversación y el resumen de lo pendiente (una vez al abrir el chat).
+  useSincronizarBot(conversacionesQuery.isSuccess)
   const conversaciones = conversacionesQuery.data ?? []
   const queryClient = useQueryClient()
   const { data: borradores = [] } = useBorradoresQuery()
@@ -128,7 +133,9 @@ function ChatContent() {
   const soloLectura =
     !!activa &&
     ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
-      (esEstudiante && activa.categoria === "ANUNCIO"))
+      (esEstudiante && activa.categoria === "ANUNCIO") ||
+      // Colevabot solo publica tarjetas: su DM no tiene compositor (diseño 4428:64360).
+      activa.esBot)
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
   // responde 403 igual si lo intenta).
   const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
@@ -151,6 +158,8 @@ function ChatContent() {
   const escribiendo = useChatTiempoRealCanal(activa?.id, puedeVerEliminados(activa, perfil))
   const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
   const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)
+  // Atajos "/" del compositor (crear actividades y votación rápida).
+  const atajos = useDialogosAtajos({ conversacion: activa, onCreado: (id) => seleccionar(id) })
 
   if (activa && marca?.conversacionId !== activa.id) {
     setMarca({ conversacionId: activa.id, noLeidos: activa.noLeidos })
@@ -175,12 +184,13 @@ function ChatContent() {
   const guardarBorrador = useGuardarBorrador()
   const programarMensaje = useProgramarMensaje()
 
-  const seleccionar = (id: number | undefined) => {
+  // `mensaje`: abrir en ese mensaje (resultado del historial filtrado).
+  const seleccionar = (id: number | undefined, mensaje?: number) => {
     setBusqueda("")
     setDestacado(undefined)
     setBorrador(null)
     setRespondiendo(null)
-    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined, mensaje: undefined }) })
+    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined, mensaje }) })
   }
 
   const abrirVista = (v: VistaChat) => {
@@ -200,13 +210,24 @@ function ChatContent() {
     if (activa?.id && pendientes > 0) leer(activa.id)
   }, [activa?.id, pendientes, leer])
 
-  // Deep link de una notificación: saltar al mensaje cuando el historial cargó.
-  const historialListo = !!mensajesQuery.data
+  // Deep link de una notificación o resultado del historial: saltar al mensaje cuando el
+  // historial cargó. Si es más viejo que lo cargado, se piden páginas anteriores hasta llegar.
+  const historial = mensajesQuery.data
+  const activaId = activa?.id
+  const historialAgotado = activaId != null && agotados.has(activaId)
+  const { mutate: cargarMas, isPending: cargandoMas } = cargarAnteriores
   useEffect(() => {
-    if (!mensajeEnlazado || !historialListo) return
+    if (!mensajeEnlazado || !historial || activaId == null || cargandoMas) return
+    const primero = historial[0]?.id
+    const falta = !historial.some((m) => m.id === mensajeEnlazado) && primero != null && mensajeEnlazado < primero
+    if (falta && !historialAgotado) {
+      const agotar = () => setAgotados((prev) => new Set(prev).add(activaId))
+      cargarMas(activaId, { onSuccess: ({ agotado }) => agotado && agotar(), onError: agotar })
+      return
+    }
     setDestacado((d) => ({ id: mensajeEnlazado, vez: (d?.vez ?? 0) + 1 }))
     navigate({ search: (prev) => ({ ...prev, mensaje: undefined }), replace: true })
-  }, [mensajeEnlazado, historialListo, navigate])
+  }, [mensajeEnlazado, historial, activaId, historialAgotado, cargandoMas, cargarMas, navigate])
 
   const irAMensaje = (id: number) => setDestacado((d) => ({ id, vez: (d?.vez ?? 0) + 1 }))
 
@@ -230,6 +251,7 @@ function ChatContent() {
           vista={vista}
           onVista={abrirVista}
           onSeleccionar={seleccionar}
+          onAbrirMensaje={seleccionar}
           invitacionDestacada={invitacion}
           className={cn("w-full md:w-72 md:shrink-0", panelAbierto && "max-md:hidden")}
         />
@@ -338,7 +360,9 @@ function ChatContent() {
                   ) : (
                     esEleccion && (
                       <>
-                        {eleccion && <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} />}
+                        {eleccion && (
+                          <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} soloTitulo={votaEstudiante} />
+                        )}
                         {votaEstudiante ? (
                           <EleccionEstudiante eleccion={eleccion} isPending={eleccionQuery.isPending} />
                         ) : (
@@ -353,10 +377,16 @@ function ChatContent() {
                   )
                 }
               />
+              {atajos.dialogos}
               <Escribiendo nombres={escribiendo} />
-              {soloLectura ? (
+              {/*
+                Card "Elecciones" (ajuste de Maldonado): la elección sin comentarios no lleva caja de
+                texto ni aviso de reemplazo (Figma 3837:43815, 4189:67308, 7127:76707). Con
+                "Permitir · Comentarios" el composer sí aparece (4195:69012).
+              */}
+              {activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  {esEleccion ? "Los comentarios están deshabilitados en esta elección." : "En este foro no se pueden enviar mensajes."}
+                  En este foro no se pueden enviar mensajes.
                 </p>
               ) : sinEscritura ? (
                 <p role="status" className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
@@ -375,7 +405,7 @@ function ChatContent() {
                           .then((b) => {
                             // El borrador del canal pasó a ser el programado.
                             setBorrador(null)
-                            notify(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}.`)
+                            notify(cerrarFrase(`Mensaje programado para el ${fechaProgramada(b.programadoPara ?? b.fecha)}`))
                           })
                     : undefined
                 }
@@ -391,6 +421,7 @@ function ChatContent() {
                 }
                 onCancelarRespuesta={() => setRespondiendo(null)}
                 onEscribiendo={avisarEscribiendo}
+                onAtajo={atajos.acciones}
                 onEnviar={(texto, archivo) =>
                   enviar
                     .mutateAsync({

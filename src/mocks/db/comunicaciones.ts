@@ -9,6 +9,7 @@ import type {
   TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
 import { ETIQUETAS_VOTACION_RAPIDA } from "@/features/comunicaciones/chat/lib/votacion-rapida"
+import { ultimoMensajeDe } from "@/features/comunicaciones/chat/lib/vista-previa"
 import {
   POLITICA_CHAT_SUGERIDA,
   type PoliticaChat,
@@ -230,12 +231,35 @@ export const mensajes: Mensaje[] = [
     formato: "WORD",
     eliminadoEn: null,
   }),
-  mensaje(
-    1,
-    colevabot,
-    "Hola, soy Colevabot. Puedo ayudarte a encontrar planillas, informes y fechas del calendario académico.",
-    haceDias(0, 6, 45),
-  ),
+  // Colevabot (comms-service BotService): bienvenida y tarjeta de aprobación (diseño 4428:64360).
+  {
+    ...mensaje(1, colevabot, "Hola, soy Colevabot", haceDias(1, 6, 40)),
+    bot: {
+      clave: "bienvenida",
+      encabezado: "👋 BIENVENIDA",
+      titulo: "Hola, soy Colevabot",
+      descripcion:
+        "Aquí te aviso de lo que necesita tu atención en Colombia Evaluadora, como las solicitudes de aprobación pendientes. En el chat escribe «/» para crear encuestas, votaciones rápidas, elecciones o comunicados, adjuntar archivos o programar un mensaje.",
+      campos: [],
+      acciones: [{ etiqueta: "Ver notificaciones", url: "/app/notificaciones" }],
+    },
+  },
+  {
+    ...mensaje(1, colevabot, "Solicitud de aprobación: corrección de resultado", haceDias(0, 6, 45)),
+    bot: {
+      clave: "aprobaciones:1:mock",
+      encabezado: "📣 NUEVA SOLICITUD DE APROBACIÓN",
+      titulo: "Solicitud de aprobación: corrección de resultado",
+      descripcion: null,
+      campos: [
+        { etiqueta: "Docente", valor: "Jesús Torres" },
+        { etiqueta: "Curso", valor: "6° - 601 - Matemáticas" },
+        { etiqueta: "Periodo", valor: "Parcial 2024 (Cerrado)" },
+        { etiqueta: "Motivo", valor: "\"Corrección de errores al registrar notas\"" },
+      ],
+      acciones: [{ etiqueta: "Revisar en el planeador", url: "/app/planeador/actividades?modo=approval" }],
+    },
+  },
   mensaje(
     2,
     marta,
@@ -467,4 +491,17 @@ for (const c of conversaciones) {
   const propios = mensajes.filter((m) => m.conversacionId === c.id && m.esPropio && !m.votacion)
   const ultimo = propios.at(-1)
   c.leidoHasta = ultimo ? ultimo.id - 1 : Math.max(0, ...mensajes.filter((m) => m.conversacionId === c.id).map((m) => m.id))
+}
+
+/**
+ * Conversación con la vista previa del último mensaje visible, como la arma comms-service
+ * (`ChatDtos.UltimoMensaje`): el mock la calcula al leer, a partir de `mensajes`.
+ */
+export function conVistaPrevia<T extends Conversacion>(c: T, usuarioId: number = USUARIO_ACTUAL.id): T {
+  let ultimo: Mensaje | undefined
+  for (const m of mensajes) {
+    if (m.conversacionId !== c.id || m.eliminado) continue
+    if (!ultimo || m.id > ultimo.id) ultimo = m
+  }
+  return { ...c, ultimoMensaje: ultimo ? ultimoMensajeDe(ultimo, usuarioId) : null }
 }
