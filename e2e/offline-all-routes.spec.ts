@@ -19,6 +19,8 @@ const RUTAS_NO_ADMIN = [
   "/app/establecimiento-educativo/general",
   "/app/establecimiento-educativo/sedes",
   "/app/establecimiento-educativo/periodos",
+  // P6: la lista de matrícula es de solo consulta sin red (datos básicos).
+  "/app/cobertura/matricula",
   "/app/comunicaciones/chat",
   "/app/notificaciones",
   "/app/notificaciones/preferencias",
@@ -26,7 +28,8 @@ const RUTAS_NO_ADMIN = [
 ]
 
 const RUTAS_SOLO_EN_LINEA = [
-  "/app/cobertura/matricula",
+  "/app/cobertura/matricula/agregar",
+  "/app/cobertura/reserva-de-cupo",
   "/app/establecimiento-educativo/funcionarios",
   // Registrar o revocar equipos necesita el servidor.
   "/app/mis-dispositivos",

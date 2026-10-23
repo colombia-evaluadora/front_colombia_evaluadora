@@ -29,6 +29,8 @@ const PALABRAS: Record<string, string> = {
   archivo: "Archivo",
   chat: "Chat",
   "matriculas-grupo": "Estudiantes del grupo",
+  matricula: "Matrícula",
+  lista: "lista",
   "docente-grupos": "Mis grupos",
   "sedes-opciones": "Sedes",
   jornadas: "Jornadas",
