@@ -97,13 +97,67 @@ test('crear un foro: el label "Nombre" queda completo sobre el borde', async ({ 
 
   const label = await d.getByText("Nombre", { exact: true }).boundingBox()
   const input = await nombre.boundingBox()
-  const form = await d.locator("form#crear-chat").boundingBox()
-  // Completo dentro del área visible del form (no recortado por su overflow)…
-  expect(label!.y).toBeGreaterThanOrEqual(form!.y)
+  const dialogo = await d.boundingBox()
+  // Completo dentro del área visible del diálogo (el único contenedor con scroll)…
+  expect(label!.y).toBeGreaterThanOrEqual(dialogo!.y)
   // …y montado sobre el borde superior, por encima de la línea del texto del input.
   expect(label!.y).toBeLessThan(input!.y)
   expect(label!.y + label!.height).toBeLessThanOrEqual(input!.y + input!.height / 2)
   await captura(page, "app-crear-foro-label")
+})
+
+// QA testv2: con el input ENFOCADO (autoFocus) el label salía cortado por arriba. El form tenía su
+// propio `overflow-y-auto` y el label quedaba a 2 px de ese borde de recorte: el form no debe
+// scrollear y el label debe verse entero, en ventana normal y baja, para foro y grupo.
+for (const alto of [832, 560]) {
+  test(`crear foro/grupo: "Nombre" entero con el input enfocado (alto ${alto})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: alto })
+    await login(page)
+    for (const abrir of [
+      async () => {
+        await lista(page).getByRole("button", { name: "Agregar foro" }).click()
+        await page.getByRole("menuitem", { name: "Foro" }).click()
+      },
+      () => lista(page).getByRole("button", { name: "Crear grupo" }).click(),
+    ]) {
+      await abrir()
+      const d = page.getByRole("dialog")
+      await expect(d.getByLabel("Nombre")).toBeFocused()
+      const recorte = await page.evaluate(() => {
+        const form = document.getElementById("crear-chat")!
+        const label = document.querySelector('label[for="crear-chat-nombre"]')!.getBoundingClientRect()
+        const scroller = form.closest<HTMLElement>("[role=dialog]")!.getBoundingClientRect()
+        return { formScrollea: getComputedStyle(form).overflowY !== "visible", margen: label.top - scroller.top }
+      })
+      expect(recorte.formScrollea).toBe(false)
+      expect(recorte.margen).toBeGreaterThan(8)
+      await page.keyboard.press("Escape")
+      await expect(d).toBeHidden()
+    }
+  })
+}
+
+// QA 57: los listados de personas del chat muestran solo nombre y rol (nunca correo ni documento).
+test("listados de personas del chat: solo nombre y rol, sin correo", async ({ page }) => {
+  await login(page)
+  // Buscador de la barra lateral (sección Personas).
+  await page.getByRole("searchbox").first().fill("Darlene")
+  const personas = lista(page)
+  await expect(personas.getByText("Darlene Robertson").first()).toBeVisible()
+  await expect(page.getByText(/@iesimonbolivar\.edu\.co/)).toHaveCount(0)
+  await page.getByRole("searchbox").first().fill("")
+  // Selector de personas al crear un foro (paso 2).
+  await lista(page).getByRole("button", { name: "Agregar foro" }).click()
+  await page.getByRole("menuitem", { name: "Foro" }).click()
+  const d = page.getByRole("dialog")
+  await d.getByLabel("Nombre").fill("qa-57-roles")
+  await d.getByRole("button", { name: "Siguiente" }).click()
+  await d.getByRole("combobox", { name: "Buscar personas" }).fill("Pedro")
+  const opcion = page.getByRole("option", { name: /Pedro Castaño Ruiz/ })
+  await expect(opcion).toBeVisible()
+  await expect(opcion).toContainText("Docente")
+  await expect(opcion).not.toContainText("@")
+  await captura(page, "app-qa57-selector-personas")
 })
 
 test("panel de preferencias: silenciar 1 hora y activar una conversación", async ({ page }) => {

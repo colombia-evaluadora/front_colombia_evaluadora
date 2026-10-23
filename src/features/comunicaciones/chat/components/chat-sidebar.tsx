@@ -19,7 +19,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { useArchivarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
-import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { agregarReciente, rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { InvitacionesSeccion } from "@/features/comunicaciones/chat/components/invitaciones-seccion"
 import { chatRoute } from "@/router"
 import { FiltrosChatPopover } from "@/features/comunicaciones/chat/components/filtros-chat-popover"
@@ -378,6 +378,9 @@ export function ChatSidebar({
                     >
                       <UserIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate">{p.nombre}</span>
+                      {rolVisible(p) && (
+                        <span className="shrink-0 text-xs text-muted-foreground">{rolVisible(p)}</span>
+                      )}
                     </button>
                   </li>
                 ))}

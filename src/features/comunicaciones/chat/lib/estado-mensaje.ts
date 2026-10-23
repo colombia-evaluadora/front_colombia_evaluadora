@@ -86,6 +86,15 @@ export const ETIQUETA_PERFIL: Record<PerfilChat, string> = {
   ESTUDIANTE: "Estudiante",
 }
 
+/**
+ * Rol que acompaña al nombre en los listados de personas del chat (QA 57: solo nombre y rol, nunca
+ * correo ni documento). `cargo` lo calcula comms-service desde los roles del SSO (Rector,
+ * Coordinador…); sin él, la etiqueta del perfil de la política.
+ */
+export function rolVisible(p: { cargo?: string; perfil?: PerfilChat }): string {
+  return p.cargo || (p.perfil ? ETIQUETA_PERFIL[p.perfil] : "")
+}
+
 const MAX_RECIENTES = 5
 
 /** Búsquedas recientes del buscador del chat: la última primero, sin repetir, máximo 5. */

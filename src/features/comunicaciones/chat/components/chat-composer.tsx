@@ -64,6 +64,7 @@ import {
   type Mencionable,
   type Sugerencia,
 } from "@/features/comunicaciones/chat/lib/menciones"
+import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
 const MAX_CARACTERES = 4000
 
@@ -81,7 +82,7 @@ interface ChatComposerProps {
   className?: string
   autoFocus?: boolean
   // Autocompletado de menciones: miembros del canal (sin el usuario actual).
-  miembros?: readonly (Mencionable & { rol?: string })[]
+  miembros?: readonly (Mencionable & { cargo?: string; perfil?: PerfilChat })[]
   // `@canal` / `@todos` según la política de la institución.
   permitirMasivas?: boolean
   // Personas ya mencionadas en `textoInicial` (al editar), para volver a codificarlas.

@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { textoConfirmacion, textoYaEnElGrupo } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
@@ -57,7 +58,9 @@ export function ConfirmarAltaDialog({
             {muestra.map((p) => (
               <li key={p.id} className="truncate">
                 {p.nombre}
-                {p.perfil === "ACUDIENTE" && <span className="text-muted-foreground"> · invitación</span>}
+                <span className="text-muted-foreground">
+                  {[rolVisible(p), p.perfil === "ACUDIENTE" && "invitación"].filter(Boolean).map((t) => ` · ${t}`)}
+                </span>
               </li>
             ))}
             {resto > 0 && <li className="text-muted-foreground">y {resto === 1 ? "1 persona más" : `${resto} personas más`}</li>}

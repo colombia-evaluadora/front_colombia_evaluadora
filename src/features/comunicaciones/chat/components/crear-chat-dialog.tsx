@@ -14,6 +14,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import type { Conversacion, Persona } from "@/features/comunicaciones/chat/api/types"
 import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
@@ -141,12 +142,16 @@ export function CrearChatDialog({
               e.preventDefault()
               if (limpio && (!esGrupo || modoValido(opciones.modo, opciones.rolesEscritura))) setPaso(2)
             }}
-            className="max-h-[65dvh] space-y-1.5 overflow-y-auto pt-1"
+            className="space-y-1.5"
           >
-            {/* Label flotante con los componentes estándar (como el login): el `span` absoluto de
-                antes quedaba recortado por el `overflow-y-auto` del form y montado sobre el input.
-                `Field outlined` reserva el margen superior para el label; `bg-popover` lo funde con
-                el fondo del diálogo (en oscuro `background` ≠ `popover`). */}
+            {/* Label flotante con los componentes estándar (como el login). El form NO scrollea: el
+                único scroll es el del `DialogContent` (ya con `max-h` + `overflow-y-auto` y padding).
+                Con un `overflow-y-auto` propio, el label (que sobresale por encima del borde del
+                input) quedaba a 2 px del borde de recorte del form: bastaba que el form tuviera
+                scroll (redondeo de fuentes/zoom, las opciones del grupo en pantallas bajas) y que el
+                foco del `autoFocus` o la rueda lo desplazaran para cortar "Nombre" por arriba (QA
+                testv2, input enfocado). `bg-popover` funde el label con el fondo del diálogo (en
+                oscuro `background` ≠ `popover`). */}
             <Field variant="outlined">
               <FieldLabel htmlFor="crear-chat-nombre" className="bg-popover">
                 Nombre
@@ -295,7 +300,7 @@ export function SelectorPersonas({
           </Avatar>
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{p.nombre}</span>
-            <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>
+            <span className="block truncate text-xs text-muted-foreground">{rolVisible(p)}</span>
           </span>
           {paraGrupo && <EtiquetaInvitacion perfil={p.perfil} />}
         </span>
