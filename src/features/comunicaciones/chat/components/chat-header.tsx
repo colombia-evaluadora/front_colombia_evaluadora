@@ -1,6 +1,9 @@
 import { useState } from "react"
 
-import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarGroup } from "@/components/ui/avatar"
+import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
+import { useEstadoPersona } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import { ETIQUETA_DISPONIBILIDAD, conPunto } from "@/features/comunicaciones/chat/lib/disponibilidad"
 import { ArrowLeftIcon } from "@/components/ui/icons"
 import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
@@ -136,16 +139,17 @@ function EncabezadoGrupo({ conversacion: c }: { conversacion: Conversacion }) {
 function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) {
   // En un DM comms-service devuelve solo a la otra persona.
   const otro = useMiembrosQuery(c.esBot ? undefined : c.id).data?.[0]
-  const subtitulo = c.esBot ? "Asistente virtual" : otro?.perfil ? ETIQUETA_PERFIL[otro.perfil] : null
+  const estado = useEstadoPersona(otro?.id, otro)
+  const perfil = c.esBot ? "Asistente virtual" : otro?.perfil ? ETIQUETA_PERFIL[otro.perfil] : null
+  // "Docente · Ausente": el estado solo si se ve (desconectado no se anuncia, como antes).
+  const subtitulo = [perfil, !c.esBot && conPunto(estado) ? ETIQUETA_DISPONIBILIDAD[estado] : null]
+    .filter(Boolean)
+    .join(" · ") || null
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <Avatar size="lg">
         <AvatarFallback className="bg-navy-22 text-xs font-semibold text-navy">{iniciales(c.nombre)}</AvatarFallback>
-        {otro?.enLinea && (
-          <AvatarBadge className="bg-green">
-            <span className="sr-only">En línea</span>
-          </AvatarBadge>
-        )}
+        <PuntoDisponibilidad estado={estado} />
       </Avatar>
       <div className="min-w-0 leading-tight">
         <h2 className="flex items-center gap-2 text-lg leading-tight font-semibold">

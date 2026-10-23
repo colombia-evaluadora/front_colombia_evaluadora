@@ -93,6 +93,39 @@ export interface AutorMensaje {
   id: number
   nombre: string
   enLinea: boolean
+  // Estado tal como lo ve quien lee (comms-service con V560); null en la forma que difunde el socket.
+  disponibilidad?: EstadoDisponibilidad | null
+}
+
+/** Disponibilidad del chat. DESCONECTADO no se elige: es no tener sesión abierta (o no poder verla). */
+export type EstadoDisponibilidad = "EN_LINEA" | "AUSENTE" | "OCUPADO" | "INVISIBLE" | "DESCONECTADO"
+
+/** `GET/PATCH /comunicaciones/disponibilidad`: el estado propio y sus preferencias. */
+export interface MiDisponibilidad {
+  estado: Exclude<EstadoDisponibilidad, "DESCONECTADO">
+  // MANUAL: lo eligió el usuario; AUTO: Ausente por inactividad.
+  origen: "MANUAL" | "AUTO"
+  cambiadoEn: string | null
+  respuestaAutomatica: string | null
+  // Perfiles que ven el estado; el resto lo ve desconectado.
+  visiblePara: PerfilChat[]
+  inactividadMinutos: number
+}
+
+/** `GET /comunicaciones/disponibilidad/directos`: la otra persona de cada directo. */
+export interface DisponibilidadDirecto {
+  conversacionId: number
+  usuarioId: number
+  estado: EstadoDisponibilidad
+}
+
+/** Evento `respuesta.automatica` (tópico personal): la otra persona del directo está Ausente. */
+export interface RespuestaAutomatica {
+  conversacionId: number
+  usuarioId: number
+  nombre: string
+  texto: string
+  fecha: string
 }
 
 export interface AdjuntoMensaje {
@@ -388,6 +421,8 @@ export interface Miembro {
   esAdmin?: boolean
   // INVITADO / RECHAZADO: invitaciones que solo ve quien gestiona el grupo (no son miembros).
   estado?: EstadoMiembro
+  // Disponibilidad tal como la ve quien pide la lista (comms-service con V560).
+  disponibilidad?: EstadoDisponibilidad
 }
 
 // Votación rápida: una pregunta de dos opciones que se cierra sola al vencer el tiempo.
