@@ -137,6 +137,7 @@ export function vistaMensaje(m: Mensaje, ver: boolean): Mensaje {
 }
 
 function hastaSilencio(duracion: SilencioDuracion) {
+  if (duracion === "NINGUNA") return null
   if (duracion === "SIEMPRE") return "9999-12-31T00:00:00.000Z"
   const d = new Date()
   if (duracion === "8H") d.setHours(d.getHours() + 8)

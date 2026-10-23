@@ -9,7 +9,8 @@ export type TipoConversacion = "CANAL" | "DIRECTO" | "GRUPO"
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"
 
-export type SilencioDuracion = "8H" | "1S" | "SIEMPRE"
+// NINGUNA quita el silencio ("Activar notificaciones"): comms-service deja silenciado_hasta en NULL.
+export type SilencioDuracion = "8H" | "1S" | "SIEMPRE" | "NINGUNA"
 
 export interface Conversacion {
   id: number
