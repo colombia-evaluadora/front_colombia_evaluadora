@@ -145,9 +145,8 @@ export function PermissionsDialog({
   onSave,
   isSaving,
 }: PermissionsDialogProps) {
-  // El permiso que da el cargo de rector o secretaria solo lo quitan el
-  // Superadministrador y el nivel territorial, los mismos que cambian a los
-  // directivos en el establecimiento (V598/V599).
+  // El permiso que da el cargo de rector o secretaria solo lo quita quien tiene
+  // Eliminar en ESTABLECIMIENTO, el mismo que cambia a los directivos.
   const { data: puedeGestionarDirectivos } = usePuedeGestionarDirectivosQuery()
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
@@ -440,7 +439,7 @@ export function PermissionsDialog({
                             render={
                               <span
                                 className="inline-flex size-8 items-center justify-center text-muted-foreground"
-                                aria-label={`Permiso principal de ${permission.principalDe === "RECTOR" ? "rector" : "secretaria"}: solo lo quita el nivel territorial`}
+                                aria-label={`Permiso principal de ${permission.principalDe === "RECTOR" ? "rector" : "secretaria"}: solo lo quita quien gestiona los directivos del establecimiento`}
                               />
                             }
                           >
@@ -448,8 +447,8 @@ export function PermissionsDialog({
                           </TooltipTrigger>
                           <TooltipContent>
                             {permission.principalDe === "RECTOR"
-                              ? "Es el permiso de rector del establecimiento: solo lo quita el Superadministrador o un usuario de nivel territorial."
-                              : "Es el permiso de la secretaria del establecimiento: solo lo quita el Superadministrador o un usuario de nivel territorial."}
+                              ? "Es el permiso de rector del establecimiento: solo lo quita quien gestiona los directivos del establecimiento."
+                              : "Es el permiso de la secretaria del establecimiento: solo lo quita quien gestiona los directivos del establecimiento."}
                           </TooltipContent>
                         </Tooltip>
                       ) : permission.role.code === DIRECTOR_GRUPO_ROLE_CODE ? (
