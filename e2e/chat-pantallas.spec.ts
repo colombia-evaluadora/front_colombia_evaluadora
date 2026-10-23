@@ -78,8 +78,17 @@ test("chat: composer, adjuntar, crear foro con bienvenida, menús, archivos, doc
   await captura(page, "app-3726-34058-inicio")
 
   await abrir(page, "02-docentes-general")
-  await page.getByRole("button", { name: "Mostrar formato de texto" }).click()
+  // Aa abre y cierra la barra de formato.
+  const formato = page.getByRole("button", { name: "Formato", exact: true })
+  await expect(page.getByRole("toolbar", { name: "Formato de texto" })).toHaveCount(0)
+  await formato.click()
+  await expect(formato).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("toolbar", { name: "Formato de texto" })).toBeVisible()
   await captura(page, "app-3729-38181-composer-formato")
+  await formato.click()
+  await expect(page.getByRole("toolbar", { name: "Formato de texto" })).toHaveCount(0)
+  // Llamadas, video y grabación quedaron fuera del alcance: nada de cámara ni micrófono.
+  await expect(page.getByRole("button", { name: /video|llamada|audio|micr[oó]fono|grabar/i })).toHaveCount(0)
   await page.getByRole("button", { name: "Adjuntar archivo" }).click()
   await captura(page, "app-4503-66530-menu-adjuntar")
   await page.keyboard.press("Escape")
@@ -93,7 +102,13 @@ test("chat: composer, adjuntar, crear foro con bienvenida, menús, archivos, doc
   await captura(page, "app-4481-66183-hover-ajeno")
   await propio.hover()
   await propio.getByRole("button", { name: "Editar mensaje" }).click()
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "Edita el mensaje" })).toBeVisible()
+  const editar = page.getByRole("dialog")
+  await expect(editar.getByRole("heading", { name: "Edita el mensaje" })).toBeVisible()
+  // Sin burbuja de vista previa vacía: el texto va en el editor y, sin adjuntos, no hay sección.
+  await expect(editar.getByRole("combobox", { name: "Editar mensaje" })).toHaveValue(/En Word está perfecto/)
+  await expect(editar.getByRole("heading", { name: "Adjuntos" })).toHaveCount(0)
+  await editar.getByRole("button", { name: "Formato", exact: true }).click()
+  await expect(editar.getByRole("toolbar", { name: "Formato de texto" })).toBeVisible()
   await captura(page, "app-4485-66928-modal-editar")
   await page.keyboard.press("Escape")
 

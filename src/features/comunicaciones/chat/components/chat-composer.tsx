@@ -152,8 +152,8 @@ export function ChatComposer({
   const docRef = useRef<HTMLInputElement>(null)
   const mediaRef = useRef<HTMLInputElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
-  // La barra de formato se ve mientras el editor (o la propia barra) tiene el foco.
-  const [enfocado, setEnfocado] = useState(false)
+  // Aa abre/cierra la barra de formato (antes salía sola con el foco y Aa no hacía nada visible).
+  const [formatoAbierto, setFormatoAbierto] = useState(false)
   const listo = (texto.trim().length > 0 || hayArchivos) && !enviando
   // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
   const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
@@ -385,14 +385,11 @@ export function ChatComposer({
         </div>
       )}
       <div
-        onFocus={() => setEnfocado(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) setEnfocado(false)
-        }}
         className="rounded-xl border bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"
       >
-        {enfocado && (
+        {formatoAbierto && (
           <div
+            id={`${id}-formato`}
             role="toolbar"
             aria-label="Formato de texto"
             className="flex flex-wrap items-center gap-0.5 rounded-t-xl border-b bg-chat-panel px-2 py-1"
@@ -489,11 +486,9 @@ export function ChatComposer({
           className="field-sizing-content max-h-40 min-h-11 w-full resize-none bg-transparent px-3 pt-3 pb-1 text-sm outline-none placeholder:text-muted-foreground"
         />
         <div className="flex items-center gap-0.5 px-2 pb-2">
-          {edicion ? (
-            <Herramienta etiqueta="Adjuntar archivo" pendiente circular>
-              <PlusIcon className="size-4" />
-            </Herramienta>
-          ) : (
+          {/* En "Edita el mensaje" no se adjunta (era un + deshabilitado sin función): los adjuntos
+              del mensaje se listan y quitan en la sección "Adjuntos" del diálogo. */}
+          {!edicion && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="Adjuntar archivos"
@@ -517,10 +512,21 @@ export function ChatComposer({
           )}
           <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivos={elegirArchivos} />
           <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivos={elegirArchivos} />
-          {/* Aa muestra la barra de formato (diseño 3729:38181): sale con el foco en el editor. */}
-          <Herramienta etiqueta="Mostrar formato de texto" onClick={() => areaRef.current?.focus()}>
+          {/* Aa abre/cierra la barra de formato (diseño 3729:38181), en el compositor y en "Edita el mensaje". */}
+          <button
+            type="button"
+            aria-label="Formato"
+            title="Formato"
+            aria-pressed={formatoAbierto}
+            aria-controls={formatoAbierto ? `${id}-formato` : undefined}
+            onClick={() => {
+              setFormatoAbierto((v) => !v)
+              areaRef.current?.focus()
+            }}
+            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none aria-pressed:bg-muted/50 aria-pressed:text-primary"
+          >
             <TextAaIcon className="size-5" />
-          </Herramienta>
+          </button>
           <SelectorEmoji
             etiqueta="Insertar emoji"
             onElegir={insertar}
