@@ -39,10 +39,10 @@ test("borrador: se guarda al salir, se retoma, se envía y aparece en Enviados",
 
   await page.getByRole("button", { name: /Borradores y enviados/ }).click()
   await page.getByRole("tab", { name: /Enviados/ }).click()
-  await page.getByRole("group", { name: "Filtrar enviados por tipo" }).getByRole("button", { name: "Canales", exact: true }).click()
-  await expect(page.getByText("Recordatorio de la reunión del viernes")).toBeVisible()
+  await page.getByRole("group", { name: "Filtrar enviados por tipo" }).getByRole("button", { name: "Foros y grupos", exact: true }).click()
+  await expect(page.getByRole("tabpanel", { name: "Enviados" }).getByText("Recordatorio de la reunión del viernes")).toBeVisible()
   await page.getByRole("group", { name: "Filtrar enviados por tipo" }).getByRole("button", { name: "Directos", exact: true }).click()
-  await expect(page.getByText("Recordatorio de la reunión del viernes")).toHaveCount(0)
+  await expect(page.getByRole("tabpanel", { name: "Enviados" }).getByText("Recordatorio de la reunión del viernes")).toHaveCount(0)
 })
 
 test("encuesta: quien fue asignado la responde una vez", async ({ page }) => {

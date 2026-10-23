@@ -1,3 +1,4 @@
+import { cerrarFrase } from "@/lib/frase"
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -44,7 +45,7 @@ export function EleccionEstudiante({
   if (e.fechaInicio && estadoEleccion(e) === "PROGRAMADA") {
     return (
       <p className="mb-4 rounded-xl border px-4 py-6 text-center text-sm text-muted-foreground">
-        La votación abre el {format(new Date(e.fechaInicio), "d 'de' MMMM 'a las' h:mm a", { locale: es })}.
+        {cerrarFrase(`La votación abre el ${format(new Date(e.fechaInicio), "d 'de' MMMM 'a las' h:mm a", { locale: es })}`)}
       </p>
     )
   }

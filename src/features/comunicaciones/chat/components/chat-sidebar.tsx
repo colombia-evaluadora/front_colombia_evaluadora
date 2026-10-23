@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
+import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -518,7 +519,8 @@ function ItemConversacion({
         onClick={onClick}
         aria-current={activa ? "page" : undefined}
         className={cn(
-          "flex h-9 min-w-0 flex-1 items-center gap-3 rounded-lg px-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
+          "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
+          c.ultimoMensaje ? "min-h-12 py-1.5" : "h-9",
           conPendientes && "font-semibold",
         )}
       >
@@ -543,7 +545,34 @@ function ItemConversacion({
             className={cn("size-5 shrink-0", activa ? "opacity-100" : "text-muted-foreground")}
           />
         )}
-        <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        {c.ultimoMensaje ? (
+          // Vista previa del último mensaje y su hora (diseño 4516:68095).
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 items-baseline gap-2">
+              <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+              <time
+                dateTime={c.ultimoMensaje.enviadoEn}
+                className={cn(
+                  "shrink-0 text-[11px] font-normal",
+                  activa ? "text-primary-foreground/80" : "text-muted-foreground",
+                )}
+              >
+                {horaVistaPrevia(c.ultimoMensaje.enviadoEn)}
+              </time>
+            </span>
+            <span
+              className={cn(
+                "truncate text-xs",
+                activa ? "text-primary-foreground/80" : conPendientes ? "text-foreground" : "text-muted-foreground",
+                !conPendientes && "font-normal",
+              )}
+            >
+              {lineaVistaPrevia(c)}
+            </span>
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        )}
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />
         )}

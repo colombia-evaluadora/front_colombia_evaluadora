@@ -53,6 +53,10 @@ export type EstadoAutoguardado = "inactivo" | "pendiente" | "guardando" | "guard
  * `datos` (si hay contenido y cambió desde el último guardado). El primer guardado crea el
  * borrador; los siguientes lo reemplazan. Un fallo no interrumpe al usuario: queda "error" y se
  * reintenta con el próximo cambio.
+ *
+ * Con `conversacionId` (editar una actividad ya publicada, comms-service V594 `fk_tcanal`) los
+ * valores iniciales son los publicados (o los de un borrador retomado): solo se guarda si cambian,
+ * y el borrador queda atado a esa actividad (uno por actividad y persona).
  */
 export function useAutoguardadoActividad({
   tipo,
@@ -61,6 +65,7 @@ export function useAutoguardadoActividad({
   datos,
   conContenido,
   borradorInicial = null,
+  conversacionId = null,
 }: {
   tipo: TipoBorradorActividad
   habilitado: boolean
@@ -68,6 +73,7 @@ export function useAutoguardadoActividad({
   datos: Record<string, unknown>
   conContenido: boolean
   borradorInicial?: number | null
+  conversacionId?: number | null
 }) {
   const queryClient = useQueryClient()
   const [borradorId, setBorradorId] = useState<number | null>(borradorInicial)
@@ -76,7 +82,7 @@ export function useAutoguardadoActividad({
   )
   const serializado = JSON.stringify(datos)
   // Último contenido guardado (o el retomado, que ya está guardado) y el guardado en curso.
-  const ultimo = useRef<string | null>(borradorInicial ? serializado : null)
+  const ultimo = useRef<string | null>(borradorInicial || conversacionId ? serializado : null)
   const enCurso = useRef<Promise<void> | null>(null)
   const idRef = useRef<number | null>(borradorInicial)
   const pendiente = useRef<{
@@ -97,6 +103,7 @@ export function useAutoguardadoActividad({
       tipo,
       titulo: p.titulo,
       datos: p.datos,
+      conversacionId,
     })
       .then((b) => {
         idRef.current = b.id

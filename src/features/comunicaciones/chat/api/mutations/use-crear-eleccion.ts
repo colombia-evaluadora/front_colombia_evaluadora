@@ -68,10 +68,18 @@ export function useEditarEleccion(conversacionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (v: Omit<CrearEleccionInput, "votantes">) =>
-      evalCol.patchRow<Eleccion>(`/comunicaciones/conversaciones/${conversacionId}/eleccion`, await cuerpoEleccion(v)),
+      evalCol.patchRow<Eleccion>(
+        `/comunicaciones/conversaciones/${conversacionId}/eleccion`,
+        await cuerpoEleccion(v),
+        conBorrador(v.borradorId),
+      ),
     onSuccess: (eleccion) => {
       queryClient.setQueryData(chatKeys.eleccion(conversacionId), eleccion)
-      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ])
     },
   })
 }

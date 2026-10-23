@@ -37,7 +37,7 @@ export function EstadoAutoguardado({
 }
 
 /**
- * Pie del diálogo de una actividad nueva: estado del autoguardado y, si ya hay borrador,
+ * Pie del diálogo de una actividad (nueva o en edición): estado del autoguardado y, si ya hay borrador,
  * "Descartar borrador" (lo elimina de "Borradores y enviados").
  */
 export function BarraBorrador({
@@ -45,11 +45,14 @@ export function BarraBorrador({
   hayBorrador,
   onDescartar,
   deshabilitado,
+  edicion = false,
 }: {
   estado: EstadoAutoguardado
   hayBorrador: boolean
   onDescartar: () => void
   deshabilitado?: boolean
+  // Editando una actividad publicada: el borrador son "cambios sin guardar".
+  edicion?: boolean
 }) {
   return (
     <div className="flex min-h-7 items-center justify-between gap-2">
@@ -63,7 +66,7 @@ export function BarraBorrador({
           onClick={onDescartar}
           disabled={deshabilitado}
         >
-          Descartar borrador
+          {edicion ? "Descartar cambios" : "Descartar borrador"}
         </Button>
       )}
     </div>

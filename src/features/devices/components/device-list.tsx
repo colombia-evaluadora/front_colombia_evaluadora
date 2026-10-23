@@ -1,3 +1,4 @@
+import { cerrarFrase } from "@/lib/frase"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -70,7 +71,7 @@ export function DeviceList({
                   Revocado el {fecha(device.revokedAt)}
                   {device.revokeReason ? ` ${REVOKE_REASON_LABEL[device.revokeReason]}` : ""}
                   {state === "borrado-pendiente" && ". Borrará sus datos cuando se conecte."}
-                  {state === "borrado" && `. Datos borrados el ${fecha(device.wipedAt)}.`}
+                  {state === "borrado" && `. ${cerrarFrase(`Datos borrados el ${fecha(device.wipedAt)}`)}`}
                 </p>
               )}
             </div>

@@ -87,6 +87,8 @@ export const comunicacionesEvaluacionesHandlers = [
     })
     const conv = conversaciones.find((c) => c.id === e.conversacionId)
     if (conv) conv.nombre = nombre
+    // Guardar la edición desde su borrador (?borrador) lo elimina, como comms-service.
+    consumirBorradorActividad(request)
     return HttpResponse.json({ rows: [e] })
   }),
 
