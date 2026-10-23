@@ -131,6 +131,17 @@ export const comunicacionesEleccionesHandlers = [
     return HttpResponse.json({ rows: [{ ...e, yaVoto: false }] })
   }),
 
+  // Jornadas de las sedes del establecimiento (comms-service: periodos académicos activos).
+  http.get(URL("elecciones/jornadas"), async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [
+        { id: 1, nombre: "Mañana" },
+        { id: 2, nombre: "Tarde" },
+      ],
+    })
+  }),
+
   http.get(URL("votantes/opciones"), async () => {
     await delay(150)
     return HttpResponse.json({ rows: [{ grados: GRADOS, funcionarios: FUNCIONARIOS }] })

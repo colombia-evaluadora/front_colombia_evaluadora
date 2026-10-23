@@ -23,7 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { useJornadasEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-jornadas-eleccion-query"
 import {
   useCrearEleccion,
   useEditarEleccion,
@@ -127,7 +127,13 @@ export function CrearEleccionDialog({
   const crearNueva = useCrearEleccion()
   const editarEleccion = useEditarEleccion(editar?.conversacionId ?? 0)
   const crear = editar ? editarEleccion : crearNueva
-  const { data: jornadas = [] } = useJornadasQuery()
+  const { data: jornadasEstablecimiento = [] } = useJornadasEleccionQuery()
+  // Al editar, la jornada guardada se conserva aunque ya no esté en un periodo activo (el backend
+  // la acepta si no cambia); así el select no queda en blanco.
+  const jornadas =
+    editar?.jornadaId && !jornadasEstablecimiento.some((j) => j.id === editar.jornadaId)
+      ? [...jornadasEstablecimiento, { id: editar.jornadaId, nombre: "Jornada actual" }]
+      : jornadasEstablecimiento
 
   const datos = useAppForm({
     defaultValues: datosDe(
@@ -289,7 +295,7 @@ export function CrearEleccionDialog({
                     required
                     emptyValue={0}
                     placeholder="Seleccionar"
-                    options={jornadas.map((j) => ({ value: j.id, label: j.name }))}
+                    options={jornadas.map((j) => ({ value: j.id, label: j.nombre }))}
                   />
                 )}
               </datos.AppField>
