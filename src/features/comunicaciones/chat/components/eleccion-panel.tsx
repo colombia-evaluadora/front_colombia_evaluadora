@@ -147,7 +147,7 @@ export function EleccionResultados({
             <ArrowCounterClockwiseIcon aria-hidden className="size-3.5" />
             Actualizado hace {segundos} {segundos === 1 ? "segundo" : "segundos"}
           </p>
-          {finalizada && e.esCreador && <BotonInforme conversacionId={e.conversacionId} />}
+          {finalizada && (e.gestiona ?? e.esCreador) && <BotonInforme conversacionId={e.conversacionId} />}
         </div>
       )}
       <dl className="mb-3 space-y-1 text-sm">
@@ -159,8 +159,8 @@ export function EleccionResultados({
             {porcentaje(pendientes, e.totalHabilitados)}%)
           </dd>
         </div>
-        {/* Solo el creador recibe cuántos abrieron el canal; a los votantes les llega 0. */}
-        {e.esCreador && (
+        {/* Solo quien gestiona recibe cuántos abrieron el canal; a los demás les llega 0. */}
+        {(e.gestiona ?? e.esCreador) && (
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium">Visibilidad del canal:</dt>
           <dd className="text-muted-foreground">

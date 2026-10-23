@@ -51,8 +51,8 @@ export function ComunicadoPanel({
   }
 
   const programado = new Date(c.publicarEn) > new Date()
-  // Los programados solo los ve quien los creó hasta la fecha de publicación.
-  if (programado && !c.esCreador) {
+  // Los programados solo los ve quien los gestiona hasta la fecha de publicación.
+  if (programado && !(c.gestiona ?? c.esCreador)) {
     return (
       <p className="grid flex-1 place-items-center p-6 text-sm text-muted-foreground">
         Este comunicado aún no se ha publicado.

@@ -93,7 +93,7 @@ export function EvaluacionEntregas({
 
   if (isPending || entregas.isPending) return <Skeleton className="mb-4 h-64 w-full" />
   if (!e) return null
-  if (!e.esCreador) return null
+  if (!(e.gestiona ?? e.esCreador)) return null
 
   if (entregas.isError) {
     return (

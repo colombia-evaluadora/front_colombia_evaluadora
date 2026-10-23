@@ -230,7 +230,9 @@ export function CrearEleccionDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        {/* Título, pie y (en candidatos) "Agregar candidato" quedan fijos; solo scrollea el contenido
+            largo de cada paso (Natalia: antes scrolleaba todo el modal). */}
+        <DialogContent className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
           </DialogHeader>
@@ -243,7 +245,7 @@ export function CrearEleccionDialog({
                 e.preventDefault()
                 void datos.handleSubmit()
               }}
-              className="space-y-4"
+              className="-mx-1 min-h-0 space-y-4 overflow-y-auto px-1 pb-1"
             >
               <datos.AppField name="nombre">
                 {(f) => (
@@ -307,11 +309,13 @@ export function CrearEleccionDialog({
               </fieldset>
             </form>
           ) : paso === 2 ? (
-            <SelectorVotantes
-              seleccion={votantes}
-              onCambio={setVotantes}
-              invalido={votantesIntentado && votantes.size === 0}
-            />
+            <div className="-mx-1 min-h-0 overflow-y-auto px-1 pb-1">
+              <SelectorVotantes
+                seleccion={votantes}
+                onCambio={setVotantes}
+                invalido={votantesIntentado && votantes.size === 0}
+              />
+            </div>
           ) : (
             <PasoCandidatos
               candidatos={candidatos}
@@ -464,14 +468,14 @@ function PasoCandidatos({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-col gap-4">
       <form
         noValidate
         onSubmit={(e) => {
           e.preventDefault()
           void form.handleSubmit()
         }}
-        className="space-y-3 border-b pb-4"
+        className="shrink-0 space-y-3 border-b pb-4"
       >
         <h3 className="text-sm font-semibold">Agregar candidato</h3>
         <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
@@ -510,7 +514,8 @@ function PasoCandidatos({
         </div>
       </form>
 
-      <ul className="space-y-2" aria-label="Candidatos agregados">
+      {/* Solo la lista (con "Voto en blanco") scrollea; el formulario de arriba queda fijo. */}
+      <ul className="-mx-1 min-h-0 space-y-2 overflow-y-auto px-1 pb-1" aria-label="Candidatos agregados">
         {candidatos.map((c) => (
           <li key={c.clave}>
             <TarjetaCandidato
