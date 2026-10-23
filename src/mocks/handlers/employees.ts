@@ -8,6 +8,7 @@ import {
   upsertEmployeeDetails,
 } from "@/mocks/db/employees"
 import { upsertPerson } from "@/mocks/db/persons"
+import { registrarArchivoMaterial } from "@/mocks/db/planeador"
 
 import type {
   Employee,
@@ -270,6 +271,25 @@ export const employeeHandlers = [
       message: "Funcionario creado.",
       employee: savedEmployee,
     })
+  }),
+
+  // Foto de perfil al editar (ver `update.ts` en modo mock). Se guarda el
+  // binario en el registro de archivos del mock —el mismo que sirve
+  // `/files/view-token/:id`— y su id queda como `photoArchivoId`, así al
+  // reabrir el funcionario la foto aparece como ya guardada.
+  http.patch("*/api/files/establishments/employees/:id/foto", async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const existing = employeesDb.find((item) => item.id === id)
+    const foto = (await request.formData()).get("fkTarchivoFoto")
+    if (!existing || !(foto instanceof File)) {
+      return HttpResponse.json({ status: "error", message: "Foto inválida." }, { status: 400 })
+    }
+    const employee = upsertEmployeeDetails({
+      ...existing,
+      person: { ...existing.person, photoArchivoId: registrarArchivoMaterial(foto) },
+    })
+    return HttpResponse.json({ status: "ok", message: "Funcionario actualizado.", employee })
   }),
 
   http.put("*/api/establishments/employees/:id", async ({ params, request }) => {
