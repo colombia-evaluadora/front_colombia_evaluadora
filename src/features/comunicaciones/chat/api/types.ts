@@ -10,7 +10,8 @@ export type TipoConversacion = "CANAL" | "DIRECTO" | "GRUPO"
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"
 
 // NINGUNA quita el silencio ("Activar notificaciones"): comms-service deja silenciado_hasta en NULL.
-export type SilencioDuracion = "8H" | "1S" | "SIEMPRE" | "NINGUNA"
+// 1H y FIN_DIA (medianoche hora Colombia) desde la tarjeta 7; 8H/1S se conservan por compatibilidad.
+export type SilencioDuracion = "1H" | "8H" | "FIN_DIA" | "1S" | "SIEMPRE" | "NINGUNA"
 
 export interface Conversacion {
   id: number

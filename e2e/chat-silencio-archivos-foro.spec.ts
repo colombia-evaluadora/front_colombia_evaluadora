@@ -44,8 +44,8 @@ test("silenciar: el menú refleja el estado y ofrece Activar notificaciones", as
   await opciones.click()
   await expect(page.getByRole("menuitem", { name: /Activar notificaciones/ })).toHaveCount(0)
   await page.getByRole("menuitem", { name: "Silenciar notificaciones" }).click()
-  await page.getByRole("menuitem", { name: "8 horas" }).click()
-  await expect(page.getByText("Notificaciones silenciadas por 8 horas.")).toBeVisible()
+  await page.getByRole("menuitem", { name: "Hasta el final del día" }).click()
+  await expect(page.getByText("Notificaciones silenciadas hasta el final del día.")).toBeVisible()
 
   await opciones.click()
   const activar = page.getByRole("menuitem", { name: /Activar notificaciones/ })
@@ -104,4 +104,22 @@ test('crear un foro: el label "Nombre" queda completo sobre el borde', async ({ 
   expect(label!.y).toBeLessThan(input!.y)
   expect(label!.y + label!.height).toBeLessThanOrEqual(input!.y + input!.height / 2)
   await captura(page, "app-crear-foro-label")
+})
+
+test("panel de preferencias: silenciar 1 hora y activar una conversación", async ({ page }) => {
+  await login(page)
+  await page.goto("/app/notificaciones/preferencias")
+  const panel = page.getByRole("region", { name: "Conversaciones del chat" })
+  await expect(panel).toBeVisible({ timeout: 30_000 })
+  const fila = panel.getByRole("listitem").filter({ hasText: "Notificaciones activas" }).first()
+  const nombre = (await fila.locator("p.font-medium").textContent())?.trim() ?? ""
+  await fila.getByRole("button", { name: `Silenciar ${nombre}` }).click()
+  await page.getByRole("menuitem", { name: "1 hora" }).click()
+  await expect(page.getByText(`Notificaciones silenciadas por 1 hora en ${nombre}.`)).toBeVisible()
+  const silenciada = panel.getByRole("listitem").filter({ hasText: nombre }).first()
+  await expect(silenciada.getByText(/^Silenciada hasta/)).toBeVisible()
+  await captura(page, "panel-silencio")
+  await silenciada.getByRole("button", { name: "Activar" }).click()
+  await expect(page.getByText(`Notificaciones activadas en ${nombre}.`)).toBeVisible()
+  await expect(silenciada.getByText("Notificaciones activas")).toBeVisible()
 })
