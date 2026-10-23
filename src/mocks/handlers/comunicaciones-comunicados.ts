@@ -80,7 +80,7 @@ function buscarComunicado(id: string | readonly string[] | undefined) {
   return comunicados.find((x) => x.conversacionId === Number(id))
 }
 
-const sinComunicado = () => HttpResponse.json({ message: "Este canal no tiene un comunicado." }, { status: 404 })
+const sinComunicado = () => HttpResponse.json({ message: "Esta conversación no tiene un comunicado." }, { status: 404 })
 
 export const comunicacionesComunicadosHandlers = [
   // "Editar Comunicado": texto, importante y respuestas siempre; destinatarios y fecha mientras siga programado.
@@ -180,7 +180,7 @@ export const comunicacionesComunicadosHandlers = [
     if (incompleto(body)) return HttpResponse.json(INCOMPLETO, { status: 400 })
     const titulo = (body.TITULO as string).trim()
     if (conversaciones.some((c) => c.nombre.toLowerCase() === titulo.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${titulo}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe una conversación llamada ${titulo}.` }, { status: 409 })
     }
     const importante = body.IMPORTANTE === "S"
     const canal: Conversacion = {
