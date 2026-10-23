@@ -59,9 +59,13 @@ El sistema SHALL persistir `["navigation","menu"]` y los permisos por pantalla c
 ### Requirement: Vistas solo en línea
 Las vistas y acciones fuera del alcance offline SHALL deshabilitarse sin red con el tooltip "Necesitas conexión para esta acción." y, sin datos en cache, MUST mostrar el título "Esta sección necesita conexión", el texto "Vuelve a intentarlo cuando tengas internet. Mientras tanto puedes usar Planeador, Planilla y Asistencia." y el botón "Reintentar".
 
-#### Scenario: Matrícula sin red
-- **WHEN** el usuario abre la lista de matrícula sin red
+#### Scenario: Detalle de matrícula sin red
+- **WHEN** el usuario abre sin red el detalle, la edición, agregar o la configuración de matrícula, o reserva de cupo, pre-matrícula o inscritos
 - **THEN** ve el empty state de sección solo en línea
+
+#### Scenario: Lista de matrícula sin red (P6)
+- **WHEN** el usuario abre sin red la lista de matrícula ya preparada
+- **THEN** la ve en solo consulta con datos básicos; agregar, configuración, exportar, mover, documentos, editar, retirar, reingresar y eliminar quedan deshabilitados con "Necesitas conexión para esta acción."
 
 #### Scenario: Escrituras de las vistas legibles offline
 - **WHEN** no hay red en Referentes curriculares, Planeador, Planilla o Asistencia
