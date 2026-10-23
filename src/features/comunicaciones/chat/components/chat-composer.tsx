@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { SelectorEmoji } from "@/features/comunicaciones/chat/components/selector-emoji"
 import {
   ACEPTA_DOCUMENTOS,
@@ -546,7 +546,7 @@ function SelectorArchivo({
 }
 
 function ArchivoPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
-  const { Icono, color } = ICONO_ARCHIVO[formatoDeArchivo(archivo)]
+  const { Icono, color } = iconoArchivo(formatoDeArchivo(archivo), archivo.name)
   return (
     <div className="mx-3 mt-3 flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
       <Icono aria-hidden className={cn("size-6 shrink-0", color)} />

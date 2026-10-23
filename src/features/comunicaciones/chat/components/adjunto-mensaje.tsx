@@ -6,7 +6,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { VistaBinario } from "@/features/comunicaciones/chat/components/archivo-acciones"
 import { descargarAdjunto, pesoLegible } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
@@ -51,7 +51,7 @@ export function AdjuntoMensaje({
     )
   }
 
-  const { Icono, color, tipo } = ICONO_ARCHIVO[adjunto.formato]
+  const { Icono, color, tipo } = iconoArchivo(adjunto.formato, adjunto.nombre)
   const conVista =
     adjunto.archivoId != null &&
     (adjunto.formato === "IMAGEN" || adjunto.formato === "PDF" || adjunto.formato === "VIDEO")

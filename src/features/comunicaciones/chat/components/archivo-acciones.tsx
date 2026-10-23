@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { ArchivoCompartido } from "@/features/comunicaciones/chat/api/types"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { fetchDocumento, useDocumentoQuery } from "@/features/comunicaciones/chat/api/query/use-documento-query"
 import { useEliminarArchivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-archivo"
 import { descargarDocumento } from "@/features/comunicaciones/chat/lib/documento"
@@ -133,7 +133,7 @@ function Accion({
 
 function VistaPrevia({ archivo: a, onClose }: { archivo: ArchivoCompartido; onClose: () => void }) {
   const documento = useDocumentoQuery(a.editable ? a.id : undefined)
-  const { Icono, color, tipo } = ICONO_ARCHIVO[a.formato]
+  const { Icono, color, tipo } = iconoArchivo(a.formato, a.nombre)
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

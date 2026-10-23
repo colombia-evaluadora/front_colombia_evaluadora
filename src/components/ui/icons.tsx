@@ -64,6 +64,7 @@ import {
   MdErrorOutline,
   MdOutlineFilterList,
   MdFolderOpen,
+  MdOutlineFolderZip,
   MdOutlinePermMedia,
   MdFormatBold,
   MdFormatItalic,
@@ -284,6 +285,7 @@ export const EyeSlashIcon = makeIcon(MdVisibilityOff)
 export const FileDownloadOutlinedIcon = makeIcon(MdOutlineFileDownload)
 export const FileUploadOutlinedIcon = makeIcon(MdOutlineFileUpload)
 export const FilePdfIcon = makeIcon(MdPictureAsPdf)
+export const FileZipIcon = makeIcon(MdOutlineFolderZip)
 export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
 export const FolderOpenIcon = makeIcon(MdFolderOpen)

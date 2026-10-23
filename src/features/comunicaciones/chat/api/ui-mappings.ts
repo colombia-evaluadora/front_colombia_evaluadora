@@ -1,5 +1,6 @@
 
-import { FilePdfIcon, FileTextIcon, type Icon, ImageIcon, VideoCameraIcon } from "@/components/ui/icons"
+import { FilePdfIcon, FileTextIcon, FileZipIcon, type Icon, ImageIcon, VideoCameraIcon } from "@/components/ui/icons"
+import { esComprimido } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import type { Audiencia, CategoriaCanal, FormatoArchivo } from "@/features/comunicaciones/chat/api/types"
 import {
   MegaphoneIcon,
@@ -23,6 +24,16 @@ export const ICONO_ARCHIVO: Record<FormatoArchivo, { Icono: Icon; color: string;
   IMAGEN: { Icono: ImageIcon, color: "text-purple", tipo: "Imagen" },
   VIDEO: { Icono: VideoCameraIcon, color: "text-purple", tipo: "Video" },
   OTRO: { Icono: FileTextIcon, color: "text-muted-foreground", tipo: "Otro" },
+}
+
+const ICONO_COMPRIMIDO = { Icono: FileZipIcon, color: "text-orange", tipo: "Archivo comprimido" }
+
+/**
+ * Ícono de un adjunto. Los .zip/.rar llegan con formato OTRO (el CHECK de
+ * `adjunto_formato` no tiene un valor propio), así que se distinguen por nombre.
+ */
+export function iconoArchivo(formato: FormatoArchivo, nombre: string | null | undefined) {
+  return formato === "OTRO" && esComprimido(nombre) ? ICONO_COMPRIMIDO : ICONO_ARCHIVO[formato]
 }
 
 // Orden y nombres del menú "Agregar canales".
