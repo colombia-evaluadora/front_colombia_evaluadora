@@ -22,6 +22,7 @@ import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensa
 import { InvitacionesSeccion } from "@/features/comunicaciones/chat/components/invitaciones-seccion"
 import { chatRoute } from "@/router"
 import { FiltrosChatPopover } from "@/features/comunicaciones/chat/components/filtros-chat-popover"
+import { FavoritosFiltrosPopover } from "@/features/comunicaciones/chat/components/favoritos-filtros-popover"
 import { ResultadosBusqueda } from "@/features/comunicaciones/chat/components/resultados-busqueda"
 import {
   useBusquedaChatQuery,
@@ -212,6 +213,7 @@ export function ChatSidebar({
           )}
         </label>
         <FiltrosChatPopover filtros={filtros} onFiltros={aplicarFiltros} />
+        <FavoritosFiltrosPopover filtros={filtros} onFiltros={aplicarFiltros} />
         {verRecientes && (
           <div className="absolute inset-x-3 top-full z-30 -mt-2 overflow-hidden rounded-lg border bg-popover py-2 text-popover-foreground shadow-md">
             <p className="px-4 pb-1 text-xs text-muted-foreground">Búsquedas recientes</p>

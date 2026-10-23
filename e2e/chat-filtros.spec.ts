@@ -69,3 +69,52 @@ test("buscar en el historial, filtrar y abrir el resultado", async ({ page }) =>
   await page.getByRole("button", { name: "Quitar filtros" }).click()
   await expect(page).not.toHaveURL(/tipos=/)
 })
+
+test("guardar, aplicar, renombrar y eliminar filtros favoritos", async ({ page }) => {
+  await login(page)
+  const lista = page.getByRole("navigation", { name: "Conversaciones" })
+  const favoritos = () => page.getByRole("dialog", { name: "Filtros favoritos" })
+
+  // Sin filtros no se puede guardar.
+  await page.getByRole("button", { name: "Filtros favoritos" }).click()
+  await expect(favoritos().getByText("Aún no tienes favoritos.", { exact: false })).toBeVisible()
+  await expect(favoritos().getByText("Escribe una búsqueda o elige filtros para guardarlos.")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  // Palabras + tipo Institucional, y se guardan con nombre.
+  await page.getByPlaceholder("Buscar conversaciones, personas y mensajes").fill("fracciones")
+  await page.getByRole("button", { name: "Filtros", exact: true }).click()
+  await page.getByRole("checkbox", { name: "Institucional" }).click()
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Filtros favoritos" }).click()
+  await favoritos().getByPlaceholder("Ej.: No leídos de 601").fill("Fracciones en foros")
+  await favoritos().getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByText("Se guardó el filtro favorito «Fracciones en foros».")).toBeVisible()
+  await expect(favoritos().getByRole("button", { name: /^Fracciones en foros/ })).toHaveAttribute("aria-current", "true")
+
+  // Mismo nombre: aviso legible del 409.
+  await favoritos().getByPlaceholder("Ej.: No leídos de 601").fill("fracciones EN foros")
+  await favoritos().getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByText("Ya tienes un filtro favorito llamado «fracciones EN foros».")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  // Limpiar y aplicar el favorito de un clic.
+  await page.getByRole("button", { name: "Quitar filtros" }).click()
+  await page.getByRole("button", { name: "Limpiar búsqueda" }).click()
+  await page.getByRole("button", { name: "Filtros favoritos" }).click()
+  await favoritos().getByRole("button", { name: /^Fracciones en foros/ }).click()
+  await expect(page.getByPlaceholder("Buscar conversaciones, personas y mensajes")).toHaveValue("fracciones")
+  await expect(page.getByRole("status").filter({ hasText: "Filtrando: Institucional" })).toBeVisible()
+  await expect(lista.getByRole("button", { name: /planeación de fracciones/ })).toBeVisible()
+
+  // Renombrar y eliminar.
+  await page.getByRole("button", { name: "Filtros favoritos" }).click()
+  await favoritos().getByRole("button", { name: "Renombrar Fracciones en foros" }).click()
+  await favoritos().getByRole("textbox", { name: "Nuevo nombre de Fracciones en foros" }).fill("Foros: fracciones")
+  await favoritos().getByRole("button", { name: "Guardar nombre" }).click()
+  await expect(page.getByText("Se renombró el filtro favorito a «Foros: fracciones».")).toBeVisible()
+  await favoritos().getByRole("button", { name: "Eliminar Foros: fracciones" }).click()
+  await favoritos().getByRole("button", { name: "Eliminar", exact: true }).click()
+  await expect(page.getByText("Se eliminó el filtro favorito «Foros: fracciones».")).toBeVisible()
+  await expect(favoritos().getByText("Aún no tienes favoritos.", { exact: false })).toBeVisible()
+})
