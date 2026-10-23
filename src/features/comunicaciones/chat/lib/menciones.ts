@@ -8,6 +8,8 @@
  * en `Mensaje.menciones`; solo esas se resaltan.
  */
 import type { Mencion, TipoMencion } from "@/features/comunicaciones/chat/api/types"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
 export const MENCIONES_MASIVAS: { tipo: Exclude<TipoMencion, "USUARIO">; nombre: string; ayuda: string }[] = [
   { tipo: "CANAL", nombre: "canal", ayuda: "Notifica a los miembros conectados" },
@@ -44,7 +46,7 @@ export type Sugerencia =
 /** Coincide con el inicio de cualquier palabra del nombre, sin tildes. */
 export function sugerenciasMencion(
   consulta: string,
-  miembros: readonly (Mencionable & { rol?: string })[],
+  miembros: readonly (Mencionable & { cargo?: string; perfil?: PerfilChat })[],
   permitirMasivas: boolean,
   max = 8,
 ): Sugerencia[] {
@@ -60,7 +62,8 @@ export function sugerenciasMencion(
   const personas: Sugerencia[] = miembros
     .filter((m) => coincide(m.nombre))
     .slice(0, max)
-    .map((m) => ({ tipo: "USUARIO", id: m.id, nombre: m.nombre, detalle: m.rol }))
+    // Junto al nombre, solo el rol del usuario (QA 57), no su rol en el canal.
+    .map((m) => ({ tipo: "USUARIO", id: m.id, nombre: m.nombre, detalle: rolVisible(m) || undefined }))
   return [...personas, ...masivas].slice(0, max)
 }
 

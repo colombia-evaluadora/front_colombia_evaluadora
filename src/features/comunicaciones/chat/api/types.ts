@@ -342,9 +342,13 @@ export interface Encuesta {
 export interface Persona {
   id: number
   nombre: string
+  // Solo para el filtro local del buscador: los listados del chat NO lo muestran (QA 57).
   correo: string
   // Perfil para la política de mensajes directos (`lib/politica-chat.ts`).
   perfil?: PerfilChat
+  // Rol legible (Rector, Coordinador, Docente, Acudiente…) que calcula comms-service
+  // (`PoliticaChat.cargo`); se muestra con `rolVisible`.
+  cargo?: string
 }
 
 // Evaluación en línea. SI_NO se muestra como Verdadero / Falso.
@@ -471,8 +475,11 @@ export interface RecepcionComunicado {
 export interface Miembro {
   id: number
   nombre: string
+  // Rol en el canal ("Administrador" / "Miembro" o el estado de la invitación).
   rol: string
   perfil?: PerfilChat
+  // Rol legible del usuario (como `Persona.cargo`).
+  cargo?: string
   enLinea: boolean
   bloqueado: boolean
   esAdmin?: boolean
