@@ -66,11 +66,13 @@ function TarjetaCandidatos({ eleccion: e }: { eleccion: Eleccion }) {
   return (
     <section aria-labelledby="tarjeta-candidatos" className="mb-4 rounded-xl border bg-card p-4">
       <h3 id="tarjeta-candidatos" className="text-[15px] leading-snug font-semibold">
-        Tarjeta electoral
+        Tarjeta Candidato
       </h3>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Selecciona el candidato por el que deseas votar y confirma tu elección. Recuerda que tu voto
-        es único y definitivo.
+      {/* Dos líneas como en Figma 4189:67308. */}
+      <p className="mb-4 text-[13px] text-muted-foreground">
+        Selecciona el candidato por el que deseas votar y confirma tu elección.
+        <br />
+        Recuerda que tu voto es único y definitivo.
       </p>
 
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3">
@@ -158,8 +160,8 @@ function VotoRegistrado({ eleccion: e }: { eleccion: Eleccion }) {
             ¡Tu voto ha sido registrado con éxito!
           </h3>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            Gracias por participar en {e.nombre}. Tu opinión cuenta y contribuye a una mejor
-            institución.
+            Gracias por participar en {participacionEn(e.nombre)}. Tu opinión cuenta y contribuye a
+            una mejor institución.
           </p>
         </section>
         {e.fechaCierre && <TiempoRestante cierre={e.fechaCierre} />}
@@ -188,7 +190,8 @@ function VotoRegistrado({ eleccion: e }: { eleccion: Eleccion }) {
             Resultados
           </h4>
           <p className="mb-3 text-sm text-muted-foreground">
-            Los resultados se mostrarán aquí automáticamente cuando cierre la elección.
+            Los resultados de la elección se mostrarán automáticamente después del cierre de la
+            elección.
           </p>
           <p className="rounded-lg bg-green-22 px-4 py-3 text-center text-sm font-medium text-green">
             <ChartBarIcon aria-hidden className="mx-auto mb-1 size-5" />
@@ -198,6 +201,12 @@ function VotoRegistrado({ eleccion: e }: { eleccion: Eleccion }) {
       </div>
     </div>
   )
+}
+
+// "Elección Personero 2026" → "la elección de Personero 2026" (texto de Figma 7127:76707).
+function participacionEn(nombre: string) {
+  const resto = nombre.replace(/^elecci[oó]n\s+(de\s+)?/i, "")
+  return resto === nombre ? `la elección ${nombre}` : `la elección de ${resto}`
 }
 
 function TiempoRestante({ cierre }: { cierre: string }) {
@@ -218,17 +227,19 @@ function TiempoRestante({ cierre }: { cierre: string }) {
         <ClockIcon aria-hidden className="size-8" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="mb-1 text-sm text-muted-foreground">Tiempo restante para el cierre</p>
+        <p className="mb-1 text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+          Tiempo restante para el cierre de la elección
+        </p>
         <div role="timer" className="flex items-start gap-3 tabular-nums">
           {partes.map(([etiqueta, valor], i) => (
             <div key={etiqueta} className="flex items-start gap-3">
               {i > 0 && (
-                <span aria-hidden className="text-3xl font-bold">
+                <span aria-hidden className="text-4xl font-bold">
                   :
                 </span>
               )}
               <span className="text-center">
-                <span className="block text-3xl font-bold">{String(valor).padStart(2, "0")}</span>
+                <span className="block text-4xl font-bold">{String(valor).padStart(2, "0")}</span>
                 <span className="block text-xs text-muted-foreground">{etiqueta}</span>
               </span>
             </div>

@@ -122,6 +122,8 @@ export function CrearEleccionDialog({
     })),
   )
   const [descartar, setDescartar] = useState(false)
+  // Figma 7162:78097: "Crear" está habilitado aunque falten candidatos; el aviso sale al intentarlo.
+  const [faltanCandidatos, setFaltanCandidatos] = useState(false)
   const crearNueva = useCrearEleccion()
   const editarEleccion = useEditarEleccion(editar?.conversacionId ?? 0)
   const crear = editar ? editarEleccion : crearNueva
@@ -165,6 +167,7 @@ export function CrearEleccionDialog({
     setCandidatos([])
     setVotantes(new Set())
     setVotantesIntentado(false)
+    setFaltanCandidatos(false)
     setPaso(1)
     crear.reset()
     onClose()
@@ -185,6 +188,10 @@ export function CrearEleccionDialog({
   }
 
   const crearEleccion = async () => {
+    if (candidatos.length < MIN_CANDIDATOS) {
+      setFaltanCandidatos(true)
+      return
+    }
     const v = datos.state.values
     const cuerpo = {
       nombre: v.nombre.trim(),
@@ -259,9 +266,8 @@ export function CrearEleccionDialog({
                       const mensaje = typeof error === "string" ? error : error?.message
                       return (
                         <Field variant="outlined" data-invalid={!!mensaje || undefined}>
-                          <FieldLabel>
-                            Fecha<span aria-hidden className="text-red">*</span>
-                          </FieldLabel>
+                          {/* Figma 3846:71356: "Fecha" sin asterisco (igual es obligatoria). */}
+                          <FieldLabel>Fecha</FieldLabel>
                           <DateRangeField
                             value={{ startDate: inicio?.slice(0, 10) ?? "", endDate: cierre?.slice(0, 10) ?? "" }}
                             onChange={({ startDate, endDate }) => {
@@ -269,11 +275,7 @@ export function CrearEleccionDialog({
                               datos.setFieldValue("fechaCierre", aCierre(endDate))
                             }}
                           />
-                          {mensaje ? (
-                            <FieldError>{mensaje}</FieldError>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">La votación cierra al terminar el último día.</p>
-                          )}
+                          {mensaje && <FieldError>{mensaje}</FieldError>}
                         </Field>
                       )
                     }}
@@ -293,12 +295,13 @@ export function CrearEleccionDialog({
               </datos.AppField>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Permitir</legend>
+                {/* En una fila, como en Figma 3846:71356. */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   <datos.AppField name="verResultadosEnVivo">
-                    {(f) => <f.CheckboxField label="Ver resultados en tiempo real" />}
+                    {(f) => <f.CheckboxField label="Ver resultados en tiempo real" className="w-auto" />}
                   </datos.AppField>
                   <datos.AppField name="permiteComentarios">
-                    {(f) => <f.CheckboxField label="Comentarios" />}
+                    {(f) => <f.CheckboxField label="Comentarios" className="w-auto" />}
                   </datos.AppField>
                 </div>
               </fieldset>
@@ -310,7 +313,14 @@ export function CrearEleccionDialog({
               invalido={votantesIntentado && votantes.size === 0}
             />
           ) : (
-            <PasoCandidatos candidatos={candidatos} onCambio={setCandidatos} />
+            <PasoCandidatos
+              candidatos={candidatos}
+              onCambio={(c) => {
+                setCandidatos(c)
+                if (c.length >= MIN_CANDIDATOS) setFaltanCandidatos(false)
+              }}
+              faltanCandidatos={faltanCandidatos}
+            />
           )}
 
           {crear.isError && (
@@ -319,13 +329,16 @@ export function CrearEleccionDialog({
             </p>
           )}
 
-          <BarraBorrador
-            estado={autoguardado.estado}
-            hayBorrador={!!autoguardado.borradorId}
-            onDescartar={() => setDescartar(true)}
-            deshabilitado={crear.isPending}
-            edicion={!!editar}
-          />
+          {/* Sin nada guardado aún no ocupa espacio: el pie queda como en Figma 3846:71356. */}
+          {(autoguardado.estado !== "inactivo" || !!autoguardado.borradorId) && (
+            <BarraBorrador
+              estado={autoguardado.estado}
+              hayBorrador={!!autoguardado.borradorId}
+              onDescartar={() => setDescartar(true)}
+              deshabilitado={crear.isPending}
+              edicion={!!editar}
+            />
+          )}
 
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
@@ -366,13 +379,8 @@ export function CrearEleccionDialog({
                   <Button
                     type="button"
                     onClick={() => void crearEleccion()}
-                    disabled={candidatos.length < MIN_CANDIDATOS || crear.isPending}
+                    disabled={crear.isPending}
                     aria-busy={crear.isPending}
-                    title={
-                      candidatos.length < MIN_CANDIDATOS
-                        ? `Agrega al menos ${MIN_CANDIDATOS} candidatos`
-                        : undefined
-                    }
                   >
                     {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
@@ -424,9 +432,11 @@ let siguienteClave = 1
 function PasoCandidatos({
   candidatos,
   onCambio,
+  faltanCandidatos,
 }: {
   candidatos: CandidatoLocal[]
   onCambio: (c: CandidatoLocal[]) => void
+  faltanCandidatos: boolean
 }) {
   const [foto, setFoto] = useState<File | null>(null)
 
@@ -474,7 +484,7 @@ function PasoCandidatos({
           />
           <div className="space-y-3">
             <form.AppField name="nombre">
-              {(f) => <f.TextField label="Nombre" required maxLength={80} />}
+              {(f) => <f.TextField label="Nombre" maxLength={80} />}
             </form.AppField>
             <form.AppField
               name="numero"
@@ -485,7 +495,7 @@ function PasoCandidatos({
                     : undefined,
               }}
             >
-              {(f) => <f.NumberField label="Número" required maxDigits={3} />}
+              {(f) => <f.NumberField label="Número" maxDigits={3} />}
             </form.AppField>
             <form.AppField name="lema">
               {(f) => <f.TextField label="Lema" maxLength={80} />}
@@ -511,8 +521,8 @@ function PasoCandidatos({
         ))}
         <li className="rounded-lg border px-4 py-3 text-sm font-semibold">Voto en blanco</li>
       </ul>
-      {candidatos.length < MIN_CANDIDATOS && (
-        <p className="text-sm text-muted-foreground">
+      {faltanCandidatos && candidatos.length < MIN_CANDIDATOS && (
+        <p role="alert" className="text-sm text-red">
           Agrega al menos {MIN_CANDIDATOS} candidatos para crear la elección.
         </p>
       )}

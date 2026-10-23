@@ -2,12 +2,15 @@ import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { useQueryClient } from "@tanstack/react-query"
 
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   ArrowCounterClockwiseIcon,
   BallotIcon,
   CalendarBlankIcon,
   CheckCircleFillIcon,
+  FilePdfIcon,
   MedalIcon,
   WarningIcon,
   XIcon,
@@ -15,6 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import { useDescargarInformeEleccion } from "@/features/comunicaciones/chat/api/mutations/use-informe-eleccion"
 import {
   cuentaRegresiva,
   estadoEleccion,
@@ -33,7 +37,16 @@ const COLORES = ["bg-orange", "bg-blue", "bg-green", "bg-purple", "bg-red", "bg-
 const ETIQUETA_ESTADO: Record<EstadoEleccion, string> = {
   PROGRAMADA: "Programada",
   ACTIVA: "Activa",
-  FINALIZADA: "Finalizada",
+  // Figma 4195:69012 / 4770:82399: "Estado: Finalizado".
+  FINALIZADA: "Finalizado",
+}
+
+// "Cierra en" cambia de color al acercarse el cierre (Figma 3837:43815 → 4168:67108 → 4193:68365):
+// verde con más de una hora, naranja con menos y rojo en los últimos diez minutos.
+function tonoCuenta(ms: number) {
+  if (ms > 60 * 60_000) return "bg-green-22 text-green"
+  if (ms > 10 * 60_000) return "bg-orange-22 text-orange"
+  return "bg-red-22 text-red"
 }
 
 // Reloj de un segundo para la cuenta regresiva y el "hace N segundos".
@@ -59,6 +72,9 @@ export function EleccionEstado({ eleccion: e }: { eleccion: Eleccion }) {
   }, [estado, e.conversacionId, queryClient])
 
   const objetivo = estado === "PROGRAMADA" ? e.fechaInicio : e.fechaCierre
+  const restante = objetivo ? Date.parse(objetivo) - ahora : 0
+  // Quien ya votó ve la cuenta regresiva grande en el cuerpo (Figma 7127:76707), no el chip.
+  const sinChip = estado === "ACTIVA" && !e.esCreador && e.yaVoto
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b px-3 py-2 text-xs text-muted-foreground md:px-5">
@@ -69,21 +85,19 @@ export function EleccionEstado({ eleccion: e }: { eleccion: Eleccion }) {
       {e.fechaCierre && (
         <span className="flex items-center gap-1">
           <CalendarBlankIcon aria-hidden className="size-4" />
-          Fecha cierre: {format(new Date(e.fechaCierre), "dd/MM/yyyy h:mm a")}
+          Fecha cierre: {format(new Date(e.fechaCierre), "dd/MM/yyyy")}
         </span>
       )}
-      {/* "Permitir comentarios" (paso 1): los participantes escriben en el canal. */}
-      <span>{e.permiteComentarios ? "Comentarios habilitados" : "Sin comentarios"}</span>
       <span className="ml-auto">
         {estado === "FINALIZADA" ? (
-          <span className="rounded-full bg-muted/50 px-3 py-1">
+          <span className="rounded-full bg-muted px-3 py-1">
             {e.cerradaManualmente ? "Votación cerrada por el administrador." : "Votación cerrada"}
           </span>
-        ) : objetivo ? (
-          <span className="rounded-full bg-orange-22 px-3 py-1 text-foreground">
+        ) : sinChip ? null : objetivo ? (
+          <span className={cn("rounded-full px-3 py-1", tonoCuenta(restante))}>
             {estado === "PROGRAMADA" ? "Abre en: " : "Cierra en: "}
-            <strong className="font-semibold text-orange tabular-nums" aria-live="off">
-              {cuentaRegresiva(Date.parse(objetivo) - ahora)}
+            <strong className="font-semibold tabular-nums" aria-live="off">
+              {cuentaRegresiva(restante)}
             </strong>
           </span>
         ) : (
@@ -126,10 +140,16 @@ export function EleccionResultados({
           Resultados finales{e.yaVoto ? " · Tu voto quedó registrado (es secreto)" : ""}
         </h3>
       )}
-      <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-        <ArrowCounterClockwiseIcon aria-hidden className="size-3.5" />
-        Actualizado hace {segundos} {segundos === 1 ? "segundo" : "segundos"}
-      </p>
+      {/* Figma 3837:43815 (sin votos) no lo muestra; 4168:67108 y 4195:69012 sí. */}
+      {(votaron > 0 || finalizada) && (
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <ArrowCounterClockwiseIcon aria-hidden className="size-3.5" />
+            Actualizado hace {segundos} {segundos === 1 ? "segundo" : "segundos"}
+          </p>
+          {finalizada && e.esCreador && <BotonInforme conversacionId={e.conversacionId} />}
+        </div>
+      )}
       <dl className="mb-3 space-y-1 text-sm">
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium">Participación:</dt>
@@ -160,7 +180,7 @@ export function EleccionResultados({
                 color={
                   fila.candidato
                     ? COLORES[(indice.get(fila.candidato.id) ?? 0) % COLORES.length]
-                    : "bg-muted-foreground/60"
+                    : "bg-muted-foreground"
                 }
               />
             </li>
@@ -181,6 +201,30 @@ export function EleccionResultados({
         </p>
       )}
     </section>
+  )
+}
+
+// Informe final del proceso electoral (PDF): solo quien gestiona la elección, ya cerrada.
+function BotonInforme({ conversacionId }: { conversacionId: number }) {
+  const { notify } = useNotify()
+  const descargar = useDescargarInformeEleccion()
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={descargar.isPending}
+      aria-busy={descargar.isPending}
+      onClick={() =>
+        descargar.mutate(conversacionId, {
+          onSuccess: () => notify("Se descargó el informe final del proceso electoral."),
+          onError: (error) => notify(error.message, { variant: "error" }),
+        })
+      }
+    >
+      <FilePdfIcon data-icon="inline-start" />
+      {descargar.isPending ? "Generando informe…" : "Descargar informe"}
+    </Button>
   )
 }
 
@@ -268,10 +312,13 @@ function leerCerrada(id: number) {
 export function CanalBienvenida({
   canal: e,
   tipo = "canal",
+  soloTitulo = false,
 }: {
   canal: Pick<Eleccion, "conversacionId" | "nombre" | "creadoPor" | "esCreador">
   // "foro" en los foros generales y "grupo" en los grupos (card: Canales → Foros).
   tipo?: "canal" | "foro" | "grupo"
+  // El votante de una elección ve solo el saludo, sin "X creó este canal" (Figma 4189:67308).
+  soloTitulo?: boolean
 }) {
   const [cerrada, setCerrada] = useState(() => leerCerrada(e.conversacionId))
   if (cerrada) return null
@@ -295,10 +342,12 @@ export function CanalBienvenida({
         <span aria-hidden>👋 </span>Te damos la bienvenida a {tipo === "foro" ? "#" : ""}
         {e.nombre}
       </h3>
-      <p className="text-[13px] text-muted-foreground">
-        {e.esCreador ? `Creaste este ${tipo}.` : `${e.creadoPor} creó este ${tipo}.`} Este es el
-        principio del {tipo} {e.nombre}.
-      </p>
+      {!soloTitulo && (
+        <p className="text-[13px] text-muted-foreground">
+          {e.esCreador ? `Creaste este ${tipo}.` : `${e.creadoPor} creó este ${tipo}.`} Este es el
+          principio del {tipo} {e.nombre}.
+        </p>
+      )}
       <button
         type="button"
         aria-label="Cerrar bienvenida"

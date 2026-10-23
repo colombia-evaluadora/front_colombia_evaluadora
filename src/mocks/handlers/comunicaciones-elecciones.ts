@@ -35,7 +35,61 @@ interface CrearEleccionBody {
   CANDIDATOS?: Array<{ NOMBRE: string; NUMERO: string; LEMA: string; FOTO_URL: string | null }>
 }
 
+// PDF mínimo válido de una página para el informe final en modo mock (el real lo arma comms-service).
+function pdfMinimo(lineas: string[]) {
+  const texto = lineas
+    .map((l, i) => `BT /F1 ${i === 0 ? 16 : 11} Tf 56 ${740 - i * 22} Td (${l.replace(/[()\\]/g, "")}) Tj ET`)
+    .join("\n")
+  const objetos = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${texto.length} >>\nstream\n${texto}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+  ]
+  let pdf = "%PDF-1.4\n"
+  const offsets: number[] = []
+  objetos.forEach((o, i) => {
+    offsets.push(pdf.length)
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`
+  })
+  const xref = pdf.length
+  pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n`
+  pdf += offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")
+  pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`
+  // Latin-1 para que las tildes salgan con WinAnsiEncoding.
+  return Uint8Array.from(pdf, (c) => c.charCodeAt(0) & 0xff)
+}
+
 export const comunicacionesEleccionesHandlers = [
+  // Informe final del proceso electoral: como comms-service, solo quien la creó y ya cerrada.
+  http.get(URL("conversaciones/:id/eleccion/informe"), async ({ params, request }) => {
+    await delay(400)
+    const e = elecciones.find((x) => x.conversacionId === Number(params.id))
+    if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
+      return HttpResponse.json({ message: "Solo quien gestiona la elección puede generar el informe." }, { status: 403 })
+    }
+    if (!eleccionCerrada(e)) {
+      return HttpResponse.json({ message: "El informe se genera cuando la votación cierra." }, { status: 409 })
+    }
+    const total = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
+    const lineas = [
+      "Informe final del proceso electoral",
+      e.nombre,
+      `Cierre: ${e.cerradaManualmente ? "manual" : "automático"}`,
+      `Votantes habilitados: ${e.totalHabilitados} | Votaron: ${total}`,
+      ...e.candidatos.map((c) => `${c.numero} ${c.nombre}: ${c.votos} votos`),
+      `Voto en blanco: ${e.votosEnBlanco}`,
+    ]
+    return new HttpResponse(pdfMinimo(lineas), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="informe-eleccion-${e.conversacionId}.pdf"`,
+      },
+    })
+  }),
+
   // "Editar Elección": como comms-service, solo antes del primer voto. El censo no cambia.
   http.patch(URL("conversaciones/:id/eleccion"), async ({ params, request }) => {
     await delay(250)
