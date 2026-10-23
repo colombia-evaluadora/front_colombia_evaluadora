@@ -72,10 +72,11 @@ export function mensajesFijados(mensajes: Mensaje[]): Mensaje[] {
 /**
  * Quien vota ve el aviso "La votación fue modificada y se reiniciaron los votos" mientras siga
  * abierta y no haya vuelto a votar. Editar la votación marca el mensaje como editado (comms-service
- * `reemplazarVotacion`) y borra los votos.
+ * `reemplazarVotacion`) y borra los votos de TODOS, incluido el del creador: por eso el Figma
+ * (4123:67058) muestra el aviso también en la tarjeta propia, junto a editar/eliminar.
  */
 export function votacionModificada(m: Mensaje, v: VotacionRapida, abierta: boolean) {
-  return abierta && m.editado && !m.esPropio && v.miVoto == null
+  return abierta && m.editado && v.miVoto == null
 }
 
 export const ETIQUETA_PERFIL: Record<PerfilChat, string> = {

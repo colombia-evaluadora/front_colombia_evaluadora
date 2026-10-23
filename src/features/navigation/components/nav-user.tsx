@@ -124,7 +124,7 @@ export function NavUser() {
             Mis dispositivos
           </DropdownMenuItem>
           {personal && (
-            <DropdownMenuItem variant="destructive" onClick={() => setWipeOpen(true)}>
+            <DropdownMenuItem onClick={() => setWipeOpen(true)}>
               <TrashIcon data-icon="inline-start" />
               Borrar los datos de este equipo…
             </DropdownMenuItem>
