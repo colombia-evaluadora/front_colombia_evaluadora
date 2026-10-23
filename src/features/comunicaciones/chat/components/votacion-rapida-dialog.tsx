@@ -24,7 +24,7 @@ const schema = z.object({
 
 const TIPOS: [TipoVotacionRapida, string][] = [
   ["VERDADERO_FALSO", "Verdadero / Falso"],
-  ["SI_NO", "Sí / No"],
+  ["SI_NO", "SI/NO"],
 ]
 
 const OPCIONES_MINUTOS = MINUTOS_VOTACION_RAPIDA.map((m) => ({
@@ -116,7 +116,6 @@ export function VotacionRapidaDialog({
               <f.SelectField
                 label="Tiempo límite"
                 options={OPCIONES_MINUTOS}
-                description="Al terminar el tiempo se cierra sola y se muestran los resultados."
               />
             )}
           </form.AppField>
