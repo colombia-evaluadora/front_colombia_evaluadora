@@ -76,6 +76,7 @@ function CeldaPonderacion({
   // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
   const [valor, setValor] = useState(String(actividad.ponderacion))
+  const [intentado, setIntentado] = useState(false)
   const { notify } = useNotify()
   const mutation = useUpdatePonderacionActividadUnidad({
     mutationConfig: {
@@ -100,6 +101,7 @@ function CeldaPonderacion({
         className="hover:bg-muted-22 -mx-2 rounded px-2 py-1 text-left"
         onClick={() => {
           setValor(String(actividad.ponderacion))
+          setIntentado(false)
           setEditando(true)
         }}
       >
@@ -108,13 +110,23 @@ function CeldaPonderacion({
     )
   }
 
+  // Antes un valor vacío se ignoraba en silencio al guardar: ahora se marca en rojo con su motivo.
+  const error =
+    valor.trim() === ""
+      ? "Ingresa la ponderación."
+      : Number(valor) < 0 || Number(valor) > maxDisponible
+        ? `Debe estar entre 0 y ${maxDisponible}%.`
+        : null
+  const invalido = intentado && error != null
+
   function guardar() {
-    const next = Number(valor)
-    if (Number.isNaN(next) || next < 0 || next > maxDisponible) return
-    mutation.mutate({ actividadId: actividad.actividadId, ponderacion: next })
+    setIntentado(true)
+    if (error) return
+    mutation.mutate({ actividadId: actividad.actividadId, ponderacion: Number(valor) })
   }
 
   return (
+    <div className="flex flex-col gap-0.5">
     <div className="flex items-center gap-1">
       <Input
         variant="outlined"
@@ -123,10 +135,13 @@ function CeldaPonderacion({
         max={maxDisponible}
         autoFocus
         value={valor}
+        aria-invalid={invalido}
+        aria-describedby={invalido ? `ponderacion-error-${actividad.actividadId}` : undefined}
         onChange={(e) => {
           const raw = e.target.value
           // `max` del input no bloquea el tecleo: se clampea a mano.
           setValor(raw === "" ? "" : String(Math.min(Number(raw) || 0, maxDisponible)))
+          setIntentado(true)
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !soloEnLinea.disabled) guardar()
@@ -153,6 +168,12 @@ function CeldaPonderacion({
         <TooltipContent>Guardar ponderación</TooltipContent>
       </Tooltip>
     </div>
+      {invalido && (
+        <p id={`ponderacion-error-${actividad.actividadId}`} role="alert" className="text-red text-xs">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -162,6 +183,7 @@ function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
   // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
   const [valor, setValor] = useState(String(actividad.notaMaxima ?? ""))
+  const [intentado, setIntentado] = useState(false)
   const { notify } = useNotify()
   const mutation = useUpdatePuntajeActividadUnidad({
     mutationConfig: {
@@ -185,6 +207,7 @@ function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
         className="hover:bg-muted-22 -mx-2 rounded px-2 py-1 text-left"
         onClick={() => {
           setValor(String(actividad.notaMaxima ?? ""))
+          setIntentado(false)
           setEditando(true)
         }}
       >
@@ -193,13 +216,18 @@ function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
     )
   }
 
+  // Antes un valor vacío/negativo se ignoraba en silencio: ahora se marca en rojo con su motivo.
+  const error = valor.trim() === "" ? "Ingresa el puntaje." : Number(valor) < 0 ? "Debe ser mayor o igual a 0." : null
+  const invalido = intentado && error != null
+
   function guardar() {
-    const next = Number(valor)
-    if (Number.isNaN(next) || next < 0) return
-    mutation.mutate({ actividadId: actividad.actividadId, puntaje: next })
+    setIntentado(true)
+    if (error) return
+    mutation.mutate({ actividadId: actividad.actividadId, puntaje: Number(valor) })
   }
 
   return (
+    <div className="flex flex-col gap-0.5">
     <div className="flex items-center gap-1">
       <Input
         variant="outlined"
@@ -207,7 +235,12 @@ function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
         min={0}
         autoFocus
         value={valor}
-        onChange={(e) => setValor(e.target.value)}
+        aria-invalid={invalido}
+        aria-describedby={invalido ? `puntaje-error-${actividad.actividadId}` : undefined}
+        onChange={(e) => {
+          setValor(e.target.value)
+          setIntentado(true)
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !soloEnLinea.disabled) guardar()
           if (e.key === "Escape") setEditando(false)
@@ -232,6 +265,12 @@ function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
         </TooltipTrigger>
         <TooltipContent>Guardar puntaje</TooltipContent>
       </Tooltip>
+    </div>
+      {invalido && (
+        <p id={`puntaje-error-${actividad.actividadId}`} role="alert" className="text-red text-xs">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

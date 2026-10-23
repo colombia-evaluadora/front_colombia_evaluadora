@@ -9,7 +9,11 @@ import { recuperacionFaltantes } from "@/features/planeador/lib/recuperacion-fal
  */
 export interface CamposObligatoriosContexto {
   /** Solo se lee si el referente exige instrumento de evaluación. */
-  camposEfectivos?: { evaluacion: { requerido: boolean } } | null
+  camposEfectivos?: {
+    evaluacion: { requerido: boolean }
+    /** Solo se exige si existe en el form (`visible`, sumativa) y el backend lo pide (`requerido`). */
+    ponderacion?: { visible: boolean; requerido: boolean; modo: string | null } | null
+  } | null
   /** Referente Formativo: no hay Bloque 5 (instrumento) ni Seguimiento. */
   esFormativa: boolean
   /** El grupo elegido tiene matrículas Cursando. */
@@ -58,6 +62,15 @@ export function camposObligatoriosFaltantes(
   if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")
   if (!esFormativa && camposEfectivos?.evaluacion.requerido && !values.instrumento) {
     faltantes.push("Instrumento de evaluación")
+  }
+  // Mismas condiciones con las que `EvaluacionSection` muestra el campo: oculto no se exige.
+  const ponderacion = camposEfectivos?.ponderacion
+  if (!esFormativa && values.esEvaluativa && ponderacion?.visible && ponderacion.requerido) {
+    if (ponderacion.modo === "PUNTAJE") {
+      if (values.notaMaxima == null || Number.isNaN(values.notaMaxima)) faltantes.push("Puntaje")
+    } else if (!(values.ponderacion > 0)) {
+      faltantes.push("Ponderación (%)")
+    }
   }
   // Regla 47: el backend rechaza "Estudiantes específicos" sin nadie, ya creada la actividad.
   ;(values.adaptaciones ?? []).forEach((adaptacion, i) => {
