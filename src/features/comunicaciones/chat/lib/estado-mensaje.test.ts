@@ -99,9 +99,9 @@ describe("votacionModificada", () => {
     opciones: [],
     miVoto: null,
   }
-  it("solo a quien vota, mientras esté abierta y sin haber vuelto a votar", () => {
+  it("a quien no ha vuelto a votar (también al creador), mientras esté abierta", () => {
     expect(votacionModificada(base({ editado: true, esPropio: false }), v, true)).toBe(true)
-    expect(votacionModificada(base({ editado: true, esPropio: true }), v, true)).toBe(false)
+    expect(votacionModificada(base({ editado: true, esPropio: true }), v, true)).toBe(true)
     expect(votacionModificada(base({ editado: true, esPropio: false }), { ...v, miVoto: 1 }, true)).toBe(false)
     expect(votacionModificada(base({ editado: true, esPropio: false }), v, false)).toBe(false)
     expect(votacionModificada(base({ esPropio: false }), v, true)).toBe(false)
