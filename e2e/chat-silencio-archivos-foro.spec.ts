@@ -50,8 +50,18 @@ test("silenciar: el menú refleja el estado y ofrece Activar notificaciones", as
   await opciones.click()
   const activar = page.getByRole("menuitem", { name: /Activar notificaciones/ })
   await expect(activar).toBeVisible()
+  await expect(activar).not.toHaveAttribute("aria-disabled", "true")
   await expect(page.getByRole("menuitem", { name: "Cambiar silencio" })).toBeVisible()
   await captura(page, "app-menu-silenciado")
+
+  // Activar notificaciones: se quita el silencio y el menú vuelve a "Silenciar notificaciones".
+  await activar.click()
+  await expect(page.getByText(`Notificaciones activadas en ${NOMBRE}.`)).toBeVisible()
+  await expect(fila(page, NOMBRE).getByLabel("Silenciado")).toHaveCount(0)
+  await opciones.click()
+  await expect(page.getByRole("menuitem", { name: /Activar notificaciones/ })).toHaveCount(0)
+  await expect(page.getByRole("menuitem", { name: "Silenciar notificaciones" })).toBeVisible()
+  await captura(page, "app-menu-activado")
 })
 
 test("archivos: lo que se sube aparece en Archivos sin recargar", async ({ page }) => {
