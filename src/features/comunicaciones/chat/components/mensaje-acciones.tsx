@@ -28,6 +28,7 @@ import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 import { decodificarMenciones, mencionadosEn } from "@/features/comunicaciones/chat/lib/menciones"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { adjuntosVigentes } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 
 /**
  * Barra flotante de acciones de un mensaje: con mouse sale al pasar por encima (`hover:` de
@@ -122,7 +123,12 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
             <AlertDialogTitle>¿Deseas eliminar este mensaje?</AlertDialogTitle>
             <AlertDialogDescription>
               El mensaje dejará de ser visible para los participantes
-              {m.adjunto && !m.adjunto.eliminadoEn ? ", junto con el archivo adjunto" : ""}, pero el
+              {adjuntosVigentes(m).length > 1
+                ? ", junto con sus archivos adjuntos"
+                : adjuntosVigentes(m).length === 1
+                  ? ", junto con el archivo adjunto"
+                  : ""}
+              , pero el
               coordinador podrá consultarlo por control y trazabilidad.
             </AlertDialogDescription>
           </AlertDialogHeader>

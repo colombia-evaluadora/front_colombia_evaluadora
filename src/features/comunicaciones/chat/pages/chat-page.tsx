@@ -442,14 +442,16 @@ function ChatContent() {
                 onCancelarRespuesta={() => setRespondiendo(null)}
                 onEscribiendo={avisarEscribiendo}
                 onAtajo={atajos.acciones}
-                onEnviar={(texto, archivo) =>
+                onEnviar={(texto, archivos) =>
                   enviar
                     .mutateAsync({
                       conversacionId: activa.id,
                       texto,
-                      archivo,
+                      archivos,
                       respuestaA: respondiendo?.id,
-                      clientMessageId: idDeIntento(`${activa.id}|${respondiendo?.id ?? ""}|${texto}|${archivo?.name ?? ""}`),
+                      clientMessageId: idDeIntento(
+                        `${activa.id}|${respondiendo?.id ?? ""}|${texto}|${archivos.map((a) => a.name).join("/")}`,
+                      ),
                     })
                     .then(() => {
                       intento.current = null

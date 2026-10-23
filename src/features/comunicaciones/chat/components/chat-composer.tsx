@@ -21,8 +21,10 @@ import { SelectorEmoji } from "@/features/comunicaciones/chat/components/selecto
 import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
+  MAX_ADJUNTOS,
+  agregarAdjuntos,
   formatoDeArchivo,
-  validarAdjunto,
+  pesoLegible,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
@@ -72,7 +74,8 @@ interface ChatComposerProps {
   textoInicial?: string
   destino: string
   enviando: boolean
-  onEnviar: (texto: string, archivo: File | null) => Promise<unknown>
+  // `archivos`: los adjuntos elegidos (hasta `MAX_ADJUNTOS`), en orden.
+  onEnviar: (texto: string, archivos: File[]) => Promise<unknown>
   // "edicion": guarda con un check y no permite adjuntar.
   variante?: "nuevo" | "edicion"
   className?: string
@@ -122,13 +125,18 @@ export function ChatComposer({
   const id = useId()
   const edicion = variante === "edicion"
   const [texto, setTexto] = useState(textoInicial)
-  const [archivo, setArchivo] = useState<File | null>(null)
+  const [archivos, setArchivos] = useState<File[]>([])
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
-  const elegirArchivo = (f: File) => {
-    const error = validarAdjunto(f)
+  const elegirArchivos = (nuevos: File[]) => {
+    const { archivos: siguientes, error } = agregarAdjuntos(archivos, nuevos)
     setErrorArchivo(error)
-    setArchivo(error ? null : f)
+    setArchivos(siguientes)
   }
+  const quitarArchivo = (indice: number) => {
+    setErrorArchivo(null)
+    setArchivos((prev) => prev.filter((_, i) => i !== indice))
+  }
+  const hayArchivos = archivos.length > 0
   // Último texto y callback, para guardarlos como borrador al desmontar.
   const borradorRef = useRef({ texto, onGuardarBorrador })
   useEffect(() => {
@@ -146,12 +154,12 @@ export function ChatComposer({
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // La barra de formato se ve mientras el editor (o la propia barra) tiene el foco.
   const [enfocado, setEnfocado] = useState(false)
-  const listo = (texto.trim().length > 0 || !!archivo) && !enviando
+  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando
   // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
   const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
     null,
   )
-  const programable = !edicion && !!onProgramar && texto.trim().length > 0 && !archivo && !enviando
+  const programable = !edicion && !!onProgramar && texto.trim().length > 0 && !hayArchivos && !enviando
   const confirmarProgramacion = async ({ programadoPara, texto: delDialogo }: { texto?: string; programadoPara: string }) => {
     if (!onProgramar) return
     setProgramar((p) => ({ guardando: true, error: null, conTexto: p?.conTexto }))
@@ -198,7 +206,7 @@ export function ChatComposer({
     setAtajoActivo(0)
     if (a.id === "adjuntar") docRef.current?.click()
     else if (a.id === "programar") {
-      setProgramar({ guardando: false, error: null, conTexto: !restante.trim() || !!archivo })
+      setProgramar({ guardando: false, error: null, conTexto: !restante.trim() || hayArchivos })
     } else onAtajo?.[a.id]?.()
   }
 
@@ -263,9 +271,10 @@ export function ChatComposer({
   const enviar = async () => {
     if (!listo) return
     try {
-      await onEnviar(codificarMenciones(texto.trim(), elegidos), archivo)
+      await onEnviar(codificarMenciones(texto.trim(), elegidos), archivos)
       setTexto("")
-      setArchivo(null)
+      setArchivos([])
+      setErrorArchivo(null)
       setElegidos([])
       setConsulta(null)
     } catch {
@@ -424,7 +433,15 @@ export function ChatComposer({
         <label htmlFor={id} className="sr-only">
           {edicion ? "Editar mensaje" : `Mensaje para ${destino}`}
         </label>
-        {archivo && <ArchivoPendiente archivo={archivo} onQuitar={() => setArchivo(null)} />}
+        {hayArchivos && (
+          <ul aria-label={`Archivos para enviar (${archivos.length} de ${MAX_ADJUNTOS})`} className="mx-3 mt-3 flex flex-wrap gap-2">
+            {archivos.map((a, i) => (
+              <li key={`${a.name}-${a.size}-${a.lastModified}`} className="max-w-full">
+                <ArchivoPendiente archivo={a} onQuitar={() => quitarArchivo(i)} />
+              </li>
+            ))}
+          </ul>
+        )}
         {errorArchivo && (
           <p role="alert" className="mx-3 mt-2 text-xs text-red">
             {errorArchivo}
@@ -479,7 +496,9 @@ export function ChatComposer({
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label="Adjuntar archivo"
+                aria-label="Adjuntar archivos"
+                disabled={archivos.length >= MAX_ADJUNTOS}
+                title={archivos.length >= MAX_ADJUNTOS ? `Máximo ${MAX_ADJUNTOS} archivos por mensaje` : undefined}
                 className="grid size-8 place-items-center rounded-full bg-muted/50 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:text-foreground"
               >
                 <PlusIcon className="size-4" />
@@ -496,8 +515,8 @@ export function ChatComposer({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivo={elegirArchivo} />
-          <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivo={elegirArchivo} />
+          <SelectorArchivo ref={docRef} accept={ACEPTA_DOCUMENTOS} onArchivos={elegirArchivos} />
+          <SelectorArchivo ref={mediaRef} accept={ACEPTA_MULTIMEDIA} onArchivos={elegirArchivos} />
           {/* Aa muestra la barra de formato (diseño 3729:38181): sale con el foco en el editor. */}
           <Herramienta etiqueta="Mostrar formato de texto" onClick={() => areaRef.current?.focus()}>
             <TextAaIcon className="size-5" />
@@ -631,21 +650,22 @@ function Separador({ className }: { className?: string }) {
 function SelectorArchivo({
   ref,
   accept,
-  onArchivo,
+  onArchivos,
 }: {
   ref: Ref<HTMLInputElement>
   accept: string
-  onArchivo: (archivo: File) => void
+  onArchivos: (archivos: File[]) => void
 }) {
   return (
     <input
       ref={ref}
       type="file"
       accept={accept}
+      multiple
       hidden
       onChange={(e) => {
-        const archivo = e.target.files?.[0]
-        if (archivo) onArchivo(archivo)
+        const elegidos = Array.from(e.target.files ?? [])
+        if (elegidos.length > 0) onArchivos(elegidos)
         // Permite volver a elegir el mismo archivo.
         e.target.value = ""
       }}
@@ -656,9 +676,10 @@ function SelectorArchivo({
 function ArchivoPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
   const { Icono, color } = iconoArchivo(formatoDeArchivo(archivo), archivo.name)
   return (
-    <div className="mx-3 mt-3 flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
+    <div className="flex w-fit max-w-full items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
       <Icono aria-hidden className={cn("size-6 shrink-0", color)} />
       <span className="min-w-0 truncate text-sm font-medium">{archivo.name}</span>
+      <span className="shrink-0 text-xs text-muted-foreground">{pesoLegible(archivo.size)}</span>
       <button
         type="button"
         aria-label={`Quitar ${archivo.name}`}

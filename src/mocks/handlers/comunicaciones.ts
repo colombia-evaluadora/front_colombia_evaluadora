@@ -101,6 +101,10 @@ if (typeof window !== "undefined") {
 /** `CLIENT_MESSAGE_ID` → id del mensaje creado (reintentos idempotentes). */
 const enviadosPorCliente = new Map<string, number>()
 
+// `pk_tmensaje_adjunto` de los archivos enviados con el mock (los de la semilla usan 9000+).
+let siguienteAdjuntoMock = 9100
+const YA_DESCARGADO = "No puedes eliminar este archivo porque otra persona ya lo descargó."
+
 function buscar(id: string | readonly string[] | undefined) {
   return conversaciones.find((c) => c.id === Number(id))
 }
@@ -133,7 +137,7 @@ function verEliminados(conversacionId: number, request: Request) {
 
 export function vistaMensaje(m: Mensaje, ver: boolean): Mensaje {
   if (!m.eliminado || ver) return m
-  return { ...m, texto: "", adjunto: null, fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
+  return { ...m, texto: "", adjunto: null, adjuntos: [], fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
 }
 
 function hastaSilencio(duracion: SilencioDuracion) {
@@ -155,8 +159,9 @@ function enviarMensajeMock(
   id: string | readonly string[] | undefined,
   body: CuerpoMensaje,
   request: Request,
-  adjunto: AdjuntoMensaje | null = null,
+  adjuntos: AdjuntoMensaje[] = [],
 ) {
+  const adjunto = adjuntos[0] ?? null
   const conv = buscar(id)
   if (!conv) return noEncontrada()
   // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
@@ -177,6 +182,7 @@ function enviarMensajeMock(
     respuestaA: original ? citaDe(original) : null,
     menciones: mencionesDe(texto, conv.id, request),
   })
+  if (adjuntos.length > 0) m.adjuntos = adjuntos
   if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
   // Como comms-service: el borrador del canal pasa a "Enviados".
   const borrador = borradores.find((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
@@ -382,20 +388,23 @@ export const comunicacionesHandlers = [
   http.post(`*/api/files/eval-col/comunicaciones/conversaciones/:id/mensajes`, async ({ params, request }) => {
     await delay(400)
     const form = await request.formData()
-    const archivo = form.get("ADJUNTO")
+    // Varios archivos: el campo `ADJUNTO` se repite (file-service los reenvía como lista).
     const texto = form.get("TEXTO")
     const respuesta = form.get("FK_MENSAJE_RESPUESTA")
     const clientId = form.get("CLIENT_MESSAGE_ID")
-    const adjunto =
-      archivo instanceof File
-        ? {
-            nombre: archivo.name,
-            formato: formatoDeArchivo(archivo),
-            eliminadoEn: null,
-            archivoId: registrarArchivoMaterial(archivo),
-            peso: archivo.size,
-          }
-        : null
+    const subidos = form.getAll("ADJUNTO").filter((x): x is File => x instanceof File)
+    if (subidos.length > 10) {
+      return HttpResponse.json({ message: "Puedes adjuntar hasta 10 archivos por mensaje." }, { status: 400 })
+    }
+    const adjuntos: AdjuntoMensaje[] = subidos.map((archivo) => ({
+      nombre: archivo.name,
+      formato: formatoDeArchivo(archivo),
+      eliminadoEn: null,
+      archivoId: registrarArchivoMaterial(archivo),
+      peso: archivo.size,
+      id: siguienteAdjuntoMock++,
+      descargado: false,
+    }))
     const res = enviarMensajeMock(
       params.id,
       {
@@ -404,23 +413,29 @@ export const comunicacionesHandlers = [
         CLIENT_MESSAGE_ID: typeof clientId === "string" ? clientId : undefined,
       },
       request,
-      adjunto,
+      adjuntos,
     )
     const conv = buscar(params.id)
-    if (res.status === 200 && adjunto && conv) {
-      archivos.unshift({
-        id: adjunto.archivoId,
-        archivoId: adjunto.archivoId,
-        nombre: adjunto.nombre,
-        formato: adjunto.formato,
-        peso: adjunto.peso,
-        compartidoPor: "Tú",
-        esPropio: true,
-        fecha: new Date().toISOString(),
-        conversacionId: conv.id,
-        conversacionNombre: conv.nombre,
-        enMiCanal: true,
-      })
+    const enviado = adjuntos.length > 0 ? mensajes.find((x) => x.adjuntos?.[0]?.id === adjuntos[0].id) : undefined
+    if (res.status === 200 && conv) {
+      for (const adjunto of [...adjuntos].reverse()) {
+        archivos.unshift({
+          id: adjunto.archivoId as number,
+          archivoId: adjunto.archivoId,
+          nombre: adjunto.nombre,
+          formato: adjunto.formato,
+          peso: adjunto.peso,
+          compartidoPor: "Tú",
+          esPropio: true,
+          fecha: new Date().toISOString(),
+          conversacionId: conv.id,
+          conversacionNombre: conv.nombre,
+          enMiCanal: true,
+          mensajeId: enviado?.id,
+          adjuntoId: adjunto.id,
+          descargado: false,
+        })
+      }
     }
     return res
   }),
@@ -570,8 +585,18 @@ export const comunicacionesArchivosHandlers = [
       archivos.splice(idx, 0, a)
       return HttpResponse.json({ message: "Solo puedes eliminar archivos que compartiste tú." }, { status: 403 })
     }
+    if (a.descargado) {
+      archivos.splice(idx, 0, a)
+      return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    }
     // El mensaje donde se compartió conserva el aviso.
     for (const m of mensajes) {
+      const enLista = m.adjuntos?.find((x) => x.id != null && x.id === a.adjuntoId)
+      if (enLista) {
+        enLista.eliminadoEn = new Date().toISOString()
+        m.adjunto = m.adjuntos?.find((x) => !x.eliminadoEn) ?? m.adjunto
+        continue
+      }
       if (m.conversacionId === a.conversacionId && m.adjunto?.nombre === a.nombre) {
         m.adjunto.eliminadoEn = new Date().toISOString()
       }
@@ -794,7 +819,43 @@ export const comunicacionesMensajesHandlers = [
     await delay(150)
     const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m?.adjunto) return mensajeNoEncontrado()
-    m.adjunto.eliminadoEn = new Date().toISOString()
+    if (m.adjuntos?.some((a) => !a.eliminadoEn && a.descargado)) {
+      return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    }
+    const ahora = new Date().toISOString()
+    m.adjunto.eliminadoEn = ahora
+    for (const a of m.adjuntos ?? []) a.eliminadoEn ??= ahora
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  // Como comms-service (V560): quitar un archivo puntual, salvo que otra persona ya lo descargó.
+  http.patch(URL("mensajes/:id/adjuntos/:adjunto/eliminar"), async ({ params }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    const a = m?.adjuntos?.find((x) => x.id === Number(params.adjunto) && !x.eliminadoEn)
+    if (!m || !a) return HttpResponse.json({ message: "El archivo ya no existe." }, { status: 404 })
+    if (!m.esPropio) {
+      return HttpResponse.json({ message: "Solo puedes quitar archivos de tus mensajes." }, { status: 403 })
+    }
+    if (a.descargado) return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    a.eliminadoEn = new Date().toISOString()
+    m.adjunto = m.adjuntos?.find((x) => !x.eliminadoEn) ?? a
+    const i = archivos.findIndex((x) => x.adjuntoId === a.id)
+    if (i !== -1) archivos.splice(i, 1)
+    publicarMensajeActualizado(m)
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  // Registro de descarga: la del autor no cuenta.
+  http.post(URL("mensajes/:id/adjuntos/:adjunto/descargas"), async ({ params }) => {
+    await delay(100)
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    const a = m?.adjuntos?.find((x) => x.id === Number(params.adjunto) && !x.eliminadoEn)
+    if (!m || !a) return HttpResponse.json({ message: "El archivo ya no existe." }, { status: 404 })
+    if (!m.esPropio && !a.descargado) {
+      a.descargado = true
+      publicarMensajeActualizado(m)
+    }
     return HttpResponse.json({ rows: [m] })
   }),
 

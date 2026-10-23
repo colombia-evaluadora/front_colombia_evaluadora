@@ -13,8 +13,9 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { fetchDocumento, useDocumentoQuery } from "@/features/comunicaciones/chat/api/query/use-documento-query"
 import { useEliminarArchivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-archivo"
+import { useRegistrarDescarga } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { descargarDocumento } from "@/features/comunicaciones/chat/lib/documento"
-import { descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { AVISO_YA_DESCARGADO, descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 
@@ -33,12 +34,18 @@ export function ArchivoAcciones({
   const { notify } = useNotify()
   const queryClient = useQueryClient()
   const eliminar = useEliminarArchivo()
+  const registrar = useRegistrarDescarga()
   const [viendo, setViendo] = useState(false)
 
   // Los documentos editables (mock) se descargan con su contenido actual; el
-  // resto, el binario de file-service.
+  // resto, el binario de file-service. Un archivo ajeno registra la descarga antes
+  // (desde ahí quien lo compartió ya no puede eliminarlo).
   const descargar = async () => {
     try {
+      if (!a.esPropio && a.adjuntoId != null && a.mensajeId != null) {
+        await registrar.mutateAsync({ mensajeId: a.mensajeId, adjuntoId: a.adjuntoId })
+        if (!a.descargado) void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
+      }
       if (a.archivoId != null) {
         await descargarAdjunto(a.archivoId, a.nombre)
         return
@@ -75,7 +82,19 @@ export function ArchivoAcciones({
       <Accion etiqueta={`Ver ${a.nombre}`} titulo="Ver" onClick={() => setViendo(true)}>
         <EyeIcon />
       </Accion>
-      {a.esPropio && (
+      {a.esPropio && a.descargado && (
+        // Deshabilitado con la razón: un botón `disabled` no recibe el puntero, el título va afuera.
+        <span title={AVISO_YA_DESCARGADO} className="grid size-8 place-items-center">
+          <ConfirmRemoveButton
+            label={`Eliminar ${a.nombre}. ${AVISO_YA_DESCARGADO}`}
+            description={AVISO_YA_DESCARGADO}
+            onConfirm={() => false}
+            disabled
+            className="size-8 rounded-none text-muted-foreground"
+          />
+        </span>
+      )}
+      {a.esPropio && !a.descargado && (
         <ConfirmRemoveButton
           label={`Eliminar ${a.nombre}`}
           title="Eliminar archivo"

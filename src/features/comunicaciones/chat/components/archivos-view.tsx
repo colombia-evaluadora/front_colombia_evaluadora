@@ -22,6 +22,7 @@ import { fechaLarga } from "@/features/comunicaciones/chat/lib/chat-format"
 import { SquaresFourIcon, ListIcon } from "@/components/ui/icons"
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
 import { ArchivoAcciones } from "@/features/comunicaciones/chat/components/archivo-acciones"
+import { AVISO_YA_DESCARGADO } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { DocumentoEditor } from "@/features/comunicaciones/chat/components/documento-editor"
 
 // Mismo estilo de item que el menú de conversaciones (en oración, no mayúsculas).
@@ -359,6 +360,11 @@ function TarjetaArchivo({
           <span className="sr-only">{tipo}. </span>
           {detalle}
         </p>
+        {a.esPropio && a.descargado && (
+          <p className="truncate text-xs text-muted-foreground" title={AVISO_YA_DESCARGADO}>
+            {AVISO_YA_DESCARGADO}
+          </p>
+        )}
       </div>
       {/* Visible al pasar el cursor o al llegar con el teclado. */}
       <ArchivoAcciones
