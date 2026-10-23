@@ -10,6 +10,7 @@ import { getInitialSidebarOpen } from "@/features/navigation/lib/sidebar-cookie"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { CampanaNotificaciones } from "@/features/notificaciones/components/campana-notificaciones"
+import { DetectorInactividad } from "@/features/comunicaciones/chat/components/detector-inactividad"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { OfflineBanner } from "@/components/layout/offline-banner"
 import { HeaderSyncIndicator } from "@/features/offline/components/header-sync-indicator"
@@ -61,6 +62,7 @@ export function ProtectedLayout() {
         <OfflineBanner />
         <FirstPrepareBanner />
         <AutoPrepareRunner />
+        <DetectorInactividad />
         <UpdateRequiredBanner />
         <StorageWarningBanner />
         {/*

@@ -40,6 +40,12 @@ import {
   hayFiltrosDeAutor,
   type FiltrosChat,
 } from "@/features/comunicaciones/chat/lib/filtros-chat"
+import {
+  useDisponibilidadDirectosQuery,
+  usePresenciaMap,
+} from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import { PuntoSuelto } from "@/features/comunicaciones/chat/components/disponibilidad"
+import type { EstadoDisponibilidad } from "@/features/comunicaciones/chat/api/types"
 
 const CLAVE_RECIENTES = "chat-busquedas-recientes"
 
@@ -73,6 +79,7 @@ import {
   ArchiveIcon,
   UnarchiveIcon,
   ClockCounterClockwiseIcon,
+  WarningCircleIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -163,6 +170,15 @@ export function ChatSidebar({
           .slice(0, 8)
       : []
   const abrirDirecto = useAbrirDirecto()
+  // Disponibilidad de la otra persona de cada directo: la del socket gana sobre la de la carga.
+  const { data: contactos = [] } = useDisponibilidadDirectosQuery(
+    conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id),
+  )
+  const presencia = usePresenciaMap()
+  const disponibilidadDe = (c: Conversacion): EstadoDisponibilidad | undefined => {
+    const k = c.tipo === "DIRECTO" ? contactos.find((x) => x.conversacionId === c.id) : undefined
+    return k ? (presencia[k.usuarioId] ?? k.estado) : undefined
+  }
 
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
@@ -174,6 +190,7 @@ export function ChatSidebar({
     <ItemConversacion
       key={c.id}
       conversacion={c}
+      disponibilidad={disponibilidadDe(c)}
       activa={c.id === activaId}
       onClick={() => {
         if (t) recordar()
@@ -497,8 +514,11 @@ function ItemConversacion({
   onClick,
   onSalida,
   desarchivar = false,
+  disponibilidad,
 }: {
   conversacion: Conversacion
+  // Solo directos: estado de la otra persona (punto sobre sus iniciales).
+  disponibilidad?: EstadoDisponibilidad
   activa: boolean
   onClick: () => void
   onSalida: () => void
@@ -534,12 +554,15 @@ function ItemConversacion({
             C
           </span>
         ) : c.tipo === "DIRECTO" ? (
-          // Mensaje directo: iniciales de la persona (diseño 4516:68095).
-          <span
-            aria-hidden
-            className="grid size-5 shrink-0 place-items-center rounded-full bg-navy-22 text-[9px] font-semibold text-navy"
-          >
-            {iniciales(c.nombre)}
+          // Mensaje directo: iniciales de la persona (diseño 4516:68095) y su disponibilidad.
+          <span className="relative shrink-0">
+            <span
+              aria-hidden
+              className="grid size-5 place-items-center rounded-full bg-navy-22 text-[9px] font-semibold text-navy"
+            >
+              {iniciales(c.nombre)}
+            </span>
+            <PuntoSuelto estado={disponibilidad} className="size-2" />
           </span>
         ) : (
           <Icono
@@ -574,6 +597,14 @@ function ItemConversacion({
           </span>
         ) : (
           <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        )}
+        {c.importante && (
+          // Comunicado marcado como importante por quien lo publicó.
+          <WarningCircleIcon
+            aria-label="Importante"
+            role="img"
+            className={cn("size-4 shrink-0", activa ? "opacity-100" : "text-red")}
+          />
         )}
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />

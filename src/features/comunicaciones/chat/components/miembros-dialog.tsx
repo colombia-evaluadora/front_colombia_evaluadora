@@ -10,7 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
+import { useEstadoPersona } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PlusIcon, ProhibitIcon, StarIcon, XIcon } from "@/components/ui/icons"
@@ -454,7 +456,7 @@ function FilaMiembro({
     return (
       <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
         <span className="flex min-w-0 flex-1 basis-40 items-center gap-3 opacity-80">
-          <AvatarPersona nombre={m.nombre} />
+          <AvatarPersona miembro={m} sinEstado />
           <span className="min-w-0 leading-tight">
             <span className="block truncate">{m.nombre}</span>
             <span className="block truncate text-sm text-muted-foreground">Acudiente</span>
@@ -497,7 +499,7 @@ function FilaMiembro({
         />
       )}
       <span className={cn("flex min-w-0 flex-1 items-center gap-3", m.bloqueado && "opacity-45")}>
-        <AvatarPersona nombre={m.nombre} enLinea={m.enLinea} />
+        <AvatarPersona miembro={m} />
         <span className="min-w-0 leading-tight">
           <span className="block truncate">{m.nombre}</span>
           <span className="block truncate text-sm text-muted-foreground">
@@ -554,13 +556,14 @@ function FilaMiembro({
   )
 }
 
-function AvatarPersona({ nombre, enLinea }: { nombre: string; enLinea?: boolean }) {
+function AvatarPersona({ miembro, sinEstado = false }: { miembro: Miembro; sinEstado?: boolean }) {
+  const estado = useEstadoPersona(miembro.id, miembro)
   return (
     <Avatar>
       <AvatarFallback className="bg-navy-22 text-[0.65rem] font-semibold text-navy">
-        {iniciales(nombre)}
+        {iniciales(miembro.nombre)}
       </AvatarFallback>
-      {enLinea && <AvatarBadge className="bg-green" />}
+      {!sinEstado && <PuntoDisponibilidad estado={estado} />}
     </Avatar>
   )
 }

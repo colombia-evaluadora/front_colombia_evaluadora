@@ -1,7 +1,9 @@
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
-import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
+import { useEstadoPersona } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   ArrowBendUpLeftIcon,
@@ -17,7 +19,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useEliminarAdjunto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { BARRA_ACCIONES, MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
-import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
+import type { AutorMensaje, Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
@@ -408,11 +410,7 @@ function MensajeItem({
         <AvatarFallback className="bg-navy-22 text-xs font-semibold text-navy">
           {iniciales(m.autor.nombre)}
         </AvatarFallback>
-        {m.autor.enLinea && (
-          <AvatarBadge className="bg-green">
-            <span className="sr-only">En línea</span>
-          </AvatarBadge>
-        )}
+        <PuntoAutor autor={m.autor} />
       </Avatar>
       <div className="min-w-0">
         <div
@@ -457,4 +455,9 @@ function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: bo
       }
     />
   )
+}
+
+/** Disponibilidad del autor de un mensaje ajeno (socket o, si no, la que trajo el historial). */
+function PuntoAutor({ autor }: { autor: AutorMensaje }) {
+  return <PuntoDisponibilidad estado={useEstadoPersona(autor.id, autor)} />
 }
