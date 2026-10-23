@@ -6,6 +6,7 @@ import {
   validarIdentificacionAdministrativa,
   validarLugar,
   validarNombreEstablecimiento,
+  validarUbicacion,
 } from "@/features/establishment/shared/text-field-rules"
 
 // Ejemplos del caso de prueba E04HU02 (Mantis 0000694).
@@ -57,5 +58,15 @@ describe("validarIdentificacionAdministrativa", () => {
 
   it.each(["ç'ç'+'+'(/)<<", "9998877/('+'+ç'ç'ç'<<<", "abc", "--12", "12//34"])("rechaza %s", (valor) =>
     expect(validarIdentificacionAdministrativa(valor, "La resolución")).not.toBeNull(),
+  )
+})
+
+describe("validarUbicacion", () => {
+  it.each(["4.7110, -74.0721", "4.711,-74.0721", "-0.5, 179.9", "10, -75"])("acepta %s", (valor) =>
+    expect(validarUbicacion(valor)).toBeNull(),
+  )
+
+  it.each(["4.7110", "abc", "91, 10", "4.7, -181", "4.7, -74, 3"])("rechaza %s", (valor) =>
+    expect(validarUbicacion(valor)).not.toBeNull(),
   )
 })
