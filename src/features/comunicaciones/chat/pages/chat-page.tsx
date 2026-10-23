@@ -175,12 +175,13 @@ function ChatContent() {
   const guardarBorrador = useGuardarBorrador()
   const programarMensaje = useProgramarMensaje()
 
-  const seleccionar = (id: number | undefined) => {
+  // `mensaje`: abrir en ese mensaje (resultado del historial filtrado).
+  const seleccionar = (id: number | undefined, mensaje?: number) => {
     setBusqueda("")
     setDestacado(undefined)
     setBorrador(null)
     setRespondiendo(null)
-    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined, mensaje: undefined }) })
+    navigate({ search: (prev) => ({ ...prev, canal: id, vista: undefined, mensaje }) })
   }
 
   const abrirVista = (v: VistaChat) => {
@@ -200,13 +201,24 @@ function ChatContent() {
     if (activa?.id && pendientes > 0) leer(activa.id)
   }, [activa?.id, pendientes, leer])
 
-  // Deep link de una notificación: saltar al mensaje cuando el historial cargó.
-  const historialListo = !!mensajesQuery.data
+  // Deep link de una notificación o resultado del historial: saltar al mensaje cuando el
+  // historial cargó. Si es más viejo que lo cargado, se piden páginas anteriores hasta llegar.
+  const historial = mensajesQuery.data
+  const activaId = activa?.id
+  const historialAgotado = activaId != null && agotados.has(activaId)
+  const { mutate: cargarMas, isPending: cargandoMas } = cargarAnteriores
   useEffect(() => {
-    if (!mensajeEnlazado || !historialListo) return
+    if (!mensajeEnlazado || !historial || activaId == null || cargandoMas) return
+    const primero = historial[0]?.id
+    const falta = !historial.some((m) => m.id === mensajeEnlazado) && primero != null && mensajeEnlazado < primero
+    if (falta && !historialAgotado) {
+      const agotar = () => setAgotados((prev) => new Set(prev).add(activaId))
+      cargarMas(activaId, { onSuccess: ({ agotado }) => agotado && agotar(), onError: agotar })
+      return
+    }
     setDestacado((d) => ({ id: mensajeEnlazado, vez: (d?.vez ?? 0) + 1 }))
     navigate({ search: (prev) => ({ ...prev, mensaje: undefined }), replace: true })
-  }, [mensajeEnlazado, historialListo, navigate])
+  }, [mensajeEnlazado, historial, activaId, historialAgotado, cargandoMas, cargarMas, navigate])
 
   const irAMensaje = (id: number) => setDestacado((d) => ({ id, vez: (d?.vez ?? 0) + 1 }))
 
@@ -230,6 +242,7 @@ function ChatContent() {
           vista={vista}
           onVista={abrirVista}
           onSeleccionar={seleccionar}
+          onAbrirMensaje={seleccionar}
           invitacionDestacada={invitacion}
           className={cn("w-full md:w-72 md:shrink-0", panelAbierto && "max-md:hidden")}
         />
