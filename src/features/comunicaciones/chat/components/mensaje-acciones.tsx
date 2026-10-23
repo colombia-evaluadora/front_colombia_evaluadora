@@ -23,8 +23,7 @@ import {
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import { BotonReaccionar } from "@/features/comunicaciones/chat/components/reacciones-mensaje"
-import { TextoFormateado } from "@/features/comunicaciones/chat/components/texto-formateado"
-import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
+import { AdjuntosMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
 import { decodificarMenciones, mencionadosEn } from "@/features/comunicaciones/chat/lib/menciones"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -83,14 +82,16 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
           <DialogHeader>
             <DialogTitle>Edita el mensaje</DialogTitle>
           </DialogHeader>
-          <div className="rounded-xl border p-3">
-            <div className="w-fit max-w-full rounded-xl bg-primary/10 px-4 py-3">
-              <p className="mb-1 text-xs text-muted-foreground">
-                <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
-              </p>
-              <TextoFormateado texto={m.texto} menciones={m.menciones} />
-            </div>
-          </div>
+          {/* Sin burbuja de vista previa: el texto ya está en el editor. Los adjuntos (que la
+              edición no cambia) se listan aparte, con quitar según las reglas del autor. */}
+          {adjuntosVigentes(m).length > 0 && (
+            <section aria-labelledby={`adjuntos-edicion-${m.id}`} className="rounded-xl border p-3">
+              <h3 id={`adjuntos-edicion-${m.id}`} className="text-xs font-medium text-muted-foreground">
+                Adjuntos
+              </h3>
+              <AdjuntosMensaje mensaje={m} propio className="mt-2" />
+            </section>
+          )}
           <ChatComposer
             variante="edicion"
             autoFocus
