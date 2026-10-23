@@ -360,7 +360,9 @@ function ChatContent() {
                   ) : (
                     esEleccion && (
                       <>
-                        {eleccion && <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} />}
+                        {eleccion && (
+                          <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} soloTitulo={votaEstudiante} />
+                        )}
                         {votaEstudiante ? (
                           <EleccionEstudiante eleccion={eleccion} isPending={eleccionQuery.isPending} />
                         ) : (
@@ -377,9 +379,14 @@ function ChatContent() {
               />
               {atajos.dialogos}
               <Escribiendo nombres={escribiendo} />
-              {activa.esBot ? null : soloLectura ? (
+              {/*
+                Card "Elecciones" (ajuste de Maldonado): la elección sin comentarios no lleva caja de
+                texto ni aviso de reemplazo (Figma 3837:43815, 4189:67308, 7127:76707). Con
+                "Permitir · Comentarios" el composer sí aparece (4195:69012).
+              */}
+              {activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
-                  {esEleccion ? "Los comentarios están deshabilitados en esta elección." : "En este foro no se pueden enviar mensajes."}
+                  En este foro no se pueden enviar mensajes.
                 </p>
               ) : sinEscritura ? (
                 <p role="status" className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
