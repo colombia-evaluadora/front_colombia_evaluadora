@@ -10,6 +10,7 @@ import type { Municipality } from "@/features/establishment/institution/api/type
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/matricula/utils/matricula-field-catalog"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { isPreescolarPrimariaGrado } from "@/features/coverage/matricula/utils/matricula-grado-rules"
+import { CORREO_REGEX, MENSAJE_CORREO_INVALIDO } from "@/lib/email-address"
 
 export function resolveMatriculaMunicipioDepartments(
   values: CreateMatriculaInput,
@@ -209,7 +210,8 @@ export interface MatriculaAccountsFound {
  * `files` es opcional porque en edición no se vuelven a pedir los documentos
  * de soporte (esos se gestionan aparte, desde el botón "Archivos").
  */
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/** Misma regla que el SSO: sin tildes ni ñ antes de la @ (ver `@/lib/email-address`). */
+export const EMAIL_REGEX = CORREO_REGEX
 export const DOCUMENT_REGEX = /^\d{3,15}$/
 
 export function validateMatricula(
@@ -295,7 +297,7 @@ export function getMatriculaFieldErrorMessage(id: string, values: CreateMatricul
         ? values.studentContact.email.trim()
         : values.guardianContact.email.trim()
     if (email && !EMAIL_REGEX.test(email)) {
-      return `Formato de correo electrónico inválido: ${label}.`
+      return `${label}: ${MENSAJE_CORREO_INVALIDO}`
     }
   }
   if (DOCUMENT_FIELD_IDS.has(id)) {
