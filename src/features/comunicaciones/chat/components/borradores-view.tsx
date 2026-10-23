@@ -78,7 +78,7 @@ const PESTANAS: Array<{ estado: EstadoBorrador; etiqueta: string; vacio: string 
 ]
 
 const ETIQUETA_ESTADO: Record<EstadoBorrador, { texto: string; clase: string }> = {
-  BORRADOR: { texto: "Borrador", clase: "text-red" },
+  BORRADOR: { texto: "Borrador", clase: "text-orange" },
   PROGRAMADO: { texto: "Programado", clase: "text-blue" },
   ENVIADO: { texto: "Enviado", clase: "text-green" },
 }
