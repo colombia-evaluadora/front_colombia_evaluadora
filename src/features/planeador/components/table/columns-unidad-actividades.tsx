@@ -66,11 +66,9 @@ function ValorBloqueado({ valor, motivo }: { valor: ReactNode; motivo: string })
 /** Celda "(%)" editable en línea; solo para cálculo "Ponderado". */
 function CeldaPonderacion({
   actividad,
-  unidadId,
   maxDisponible,
 }: {
   actividad: UnidadActividad
-  unidadId: number
   /** Tope optimista (100 - resto de la unidad); el real lo topa el backend por (unidad, grupo), sso V223. */
   maxDisponible: number
 }) {
@@ -80,7 +78,6 @@ function CeldaPonderacion({
   const [valor, setValor] = useState(String(actividad.ponderacion))
   const { notify } = useNotify()
   const mutation = useUpdatePonderacionActividadUnidad({
-    unidadId,
     mutationConfig: {
       onSuccess: () => {
         notify("Ponderación actualizada.")
@@ -160,14 +157,13 @@ function CeldaPonderacion({
 }
 
 /** Celda "Puntaje" para "Suma de puntos": sin tope, el backend deriva el %. */
-function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; unidadId: number }) {
+function CeldaPuntaje({ actividad }: { actividad: UnidadActividad }) {
   const [editando, setEditando] = useState(false)
   // Sin red no se cambian ponderaciones/puntajes (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
   const [valor, setValor] = useState(String(actividad.notaMaxima ?? ""))
   const { notify } = useNotify()
   const mutation = useUpdatePuntajeActividadUnidad({
-    unidadId,
     mutationConfig: {
       onSuccess: () => {
         notify("Puntaje actualizado.")
@@ -242,12 +238,10 @@ function CeldaPuntaje({ actividad, unidadId }: { actividad: UnidadActividad; uni
 
 function BotonDesvincular({
   actividad,
-  unidadId,
   rotuloActividad,
   rotuloUnidad,
 }: {
   actividad: UnidadActividad
-  unidadId: number
   rotuloActividad: string
   rotuloUnidad: string
 }) {
@@ -258,7 +252,6 @@ function BotonDesvincular({
   const soloEnLinea = useOnlineOnly()
   const genero = terminacionRotulo(rotuloActividad)
   const unlink = useUnlinkActividadUnidad({
-    unidadId,
     mutationConfig: {
       onSuccess: () => {
         notify(`${rotuloActividad} desvinculad${genero}.`)
@@ -352,7 +345,6 @@ function BotonDesvincular({
 /** Columnas de actividades de una unidad; la columna de peso depende de `metodoCalculo` y
  * `esFormativa` la oculta (se observa, no se califica). */
 export function createUnidadActividadesColumns(
-  unidadId: number,
   metodoCalculo: MetodoCalculo,
   totalPonderacion: number,
   esFormativa: boolean,
@@ -376,7 +368,6 @@ export function createUnidadActividadesColumns(
             cell: ({ row }) => (
               <CeldaPonderacion
                 actividad={row.original}
-                unidadId={unidadId}
                 maxDisponible={Math.max(0, 100 - totalPonderacion + row.original.ponderacion)}
               />
             ),
@@ -390,7 +381,7 @@ export function createUnidadActividadesColumns(
               // "(Σ)" pedido en la reunión del 22-sep.
               meta: { label: "(Σ) Puntaje" },
               header: ({ column }) => <DataTableColumnHeader column={column} title="(Σ)" />,
-              cell: ({ row }) => <CeldaPuntaje actividad={row.original} unidadId={unidadId} />,
+              cell: ({ row }) => <CeldaPuntaje actividad={row.original} />,
             },
           ]
         : []
@@ -532,7 +523,6 @@ export function createUnidadActividadesColumns(
           {puedeEliminar && (
             <BotonDesvincular
               actividad={row.original}
-              unidadId={unidadId}
               rotuloActividad={rotuloActividadLabel}
               rotuloUnidad={rotuloUnidad}
             />

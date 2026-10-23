@@ -3,8 +3,7 @@ import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-reque
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarVinculoActividadUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 // `PATCH`, no `DELETE` — mismo motor que el resto de soft-deletes del
 // Planeador. Sin body: el `:actividadId` en el path alcanza.
@@ -13,10 +12,6 @@ export function unlinkActividadUnidad(actividadId: number, req?: WriteRequest): 
 }
 
 interface UseUnlinkActividadUnidadOptions {
-  /** Detalle de la unidad a invalidar tras desvincular — se pasa acá (no se
-   *  puede derivar del id de la actividad) para que la tabla de
-   *  "Actividades" refleje la baja apenas se confirma. */
-  unidadId: number
   mutationConfig?: MutationConfig<typeof unlinkActividadUnidad>
 }
 
@@ -24,20 +19,15 @@ interface UseUnlinkActividadUnidadOptions {
  * Desvincula una actividad de su unidad: `FK_TUNIDAD`/`PONDERACION` quedan
  * en NULL y vuelve a aparecer como huérfana (`GET /actividades/huerfanas`).
  */
-export function useUnlinkActividadUnidad({
-  unidadId,
-  mutationConfig,
-}: UseUnlinkActividadUnidadOptions) {
+export function useUnlinkActividadUnidad({ mutationConfig }: UseUnlinkActividadUnidadOptions = {}) {
   const queryClient = useQueryClient()
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
 
   return useMutation({
     mutationFn: (actividadId: number) => unlinkActividadUnidad(actividadId),
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(unidadId) })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
-      onSuccess?.(...args)
+    onSuccess: (data, actividadId, ...rest) => {
+      invalidarVinculoActividadUnidad(queryClient, actividadId)
+      onSuccess?.(data, actividadId, ...rest)
     },
     ...restConfig,
   })
