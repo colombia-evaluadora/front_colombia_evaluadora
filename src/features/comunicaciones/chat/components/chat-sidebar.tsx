@@ -20,6 +20,24 @@ import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { useArchivarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { InvitacionesSeccion } from "@/features/comunicaciones/chat/components/invitaciones-seccion"
+import { chatRoute } from "@/router"
+import { FiltrosChatPopover } from "@/features/comunicaciones/chat/components/filtros-chat-popover"
+import { ResultadosBusqueda } from "@/features/comunicaciones/chat/components/resultados-busqueda"
+import {
+  useBusquedaChatQuery,
+  useOpcionesFiltroQuery,
+} from "@/features/comunicaciones/chat/api/query/use-busqueda-chat-query"
+import {
+  FILTROS_VACIOS,
+  contarFiltrosAvanzados,
+  describirFiltros,
+  filtrosAUrl,
+  filtrosDeUrl,
+  filtrosEfectivos,
+  hayFiltros,
+  hayFiltrosDeAutor,
+  type FiltrosChat,
+} from "@/features/comunicaciones/chat/lib/filtros-chat"
 
 const CLAVE_RECIENTES = "chat-busquedas-recientes"
 
@@ -65,6 +83,8 @@ interface ChatSidebarProps {
   vista: VistaChat | undefined
   onVista: (vista: VistaChat) => void
   onSeleccionar: (id: number | undefined) => void
+  // Resultado del historial filtrado: abre la conversación en ese mensaje.
+  onAbrirMensaje?: (conversacionId: number, mensajeId: number) => void
   // Invitación resaltada (`?invitacion=` del deep link de la notificación).
   invitacionDestacada?: number
   className?: string
@@ -79,6 +99,7 @@ export function ChatSidebar({
   vista,
   onVista,
   onSeleccionar,
+  onAbrirMensaje,
   invitacionDestacada,
   className,
 }: ChatSidebarProps) {
@@ -86,7 +107,30 @@ export function ChatSidebar({
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
   const { puedeGestionar, reglaDirectoCon } = useChatAccess()
   const { notify } = useNotify()
-  const [texto, setTexto] = useState("")
+  // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
+  // marcador. El texto del buscador vive también en estado local para no perder el cursor.
+  const filtrosUrl = chatRoute.useSearch()
+  const navigate = chatRoute.useNavigate()
+  const [texto, setTextoLocal] = useState(filtrosUrl.q ?? "")
+  const setTexto = (v: string) => {
+    setTextoLocal(v)
+    navigate({ search: (prev) => ({ ...prev, q: v || undefined }), replace: true })
+  }
+  const filtros: FiltrosChat = { ...filtrosDeUrl(filtrosUrl), q: texto }
+  const aplicarFiltros = (f: FiltrosChat) => {
+    setTextoLocal(f.q)
+    navigate({ search: (prev) => ({ ...prev, ...filtrosAUrl(f) }), replace: true })
+  }
+  const buscando = hayFiltros(filtros)
+  // Filtros del panel (tipo, fechas, estado, persona, rol, grupo): la lista es la del servidor.
+  const conPanel = contarFiltrosAvanzados(filtros) > 0
+  const busqueda = useBusquedaChatQuery(filtros)
+  const paginas = buscando ? busqueda.data?.pages : undefined
+  const delServidor = new Set(paginas?.[0]?.conversaciones ?? [])
+  const resultados = paginas?.flatMap((p) => p.mensajes) ?? []
+  const opcionesFiltro = useOpcionesFiltroQuery(hayFiltrosDeAutor(filtros))
+  const nombreGrupo = (id: number) => opcionesFiltro.data?.grupos.find((g) => Number(g.valor) === id)?.etiqueta
+  const resumenFiltros = conPanel ? describirFiltros(filtros, nombreGrupo) : ""
   const [crearGrupo, setCrearGrupo] = useState(false)
   // Búsquedas recientes (diseño 4501:66442): por navegador, solo una comodidad.
   const [recientes, setRecientes] = useState<string[]>(leerRecientes)
@@ -100,7 +144,13 @@ export function ChatSidebar({
   const t = texto.trim().toLowerCase()
   // El buscador (en lugar del nombre del establecimiento) filtra la lista en el lugar y,
   // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
-  const visibles = t ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t)) : conversaciones
+  // Con filtros del panel la lista es la que devuelve el servidor; con solo palabras, las que
+  // coinciden por nombre más las que tienen mensajes con esas palabras.
+  const visibles = conPanel
+    ? conversaciones.filter((c) => delServidor.has(c.id))
+    : t
+      ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t) || delServidor.has(c.id))
+      : conversaciones
   const personasQuery = usePersonasQuery(t.length >= 2, texto)
   const conDirecto = new Set(conversaciones.filter((c) => c.tipo === "DIRECTO").map((c) => c.nombre))
   const personas =
@@ -133,8 +183,8 @@ export function ChatSidebar({
 
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
-      <div className="relative flex h-16 shrink-0 items-center border-b px-3">
-        <label className="flex h-10 w-full items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+      <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
+        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>
           <input
@@ -147,7 +197,7 @@ export function ChatSidebar({
               if (e.key === "Escape") setTexto("")
               if (e.key === "Enter") recordar()
             }}
-            placeholder="Buscar conversaciones y personas"
+            placeholder="Buscar conversaciones, personas y mensajes"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
           {texto && (
@@ -161,6 +211,7 @@ export function ChatSidebar({
             </button>
           )}
         </label>
+        <FiltrosChatPopover filtros={filtros} onFiltros={aplicarFiltros} />
         {verRecientes && (
           <div className="absolute inset-x-3 top-full z-30 -mt-2 overflow-hidden rounded-lg border bg-popover py-2 text-popover-foreground shadow-md">
             <p className="px-4 pb-1 text-xs text-muted-foreground">Búsquedas recientes</p>
@@ -184,6 +235,20 @@ export function ChatSidebar({
         )}
       </div>
 
+      {conPanel && (
+        <div role="status" className="flex items-center gap-2 border-b bg-primary/5 px-3 py-1.5 text-xs">
+          <span className="min-w-0 flex-1 truncate" title={resumenFiltros}>
+            Filtrando: {resumenFiltros}
+          </span>
+          <button
+            type="button"
+            onClick={() => aplicarFiltros({ ...FILTROS_VACIOS, q: texto })}
+            className="shrink-0 font-medium text-primary underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            Quitar filtros
+          </button>
+        </div>
+      )}
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
           <InvitacionesSeccion destacada={invitacionDestacada} onAceptada={onSeleccionar} />
           {/* Archivados arriba, con contador y desarchivar por fila (diseño 4742:72681). */}
@@ -247,12 +312,31 @@ export function ChatSidebar({
               Reintentar
             </button>
           </div>
-        ) : t && visibles.length === 0 && personas.length === 0 ? (
+        ) : t && !buscando && visibles.length === 0 && personas.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
             {personasQuery.isFetching ? "Buscando…" : `Ninguna conversación o persona coincide con “${texto.trim()}”.`}
           </p>
         ) : (
           <>
+            {buscando && (
+              <Seccion titulo="Mensajes" icono={MagnifyingGlassIcon}>
+                <ResultadosBusqueda
+                  mensajes={resultados}
+                  termino={filtrosEfectivos(filtros).q}
+                  cargando={busqueda.isPending || (busqueda.isPlaceholderData && resultados.length === 0)}
+                  error={busqueda.isError}
+                  hayMas={!!busqueda.hasNextPage}
+                  cargandoMas={busqueda.isFetchingNextPage}
+                  onMas={() => void busqueda.fetchNextPage()}
+                  onReintentar={() => void busqueda.refetch()}
+                  onAbrir={(m) => {
+                    if (t) recordar()
+                    if (onAbrirMensaje) onAbrirMensaje(m.conversacionId, m.id)
+                    else onSeleccionar(m.conversacionId)
+                  }}
+                />
+              </Seccion>
+            )}
             {personas.length > 0 && (
               <Seccion titulo="Personas">
                 {personas.map((p) => (
