@@ -140,6 +140,11 @@ export interface AdjuntoMensaje {
   archivoId?: number | null
   // Bytes.
   peso?: number | null
+  // `pk_tmensaje_adjunto` (V560): con él se registra la descarga y se quita un archivo
+  // puntual. Null en adjuntos anteriores a la tabla (se quitan por el mensaje).
+  id?: number | null
+  // Alguien distinto del autor ya lo descargó: el autor ya no puede quitarlo.
+  descargado?: boolean
 }
 
 export interface Mensaje {
@@ -149,7 +154,9 @@ export interface Mensaje {
   esPropio: boolean
   texto: string
   fecha: string
+  // Primer archivo vigente (compatibilidad); `adjuntos` trae todos, en orden (hasta 10).
   adjunto: AdjuntoMensaje | null
+  adjuntos?: AdjuntoMensaje[]
   editado: boolean
   fijado: boolean
   // Aviso del sistema ("X se ha unido a…"): se muestra centrado, sin burbuja.
@@ -223,6 +230,10 @@ export interface ArchivoCompartido {
   archivoId?: number | null
   mensajeId?: number
   peso?: number | null
+  // `pk_tmensaje_adjunto` para registrar la descarga; `descargado`: otra persona ya lo
+  // bajó, así que quien lo compartió no puede eliminarlo.
+  adjuntoId?: number | null
+  descargado?: boolean
 }
 
 export interface Candidato {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  MAX_ADJUNTOS,
+  adjuntosDe,
+  adjuntosVigentes,
+  agregarAdjuntos,
   esComprimido,
   formatoDeArchivo,
   pesoLegible,
@@ -29,6 +33,45 @@ describe("validarAdjunto", () => {
 
   it("rechaza lo que supera el máximo", () => {
     expect(validarAdjunto({ name: "video.mp4", size: 21 * 1024 * 1024 })).toMatch(/20 MB/)
+  })
+})
+
+describe("agregarAdjuntos", () => {
+  const archivo = (name: string, size = 10, type = "") => ({ name, size, type })
+
+  it("suma varios, ignora repetidos y explica el que no se puede adjuntar", () => {
+    const { archivos, error } = agregarAdjuntos(
+      [archivo("a.pdf")],
+      [archivo("b.png"), archivo("a.pdf"), archivo("virus.exe"), archivo("c.zip", 10, "application/zip")],
+    )
+    expect(archivos.map((a) => a.name)).toEqual(["a.pdf", "b.png", "c.zip"])
+    expect(error).toMatch(/^virus\.exe: .*tipo de archivo/)
+  })
+
+  it("corta en el máximo de archivos por mensaje", () => {
+    const muchos = Array.from({ length: MAX_ADJUNTOS + 2 }, (_, i) => archivo(`f${i}.pdf`))
+    const { archivos, error } = agregarAdjuntos([], muchos)
+    expect(archivos).toHaveLength(MAX_ADJUNTOS)
+    expect(error).toMatch(/hasta 10 archivos/)
+  })
+
+  it("no deja pasar del peso total del mensaje", () => {
+    const mb = 1024 * 1024
+    const { archivos, error } = agregarAdjuntos([], [archivo("a.pdf", 15 * mb), archivo("b.pdf", 15 * mb), archivo("c.pdf", 5 * mb)])
+    expect(archivos.map((a) => a.name)).toEqual(["a.pdf", "c.pdf"])
+    expect(error).toMatch(/25 MB/)
+  })
+})
+
+describe("adjuntosDe", () => {
+  const adj = (nombre: string, eliminadoEn: string | null = null) =>
+    ({ nombre, formato: "PDF", eliminadoEn }) as const
+
+  it("usa la lista y cae al adjunto único de los mensajes viejos", () => {
+    expect(adjuntosDe({ adjunto: adj("a"), adjuntos: [adj("a"), adj("b")] })).toHaveLength(2)
+    expect(adjuntosDe({ adjunto: adj("a") })).toHaveLength(1)
+    expect(adjuntosDe({ adjunto: null, adjuntos: [] })).toHaveLength(0)
+    expect(adjuntosVigentes({ adjunto: adj("b"), adjuntos: [adj("a", "2026-01-01"), adj("b")] })).toHaveLength(1)
   })
 })
 

@@ -22,6 +22,7 @@ export function comoEliminado(m: Mensaje, eliminadoEn: string | null | undefined
     ...m,
     texto: "",
     adjunto: null,
+    adjuntos: [],
     fijado: false,
     reacciones: [],
     menciones: [],

@@ -1,5 +1,5 @@
 import { fetchArchivoViewUrl } from "@/lib/files"
-import type { FormatoArchivo } from "@/features/comunicaciones/chat/api/types"
+import type { AdjuntoMensaje, FormatoArchivo, Mensaje } from "@/features/comunicaciones/chat/api/types"
 
 /**
  * Tipos y peso que acepta comms-service para un adjunto (`AdjuntosChat`): la
@@ -51,6 +51,16 @@ const MIME_COMPRIMIDOS = new Set([
 export const MAX_ADJUNTO_MB = 20
 const MAX_ADJUNTO_BYTES = MAX_ADJUNTO_MB * 1024 * 1024
 
+/** Tope de archivos por mensaje (comms-service `AdjuntosChat.MAX_POR_MENSAJE`, V560). */
+export const MAX_ADJUNTOS = 10
+/**
+ * Peso total por mensaje: todos los archivos viajan en un solo multipart y file-service
+ * rechaza el pedido que pasa de `FILES_MAX_REQUEST_SIZE` (30 MB, contando el texto y los
+ * separadores del multipart). Se deja margen para no recibir ese error genérico.
+ */
+export const MAX_TOTAL_MB = 25
+const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024
+
 export const ACEPTA_DOCUMENTOS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
 export const ACEPTA_MULTIMEDIA = ".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mov"
 
@@ -85,6 +95,53 @@ export function validarAdjunto(archivo: { name: string; size: number; type?: str
   return null
 }
 
+/**
+ * Suma `nuevos` a los archivos ya elegidos para un mensaje: descarta los que no se pueden
+ * adjuntar y los repetidos (mismo nombre y peso), y corta en el tope de cantidad y de peso
+ * total. `error` explica el primer descarte (null si entraron todos).
+ */
+export function agregarAdjuntos<T extends { name: string; size: number; type?: string }>(
+  actuales: readonly T[],
+  nuevos: readonly T[],
+): { archivos: T[]; error: string | null } {
+  const archivos = [...actuales]
+  let error: string | null = null
+  let total = archivos.reduce((s, a) => s + a.size, 0)
+  for (const archivo of nuevos) {
+    const invalido = validarAdjunto(archivo)
+    if (invalido) {
+      error ??= `${archivo.name}: ${invalido}`
+      continue
+    }
+    if (archivos.some((a) => a.name === archivo.name && a.size === archivo.size)) continue
+    if (archivos.length >= MAX_ADJUNTOS) {
+      error ??= `Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos por mensaje.`
+      break
+    }
+    if (total + archivo.size > MAX_TOTAL_BYTES) {
+      error ??= `Los archivos de un mensaje no pueden sumar más de ${MAX_TOTAL_MB} MB.`
+      continue
+    }
+    archivos.push(archivo)
+    total += archivo.size
+  }
+  return { archivos, error }
+}
+
+/**
+ * Archivos del mensaje en orden. `adjuntos` lo trae comms-service desde `tmensaje_adjunto` (V560); los mensajes
+ * de antes (o del mock) solo traen `adjunto`.
+ */
+export function adjuntosDe(m: Pick<Mensaje, "adjunto" | "adjuntos">): AdjuntoMensaje[] {
+  if (m.adjuntos && m.adjuntos.length > 0) return m.adjuntos
+  return m.adjunto ? [m.adjunto] : []
+}
+
+/** Archivos que siguen visibles (sin quitar). */
+export function adjuntosVigentes(m: Pick<Mensaje, "adjunto" | "adjuntos">) {
+  return adjuntosDe(m).filter((a) => !a.eliminadoEn)
+}
+
 /** "1,2 MB" / "350 KB". */
 export function pesoLegible(bytes: number | null | undefined) {
   if (bytes == null) return ""
@@ -107,3 +164,6 @@ export async function descargarAdjunto(archivoId: number, nombre: string) {
   a.click()
   a.remove()
 }
+
+/** Por qué el autor ya no puede quitar un archivo (comms-service responde 409). */
+export const AVISO_YA_DESCARGADO = "Otra persona ya lo descargó: no se puede eliminar."
