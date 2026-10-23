@@ -30,7 +30,8 @@ import { useEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-e
 import { useEncuestaQuery } from "@/features/comunicaciones/chat/api/query/use-encuesta-query"
 import { useEvaluacionQuery } from "@/features/comunicaciones/chat/api/query/use-evaluacion-query"
 import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
-import { ComunicadoPanel } from "@/features/comunicaciones/chat/components/comunicado-panel"
+import { ComunicadoArticulo, ComunicadoPanel } from "@/features/comunicaciones/chat/components/comunicado-panel"
+import { comunicadoConRespuestas } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
 import {
   EvaluacionEntregas,
   EvaluacionEstado,
@@ -128,12 +129,16 @@ function ChatContent() {
   const evaluacion = evaluacionQuery.data
   const esComunicado = activa?.categoria === "ANUNCIO"
   const comunicadoQuery = useComunicadoQuery(esComunicado ? activa.id : undefined)
+  const comunicado = comunicadoQuery.data
+  // Comunicado con "Permitir respuestas" ya publicado: la tarjeta encabeza la conversación.
+  const conRespuestas = esComunicado && comunicadoConRespuestas(comunicado)
   // Elecciones, encuestas y exámenes son canales sin comentarios para todos, salvo la elección con
-  // "Permitir comentarios". En el comunicado el estudiante solo lee; no escribe.
+  // "Permitir comentarios". En el comunicado responde quien lo recibe solo si quien lo publicó lo
+  // permitió (comms-service responde 403 igual si lo intenta).
   const soloLectura =
     !!activa &&
     ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
-      (esEstudiante && activa.categoria === "ANUNCIO") ||
+      (activa.categoria === "ANUNCIO" && !conRespuestas) ||
       // Colevabot solo publica tarjetas: su DM no tiene compositor (diseño 4428:64360).
       activa.esBot)
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
@@ -284,7 +289,7 @@ function ChatContent() {
               {eleccion && <EleccionEstado eleccion={eleccion} />}
               {encuesta && <EncuestaEstado encuesta={encuesta} />}
               {evaluacion && <EvaluacionEstado evaluacion={evaluacion} />}
-              {esComunicado ? (
+              {esComunicado && !conRespuestas ? (
                 <ComunicadoPanel
                   comunicado={comunicadoQuery.data}
                   isPending={comunicadoQuery.isPending}
@@ -294,7 +299,12 @@ function ChatContent() {
               ) : (
               <>
               <ChatMessages
-                mensajes={mensajesQuery.data ?? []}
+                mensajes={
+                  // El mensaje de apertura del comunicado ya es la tarjeta de arriba.
+                  conRespuestas
+                    ? (mensajesQuery.data ?? []).filter((m) => m.id !== comunicado?.mensajeId)
+                    : (mensajesQuery.data ?? [])
+                }
                 isPending={mensajesQuery.isPending}
                 isError={mensajesQuery.isError}
                 onRetry={() => void mensajesQuery.refetch()}
@@ -327,7 +337,11 @@ function ChatContent() {
                   )
                 }
                 antes={
-                  activa.categoria === "GENERAL" && activa.creadoPor ? (
+                  conRespuestas && comunicado ? (
+                    <div className="mb-4">
+                      <ComunicadoArticulo comunicado={comunicado} />
+                    </div>
+                  ) : activa.categoria === "GENERAL" && activa.creadoPor ? (
                     <CanalBienvenida
                       key={activa.id}
                       tipo={activa.tipo === "GRUPO" ? "grupo" : "foro"}

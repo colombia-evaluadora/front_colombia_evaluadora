@@ -13,6 +13,9 @@ export const chatKeys = {
   personas: [...all, "personas"] as const,
   comunicado: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "comunicado"] as const,
+  // Bajo el comunicado: `actividad.actualizada` (alguien lo vio) también la refresca.
+  recepcion: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "comunicado", "recepcion"] as const,
   evaluacion: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "evaluacion"] as const,
   entregas: (conversacionId: number | "none") =>

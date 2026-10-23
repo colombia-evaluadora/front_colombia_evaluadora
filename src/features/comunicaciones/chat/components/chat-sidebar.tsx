@@ -73,6 +73,7 @@ import {
   ArchiveIcon,
   UnarchiveIcon,
   ClockCounterClockwiseIcon,
+  WarningCircleIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -574,6 +575,14 @@ function ItemConversacion({
           </span>
         ) : (
           <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        )}
+        {c.importante && (
+          // Comunicado marcado como importante por quien lo publicó.
+          <WarningCircleIcon
+            aria-label="Importante"
+            role="img"
+            className={cn("size-4 shrink-0", activa ? "opacity-100" : "text-red")}
+          />
         )}
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />

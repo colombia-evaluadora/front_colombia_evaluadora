@@ -253,7 +253,7 @@ export function CrearChatDialog({
   )
 }
 
-function SelectorPersonas({
+export function SelectorPersonas({
   personas,
   cargando,
   delServidor,
@@ -261,6 +261,7 @@ function SelectorPersonas({
   value,
   onChange,
   paraGrupo = false,
+  autoFocus = true,
 }: {
   personas: Persona[]
   cargando: boolean
@@ -269,6 +270,7 @@ function SelectorPersonas({
   value: Persona[]
   onChange: (v: Persona[]) => void
   paraGrupo?: boolean
+  autoFocus?: boolean
 }) {
   return (
     <SelectorChips
@@ -280,7 +282,7 @@ function SelectorPersonas({
       filtrar={(p, t) => coincidePersona(p, t, delServidor)}
       onConsulta={onConsulta}
       cargando={cargando}
-      autoFocus
+      autoFocus={autoFocus}
       ariaLabel="Buscar personas"
       placeholder="P. ej.: Natalia o pedro@iesimonbolivar.edu.co"
       vacio="Nadie coincide con la búsqueda."

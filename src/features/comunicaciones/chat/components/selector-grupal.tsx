@@ -17,10 +17,17 @@ export function SelectorGrupal({
   enabled,
   value,
   onChange,
+  leyenda = "O agrega por grado, grupo o rol",
+  etiquetaPara = "De los grados y grupos, agregar a",
+  ayuda = "Los acudientes reciben una invitación (una sola aunque tengan varios hijos) y entran al grupo solo si la aceptan.",
 }: {
   enabled: boolean
   value: SeleccionGrupal
   onChange: (v: SeleccionGrupal) => void
+  // Textos según quién lo usa (en un comunicado los acudientes no se invitan: lo reciben directo).
+  leyenda?: string
+  etiquetaPara?: string
+  ayuda?: string | null
 }) {
   const opciones = useOpcionesSeleccionQuery(enabled)
   const datos = opciones.data
@@ -28,7 +35,7 @@ export function SelectorGrupal({
   return (
     // `min-w-0`: un fieldset tiene `min-inline-size: min-content` y se estiraba con los chips.
     <fieldset className="min-w-0 space-y-3">
-      <legend className="mb-2 text-sm font-medium">O agrega por grado, grupo o rol</legend>
+      <legend className="mb-2 text-sm font-medium">{leyenda}</legend>
       {opciones.isError ? (
         <p className="text-sm text-muted-foreground">
           No se pudieron cargar los grados, grupos y roles.{" "}
@@ -72,7 +79,7 @@ export function SelectorGrupal({
       )}
       {value.grados.length + value.grupos.length > 0 && (
         <fieldset className="min-w-0 space-y-1.5">
-          <legend className="text-sm font-medium">De los grados y grupos, agregar a</legend>
+          <legend className="text-sm font-medium">{etiquetaPara}</legend>
           <RadioGroup
             value={value.para ?? "ESTUDIANTES"}
             onValueChange={(v) => onChange({ ...value, para: v as ParaSeleccion })}
@@ -87,10 +94,7 @@ export function SelectorGrupal({
           </RadioGroup>
         </fieldset>
       )}
-      <p className="text-xs text-muted-foreground">
-        Los acudientes reciben una invitación (una sola aunque tengan varios hijos) y entran al grupo
-        solo si la aceptan.
-      </p>
+      {ayuda && <p className="text-xs text-muted-foreground">{ayuda}</p>}
     </fieldset>
   )
 }

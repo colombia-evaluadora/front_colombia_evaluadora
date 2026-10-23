@@ -46,6 +46,8 @@ export interface Conversacion {
   // por comms-service. Null si la conversación no tiene mensajes. Llega también en vivo con
   // `conversacion.actualizada`.
   ultimoMensaje?: UltimoMensaje | null
+  // Comunicado marcado como importante (comms-service): ícono y etiqueta en la lista.
+  importante?: boolean
 }
 
 export type TipoUltimoMensaje = "NORMAL" | "SISTEMA" | "BOT"
@@ -360,11 +362,12 @@ export interface EntregaEvaluacion {
 
 export type Audiencia = "ESTUDIANTES" | "DOCENTES" | "PADRES" | "DIRECTIVOS" | "ADMINISTRATIVOS"
 
-// Comunicado oficial: canal de solo lectura con un único contenido.
+// Comunicado oficial: canal con un único contenido (y respuestas solo si quien lo publica las permite).
 export interface Comunicado {
   conversacionId: number
   titulo: string
   descripcion: string
+  // Audiencia por rol; puede ir vacía si se eligieron destinos.
   audiencia: Audiencia[]
   publicarEn: string
   // HTML del editor; se sanea antes de mostrarlo.
@@ -372,9 +375,51 @@ export interface Comunicado {
   publicadoPor: string
   esCreador: boolean
   // Confirmación de lectura (solo para quien lo publicó): destinatarios que ya
-  // abrieron el canal / total. comms-service la envía; el mock no.
+  // lo vieron / total. comms-service la envía; el mock también.
   leidos?: number | null
   totalDestinatarios?: number | null
+  // Grados, grupos, cargos, personas y grupos del chat elegidos (con su etiqueta).
+  destinos?: DestinosComunicado | null
+  // Destacado para quien lo recibe (ícono y etiqueta en la lista y en el panel).
+  importante?: boolean
+  // Lo decide quien lo publica; apagado, nadie escribe en el canal.
+  permiteRespuestas?: boolean
+  adjuntos?: AdjuntoComunicado[]
+  // Mensaje de apertura fijado (no se repite en la conversación de respuestas).
+  mensajeId?: number | null
+}
+
+export interface OpcionDestino {
+  valor: string
+  etiqueta: string
+}
+
+export interface DestinosComunicado {
+  grados: OpcionDestino[]
+  grupos: OpcionDestino[]
+  roles: OpcionDestino[]
+  usuarios: OpcionDestino[]
+  gruposChat: OpcionDestino[]
+  para: "ESTUDIANTES" | "ACUDIENTES" | "AMBOS"
+}
+
+export interface AdjuntoComunicado {
+  id: number
+  archivoId: number
+  nombre: string
+  formato: FormatoArchivo
+  peso: number
+}
+
+// Registro de recepción por destinatario (solo lo ve quien publicó el comunicado).
+export interface RecepcionComunicado {
+  usuarioId: number
+  nombre: string
+  estado: "LEIDO" | "NO_LEIDO"
+  // Cuándo salió el aviso; null mientras siga programado.
+  entregadoEn: string | null
+  // Cuándo lo abrió; null si no lo ha visto o si lo leyó antes de existir el registro.
+  vistoEn: string | null
 }
 
 // Miembro de un canal. Bloqueado = sigue en el canal pero no puede escribir.
