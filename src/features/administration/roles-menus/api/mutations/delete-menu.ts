@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
+import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
 
 /**
  * Baja del menú. No es un DELETE: el backend expone un soft-delete en cascada
@@ -25,10 +26,10 @@ export function useDeleteMenu({ mutationConfig }: UseDeleteMenuOptions = {}) {
     mutationFn: deleteMenu,
     ...mutationConfig,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: menusQueryKey() })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.menus.all })
       // Borrar un menú también cambia lo que ve cada rol.
-      queryClient.invalidateQueries({ queryKey: ["role-menus"] })
-      queryClient.invalidateQueries({ queryKey: ["navigation", "menu"] })
+      queryClient.invalidateQueries({ queryKey: roleMenuKeys.roleMenus.all })
+      queryClient.invalidateQueries({ queryKey: navigationKeys.menu })
       mutationConfig?.onSuccess?.(...args)
     },
   })
