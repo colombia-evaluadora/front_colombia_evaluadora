@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import type { ArchivoCompartido, FormatoArchivo } from "@/features/comunicaciones/chat/api/types"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { useArchivosQuery } from "@/features/comunicaciones/chat/api/query/use-archivos-query"
 import { fechaLarga } from "@/features/comunicaciones/chat/lib/chat-format"
 import { SquaresFourIcon, ListIcon } from "@/components/ui/icons"
@@ -333,7 +333,7 @@ function TarjetaArchivo({
   cuadricula: boolean
   onEditar: () => void
 }) {
-  const { Icono, color, tipo } = ICONO_ARCHIVO[a.formato]
+  const { Icono, color, tipo } = iconoArchivo(a.formato, a.nombre)
   const detalle = `Compartido por ${a.esPropio ? "ti" : a.compartidoPor} el ${fechaLarga(a.fecha)}`
   return (
     <article
