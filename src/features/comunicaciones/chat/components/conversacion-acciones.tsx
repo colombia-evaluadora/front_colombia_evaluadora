@@ -40,7 +40,8 @@ import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
-import type { Conversacion, SilencioDuracion } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
+import { SILENCIOS } from "@/features/comunicaciones/chat/lib/silencios"
 import {
   useArchivarConversacion,
   useDuplicarConversacion,
@@ -70,11 +71,6 @@ import {
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
-const SILENCIOS: Array<{ valor: SilencioDuracion; etiqueta: string; aviso: string }> = [
-  { valor: "8H", etiqueta: "8 horas", aviso: "Notificaciones silenciadas por 8 horas." },
-  { valor: "1S", etiqueta: "1 semana", aviso: "Notificaciones silenciadas por 1 semana." },
-  { valor: "SIEMPRE", etiqueta: "Siempre", aviso: "Notificaciones silenciadas." },
-]
 
 type Dialogo = "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
