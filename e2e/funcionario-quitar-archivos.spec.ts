@@ -1,96 +1,86 @@
-import { writeFileSync } from "node:fs"
 import { expect, test, type Page } from "@playwright/test"
 
+// Quitar la foto del funcionario (MSW): al crear, al editar con una foto recién
+// elegida y al editar con una ya guardada — guardar y reabrir debe dejarlo sin
+// foto. Con `QUITAR_CAPTURAS=<dir>` guarda una captura por paso.
 test.setTimeout(400_000)
-const URL_F = "/app/establecimiento-educativo/funcionarios"
+const FUNCIONARIOS = "/app/establecimiento-educativo/funcionarios"
 const CAPTURAS = process.env.QUITAR_CAPTURAS
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+)
+const ZONA_VACIA = "para cargar la foto del usuario"
 
 async function captura(page: Page, nombre: string) {
   if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/${nombre}.png`, fullPage: true })
 }
 
-async function volcar(page: Page, nombre: string) {
-  if (CAPTURAS) writeFileSync(`${CAPTURAS}/${nombre}.txt`, page.url() + "\n" + (await page.locator("body").innerText()))
-}
-
-async function login(page: Page, destino: string) {
-  await page.goto(`/login?redirectTo=${encodeURIComponent(destino)}`)
+async function login(page: Page) {
+  await page.goto(`/login?redirectTo=${encodeURIComponent(FUNCIONARIOS)}`)
   await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 60_000 })
-  for (let i = 0; i < 4; i++) {
-    await page.waitForTimeout(1_000)
-    if (!new URL(page.url()).pathname.startsWith("/login")) break
-    await page.getByLabel("Correo electrónico").fill("admin@example.com")
-    await page.getByLabel("Contraseña", { exact: true }).fill("password")
-    await page.getByRole("button", { name: "Ingresar" }).click()
-    await page.waitForURL((u) => u.pathname.startsWith("/app"), { timeout: 30_000 }).catch(() => {})
+  // El primer ingreso tras arrancar MSW a veces rebota al login: se reintenta.
+  // El primer compilado de Vite es lento: se espera el título, no la URL.
+  const titulo = page.getByRole("heading", { name: "Funcionarios" })
+  for (let intento = 0; intento < 4; intento++) {
+    const ingresar = page.getByRole("button", { name: "Ingresar" })
+    if (await ingresar.isVisible().catch(() => false)) {
+      await page.getByLabel("Correo electrónico").fill("admin@example.com")
+      await page.getByLabel("Contraseña", { exact: true }).fill("password")
+      await ingresar.click()
+    }
+    if (await titulo.waitFor({ timeout: 45_000 }).then(() => true, () => false)) return
   }
-  await page.waitForTimeout(30_000)
+  await expect(titulo).toBeVisible()
 }
 
-test("explorar", async ({ page }) => {
-  const logs: string[] = []
-  page.on("console", (m) => logs.push(m.type() + " " + m.text()))
-  await login(page, URL_F)
-  if (CAPTURAS) writeFileSync(`${CAPTURAS}/console.txt`, logs.join("\n"))
-  await volcar(page, "00-lista")
-  await captura(page, "00-lista")
-  expect(new URL(page.url()).pathname).toBe(URL_F)
+const subirFoto = (page: Page) =>
+  page.locator('input[type="file"]').first().setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: PNG })
+const quitar = (page: Page) => page.getByRole("button", { name: "Eliminar foto" })
 
+test("quitar la foto del funcionario al crear y al editar", async ({ page }) => {
+  await login(page)
+
+  // Crear: elegir y quitar.
   await page.getByRole("button", { name: "Agregar" }).click()
-  await page.waitForTimeout(2_000)
-  await captura(page, "01-crear-abierto")
-  const inputs = page.locator('input[type="file"]')
-  writeFileSync(`${CAPTURAS}/inputs.txt`, String(await inputs.count()))
-  await inputs.first().setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: PNG })
-  await page.waitForTimeout(1_000)
-  await captura(page, "02-crear-con-foto")
-  const quitar = page.getByRole("button", { name: "Eliminar foto" })
-  writeFileSync(`${CAPTURAS}/quitar.txt`, `${await quitar.count()} visible=${await quitar.first().isVisible().catch(() => "x")}`)
-  await quitar.first().click({ timeout: 5_000 }).catch((e) => writeFileSync(`${CAPTURAS}/click-err.txt`, String(e)))
-  await page.waitForTimeout(1_000)
-  await captura(page, "03-crear-tras-quitar")
-  await volcar(page, "03-crear-tras-quitar")
+  await subirFoto(page)
+  await captura(page, "01-crear-con-foto")
+  await quitar(page).click()
+  await expect(page.getByText(ZONA_VACIA)).toBeVisible()
+  await captura(page, "02-crear-tras-quitar")
   await page.getByRole("button", { name: "Cancelar" }).click()
-  await page.waitForTimeout(1_000)
   const descartar = page.getByRole("button", { name: /Descartar/ })
-  if (await descartar.count()) await descartar.first().click()
-  await page.waitForTimeout(1_000)
+  if (await descartar.isVisible().catch(() => false)) await descartar.click()
 
-  // Editar: subir, guardar, reabrir y quitar la ya guardada.
-  const fila = page.getByRole("row").nth(1)
-  await fila.hover()
-  await fila.getByRole("button", { name: "Editar funcionario" }).click()
-  await page.waitForTimeout(3_000)
-  await captura(page, "10-editar-abierto")
-  await page.locator('input[type="file"]').first().setInputFiles({ name: "foto.png", mimeType: "image/png", buffer: PNG })
-  await page.waitForTimeout(1_000)
-  await captura(page, "11-editar-con-foto")
+  // Editar: subir y guardar, para que al reabrir sea una foto ya guardada.
+  // Por documento y no por posición: tras guardar, la lista puede reordenarse.
+  const documento = (await page.getByRole("row").nth(1).getByRole("cell").nth(1).innerText()).trim()
+  const fila = page.getByRole("row").filter({ hasText: documento })
+  const abrirEdicion = async () => {
+    await fila.hover()
+    await fila.getByRole("button", { name: "Editar funcionario" }).click()
+    // Al llegar el detalle el diálogo reinicia la foto elegida: se espera a que cargue.
+    await expect(page.getByLabel("Número de documento*")).toHaveValue(documento, { timeout: 15_000 })
+  }
+  await abrirEdicion()
+  await subirFoto(page)
   await page.getByLabel("Teléfono").fill("3001234567")
-  await page.getByRole("button", { name: "Guardar" }).first().click()
-  await page.waitForTimeout(4_000)
-  await captura(page, "11b-tras-guardar")
-  // Cerrar y reabrir: la foto llega como ya guardada (existingPreview).
-  await fila.hover()
-  await fila.getByRole("button", { name: "Editar funcionario" }).click()
-  await page.waitForTimeout(4_000)
-  await captura(page, "12-editar-guardado")
-  await volcar(page, "12-editar-guardado")
-  const q2 = page.getByRole("button", { name: "Eliminar foto" })
-  writeFileSync(`${CAPTURAS}/quitar2.txt`, `${await q2.count()} visible=${await q2.first().isVisible().catch(() => "x")}`)
-  await q2.first().click({ timeout: 5_000 }).catch((e) => writeFileSync(`${CAPTURAS}/click-err2.txt`, String(e)))
-  await page.waitForTimeout(1_000)
-  await captura(page, "13-editar-tras-quitar")
-  await page.getByRole("button", { name: "Guardar" }).first().click()
-  await page.waitForTimeout(4_000)
-  await fila.hover()
-  await fila.getByRole("button", { name: "Editar funcionario" }).click()
-  await page.waitForTimeout(4_000)
-  await captura(page, "14-reabierto-tras-quitar-y-guardar")
-  await expect(page.getByRole("button", { name: "Eliminar foto" })).toHaveCount(0)
-  await expect(page.getByText("para cargar la foto del usuario")).toBeVisible()
-})
+  await page.getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 })
 
-const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-)
+  // Reabrir: la foto guardada trae su botón de quitar.
+  await abrirEdicion()
+  await expect(quitar(page)).toBeVisible({ timeout: 15_000 })
+  await captura(page, "03-editar-foto-guardada")
+  await quitar(page).click()
+  await expect(page.getByText(ZONA_VACIA)).toBeVisible()
+  await captura(page, "04-editar-tras-quitar")
+  await page.getByRole("button", { name: "Guardar" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 })
+
+  // Reabrir otra vez: sigue sin foto.
+  await abrirEdicion()
+  await expect(page.getByText(ZONA_VACIA)).toBeVisible({ timeout: 15_000 })
+  await expect(quitar(page)).toHaveCount(0)
+  await captura(page, "05-reabierto-sin-foto")
+})

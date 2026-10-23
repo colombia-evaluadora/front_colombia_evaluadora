@@ -129,8 +129,11 @@ export async function update(
     })
   }
 
+  // Quitar la foto: `fkTarchivoFoto: null` no sirve, `fn_fun_actualizar`
+  // trata un NULL como "no tocar" (COALESCE) y la foto seguía ahí al
+  // reabrir. El borrado va con su propio flag (`p_limpiar_foto`, sso V72/V93).
   if (removePhoto) {
-    return api.patch(url, { ...toOutgoingPayload(values), fkTarchivoFoto: null })
+    return api.patch(url, { ...toOutgoingPayload(values), limpiarFoto: true })
   }
 
   return api.patch(url, toOutgoingPayload(values))
