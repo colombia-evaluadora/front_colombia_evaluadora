@@ -254,6 +254,13 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         )
         return
       }
+      case "mensaje.confirmacion": {
+        // Confirmación de lectura (HU 7): un receptor recibió o leyó un mensaje que la pidió. El
+        // evento no trae quién; el autor vuelve a pedir el historial (sus checks y "leído por").
+        const { conversacionId: id } = e.data as { conversacionId: number }
+        void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(id) })
+        return
+      }
       case "actividad.actualizada": {
         // Alguien votó, respondió o leyó una actividad (elección, encuesta,
         // comunicado, evaluación). El evento no trae conteos (la urna es secreta):

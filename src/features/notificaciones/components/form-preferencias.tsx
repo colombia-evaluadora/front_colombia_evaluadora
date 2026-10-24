@@ -108,7 +108,7 @@ export function FormPreferencias({
       <section aria-labelledby="pref-matriz-titulo" className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <FormSectionHeading as="h2" id="pref-matriz-titulo">
-            Canales por tipo de notificación
+            Medios de aviso por tipo de notificación
           </FormSectionHeading>
           <p className="text-sm text-muted-foreground">
             La bandeja de la aplicación siempre recibe todas tus notificaciones; aquí eliges qué más

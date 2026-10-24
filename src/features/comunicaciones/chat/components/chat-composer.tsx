@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode,
 
 import {
   CheckIcon,
+  ChecksIcon,
   ClockIcon,
   FileIcon,
   ImagesIcon,
@@ -101,6 +102,9 @@ interface ChatComposerProps {
   // Atajos "/" que abre la página (crear actividades, votación rápida); los que faltan no se
   // ofrecen. "Adjuntar" y "Programar envío" los resuelve el propio compositor.
   onAtajo?: AccionesAtajo
+  // Confirmación de lectura del próximo mensaje (HU 7). Sin prop no se ofrece (edición o perfil
+  // que no puede pedirla, p. ej. un estudiante a directivos).
+  confirmacionLectura?: { activa: boolean; onCambiar: (activa: boolean) => void }
 }
 
 export type AccionesAtajo = Partial<Record<Exclude<IdAtajo, "adjuntar" | "programar">, () => void>>
@@ -122,9 +126,11 @@ export function ChatComposer({
   onGuardarBorrador,
   onProgramar,
   onAtajo,
+  confirmacionLectura,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
+  const confirmacion = edicion ? undefined : confirmacionLectura
   const [texto, setTexto] = useState(textoInicial)
   const [archivos, setArchivos] = useState<File[]>([])
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
@@ -571,12 +577,28 @@ export function ChatComposer({
             </>
           )}
 
+          {confirmacion && (
+            <button
+              type="button"
+              aria-pressed={confirmacion.activa}
+              aria-label="Solicitar confirmación de lectura"
+              title={
+                confirmacion.activa
+                  ? "Se pedirá confirmación de lectura de este mensaje"
+                  : "Solicitar confirmación de lectura"
+              }
+              onClick={() => confirmacion.onCambiar(!confirmacion.activa)}
+              className="ml-auto grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none aria-pressed:bg-primary/10 aria-pressed:text-primary"
+            >
+              <ChecksIcon className="size-5" />
+            </button>
+          )}
           {!edicion && onProgramar && (
             <Herramienta
               etiqueta="Programar envío"
               onClick={() => setProgramar({ guardando: false, error: null })}
               deshabilitado={!programable}
-              className="ml-auto"
+              className={confirmacion ? undefined : "ml-auto"}
             >
               <ClockIcon className="size-5" />
             </Herramienta>
@@ -586,7 +608,7 @@ export function ChatComposer({
             disabled={!listo}
             aria-label={edicion ? "Guardar cambios" : "Enviar mensaje"}
             className={cn(
-              !(!edicion && onProgramar) && "ml-auto",
+              !(!edicion && onProgramar) && !confirmacion && "ml-auto",
               "grid size-9 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
               edicion
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"

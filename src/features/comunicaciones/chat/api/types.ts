@@ -47,6 +47,13 @@ export interface Conversacion {
   // por comms-service. Null si la conversación no tiene mensajes. Llega también en vivo con
   // `conversacion.actualizada`.
   ultimoMensaje?: UltimoMensaje | null
+  // Última duración de silencio elegida (solo mientras está silenciada).
+  silencioDuracion?: Exclude<SilencioDuracion, "NINGUNA"> | null
+  // Medios por los que avisa la conversación (comms-service, V560 alerta_*). Sin campo = defecto
+  // (campana y sonido sí, correo no). El sonido requiere la campana.
+  alertaCampana?: boolean
+  alertaSonido?: boolean
+  alertaCorreo?: boolean
   // Comunicado marcado como importante (comms-service): ícono y etiqueta en la lista.
   importante?: boolean
 }
@@ -180,6 +187,8 @@ export interface Mensaje {
   editadoEn?: string | null
   // Tarjeta de Colevabot: se pinta como tarjeta estructurada; `texto` es su título.
   bot?: TarjetaBot | null
+  // Mensaje propio que pidió confirmación de lectura: estado y receptores (comms-service).
+  confirmacion?: ConfirmacionLectura | null
 }
 
 export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"
@@ -575,4 +584,37 @@ export interface Enviado {
   mensajeId: number | null
   texto: string
   fecha: string
+}
+
+// Confirmación de lectura de un mensaje propio (HU 7): ENVIADO (nadie lo recibió), ENTREGADO
+// (todos lo recibieron o alguno lo leyó) y LEIDO (todos lo leyeron). Quien no permite la
+// confirmación nunca pasa de entregado.
+export type EstadoConfirmacion = "ENVIADO" | "ENTREGADO" | "LEIDO"
+
+export interface LectorMensaje {
+  id: number
+  nombre: string
+  entregadoEn: string | null
+  leidoEn: string | null
+}
+
+export interface ConfirmacionLectura {
+  estado: EstadoConfirmacion
+  total: number
+  entregados: number
+  leidos: number
+  lectores: LectorMensaje[]
+}
+
+// Ajustes del chat del usuario (`GET/PUT /comunicaciones/ajustes`).
+export interface AjustesChat {
+  confirmacionLecturaPermitir: boolean
+  confirmacionLecturaSolicitar: boolean
+  sonido: boolean
+}
+
+export interface AlertasConversacion {
+  campana: boolean
+  sonido: boolean
+  correo: boolean
 }

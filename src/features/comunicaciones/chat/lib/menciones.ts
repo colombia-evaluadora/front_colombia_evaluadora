@@ -2,7 +2,7 @@
  * Menciones estilo Discord.
  *
  * En el texto guardado una mención a persona es un token `<@id>` (estable si
- * la persona cambia de nombre); `@canal` y `@todos` van literales. El
+ * la persona cambia de nombre); `@todos` va literal (`@canal` se acepta como alias). El
  * compositor muestra `@Nombre` y codifica al enviar; para editar se decodifica.
  * El servidor decide qué menciones valen (permisos de `@todos`) y las devuelve
  * en `Mensaje.menciones`; solo esas se resaltan.
@@ -12,7 +12,6 @@ import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
 export const MENCIONES_MASIVAS: { tipo: Exclude<TipoMencion, "USUARIO">; nombre: string; ayuda: string }[] = [
-  { tipo: "CANAL", nombre: "canal", ayuda: "Notifica a los miembros conectados" },
   { tipo: "TODOS", nombre: "todos", ayuda: "Notifica a todos los miembros" },
 ]
 
@@ -110,10 +109,8 @@ export function extraerMenciones(
     }
   }
   if (permitirMasivas) {
-    for (const [, , nombre] of texto.matchAll(MASIVA)) {
-      const tipo: TipoMencion = nombre.toLowerCase() === "canal" ? "CANAL" : "TODOS"
-      if (!out.some((x) => x.tipo === tipo)) out.push({ tipo, usuarioId: null, nombre: nombre.toLowerCase() })
-    }
+    // "@canal" (mensajes viejos) es alias de "@todos": una sola mención masiva.
+    if (texto.match(MASIVA)) out.push({ tipo: "TODOS", usuarioId: null, nombre: "todos" })
   }
   return out
 }
@@ -133,8 +130,8 @@ export function segmentarMenciones(texto: string, menciones: readonly Mencion[] 
     if (m[1] != null) {
       mencion = menciones.find((x) => x.tipo === "USUARIO" && x.usuarioId === Number(m[1]))
     } else {
-      const tipo = m[3].toLowerCase() === "canal" ? "CANAL" : "TODOS"
-      mencion = menciones.find((x) => x.tipo === tipo)
+      // "@canal" y "@todos" son la misma mención masiva (datos viejos pueden traer tipo CANAL).
+      mencion = menciones.find((x) => x.tipo === "TODOS" || x.tipo === "CANAL")
       inicio = idx + m[2].length
     }
     if (!mencion) continue
