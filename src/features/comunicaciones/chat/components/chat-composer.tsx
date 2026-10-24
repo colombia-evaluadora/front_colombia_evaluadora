@@ -6,7 +6,9 @@ import {
   ClockIcon,
   FileIcon,
   ImagesIcon,
+  MicrophoneIcon,
   PaperPlaneTiltIcon,
+  StopIcon,
   PlusIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -23,9 +25,13 @@ import {
   ACEPTA_MULTIMEDIA,
   MAX_ADJUNTOS,
   agregarAdjuntos,
+  esAudio,
   formatoDeArchivo,
   pesoLegible,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { useGrabadorNota } from "@/features/comunicaciones/chat/hooks/use-grabador-nota"
+import { MAX_NOTA_SEGUNDOS, duracionLegible } from "@/features/comunicaciones/chat/lib/nota-de-voz"
+import { ReproductorLocal } from "@/features/comunicaciones/chat/components/reproductor-audio"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
 import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
@@ -138,6 +144,12 @@ export function ChatComposer({
     setArchivos((prev) => prev.filter((_, i) => i !== indice))
   }
   const hayArchivos = archivos.length > 0
+  // Nota de voz: al detener queda como un archivo pendiente más (se escucha y se quita ahí).
+  const grabador = useGrabadorNota({
+    onGrabada: (archivo) => elegirArchivos([archivo]),
+    onError: setErrorArchivo,
+  })
+  const grabando = grabador.estado !== "inactivo"
   // Último texto y callback, para guardarlos como borrador al desmontar.
   const borradorRef = useRef({ texto, onGuardarBorrador })
   useEffect(() => {
@@ -155,7 +167,7 @@ export function ChatComposer({
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // Aa abre/cierra la barra de formato (antes salía sola con el foco y Aa no hacía nada visible).
   const [formatoAbierto, setFormatoAbierto] = useState(false)
-  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando
+  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando && !grabando
   // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
   const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
     null,
@@ -440,6 +452,36 @@ export function ChatComposer({
             ))}
           </ul>
         )}
+        {grabador.estado === "grabando" && (
+          <div
+            role="status"
+            className="mx-3 mt-3 flex items-center gap-3 rounded-lg border border-red-stroke bg-red-22 px-3 py-2 text-sm"
+          >
+            <span aria-hidden className="size-2.5 shrink-0 animate-pulse rounded-full bg-red motion-reduce:animate-none" />
+            <span className="font-medium text-red">Grabando nota de voz</span>
+            <span className="text-xs tabular-nums text-muted-foreground" aria-label={`${duracionLegible(grabador.segundos)} de ${duracionLegible(MAX_NOTA_SEGUNDOS)}`}>
+              {duracionLegible(grabador.segundos)} / {duracionLegible(MAX_NOTA_SEGUNDOS)}
+            </span>
+            <button
+              type="button"
+              onClick={grabador.cancelar}
+              aria-label="Cancelar grabación"
+              title="Cancelar"
+              className="ml-auto grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <XIcon className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={grabador.detener}
+              aria-label="Detener grabación"
+              title="Detener"
+              className="grid size-8 place-items-center rounded-full bg-red text-red-foreground hover:bg-red/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <StopIcon className="size-5" />
+            </button>
+          </div>
+        )}
         {errorArchivo && (
           <p role="alert" className="mx-3 mt-2 text-xs text-red">
             {errorArchivo}
@@ -540,7 +582,20 @@ export function ChatComposer({
               <AtIcon className="size-5" />
             </Herramienta>
           )}
-          {/* Sin grabar video ni audio: llamadas y grabaciones quedaron fuera del alcance. */}
+          {/* Nota de voz (micrófono del diseño): se graba y se adjunta como un archivo más. Sin
+              videollamadas ni grabación de video: quedaron fuera del alcance. */}
+          {!edicion && (
+            <Herramienta
+              etiqueta={grabador.estado === "pidiendo" ? "Esperando permiso del micrófono" : "Grabar nota de voz"}
+              onClick={() => {
+                setErrorArchivo(null)
+                void grabador.iniciar()
+              }}
+              deshabilitado={grabando || archivos.length >= MAX_ADJUNTOS || enviando}
+            >
+              <MicrophoneIcon className="size-5" />
+            </Herramienta>
+          )}
           {disponibles.size > 0 && (
             <>
               <Separador />
@@ -681,12 +736,43 @@ function SelectorArchivo({
 }
 
 function ArchivoPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
+  if (esAudio(archivo.name)) return <AudioPendiente archivo={archivo} onQuitar={onQuitar} />
   const { Icono, color } = iconoArchivo(formatoDeArchivo(archivo), archivo.name)
   return (
     <div className="flex w-fit max-w-full items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
       <Icono aria-hidden className={cn("size-6 shrink-0", color)} />
       <span className="min-w-0 truncate text-sm font-medium">{archivo.name}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{pesoLegible(archivo.size)}</span>
+      <button
+        type="button"
+        aria-label={`Quitar ${archivo.name}`}
+        onClick={onQuitar}
+        className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      >
+        <XIcon className="size-4" />
+      </button>
+    </div>
+  )
+}
+
+// Audio por enviar (nota de voz recién grabada o archivo de audio): se escucha antes de
+// mandarlo y se puede quitar.
+function AudioPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const u = URL.createObjectURL(archivo)
+    setUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [archivo])
+  return (
+    <div className="flex w-full max-w-sm items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate font-medium text-foreground">{archivo.name}</span>
+          <span className="shrink-0">{pesoLegible(archivo.size)}</span>
+        </span>
+        {url && <ReproductorLocal src={url} nombre={archivo.name} className="mt-1 h-9" />}
+      </span>
       <button
         type="button"
         aria-label={`Quitar ${archivo.name}`}
