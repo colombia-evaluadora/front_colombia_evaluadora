@@ -359,7 +359,7 @@ function ChatContent() {
                     />
                   ) : esEvaluacion ? (
                     <>
-                      {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} canal={evaluacion} />}
+                      {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} tipo="evaluacion" canal={evaluacion} />}
                       {esEstudiante ? (
                         <EvaluacionEstudiante evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
                       ) : (
@@ -368,7 +368,7 @@ function ChatContent() {
                     </>
                   ) : esEncuesta ? (
                     <>
-                      {encuesta && <CanalBienvenida key={encuesta.conversacionId} canal={encuesta} />}
+                      {encuesta && <CanalBienvenida key={encuesta.conversacionId} tipo="encuesta" canal={encuesta} />}
                       {/* Quien la creó ve los resultados; las personas asignadas la responden. */}
                       {encuesta && !encuesta.esCreador ? (
                         <EncuestaParticipante encuesta={encuesta} isPending={encuestaQuery.isPending} />
@@ -380,7 +380,12 @@ function ChatContent() {
                     esEleccion && (
                       <>
                         {eleccion && (
-                          <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} soloTitulo={votaEstudiante} />
+                          <CanalBienvenida
+                            key={eleccion.conversacionId}
+                            tipo="eleccion"
+                            canal={eleccion}
+                            soloTitulo={votaEstudiante}
+                          />
                         )}
                         {votaEstudiante ? (
                           <EleccionEstudiante eleccion={eleccion} isPending={eleccionQuery.isPending} />

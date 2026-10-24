@@ -162,9 +162,9 @@ export function EleccionResultados({
         {/* Solo el creador recibe cuántos abrieron el canal; a los votantes les llega 0. */}
         {e.esCreador && (
         <div className="flex flex-wrap gap-x-2">
-          <dt className="font-medium">Visibilidad del canal:</dt>
+          <dt className="font-medium">Visibilidad de la elección:</dt>
           <dd className="text-muted-foreground">
-            Han visto el canal: {e.vieronCanal} | No han visto:{" "}
+            Han visto la elección: {e.vieronCanal} | No han visto:{" "}
             {Math.max(0, e.totalHabilitados - e.vieronCanal)}
           </dd>
         </div>
@@ -309,14 +309,24 @@ function leerCerrada(id: number) {
 }
 
 // Mensaje de inicio que traen los canales de elección y encuesta al crearse.
+// Texto visible: nunca "canal" (terminología del Figma: foro / grupo); las
+// conversaciones de encuesta, evaluación y elección se nombran por lo que son.
+const SUSTANTIVO_BIENVENIDA = {
+  foro: { este: "este foro", del: "del foro" },
+  grupo: { este: "este grupo", del: "del grupo" },
+  encuesta: { este: "esta encuesta", del: "de la encuesta" },
+  evaluacion: { este: "esta evaluación", del: "de la evaluación" },
+  eleccion: { este: "esta elección", del: "de la elección" },
+} as const
+
 export function CanalBienvenida({
   canal: e,
-  tipo = "canal",
+  tipo,
   soloTitulo = false,
 }: {
   canal: Pick<Eleccion, "conversacionId" | "nombre" | "creadoPor" | "esCreador">
   // "foro" en los foros generales y "grupo" en los grupos (card: Canales → Foros).
-  tipo?: "canal" | "foro" | "grupo"
+  tipo: keyof typeof SUSTANTIVO_BIENVENIDA
   // El votante de una elección ve solo el saludo, sin "X creó este canal" (Figma 4189:67308).
   soloTitulo?: boolean
 }) {
@@ -344,8 +354,10 @@ export function CanalBienvenida({
       </h3>
       {!soloTitulo && (
         <p className="text-[13px] text-muted-foreground">
-          {e.esCreador ? `Creaste este ${tipo}.` : `${e.creadoPor} creó este ${tipo}.`} Este es el
-          principio del {tipo} {e.nombre}.
+          {e.esCreador
+            ? `Creaste ${SUSTANTIVO_BIENVENIDA[tipo].este}.`
+            : `${e.creadoPor} creó ${SUSTANTIVO_BIENVENIDA[tipo].este}.`}{" "}
+          Este es el principio {SUSTANTIVO_BIENVENIDA[tipo].del} {e.nombre}.
         </p>
       )}
       <button

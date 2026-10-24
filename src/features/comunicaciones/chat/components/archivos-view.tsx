@@ -161,7 +161,7 @@ function ListaArchivos({
             className={chip(soloMisCanales)}
           >
             {soloMisCanales && <CheckIcon aria-hidden className="size-4" />}
-            Solo mis canales
+            Solo mis foros y grupos
           </button>
 
           <div
@@ -240,7 +240,7 @@ function ListaArchivos({
                 </button>
               </>
             ) : (
-              <p>Los archivos que se compartan en tus canales aparecerán aquí.</p>
+              <p>Los archivos que se compartan en tus foros y grupos aparecerán aquí.</p>
             )}
           </div>
         ) : (

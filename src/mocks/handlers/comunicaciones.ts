@@ -241,10 +241,10 @@ export const comunicacionesHandlers = [
     }
     const nombre = body.NOMBRE?.trim()
     if (!nombre) {
-      return HttpResponse.json({ message: "Escribe un nombre para el canal." }, { status: 400 })
+      return HttpResponse.json({ message: "Escribe un nombre." }, { status: 400 })
     }
     if (conversaciones.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${nombre}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe un foro llamado ${nombre}.` }, { status: 409 })
     }
     const canal = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
@@ -312,7 +312,7 @@ export const comunicacionesHandlers = [
     await delay(150)
     const conv = buscar(params.id)
     const m = conv && miembrosDe(conv.id).find((x) => x.id === Number(params.miembro))
-    if (!m) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    if (!m) return HttpResponse.json({ message: "La persona ya no está en la conversación." }, { status: 404 })
     const body = (await request.json()) as { BLOQUEADO: boolean }
     m.bloqueado = body.BLOQUEADO
     return HttpResponse.json({ rows: [m] })
@@ -324,7 +324,7 @@ export const comunicacionesHandlers = [
     if (!conv) return noEncontrada()
     const lista = miembrosDe(conv.id)
     const i = lista.findIndex((x) => x.id === Number(params.miembro))
-    if (i < 0) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    if (i < 0) return HttpResponse.json({ message: "La persona ya no está en la conversación." }, { status: 404 })
     const [m] = lista.splice(i, 1)
     conv.totalMiembros = Math.max(1, conv.totalMiembros - 1)
     return HttpResponse.json({ rows: [m] })
@@ -543,7 +543,7 @@ export const comunicacionesHandlers = [
     const body = (await request.json()) as { NOMBRE?: string }
     const nombre = body.NOMBRE?.trim()
     if (!nombre) {
-      return HttpResponse.json({ message: "Escribe un nombre para el canal." }, { status: 400 })
+      return HttpResponse.json({ message: "Escribe un nombre." }, { status: 400 })
     }
     conv.nombre = nombre
     return HttpResponse.json({ rows: [conv] })

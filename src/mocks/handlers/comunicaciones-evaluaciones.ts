@@ -57,7 +57,7 @@ export const comunicacionesEvaluacionesHandlers = [
   http.patch(URL("conversaciones/:id/evaluacion"), async ({ params, request }) => {
     await delay(250)
     const e = evaluaciones.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una evaluación." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una evaluación." }, { status: 404 })
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       return HttpResponse.json({ message: "Solo quien creó la evaluación puede editarla." }, { status: 403 })
     }
@@ -102,7 +102,7 @@ export const comunicacionesEvaluacionesHandlers = [
     const e = evaluaciones.find((x) => x.conversacionId === Number(params.id))
     const user = usuarioDe(request)
     if (!e || !user) {
-      return HttpResponse.json({ message: "Este canal no tiene una evaluación." }, { status: 404 })
+      return HttpResponse.json({ message: "Esta conversación no tiene una evaluación." }, { status: 404 })
     }
     if (estadoEleccion(e) !== "ACTIVA") {
       return HttpResponse.json({ message: "La evaluación no está abierta." }, { status: 409 })
@@ -136,7 +136,7 @@ export const comunicacionesEvaluacionesHandlers = [
     await delay(200)
     const e = evaluaciones.find((x) => x.conversacionId === Number(params.id))
     if (!e) {
-      return HttpResponse.json({ message: "Este canal no tiene una evaluación." }, { status: 404 })
+      return HttpResponse.json({ message: "Esta conversación no tiene una evaluación." }, { status: 404 })
     }
     const user = usuarioDe(request)
     if (user?.roles.includes("CEVAL-ESTUDIANTE")) {
@@ -176,7 +176,7 @@ export const comunicacionesEvaluacionesHandlers = [
       )
     }
     if (conversaciones.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${nombre}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe una conversación llamada ${nombre}.` }, { status: 409 })
     }
     const canal: Conversacion = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,

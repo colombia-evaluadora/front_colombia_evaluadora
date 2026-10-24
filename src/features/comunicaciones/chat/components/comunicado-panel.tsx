@@ -153,7 +153,7 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
           <>
             <LockIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             <p>
-              Este es un canal informativo.
+              Este es un comunicado informativo.
               <br />
               Los comentarios están deshabilitados.
             </p>
