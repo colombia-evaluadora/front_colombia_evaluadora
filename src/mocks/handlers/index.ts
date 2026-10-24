@@ -45,6 +45,7 @@ import { planeadorHandlers } from "@/mocks/handlers/planeador"
 import { planeadorDocentesHandlers } from "@/mocks/handlers/planeador/docentes"
 import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
+import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { informesHandlers } from "@/mocks/handlers/informes"
 import {
@@ -104,6 +105,7 @@ export const handlers = [
   ...preMatriculaHandlers,
   ...enrollmentsHandlers,
   // Antes de `planeadorHandlers`: MSW usa el primer match.
+  ...planeadorEscalaPrecargaHandlers,
   ...planeadorValidacionCoordinadorHandlers,
   ...planeadorHandlers,
   ...planeadorDocentesHandlers,

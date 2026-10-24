@@ -28,6 +28,7 @@ import type {
   InstrumentoCotejoItem,
   InstrumentoCriterio,
   InstrumentoEscala,
+  InstrumentoNivel,
 } from "@/features/planeador/api/types/planilla"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 
@@ -68,6 +69,44 @@ export function notaDe(value: NotaCriterio[], criterioId: number): NotaCriterio 
  */
 export function splitCriteriosGenerales(criteriosGenerales: string | null | undefined): string[] {
   return criteriosGenerales ? criteriosGenerales.split(",") : []
+}
+
+/** Un criterio de la escala listo para calificar, sea de la escala por criterio o de la anterior. */
+export interface CriterioEscalaCalificable {
+  nombre: string
+  niveles: InstrumentoNivel[]
+  valorMin: number | null
+  valorMax: number | null
+}
+
+/**
+ * Criterios a calificar de una escala, en el orden del `criterioIndex` que espera el
+ * backend. Escala por criterio (Reglas 40-42): cada uno con sus niveles o su rango.
+ * Escala anterior: los tramos de `criteriosGenerales` (al menos uno) compartiendo los
+ * niveles y el rango de toda la escala.
+ */
+export function criteriosDeEscala(escala: InstrumentoEscala): CriterioEscalaCalificable[] {
+  if (escala.criterios?.length) {
+    return escala.criterios.map((c) => ({
+      nombre: c.nombre,
+      niveles: c.niveles ?? [],
+      valorMin: c.valorMin ?? null,
+      valorMax: c.valorMax ?? null,
+    }))
+  }
+  const nombres = splitCriteriosGenerales(escala.criteriosGenerales)
+  return (nombres.length > 0 ? nombres : [""]).map((nombre) => ({
+    nombre: nombre.trim(),
+    niveles: escala.niveles,
+    valorMin: escala.valorMin ?? null,
+    valorMax: escala.valorMax ?? null,
+  }))
+}
+
+/** Cualitativa si el código lo dice o si algún criterio trae niveles. */
+export function escalaEsCualitativa(escala: InstrumentoEscala): boolean {
+  if (escala.tipoEscalaValor) return String(escala.tipoEscalaValor).trim().toUpperCase() === "CUALITATIVA"
+  return criteriosDeEscala(escala).some((c) => c.niveles.length > 0)
 }
 
 /**
@@ -145,7 +184,7 @@ export function instrumentoCompletitud(
     return { completo: true }
   }
   if (efectivo.tipo === "ESCALA_VALORACION") {
-    const criterios = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
+    const criterios = criteriosDeEscala(efectivo.definicion)
     if (criterios.length > 1) {
       const cubiertos = value.filter(
         (n) => n.criterioId < criterios.length && (n.nivelId != null || n.valor != null),
@@ -245,57 +284,40 @@ function EscalaValoracionFields({
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
-  const criterios = splitCriteriosGenerales(escala.criteriosGenerales)
-  if (escala.niveles.length === 0) {
-    if (criterios.length > 1) {
-      return (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {criterios.map((criterio, index) => (
-            <ValorNumericoField
-              key={index}
-              value={value}
-              onChange={onChange}
-              criterioId={index}
-              label={`Criterio ${index + 1}${criterio.trim() ? `: ${criterio.trim()}` : ""}`}
-              min={escala.valorMin ?? undefined}
-              max={escala.valorMax ?? undefined}
-            />
-          ))}
-        </div>
-      )
-    }
-    return (
-      <ValorNumericoField
-        value={value}
-        onChange={onChange}
-        min={escala.valorMin ?? undefined}
-        max={escala.valorMax ?? undefined}
-      />
-    )
-  }
+  const criterios = criteriosDeEscala(escala)
+  const etiqueta = (nombre: string, index: number) =>
+    criterios.length > 1 ? `Criterio ${index + 1}${nombre ? `: ${nombre}` : ""}` : nombre || "Nivel"
 
-  if (criterios.length > 1) {
+  if (!escalaEsCualitativa(escala)) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={criterios.length > 1 ? "grid gap-4 sm:grid-cols-2" : undefined}>
         {criterios.map((criterio, index) => (
-          <NivelSelectField
+          <ValorNumericoField
             key={index}
-            label={`Criterio ${index + 1}${criterio.trim() ? `: ${criterio.trim()}` : ""}`}
-            niveles={escala.niveles}
-            nivelIdActual={notaDe(value, index)?.nivelId}
-            onSelect={(nivel) => onChange(setNota(value, index, nivel.ponderacion, nivel.pk))}
+            value={value}
+            onChange={onChange}
+            criterioId={criterios.length > 1 ? index : undefined}
+            label={criterios.length > 1 ? etiqueta(criterio.nombre, index) : undefined}
+            min={criterio.valorMin ?? undefined}
+            max={criterio.valorMax ?? undefined}
           />
         ))}
       </div>
     )
   }
+
   return (
-    <NivelSelectField
-      label="Nivel"
-      niveles={escala.niveles}
-      nivelIdActual={notaDe(value, 0)?.nivelId}
-      onSelect={(nivel) => onChange(setNota(value, 0, nivel.ponderacion, nivel.pk))}
-    />
+    <div className={criterios.length > 1 ? "grid gap-4 sm:grid-cols-2" : undefined}>
+      {criterios.map((criterio, index) => (
+        <NivelSelectField
+          key={index}
+          label={etiqueta(criterio.nombre, index)}
+          niveles={criterio.niveles}
+          nivelIdActual={notaDe(value, index)?.nivelId}
+          onSelect={(nivel) => onChange(setNota(value, index, nivel.ponderacion, nivel.pk))}
+        />
+      ))}
+    </div>
   )
 }
 

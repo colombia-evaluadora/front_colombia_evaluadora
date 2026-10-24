@@ -373,44 +373,51 @@ function ListaCotejoDetalle({ listaCotejo }: { listaCotejo: Actividad["listaCote
 }
 
 function EscalaValoracionDetalle({ escala }: { escala: Actividad["escalaValoracion"] }) {
-  const vacia = !escala.criteriosGenerales.trim() &&
-    (escala.tipo === "Numérica"
-      ? escala.valorMinimo == null && escala.valorMaximo == null
-      : escala.niveles.length === 0)
+  const numerica = escala.tipo === "Numérica"
   return (
     <Section title="Definición de Escala de Valoración" className="mt-4">
-      {vacia ? (
+      {escala.criterios.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           Esta actividad no tiene escala de valoración definida.
         </p>
       ) : (
-        <div className="space-y-3">
-          <Definition term="Criterios generales">{escala.criteriosGenerales}</Definition>
+        <div className="space-y-4">
           <Definition term="Tipo de escala">{escala.tipo}</Definition>
-          {escala.tipo === "Numérica" ? (
-            <>
-              <Definition term="Rango">
-                {escala.valorMinimo != null || escala.valorMaximo != null
-                  ? `${escala.valorMinimo ?? "…"} – ${escala.valorMaximo ?? "…"}`
-                  : "—"}
-              </Definition>
-              <Definition term="Interpretación de rangos">{escala.interpretacionRangos}</Definition>
-            </>
-          ) : (
-            escala.niveles.length > 0 && (
-              <ul className="flex flex-col gap-2">
-                {escala.niveles.map((nivel) => (
-                  <li key={nivel.id} className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-                    <span className="text-sm font-semibold">{nivel.nombre}</span>
-                    <span className="text-sm">{nivel.descripcion}</span>
-                    {nivel.ponderacion != null && (
-                      <span className="text-muted-foreground text-sm">{nivel.ponderacion}%</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          {escala.criterios.map((criterio) => {
+            // Regla 42: el valor máximo del criterio cualitativo es su puntaje más alto.
+            const puntajes = criterio.niveles.map((n) => n.ponderacion).filter((p): p is number => p != null)
+            const maximo = numerica ? criterio.valorMaximo : puntajes.length > 0 ? Math.max(...puntajes) : undefined
+            return (
+              <div key={criterio.id} className="space-y-2 rounded-md border p-3">
+                <Definition term="Criterio">{criterio.nombre}</Definition>
+                {numerica ? (
+                  <>
+                    <Definition term="Valor asignado">
+                      {criterio.valorMinimo != null || criterio.valorMaximo != null
+                        ? `${criterio.valorMinimo ?? "…"} – ${criterio.valorMaximo ?? "…"}`
+                        : "—"}
+                    </Definition>
+                    {criterio.interpretacion && <Definition term="Interpretación">{criterio.interpretacion}</Definition>}
+                  </>
+                ) : (
+                  <>
+                    <ul className="flex flex-col gap-2">
+                      {criterio.niveles.map((nivel) => (
+                        <li key={nivel.id} className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                          <span className="text-sm font-semibold">{nivel.nombre}</span>
+                          <span className="text-sm">{nivel.descripcion}</span>
+                          {nivel.ponderacion != null && (
+                            <span className="text-muted-foreground text-sm">{nivel.ponderacion} pts</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {maximo != null && <Definition term="Valor máximo">{maximo}</Definition>}
+                  </>
+                )}
+              </div>
             )
-          )}
+          })}
         </div>
       )}
     </Section>

@@ -188,7 +188,6 @@ export function InstrumentoPersonalizadoSection({
               ) : value.metodoValoracion === "Escala de valoración" ? (
                 <EscalaValoracionSection
                   form={form}
-                  unidades={unidades}
                   tipoEvaluacion={tipoEvaluacion}
                   disabled={disabled}
                 />
