@@ -20,6 +20,9 @@ export const chatSearchSchema = z.object({
   // (botón Aceptar / Rechazar del push) se responde al abrir.
   invitacion: z.coerce.number().int().positive().optional().catch(undefined),
   accion: z.enum(["aceptar", "rechazar"]).optional().catch(undefined),
+  // Deep link de la campana a Colevabot (solicitudes de aprobación): el id de su conversación es
+  // por usuario y el backend no lo conoce al encolar, así que se resuelve al abrir el chat.
+  colevabot: z.literal("1").optional().catch(undefined),
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. Palabras clave, persona, rol, grupo académico, tipo, fechas y estado.
   q: z.string().max(200).optional().catch(undefined),

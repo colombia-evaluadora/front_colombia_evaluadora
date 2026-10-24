@@ -70,10 +70,8 @@ export function crearActividadVacia(): Actividad {
     listaCotejo: { id: draftId(), items: [] },
     escalaValoracion: {
       id: draftId(),
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",

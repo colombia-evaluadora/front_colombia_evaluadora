@@ -3,10 +3,13 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode,
 
 import {
   CheckIcon,
+  ChecksIcon,
   ClockIcon,
   FileIcon,
   ImagesIcon,
+  MicrophoneIcon,
   PaperPlaneTiltIcon,
+  StopIcon,
   PlusIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -23,9 +26,13 @@ import {
   ACEPTA_MULTIMEDIA,
   MAX_ADJUNTOS,
   agregarAdjuntos,
+  esAudio,
   formatoDeArchivo,
   pesoLegible,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { useGrabadorNota } from "@/features/comunicaciones/chat/hooks/use-grabador-nota"
+import { MAX_NOTA_SEGUNDOS, duracionLegible } from "@/features/comunicaciones/chat/lib/nota-de-voz"
+import { ReproductorLocal } from "@/features/comunicaciones/chat/components/reproductor-audio"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
 import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
@@ -101,6 +108,9 @@ interface ChatComposerProps {
   // Atajos "/" que abre la página (crear actividades, votación rápida); los que faltan no se
   // ofrecen. "Adjuntar" y "Programar envío" los resuelve el propio compositor.
   onAtajo?: AccionesAtajo
+  // Confirmación de lectura del próximo mensaje (HU 7). Sin prop no se ofrece (edición o perfil
+  // que no puede pedirla, p. ej. un estudiante a directivos).
+  confirmacionLectura?: { activa: boolean; onCambiar: (activa: boolean) => void }
 }
 
 export type AccionesAtajo = Partial<Record<Exclude<IdAtajo, "adjuntar" | "programar">, () => void>>
@@ -122,9 +132,11 @@ export function ChatComposer({
   onGuardarBorrador,
   onProgramar,
   onAtajo,
+  confirmacionLectura,
 }: ChatComposerProps) {
   const id = useId()
   const edicion = variante === "edicion"
+  const confirmacion = edicion ? undefined : confirmacionLectura
   const [texto, setTexto] = useState(textoInicial)
   const [archivos, setArchivos] = useState<File[]>([])
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
@@ -138,6 +150,12 @@ export function ChatComposer({
     setArchivos((prev) => prev.filter((_, i) => i !== indice))
   }
   const hayArchivos = archivos.length > 0
+  // Nota de voz: al detener queda como un archivo pendiente más (se escucha y se quita ahí).
+  const grabador = useGrabadorNota({
+    onGrabada: (archivo) => elegirArchivos([archivo]),
+    onError: setErrorArchivo,
+  })
+  const grabando = grabador.estado !== "inactivo"
   // Último texto y callback, para guardarlos como borrador al desmontar.
   const borradorRef = useRef({ texto, onGuardarBorrador })
   useEffect(() => {
@@ -155,7 +173,7 @@ export function ChatComposer({
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // Aa abre/cierra la barra de formato (antes salía sola con el foco y Aa no hacía nada visible).
   const [formatoAbierto, setFormatoAbierto] = useState(false)
-  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando
+  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando && !grabando
   // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
   const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
     null,
@@ -440,6 +458,36 @@ export function ChatComposer({
             ))}
           </ul>
         )}
+        {grabador.estado === "grabando" && (
+          <div
+            role="status"
+            className="mx-3 mt-3 flex items-center gap-3 rounded-lg border border-red-stroke bg-red-22 px-3 py-2 text-sm"
+          >
+            <span aria-hidden className="size-2.5 shrink-0 animate-pulse rounded-full bg-red motion-reduce:animate-none" />
+            <span className="font-medium text-red">Grabando nota de voz</span>
+            <span className="text-xs tabular-nums text-muted-foreground" aria-label={`${duracionLegible(grabador.segundos)} de ${duracionLegible(MAX_NOTA_SEGUNDOS)}`}>
+              {duracionLegible(grabador.segundos)} / {duracionLegible(MAX_NOTA_SEGUNDOS)}
+            </span>
+            <button
+              type="button"
+              onClick={grabador.cancelar}
+              aria-label="Cancelar grabación"
+              title="Cancelar"
+              className="ml-auto grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <XIcon className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={grabador.detener}
+              aria-label="Detener grabación"
+              title="Detener"
+              className="grid size-8 place-items-center rounded-full bg-red text-red-foreground hover:bg-red/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <StopIcon className="size-5" />
+            </button>
+          </div>
+        )}
         {errorArchivo && (
           <p role="alert" className="mx-3 mt-2 text-xs text-red">
             {errorArchivo}
@@ -540,7 +588,20 @@ export function ChatComposer({
               <AtIcon className="size-5" />
             </Herramienta>
           )}
-          {/* Sin grabar video ni audio: llamadas y grabaciones quedaron fuera del alcance. */}
+          {/* Nota de voz (micrófono del diseño): se graba y se adjunta como un archivo más. Sin
+              videollamadas ni grabación de video: quedaron fuera del alcance. */}
+          {!edicion && (
+            <Herramienta
+              etiqueta={grabador.estado === "pidiendo" ? "Esperando permiso del micrófono" : "Grabar nota de voz"}
+              onClick={() => {
+                setErrorArchivo(null)
+                void grabador.iniciar()
+              }}
+              deshabilitado={grabando || archivos.length >= MAX_ADJUNTOS || enviando}
+            >
+              <MicrophoneIcon className="size-5" />
+            </Herramienta>
+          )}
           {disponibles.size > 0 && (
             <>
               <Separador />
@@ -571,12 +632,28 @@ export function ChatComposer({
             </>
           )}
 
+          {confirmacion && (
+            <button
+              type="button"
+              aria-pressed={confirmacion.activa}
+              aria-label="Solicitar confirmación de lectura"
+              title={
+                confirmacion.activa
+                  ? "Se pedirá confirmación de lectura de este mensaje"
+                  : "Solicitar confirmación de lectura"
+              }
+              onClick={() => confirmacion.onCambiar(!confirmacion.activa)}
+              className="ml-auto grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none aria-pressed:bg-primary/10 aria-pressed:text-primary"
+            >
+              <ChecksIcon className="size-5" />
+            </button>
+          )}
           {!edicion && onProgramar && (
             <Herramienta
               etiqueta="Programar envío"
               onClick={() => setProgramar({ guardando: false, error: null })}
               deshabilitado={!programable}
-              className="ml-auto"
+              className={confirmacion ? undefined : "ml-auto"}
             >
               <ClockIcon className="size-5" />
             </Herramienta>
@@ -586,7 +663,7 @@ export function ChatComposer({
             disabled={!listo}
             aria-label={edicion ? "Guardar cambios" : "Enviar mensaje"}
             className={cn(
-              !(!edicion && onProgramar) && "ml-auto",
+              !(!edicion && onProgramar) && !confirmacion && "ml-auto",
               "grid size-9 place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
               edicion
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
@@ -681,12 +758,43 @@ function SelectorArchivo({
 }
 
 function ArchivoPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
+  if (esAudio(archivo.name)) return <AudioPendiente archivo={archivo} onQuitar={onQuitar} />
   const { Icono, color } = iconoArchivo(formatoDeArchivo(archivo), archivo.name)
   return (
     <div className="flex w-fit max-w-full items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
       <Icono aria-hidden className={cn("size-6 shrink-0", color)} />
       <span className="min-w-0 truncate text-sm font-medium">{archivo.name}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{pesoLegible(archivo.size)}</span>
+      <button
+        type="button"
+        aria-label={`Quitar ${archivo.name}`}
+        onClick={onQuitar}
+        className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      >
+        <XIcon className="size-4" />
+      </button>
+    </div>
+  )
+}
+
+// Audio por enviar (nota de voz recién grabada o archivo de audio): se escucha antes de
+// mandarlo y se puede quitar.
+function AudioPendiente({ archivo, onQuitar }: { archivo: File; onQuitar: () => void }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const u = URL.createObjectURL(archivo)
+    setUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [archivo])
+  return (
+    <div className="flex w-full max-w-sm items-center gap-2 rounded-lg border bg-card py-1.5 pr-1 pl-2">
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate font-medium text-foreground">{archivo.name}</span>
+          <span className="shrink-0">{pesoLegible(archivo.size)}</span>
+        </span>
+        {url && <ReproductorLocal src={url} nombre={archivo.name} className="mt-1 h-9" />}
+      </span>
       <button
         type="button"
         aria-label={`Quitar ${archivo.name}`}

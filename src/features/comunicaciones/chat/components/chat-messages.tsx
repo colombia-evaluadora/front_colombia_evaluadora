@@ -267,19 +267,34 @@ function BotonAccionesTactil({ abiertas, onClick }: { abiertas: boolean; onClick
   )
 }
 
-// ✓ enviado / ✓✓ leído por todos, abajo a la derecha de la burbuja (diseño 3731:41577).
-function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectura> }) {
+const ETIQUETA_LECTURA = { ENVIADO: "Enviado", ENTREGADO: "Entregado", LEIDO: "Leído" } as const
+
+// ✓ enviado / ✓✓ gris entregado / ✓✓ azul leído por todos, abajo a la derecha de la burbuja
+// (diseño 3731:41577). Con confirmación de lectura (HU 7) el título detalla quién lo leyó.
+function ConfirmacionLectura({ mensaje: m, estado }: { mensaje: Mensaje; estado: ReturnType<typeof estadoLectura> }) {
   if (!estado) return null
   const leido = estado === "LEIDO"
-  const Icono = leido ? ChecksIcon : CheckIcon
+  const Icono = estado === "ENVIADO" ? CheckIcon : ChecksIcon
+  const c = m.confirmacion
+  const detalle = c
+    ? [
+        `${ETIQUETA_LECTURA[estado]} · leído por ${c.leidos} de ${c.total}`,
+        ...c.lectores.map((l) =>
+          l.leidoEn
+            ? `${l.nombre}: leído ${horaMensaje(l.leidoEn)}`
+            : `${l.nombre}: ${l.entregadoEn ? "entregado" : "enviado"}`,
+        ),
+      ].join("\n")
+    : ETIQUETA_LECTURA[estado]
   return (
     <span
-      title={leido ? "Leído" : "Enviado"}
+      title={detalle}
       data-lectura={estado}
-      className={cn("-mr-1 -mb-1 flex justify-end", leido ? "text-primary" : "text-muted-foreground")}
+      className={cn("-mr-1 -mb-1 flex items-center justify-end gap-1", leido ? "text-primary" : "text-muted-foreground")}
     >
+      {c && <span className="text-[11px]">{ETIQUETA_LECTURA[estado]}</span>}
       <Icono aria-hidden className="size-4" />
-      <span className="sr-only">{leido ? "Leído" : "Enviado"}</span>
+      <span className="sr-only">{c ? detalle : ETIQUETA_LECTURA[estado]}</span>
     </span>
   )
 }
@@ -401,7 +416,7 @@ function MensajeItem({
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
           <AdjuntosMensaje mensaje={m} propio />
-          <ConfirmacionLectura estado={estadoLectura(m, conversacion)} />
+          <ConfirmacionLectura mensaje={m} estado={estadoLectura(m, conversacion)} />
         </article>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>

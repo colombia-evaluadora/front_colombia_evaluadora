@@ -289,7 +289,6 @@ function InstrumentoEvaluacionSection({
         ) : instrumento === "Escala de valoración" ? (
           <EscalaValoracionSection
             form={form}
-            unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
             disabled={disabled}
           />

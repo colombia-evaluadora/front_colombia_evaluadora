@@ -156,6 +156,8 @@ import {
   MdOutlineMarkChatRead,
   MdOutlineMarkChatUnread,
   MdOutlineNotificationsOff,
+  MdOutlineNotificationsActive,
+  MdOutlineVolumeUp,
   MdOutlineTerminal,
   MdOutlineUnarchive,
   MdOutlineVideocam,
@@ -392,6 +394,8 @@ export const SmileyIcon = makeIcon(MdOutlineEmojiEmotions)
 export const VideoCameraIcon = makeIcon(MdOutlineVideocam)
 export const MicrophoneIcon = makeIcon(MdMicNone)
 export const BellSlashIcon = makeIcon(MdOutlineNotificationsOff)
+export const BellRingingIcon = makeIcon(MdOutlineNotificationsActive)
+export const SpeakerHighIcon = makeIcon(MdOutlineVolumeUp)
 export const ChatUnreadIcon = makeIcon(MdOutlineMarkChatUnread)
 export const ChatReadIcon = makeIcon(MdOutlineMarkChatRead)
 export const TerminalIcon = makeIcon(MdOutlineTerminal)

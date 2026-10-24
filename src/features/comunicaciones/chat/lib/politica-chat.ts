@@ -122,3 +122,14 @@ export function reglaDirecto(politica: PoliticaChat, de: PerfilChat, a: PerfilCh
 export function puedeMencionarMasivo(politica: PoliticaChat, perfil: PerfilChat) {
   return politica.mencionesMasivas.includes(perfil)
 }
+
+/**
+ * Confirmación de lectura (HU 7): un estudiante no puede exigírsela a un directivo. Misma regla
+ * que `PoliticaChat.puedeSolicitarConfirmacionLectura` de comms-service, que es quien la aplica.
+ */
+export function puedeSolicitarConfirmacionLectura(
+  emisor: PerfilChat,
+  receptores: readonly (PerfilChat | undefined)[],
+): boolean {
+  return !(emisor === "ESTUDIANTE" && receptores.includes("DIRECTIVO"))
+}

@@ -24,6 +24,7 @@ import { usePreferenciasQuery } from "@/features/notificaciones/api/query/use-pr
 import { FormPreferencias, PREFERENCIAS_FORM_ID } from "@/features/notificaciones/components/form-preferencias"
 import { PushToggleSlot } from "@/features/notificaciones/components/push-toggle-slot"
 import { SilencioConversaciones } from "@/features/notificaciones/components/silencio-conversaciones"
+import { AjustesChatSeccion } from "@/features/notificaciones/components/ajustes-chat"
 
 /**
  * `/app/notificaciones/preferencias`. `pushToggle` es el punto de montaje del
@@ -98,6 +99,7 @@ function PreferenciasContent({ pushToggle }: { pushToggle?: ReactNode }) {
             />
           )}
           <PushToggleSlot>{pushToggle}</PushToggleSlot>
+          <AjustesChatSeccion disabled={onlineOnly.disabled} />
           <SilencioConversaciones disabled={onlineOnly.disabled} />
         </div>
       </TableScreenBody>

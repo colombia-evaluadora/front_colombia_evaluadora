@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { Actividad, Criterio, EscalaValoracion } from "@/features/planeador/api/types/actividad"
+import type { Actividad, Criterio, EscalaCriterio, EscalaValoracion } from "@/features/planeador/api/types/actividad"
 import {
   faltantesEscala,
   faltantesInstrumento,
@@ -24,15 +24,14 @@ function criterio(patch: Partial<Criterio> = {}): Criterio {
   }
 }
 
-function escala(patch: Partial<EscalaValoracion> = {}): EscalaValoracion {
+function escala(
+  criterio: Partial<EscalaCriterio> = {},
+  patch: Partial<EscalaValoracion> = {},
+): EscalaValoracion {
   return {
     id: 1,
-    criteriosGenerales: "",
     tipo: "Numérica",
-    valorMinimo: 1,
-    valorMaximo: 5,
-    interpretacionRangos: "",
-    niveles: [],
+    criterios: [{ id: 1, nombre: "Exactitud", valorMinimo: 1, valorMaximo: 5, interpretacion: "", niveles: [], ...criterio }],
     ...patch,
   }
 }
@@ -105,23 +104,42 @@ describe("faltantesEscala", () => {
   it("numérica: exige mínimo y máximo, con mínimo < máximo", () => {
     expect(faltantesEscala(escala())).toEqual([])
     expect(faltantesEscala(escala({ valorMinimo: undefined, valorMaximo: undefined }))).toEqual([
-      "La escala numérica necesita valor mínimo y valor máximo.",
+      'En el criterio "Exactitud" falta el valor mínimo o el valor máximo.',
     ])
     expect(faltantesEscala(escala({ valorMinimo: 5, valorMaximo: 1 }))).toEqual([
-      "En la escala el valor mínimo (5) debe ser menor que el máximo (1).",
+      'En el criterio "Exactitud" el valor mínimo (5) debe ser menor que el máximo (1).',
     ])
   })
 
-  it("cualitativa: cada nivel necesita puntaje y descriptor", () => {
-    expect(faltantesEscala(escala({ tipo: "Cualitativa", niveles: [] }))).toEqual([
-      "La escala cualitativa necesita al menos un nivel.",
+  it("exige al menos un criterio, con nombre único", () => {
+    expect(faltantesEscala(escala({}, { criterios: [] }))).toEqual([
+      "La escala de valoración necesita al menos un criterio.",
+    ])
+    expect(faltantesEscala(escala({ nombre: " " }))).toEqual(["Cada criterio de la escala necesita su nombre."])
+  })
+
+  it("cualitativa: cada criterio con sus niveles, puntaje y descriptor", () => {
+    expect(faltantesEscala(escala({ niveles: [] }, { tipo: "Cualitativa" }))).toEqual([
+      'El criterio "Exactitud" necesita al menos un nivel.',
     ])
     expect(
-      faltantesEscala(escala({ tipo: "Cualitativa", niveles: [{ id: 1, nombre: "Bajo", descripcion: "" }] })),
+      faltantesEscala(escala({ niveles: [{ id: 1, nombre: "Bajo", descripcion: "" }] }, { tipo: "Cualitativa" })),
     ).toEqual([
-      "Cada nivel de la escala necesita un puntaje entre 0 y 100.",
-      "Cada nivel de la escala necesita su interpretación o descriptor.",
+      'Cada nivel de el criterio "Exactitud" necesita un puntaje entre 0 y 100.',
+      'Cada nivel de el criterio "Exactitud" necesita su descriptor.',
     ])
+    // Dos criterios pueden repetir puntajes entre sí (cada uno es independiente).
+    const nivel = { id: 1, nombre: "Alto", descripcion: "d", ponderacion: 4 }
+    expect(
+      faltantesEscala({
+        id: 1,
+        tipo: "Cualitativa",
+        criterios: [
+          { id: 1, nombre: "A", interpretacion: "", niveles: [nivel] },
+          { id: 2, nombre: "B", interpretacion: "", niveles: [nivel, { ...nivel, id: 2, nombre: "En proceso", ponderacion: 2 }] },
+        ],
+      }),
+    ).toEqual([])
   })
 })
 
@@ -149,6 +167,8 @@ describe("faltantesInstrumento", () => {
       ...base,
       instrumentoPersonalizado: { ...base.instrumentoPersonalizado, tipoEvidenciaEsperada: "Documento", metodoValoracion: "Escala de valoración" as const },
     }
-    expect(faltantesInstrumento(conMetodo, conPuntaje)).toEqual(["La escala numérica necesita valor mínimo y valor máximo."])
+    expect(faltantesInstrumento(conMetodo, conPuntaje)).toEqual([
+      'En el criterio "Exactitud" falta el valor mínimo o el valor máximo.',
+    ])
   })
 })

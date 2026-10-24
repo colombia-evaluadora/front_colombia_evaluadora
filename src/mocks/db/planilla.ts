@@ -113,15 +113,28 @@ export function instrumentoActividadDe(actividad: Actividad): InstrumentoActivid
         tipoEscala: esNumerica ? 1 : 2,
         tipoEscalaValor: esNumerica ? "NUMERICA" : "CUALITATIVA",
         tipoEscalaNombre: esNumerica ? "Numérica" : "Cualitativa",
-        criteriosGenerales: actividad.escalaValoracion.criteriosGenerales || null,
-        valorMin: esNumerica ? (actividad.escalaValoracion.valorMinimo ?? null) : null,
-        valorMax: esNumerica ? (actividad.escalaValoracion.valorMaximo ?? null) : null,
-        interpretacionRangos: esNumerica ? actividad.escalaValoracion.interpretacionRangos || null : null,
-        niveles: actividad.escalaValoracion.niveles.map((nivel) => ({
-          pk: nivel.id,
-          etiqueta: nivel.nombre,
-          descripcion: nivel.descripcion,
-          ponderacion: nivel.ponderacion ?? 100,
+        criteriosGenerales: actividad.escalaValoracion.criterios.map((c) => c.nombre).join(", ") || null,
+        valorMin: null,
+        valorMax: null,
+        interpretacionRangos: null,
+        // Escala por criterio (Reglas 40-42): los niveles viajan dentro de cada criterio.
+        niveles: [],
+        criterios: actividad.escalaValoracion.criterios.map((criterio, index) => ({
+          pk: criterio.id,
+          orden: index + 1,
+          nombre: criterio.nombre,
+          valorMin: esNumerica ? (criterio.valorMinimo ?? null) : null,
+          valorMax: esNumerica ? (criterio.valorMaximo ?? null) : null,
+          interpretacion: criterio.interpretacion || null,
+          niveles: esNumerica
+            ? []
+            : criterio.niveles.map((nivel, nIndex) => ({
+                pk: nivel.id,
+                orden: nIndex + 1,
+                etiqueta: nivel.nombre,
+                descripcion: nivel.descripcion,
+                ponderacion: nivel.ponderacion ?? 100,
+              })),
         })),
       },
     }
@@ -158,7 +171,8 @@ export function ponderacionItemCotejo(actividad: Actividad, pkItem: number): num
 }
 
 export function ponderacionNivelEscala(actividad: Actividad, pkNivel: number): number | undefined {
-  return actividad.escalaValoracion.niveles.find((n) => n.id === pkNivel)?.ponderacion ?? 100
+  const nivel = actividad.escalaValoracion.criterios.flatMap((c) => c.niveles).find((n) => n.id === pkNivel)
+  return nivel?.ponderacion ?? 100
 }
 
 /**

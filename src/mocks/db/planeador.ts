@@ -124,10 +124,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 106, items: [] },
     escalaValoracion: {
       id: 107,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -204,10 +202,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 110, items: [] },
     escalaValoracion: {
       id: 111,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -267,10 +263,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 113, items: [] },
     escalaValoracion: {
       id: 114,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -342,10 +336,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     },
     escalaValoracion: {
       id: 119,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -396,10 +388,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 121, items: [] },
     escalaValoracion: {
       id: 122,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -463,29 +453,32 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 125, items: [] },
     escalaValoracion: {
       id: 126,
-      criteriosGenerales: "Comprensión, Aplicación",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      // Ponderación por nivel (suman 100 entre los tres) — cada
-      // definición pesa lo suyo, la escala no pondera como bloque único.
-      niveles: [
+      // Escala por criterio (Reglas 40-42): cada criterio con sus propios niveles. El
+      // segundo agrega "En proceso" solo para él (cambio local de la actividad).
+      criterios: [
         {
-          id: 127,
-          nombre: "Excelente",
-          descripcion: "Resuelve todos los problemas con argumentos claros y completos.",
-          ponderacion: 50,
+          id: 1261,
+          nombre: "Comprensión",
+          interpretacion: "",
+          niveles: [
+          { id: 127, nombre: "Bajo", descripcion: "No logra explicar los conceptos.", ponderacion: 1 },
+          { id: 128, nombre: "Básico", descripcion: "Explica parcialmente los conceptos.", ponderacion: 3 },
+          { id: 129, nombre: "Alto", descripcion: "Explica los conceptos con claridad.", ponderacion: 4 },
+          { id: 1291, nombre: "Superior", descripcion: "Explica y relaciona los conceptos.", ponderacion: 5 },
+          ],
         },
         {
-          id: 128,
-          nombre: "Aceptable",
-          descripcion: "Resuelve la mayoría de los problemas, con argumentos parciales.",
-          ponderacion: 30,
-        },
-        {
-          id: 129,
-          nombre: "Insuficiente",
-          descripcion: "No logra resolver los problemas ni argumentar la solución.",
-          ponderacion: 20,
+          id: 1262,
+          nombre: "Aplicación",
+          interpretacion: "",
+          niveles: [
+          { id: 1301, nombre: "Bajo", descripcion: "No aplica lo aprendido.", ponderacion: 1 },
+          { id: 1302, nombre: "En proceso", descripcion: "Aplica con ayuda.", ponderacion: 2 },
+          { id: 1303, nombre: "Básico", descripcion: "Aplica en casos sencillos.", ponderacion: 3 },
+          { id: 1304, nombre: "Alto", descripcion: "Aplica en casos nuevos.", ponderacion: 4 },
+          { id: 1305, nombre: "Superior", descripcion: "Aplica y propone soluciones propias.", ponderacion: 5 },
+          ],
         },
       ],
     },
@@ -567,10 +560,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 131, items: [] },
     escalaValoracion: {
       id: 132,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -630,10 +621,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 134, items: [] },
     escalaValoracion: {
       id: 135,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -699,10 +688,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     },
     escalaValoracion: {
       id: 140,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -753,10 +740,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 142, items: [] },
     escalaValoracion: {
       id: 143,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -807,10 +792,8 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 145, items: [] },
     escalaValoracion: {
       id: 146,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -865,12 +848,18 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     listaCotejo: { id: 148, items: [] },
     escalaValoracion: {
       id: 149,
-      criteriosGenerales: "Exactitud, Procedimiento",
       tipo: "Numérica",
-      valorMinimo: 1,
-      valorMaximo: 5,
-      interpretacionRangos: "1-2: Insuficiente. 3: Aceptable. 4-5: Sobresaliente.",
-      niveles: [],
+      criterios: [
+        {
+          id: 1491,
+          nombre: "Exactitud",
+          valorMinimo: 0,
+          valorMaximo: 5,
+          interpretacion: "1-2: Insuficiente. 3: Aceptable. 4-5: Sobresaliente.",
+          niveles: [],
+        },
+        { id: 1492, nombre: "Procedimiento", valorMinimo: 0, valorMaximo: 10, interpretacion: "", niveles: [] },
+      ],
     },
     instrumentoPersonalizado: {
       descripcion: "",

@@ -387,10 +387,8 @@ function toActividadDetalle(
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
       id: 0,
-      criteriosGenerales: "",
       tipo: "Numérica",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",

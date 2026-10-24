@@ -23,6 +23,8 @@ export const chatKeys = {
   miembros: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "miembros"] as const,
   politica: [...all, "politica"] as const,
+  // Ajustes del chat del usuario: confirmación de lectura y sonido.
+  ajustes: [...all, "ajustes"] as const,
   // Disponibilidad propia, la de los directos y el mapa usuarioId → estado que alimenta el socket.
   disponibilidad: [...all, "disponibilidad"] as const,
   disponibilidadDirectos: [...all, "disponibilidad", "directos"] as const,

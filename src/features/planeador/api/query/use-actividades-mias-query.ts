@@ -145,10 +145,8 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
       id: 0,
-      criteriosGenerales: "",
       tipo: "Numérica",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",

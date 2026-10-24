@@ -21,10 +21,12 @@ import {
   AVISO_YA_DESCARGADO,
   adjuntosDe,
   descargarAdjunto,
+  esAudio,
   pesoLegible,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
+import { ReproductorAudio } from "@/features/comunicaciones/chat/components/reproductor-audio"
 
 const BOTON =
   "grid size-8 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
@@ -165,6 +167,9 @@ function TarjetaAdjunto({
           </button>
         )}
       </div>
+      {esAudio(adjunto.nombre) && (
+        <ReproductorAudio archivoId={adjunto.archivoId} nombre={adjunto.nombre} className="mt-2" />
+      )}
       {bloqueado && (
         <p id={avisoId} className="mt-1 text-xs text-muted-foreground">
           {AVISO_YA_DESCARGADO}

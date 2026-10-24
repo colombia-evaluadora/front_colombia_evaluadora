@@ -15,7 +15,8 @@ import { fetchDocumento, useDocumentoQuery } from "@/features/comunicaciones/cha
 import { useEliminarArchivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-archivo"
 import { useRegistrarDescarga } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { descargarDocumento } from "@/features/comunicaciones/chat/lib/documento"
-import { AVISO_YA_DESCARGADO, descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { ReproductorAudio } from "@/features/comunicaciones/chat/components/reproductor-audio"
+import { AVISO_YA_DESCARGADO, descargarAdjunto, esAudio } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 
@@ -193,8 +194,18 @@ export function VistaBinario({
   icono: ReactNode
   tipo: string
 }) {
-  const visible = a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
+  // Notas de voz y audios (formato OTRO por extensión): reproductor inline.
+  const audio = a.archivoId != null && esAudio(a.nombre)
+  const visible = !audio && a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
   const { data: url, isPending, isError } = useArchivoViewUrl(visible ? a.archivoId : null)
+  if (audio) {
+    return (
+      <div className="grid place-items-center gap-4 rounded-lg border border-dashed px-4 py-10">
+        {icono}
+        <ReproductorAudio archivoId={a.archivoId} nombre={a.nombre} className="w-full max-w-md justify-center" />
+      </div>
+    )
+  }
   if (visible && isPending) return <Skeleton className="h-80 w-full" />
   if (!visible || isError || !url) {
     return (
