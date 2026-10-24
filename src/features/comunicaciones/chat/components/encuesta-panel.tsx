@@ -40,11 +40,11 @@ export function EncuestaResultados({
   if (isPending) return <Skeleton className="mb-4 h-64 w-full" />
   if (!e) return null
 
-  // Con resultados privados solo quien la creó los ve.
-  if (e.resultados === "ADMIN" && !e.esCreador) {
+  // Con resultados privados solo quien la gestiona los ve.
+  if (e.resultados === "ADMIN" && !(e.gestiona ?? e.esCreador)) {
     return (
       <p className="mb-4 rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-        Los resultados de esta encuesta solo los ve quien la creó.
+        Los resultados de esta encuesta solo los ve quien la gestiona.
       </p>
     )
   }

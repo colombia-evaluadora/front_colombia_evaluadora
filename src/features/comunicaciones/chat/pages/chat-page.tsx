@@ -147,9 +147,13 @@ function ChatContent() {
   // Elecciones, encuestas y exámenes son canales sin comentarios para todos, salvo la elección con
   // "Permitir comentarios". En el comunicado responde quien lo recibe solo si quien lo publicó lo
   // permitió (comms-service responde 403 igual si lo intenta).
+  // Elección cerrada (a mano o por fecha): nadie escribe, aunque tuviera "Permitir comentarios"
+  // (Natalia). comms-service responde 403 igual (ChatService#exigirComentarios).
+  const eleccionCerrada = !!eleccion && estadoEleccion(eleccion) === "FINALIZADA"
+  const comentariosEleccion = esEleccion && !!eleccion?.permiteComentarios && !eleccionCerrada
   const soloLectura =
     !!activa &&
-    ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
+    ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !comentariosEleccion) ||
       (activa.categoria === "ANUNCIO" && !conRespuestas) ||
       // Colevabot solo publica tarjetas: su DM no tiene compositor (diseño 4428:64360).
       activa.esBot)
@@ -444,7 +448,11 @@ function ChatContent() {
                 texto ni aviso de reemplazo (Figma 3837:43815, 4189:67308, 7127:76707). Con
                 "Permitir · Comentarios" el composer sí aparece (4195:69012).
               */}
-              {activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
+              {esEleccion && eleccionCerrada && eleccion?.permiteComentarios ? (
+                <p role="status" className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
+                  La elección cerró: ya no se pueden enviar mensajes.
+                </p>
+              ) : activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   En este foro no se pueden enviar mensajes.
                 </p>

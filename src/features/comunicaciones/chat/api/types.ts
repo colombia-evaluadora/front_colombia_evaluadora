@@ -265,6 +265,9 @@ export interface Eleccion {
   vieronCanal: number
   creadoPor: string
   esCreador: boolean
+  // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
+  // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
+  gestiona?: boolean
   // "Permitir comentarios" (paso 1): los participantes escriben en el canal de la elección.
   permiteComentarios?: boolean
 }
@@ -334,6 +337,9 @@ export interface Encuesta {
   participantes: number
   creadoPor: string
   esCreador: boolean
+  // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
+  // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
+  gestiona?: boolean
   // El usuario actual ya la respondió (se responde una sola vez).
   yaRespondi: boolean
 }
@@ -384,6 +390,9 @@ export interface Evaluacion {
   preguntas: PreguntaEvaluacion[]
   creadoPor: string
   esCreador: boolean
+  // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
+  // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
+  gestiona?: boolean
   // Del usuario actual (estudiante): cuántas veces la envió y su última nota.
   intentosUsados: number
   // null = aún no se puede ver (se publica al cierre) o no ha enviado.
@@ -423,6 +432,9 @@ export interface Comunicado {
   contenidoHtml: string
   publicadoPor: string
   esCreador: boolean
+  // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
+  // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
+  gestiona?: boolean
   // Confirmación de lectura (solo para quien lo publicó): destinatarios que ya
   // lo vieron / total. comms-service la envía; el mock también.
   leidos?: number | null
