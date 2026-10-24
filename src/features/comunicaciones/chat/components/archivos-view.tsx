@@ -22,7 +22,8 @@ import { fechaLarga } from "@/features/comunicaciones/chat/lib/chat-format"
 import { SquaresFourIcon, ListIcon } from "@/components/ui/icons"
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
 import { ArchivoAcciones } from "@/features/comunicaciones/chat/components/archivo-acciones"
-import { AVISO_YA_DESCARGADO } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { ReproductorAudio } from "@/features/comunicaciones/chat/components/reproductor-audio"
+import { AVISO_YA_DESCARGADO, esAudio } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { DocumentoEditor } from "@/features/comunicaciones/chat/components/documento-editor"
 
 // Mismo estilo de item que el menú de conversaciones (en oración, no mayúsculas).
@@ -364,6 +365,10 @@ function TarjetaArchivo({
           <p className="truncate text-xs text-muted-foreground" title={AVISO_YA_DESCARGADO}>
             {AVISO_YA_DESCARGADO}
           </p>
+        )}
+        {/* Notas de voz: se escuchan desde la tarjeta (también en "Ver"). */}
+        {esAudio(a.nombre) && a.archivoId != null && (
+          <ReproductorAudio archivoId={a.archivoId} nombre={a.nombre} className="mt-2" />
         )}
       </div>
       {/* Visible al pasar el cursor o al llegar con el teclado. */}

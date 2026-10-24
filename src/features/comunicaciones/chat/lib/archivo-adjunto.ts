@@ -29,9 +29,32 @@ const EXTENSIONES: Record<string, FormatoArchivo> = {
   // comprimido lo decide el front por la extensión (`esComprimido`).
   zip: "OTRO",
   rar: "OTRO",
+  // Audio (notas de voz y archivos de audio): el mismo CHECK no tiene un valor AUDIO, así
+  // que viajan como OTRO y el reproductor/ícono lo decide la extensión (`esAudio`). La nota
+  // de voz de Chrome/Edge se guarda como .weba (WebM solo audio) para no confundirla con un
+  // video .webm; Firefox graba .ogg y Safari .m4a (`nota-de-voz.ts`).
+  weba: "OTRO",
+  ogg: "OTRO",
+  oga: "OTRO",
+  opus: "OTRO",
+  m4a: "OTRO",
+  mp3: "OTRO",
+  wav: "OTRO",
 }
 
 const COMPRIMIDOS = new Set(["zip", "rar"])
+const AUDIOS = new Set(["weba", "ogg", "oga", "opus", "m4a", "mp3", "wav"])
+
+/** MIME con que se reproduce un audio por su extensión (el Blob que se arma para el `<audio>`). */
+const MIME_AUDIO: Record<string, string> = {
+  weba: "audio/webm",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  opus: "audio/ogg",
+  m4a: "audio/mp4",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+}
 
 /**
  * MIME que reportan los navegadores para un .zip/.rar según el SO y lo que haya
@@ -62,7 +85,7 @@ export const MAX_TOTAL_MB = 25
 const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024
 
 export const ACEPTA_DOCUMENTOS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-export const ACEPTA_MULTIMEDIA = ".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mov"
+export const ACEPTA_MULTIMEDIA = ".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mov,.weba,.ogg,.oga,.opus,.m4a,.mp3,.wav"
 
 function extension(nombre: string) {
   const i = nombre.lastIndexOf(".")
@@ -72,6 +95,16 @@ function extension(nombre: string) {
 /** `true` si el nombre es un .zip/.rar (para pintar el ícono de comprimido). */
 export function esComprimido(nombre: string | null | undefined) {
   return COMPRIMIDOS.has(extension(nombre ?? ""))
+}
+
+/** `true` si el nombre es un audio (nota de voz o archivo de audio): se reproduce inline. */
+export function esAudio(nombre: string | null | undefined) {
+  return AUDIOS.has(extension(nombre ?? ""))
+}
+
+/** MIME de reproducción de un audio por su nombre (`""` si no es audio). */
+export function mimeAudio(nombre: string | null | undefined) {
+  return MIME_AUDIO[extension(nombre ?? "")] ?? ""
 }
 
 export function formatoDeArchivo(archivo: { name: string; type: string }): FormatoArchivo {
@@ -86,7 +119,7 @@ export function formatoDeArchivo(archivo: { name: string; type: string }): Forma
 export function validarAdjunto(archivo: { name: string; size: number; type?: string }): string | null {
   const ext = extension(archivo.name)
   if (!EXTENSIONES[ext]) {
-    return "Ese tipo de archivo no se puede adjuntar. Usa PDF, Word, Excel, PowerPoint, texto, imagen, video, ZIP o RAR."
+    return "Ese tipo de archivo no se puede adjuntar. Usa PDF, Word, Excel, PowerPoint, texto, imagen, video, audio, ZIP o RAR."
   }
   if (COMPRIMIDOS.has(ext) && !MIME_COMPRIMIDOS.has((archivo.type ?? "").toLowerCase())) {
     return "El archivo no parece un ZIP o RAR válido."
