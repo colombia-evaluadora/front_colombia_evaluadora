@@ -20,6 +20,8 @@ export interface EnviarMensajeInput {
    * mismo valor; si falta se genera uno nuevo.
    */
   clientMessageId?: string
+  /** Pedir confirmación de lectura (HU 7). Sin valor, comms-service usa el ajuste por defecto. */
+  solicitaConfirmacion?: boolean
 }
 
 /**
@@ -29,13 +31,21 @@ export interface EnviarMensajeInput {
  * campo `ADJUNTO` se repite y llega como lista (`TransformadorMultipart`). Nombre,
  * formato y peso los toma el servidor del archivo, no del cliente.
  */
-async function enviarMensaje({ conversacionId, texto, archivos = [], respuestaA, clientMessageId }: EnviarMensajeInput) {
+async function enviarMensaje({
+  conversacionId,
+  texto,
+  archivos = [],
+  respuestaA,
+  clientMessageId,
+  solicitaConfirmacion,
+}: EnviarMensajeInput) {
   const ruta = `/comunicaciones/conversaciones/${conversacionId}/mensajes`
   const campos = {
     // Las menciones viajan dentro del texto como `<@id>`; el servidor las valida.
     TEXTO: texto,
     CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
     ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
+    ...(solicitaConfirmacion !== undefined && { SOLICITA_CONFIRMACION_LECTURA: solicitaConfirmacion ? "S" : "N" }),
   }
   if (archivos.length === 0) return evalCol.postRow<Mensaje>(ruta, campos)
   const crudo = await postMultipart<string | { rows: Mensaje[] } | Mensaje[]>(`/eval-col${ruta}`, campos, {

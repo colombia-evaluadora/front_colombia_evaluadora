@@ -16,6 +16,8 @@ import {
 } from "@/features/comunicaciones/chat/api/query/use-mensajes-query"
 import { Button } from "@/components/ui/button"
 import { useEnviarMensaje } from "@/features/comunicaciones/chat/api/mutations/use-enviar-mensaje"
+import { useAjustesChatQuery } from "@/features/comunicaciones/chat/api/query/use-ajustes-chat-query"
+import { puedeSolicitarConfirmacionLectura } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { useMarcarLeido } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-sidebar"
 import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-header"
@@ -199,6 +201,16 @@ function ChatContent() {
   }
 
   const enviar = useEnviarMensaje()
+  // Confirmación de lectura del próximo mensaje (HU 7): el ajuste por defecto del usuario o lo que
+  // elija en el compositor para esta conversación. Un estudiante no la pide si hay directivos.
+  const ajustesChat = useAjustesChatQuery()
+  const [confirmar, setConfirmar] = useState<{ conversacionId: number; activa: boolean } | null>(null)
+  const confirmarActiva =
+    confirmar && confirmar.conversacionId === activa?.id
+      ? confirmar.activa
+      : (ajustesChat.data?.confirmacionLecturaSolicitar ?? false)
+  const puedePedirConfirmacion =
+    !!activa && !activa.esBot && puedeSolicitarConfirmacionLectura(perfil, (miembrosQuery.data ?? []).map((m) => m.perfil))
   // Mismo `CLIENT_MESSAGE_ID` mientras se reintenta el mismo texto en el mismo
   // canal (envío fallido → reintento): el backend no lo duplica.
   const intento = useRef<{ clave: string; id: string } | null>(null)
@@ -498,6 +510,11 @@ function ChatContent() {
                 onCancelarRespuesta={() => setRespondiendo(null)}
                 onEscribiendo={avisarEscribiendo}
                 onAtajo={atajos.acciones}
+                confirmacionLectura={
+                  puedePedirConfirmacion
+                    ? { activa: confirmarActiva, onCambiar: (v) => setConfirmar({ conversacionId: activa.id, activa: v }) }
+                    : undefined
+                }
                 onEnviar={(texto, archivos) =>
                   enviar
                     .mutateAsync({
@@ -505,12 +522,14 @@ function ChatContent() {
                       texto,
                       archivos,
                       respuestaA: respondiendo?.id,
+                      solicitaConfirmacion: puedePedirConfirmacion ? confirmarActiva : undefined,
                       clientMessageId: idDeIntento(
                         `${activa.id}|${respondiendo?.id ?? ""}|${texto}|${archivos.map((a) => a.name).join("/")}`,
                       ),
                     })
                     .then(() => {
                       intento.current = null
+                      setConfirmar(null)
                       setRespondiendo(null)
                       // Quien responde ya leyó lo anterior: el divisor "Nuevos" sobra.
                       setMarca((m) => (m?.conversacionId === activa.id && m.id ? { ...m, id: null } : m))

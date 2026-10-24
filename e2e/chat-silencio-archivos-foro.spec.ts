@@ -177,3 +177,42 @@ test("panel de preferencias: silenciar 1 hora y activar una conversación", asyn
   await expect(page.getByText(`Notificaciones activadas en ${nombre}.`)).toBeVisible()
   await expect(silenciada.getByText("Notificaciones activas")).toBeVisible()
 })
+
+test("panel de preferencias: tipo de alerta por conversación y ajustes de sonido", async ({ page }) => {
+  await login(page)
+  await page.goto("/app/notificaciones/preferencias")
+  await expect(page.getByText("Medios de aviso por tipo de notificación")).toBeVisible({ timeout: 30_000 })
+  const panel = page.getByRole("region", { name: "Conversaciones del chat" })
+  const fila = panel.getByRole("listitem").filter({ hasText: "Campana y sonido" }).first()
+  const nombre = (await fila.locator("p.font-medium").textContent())?.trim() ?? ""
+  await fila.getByRole("button", { name: `Tipo de alerta de ${nombre}` }).click()
+  await page.getByRole("menuitemcheckbox", { name: "Correo" }).click()
+  await expect(page.getByText(`Alertas de ${nombre}: campana, sonido y correo.`)).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(panel.getByRole("listitem").filter({ hasText: nombre }).first()).toContainText("Campana, sonido y correo")
+
+  const ajustes = page.getByRole("region", { name: "Sonido y confirmación de lectura" })
+  const sonido = ajustes.getByRole("switch", { name: "Sonido de los avisos" })
+  await expect(sonido).toBeChecked()
+  await sonido.click()
+  await expect(page.getByText("Ajustes del chat actualizados.")).toBeVisible()
+  await expect(sonido).not.toBeChecked()
+})
+
+test("confirmación de lectura: el mensaje propio la pide y queda Enviado", async ({ page }) => {
+  const NOMBRE = "02-docentes-general"
+  await login(page)
+  await fila(page, NOMBRE).click()
+  const pedir = page.getByRole("button", { name: "Solicitar confirmación de lectura" })
+  await expect(pedir).toHaveAttribute("aria-pressed", "false")
+  await pedir.click()
+  await expect(pedir).toHaveAttribute("aria-pressed", "true")
+  const texto = `confirmar-${Date.now()}`
+  const editor = page.getByRole("combobox", { name: /^Mensaje para/ })
+  await editor.fill(texto)
+  await editor.press("Enter")
+  const burbuja = page.getByRole("log").locator("article").filter({ hasText: texto })
+  await expect(burbuja.locator('[data-lectura="ENVIADO"]')).toContainText("Enviado")
+  // Vuelve al ajuste por defecto para el siguiente mensaje.
+  await expect(pedir).toHaveAttribute("aria-pressed", "false")
+})

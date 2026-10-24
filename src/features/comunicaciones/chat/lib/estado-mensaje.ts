@@ -34,7 +34,7 @@ export function comoEliminado(m: Mensaje, eliminadoEn: string | null | undefined
   }
 }
 
-export type EstadoLectura = "ENVIADO" | "LEIDO"
+export type EstadoLectura = "ENVIADO" | "ENTREGADO" | "LEIDO"
 
 /**
  * Confirmación de lectura de un mensaje propio: ✓ enviado, ✓✓ leído por todos. `leidoHasta` es el
@@ -46,6 +46,8 @@ export function estadoLectura(
   c: Pick<Conversacion, "leidoHasta" | "totalMiembros"> | undefined,
 ): EstadoLectura | null {
   if (!m.esPropio || m.sistema || m.eliminado || !c || c.totalMiembros < 2) return null
+  // Pidió confirmación de lectura (HU 7): el estado lo calcula comms-service por receptor.
+  if (m.confirmacion) return m.confirmacion.estado
   return c.leidoHasta != null && m.id <= c.leidoHasta ? "LEIDO" : "ENVIADO"
 }
 

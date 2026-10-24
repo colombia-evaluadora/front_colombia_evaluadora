@@ -37,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
+  DropdownMenuCheckboxItem,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
@@ -47,6 +48,8 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { SILENCIOS } from "@/features/comunicaciones/chat/lib/silencios"
+import { MEDIOS_ALERTA, alertasDe, describirAlertas } from "@/features/comunicaciones/chat/lib/alertas"
+import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
 import {
   useArchivarConversacion,
   useDuplicarConversacion,
@@ -69,6 +72,7 @@ import {
   SignOutIcon,
   BellSlashIcon,
   BellIcon,
+  BellRingingIcon,
   LightningIcon,
   XSquareIcon,
 } from "@/components/ui/icons"
@@ -101,6 +105,8 @@ export function ConversacionAcciones({
   const [nombre, setNombre] = useState(c.nombre)
 
   const silenciar = useSilenciarConversacion()
+  const cambiarAlertas = useAlertasConversacion()
+  const alertas = alertasDe(c)
   const marcarLeido = useMarcarLeido()
   const marcarNoLeido = useMarcarNoLeido()
   const duplicar = useDuplicarConversacion()
@@ -236,6 +242,32 @@ export function ConversacionAcciones({
                 >
                   {s.etiqueta}
                 </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          {/* Tipo de alerta (HU 7): por qué medios avisa esta conversación. El sonido va con la campana. */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className={ITEM}>
+              <BellRingingIcon />
+              Tipo de alerta
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="min-w-40">
+              {MEDIOS_ALERTA.map((medio) => (
+                <DropdownMenuCheckboxItem
+                  key={medio.clave}
+                  className={ITEM}
+                  checked={alertas[medio.clave]}
+                  disabled={cambiarAlertas.isPending || (medio.clave === "sonido" && !alertas.campana)}
+                  onCheckedChange={(v) => {
+                    const nuevas = { ...alertas, [medio.clave]: v }
+                    cambiarAlertas.mutate(
+                      { id: c.id, alertas: nuevas },
+                      { onSuccess: () => notify(`Alertas de ${c.nombre}: ${describirAlertas(nuevas).toLowerCase()}.`), onError },
+                    )
+                  }}
+                >
+                  {medio.etiqueta}
+                </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>

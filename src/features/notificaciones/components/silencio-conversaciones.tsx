@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -14,6 +15,8 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useSilenciarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { SILENCIOS, describirSilencio } from "@/features/comunicaciones/chat/lib/silencios"
+import { MEDIOS_ALERTA, alertasDe, describirAlertas } from "@/features/comunicaciones/chat/lib/alertas"
+import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
 
 /**
  * Panel de configuración de mensajería: lista las conversaciones del chat con su estado de
@@ -26,6 +29,7 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
   const { notify } = useNotify()
   const conversaciones = useConversacionesQuery()
   const silenciar = useSilenciarConversacion()
+  const cambiarAlertas = useAlertasConversacion()
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const lista = (conversaciones.data ?? []).filter((c) => !c.archivada)
 
@@ -36,7 +40,7 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
           Conversaciones del chat
         </h2>
         <p className="text-sm text-muted-foreground">
-          Silencia o activa las notificaciones de cada conversación.
+          Silencia o activa las notificaciones de cada conversación y elige por qué medios te avisa.
         </p>
       </div>
       {conversaciones.isPending ? (
@@ -49,6 +53,7 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
         <ul className="divide-y rounded-md border">
           {lista.map((c) => {
             const silenciada = Boolean(c.silenciadoHasta)
+            const alertas = alertasDe(c)
             return (
               <li key={c.id} className="flex items-center gap-3 px-3 py-2">
                 {silenciada ? (
@@ -58,7 +63,10 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{c.nombre}</p>
-                  <p className="text-xs text-muted-foreground">{describirSilencio(c.silenciadoHasta)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {describirSilencio(c.silenciadoHasta)}
+                    {!silenciada && ` · ${describirAlertas(alertas)}`}
+                  </p>
                 </div>
                 {!silenciada && (
                   <Badge variant="soft" color="success" className="hidden sm:inline-flex">
@@ -80,6 +88,38 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
                     Activar
                   </Button>
                 )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={disabled || cambiarAlertas.isPending}
+                    render={
+                      <Button size="sm" variant="ghost" color="neutral" aria-label={`Tipo de alerta de ${c.nombre}`} />
+                    }
+                  >
+                    Alertas
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {MEDIOS_ALERTA.map((medio) => (
+                      <DropdownMenuCheckboxItem
+                        key={medio.clave}
+                        checked={alertas[medio.clave]}
+                        disabled={medio.clave === "sonido" && !alertas.campana}
+                        onCheckedChange={(v) => {
+                          const nuevas = { ...alertas, [medio.clave]: v }
+                          cambiarAlertas.mutate(
+                            { id: c.id, alertas: nuevas },
+                            {
+                              onSuccess: () =>
+                                notify(`Alertas de ${c.nombre}: ${describirAlertas(nuevas).toLowerCase()}.`),
+                              onError,
+                            },
+                          )
+                        }}
+                      >
+                        {medio.etiqueta}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     disabled={disabled || silenciar.isPending}

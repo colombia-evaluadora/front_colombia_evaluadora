@@ -7,6 +7,7 @@ import type {
   AdjuntoMensaje,
   Mensaje,
   CategoriaCanal,
+  AjustesChat,
   SilencioDuracion,
   TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
@@ -151,10 +152,14 @@ function hastaSilencio(duracion: SilencioDuracion) {
   return d.toISOString()
 }
 
+// Ajustes del chat del usuario (en memoria, uno para toda la sesión del mock).
+const ajustesChatMock: AjustesChat = { confirmacionLecturaPermitir: true, confirmacionLecturaSolicitar: false, sonido: true }
+
 interface CuerpoMensaje {
   TEXTO?: string
   FK_MENSAJE_RESPUESTA?: number | null
   CLIENT_MESSAGE_ID?: string
+  SOLICITA_CONFIRMACION_LECTURA?: "S" | "N"
 }
 
 function enviarMensajeMock(
@@ -185,6 +190,9 @@ function enviarMensajeMock(
     menciones: mencionesDe(texto, conv.id, request),
   })
   if (adjuntos.length > 0) m.adjuntos = adjuntos
+  // Confirmación de lectura (HU 7): en el mock queda Enviado; comms-service la avanza por receptor.
+  const confirmar = body.SOLICITA_CONFIRMACION_LECTURA ? body.SOLICITA_CONFIRMACION_LECTURA === "S" : ajustesChatMock.confirmacionLecturaSolicitar
+  if (confirmar) m.confirmacion = { estado: "ENVIADO", total: Math.max(conv.totalMiembros - 1, 1), entregados: 0, leidos: 0, lectores: [] }
   if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
   // Como comms-service: el borrador del canal pasa a "Enviados".
   const borrador = borradores.find((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
@@ -394,6 +402,7 @@ export const comunicacionesHandlers = [
     const texto = form.get("TEXTO")
     const respuesta = form.get("FK_MENSAJE_RESPUESTA")
     const clientId = form.get("CLIENT_MESSAGE_ID")
+    const confirmacion = form.get("SOLICITA_CONFIRMACION_LECTURA")
     const subidos = form.getAll("ADJUNTO").filter((x): x is File => x instanceof File)
     if (subidos.length > 10) {
       return HttpResponse.json({ message: "Puedes adjuntar hasta 10 archivos por mensaje." }, { status: 400 })
@@ -413,6 +422,7 @@ export const comunicacionesHandlers = [
         TEXTO: typeof texto === "string" ? texto : "",
         FK_MENSAJE_RESPUESTA: typeof respuesta === "string" ? Number(respuesta) : null,
         CLIENT_MESSAGE_ID: typeof clientId === "string" ? clientId : undefined,
+        SOLICITA_CONFIRMACION_LECTURA: confirmacion === "S" || confirmacion === "N" ? confirmacion : undefined,
       },
       request,
       adjuntos,
@@ -475,7 +485,35 @@ export const comunicacionesHandlers = [
     if (!conv) return noEncontrada()
     const body = (await request.json()) as { DURACION: SilencioDuracion }
     conv.silenciadoHasta = hastaSilencio(body.DURACION)
+    conv.silencioDuracion = body.DURACION === "NINGUNA" ? null : body.DURACION
     return HttpResponse.json({ rows: [conv] })
+  }),
+
+  // Medios de aviso de la conversación (HU 7).
+  http.patch(URL("conversaciones/:id/alertas"), async ({ params, request }) => {
+    await delay(150)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const body = (await request.json()) as { CAMPANA: "S" | "N"; SONIDO: "S" | "N"; CORREO: "S" | "N" }
+    conv.alertaCampana = body.CAMPANA === "S"
+    conv.alertaSonido = body.SONIDO === "S"
+    conv.alertaCorreo = body.CORREO === "S"
+    return HttpResponse.json({ rows: [conv] })
+  }),
+
+  // Ajustes del chat del usuario (confirmación de lectura y sonido).
+  http.get(URL("ajustes"), async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [ajustesChatMock] })
+  }),
+
+  http.put(URL("ajustes"), async ({ request }) => {
+    await delay(150)
+    const body = (await request.json()) as Record<string, "S" | "N" | undefined>
+    if (body.CONFIRMACION_LECTURA_PERMITIR) ajustesChatMock.confirmacionLecturaPermitir = body.CONFIRMACION_LECTURA_PERMITIR === "S"
+    if (body.CONFIRMACION_LECTURA_SOLICITAR) ajustesChatMock.confirmacionLecturaSolicitar = body.CONFIRMACION_LECTURA_SOLICITAR === "S"
+    if (body.SONIDO) ajustesChatMock.sonido = body.SONIDO === "S"
+    return HttpResponse.json({ rows: [ajustesChatMock] })
   }),
 
   http.patch(URL("conversaciones/:id/no-leido"), async ({ params }) => {
