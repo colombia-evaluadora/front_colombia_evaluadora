@@ -243,15 +243,16 @@ export function ConversacionAcciones({
           ) : (
             <DropdownMenuItem
               className={ITEM}
-              onClick={() =>
-                marcarNoLeido.mutate(c.id, {
-                  onSuccess: () => {
-                    notify(`${c.nombre} quedó como no leído.`)
-                    if (activa) onSalida()
-                  },
-                  onError,
-                })
-              }
+              onClick={() => {
+                // La conversación abierta se cierra ANTES de marcarla: abierta y a la vista, la
+                // página la vuelve a leer apenas su contador sube (chat-page) y la marca se perdía
+                // en el acto. `mutateAsync` porque este menú se desmonta al cerrar (el aviso igual sale).
+                if (activa) onSalida()
+                marcarNoLeido
+                  .mutateAsync(c.id)
+                  .then(() => notify(`${c.nombre} quedó como no leído.`))
+                  .catch(onError)
+              }}
             >
               <ChatUnreadIcon />
               Marcar como no leído

@@ -50,6 +50,22 @@ describe("mock de notificaciones", () => {
     expect((await getPage("?estado=no-leidas")).items).toHaveLength(0)
   })
 
+  it("leer-conversacion deja leídos solo los avisos de mensajes de ese canal", async () => {
+    const { notificacionesDb } = await import("@/mocks/db/notificaciones")
+    const base = { categoria: "CHAT", titulo: "t", cuerpo_corto: null, prioridad: "NORMAL", creada_en: new Date().toISOString(), leida_en: null, actores: [] as string[], conteo: 1, archivada: false } as const
+    notificacionesDb.unshift(
+      { ...base, id: "lc-1", tipo: "CHAT_DIRECTO", deep_link: "/app/comunicaciones/chat?canal=777&mensaje=1" },
+      { ...base, id: "lc-2", tipo: "CHAT_GRUPO_AGREGADO", deep_link: "/app/comunicaciones/chat?canal=777" },
+      { ...base, id: "lc-3", tipo: "CHAT_MENSAJE", deep_link: "/app/comunicaciones/chat?canal=7770" },
+    )
+    const res = await fetch(`${BASE}/leer-conversacion/777`, { method: "POST" })
+    expect(res.status).toBe(204)
+    const estado = (id: string) => notificacionesDb.find((n) => n.id === id)?.leida_en
+    expect(estado("lc-1")).toBeTruthy()
+    expect(estado("lc-2")).toBeNull()
+    expect(estado("lc-3")).toBeNull()
+  })
+
   it("rechaza cambiar un canal bloqueado por la institución", async () => {
     const prefs = await (await fetch(`${BASE}/preferencias`)).json()
     const bloqueado = prefs.tipos.find((t: { push_bloqueado: boolean }) => t.push_bloqueado)

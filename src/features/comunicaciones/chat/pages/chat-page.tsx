@@ -66,7 +66,15 @@ import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 import { realtimeEnabled } from "@/lib/realtime"
 import { FijadosBarra } from "@/features/comunicaciones/chat/components/fijados-barra"
 import { puedeVerEliminados } from "@/features/comunicaciones/chat/lib/estado-mensaje"
-import { useRealtimeStatus } from "@/lib/realtime/use-realtime"
+import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
+import { useDocumentoVisible } from "@/hooks/use-documento-visible"
+import { useAuth } from "@/features/auth/hooks/use-auth"
+import { topicoUsuario } from "@/lib/auth-mapper"
+import type { NotificacionRow } from "@/features/notificaciones/api/types"
+import {
+  canalDeDeepLink,
+  leerNotificacionesConversacion,
+} from "@/features/notificaciones/api/mutations/leer-conversacion"
 import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grupo"
@@ -212,12 +220,39 @@ function ChatContent() {
     setBorrador(b)
   }
 
-  // Abrir una conversación con pendientes la marca como leída.
+  // Abrir una conversación con pendientes la marca como leída, y también los mensajes que llegan
+  // mientras está abierta, pero solo con la pestaña visible: si el usuario está en otra pestaña o
+  // con la ventana minimizada no los vio, quedan sin leer (contador y campana) hasta que vuelva.
+  const visible = useDocumentoVisible()
   const pendientes = activa?.noLeidos ?? 0
   const { mutate: leer } = marcarLeido
+  const vistoAntes = useRef<{ id?: number; visible: boolean }>({ visible })
   useEffect(() => {
-    if (activa?.id && pendientes > 0) leer(activa.id)
-  }, [activa?.id, pendientes, leer])
+    const antes = vistoAntes.current
+    vistoAntes.current = { id: activa?.id, visible }
+    if (!activa?.id || pendientes === 0 || !visible) return
+    // Divisor "Nuevos": la foto se toma al abrir. Si ya estaba abierta y a la vista, lo que llega
+    // en vivo se está viendo y el divisor deja de tener sentido; si vuelve a la pestaña con
+    // mensajes sin leer, el divisor pasa al primero de ellos.
+    if (antes.id === activa.id) {
+      const id = activa.id
+      const volvio = !antes.visible
+      setMarca((m) =>
+        m?.conversacionId !== id ? m : volvio ? { conversacionId: id, noLeidos: pendientes } : { ...m, id: null },
+      )
+    }
+    leer(activa.id)
+  }, [activa?.id, pendientes, visible, leer])
+
+  // Aviso de la campana por un mensaje de la conversación abierta y a la vista: notification-service
+  // lo crea ~1 s después del mensaje (outbox), cuando la conversación ya se leyó; queda leído en el acto.
+  const { user } = useAuth()
+  useRealtimeTopic(user && !user.offline ? topicoUsuario(user) : null, (e) => {
+    if (e.event !== "notification.created" || !activa?.id || document.visibilityState !== "visible") return
+    if (canalDeDeepLink((e.data as NotificacionRow | undefined)?.deep_link) === activa.id) {
+      void leerNotificacionesConversacion(activa.id)
+    }
+  })
 
   // Deep link de una notificación o resultado del historial: saltar al mensaje cuando el
   // historial cargó. Si es más viejo que lo cargado, se piden páginas anteriores hasta llegar.
@@ -461,6 +496,8 @@ function ChatContent() {
                     .then(() => {
                       intento.current = null
                       setRespondiendo(null)
+                      // Quien responde ya leyó lo anterior: el divisor "Nuevos" sobra.
+                      setMarca((m) => (m?.conversacionId === activa.id && m.id ? { ...m, id: null } : m))
                       // El servidor pasa el borrador del canal a "Enviados".
                       if (borradorActivo) {
                         setBorrador(null)
