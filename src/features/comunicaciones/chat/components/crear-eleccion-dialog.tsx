@@ -23,7 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { useJornadasEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-jornadas-eleccion-query"
 import {
   useCrearEleccion,
   useEditarEleccion,
@@ -127,7 +127,13 @@ export function CrearEleccionDialog({
   const crearNueva = useCrearEleccion()
   const editarEleccion = useEditarEleccion(editar?.conversacionId ?? 0)
   const crear = editar ? editarEleccion : crearNueva
-  const { data: jornadas = [] } = useJornadasQuery()
+  const { data: jornadasEstablecimiento = [] } = useJornadasEleccionQuery()
+  // Al editar, la jornada guardada se conserva aunque ya no esté en un periodo activo (el backend
+  // la acepta si no cambia); así el select no queda en blanco.
+  const jornadas =
+    editar?.jornadaId && !jornadasEstablecimiento.some((j) => j.id === editar.jornadaId)
+      ? [...jornadasEstablecimiento, { id: editar.jornadaId, nombre: "Jornada actual" }]
+      : jornadasEstablecimiento
 
   const datos = useAppForm({
     defaultValues: datosDe(
@@ -230,7 +236,9 @@ export function CrearEleccionDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        {/* Título, pie y (en candidatos) "Agregar candidato" quedan fijos; solo scrollea el contenido
+            largo de cada paso (Natalia: antes scrolleaba todo el modal). */}
+        <DialogContent className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
           </DialogHeader>
@@ -243,7 +251,7 @@ export function CrearEleccionDialog({
                 e.preventDefault()
                 void datos.handleSubmit()
               }}
-              className="space-y-4"
+              className="-mx-1 min-h-0 space-y-4 overflow-y-auto px-1 pb-1"
             >
               <datos.AppField name="nombre">
                 {(f) => (
@@ -289,7 +297,7 @@ export function CrearEleccionDialog({
                     required
                     emptyValue={0}
                     placeholder="Seleccionar"
-                    options={jornadas.map((j) => ({ value: j.id, label: j.name }))}
+                    options={jornadas.map((j) => ({ value: j.id, label: j.nombre }))}
                   />
                 )}
               </datos.AppField>
@@ -307,11 +315,13 @@ export function CrearEleccionDialog({
               </fieldset>
             </form>
           ) : paso === 2 ? (
-            <SelectorVotantes
-              seleccion={votantes}
-              onCambio={setVotantes}
-              invalido={votantesIntentado && votantes.size === 0}
-            />
+            <div className="-mx-1 min-h-0 overflow-y-auto px-1 pb-1">
+              <SelectorVotantes
+                seleccion={votantes}
+                onCambio={setVotantes}
+                invalido={votantesIntentado && votantes.size === 0}
+              />
+            </div>
           ) : (
             <PasoCandidatos
               candidatos={candidatos}
@@ -464,14 +474,14 @@ function PasoCandidatos({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-col gap-4">
       <form
         noValidate
         onSubmit={(e) => {
           e.preventDefault()
           void form.handleSubmit()
         }}
-        className="space-y-3 border-b pb-4"
+        className="shrink-0 space-y-3 border-b pb-4"
       >
         <h3 className="text-sm font-semibold">Agregar candidato</h3>
         <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
@@ -510,7 +520,8 @@ function PasoCandidatos({
         </div>
       </form>
 
-      <ul className="space-y-2" aria-label="Candidatos agregados">
+      {/* Solo la lista (con "Voto en blanco") scrollea; el formulario de arriba queda fijo. */}
+      <ul className="-mx-1 min-h-0 space-y-2 overflow-y-auto px-1 pb-1" aria-label="Candidatos agregados">
         {candidatos.map((c) => (
           <li key={c.clave}>
             <TarjetaCandidato

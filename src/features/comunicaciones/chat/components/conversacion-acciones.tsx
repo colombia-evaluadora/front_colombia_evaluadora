@@ -1,6 +1,11 @@
 import { EditarActividad } from "@/features/comunicaciones/chat/components/editar-actividad"
 import { EditarGrupoDialog } from "@/features/comunicaciones/chat/components/editar-grupo-dialog"
-import { ETIQUETA_EDITAR, esActividadEditable } from "@/features/comunicaciones/chat/lib/actividad-editable"
+import {
+  ETIQUETA_EDITAR,
+  esActividadEditable,
+  esCategoriaActividad,
+  gestionaActividad,
+} from "@/features/comunicaciones/chat/lib/actividad-editable"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
@@ -105,17 +110,19 @@ export function ConversacionAcciones({
   const salir = useSalirConversacion()
   const cerrarEleccion = useCerrarEleccion()
 
-  const { puedeGestionar } = useChatAccess()
-  // Foros (CANAL) y grupos se administran igual: solo quien administra (`esAdmin`).
+  const { puedeGestionar, perfil } = useChatAccess()
+  // Foros (CANAL) y grupos se administran igual: solo quien administra (`esAdmin`). El canal de una
+  // actividad lo gestiona además su creador (mientras siga dentro) y los directivos miembros.
   const esCanal = c.tipo === "CANAL" || c.tipo === "GRUPO"
-  const gestionaCanal = esCanal && (c.esAdmin ?? puedeGestionar)
+  const gestionaCanal =
+    esCanal && (esCategoriaActividad(c.categoria) ? gestionaActividad(c, perfil) : (c.esAdmin ?? puedeGestionar))
   const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
   // Elección, encuesta, evaluación o comunicado propios: el lápiz abre "Editar …" con todos sus
   // datos; un grupo, "Editar grupo" (descripción, imagen y quién escribe); un foro solo se renombra.
-  const actividadEditable = esActividadEditable(c)
+  const actividadEditable = esActividadEditable(c, perfil)
   const abrirRenombrar = () => {
     if (actividadEditable) {
       setDialogo("editarActividad")
@@ -184,8 +191,8 @@ export function ConversacionAcciones({
               {ETIQUETA_EDITAR[c.categoria as keyof typeof ETIQUETA_EDITAR]}
             </DropdownMenuItem>
           )}
-          {/* Solo quien creó la elección puede cerrarla, y solo mientras sigue abierta. */}
-          {c.categoria === "VOTACION" && c.esCreador && c.actividadAbierta && (
+          {/* Solo quien gestiona la elección puede cerrarla, y solo mientras sigue abierta. */}
+          {c.categoria === "VOTACION" && gestionaCanal && c.actividadAbierta && (
             <DropdownMenuItem className={ITEM} onClick={() => setDialogo("cerrarEleccion")}>
               <XSquareIcon />
               Cerrar proceso electoral
@@ -243,15 +250,16 @@ export function ConversacionAcciones({
           ) : (
             <DropdownMenuItem
               className={ITEM}
-              onClick={() =>
-                marcarNoLeido.mutate(c.id, {
-                  onSuccess: () => {
-                    notify(`${c.nombre} quedó como no leído.`)
-                    if (activa) onSalida()
-                  },
-                  onError,
-                })
-              }
+              onClick={() => {
+                // La conversación abierta se cierra ANTES de marcarla: abierta y a la vista, la
+                // página la vuelve a leer apenas su contador sube (chat-page) y la marca se perdía
+                // en el acto. `mutateAsync` porque este menú se desmonta al cerrar (el aviso igual sale).
+                if (activa) onSalida()
+                marcarNoLeido
+                  .mutateAsync(c.id)
+                  .then(() => notify(`${c.nombre} quedó como no leído.`))
+                  .catch(onError)
+              }}
             >
               <ChatUnreadIcon />
               Marcar como no leído

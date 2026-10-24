@@ -66,7 +66,15 @@ import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 import { realtimeEnabled } from "@/lib/realtime"
 import { FijadosBarra } from "@/features/comunicaciones/chat/components/fijados-barra"
 import { puedeVerEliminados } from "@/features/comunicaciones/chat/lib/estado-mensaje"
-import { useRealtimeStatus } from "@/lib/realtime/use-realtime"
+import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
+import { useDocumentoVisible } from "@/hooks/use-documento-visible"
+import { useAuth } from "@/features/auth/hooks/use-auth"
+import { topicoUsuario } from "@/lib/auth-mapper"
+import type { NotificacionRow } from "@/features/notificaciones/api/types"
+import {
+  canalDeDeepLink,
+  leerNotificacionesConversacion,
+} from "@/features/notificaciones/api/mutations/leer-conversacion"
 import type { RealtimeStatus } from "@/lib/realtime/protocol"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { motivoSinEscritura } from "@/features/comunicaciones/chat/lib/modo-grupo"
@@ -139,9 +147,13 @@ function ChatContent() {
   // Elecciones, encuestas y exámenes son canales sin comentarios para todos, salvo la elección con
   // "Permitir comentarios". En el comunicado responde quien lo recibe solo si quien lo publicó lo
   // permitió (comms-service responde 403 igual si lo intenta).
+  // Elección cerrada (a mano o por fecha): nadie escribe, aunque tuviera "Permitir comentarios"
+  // (Natalia). comms-service responde 403 igual (ChatService#exigirComentarios).
+  const eleccionCerrada = !!eleccion && estadoEleccion(eleccion) === "FINALIZADA"
+  const comentariosEleccion = esEleccion && !!eleccion?.permiteComentarios && !eleccionCerrada
   const soloLectura =
     !!activa &&
-    ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !(esEleccion && eleccion?.permiteComentarios)) ||
+    ((CANALES_SIN_COMENTARIOS.includes(activa.categoria) && !comentariosEleccion) ||
       (activa.categoria === "ANUNCIO" && !conRespuestas) ||
       // Colevabot solo publica tarjetas: su DM no tiene compositor (diseño 4428:64360).
       activa.esBot)
@@ -212,12 +224,39 @@ function ChatContent() {
     setBorrador(b)
   }
 
-  // Abrir una conversación con pendientes la marca como leída.
+  // Abrir una conversación con pendientes la marca como leída, y también los mensajes que llegan
+  // mientras está abierta, pero solo con la pestaña visible: si el usuario está en otra pestaña o
+  // con la ventana minimizada no los vio, quedan sin leer (contador y campana) hasta que vuelva.
+  const visible = useDocumentoVisible()
   const pendientes = activa?.noLeidos ?? 0
   const { mutate: leer } = marcarLeido
+  const vistoAntes = useRef<{ id?: number; visible: boolean }>({ visible })
   useEffect(() => {
-    if (activa?.id && pendientes > 0) leer(activa.id)
-  }, [activa?.id, pendientes, leer])
+    const antes = vistoAntes.current
+    vistoAntes.current = { id: activa?.id, visible }
+    if (!activa?.id || pendientes === 0 || !visible) return
+    // Divisor "Nuevos": la foto se toma al abrir. Si ya estaba abierta y a la vista, lo que llega
+    // en vivo se está viendo y el divisor deja de tener sentido; si vuelve a la pestaña con
+    // mensajes sin leer, el divisor pasa al primero de ellos.
+    if (antes.id === activa.id) {
+      const id = activa.id
+      const volvio = !antes.visible
+      setMarca((m) =>
+        m?.conversacionId !== id ? m : volvio ? { conversacionId: id, noLeidos: pendientes } : { ...m, id: null },
+      )
+    }
+    leer(activa.id)
+  }, [activa?.id, pendientes, visible, leer])
+
+  // Aviso de la campana por un mensaje de la conversación abierta y a la vista: notification-service
+  // lo crea ~1 s después del mensaje (outbox), cuando la conversación ya se leyó; queda leído en el acto.
+  const { user } = useAuth()
+  useRealtimeTopic(user && !user.offline ? topicoUsuario(user) : null, (e) => {
+    if (e.event !== "notification.created" || !activa?.id || document.visibilityState !== "visible") return
+    if (canalDeDeepLink((e.data as NotificacionRow | undefined)?.deep_link) === activa.id) {
+      void leerNotificacionesConversacion(activa.id)
+    }
+  })
 
   // Deep link de una notificación o resultado del historial: saltar al mensaje cuando el
   // historial cargó. Si es más viejo que lo cargado, se piden páginas anteriores hasta llegar.
@@ -359,7 +398,7 @@ function ChatContent() {
                     />
                   ) : esEvaluacion ? (
                     <>
-                      {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} canal={evaluacion} />}
+                      {evaluacion && <CanalBienvenida key={evaluacion.conversacionId} tipo="evaluacion" canal={evaluacion} />}
                       {esEstudiante ? (
                         <EvaluacionEstudiante evaluacion={evaluacion} isPending={evaluacionQuery.isPending} />
                       ) : (
@@ -368,7 +407,7 @@ function ChatContent() {
                     </>
                   ) : esEncuesta ? (
                     <>
-                      {encuesta && <CanalBienvenida key={encuesta.conversacionId} canal={encuesta} />}
+                      {encuesta && <CanalBienvenida key={encuesta.conversacionId} tipo="encuesta" canal={encuesta} />}
                       {/* Quien la creó ve los resultados; las personas asignadas la responden. */}
                       {encuesta && !encuesta.esCreador ? (
                         <EncuestaParticipante encuesta={encuesta} isPending={encuestaQuery.isPending} />
@@ -380,7 +419,12 @@ function ChatContent() {
                     esEleccion && (
                       <>
                         {eleccion && (
-                          <CanalBienvenida key={eleccion.conversacionId} canal={eleccion} soloTitulo={votaEstudiante} />
+                          <CanalBienvenida
+                            key={eleccion.conversacionId}
+                            tipo="eleccion"
+                            canal={eleccion}
+                            soloTitulo={votaEstudiante}
+                          />
                         )}
                         {votaEstudiante ? (
                           <EleccionEstudiante eleccion={eleccion} isPending={eleccionQuery.isPending} />
@@ -404,7 +448,11 @@ function ChatContent() {
                 texto ni aviso de reemplazo (Figma 3837:43815, 4189:67308, 7127:76707). Con
                 "Permitir · Comentarios" el composer sí aparece (4195:69012).
               */}
-              {activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
+              {esEleccion && eleccionCerrada && eleccion?.permiteComentarios ? (
+                <p role="status" className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
+                  La elección cerró: ya no se pueden enviar mensajes.
+                </p>
+              ) : activa.esBot || (soloLectura && esEleccion) ? null : soloLectura ? (
                 <p className="shrink-0 border-t px-5 py-4 text-center text-sm text-muted-foreground">
                   En este foro no se pueden enviar mensajes.
                 </p>
@@ -456,6 +504,8 @@ function ChatContent() {
                     .then(() => {
                       intento.current = null
                       setRespondiendo(null)
+                      // Quien responde ya leyó lo anterior: el divisor "Nuevos" sobra.
+                      setMarca((m) => (m?.conversacionId === activa.id && m.id ? { ...m, id: null } : m))
                       // El servidor pasa el borrador del canal a "Enviados".
                       if (borradorActivo) {
                         setBorrador(null)

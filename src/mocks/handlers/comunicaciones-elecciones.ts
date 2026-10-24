@@ -66,7 +66,7 @@ export const comunicacionesEleccionesHandlers = [
   http.get(URL("conversaciones/:id/eleccion/informe"), async ({ params, request }) => {
     await delay(400)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una elección." }, { status: 404 })
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       return HttpResponse.json({ message: "Solo quien gestiona la elección puede generar el informe." }, { status: 403 })
     }
@@ -94,7 +94,7 @@ export const comunicacionesEleccionesHandlers = [
   http.patch(URL("conversaciones/:id/eleccion"), async ({ params, request }) => {
     await delay(250)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una elección." }, { status: 404 })
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       return HttpResponse.json({ message: "Solo quien creó la elección puede editarla." }, { status: 403 })
     }
@@ -131,6 +131,17 @@ export const comunicacionesEleccionesHandlers = [
     return HttpResponse.json({ rows: [{ ...e, yaVoto: false }] })
   }),
 
+  // Jornadas de las sedes del establecimiento (comms-service: periodos académicos activos).
+  http.get(URL("elecciones/jornadas"), async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [
+        { id: 1, nombre: "Mañana" },
+        { id: 2, nombre: "Tarde" },
+      ],
+    })
+  }),
+
   http.get(URL("votantes/opciones"), async () => {
     await delay(150)
     return HttpResponse.json({ rows: [{ grados: GRADOS, funcionarios: FUNCIONARIOS }] })
@@ -146,7 +157,7 @@ export const comunicacionesEleccionesHandlers = [
     await delay(250)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
     const correo = usuarioDe(request)?.email
-    if (!e || !correo) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (!e || !correo) return HttpResponse.json({ message: "Esta conversación no tiene una elección." }, { status: 404 })
     if (eleccionCerrada(e)) return HttpResponse.json({ message: "La votación ya está cerrada." }, { status: 409 })
     if (e.fechaInicio && Date.parse(e.fechaInicio) > Date.now()) {
       return HttpResponse.json({ message: "La votación aún no ha abierto." }, { status: 409 })
@@ -172,7 +183,7 @@ export const comunicacionesEleccionesHandlers = [
     await delay(200)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
     const conv = conversaciones.find((c) => c.id === Number(params.id))
-    if (!e || !conv) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (!e || !conv) return HttpResponse.json({ message: "Esta conversación no tiene una elección." }, { status: 404 })
     if (e.cerradaManualmente || (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now())) {
       return HttpResponse.json({ message: "La votación ya está cerrada." }, { status: 409 })
     }
@@ -186,7 +197,7 @@ export const comunicacionesEleccionesHandlers = [
   http.get(URL("conversaciones/:id/eleccion"), async ({ params, request }) => {
     await delay(200)
     const e = elecciones.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una elección." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una elección." }, { status: 404 })
     // Solo la elección de ejemplo recibe votos simulados; una recién creada queda en cero (se
     // puede editar hasta el primer voto, como en comms-service).
     if (e.conversacionId === 5) simularVotos(e)
@@ -211,7 +222,7 @@ export const comunicacionesEleccionesHandlers = [
       return HttpResponse.json({ message: "Agrega al menos dos candidatos." }, { status: 400 })
     }
     if (conversaciones.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${nombre}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe una conversación llamada ${nombre}.` }, { status: 409 })
     }
     const canal: Conversacion = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
