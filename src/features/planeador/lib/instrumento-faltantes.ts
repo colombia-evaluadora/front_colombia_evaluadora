@@ -49,7 +49,7 @@ function puntajeFueraDeRango(valor: number | undefined): boolean {
   return valor != null && (!Number.isFinite(valor) || valor < 0 || valor > PUNTAJE_MAXIMO)
 }
 
-function hayRepetidos(valores: number[]): boolean {
+function hayRepetidos<T>(valores: T[]): boolean {
   return new Set(valores).size !== valores.length
 }
 
@@ -123,37 +123,50 @@ function valorEscalaValido(valor: number): boolean {
   return Number.isFinite(valor) && Math.abs(valor) < 1000
 }
 
+/** Mismas reglas que `fn_actividad_validar_escala_definicion` (V496.5), por criterio. */
 export function faltantesEscala(escala: EscalaValoracion): string[] {
-  if (escala.tipo === "Numérica") {
-    const { valorMinimo, valorMaximo } = escala
-    if (valorMinimo == null || valorMaximo == null) {
-      return ["La escala numérica necesita valor mínimo y valor máximo."]
-    }
-    if (!valorEscalaValido(valorMinimo) || !valorEscalaValido(valorMaximo)) {
-      return ["Los valores mínimo y máximo de la escala deben ser números de hasta tres cifras."]
-    }
-    if (valorMinimo >= valorMaximo) {
-      return [`En la escala el valor mínimo (${valorMinimo}) debe ser menor que el máximo (${valorMaximo}).`]
-    }
-    return []
-  }
-  const { niveles } = escala
-  if (niveles.length === 0) return ["La escala cualitativa necesita al menos un nivel."]
+  const { criterios } = escala
+  if (criterios.length === 0) return ["La escala de valoración necesita al menos un criterio."]
   const faltantes: string[] = []
-  // A diferencia de rúbrica/lista de cotejo, el puntaje de cada nivel de la
-  // escala es SIEMPRE obligatorio en el backend (no depende de la unidad).
-  if (niveles.some((n) => n.ponderacion == null || puntajeFueraDeRango(n.ponderacion))) {
-    faltantes.push(`Cada nivel de la escala necesita un puntaje entre 0 y ${PUNTAJE_MAXIMO}.`)
-  }
-  if (niveles.some((n) => !n.descripcion.trim())) {
-    faltantes.push("Cada nivel de la escala necesita su interpretación o descriptor.")
-  }
-  const puntajes = niveles.map((n) => n.ponderacion).filter((p): p is number => p != null)
-  if (puntajes.length === niveles.length) {
-    if (hayRepetidos(puntajes)) faltantes.push("La escala tiene dos niveles con el mismo puntaje.")
-    else if (Math.max(...puntajes) === 0) faltantes.push("La escala necesita al menos un nivel con puntaje mayor que 0.")
-  }
+  if (criterios.some((c) => !c.nombre.trim())) faltantes.push("Cada criterio de la escala necesita su nombre.")
+  const nombres = criterios.map((c) => c.nombre.trim().toLowerCase()).filter(Boolean)
+  if (hayRepetidos(nombres)) faltantes.push("La escala tiene dos criterios con el mismo nombre.")
+  criterios.forEach((criterio, index) => {
+    const quien = `el criterio ${criterio.nombre.trim() ? `"${criterio.nombre.trim()}"` : index + 1}`
+    if (escala.tipo === "Numérica") {
+      const { valorMinimo, valorMaximo } = criterio
+      if (valorMinimo == null || valorMaximo == null) {
+        faltantes.push(`En ${quien} falta el valor mínimo o el valor máximo.`)
+      } else if (!valorEscalaValido(valorMinimo) || !valorEscalaValido(valorMaximo)) {
+        faltantes.push(`En ${quien} los valores mínimo y máximo deben ser números de hasta tres cifras.`)
+      } else if (valorMinimo >= valorMaximo) {
+        faltantes.push(`En ${quien} el valor mínimo (${valorMinimo}) debe ser menor que el máximo (${valorMaximo}).`)
+      }
+      return
+    }
+    const { niveles } = criterio
+    if (niveles.length === 0) {
+      faltantes.push(`${mayuscula(quien)} necesita al menos un nivel.`)
+      return
+    }
+    // El puntaje de cada nivel de la escala es SIEMPRE obligatorio en el backend.
+    if (niveles.some((n) => n.ponderacion == null || puntajeFueraDeRango(n.ponderacion))) {
+      faltantes.push(`Cada nivel de ${quien} necesita un puntaje entre 0 y ${PUNTAJE_MAXIMO}.`)
+    }
+    if (niveles.some((n) => !n.descripcion.trim())) {
+      faltantes.push(`Cada nivel de ${quien} necesita su descriptor.`)
+    }
+    const puntajes = niveles.map((n) => n.ponderacion).filter((p): p is number => p != null)
+    if (puntajes.length === niveles.length) {
+      if (hayRepetidos(puntajes)) faltantes.push(`${mayuscula(quien)} tiene dos niveles con el mismo puntaje.`)
+      else if (Math.max(...puntajes) === 0) faltantes.push(`${mayuscula(quien)} necesita al menos un nivel con puntaje mayor que 0.`)
+    }
+  })
   return faltantes
+}
+
+function mayuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 function faltantesPorMetodo(metodo: string, actividad: Actividad, options: FaltantesInstrumentoOptions): string[] {

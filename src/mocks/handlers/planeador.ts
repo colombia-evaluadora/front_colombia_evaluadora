@@ -349,18 +349,24 @@ function toActividadExportada(actividad: Actividad): ActividadExportada {
   } else if (esCotejo) {
     exportada.cotejo = actividad.listaCotejo.items.map((item) => item.descripcion)
   } else if (esEscala) {
-    exportada.escala =
-      actividad.escalaValoracion.tipo === "Numérica"
+    const esNumerica = actividad.escalaValoracion.tipo === "Numérica"
+    exportada.escala = actividad.escalaValoracion.criterios.map((criterio) =>
+      esNumerica
         ? {
-            minimo: actividad.escalaValoracion.valorMinimo,
-            maximo: actividad.escalaValoracion.valorMaximo,
-            interpretacion: actividad.escalaValoracion.interpretacionRangos,
+            nombre: criterio.nombre,
+            minimo: criterio.valorMinimo,
+            maximo: criterio.valorMaximo,
+            interpretacion: criterio.interpretacion,
           }
-        : actividad.escalaValoracion.niveles.map((nivel) => ({
-            nombre: nivel.nombre,
-            descriptor: nivel.descripcion,
-            ponderacion: nivel.ponderacion ?? 0,
-          }))
+        : {
+            nombre: criterio.nombre,
+            niveles: criterio.niveles.map((nivel) => ({
+              nombre: nivel.nombre,
+              descriptor: nivel.descripcion,
+              ponderacion: nivel.ponderacion ?? 0,
+            })),
+          },
+    )
   }
 
   if (actividad.unidad.id !== 0) {
@@ -426,10 +432,8 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
       id: 0,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",

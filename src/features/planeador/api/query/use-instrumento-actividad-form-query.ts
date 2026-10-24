@@ -64,6 +64,19 @@ interface RawEscala {
   valorMin?: number | null
   valorMax?: number | null
   interpretacionRangos?: string | null
+  /** Solo la escala anterior (sin criterios); con `criterios` viene `[]`. */
+  niveles?: RawNivel[]
+  /** Escala por criterio (Reglas 40-42, `fn_actividad_escala_criterios_json`). */
+  criterios?: RawEscalaCriterio[]
+}
+
+interface RawEscalaCriterio {
+  pk?: number
+  orden?: number
+  nombre: string
+  valorMin?: number | null
+  valorMax?: number | null
+  interpretacion?: string | null
   niveles?: RawNivel[]
 }
 
@@ -176,28 +189,37 @@ function listaCotejoDesdeRaw(items: RawCotejoItem[], syntheticId: SyntheticId): 
 }
 
 function escalaDesdeRaw(raw: RawEscala, syntheticId: SyntheticId): EscalaValoracion {
-  // `tipoEscalaValor`, NO `tipoEscala` — ese es el id numérico de
-  // `TLISTA_VALOR` (confirmado real: `{tipoEscala: 52016, tipoEscalaValor:
-  // "NUMERICA", ...}`). Comparación tolerante a mayúsculas/espacios por las
-  // dudas, mismo criterio que el matcheo por `valor` en
-  // `use-tipo-escala-catalog.ts`.
-  if (String(raw.tipoEscalaValor).trim().toUpperCase() === "NUMERICA") {
+  // `tipoEscalaValor`, NO `tipoEscala` (ese es el id numérico de `TLISTA_VALOR`).
+  const tipo = String(raw.tipoEscalaValor).trim().toUpperCase() === "NUMERICA" ? "Numérica" : "Cualitativa"
+  const numerica = tipo === "Numérica"
+  if (raw.criterios?.length) {
     return {
       id: 0,
-      criteriosGenerales: raw.criteriosGenerales ?? "",
-      tipo: "Numérica",
-      valorMinimo: raw.valorMin ?? undefined,
-      valorMaximo: raw.valorMax ?? undefined,
-      interpretacionRangos: raw.interpretacionRangos ?? "",
-      niveles: [],
+      tipo,
+      criterios: raw.criterios.map((c) => ({
+        id: syntheticId(c.pk),
+        nombre: c.nombre ?? "",
+        valorMinimo: numerica ? (c.valorMin ?? undefined) : undefined,
+        valorMaximo: numerica ? (c.valorMax ?? undefined) : undefined,
+        interpretacion: c.interpretacion ?? "",
+        niveles: numerica ? [] : (c.niveles ?? []).map((nivel) => nivelDesdeRaw(nivel, syntheticId)),
+      })),
     }
   }
+  // Escala anterior: un criterio por tramo de `criteriosGenerales`, cada uno con una
+  // copia del juego de niveles/rango de toda la escala. Al guardar queda por criterio.
+  const nombres = (raw.criteriosGenerales ?? "").split(",").map((n) => n.trim()).filter(Boolean)
   return {
     id: 0,
-    criteriosGenerales: raw.criteriosGenerales ?? "",
-    tipo: "Cualitativa",
-    interpretacionRangos: "",
-    niveles: (raw.niveles ?? []).map((nivel) => nivelDesdeRaw(nivel, syntheticId)),
+    tipo,
+    criterios: (nombres.length > 0 ? nombres : [""]).map((nombre) => ({
+      id: syntheticId(undefined),
+      nombre,
+      valorMinimo: numerica ? (raw.valorMin ?? undefined) : undefined,
+      valorMaximo: numerica ? (raw.valorMax ?? undefined) : undefined,
+      interpretacion: numerica ? (raw.interpretacionRangos ?? "") : "",
+      niveles: numerica ? [] : (raw.niveles ?? []).map((nivel) => ({ ...nivelDesdeRaw(nivel, syntheticId), id: syntheticId(undefined) })),
+    })),
   }
 }
 
@@ -217,10 +239,8 @@ function vacioParaForm(): InstrumentoActividadParaForm {
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
       id: 0,
-      criteriosGenerales: "",
       tipo: "Numérica",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",

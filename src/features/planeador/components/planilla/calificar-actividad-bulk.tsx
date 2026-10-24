@@ -19,7 +19,8 @@ import {
   instrumentoSinBulk,
   notaDe,
   resolverInstrumentoEfectivo,
-  splitCriteriosGenerales,
+  criteriosDeEscala,
+  escalaEsCualitativa,
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import { bloqueoCalificar, type NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoActividad } from "@/features/planeador/api/types/planilla"
@@ -91,8 +92,8 @@ export function buildBulkInputs(
       }))
   }
   if (efectivo.tipo === "ESCALA_VALORACION") {
-    const esNumerica = efectivo.definicion.niveles.length === 0
-    const criteriosGenerales = splitCriteriosGenerales(efectivo.definicion.criteriosGenerales)
+    const esNumerica = !escalaEsCualitativa(efectivo.definicion)
+    const criteriosGenerales = criteriosDeEscala(efectivo.definicion)
 
     if (criteriosGenerales.length > 1) {
       // Varios criterios generales: un valor por criterio en un solo request.

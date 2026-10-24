@@ -71,27 +71,30 @@ function buildListaCotejoDefinicion(listaCotejo: ListaCotejo) {
 }
 
 function escalaVacia(escala: EscalaValoracion): boolean {
-  if (escala.criteriosGenerales.trim()) return false
-  return escala.tipo === "Numérica"
-    ? escala.valorMinimo == null && escala.valorMaximo == null
-    : escala.niveles.length === 0
+  return escala.criterios.length === 0
 }
 
+/**
+ * Escala por criterio (Reglas 40-42, `fn_actividad_escala_definir_interno`): cada
+ * criterio con su nombre y, según el tipo, su rango + interpretación (numérica) o sus
+ * propios niveles (cualitativa). El backend guarda una fila por criterio
+ * (`TACTIVIDAD_ESCALA_CRITERIO`) y califica con suma obtenida / suma de máximos.
+ */
 async function buildEscalaDefinicion(escala: EscalaValoracion, instrumentosPermitidos?: InstrumentoPermitido[]) {
   const tipoEscala = pkDeVarianteEscala(instrumentosPermitidos, escala.tipo) ?? (await resolveTipoEscalaId(escala.tipo))
-  if (escala.tipo === "Numérica") {
-    return {
-      tipoEscala,
-      criteriosGenerales: escala.criteriosGenerales,
-      valorMin: escala.valorMinimo,
-      valorMax: escala.valorMaximo,
-      interpretacionRangos: escala.interpretacionRangos,
-    }
-  }
+  const numerica = escala.tipo === "Numérica"
   return {
     tipoEscala,
-    criteriosGenerales: escala.criteriosGenerales,
-    niveles: escala.niveles.map(nivelABody),
+    criterios: escala.criterios.map((criterio) =>
+      numerica
+        ? {
+            nombre: criterio.nombre.trim(),
+            valorMin: criterio.valorMinimo,
+            valorMax: criterio.valorMaximo,
+            interpretacion: criterio.interpretacion.trim() || undefined,
+          }
+        : { nombre: criterio.nombre.trim(), niveles: criterio.niveles.map(nivelABody) },
+    ),
   }
 }
 
