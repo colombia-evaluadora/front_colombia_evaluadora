@@ -17,6 +17,7 @@ export const NOTIFICACIONES_ENDPOINTS = {
   contador: () => ruta("/notificaciones/contador"),
   leida: (id: string) => ruta(`/notificaciones/${encodeURIComponent(id)}/leida`),
   leerTodas: () => ruta("/notificaciones/leer-todas"),
+  leerConversacion: (canal: number) => ruta(`/notificaciones/leer-conversacion/${canal}`),
   archivar: (id: string) => ruta(`/notificaciones/${encodeURIComponent(id)}/archivar`),
   preferencias: () => ruta("/notificaciones/preferencias"),
 } as const

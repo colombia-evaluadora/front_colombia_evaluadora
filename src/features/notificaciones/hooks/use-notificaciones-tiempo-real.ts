@@ -27,12 +27,26 @@ const EVENTOS = new Set([
   "notification.read_all",
 ])
 
+/** Ventana en la que se juntan los eventos de una ráfaga antes de refrescar la campana. */
+export const REFRESCO_MS = 400
+
 export function useNotificacionesTiempoReal() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
-  // Prefijo de todas las keys de la bandeja (lista, contador, preferencias).
-  const refrescar = () => void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+  // Prefijo de todas las keys de la bandeja (lista, contador, preferencias). Un mensaje del chat
+  // trae en ráfaga `conversacion.actualizada` + `notification.created` (+ `read_all` si se lee en
+  // el acto): se juntan en un solo refetch en vez de pedir lista y contador tres veces, que sumaba
+  // carga al gateway justo cuando el mensaje tiene que verse en vivo.
+  const pendiente = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const refrescar = () => {
+    if (pendiente.current) return
+    pendiente.current = setTimeout(() => {
+      pendiente.current = undefined
+      void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+    }, REFRESCO_MS)
+  }
+  useEffect(() => () => clearTimeout(pendiente.current), [])
 
   useRealtimeTopic(
     user && !user.offline ? topicoUsuario(user) : null,
