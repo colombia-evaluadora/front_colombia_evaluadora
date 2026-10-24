@@ -97,7 +97,7 @@ export function ChatPage() {
 }
 
 function ChatContent() {
-  const { canal, vista, mensaje: mensajeEnlazado, invitacion, accion } = chatRoute.useSearch()
+  const { canal, vista, mensaje: mensajeEnlazado, invitacion, accion, colevabot } = chatRoute.useSearch()
   const navigate = chatRoute.useNavigate()
   const { notify } = useNotify()
   const [busqueda, setBusqueda] = useState("")
@@ -160,6 +160,14 @@ function ChatContent() {
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
   // responde 403 igual si lo intenta).
   const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
+
+  // Campana de una solicitud de aprobación (?colevabot=1): abre la conversación de Colevabot en
+  // cuanto la sincronización la deja en la lista.
+  const botId = conversaciones.find((c) => c.esBot)?.id
+  useEffect(() => {
+    if (colevabot && botId != null)
+      navigate({ search: (prev) => ({ ...prev, colevabot: undefined, vista: undefined, canal: botId }), replace: true })
+  }, [colevabot, botId, navigate])
 
   // Botón Aceptar / Rechazar del push: responde la invitación al abrir y limpia la URL.
   useResponderInvitacionEnlazada(invitacion, accion, {

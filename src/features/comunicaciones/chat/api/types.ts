@@ -73,6 +73,27 @@ export interface TarjetaBot {
   descripcion: string | null
   campos: { etiqueta: string; valor: string }[]
   acciones: { etiqueta: string; url: string }[]
+  /** Solicitud de aprobación que respalda la tarjeta (Regla 70); null en las demás tarjetas. */
+  aprobacion?: AprobacionBot | null
+}
+
+export type EstadoSolicitudAprobacion = "PENDIENTE" | "APROBADA" | "RECHAZADA"
+
+/**
+ * `resolver`: tarjeta del aprobador; el front ofrece Aprobar / Rechazar con los mismos servicios de
+ * Gestión académica y consulta el estado vigente en vivo. Sin `resolver` es la del docente y
+ * `estado` es el del momento del aviso. En `CORRECCION_RESULTADO` la tarjeta representa la planilla
+ * (grupo, asignatura, periodo), no una sola nota.
+ */
+export interface AprobacionBot {
+  solicitudId: number
+  tipo: string
+  estado: EstadoSolicitudAprobacion
+  grupoId: number | null
+  asignaturaId: number | null
+  periodoId: number | null
+  matriculaId: number | null
+  resolver: boolean
 }
 
 // ABIERTO: todos escriben; SOLO_LECTURA: solo quien gestiona; MODERADO: quien gestiona y los perfiles elegidos.

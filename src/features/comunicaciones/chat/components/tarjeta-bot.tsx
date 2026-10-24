@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { Mensaje, TarjetaBot } from "@/features/comunicaciones/chat/api/types"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 import { safeDeepLink } from "@/features/notificaciones/lib/deep-link"
+import { AprobacionBotAcciones } from "@/features/comunicaciones/chat/components/aprobacion-bot"
 
 /** Logo de Colevabot (mismo del ítem de la lista). */
 export function AvatarColevabot({ className }: { className?: string }) {
@@ -59,6 +60,7 @@ export function TarjetaBotMensaje({ mensaje: m, tarjeta: t }: { mensaje: Mensaje
                 ))}
               </dl>
             )}
+            {t.aprobacion && <AprobacionBotAcciones aprobacion={t.aprobacion} />}
             {t.acciones.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {t.acciones.map((a, i) => (
