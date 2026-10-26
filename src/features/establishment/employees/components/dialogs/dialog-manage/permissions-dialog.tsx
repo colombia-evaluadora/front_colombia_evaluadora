@@ -44,7 +44,7 @@ import {
 import { toSelectItemsMap, type SelectOption } from "@/lib/catalog-options"
 import { cn } from "@/lib/utils"
 import { NoticeOutlet } from "@/components/notice/notice-context"
-import { usePuedeGestionarDirectivosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-directivos"
+import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import {
   permissionDraftSchema,
@@ -145,9 +145,9 @@ export function PermissionsDialog({
   onSave,
   isSaving,
 }: PermissionsDialogProps) {
-  // El permiso que da el cargo de rector o secretaria solo lo quita quien tiene
-  // Eliminar en ESTABLECIMIENTO, el mismo que cambia a los directivos.
-  const { data: puedeGestionarDirectivos } = usePuedeGestionarDirectivosQuery()
+  // El permiso que da el cargo de rector o secretaria solo lo quita quien
+  // gestiona los directivos: Eliminar en ESTABLECIMIENTO y nivel territorial.
+  const { data: puedeGestionarDirectivos } = usePuedeGestionarEstablecimientosQuery()
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   const sortedPermissions = (() => {

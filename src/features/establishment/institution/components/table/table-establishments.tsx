@@ -35,6 +35,7 @@ import { ExportSelectedEstablishmentsDialog } from "@/features/establishment/ins
 import { SearchEstablishments } from "@/features/establishment/institution/components/search/search-establishments"
 import { useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
 
 interface EstablishmentsDataTableProps {
   title: ReactNode
@@ -45,6 +46,8 @@ interface EstablishmentsDataTableProps {
 export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTableProps) {
   const { notify } = useNotify()
   const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
+  // Dar de baja un EE es del Superadministrador o del nivel territorial (V574).
+  const { data: puedeGestionar } = usePuedeGestionarEstablecimientosQuery()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -131,7 +134,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                {puedeEliminar ? (
+                {puedeEliminar && puedeGestionar ? (
                   <DialogBulkDelete<Establishment, number>
                     items={selectedItems}
                     getItemId={(item) => item.id}

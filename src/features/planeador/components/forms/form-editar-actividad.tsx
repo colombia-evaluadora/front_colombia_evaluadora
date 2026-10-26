@@ -25,7 +25,8 @@ import {
   camposObligatoriosFaltantes,
 } from "@/features/planeador/lib/campos-obligatorios-faltantes"
 import { faltantesInstrumento } from "@/features/planeador/lib/instrumento-faltantes"
-import { scrollToFirstInvalidField } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
+import { precargarPredeterminado, scrollToFirstInvalidField } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import {
   useHasGradoAsignatura,
   useRecuperacionBloqueaCampos,
@@ -139,6 +140,14 @@ export function EditarActividadForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Solo en el alta y sin borrador: el borrador ya trae lo que eligió el usuario
+  const precargar = esNueva && !draftInicial && !readOnly
+  const { data: tipoPredeterminado } = usePredeterminadoQuery("TIPO_ACTIVIDAD")
+  useEffect(() => {
+    if (!precargar || !tipoPredeterminado || form.state.values.tipo) return
+    precargarPredeterminado(form, "tipo", tipoPredeterminado.nombre as Actividad["tipo"])
+  }, [precargar, tipoPredeterminado, form])
 
   const isDirty = useSelector(form.store, (state) => !state.isDefaultValue)
   useEffect(() => {
@@ -332,6 +341,7 @@ export function EditarActividadForm({
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
         esRecuperacion={esRecuperacion}
+        precargar={precargar}
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />

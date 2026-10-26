@@ -228,6 +228,7 @@ export function PlanillaGrid({
                               observacionActual={celda.observacion}
                               evidenciasActuales={celda.evidencias}
                               actividadSinComenzar={columna.fechaInicio > todayDateOnly()}
+                              propuesta={celda.solicitudPendiente ? celda.calificacionPropuesta : undefined}
                             />
                           )}
                           {celda?.observacion?.trim() ? (

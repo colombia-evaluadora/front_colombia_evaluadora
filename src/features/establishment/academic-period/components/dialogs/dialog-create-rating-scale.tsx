@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import { cn } from "@/lib/utils"
 import {
@@ -50,6 +51,7 @@ import { useCreateRatingScalesBulk } from "@/features/establishment/academic-per
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useRatingScaleTypesQuery, useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import type { RatingScaleType } from "@/features/establishment/academic-period/api/types/rating-scales"
 import {
@@ -59,6 +61,7 @@ import {
 import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
+  RATING_SCALE_DESCRIPCION_MAX,
   type GradingRange,
 } from "@/features/establishment/academic-period/utils/grading-range"
 import {
@@ -79,15 +82,17 @@ import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-r
 
 type RatingScaleDraftValues = z.infer<ReturnType<typeof makeRatingScaleGradesSchema>>
 
-function makeEmptyDraft(range: GradingRange): RatingScaleDraftValues {
+// `tipo`: predeterminado de Listas valor, o vacío ("Seleccione")
+function makeEmptyDraft(range: GradingRange, tipo = ""): RatingScaleDraftValues {
   return {
     nombre: "",
     abreviacion: "",
-    tipo: "",
+    tipo,
     iconografia: "",
     notaMaxima: range.max,
     notaMinima: range.min,
     notaEquivalente: range.min,
+    descripcion: "",
   }
 }
 
@@ -139,6 +144,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const range = parseGradingRange(criteria?.gradingFormatName)
   const rangeRef = useRef(range)
   rangeRef.current = range
+  const { data: tipoPredeterminado } = usePredeterminadoQuery("TIPO_VALORACION")
+  const tipoPredeterminadoRef = useRef(tipoPredeterminado?.valor ?? "")
+  tipoPredeterminadoRef.current = tipoPredeterminado?.valor ?? ""
   const draftSchema = makeRatingScaleGradesSchema(range)
 
   // Unicidad por nivel (MantisBT 0000731); ref porque `onSubmit` cierra sobre el render inicial.
@@ -173,7 +181,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   }
 
   const form = useAppForm({
-    defaultValues: makeEmptyDraft(range),
+    defaultValues: makeEmptyDraft(range, tipoPredeterminadoRef.current),
     validators: {
       onChange: draftSchema,
       onSubmit: draftSchema,
@@ -183,7 +191,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       if (!data) return
       setDrafts((prev) => [...prev, data])
       showLocalNotice("Escala agregada a la lista.", "info")
-      formApi.reset(makeEmptyDraft(rangeRef.current))
+      formApi.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
     },
   })
 
@@ -192,7 +200,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     setTeachingLevelIds([])
     setDrafts([])
     cancelEdit()
-    form.reset(makeEmptyDraft(rangeRef.current))
+    form.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
     setLocalNotice(null)
   }
 
@@ -258,7 +266,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) form.reset(makeEmptyDraft(rangeRef.current))
+        if (next) form.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
         else reset()
       }}
     >
@@ -381,6 +389,28 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                   }}
                 </form.Field>
               </div>
+
+              <form.Field name="descripcion">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field variant="outlined" data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        rows={3}
+                        maxLength={RATING_SCALE_DESCRIPCION_MAX}
+                        placeholder="Descriptor del nivel (opcional). El planeador lo precarga en cada criterio."
+                        value={field.state.value ?? ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  )
+                }}
+              </form.Field>
 
               <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
@@ -628,6 +658,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             onSortChange={setSort}
                           />
                         </TableHead>
+                        <TableHead className="text-foreground">Descripción</TableHead>
                         {/* Como en `DataTable`: acciones sin rótulo visible. */}
                         {actionsSpacerHeadCell}
                         <TableHead className="w-px text-foreground">
@@ -773,6 +804,17 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   onChange={(valor) => patchEditRow({ iconografia: valor })}
                                 />
                               </TableCell>
+                              <TableCell>
+                                <Textarea
+                                  aria-label="Descripción"
+                                  placeholder="Opcional"
+                                  maxLength={RATING_SCALE_DESCRIPCION_MAX}
+                                  rows={2}
+                                  value={editRow.descripcion ?? ""}
+                                  onChange={(e) => patchEditRow({ descripcion: e.target.value })}
+                                  className="min-w-48"
+                                />
+                              </TableCell>
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
                                 {/* `true`: la fila en edición mantiene el bloque fijo. */}
@@ -827,6 +869,18 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             </TableCell>
                             <TableCell className="text-lg">
                               <RatingSymbolView value={d.iconografia} />
+                            </TableCell>
+                            <TableCell>
+                              {d.descripcion ? (
+                                <span
+                                  className="line-clamp-2 max-w-64 whitespace-normal"
+                                  title={d.descripcion}
+                                >
+                                  {d.descripcion}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                             {actionsSpacerCell}
                             <TableCell className={ACTIONS_CELL_CLASS}>

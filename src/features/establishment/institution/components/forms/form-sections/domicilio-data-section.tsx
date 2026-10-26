@@ -9,7 +9,7 @@ import {
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
-import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toSelectItemsMap, toSelectOptions, withSeleccione } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { toDireccionInput, toTextoInput } from "@/features/establishment/shared/text-field-rules"
@@ -35,7 +35,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
         value: municipality.id,
         label: `${municipality.code} - ${municipality.department.name} - ${municipality.name}`,
     }))
-    const zoneItems = toSelectOptions(zones)
+    const zoneItems = withSeleccione(toSelectOptions(zones))
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -57,7 +57,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         items={toSelectItemsMap(municipalityItems)}
                     >
                         <ComboboxFieldTrigger aria-invalid={isInvalid("address.municipality")}>
-                            <ComboboxFieldValue placeholder="Seleccionar" />
+                            <ComboboxFieldValue placeholder="Seleccione" />
                         </ComboboxFieldTrigger>
 
                         <ComboboxFieldContent>
@@ -77,12 +77,12 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         value={value.zone?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = zones.find((item) => item.id === selectedValue)
-                            if (option) onChange({ ...value, zone: option })
+                            onChange({ ...value, zone: option ?? null })
                         }}
                         items={toSelectItemsMap(zoneItems)}
                     >
                         <ComboboxFieldTrigger>
-                            <ComboboxFieldValue placeholder="Seleccionar" />
+                            <ComboboxFieldValue placeholder="Seleccione" />
                         </ComboboxFieldTrigger>
 
                         <ComboboxFieldContent>

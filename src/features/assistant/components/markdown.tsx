@@ -6,7 +6,7 @@ import { esRutaInterna } from "@/features/assistant/lib/acciones-ui"
 // Markdown mínimo y seguro para las respuestas del asistente: se arman
 // elementos de React (nunca `dangerouslySetInnerHTML`), así que un texto con
 // HTML se muestra literal. Cubre lo que produce el modelo: párrafos, títulos,
-// listas, **negrita**, *cursiva*, `código` y enlaces. Los enlaces internos
+// listas, tablas, **negrita**, *cursiva*, `código` y enlaces. Los enlaces internos
 // (`/app/...`) navegan con el router; los externos solo `https:`.
 
 function inline(texto: string, clave: string): ReactNode[] {
@@ -86,8 +86,86 @@ export function Markdown({ texto }: { texto: string }) {
     )
     lista = null
   }
+  // Tabla: filas `| a | b |`; la fila `|---|---|` separa encabezado y cuerpo.
+  let tabla: string[][] | null = null
+  let tablaConEncabezado = false
+  const celdas = (linea: string) =>
+    linea.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim())
+  const cerrarTabla = () => {
+    if (!tabla) return
+    const k = `t-${bloques.length}`
+    const cabecera = tablaConEncabezado ? tabla[0] : null
+    const cuerpo = tablaConEncabezado ? tabla.slice(1) : tabla
+    // Con 3+ columnas no cabe en el panel: cada fila se muestra como ficha
+    // (primera columna de título y el resto como etiqueta: valor).
+    if (cabecera && cabecera.length > 2) {
+      bloques.push(
+        <ul key={k} className="divide-y rounded-md border">
+          {cuerpo.map((fila, f) => (
+            <li key={f} className="px-3 py-2">
+              <p className="font-semibold">{inline(fila[0] ?? "", `${k}-${f}-0`)}</p>
+              <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+                {cabecera.slice(1).map((titulo, i) => (
+                  <div key={i} className="contents">
+                    <dt className="text-muted-foreground">{inline(titulo, `${k}-h-${i}`)}</dt>
+                    <dd>{inline(fila[i + 1] ?? "", `${k}-${f}-${i + 1}`)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </li>
+          ))}
+        </ul>,
+      )
+      tabla = null
+      tablaConEncabezado = false
+      return
+    }
+    bloques.push(
+      <div key={k} className="overflow-x-auto rounded-md border">
+        <table className="w-full border-collapse text-left text-xs">
+          {cabecera && (
+            <thead className="bg-muted">
+              <tr>
+                {cabecera.map((c, i) => (
+                  <th key={i} className="px-2 py-1.5 font-semibold">
+                    {inline(c, `${k}-h-${i}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {cuerpo.map((fila, f) => (
+              <tr key={f} className="border-t">
+                {fila.map((c, i) => (
+                  <td key={i} className="px-2 py-1.5 align-top">
+                    {inline(c, `${k}-${f}-${i}`)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>,
+    )
+    tabla = null
+    tablaConEncabezado = false
+  }
 
   for (const linea of lineas) {
+    if (/^\s*\|.*\|\s*$/.test(linea)) {
+      cerrarParrafo()
+      cerrarLista()
+      tabla ??= []
+      if (/^\s*\|(\s*:?-+:?\s*\|)+\s*$/.test(linea)) {
+        tablaConEncabezado = tabla.length === 1
+      } else {
+        tabla.push(celdas(linea))
+      }
+      continue
+    }
+    cerrarTabla()
+
     const vineta = /^\s*[-*•]\s+(.*)$/.exec(linea)
     const numerada = /^\s*\d+[.)]\s+(.*)$/.exec(linea)
     const titulo = /^(#{1,4})\s+(.*)$/.exec(linea)
@@ -116,6 +194,7 @@ export function Markdown({ texto }: { texto: string }) {
   }
   cerrarParrafo()
   cerrarLista()
+  cerrarTabla()
 
   return <div className="flex flex-col gap-2 text-sm leading-relaxed">{bloques}</div>
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useSelector } from "@tanstack/react-form"
 import { Card } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   useInstrumentoEvaluacionCatalogQuery,
+  INSTRUMENTO_EVALUACION_POR_CODIGO,
   instrumentoPermitidoLabel,
 } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { InfoIcon } from "@/components/ui/icons"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import type { FormActividad } from "@/features/planeador/components/forms/form-editar-actividad/types"
 import { useCamposEvaluacionEfectivos } from "@/features/planeador/components/forms/form-editar-actividad/hooks"
+import { precargarPredeterminado } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { ListaCotejoSection } from "@/features/planeador/components/forms/form-editar-actividad/lista-cotejo-section"
 import {
   EscalaValoracionSection,
@@ -27,6 +30,7 @@ export function EvaluacionSection({
   camposEfectivos,
   esFormativa,
   esRecuperacion,
+  precargar = false,
   tipoEvaluacion,
   disabled,
 }: {
@@ -36,6 +40,8 @@ export function EvaluacionSection({
   esFormativa: boolean
   /** Una recuperación siempre es sumativa: bloquea el select en "Sí". */
   esRecuperacion: boolean
+  /** Alta sin borrador: precarga el instrumento predeterminado de Listas valor. */
+  precargar?: boolean
   tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
   disabled: boolean
 }) {
@@ -59,6 +65,20 @@ export function EvaluacionSection({
     instrumentosPermitidosLabels && instrumentosPermitidosLabels.length > 0
       ? instrumentos.filter((instrumento) => instrumentosPermitidosLabels.includes(instrumento))
       : instrumentos
+
+  // `instrumento` arranca en "Rúbrica" (sin "Seleccione"): se cambia una sola vez por el predeterminado
+  const { data: instrumentoPredeterminado } = usePredeterminadoQuery("INSTRUMENTO_EVALUACION")
+  const instrumentoPrecargado = useRef(false)
+  const instrumentoDefault = instrumentoPredeterminado
+    ? (INSTRUMENTO_EVALUACION_POR_CODIGO[instrumentoPredeterminado.valor] ?? instrumentoPredeterminado.nombre)
+    : null
+  const instrumentoDefaultPermitido = instrumentoDefault != null && instrumentosDisponibles.includes(instrumentoDefault)
+  useEffect(() => {
+    if (!precargar || esFormativa || instrumentoPrecargado.current || !instrumentoDefaultPermitido) return
+    instrumentoPrecargado.current = true
+    if (form.getFieldMeta("instrumento")?.isTouched) return
+    if (form.state.values.instrumento !== instrumentoDefault) precargarPredeterminado(form, "instrumento", instrumentoDefault)
+  }, [precargar, esFormativa, instrumentoDefault, instrumentoDefaultPermitido, form])
 
   // Con referente formativo la tarjeta entera no tiene nada que mostrar.
   // El `return null` va después de los hooks.

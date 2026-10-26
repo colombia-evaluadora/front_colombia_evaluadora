@@ -45,6 +45,20 @@ interface CeldaObservacionTriggerProps {
   onGuardado?: () => void
   /** Motivo por el que no se puede observar (No asistido, No presentó). */
   bloqueo?: string | null
+  /** Body de observar de una corrección pendiente (`calificacion_propuesta`). */
+  propuesta?: unknown
+}
+
+interface ObservacionPropuesta {
+  observacion?: string | null
+  momento?: string | null
+  enlace?: string | null
+}
+
+/** Solo una corrección de observación trae `observacion` en la propuesta. */
+function toObservacionPropuesta(propuesta: unknown): ObservacionPropuesta | null {
+  if (!propuesta || typeof propuesta !== "object" || !("observacion" in propuesta)) return null
+  return propuesta as ObservacionPropuesta
 }
 
 /**
@@ -66,7 +80,9 @@ export function CeldaObservacionTrigger({
   actividadSinComenzar,
   onGuardado,
   bloqueo,
+  propuesta,
 }: CeldaObservacionTriggerProps) {
+  const pendiente = toObservacionPropuesta(propuesta)
   const [abierto, setAbierto] = useState(false)
   // Observaciones y evidencias se guardan en el servidor (plan offline §7.5).
   // Fase 2: el texto de la observación se encola sin red; las evidencias
@@ -79,7 +95,11 @@ export function CeldaObservacionTrigger({
   const observar = useObservarEstudianteMutation({
     mutationConfig: {
       onSuccess: (result) => {
-        notify(result.queued ? QUEUED_MESSAGE : "Observación guardada.", result.queued ? { variant: "info" } : undefined)
+        if (result.queued) notify(QUEUED_MESSAGE, { variant: "info" })
+        // Periodo cerrado: queda la vigente hasta que el coordinador apruebe.
+        else if (result.solicitudPendiente)
+          notify("Periodo cerrado: la corrección quedó como solicitud al coordinador.", { variant: "info" })
+        else notify("Observación guardada.")
         setAbierto(false)
         onGuardado?.()
       },
@@ -148,10 +168,13 @@ export function CeldaObservacionTrigger({
             ? {
                 id: pkTactividadEstudiante,
                 nombreCompleto: estudianteNombre,
-                observacion: notaActual?.observacion ?? observacionActual,
-                enlace: enlaceActual,
-                momento: momentoActual,
+                // Pendiente de aprobación: se edita sobre lo propuesto, no lo vigente.
+                observacion: pendiente ? (pendiente.observacion ?? "") : (notaActual?.observacion ?? observacionActual),
+                // NULL en la propuesta = no se tocaba: queda lo vigente.
+                enlace: pendiente?.enlace ?? enlaceActual,
+                momento: pendiente?.momento ?? momentoActual,
                 fecha,
+                pendienteAprobacion: pendiente != null,
               }
             : null
         }

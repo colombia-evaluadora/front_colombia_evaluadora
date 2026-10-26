@@ -104,6 +104,14 @@ export type CalificacionEstudiante = Estudiante & {
 }
 
 /** Motivo por el que no se puede calificar ni observar, o `null` si se puede. */
+/** Calificado con contenido: un Calificado vacío no exime del bloqueo por asistencia. */
+export function tieneResultadoReal(e: CalificacionEstudiante): boolean {
+  return (
+    e.estadoResultado === "CALIFICADO" &&
+    (e.calificacion != null || Boolean(e.observacion?.trim()) || Boolean(e.evidenciaEnlace?.trim()))
+  )
+}
+
 export function bloqueoCalificar(e: CalificacionEstudiante): string | null {
   if (e.estadoResultado === "NO_PRESENTO" || e.noPresento) {
     return "El estudiante no presentó."
@@ -111,12 +119,12 @@ export function bloqueoCalificar(e: CalificacionEstudiante): string | null {
   // Si el backend aún no manda el estado, la asistencia ausente basta.
   if (
     e.estadoResultado?.startsWith("NO_ASISTIO") ||
-    (e.asistencia.estado === "no-asistio" && e.estadoResultado !== "CALIFICADO")
+    (e.asistencia.estado === "no-asistio" && !tieneResultadoReal(e))
   ) {
     return "El estudiante no asistió"
   }
   // Un resultado ya registrado (congelado) se puede corregir.
-  if (e.asistencia.estado === "sin-registrar" && e.estadoResultado !== "CALIFICADO") {
+  if (e.asistencia.estado === "sin-registrar" && !tieneResultadoReal(e)) {
     return "Registre la asistencia antes de registrar el resultado."
   }
   return null

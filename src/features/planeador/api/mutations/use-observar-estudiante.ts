@@ -11,6 +11,7 @@ import {
   invalidarCalificacionesActividad,
   refrescarBloqueoEdicion,
 } from "@/features/planeador/api/mutations/invalidar-calificaciones"
+import { PLANILLA_SOLICITUD_NOTE } from "@/features/planeador/api/mutations/use-calificar-celda"
 
 export interface ObservarEstudianteInput {
   pkTactividadEstudiante: number
@@ -43,6 +44,12 @@ function buildObservarBody(input: {
   return body
 }
 
+/** Corregir una observación con el periodo cerrado abre solicitud al coordinador. */
+export interface ObservarResult {
+  /** Vacío = se aplicó directo. */
+  solicitudes_pendientes?: number[] | null
+}
+
 interface ObservarPayload {
   pkTactividadEstudiante: number
   actividadId?: number
@@ -60,12 +67,13 @@ registerOutboxHandler<ObservarPayload>({
     body: { ...prev.body, ...next.body },
     baseVersion: prev.baseVersion ?? next.baseVersion,
   }),
-  send: (p: ObservarPayload, ctx: SendCtx) =>
-    evalCol.put(
+  send: (p: ObservarPayload, ctx: SendCtx): Promise<ObservarResult> =>
+    evalCol.putRow(
       `/planeador/actividades/estudiantes/${p.pkTactividadEstudiante}/observar`,
       { ...p.body, ...(p.baseVersion ? { BASE_VERSION: p.baseVersion } : {}) },
       { headers: outboxHeaders(ctx), background: ctx.background },
     ),
+  noteOf: (r) => ((r as ObservarResult)?.solicitudes_pendientes?.length ? PLANILLA_SOLICITUD_NOTE : null),
   invalidates: (p) => [
     planeadorKeys.planilla.calificaciones.all,
     planeadorKeys.actividadEstudiante.nota(p.pkTactividadEstudiante),
@@ -86,15 +94,16 @@ registerOutboxHandler<ObservarPayload>({
 
 async function observarEstudiante(
   input: ObservarEstudianteInput & { baseVersion?: string | null },
-): Promise<{ queued: boolean }> {
+): Promise<{ queued: boolean; solicitudPendiente: boolean }> {
   const payload: ObservarPayload = {
     pkTactividadEstudiante: input.pkTactividadEstudiante,
     actividadId: input.actividadId,
     body: buildObservarBody(input),
     baseVersion: input.baseVersion ?? null,
   }
-  const outcome = await runOrQueue("planilla.observacion", payload)
-  return { queued: outcome.queued }
+  const outcome = await runOrQueue<ObservarPayload, ObservarResult>("planilla.observacion", payload)
+  if (outcome.queued) return { queued: true, solicitudPendiente: false }
+  return { queued: false, solicitudPendiente: Boolean(outcome.result?.solicitudes_pendientes?.length) }
 }
 
 interface UseObservarEstudianteOptions {

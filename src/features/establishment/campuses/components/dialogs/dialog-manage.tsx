@@ -19,6 +19,13 @@ import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-
 import { useZonasSedeQuery } from "@/features/establishment/campuses/api/query/use-zonas-sede"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
+import {
+  validarDireccion,
+  validarLugar,
+  validarNombreEstablecimiento,
+  validarUbicacion,
+} from "@/features/establishment/shared/text-field-rules"
+import { MENSAJES, TELEFONO } from "@/features/establishment/shared/person-field-rules"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
@@ -38,23 +45,47 @@ function createInitialCampusValues(): CampusDraft {
     commune: "",
     address: "",
     phone: "",
+    locality: "",
+    georeference: "",
     establishmentId: null,
   }
 }
 
 /**
- * Solo los tres campos con asterisco (más el establecimiento, cuando el
- * selector está visible). El resto de la sede (barrio, comuna, dirección,
- * teléfono, resolución) es opcional, así que no entra al esquema.
+ * Obligatorios: los tres campos con asterisco (más el establecimiento, cuando
+ * el selector está visible). El resto es opcional, pero si se llena pasa por
+ * las mismas reglas de composición que el establecimiento (`text-field-rules`):
+ * sin relleno de símbolos, dirección con estructura, teléfono de 7 o 10.
  *
  * `requireEstablishment`: `FK_TESTABLECIMIENTO` es obligatorio en el alta
  * real. El selector ahora se muestra para cualquier rol en el alta (ver
  * `showEstablishmentPicker` más abajo), así que esto también aplica para
  * cualquier rol — ya no es un caso especial de super admin.
  */
+/** Campo opcional validado por una regla de `text-field-rules` (mensaje o `null`). */
+function regla(check: (value: string) => string | null) {
+  return z.string().nullish().superRefine((value, ctx) => {
+    const message = check(value ?? "")
+    if (message) ctx.addIssue({ code: "custom", message })
+  })
+}
+
 function buildCampusSchema(requireEstablishment: boolean) {
   return z.object({
-    name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
+    name: z
+      .string()
+      .trim()
+      .min(1, "Ingresa el nombre de la sede.")
+      .superRefine((value, ctx) => {
+        const message = validarNombreEstablecimiento(value)
+        if (message) ctx.addIssue({ code: "custom", message })
+      }),
+    locality: regla((v) => validarLugar(v, "La localidad")),
+    commune: regla((v) => validarLugar(v, "La comuna")),
+    neighborhood: regla((v) => validarLugar(v, "El barrio")),
+    address: regla(validarDireccion),
+    phone: regla((v) => (v.trim() && !TELEFONO.test(v.trim()) ? MENSAJES.telefono : null)),
+    georeference: regla(validarUbicacion),
     dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
     // Mismo criterio que `requiredCatalogItem` en
     // `institution/utils/validate-form.ts`: `.nullish()` + chequear
@@ -301,6 +332,7 @@ export function ManageCampusDialog({
               zones={zones}
               errors={fieldErrors}
               establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
+              info={isEditMode && campusQuery.data?.status === "ok" ? campusQuery.data.info : undefined}
             />
           </form>
         </div>

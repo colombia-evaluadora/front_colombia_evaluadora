@@ -1,3 +1,5 @@
+import type { Actividad } from "@/features/planeador/api/types/actividad"
+import type { FormActividad } from "@/features/planeador/components/forms/form-editar-actividad/types"
 
 /**
  * Tras un guardado fallido lleva la vista y el foco al primer campo inválido de este form.
@@ -26,4 +28,18 @@ export function cryptoId(): number {
 export function formatDiaCorto(value: string): string {
   const [, m, d] = value.split("-")
   return `${d}/${m}`
+}
+
+/**
+ * Alta: pone el predeterminado de Listas valor. Si el form sigue limpio, también
+ * pasa a ser la base del `isDirty` para no pedir confirmación al salir sin tocar nada.
+ */
+export function precargarPredeterminado<K extends "tipo" | "instrumento">(
+  form: FormActividad,
+  name: K,
+  value: Actividad[K],
+) {
+  const limpio = form.state.isDefaultValue
+  form.setFieldValue(name, value as never)
+  if (limpio) form.reset(form.state.values)
 }

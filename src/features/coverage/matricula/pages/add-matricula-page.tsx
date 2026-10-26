@@ -36,6 +36,7 @@ import {
   type DepartmentOption,
   type MatriculaSupportFiles,
 } from "@/features/coverage/matricula/components/forms/form-create-matricula"
+import { useMatriculaPredeterminados } from "@/features/coverage/matricula/hooks/use-matricula-predeterminados"
 import { MatriculaFormBody } from "@/features/coverage/matricula/components/forms/matricula-form-body"
 import {
   createEmptySupportFiles,
@@ -160,6 +161,7 @@ function AddMatriculaPageContent() {
   }
 
   const initialValuesRef = useRef(createInitialMatriculaValues())
+  const { conPredeterminados } = useMatriculaPredeterminados(values, setValues, fieldSettings, initialValuesRef)
 
   const isDirty =
     JSON.stringify(values) !== JSON.stringify(initialValuesRef.current) ||
@@ -321,7 +323,7 @@ function AddMatriculaPageContent() {
   }, [missingFields, values, notify, dismiss])
 
   function resetForm() {
-    const blank = createInitialMatriculaValues()
+    const blank = conPredeterminados(createInitialMatriculaValues())
     setValues(blank)
     setFiles(createEmptySupportFiles())
     initialValuesRef.current = blank

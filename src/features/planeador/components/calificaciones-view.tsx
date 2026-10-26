@@ -37,7 +37,7 @@ import { useEstadoResultadoMutation } from "@/features/planeador/api/mutations/u
 import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
-import { bloqueoCalificar, itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
+import { bloqueoCalificar, itemsPonderables, porcentajeFinal, tieneResultadoReal } from "@/features/planeador/api/types/calificacion"
 import { formatDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
 import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
@@ -236,7 +236,7 @@ function CalificacionRow({
   const noPresento = estudiante.noPresento === true
   const noAsistido =
     estudiante.estadoResultado?.startsWith("NO_ASISTIO") === true ||
-    (estudiante.asistencia.estado === "no-asistio" && estudiante.estadoResultado !== "CALIFICADO")
+    (estudiante.asistencia.estado === "no-asistio" && !tieneResultadoReal(estudiante))
   const tieneResultado = formativa ? Boolean(estudiante.observacion?.trim()) : !sinNota
   const bloqueo = bloqueoCalificar(estudiante)
   // La editada sin enviar o la ya enviada que espera aprobación (Regla 55).
@@ -317,6 +317,7 @@ function CalificacionRow({
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
               bloqueo={bloqueo}
+              propuesta={estudiante.solicitudPendiente ? estudiante.calificacionPropuesta : undefined}
             />
           ) : null}
           {formativa ? (

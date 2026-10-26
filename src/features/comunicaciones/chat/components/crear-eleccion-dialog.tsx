@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
@@ -24,6 +24,7 @@ import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import { cn } from "@/lib/utils"
 import { useJornadasEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-jornadas-eleccion-query"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import {
   useCrearEleccion,
   useEditarEleccion,
@@ -153,6 +154,21 @@ export function CrearEleccionDialog({
     validators: { onSubmit: datosSchema },
     onSubmit: () => setPaso(editar ? 3 : 2),
   })
+
+  // Elección nueva: jornada arranca en el predeterminado de Listas valor si el
+  // establecimiento la tiene, una vez por apertura.
+  const { data: jornadaPredeterminada } = usePredeterminadoQuery("JORNADA")
+  const jornadaAplicadaRef = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      jornadaAplicadaRef.current = false
+      return
+    }
+    if (editar || !jornadaPredeterminada || jornadasEstablecimiento.length === 0 || jornadaAplicadaRef.current) return
+    jornadaAplicadaRef.current = true
+    const disponible = jornadasEstablecimiento.some((j) => j.id === jornadaPredeterminada.pk_lista_valor)
+    if (disponible && !datos.state.values.jornadaId) datos.setFieldValue("jornadaId", jornadaPredeterminada.pk_lista_valor)
+  }, [open, editar, jornadaPredeterminada, jornadasEstablecimiento, datos])
 
   // Lo escrito se autoguarda como borrador (comms-service); al editar una publicada, atado a ella.
   const valores = useStore(datos.store, (s) => s.values)

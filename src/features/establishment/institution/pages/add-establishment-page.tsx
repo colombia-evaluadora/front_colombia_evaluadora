@@ -34,7 +34,7 @@ import {
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
-import { usePuedeGestionarDirectivosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-directivos"
+import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
@@ -42,6 +42,9 @@ import { UserDetailsForm } from "@/features/establishment/employees/components/f
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { findPredeterminado, useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { CATALOGS } from "@/lib/catalogs"
 import { createEmptyPerson } from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
 
 /** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
@@ -120,10 +123,10 @@ export function AddEstablishmentPage() {
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
   const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
-  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO: con
-  // Guardar se editan los datos del EE con ese panel en solo lectura, y no se
-  // crean EE (uno nace con su rector).
-  const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarDirectivosQuery()
+  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO y nivel
+  // territorial (V574): el resto edita los datos del EE con ese panel en solo
+  // lectura, y no crea EE (uno nace con su rector).
+  const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarEstablecimientosQuery()
   const directivosSoloLectura = puedeGestionarDirectivos !== true
   useEffect(() => {
     if (permisoCargando || directivosCargando) return
@@ -157,6 +160,7 @@ export function AddEstablishmentPage() {
   useEffect(() => {
     if (!isEditMode) {
       setFormValues(createInitialEstablishmentValues())
+      predeterminadosAplicados.current.clear()
       setHasSubmitted(false)
       setPrincipalEmployee(null)
       setSecretaryEmployee(null)
@@ -175,6 +179,79 @@ export function AddEstablishmentPage() {
       secretaryMatchRef.current = null
     }
   }, [establishmentQuery.data, isEditMode])
+
+  // Predeterminados de Listas valor: solo al agregar y sobre campos vacíos
+  const { data: zonesCat } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
+  const { data: idiomasCat } = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
+  const { data: calendariosCat } = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
+  const { data: costRegimenCat } = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
+  const { data: populationGendersCat } = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
+  const { data: rangosTarifasCat } = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
+  const { data: disabilitiesCat } = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES_ATTENDED)
+  const { data: documentTypesCat } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
+  const { data: gendersCat } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
+  const predeterminadosAplicados = useRef(new Set<string>())
+
+  useEffect(() => {
+    if (isEditMode) return
+    const zone = findPredeterminado(zonesCat) ?? null
+    const extra = {
+      teachingLanguage: findPredeterminado(idiomasCat),
+      calendar: findPredeterminado(calendariosCat),
+      costRegime: findPredeterminado(costRegimenCat),
+      populationGender: findPredeterminado(populationGendersCat),
+      tuitionRange: findPredeterminado(rangosTarifasCat),
+      disabilityType: findPredeterminado(disabilitiesCat),
+    }
+    const documentType = findPredeterminado(documentTypesCat) ?? null
+    const gender = findPredeterminado(gendersCat) ?? null
+    // Una sola vez por campo: si el usuario elige "Seleccione" no se vuelve a llenar
+    const aplicar = (key: string, vacio: boolean, item: CatalogItem | null | undefined) => {
+      if (!item || !vacio || predeterminadosAplicados.current.has(key)) return false
+      predeterminadosAplicados.current.add(key)
+      return true
+    }
+    const prev = formValues
+    let changed = false
+    const additionalInfo = { ...prev.additionalInfo }
+    for (const [key, item] of Object.entries(extra)) {
+      const field = key as keyof typeof extra
+      if (aplicar(field, !additionalInfo[field], item)) {
+        Object.assign(additionalInfo, { [field]: item })
+        changed = true
+      }
+    }
+    const address = aplicar("zone", !prev.address.zone, zone) ? { ...prev.address, zone } : prev.address
+    const withPersonDefaults = (rol: string, person: Person | null): Person | null => {
+      if (!person) return person
+      const doc = aplicar(`${rol}.documentType`, !person.documentType, documentType)
+      const gen = aplicar(`${rol}.gender`, !person.gender, gender)
+      if (!doc && !gen) return person
+      return { ...person, ...(doc && { documentType }), ...(gen && { gender }) }
+    }
+    const principal = withPersonDefaults("principal", prev.principal)
+    const secretary = withPersonDefaults("secretary", prev.secretary)
+    if (!changed && address === prev.address && principal === prev.principal && secretary === prev.secretary) return
+    setFormValues((current) => ({
+      ...current,
+      address: { ...current.address, zone: address.zone },
+      additionalInfo: { ...current.additionalInfo, ...additionalInfo },
+      principal,
+      secretary,
+    }))
+  }, [
+    isEditMode,
+    formValues,
+    zonesCat,
+    idiomasCat,
+    calendariosCat,
+    costRegimenCat,
+    populationGendersCat,
+    rangosTarifasCat,
+    disabilitiesCat,
+    documentTypesCat,
+    gendersCat,
+  ])
 
   // Tras el primer intento de guardar se revalida en cada cambio.
   const validacionVisible = hasSubmitted ? validateEstablishmentForm(formValues, { logo: shield, photos }, { validarDirectivos: !directivosSoloLectura }) : null
@@ -584,8 +661,8 @@ export function AddEstablishmentPage() {
                 <div className="space-y-4">
                   {directivosSoloLectura && !directivosCargando ? (
                     <p className="text-sm text-muted-foreground">
-                      Solo un usuario con permiso de eliminar en Establecimiento puede cambiar el rector o la
-                      secretaria del establecimiento.
+                      Solo el Superadministrador o un usuario de nivel territorial con permiso de eliminar en
+                      Establecimiento puede cambiar el rector o la secretaria del establecimiento.
                     </p>
                   ) : null}
                   <Card className={accordionCardClassName}>

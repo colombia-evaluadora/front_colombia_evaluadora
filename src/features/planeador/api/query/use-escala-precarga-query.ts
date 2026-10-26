@@ -13,8 +13,9 @@ import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
  * criterio da el `valorMaximo` de la variante numérica.
  *
  * Los niveles traen etiqueta y puntaje (`LIMITE_PROMEDIO` de la banda, convertido al
- * formato numérico cuando lo hay). `descriptor` llega siempre `null`: la escala del
- * período (`TVALORACION`) no tiene descripción por nivel, así que el docente la escribe.
+ * formato numérico cuando lo hay). `descriptor` es la descripción del nivel en la escala
+ * del período (`TESCALA_VALORACION.DESCRIPCION`, V71.1) y precarga el Descriptor de cada
+ * nivel; sigue siendo editable por criterio y, si llega `null`, el docente la escribe.
  */
 interface RawPrecargaNivel {
   fkTescalaValoracion: number
