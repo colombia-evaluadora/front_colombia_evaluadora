@@ -33,6 +33,8 @@ interface DeleteEntityDialogProps {
   successMessage: string
   mutation: UseMutationResult<DeleteResult, unknown, number, unknown>
   onDeleted: () => void
+  /** Condición extra además de Eliminar en el menú (p. ej. el nivel para dar de baja un EE). */
+  allowed?: boolean
 }
 
 // Botón + confirmación de borrado de una fila; el feature aporta textos y mutation.
@@ -44,6 +46,7 @@ export function DeleteEntityDialog({
   successMessage,
   mutation,
   onDeleted,
+  allowed = true,
 }: DeleteEntityDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
@@ -66,7 +69,7 @@ export function DeleteEntityDialog({
       },
     })
 
-  if (!puedeEliminar) return null
+  if (!puedeEliminar || !allowed) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

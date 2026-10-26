@@ -34,7 +34,7 @@ import {
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
-import { usePuedeGestionarDirectivosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-directivos"
+import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
@@ -123,10 +123,10 @@ export function AddEstablishmentPage() {
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
   const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
-  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO: con
-  // Guardar se editan los datos del EE con ese panel en solo lectura, y no se
-  // crean EE (uno nace con su rector).
-  const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarDirectivosQuery()
+  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO y nivel
+  // territorial (V574): el resto edita los datos del EE con ese panel en solo
+  // lectura, y no crea EE (uno nace con su rector).
+  const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarEstablecimientosQuery()
   const directivosSoloLectura = puedeGestionarDirectivos !== true
   useEffect(() => {
     if (permisoCargando || directivosCargando) return
@@ -661,8 +661,8 @@ export function AddEstablishmentPage() {
                 <div className="space-y-4">
                   {directivosSoloLectura && !directivosCargando ? (
                     <p className="text-sm text-muted-foreground">
-                      Solo un usuario con permiso de eliminar en Establecimiento puede cambiar el rector o la
-                      secretaria del establecimiento.
+                      Solo el Superadministrador o un usuario de nivel territorial con permiso de eliminar en
+                      Establecimiento puede cambiar el rector o la secretaria del establecimiento.
                     </p>
                   ) : null}
                   <Card className={accordionCardClassName}>
