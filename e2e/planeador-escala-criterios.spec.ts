@@ -2,8 +2,9 @@ import { expect, test, type Page } from "@playwright/test"
 
 // Reglas 40/41/42 (escala de valoración por criterio) contra el dev server con MSW
 // (`playwright.config.ts`). La 606 del seed es Cualitativa con dos criterios (el segundo
-// ya trae "En proceso"); la 612 es Numérica. La precarga sale del mock de
-// `GET /planeador/actividades/escala-precarga` (Bajo/Básico/Alto/Superior, 0-5).
+// ya trae "En proceso"); la 612 es Numérica. La precarga sale de `variantes[].precarga` de la
+// configuración (sin petición extra); "Restaurar valores de la institución" usa
+// `GET /planeador/actividades/escala-precarga` (mismo mock: Bajo/Básico/Alto/Superior, 0-5).
 // `CAPTURAS_DIR` guarda capturas de cada paso.
 
 test.describe.configure({ timeout: 240_000 })
@@ -95,4 +96,31 @@ test("numérica: valor asignado por criterio con máximo del formato de califica
   await expect(criterios.nth(2).getByTestId("escala-nivel")).toHaveCount(0)
   await criterios.nth(2).scrollIntoViewIfNeeded()
   await captura(page, "12-numerica-valor-asignado")
+})
+
+test("restaurar valores de la institución rehace los niveles sin pedir la precarga al elegir variante", async ({ page }) => {
+  const pedidos: string[] = []
+  page.on("request", (req) => {
+    if (req.url().includes("/api/eval-col/planeador/actividades/escala-precarga")) pedidos.push(req.url())
+  })
+  await abrir(page, 612)
+  const criterios = page.getByTestId("escala-criterio")
+  await page.getByText("Cualitativa", { exact: true }).click()
+  const niveles = criterios.nth(0).getByTestId("escala-nivel")
+  await expect(niveles).toHaveCount(4)
+  // Elegir la variante no pide nada: la precarga vino en la configuración.
+  expect(pedidos).toHaveLength(0)
+  await criterios.nth(0).getByLabel("Nombre del criterio *").fill("Comprensión")
+  await niveles.nth(0).getByLabel("Etiqueta").fill("Cambiado")
+  await niveles.nth(0).getByLabel("Puntaje *").fill("9")
+  await page.getByRole("button", { name: "Restaurar valores de la institución" }).click()
+  await captura(page, "13-restaurar-confirmacion")
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click()
+  await expect(niveles.nth(0).getByLabel("Etiqueta")).toHaveValue("Bajo")
+  await expect(niveles.nth(0).getByLabel("Puntaje *")).toHaveValue("1.5")
+  await expect(criterios.nth(0).getByLabel("Nombre del criterio *")).toHaveValue("Comprensión")
+  await expect(page.getByTestId("escala-precarga-origen")).toContainText("Escala Básica Secundaria")
+  expect(pedidos.length).toBeGreaterThan(0)
+  await criterios.first().scrollIntoViewIfNeeded()
+  await captura(page, "14-restaurado")
 })

@@ -1,9 +1,11 @@
 import { useNavigate } from "@tanstack/react-router"
+import { format } from "date-fns"
+import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRightIcon } from "@/components/ui/icons"
+import { CalendarIcon, ClockIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import type { Mensaje, TarjetaBot } from "@/features/comunicaciones/chat/api/types"
+import type { EstadoSolicitudAprobacion, Mensaje, TarjetaBot } from "@/features/comunicaciones/chat/api/types"
 import { horaMensaje } from "@/features/comunicaciones/chat/lib/chat-format"
 import { safeDeepLink } from "@/features/notificaciones/lib/deep-link"
 import { AprobacionBotAcciones } from "@/features/comunicaciones/chat/components/aprobacion-bot"
@@ -23,6 +25,20 @@ export function AvatarColevabot({ className }: { className?: string }) {
   )
 }
 
+/** Solicitud resuelta (diseño 400:47651 / 400:47937): verde si se aprobó, roja si se rechazó. */
+const TONO_ESTADO: Partial<Record<EstadoSolicitudAprobacion, { tarjeta: string; texto: string }>> = {
+  APROBADA: { tarjeta: "border-green-stroke bg-green-22", texto: "text-green" },
+  RECHAZADA: { tarjeta: "border-red-stroke bg-red-22", texto: "text-red" },
+}
+
+function Chip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border bg-background px-1.5 py-0.5 text-xs">
+      {children}
+    </span>
+  )
+}
+
 /**
  * Tarjeta estructurada de Colevabot (diseño 4428:64360): encabezado en mayúsculas, título, campos
  * "Etiqueta: valor" y acciones que abren pantallas de la app. Los enlaces pasan por `safeDeepLink`
@@ -31,6 +47,7 @@ export function AvatarColevabot({ className }: { className?: string }) {
 export function TarjetaBotMensaje({ mensaje: m, tarjeta: t }: { mensaje: Mensaje; tarjeta: TarjetaBot }) {
   const navigate = useNavigate()
   const tituloId = `tarjeta-bot-${m.id}`
+  const tono = t.aprobacion && !t.aprobacion.resolver ? TONO_ESTADO[t.aprobacion.estado] : undefined
   return (
     <article aria-labelledby={tituloId} className="flex gap-3">
       <AvatarColevabot />
@@ -40,16 +57,29 @@ export function TarjetaBotMensaje({ mensaje: m, tarjeta: t }: { mensaje: Mensaje
           <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time>
         </p>
         <div className="rounded-xl bg-muted/60 p-2">
-          <div className="space-y-3 rounded-lg border bg-card p-4 text-sm shadow-xs">
+          <div className={cn("space-y-3 rounded-lg border bg-card p-4 text-sm shadow-xs", tono?.tarjeta)}>
             {t.encabezado && (
-              <p className="border-b pb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <p className={cn("border-b pb-2 font-medium uppercase", tono?.texto)}>
                 {t.encabezado}
               </p>
             )}
-            <h3 id={tituloId} className="text-[15px] font-semibold">
+            {/* En la resuelta el encabezado ya dice el estado: el título queda solo para lectores de pantalla. */}
+            <h3 id={tituloId} className={cn("text-sm font-normal", tono && "sr-only")}>
               {t.titulo}
             </h3>
-            {t.descripcion && <p className="text-muted-foreground">{t.descripcion}</p>}
+            {t.aprobacion && (
+              <p className="flex flex-wrap gap-2 text-muted-foreground">
+                <Chip>
+                  <CalendarIcon className="size-3.5" />
+                  <time dateTime={m.fecha}>{format(new Date(m.fecha), "dd/MM/yyyy")}</time>
+                </Chip>
+                <Chip>
+                  <ClockIcon className="size-3.5" />
+                  {horaMensaje(m.fecha)}
+                </Chip>
+              </p>
+            )}
+            {t.descripcion && <p className={tono ? undefined : "text-muted-foreground"}>{t.descripcion}</p>}
             {t.campos.length > 0 && (
               <dl className="space-y-1">
                 {t.campos.map((c) => (
@@ -71,7 +101,6 @@ export function TarjetaBotMensaje({ mensaje: m, tarjeta: t }: { mensaje: Mensaje
                     onClick={() => void navigate({ href: safeDeepLink(a.url) })}
                   >
                     {a.etiqueta}
-                    <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                 ))}
               </div>

@@ -12,6 +12,7 @@ import {
   resolverSolicitud,
   soloMisClases,
 } from "@/mocks/db/asistencia/asistencia"
+import { correccionesNotaPendientes, resolverCorreccionesNota } from "@/mocks/db/comunicaciones"
 
 import type {
   AsistenciaEditarRequest,
@@ -146,7 +147,9 @@ export const asistenciaHandlers = [
 
   http.get("*/api/eval-col/aprobaciones/pendientes", async ({ request }) => {
     await delay(200)
-    return HttpResponse.json(listarSolicitudes(new URL(request.url).searchParams.get("tipo")))
+    const tipo = new URL(request.url).searchParams.get("tipo")
+    if (tipo === "CORRECCION_RESULTADO") return HttpResponse.json([...correccionesNotaPendientes])
+    return HttpResponse.json(listarSolicitudes(tipo))
   }),
 
   http.post("*/api/eval-col/aprobaciones/:accion", async ({ request, params }) => {
@@ -159,7 +162,10 @@ export const asistenciaHandlers = [
     const resueltas: number[] = []
     const fallidas: { id: number; codigo: string; error: string }[] = []
     for (const id of IDS) {
-      if (resolverSolicitud(id, aprobar)) resueltas.push(id)
+      if (correccionesNotaPendientes.some((c) => c.pk_tsolicitud_aprobacion === id)) {
+        resolverCorreccionesNota((c) => c.pk_tsolicitud_aprobacion === id)
+        resueltas.push(id)
+      } else if (resolverSolicitud(id, aprobar)) resueltas.push(id)
       else fallidas.push({ id, codigo: "22023", error: "La solicitud no existe o ya fue resuelta." })
     }
     return HttpResponse.json({ rows: [{ resultado: { resueltas, fallidas } }] })

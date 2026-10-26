@@ -1,13 +1,29 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useSelector } from "@tanstack/react-form"
+import { useQueryClient } from "@tanstack/react-query"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
-import { PlusCircleIcon, TrashIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, CheckIcon, PlusCircleIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
+  escalaPrecargaQueryOptions,
+  toEscalaVariantesConfig,
   useEscalaPrecargaQuery,
   type EscalaPrecarga,
 } from "@/features/planeador/api/query/use-escala-precarga-query"
@@ -15,6 +31,7 @@ import type {
   EscalaCriterio,
   EscalaValoracion,
   EscalaValoracionTipo,
+  InstrumentoPermitidoVariante,
   Nivel,
 } from "@/features/planeador/api/types/actividad"
 import { TEXTAREA_OUTLINED } from "@/features/planeador/components/forms/form-editar-actividad/constants"
@@ -64,22 +81,32 @@ function numeroDesdeInput(raw: string): number | undefined {
  * Editor de la escala de valoración (Reglas 40-42). El modo (Numérica/Cualitativa) es
  * de toda la escala; cada criterio es un bloque independiente ("+ Agregar más") con su
  * nombre y:
- * - Numérica: "Valor Asignado (Escala)" — valor mínimo/máximo (el máximo se autocompleta
- *   desde el formato de calificación del criterio de evaluación del período y es
- *   editable por criterio) e interpretación (texto libre único).
+ * - Numérica: "Valor Asignado (Escala)" — valor mínimo/máximo (precargados desde la
+ *   escala de la institución y editables por criterio) e interpretación (texto libre).
  * - Cualitativa: "Escala de Niveles" ("+ Agregar Nivel") con Etiqueta, Descriptor y
  *   Puntaje; el valor máximo del criterio es el puntaje más alto (solo lectura).
  * La nota del instrumento la calcula el backend: suma obtenida / suma de máximos.
- * "Otro (personalizado)" con método Escala monta este mismo componente (Regla 41).
+ * "Otro (personalizado)" con método Escala monta este mismo componente (Regla 41) con las
+ * `variantes` de `campos.metodoValoracion.catalogo[ESCALA_VALORACION]`.
+ *
+ * Regla 40: los modos ofrecidos y los valores iniciales salen de `variantes[]` (con su
+ * `precarga`) de la configuración de la actividad; elegir modo no hace petición. Sin
+ * `precarga` en la configuración (respuesta anterior) se cae a `GET escala-precarga`.
  */
 export function EscalaValoracionSection({
   form,
   tipoEvaluacion,
+  variantes,
+  configuracionLista = true,
   disabled,
 }: {
   form: FormActividad
-  /** `TIPO_EVALUACION` del referente; `null` no restringe. */
+  /** `TIPO_EVALUACION` del referente; `null` no restringe. Solo se usa si no llegan `variantes`. */
   tipoEvaluacion: string | null
+  /** `variantes` de `ESCALA_VALORACION` en la configuración (filtradas por `tipoEvaluacion` en el backend). */
+  variantes?: InstrumentoPermitidoVariante[]
+  /** `false` sin configuración (o mientras carga): no se pide el respaldo antes de saber si hace falta. */
+  configuracionLista?: boolean
   disabled: boolean
 }) {
   // Errores inline; quien frena el guardado es `faltantesEscala`.
@@ -87,35 +114,130 @@ export function EscalaValoracionSection({
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
-  // Mientras carga la precarga no se crean criterios: nacerían sin los valores del período.
-  const { data: precarga, isLoading: cargandoPrecarga } = useEscalaPrecargaQuery({ grupoId, asignaturaId, unidadId }, !disabled)
+  const actividadId = useSelector(form.store, (state) => state.values.id) || undefined
+  const precargaParams = { grupoId, asignaturaId, unidadId, actividadId }
 
-  // CUANTITATIVA solo admite Numérica, CUALITATIVA solo Cualitativa; mixto o sin dato, ambas.
-  const permiteNumerica = tipoEvaluacion !== "CUALITATIVA"
-  const permiteCualitativa = tipoEvaluacion !== "CUANTITATIVA"
+  const config = toEscalaVariantesConfig(variantes)
+  // Respaldo: solo si la configuración no trae `precarga`. Mientras carga no se crean
+  // criterios: nacerían sin los valores de la institución.
+  const respaldo = useEscalaPrecargaQuery(
+    precargaParams,
+    !disabled && configuracionLista && config?.precargas === undefined,
+  )
+  const cargandoPrecarga = respaldo.isLoading
+  function precargaDe(tipo: EscalaValoracionTipo): EscalaPrecarga | undefined {
+    return config?.precargas ? config.precargas[tipo] : respaldo.data
+  }
+
+  // Con `variantes` se ofrecen solo las que llegaron; sin ellas, CUANTITATIVA solo admite
+  // Numérica, CUALITATIVA solo Cualitativa y mixto o sin dato, ambas.
+  const permiteNumerica = config ? config.permitidas.includes("Numérica") : tipoEvaluacion !== "CUALITATIVA"
+  const permiteCualitativa = config ? config.permitidas.includes("Cualitativa") : tipoEvaluacion !== "CUANTITATIVA"
 
   // Si el modo elegido dejó de estar permitido se corrige al único admitido (los
   // criterios se rehacen conservando el nombre: rango y niveles no se traducen).
   const escalaTipoActual = useSelector(form.store, (state) => state.values.escalaValoracion.tipo)
+  const precargasConfig = config?.precargas
   useEffect(() => {
     const forzado: EscalaValoracionTipo | null =
-      escalaTipoActual === "Numérica" && !permiteNumerica
+      escalaTipoActual === "Numérica" && !permiteNumerica && permiteCualitativa
         ? "Cualitativa"
-        : escalaTipoActual === "Cualitativa" && !permiteCualitativa
+        : escalaTipoActual === "Cualitativa" && !permiteCualitativa && permiteNumerica
           ? "Numérica"
           : null
     if (forzado) {
+      const precarga = precargasConfig ? precargasConfig[forzado] : respaldo.data
       form.setFieldValue("escalaValoracion", (prev) => ({
         ...prev,
         tipo: forzado,
         criterios: prev.criterios.map((c) => ({ ...nuevoCriterio(forzado, precarga), id: c.id, nombre: c.nombre })),
       }))
     }
-  }, [escalaTipoActual, permiteNumerica, permiteCualitativa, form, precarga])
+  }, [escalaTipoActual, permiteNumerica, permiteCualitativa, form, precargasConfig, respaldo.data])
+
+  // "Restaurar valores de la institución": relee la escala aplicable (`GET escala-precarga`)
+  // y rehace cada criterio conservando nombre e interpretación. Guardar nunca modifica la
+  // escala institucional.
+  const queryClient = useQueryClient()
+  const { notify } = useNotify()
+  const [restaurando, setRestaurando] = useState(false)
+  const [confirmarRestaurar, setConfirmarRestaurar] = useState(false)
+  const [origenRestaurado, setOrigenRestaurado] = useState<string | null>(null)
+  const sinContexto = !(grupoId && asignaturaId) && !unidadId && !actividadId
+  async function restaurar() {
+    setRestaurando(true)
+    try {
+      const precarga = await queryClient.fetchQuery({ ...escalaPrecargaQueryOptions(precargaParams), staleTime: 0 })
+      setOrigenRestaurado(precarga.escala)
+      form.setFieldValue("escalaValoracion", (prev) => ({
+        ...prev,
+        criterios: prev.criterios.map((c) => ({
+          ...nuevoCriterio(prev.tipo, precarga),
+          id: c.id,
+          nombre: c.nombre,
+          interpretacion: c.interpretacion,
+        })),
+      }))
+      setConfirmarRestaurar(false)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setRestaurando(false)
+    }
+  }
+  const nombreEscala = origenRestaurado ?? respaldo.data?.escala ?? null
 
   return (
     <Card className="gap-4 p-4">
-      <h3 className="text-base font-semibold">Definición Escala de Valoración</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-base font-semibold">Definición Escala de Valoración</h3>
+        <SoloEdicion>
+          <AlertDialog
+            open={confirmarRestaurar}
+            onOpenChange={(open) => {
+              if (!restaurando) setConfirmarRestaurar(open)
+            }}
+          >
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="primary"
+                  size="sm"
+                  disabled={disabled || cargandoPrecarga || sinContexto}
+                />
+              }
+            >
+              <ArrowCounterClockwiseIcon data-icon="inline-start" />
+              Restaurar valores de la institución
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Restaurar valores de la institución</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Los niveles y valores de cada criterio se reemplazan por los de la escala de valoración de la
+                  institución. Se conservan los nombres de los criterios. ¿Desea continuar?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={restaurar} disabled={restaurando} aria-busy={restaurando}>
+                  {restaurando ? (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
+                  )}
+                  Restaurar
+                </AlertDialogAction>
+                <AlertDialogCancel variant="fill" color="neutral" disabled={restaurando}>
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </SoloEdicion>
+      </div>
 
       <form.Field name="escalaValoracion">
         {(field) => {
@@ -132,6 +254,7 @@ export function EscalaValoracionSection({
           }
 
           const sinCriterios = intentoGuardar && escala.criterios.length === 0
+          const precargaActual = precargaDe(escala.tipo)
 
           return (
             <>
@@ -144,12 +267,12 @@ export function EscalaValoracionSection({
                   onValueChange={(value) => {
                     const tipo = value as EscalaValoracionTipo
                     if (tipo === escala.tipo) return
-                    // Cambiar de modo rehace cada criterio (conserva el nombre) con la precarga del nuevo modo.
+                    // Cambiar de modo rehace cada criterio (conserva el nombre) con la precarga de esa variante.
                     field.handleChange({
                       ...escala,
                       tipo,
                       criterios: escala.criterios.map((c) => ({
-                        ...nuevoCriterio(tipo, precarga),
+                        ...nuevoCriterio(tipo, precargaDe(tipo)),
                         id: c.id,
                         nombre: c.nombre,
                       })),
@@ -172,11 +295,13 @@ export function EscalaValoracionSection({
                 </RadioGroup>
               </Field>
 
-              {precarga?.escala && (
+              {precargaActual && (
                 <p className="text-muted-foreground text-xs" data-testid="escala-precarga-origen">
                   {escala.tipo === "Cualitativa"
-                    ? `Los niveles de cada criterio nuevo se precargan desde "${precarga.escala}". Los cambios solo aplican a ese criterio de esta actividad.`
-                    : `El valor máximo se precarga desde el formato de calificación${precarga.formato ? ` "${precarga.formato}"` : ""}; puede ajustarlo en cada criterio.`}
+                    ? precargaActual.niveles.length > 0
+                      ? `Los niveles de cada criterio nuevo se precargan desde ${nombreEscala ? `"${nombreEscala}"` : "la escala de valoración de la institución"}. Los cambios solo aplican a ese criterio de esta actividad.`
+                      : "La institución no tiene niveles para esta escala: agréguelos en cada criterio."
+                    : `Los valores mínimo y máximo se precargan desde la escala de valoración de la institución${precargaActual.formato ? ` ("${precargaActual.formato}")` : ""}; puede ajustarlos en cada criterio.`}
                 </p>
               )}
 
@@ -197,7 +322,7 @@ export function EscalaValoracionSection({
                       criterio={criterio}
                       index={index}
                       tipo={escala.tipo}
-                      precarga={precarga}
+                      precarga={precargaActual}
                       intentoGuardar={intentoGuardar}
                       disabled={disabled}
                       onChange={(patch) => updateCriterio(index, patch)}
@@ -214,7 +339,7 @@ export function EscalaValoracionSection({
                     color="primary"
                     type="button"
                     disabled={disabled || cargandoPrecarga}
-                    onClick={() => setCriterios([...escala.criterios, nuevoCriterio(escala.tipo, precarga)])}
+                    onClick={() => setCriterios([...escala.criterios, nuevoCriterio(escala.tipo, precargaActual)])}
                   >
                     <PlusCircleIcon data-icon="inline-start" />
                     Agregar más

@@ -537,10 +537,37 @@ export interface ListaValorOption {
 
 /** Sub-opción de un instrumento permitido (p. ej. el `tipoEscala` que admite
  *  ese `ESCALA_VALORACION` puntual) — mismo shape que `ListaValorOption`. */
+/** Nivel de la escala institucional en la precarga (Regla 40, `fn_actividad_escala_precarga_interno`). */
+export interface EscalaPrecargaNivelRaw {
+  fkTescalaValoracion: number
+  orden: number | null
+  codigo: string | null
+  etiqueta: string
+  descriptor: string | null
+  tipoValoracion?: string | null
+  limiteInferior?: number | null
+  limiteSuperior?: number | null
+  puntaje: number | null
+}
+
+/**
+ * `precarga` de una variante de `ESCALA_VALORACION` (Regla 40, V458/V496.2): valores
+ * iniciales que el front COPIA al formulario, no un límite. CUALITATIVA trae `niveles`;
+ * NUMERICA trae `valorMinimo`/`valorMaximo`. `null` = sin escala aplicable (form vacío).
+ */
+export interface EscalaVariantePrecargaRaw {
+  niveles?: EscalaPrecargaNivelRaw[]
+  valorMinimo?: number | null
+  valorMaximo?: number | null
+}
+
 export interface InstrumentoPermitidoVariante {
   pk: number
+  /** `CUALITATIVA` | `NUMERICA` (el referente decide cuáles llegan por `tipoEvaluacion`). */
   valor: string
   nombre: string
+  /** Ausente en respuestas anteriores a la Regla 40: el form cae a `GET escala-precarga`. */
+  precarga?: EscalaVariantePrecargaRaw | null
 }
 
 export interface InstrumentoPermitidoCampoCatalogo {

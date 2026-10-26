@@ -657,7 +657,7 @@ function ReportsPageContent() {
     texto: string,
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
-    if (!puedeEscribir || periodosCerrados.includes(fila.periodoId)) return
+    if (!puedeEscribir) return
     const limpio = texto.trim()
     const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
@@ -788,11 +788,8 @@ function ReportsPageContent() {
           onOpenChange={(open) => !open && setObservacionAbierta(null)}
           onGuardar={handleGuardarObservacion}
           soloLecturaMotivo={
-            !puedeEscribir
-              ? "Solo lectura: no tienes permiso para editar observaciones."
-              : observacionAbierta && periodosCerrados.includes(observacionAbierta.periodoId)
-                ? "Periodo cerrado: la observación no se puede modificar."
-                : null
+            // Periodo cerrado: el resumen de la IA se puede generar y guardar igual.
+            !puedeEscribir ? "Solo lectura: no tienes permiso para editar observaciones." : null
           }
         />
 
