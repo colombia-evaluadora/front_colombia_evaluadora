@@ -1,5 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
+import { resolverCorreccionesNota } from "@/mocks/db/comunicaciones"
+
 import { PERIODO_FINAL_ID } from "@/features/academic-management/reports/api/types"
 
 import {
@@ -501,6 +503,13 @@ export const informesHandlers = [
       FK_TPERIODO_EVALUACION: number
       MATRICULAS: number[] | null
     }
+    // Guardar la planilla aprueba sus correcciones pendientes (Regla 55).
+    resolverCorreccionesNota(
+      (c) =>
+        c.fk_tgrupo === body.FK_TGRUPO &&
+        c.fk_tasignatura === body.FK_TASIGNATURA &&
+        c.fk_tperiodo_evaluacion === body.FK_TPERIODO_EVALUACION,
+    )
     const objetivo = estudiantesDe(body.FK_TGRUPO).filter(
       (e) => !body.MATRICULAS?.length || body.MATRICULAS.includes(e.matriculaId),
     )
