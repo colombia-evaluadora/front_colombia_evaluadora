@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import { cn } from "@/lib/utils"
 import {
@@ -60,6 +61,7 @@ import {
 import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
+  RATING_SCALE_DESCRIPCION_MAX,
   type GradingRange,
 } from "@/features/establishment/academic-period/utils/grading-range"
 import {
@@ -90,6 +92,7 @@ function makeEmptyDraft(range: GradingRange, tipo = ""): RatingScaleDraftValues 
     notaMaxima: range.max,
     notaMinima: range.min,
     notaEquivalente: range.min,
+    descripcion: "",
   }
 }
 
@@ -387,6 +390,28 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                 </form.Field>
               </div>
 
+              <form.Field name="descripcion">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field variant="outlined" data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        rows={3}
+                        maxLength={RATING_SCALE_DESCRIPCION_MAX}
+                        placeholder="Descriptor del nivel (opcional). El planeador lo precarga en cada criterio."
+                        value={field.state.value ?? ""}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+
               <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
                   // `mb-8`: el error flotante de cada nota pisaría los botones del footer.
@@ -633,6 +658,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             onSortChange={setSort}
                           />
                         </TableHead>
+                        <TableHead className="text-foreground">Descripción</TableHead>
                         {/* Como en `DataTable`: acciones sin rótulo visible. */}
                         {actionsSpacerHeadCell}
                         <TableHead className="w-px text-foreground">
@@ -778,6 +804,17 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   onChange={(valor) => patchEditRow({ iconografia: valor })}
                                 />
                               </TableCell>
+                              <TableCell>
+                                <Textarea
+                                  aria-label="Descripción"
+                                  placeholder="Opcional"
+                                  maxLength={RATING_SCALE_DESCRIPCION_MAX}
+                                  rows={2}
+                                  value={editRow.descripcion ?? ""}
+                                  onChange={(e) => patchEditRow({ descripcion: e.target.value })}
+                                  className="min-w-48"
+                                />
+                              </TableCell>
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
                                 {/* `true`: la fila en edición mantiene el bloque fijo. */}
@@ -832,6 +869,18 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             </TableCell>
                             <TableCell className="text-lg">
                               <RatingSymbolView value={d.iconografia} />
+                            </TableCell>
+                            <TableCell>
+                              {d.descripcion ? (
+                                <span
+                                  className="line-clamp-2 max-w-64 whitespace-normal"
+                                  title={d.descripcion}
+                                >
+                                  {d.descripcion}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                             {actionsSpacerCell}
                             <TableCell className={ACTIONS_CELL_CLASS}>
