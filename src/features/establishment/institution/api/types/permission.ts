@@ -38,8 +38,8 @@ export interface Permission {
 
   /**
    * Permiso que le da a la persona su cargo de rector o secretaria del
-   * establecimiento (`fn_sede_usuario_principal_de`, V599): solo lo quita quien
-   * tiene Eliminar en ESTABLECIMIENTO, como a los directivos.
+   * establecimiento (`fn_sede_usuario_principal_de`, V577): solo lo quita quien
+   * gestiona los directivos (Eliminar en ESTABLECIMIENTO y nivel territorial).
    * `null`/ausente en cualquier otro permiso y en los del borrador.
    */
   principalDe?: "RECTOR" | "SECRETARIA" | null
