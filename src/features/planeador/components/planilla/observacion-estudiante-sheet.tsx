@@ -37,6 +37,7 @@ import {
   FileTextIcon,
   FileUploadOutlinedIcon,
   ImageIcon,
+  HourglassIcon,
   InfoIcon,
   InsertLinkOutlinedIcon,
   SpinnerIcon,
@@ -102,6 +103,8 @@ export interface EstudianteObservable {
   /** Momento guardado (VALOR: INICIO/PROCESO/CIERRE); `undefined` si la vista no lo trae. */
   momento?: string | null
   fecha: string | null
+  /** Corrección pendiente del coordinador: los campos de arriba son la propuesta. */
+  pendienteAprobacion?: boolean
 }
 
 
@@ -245,6 +248,12 @@ export function ObservacionEstudianteSheet({
                   <p className="font-semibold">{estudiante.nombreCompleto}</p>
                   {estudiante.fecha && (
                     <p className="text-xs text-muted-foreground">Asistencia: {estudiante.fecha}</p>
+                  )}
+                  {estudiante.pendienteAprobacion && (
+                    <p className="flex items-center gap-1 text-xs text-orange">
+                      <HourglassIcon className="size-3.5 shrink-0" />
+                      Corrección pendiente de aprobación del coordinador
+                    </p>
                   )}
                 </div>
               </div>

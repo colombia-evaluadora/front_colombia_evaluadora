@@ -317,6 +317,7 @@ function CalificacionRow({
               actividadSinComenzar={actividad.fechaInicio > todayDateOnly()}
               onGuardado={onGuardado}
               bloqueo={bloqueo}
+              propuesta={estudiante.solicitudPendiente ? estudiante.calificacionPropuesta : undefined}
             />
           ) : null}
           {formativa ? (
