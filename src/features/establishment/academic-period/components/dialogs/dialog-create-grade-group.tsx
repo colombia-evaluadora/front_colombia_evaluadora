@@ -38,6 +38,7 @@ import { useAssignmentTeachersQuery } from "@/features/establishment/academic-pe
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
 import { useJornadasQuery, useMetodologiasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
 import {
@@ -85,6 +86,7 @@ export function CreateGradeGroupDialog({
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
   const { data: jornadas = [] } = useJornadasQuery()
+  const { data: metodologiaPredeterminada } = usePredeterminadoQuery("MODELO_PEDAGOGICO")
   const jornadaName =
     jornadas.find((j) => j.id === academicPeriod?.config.jornadaId)?.name ??
     gradeGroup?.jornada ??
@@ -105,7 +107,8 @@ export function CreateGradeGroupDialog({
         metodologia: gradeGroup.metodologia ?? "",
         cupo: gradeGroup.cupo ?? 0,
       }
-    : EMPTY
+    : // Al crear, metodología arranca en el predeterminado de Listas valor (si hay)
+      { ...EMPTY, metodologia: metodologiaPredeterminada?.valor ?? "" }
 
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
@@ -163,6 +166,7 @@ export function CreateGradeGroupDialog({
     onOpen: () => {
       setOpen(true)
       setNotice(null)
+      if (!isEditing) form.reset(defaultValues)
     },
     onClose: closeDialog,
   })

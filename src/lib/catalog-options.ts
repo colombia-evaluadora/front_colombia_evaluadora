@@ -63,3 +63,11 @@ export function toSelectItemsMap<TValue extends string | number>(
 ): Record<string, string> {
   return Object.fromEntries(options.map((option) => [String(option.value), option.label]))
 }
+
+/** Valor de la opción "Seleccione": ningún id de catálogo es 0. */
+export const SELECCIONE_VALUE = 0
+
+/** Antepone "Seleccione" para poder dejar el select vacío (p. ej. tras precargar el predeterminado). */
+export function withSeleccione(options: SelectOption<number>[]): SelectOption<number>[] {
+  return [{ value: SELECCIONE_VALUE, label: "Seleccione" }, ...options]
+}

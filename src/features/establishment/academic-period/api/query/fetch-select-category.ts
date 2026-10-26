@@ -1,4 +1,4 @@
-import type { QueryClient } from "@tanstack/react-query"
+import { useQuery, type QueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { catalogoMeta } from "@/lib/offline/query-meta"
@@ -9,6 +9,8 @@ export interface SelectCategoryRow {
   nombre: string
   valor: string
   accion: string | null
+  /** Predeterminado de la lista (a lo sumo uno, V102). */
+  predeterminado?: boolean
 }
 
 interface SelectCategoryResponse {
@@ -36,6 +38,13 @@ export const selectCategoryQueryOptions = (categoria: string) => ({
   queryFn: () => fetchSelectCategory(categoria),
   staleTime: LISTA_VALOR_STALE_TIME,
 })
+
+const toPredeterminado = (rows: SelectCategoryRow[]) => rows.find((row) => row.predeterminado) ?? null
+
+/** Fila predeterminada de la categoría; null si la lista no tiene (el select queda en "Seleccione"). */
+export function usePredeterminadoQuery(categoria: string) {
+  return useQuery({ ...selectCategoryQueryOptions(categoria), select: toPredeterminado })
+}
 
 /** Tras editar en Listas valor: ambos sistemas de catálogo. */
 export function invalidateListaValor(queryClient: QueryClient) {

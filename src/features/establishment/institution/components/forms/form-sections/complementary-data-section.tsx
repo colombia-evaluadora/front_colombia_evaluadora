@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { CATALOGS } from "@/lib/catalogs"
-import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toSelectItemsMap, toSelectOptions, withSeleccione } from "@/lib/catalog-options"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import { toIdentificacionInput } from "@/features/establishment/shared/text-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
@@ -40,12 +40,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES_ATTENDED)
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
-    const idiomaItems = toSelectOptions(idiomas)
-    const calendarioItems = toSelectOptions(calendarios)
-    const costRegimenItems = toSelectOptions(costRegimen)
-    const populationGenderItems = toSelectOptions(populationGenders)
-    const rangoTarifaItems = toSelectOptions(rangosTarifas)
-    const disabilityItems = toSelectOptions(disabilities)
+    const idiomaItems = withSeleccione(toSelectOptions(idiomas))
+    const calendarioItems = withSeleccione(toSelectOptions(calendarios))
+    const costRegimenItems = withSeleccione(toSelectOptions(costRegimen))
+    const populationGenderItems = withSeleccione(toSelectOptions(populationGenders))
+    const rangoTarifaItems = withSeleccione(toSelectOptions(rangosTarifas))
+    const disabilityItems = withSeleccione(toSelectOptions(disabilities))
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -84,12 +84,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.teachingLanguage?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = idiomas.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, teachingLanguage: option })
+                                onChange({ ...value, teachingLanguage: option ?? null })
                             }}
                             items={toSelectItemsMap(idiomaItems)}
                         >
                             <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
 
                             <ComboboxFieldContent>
@@ -111,12 +111,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.calendar?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = calendarios.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, calendar: option })
+                                onChange({ ...value, calendar: option ?? null })
                             }}
                             items={toSelectItemsMap(calendarioItems)}
                         >
                             <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
                             <ComboboxFieldContent>
                                 {calendarioItems.map((item) => (
@@ -138,12 +138,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.costRegime?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = costRegimen.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, costRegime: option })
+                                onChange({ ...value, costRegime: option ?? null })
                             }}
                             items={toSelectItemsMap(costRegimenItems)}
                         >
                             <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
 
                             <ComboboxFieldContent>
@@ -165,12 +165,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.populationGender?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = populationGenders.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, populationGender: option })
+                                onChange({ ...value, populationGender: option ?? null })
                             }}
                             items={toSelectItemsMap(populationGenderItems)}
                         >
                             <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
                             <ComboboxFieldContent>
                                 {populationGenderItems.map((item) => (
@@ -190,12 +190,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.tuitionRange?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, tuitionRange: option })
+                                onChange({ ...value, tuitionRange: option ?? null })
                             }}
                             items={toSelectItemsMap(rangoTarifaItems)}
                         >
                             <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
                             <ComboboxFieldContent>
                                 {rangoTarifaItems.map((item) => (
@@ -219,12 +219,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.disabilityType?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = disabilities.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, disabilityType: option })
+                                onChange({ ...value, disabilityType: option ?? null })
                             }}
                             items={toSelectItemsMap(disabilityItems)}
                         >
                             <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
-                                <ComboboxFieldValue placeholder="Seleccionar" />
+                                <ComboboxFieldValue placeholder="Seleccione" />
                             </ComboboxFieldTrigger>
 
                             <ComboboxFieldContent>

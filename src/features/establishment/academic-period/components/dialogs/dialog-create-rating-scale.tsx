@@ -50,6 +50,7 @@ import { useCreateRatingScalesBulk } from "@/features/establishment/academic-per
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useRatingScaleTypesQuery, useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import type { RatingScaleType } from "@/features/establishment/academic-period/api/types/rating-scales"
 import {
@@ -79,11 +80,12 @@ import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-r
 
 type RatingScaleDraftValues = z.infer<ReturnType<typeof makeRatingScaleGradesSchema>>
 
-function makeEmptyDraft(range: GradingRange): RatingScaleDraftValues {
+// `tipo`: predeterminado de Listas valor, o vacío ("Seleccione")
+function makeEmptyDraft(range: GradingRange, tipo = ""): RatingScaleDraftValues {
   return {
     nombre: "",
     abreviacion: "",
-    tipo: "",
+    tipo,
     iconografia: "",
     notaMaxima: range.max,
     notaMinima: range.min,
@@ -139,6 +141,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const range = parseGradingRange(criteria?.gradingFormatName)
   const rangeRef = useRef(range)
   rangeRef.current = range
+  const { data: tipoPredeterminado } = usePredeterminadoQuery("TIPO_VALORACION")
+  const tipoPredeterminadoRef = useRef(tipoPredeterminado?.valor ?? "")
+  tipoPredeterminadoRef.current = tipoPredeterminado?.valor ?? ""
   const draftSchema = makeRatingScaleGradesSchema(range)
 
   // Unicidad por nivel (MantisBT 0000731); ref porque `onSubmit` cierra sobre el render inicial.
@@ -173,7 +178,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   }
 
   const form = useAppForm({
-    defaultValues: makeEmptyDraft(range),
+    defaultValues: makeEmptyDraft(range, tipoPredeterminadoRef.current),
     validators: {
       onChange: draftSchema,
       onSubmit: draftSchema,
@@ -183,7 +188,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       if (!data) return
       setDrafts((prev) => [...prev, data])
       showLocalNotice("Escala agregada a la lista.", "info")
-      formApi.reset(makeEmptyDraft(rangeRef.current))
+      formApi.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
     },
   })
 
@@ -192,7 +197,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     setTeachingLevelIds([])
     setDrafts([])
     cancelEdit()
-    form.reset(makeEmptyDraft(rangeRef.current))
+    form.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
     setLocalNotice(null)
   }
 
@@ -258,7 +263,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) form.reset(makeEmptyDraft(rangeRef.current))
+        if (next) form.reset(makeEmptyDraft(rangeRef.current, tipoPredeterminadoRef.current))
         else reset()
       }}
     >

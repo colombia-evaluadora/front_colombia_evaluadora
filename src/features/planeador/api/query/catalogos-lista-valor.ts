@@ -24,7 +24,7 @@ export async function resolveTipoActividadId(tipo: ActividadTipo): Promise<numbe
 // ---- MOMENTO_REGISTRO ----
 
 const toMomentosRegistro = (rows: SelectCategoryRow[]) =>
-  rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
+  rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre, predeterminado: row.predeterminado === true }))
 
 export function useMomentoRegistroCatalog() {
   return useQuery({ ...selectCategoryQueryOptions("MOMENTO_REGISTRO"), select: toMomentosRegistro })

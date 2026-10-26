@@ -29,6 +29,7 @@ import { BreaksField } from "@/features/establishment/academic-period/components
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 
 import { useAcademicPeriodStatusesQuery, useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
@@ -117,6 +118,13 @@ export function AcademicPeriodForm({
     const inscripciones = statusOptions.find((o) => o.key === "I")
     if (inscripciones) form.setFieldValue("statusId", inscripciones.id)
   }, [isCreating, statusOptions, form])
+
+  // Al crear, jornada arranca en el predeterminado de Listas valor (si hay).
+  const { data: jornadaPredeterminada } = usePredeterminadoQuery("JORNADA")
+  useEffect(() => {
+    if (!isCreating || !jornadaPredeterminada || form.state.values.jornadaId) return
+    form.setFieldValue("jornadaId", jornadaPredeterminada.pk_lista_valor)
+  }, [isCreating, jornadaPredeterminada, form])
 
 
   const isFormValid = useSelector(

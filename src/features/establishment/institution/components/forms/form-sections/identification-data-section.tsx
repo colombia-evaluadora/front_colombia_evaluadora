@@ -11,7 +11,7 @@ import {
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
-import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toSelectItemsMap, toSelectOptions, withSeleccione } from "@/lib/catalog-options"
 import { toDigitsOnly, toNitInput } from "@/lib/text-input"
 import { toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
@@ -36,7 +36,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const { data: legalTypes = []} = useOwnershipTypesQuery()
-    const legalTypeItems = toSelectOptions(legalTypes)
+    const legalTypeItems = withSeleccione(toSelectOptions(legalTypes))
 
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
@@ -128,12 +128,12 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         value={value.ownershipType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = legalTypes.find((item) => item.id === selectedValue)
-                            if (option) onChange({ ...value, ownershipType: option })
+                            onChange({ ...value, ownershipType: option ?? null })
                         }}
                         items={toSelectItemsMap(legalTypeItems)}
                     >
                         <ComboboxFieldTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
-                            <ComboboxFieldValue placeholder="Seleccionar" />
+                            <ComboboxFieldValue placeholder="Seleccione" />
                         </ComboboxFieldTrigger>
 
                         <ComboboxFieldContent>
