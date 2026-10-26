@@ -151,6 +151,35 @@ function CeldaActividad({ celda }: { celda: CeldaPlanilla | undefined }) {
     return <span className="text-muted-foreground">·</span>
   }
   if (celda.estado === "NO_CALIFICABLE") {
+    // Corrección de observación pendiente: se aprueba con la planilla. Popover
+    // con scroll y no tooltip: las observaciones llegan a 1000 caracteres.
+    if (celda.solicitudPendiente) {
+      return (
+        <Popover>
+          <PopoverTrigger className="inline-flex max-w-40 cursor-pointer items-center gap-1 text-left outline-none">
+            <span className="truncate">{celda.observacionPropuesta ?? celda.observacion}</span>
+            <HourglassIcon className="text-orange size-4 shrink-0" />
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-96 gap-3 p-4 text-sm">
+            <div className="grid gap-1">
+              <span className="font-semibold">Observación actual</span>
+              <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-muted-foreground">
+                {celda.observacion ?? "Sin texto"}
+              </p>
+            </div>
+            <div className="grid gap-1">
+              <span className="flex items-center gap-1 font-semibold">
+                Observación propuesta
+                <HourglassIcon className="text-orange size-4" />
+              </span>
+              <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words">
+                {celda.observacionPropuesta ?? "Sin texto"}
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )
+    }
     return celda.observacion ? (
       <Tooltip>
         <TooltipTrigger className="max-w-40 truncate text-left outline-none">

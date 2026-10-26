@@ -25,14 +25,18 @@ export interface RechazarPlanillaInput {
 }
 
 /**
- * Rechaza las correcciones de nota pendientes (Regla 55) de una planilla:
+ * Rechaza las correcciones de nota y de observación pendientes (Regla 55) de una planilla:
  * `GET /aprobaciones/pendientes` filtra por grupo y acá por asignatura y
  * periodo; `POST /aprobaciones/rechazar-masivo` las resuelve en una llamada.
  */
 async function rechazarPlanilla(input: RechazarPlanillaInput): Promise<{ rechazadas: number; fallidas: number }> {
-  const pendientes = await evalCol.getRows<SolicitudRow>(
-    `/aprobaciones/pendientes?tipo=CORRECCION_RESULTADO&grupo=${input.grupoId}`,
+  // Notas y observaciones: las dos se resuelven desde la planilla.
+  const porTipo = await Promise.all(
+    ["CORRECCION_RESULTADO", "CORRECCION_OBSERVACION"].map((tipo) =>
+      evalCol.getRows<SolicitudRow>(`/aprobaciones/pendientes?tipo=${tipo}&grupo=${input.grupoId}`),
+    ),
   )
+  const pendientes = porTipo.flat()
   const ids = pendientes
     .filter((s) => s.fk_tasignatura === input.asignaturaId && s.fk_tperiodo_evaluacion === input.periodoId)
     .map((s) => s.pk_tsolicitud_aprobacion)
