@@ -35,6 +35,7 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   CheckCircleFillIcon,
+  ClipboardTextIcon,
   DotsThreeIcon,
   MagnifyingGlassIcon,
   ProhibitIcon,
@@ -220,8 +221,45 @@ function CeldaActividad({ celda }: { celda: CeldaPlanilla | undefined }) {
   return <span>{formatNota(celda.nota)}</span>
 }
 
-function PlanillaTable({ filas }: { filas: FilaPlanilla[] }) {
+/**
+ * Sin actividades no hay columnas ni definitiva que proyectar: en vez de una
+ * columna vacía, una sola celda junto a los estudiantes dice por qué. La ven
+ * docente y coordinador, así que no le habla a ninguno de los dos.
+ */
+function AvisoSinActividades({ filas, busqueda }: { filas: number; busqueda: string }) {
+  return (
+    <td rowSpan={filas} className="border-l border-input bg-muted/20 px-6 py-6 align-top">
+      <div className="sticky top-4 flex max-w-prose items-start gap-3 text-sm">
+        {busqueda ? (
+          <MagnifyingGlassIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ClipboardTextIcon className="mt-0.5 size-5 shrink-0 text-blue" />
+        )}
+        <div className="grid gap-1">
+          {busqueda ? (
+            <>
+              <p className="font-semibold">Ninguna actividad coincide con «{busqueda}»</p>
+              <p className="text-muted-foreground">Pruebe con otro nombre de actividad o de estudiante.</p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">Sin actividades registradas en este periodo</p>
+              <p className="text-muted-foreground">
+                La asignatura no tiene actividades en el Planeador para este grupo y periodo, por eso
+                ningún estudiante tiene notas ni definitiva proyectada. Las actividades aparecen aquí
+                como columnas en cuanto el docente las registre.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </td>
+  )
+}
+
+function PlanillaTable({ filas, busqueda }: { filas: FilaPlanilla[]; busqueda: string }) {
   const columnas = columnasDe(filas)
+  const sinActividades = columnas.length === 0
 
   if (filas.length === 0) {
     return (
@@ -237,9 +275,13 @@ function PlanillaTable({ filas }: { filas: FilaPlanilla[] }) {
         <thead className="border-b bg-muted/10">
           <tr>
             <th className="w-80 px-4 py-3 text-left font-semibold uppercase">Nombres</th>
-            <th className="w-28 bg-muted/40 px-4 py-3 text-left font-semibold uppercase">
-              Definit. Proy.
-            </th>
+            {sinActividades ? (
+              <th className="border-l border-input px-6 py-3 text-left font-semibold uppercase">Actividades</th>
+            ) : (
+              <th className="w-28 bg-muted/40 px-4 py-3 text-left font-semibold uppercase">
+                Definit. Proy.
+              </th>
+            )}
             {columnas.map((columna) => (
               <th key={columna.actividadId} className="w-40 px-4 py-3 text-left font-semibold uppercase">
                 <span className="line-clamp-2" title={columna.titulo}>
@@ -250,7 +292,7 @@ function PlanillaTable({ filas }: { filas: FilaPlanilla[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {filas.map((fila) => (
+          {filas.map((fila, i) => (
             <tr key={fila.matriculaId}>
               <td
                 className={cn(
@@ -260,9 +302,13 @@ function PlanillaTable({ filas }: { filas: FilaPlanilla[] }) {
               >
                 {fila.nombreCompleto}
               </td>
-              <td className="bg-muted/40 px-4 py-1.5 align-middle">
-                <DefinitivaCelda fila={fila} />
-              </td>
+              {sinActividades ? (
+                i === 0 && <AvisoSinActividades filas={filas.length} busqueda={busqueda} />
+              ) : (
+                <td className="bg-muted/40 px-4 py-1.5 align-middle">
+                  <DefinitivaCelda fila={fila} />
+                </td>
+              )}
               {columnas.map((columna) => (
                 <td key={columna.actividadId} className="px-4 py-1.5 align-middle">
                   <CeldaActividad
@@ -469,7 +515,7 @@ function PlanillaInformeContent() {
         {planilla.isError && (
           <p className="py-8 text-center text-sm text-red">{getErrorMessage(planilla.error)}</p>
         )}
-        {!planilla.isPending && !planilla.isError && <PlanillaTable filas={filas} />}
+        {!planilla.isPending && !planilla.isError && <PlanillaTable filas={filas} busqueda={busquedaDiferida.trim()} />}
       </TableScreenBody>
 
       <DialogRechazarCambios
