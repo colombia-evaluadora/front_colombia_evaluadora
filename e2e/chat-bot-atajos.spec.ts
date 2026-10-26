@@ -42,7 +42,7 @@ test("lista: cada conversación muestra la vista previa y la hora del último me
   await expect(darlene).toContainText("Hola Andrés, ¿tienes un momento para revisar la planilla de 7°B?")
   await expect(darlene.locator("time")).toHaveText(/\d{1,2}:\d{2}/)
   await expect(fila(page, "02-docentes-general")).toContainText("Tú:")
-  await expect(fila(page, "Colevabot")).toContainText("Solicitud de aprobación: corrección de resultado")
+  await expect(fila(page, "Colevabot")).toContainText("Solicitud de aprobación de cambios en calificaciones")
   await captura(page, "app-4516-68095-lista-vista-previa")
 
   // En vivo: lo que envío pasa a ser la vista previa.
@@ -55,7 +55,7 @@ test("lista: cada conversación muestra la vista previa y la hora del último me
 test("Colevabot: tarjeta de aprobación estructurada y DM sin compositor", async ({ page }) => {
   await login(page, "admin@example.com")
   await fila(page, "Colevabot").click()
-  const tarjeta = page.getByRole("article", { name: "Solicitud de aprobación: corrección de resultado" })
+  const tarjeta = page.getByRole("article", { name: "Solicitud de aprobación de cambios en calificaciones" })
   await expect(tarjeta).toBeVisible()
   await expect(tarjeta).toContainText("NUEVA SOLICITUD DE APROBACIÓN")
   await expect(tarjeta).toContainText("Docente:")
@@ -64,8 +64,8 @@ test("Colevabot: tarjeta de aprobación estructurada y DM sin compositor", async
   await expect(page.getByRole("article", { name: "Hola, soy Colevabot" })).toBeVisible()
   await expect(editor(page)).toHaveCount(0)
   await captura(page, "app-4428-64360-colevabot-tarjeta")
-  await tarjeta.getByRole("button", { name: "Revisar en el planeador" }).click()
-  await page.waitForURL((u) => u.pathname === "/app/planeador/actividades")
+  await tarjeta.getByRole("button", { name: "Ir a planilla" }).click()
+  await page.waitForURL((u) => u.pathname === "/app/gestion-academica/informes/planilla/1/1/1")
 })
 
 test('atajos "/": se escriben o se eligen con el botón (sin llamadas ni grabaciones)', async ({ page }) => {

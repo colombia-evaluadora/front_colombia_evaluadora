@@ -244,20 +244,56 @@ export const mensajes: Mensaje[] = [
       acciones: [{ etiqueta: "Ver notificaciones", url: "/app/notificaciones" }],
     },
   },
-  {
-    ...mensaje(1, colevabot, "Solicitud de aprobación: corrección de resultado", haceDias(0, 6, 45)),
+  // Lo que ve el docente cuando se resuelve su solicitud (diseño 400:47651 / 400:47937).
+  ...(["APROBADA", "RECHAZADA"] as const).map((estado, i) => ({
+    ...mensaje(1, colevabot, `Solicitud #${124 - i} ${estado.toLowerCase()}`, haceDias(2, 11, 20 + i)),
     bot: {
-      clave: "aprobaciones:1:mock",
+      clave: `aprobacion:${124 - i}:${estado.toLowerCase()}:mock`,
+      encabezado: `📣 SOLICITUD #${124 - i} ${estado}`,
+      titulo: `Solicitud #${124 - i} ${estado.toLowerCase()}`,
+      descripcion:
+        estado === "APROBADA"
+          ? "Los cambios propuestos por el docente Jesús Torres en el curso 6° - 601 - Matemáticas han sido aplicados exitosamente."
+          : "Los cambios propuestos por el docente Jesús Torres en el curso 6° - 601 - Matemáticas han sido rechazados. Sigue vigente el valor anterior.",
+      campos: estado === "RECHAZADA" ? [{ etiqueta: "Motivo del rechazo", valor: "Nota mal digitada" }] : [],
+      acciones: [],
+      aprobacion: {
+        solicitudId: 124 - i,
+        tipo: "CORRECCION_RESULTADO",
+        estado,
+        grupoId: 1,
+        asignaturaId: 1,
+        periodoId: 1,
+        matriculaId: null,
+        resolver: false,
+      },
+    },
+  })),
+  {
+    ...mensaje(1, colevabot, "Solicitud de aprobación de cambios en calificaciones", haceDias(0, 6, 45)),
+    bot: {
+      clave: "aprobacion:planilla:1:1:1:pendiente:mock",
       encabezado: "📣 NUEVA SOLICITUD DE APROBACIÓN",
-      titulo: "Solicitud de aprobación: corrección de resultado",
+      titulo: "Solicitud de aprobación de cambios en calificaciones",
       descripcion: null,
       campos: [
         { etiqueta: "Docente", valor: "Jesús Torres" },
         { etiqueta: "Curso", valor: "6° - 601 - Matemáticas" },
         { etiqueta: "Periodo", valor: "Parcial 2024 (Cerrado)" },
+        { etiqueta: "Cambios realizados", valor: "2 modificaciones" },
         { etiqueta: "Motivo", valor: "\"Corrección de errores al registrar notas\"" },
       ],
-      acciones: [{ etiqueta: "Revisar en el planeador", url: "/app/planeador/actividades?modo=approval" }],
+      acciones: [{ etiqueta: "Ir a planilla", url: "/app/gestion-academica/informes/planilla/1/1/1" }],
+      aprobacion: {
+        solicitudId: 125,
+        tipo: "CORRECCION_RESULTADO",
+        estado: "PENDIENTE",
+        grupoId: 1,
+        asignaturaId: 1,
+        periodoId: 1,
+        matriculaId: null,
+        resolver: true,
+      },
     },
   },
   mensaje(
@@ -520,4 +556,32 @@ export function conVistaPrevia<T extends Conversacion>(c: T, usuarioId: number =
     if (!ultimo || m.id > ultimo.id) ultimo = m
   }
   return { ...c, ultimoMensaje: ultimo ? ultimoMensajeDe(ultimo, usuarioId) : null }
+}
+
+/**
+ * Correcciones de nota pendientes de la planilla (grupo 1, asignatura 1, periodo 1) que respaldan la
+ * tarjeta de aprobación de Colevabot: las devuelve `GET /aprobaciones/pendientes` y se resuelven con
+ * `POST /informes/planilla/guardar` o `/aprobaciones/rechazar-masivo`.
+ */
+export const correccionesNotaPendientes: {
+  pk_tsolicitud_aprobacion: number
+  tipo: "CORRECCION_RESULTADO"
+  fk_tgrupo: number
+  fk_tasignatura: number
+  fk_tperiodo_evaluacion: number
+  fk_tmatricula: number
+}[] = [125, 126].map((pk, i) => ({
+  pk_tsolicitud_aprobacion: pk,
+  tipo: "CORRECCION_RESULTADO",
+  fk_tgrupo: 1,
+  fk_tasignatura: 1,
+  fk_tperiodo_evaluacion: 1,
+  fk_tmatricula: i + 1,
+}))
+
+/** Quita de las pendientes las correcciones ya resueltas. */
+export function resolverCorreccionesNota(debeQuitar: (c: (typeof correccionesNotaPendientes)[number]) => boolean) {
+  for (let i = correccionesNotaPendientes.length - 1; i >= 0; i--) {
+    if (debeQuitar(correccionesNotaPendientes[i])) correccionesNotaPendientes.splice(i, 1)
+  }
 }
