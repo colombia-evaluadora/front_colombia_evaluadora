@@ -310,6 +310,11 @@ function InstrumentoEvaluacionSection({
           <EscalaValoracionSection
             form={form}
             tipoEvaluacion={tipoEvaluacion}
+            variantes={
+              camposEfectivos?.evaluacion.instrumentosPermitidos.find((item) => item.valor === "ESCALA_VALORACION")
+                ?.variantes
+            }
+            configuracionLista={camposEfectivos != null}
             disabled={disabled}
           />
         ) : instrumento === "Otro" ? (

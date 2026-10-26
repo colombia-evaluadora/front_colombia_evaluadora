@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { toEscalaPrecarga } from "@/features/planeador/api/query/use-escala-precarga-query"
+import { toEscalaPrecarga, toEscalaVariantesConfig } from "@/features/planeador/api/query/use-escala-precarga-query"
 
 // Reglas 40-42: el `descriptor` de cada nivel (TESCALA_VALORACION.DESCRIPCION, V71.1)
 // precarga la descripción del nivel; si viene null, queda vacía para que la escriba el docente.
@@ -26,5 +26,47 @@ describe("toEscalaPrecarga", () => {
   it("deja la descripción vacía cuando el nivel no tiene descriptor", () => {
     const precarga = toEscalaPrecarga({ niveles: [nivel("Superior", null, 4.9)] })
     expect(precarga.niveles[0]?.descripcion).toBe("")
+  })
+})
+
+// Regla 40: la precarga viaja en `variantes[].precarga` de la configuración.
+describe("toEscalaVariantesConfig", () => {
+  const nivel = { fkTescalaValoracion: 41, orden: 1, codigo: "BAJO", etiqueta: "Bajo", descriptor: null, puntaje: 1.5 }
+
+  it("ofrece solo las variantes que llegan, con su precarga por modo", () => {
+    const config = toEscalaVariantesConfig([
+      { pk: 1, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: { niveles: [nivel] } },
+      { pk: 2, valor: "NUMERICA", nombre: "Numérica", precarga: { valorMinimo: 1, valorMaximo: 5 } },
+    ])
+    expect(config?.permitidas).toEqual(["Cualitativa", "Numérica"])
+    expect(config?.precargas?.Cualitativa?.niveles).toEqual([{ nombre: "Bajo", descripcion: "", ponderacion: 1.5 }])
+    expect(config?.precargas?.Numérica).toMatchObject({ valorMinimo: 1, valorMaximo: 5, niveles: [] })
+  })
+
+  it("CUANTITATIVA: solo NUMERICA", () => {
+    const config = toEscalaVariantesConfig([
+      { pk: 2, valor: "NUMERICA", nombre: "Numérica", precarga: { valorMinimo: 0, valorMaximo: 10 } },
+    ])
+    expect(config?.permitidas).toEqual(["Numérica"])
+  })
+
+  it("precarga null deja el formulario vacío y niveles [] no inventa niveles", () => {
+    const config = toEscalaVariantesConfig([
+      { pk: 1, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: { niveles: [] } },
+      { pk: 2, valor: "NUMERICA", nombre: "Numérica", precarga: null },
+    ])
+    expect(config?.precargas?.Cualitativa?.niveles).toEqual([])
+    expect(config?.precargas?.Numérica).toMatchObject({ valorMinimo: 0, valorMaximo: undefined })
+  })
+
+  it("sin `precarga` en la respuesta (anterior a la Regla 40) pide el respaldo", () => {
+    const config = toEscalaVariantesConfig([{ pk: 2, valor: "NUMERICA", nombre: "Numérica" }])
+    expect(config?.permitidas).toEqual(["Numérica"])
+    expect(config?.precargas).toBeUndefined()
+  })
+
+  it("sin variantes devuelve null (decide tipoEvaluacion)", () => {
+    expect(toEscalaVariantesConfig(undefined)).toBeNull()
+    expect(toEscalaVariantesConfig([])).toBeNull()
   })
 })

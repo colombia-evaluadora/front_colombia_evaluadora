@@ -189,6 +189,11 @@ export function InstrumentoPersonalizadoSection({
                 <EscalaValoracionSection
                   form={form}
                   tipoEvaluacion={tipoEvaluacion}
+                  // Regla 41: misma precarga, desde `metodoValoracion.catalogo[ESCALA_VALORACION]`.
+                  variantes={
+                    camposOtro?.metodoValoracion.catalogo.find((item) => item.valor === "ESCALA_VALORACION")?.variantes
+                  }
+                  configuracionLista={camposOtro != null}
                   disabled={disabled}
                 />
               ) : null}
