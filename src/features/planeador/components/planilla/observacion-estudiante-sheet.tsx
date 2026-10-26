@@ -190,9 +190,14 @@ export function ObservacionEstudianteSheet({
   }, [estudiante?.id])
 
   // Precarga el momento guardado; espera al catálogo para resolver su id.
+  // Sin momento guardado (null), arranca en el predeterminado de Listas valor.
   useEffect(() => {
     const guardado = estudiante?.momento?.trim().toUpperCase()
-    if (!guardado) return
+    if (!guardado) {
+      const predeterminado = estudiante?.momento !== undefined ? momentos.find((m) => m.predeterminado) : undefined
+      if (predeterminado) setMomento((actual) => actual || String(predeterminado.id))
+      return
+    }
     const match = momentos.find((m) => m.nombre.trim().toUpperCase() === guardado)
     if (!match) return
     momentoGuardadoRef.current = String(match.id)

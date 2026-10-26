@@ -41,6 +41,8 @@ import { useEmployeeQuery } from "@/features/establishment/employees/api/query/u
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { findPredeterminado, useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { CATALOGS } from "@/lib/catalogs"
 import { useAsistenteFuncionario } from "@/features/establishment/employees/hooks/use-asistente-funcionario"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import type { Permission } from "@/features/establishment/institution/api/types/permission"
@@ -188,6 +190,70 @@ function ManageEmployeeDialogContent({
       if (canOpenOptionalSections) setAdditionalInfoDialogOpen(true)
     },
   })
+
+  // Predeterminados de Listas valor, solo en alta y sobre campos vacíos
+  const { data: documentTypesCat } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
+  const { data: gendersCat } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
+  const { data: employeeClassesCat } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_CLASSES)
+  const { data: educationLevelsCat } = useCatalogQuery<CatalogItem>(CATALOGS.EDUCATION_LEVELS)
+  const { data: gradesCat } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_GRADES)
+  const { data: highestLevelsCat } = useCatalogQuery<CatalogItem>(CATALOGS.HIGHEST_EDUCATION_LEVELS)
+  const { data: fundingSourcesCat } = useCatalogQuery<CatalogItem>(CATALOGS.FUNDING_SOURCES)
+  const { data: positionsCat } = useCatalogQuery<CatalogItem>(CATALOGS.FUNCTIONAL_POSITIONS)
+  const { data: employmentTypesCat } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYMENT_TYPES)
+  const isCreateDraft = open && !isEditMode && matchedFuncionarioId == null && createdEmployeeId == null
+
+  useEffect(() => {
+    if (!isCreateDraft) return
+    const documentType = findPredeterminado(documentTypesCat)
+    const gender = findPredeterminado(gendersCat)
+    if (!documentType && !gender) return
+    setPerson((prev) => {
+      if (!prev) return prev
+      const next = { ...prev }
+      if (!next.documentType && documentType) next.documentType = documentType
+      if (!next.gender && gender) next.gender = gender
+      return next.documentType === prev.documentType && next.gender === prev.gender ? prev : next
+    })
+  }, [isCreateDraft, documentTypesCat, gendersCat, person?.documentType, person?.gender])
+
+  // Datos adicionales: al abrir el sub-diálogo en el alta, sin pisar lo elegido
+  useEffect(() => {
+    if (!additionalInfoDialogOpen || isEditMode || matchedFuncionarioId != null || additionalInfoSaved) return
+    const defaults: Partial<EmployeeAdditionalInfoValue> = {
+      employeeClass: findPredeterminado(employeeClassesCat),
+      educationLevel: findPredeterminado(educationLevelsCat),
+      grade: findPredeterminado(gradesCat),
+      highestEducationLevel: findPredeterminado(highestLevelsCat),
+      fundingSource: findPredeterminado(fundingSourcesCat),
+      functionalPosition: findPredeterminado(positionsCat),
+      employmentType: findPredeterminado(employmentTypesCat),
+    }
+    setAdditionalInfo((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const [key, item] of Object.entries(defaults)) {
+        const field = key as keyof typeof defaults
+        if (item && !next[field]) {
+          Object.assign(next, { [field]: item })
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [
+    additionalInfoDialogOpen,
+    isEditMode,
+    matchedFuncionarioId,
+    additionalInfoSaved,
+    employeeClassesCat,
+    educationLevelsCat,
+    gradesCat,
+    highestLevelsCat,
+    fundingSourcesCat,
+    positionsCat,
+    employmentTypesCat,
+  ])
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()

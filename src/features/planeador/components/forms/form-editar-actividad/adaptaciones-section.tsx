@@ -24,7 +24,8 @@ import {
   useAdaptacionesReutilizablesQuery,
   type AdaptacionReutilizable,
 } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
-import { useTipoAdaptacionCatalogQuery } from "@/features/planeador/api/query/catalogos-lista-valor"
+import { toAplicaAOptions, toTipoAdaptacionOptions, useTipoAdaptacionCatalogQuery } from "@/features/planeador/api/query/catalogos-lista-valor"
+import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import {
   EyeIcon,
   FileUploadOutlinedIcon,
@@ -64,6 +65,11 @@ export function AdaptacionesSection({
   // Regla 47: solo estudiantes de la actividad, no todo el grupo (el backend rechaza el resto).
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const matriculasIds = useSelector(form.store, (state) => state.values.matriculasIds)
+  // Adaptación nueva: arranca con el tipo predeterminado de Listas valor
+  const { data: tipoPredeterminadoRow } = usePredeterminadoQuery("TIPO_ADAPTACION")
+  const tipoPredeterminado = tipoPredeterminadoRow ? (toTipoAdaptacionOptions([tipoPredeterminadoRow])[0]?.tipo ?? "") : ""
+  const { data: aplicaAPredeterminadoRow } = usePredeterminadoQuery("APLICA_A")
+  const aplicaAPredeterminado = aplicaAPredeterminadoRow ? (toAplicaAOptions([aplicaAPredeterminadoRow])[0]?.valor ?? "") : ""
   const estudiantesActividad = matriculas.filter((m) =>
     esEstudianteDeLaActividad({ asignarTodoElGrupo, matriculasIds }, m.id),
   )
@@ -78,13 +84,13 @@ export function AdaptacionesSection({
             field.handleChange([
               ...adaptaciones,
               {
-                tipo: "",
+                tipo: tipoPredeterminado as Adaptacion["tipo"],
                 especificacionTipo: "",
                 descripcion: "",
                 versionModificada: "no",
                 versionModificadaRef: "",
                 nombrePlantilla: "",
-                aplicaA: "",
+                aplicaA: aplicaAPredeterminado as Adaptacion["aplicaA"],
                 estudiantesIds: [],
                 archivos: [],
               },

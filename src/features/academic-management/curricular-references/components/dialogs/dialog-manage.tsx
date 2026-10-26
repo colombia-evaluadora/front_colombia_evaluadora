@@ -43,6 +43,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { esEnfoqueFormativo, esEvaluacionCuantitativa } from "@/features/academic-management/curricular-references/utils/catalogs"
+import { findPredeterminado } from "@/features/establishment/employees/api/query/use-catalogs"
 
 interface ManageCurricularReferenceDialogProps {
   open: boolean
@@ -201,6 +202,29 @@ export function ManageCurricularReferenceDialog({
     setFormValues((prev) => ({ ...prev, subjectLabel }))
     initialValuesRef.current = { ...initialValuesRef.current, subjectLabel }
   }, [open, isEditMode, subjectLabelOptions, formValues.subjectLabel])
+
+  // Al agregar: enfoque y tipo de evaluación arrancan en el predeterminado de
+  // Listas valor, una vez por apertura (si el usuario lo quita, no se repone).
+  const predeterminadosAplicadosRef = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      predeterminadosAplicadosRef.current = false
+      return
+    }
+    if (isEditMode || !populatedRef.current || predeterminadosAplicadosRef.current) return
+    if (pedagogicalApproaches.length === 0 || evaluationTypes.length === 0) return
+    predeterminadosAplicadosRef.current = true
+    const pedagogicalApproach = findPredeterminado(pedagogicalApproaches)
+    const evaluationType = findPredeterminado(evaluationTypes)
+    if (!pedagogicalApproach && !evaluationType) return
+    const patch = (prev: CurricularReferenceDraft) => ({
+      ...prev,
+      pedagogicalApproach: prev.pedagogicalApproach ?? pedagogicalApproach ?? null,
+      evaluationType: prev.evaluationType ?? evaluationType ?? null,
+    })
+    setFormValues(patch)
+    initialValuesRef.current = patch(initialValuesRef.current)
+  }, [open, isEditMode, pedagogicalApproaches, evaluationTypes, formValues])
 
   // Los errores se manejan en `save` (ahí se detecta el de la Regla 7).
   const createMutation = useCreate()

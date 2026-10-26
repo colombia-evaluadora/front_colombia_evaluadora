@@ -70,6 +70,14 @@ interface RealCatalogRow {
   nombre: string
   valor: string
   accion: string | null
+  predeterminado?: boolean
+}
+
+/** Ítem marcado como predeterminado en Listas valor, si hay */
+export function findPredeterminado<T extends { predeterminado?: boolean }>(
+  items: T[] | undefined,
+): T | undefined {
+  return items?.find((item) => item.predeterminado === true)
 }
 
 async function getMockCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
@@ -101,6 +109,7 @@ async function getRealCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
       id: row.pk_lista_valor,
       code: row.valor,
       name: row.nombre,
+      predeterminado: row.predeterminado === true,
     })) as T[]
   } catch {
     throw new Error(`No fue posible obtener ${friendly}`)

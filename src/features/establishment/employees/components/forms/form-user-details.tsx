@@ -329,10 +329,10 @@ export function UserDetailsForm({
                         }}
                     >
                         <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
-                            <ComboboxFieldValue placeholder="Seleccionar" />
+                            <ComboboxFieldValue placeholder="Seleccione" />
                         </ComboboxFieldTrigger>
                         <ComboboxFieldContent>
-                            <ComboboxFieldItem value={null}>Ninguno</ComboboxFieldItem>
+                            <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
                             {documentTypes.map((item) => (
                                 <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                                     {item.name}
@@ -497,13 +497,14 @@ export function UserDetailsForm({
                         value={person.gender?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = genders.find((item) => item.id === selectedValue)
-                            if (option) emitChange({ gender: option })
+                            emitChange({ gender: option ?? null })
                         }}
                     >
                         <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
-                            <ComboboxFieldValue placeholder="Seleccionar" />
+                            <ComboboxFieldValue placeholder="Seleccione" />
                         </ComboboxFieldTrigger>
                         <ComboboxFieldContent>
+                            <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
                             {genders.map((item) => (
                                 <ComboboxFieldItem key={item.id} value={item.id}>
                                     {item.name}
