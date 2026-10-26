@@ -50,7 +50,7 @@ interface ObservacionSheetProps {
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   onGuardar: (fila: FilaInforme, texto: string, borrador: Borrador | null) => void
-  /** Sin permiso, rol de solo lectura o período cerrado: la hoja solo muestra. */
+  /** Sin permiso o rol de solo lectura: la hoja solo muestra. */
   soloLecturaMotivo?: string | null
 }
 
