@@ -14,7 +14,16 @@ const MOMENTOS_POR_DEFECTO = ["Inicio", "Proceso", "Cierre"]
  */
 export function SeguimientoFormativoSection() {
   const { data: momentos = [] } = useMomentoRegistroCatalog()
-  const nombresMomento = momentos.length > 0 ? momentos.map((m) => m.nombre) : MOMENTOS_POR_DEFECTO
+  // Orden del documento (Inicio / Proceso / Cierre), no el alfabético del catálogo; los
+  // momentos que el catálogo agregue de más van al final.
+  const nombresCatalogo = momentos.map((m) => m.nombre)
+  const nombresMomento =
+    nombresCatalogo.length > 0
+      ? [
+          ...MOMENTOS_POR_DEFECTO.filter((m) => nombresCatalogo.includes(m)),
+          ...nombresCatalogo.filter((m) => !MOMENTOS_POR_DEFECTO.includes(m)),
+        ]
+      : MOMENTOS_POR_DEFECTO
 
   const items = [
     {
@@ -25,12 +34,12 @@ export function SeguimientoFormativoSection() {
     {
       icon: CalendarDotsIcon,
       titulo: "Momento del registro",
-      descripcion: nombresMomento.join(" · "),
+      descripcion: nombresMomento.join(" / "),
     },
     {
       icon: PaperclipIcon,
       titulo: "Evidencia asociada",
-      descripcion: "Fotografía, archivo o enlace que respalda la observación (opcional).",
+      descripcion: "Archivo / enlace / observación directa.",
     },
   ]
 
