@@ -9,6 +9,10 @@ export interface Campus {
   commune: string
   address: string
   phone: string
+  /** `TSEDE.LOCALIDAD`. Opcional: el listado no la trae. */
+  locality?: string
+  /** `TSEDE.GEOREFERENCIACION` ("latitud, longitud"). Opcional: el listado no la trae. */
+  georeference?: string
   /**
    * `FK_TESTABLECIMIENTO` de la sede. Opcional porque solo lo trae el
    * detalle (`fn_sed_buscar_por_pk`), no el listado. Se usa en edición
@@ -30,6 +34,21 @@ export interface Campus {
  * admin (los demás roles solo pueden crear sedes en su propio EE).
  */
 export type CampusDraft = Omit<Campus, "id" | "establishmentId"> & { establishmentId: number | null }
+
+/**
+ * Lo que el detalle de una sede muestra sin dejar editar (V600): el EE y el
+ * consecutivo son inmutables, y lo demás se calcula sobre el año lectivo más
+ * reciente de la sede (`fn_sed_detalle_calculado_interno`).
+ */
+export interface CampusDetailInfo {
+  establishmentName: string
+  consecutive: string
+  /** Jornadas con periodo académico en la sede; se definen en Periodos académicos. */
+  workSchedules: string[]
+  attendsDisability: boolean
+  /** Desplazados, desvinculados de grupos armados o hijos de desmovilizados. */
+  attendsConflictVictims: boolean
+}
 
 /** Opción liviana para el selector de establecimiento (super admin). */
 export interface EstablishmentOption {

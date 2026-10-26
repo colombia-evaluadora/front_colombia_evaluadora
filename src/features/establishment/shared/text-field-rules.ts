@@ -95,6 +95,23 @@ export function validarDireccion(valor: string | null | undefined): string | nul
   return placaRara ? ejemplo : null
 }
 
+/** Lo que deja escribir la ubicación: dígitos, punto, coma, signo y espacios. */
+export const toUbicacionInput = (value: string, max = 60) => value.replace(/[^\d.,\s-]/g, "").slice(0, max)
+
+/**
+ * Ubicación de una sede (`TSEDE.GEOREFERENCIACION`): "latitud, longitud" en
+ * grados decimales, como la copia Google Maps (`4.7110, -74.0721`), dentro
+ * de los rangos de una coordenada real.
+ */
+export function validarUbicacion(valor: string | null | undefined): string | null {
+  if (enBlanco(valor)) return null
+  const m = (valor ?? "").trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/)
+  const ejemplo = "Ingresa la ubicación como latitud, longitud (ej. 4.7110, -74.0721)."
+  if (!m) return ejemplo
+  const [lat, lng] = [Number(m[1]), Number(m[2])]
+  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? null : ejemplo
+}
+
 /**
  * Resolución de aprobación y licencia de funcionamiento: identificaciones
  * administrativas, así que llevan el número (al menos un dígito) y solo
