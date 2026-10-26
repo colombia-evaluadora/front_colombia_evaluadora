@@ -37,6 +37,8 @@ export interface RatingScaleRow {
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
+  // TESCALA_VALORACION.DESCRIPCION (V71.1): null si no se escribió.
+  descripcion: string | null
   academicPeriodId: number
 }
 

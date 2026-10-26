@@ -34,6 +34,8 @@ interface RatingScaleRow {
   // Cada nivel tiene su propia TESCALA, así que este valor es distinto por fila
   // aunque varias filas terminen agrupadas bajo el mismo `RatingScale.codigo`.
   escala_id: number
+  // V71.1; null si la banda no tiene descripción.
+  descripcion?: string | null
 }
 interface RatingScaleRawResponse {
   rows: RatingScaleRow[]
@@ -71,6 +73,7 @@ function groupRatingScales(
       notaMaxima: row.nota_maxima,
       notaMinima: row.nota_minima,
       notaEquivalente: row.nota_equivalente,
+      descripcion: row.descripcion ?? "",
     })
   }
   return Array.from(groups.values())

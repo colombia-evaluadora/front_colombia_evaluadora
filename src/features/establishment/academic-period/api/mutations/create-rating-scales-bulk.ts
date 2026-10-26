@@ -25,6 +25,8 @@ async function createRatingScalesBulk(
         notaMaxima: scale.notaMaxima,
         notaMinima: scale.notaMinima,
         notaEquivalente: scale.notaEquivalente,
+        // Vacío → null: `fn_escala_guardar_bulk_interno` guarda NULL.
+        descripcion: scale.descripcion?.trim() || null,
       }))
     ),
   })

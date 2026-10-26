@@ -44,6 +44,7 @@ function toRawRow(row: RatingScaleRow) {
     nota_minima: row.notaMinima,
     nota_maxima: row.notaMaxima,
     nota_equivalente: row.notaEquivalente,
+    descripcion: row.descripcion,
   }
 }
 
@@ -56,6 +57,7 @@ interface ScaleWriteItem {
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
+  descripcion?: string | null
 }
 
 export const ratingScalesHandlers = [
@@ -101,11 +103,14 @@ export const ratingScalesHandlers = [
     const body = (await request.json()) as {
       ACADEMIC_PERIOD_ID: number
       TEACHING_LEVEL_IDS: number[]
-      SCALES: ScaleWriteItem[]
+      SCALES: ScaleWriteItem[] | string
     }
+    // El front manda SCALES como string JSON (`CAST(:BODY.SCALES AS JSONB)`).
+    const scales: ScaleWriteItem[] =
+      typeof body.SCALES === "string" ? JSON.parse(body.SCALES) : body.SCALES
     let count = 0
     for (const levelId of body.TEACHING_LEVEL_IDS) {
-      for (const scale of body.SCALES) {
+      for (const scale of scales) {
         const id = nextRatingScaleId()
         ratingScalesDb.push({
           id,
@@ -118,6 +123,7 @@ export const ratingScalesHandlers = [
           notaMinima: scale.notaMinima,
           notaMaxima: scale.notaMaxima,
           notaEquivalente: scale.notaEquivalente,
+          descripcion: scale.descripcion?.trim() || null,
           academicPeriodId: body.ACADEMIC_PERIOD_ID,
         })
         count++

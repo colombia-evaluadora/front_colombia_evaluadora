@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -25,7 +26,10 @@ import {
   type RatingScaleTypeOption,
   type RatingSymbol,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
-import type { GradingRange } from "@/features/establishment/academic-period/utils/grading-range"
+import {
+  RATING_SCALE_DESCRIPCION_MAX,
+  type GradingRange,
+} from "@/features/establishment/academic-period/utils/grading-range"
 import {
   RatingSymbolSelect,
   RatingSymbolView,
@@ -42,6 +46,7 @@ export type EditableScale = Pick<
   | "notaEquivalente"
   | "tipo"
   | "iconografia"
+  | "descripcion"
 >
 
 export function toScaleDraft(scale: RatingScale): EditableScale {
@@ -53,6 +58,7 @@ export function toScaleDraft(scale: RatingScale): EditableScale {
     notaEquivalente: scale.notaEquivalente,
     tipo: scale.tipo,
     iconografia: scale.iconografia,
+    descripcion: scale.descripcion ?? "",
   }
 }
 
@@ -256,6 +262,39 @@ export function createRatingScaleDetailColumns(
         )
       },
       enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      id: "descripcion",
+      accessorKey: "descripcion",
+      meta: { label: "Descripción" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Descripción" />,
+      cell: ({ row }) => {
+        const scale = row.original
+        if (!isEditing(scale)) {
+          return scale.descripcion ? (
+            <span className="line-clamp-2 max-w-64 whitespace-normal" title={scale.descripcion}>
+              {scale.descripcion}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )
+        }
+        const { draft, patchDraft } = optionsRef.current
+        return (
+          <Textarea
+            aria-label="Descripción"
+            placeholder="Opcional"
+            maxLength={RATING_SCALE_DESCRIPCION_MAX}
+            rows={2}
+            value={draft!.descripcion ?? ""}
+            onChange={(e) => patchDraft({ descripcion: e.target.value })}
+            className="min-w-48"
+          />
+        )
+      },
+      enableSorting: false,
+      // La fila de alta (`footerRow`) arma sus celdas a mano: ocultar columnas las desalinearía.
       enableHiding: false,
     },
     {

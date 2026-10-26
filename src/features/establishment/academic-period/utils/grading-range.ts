@@ -29,6 +29,9 @@ export function parseGradingRange(gradingFormat?: string): GradingRange {
   return DEFAULT_GRADING_RANGE
 }
 
+// TESCALA_VALORACION.DESCRIPCION es VARCHAR(1000); el backend también lo valida (22023).
+export const RATING_SCALE_DESCRIPCION_MAX = 1000
+
 export function makeRatingScaleGradesSchema({ min, max }: GradingRange) {
   const nota = z
     .number({ error: "Ingresa una nota válida" })
@@ -49,6 +52,11 @@ export function makeRatingScaleGradesSchema({ min, max }: GradingRange) {
       notaMaxima: nota,
       notaMinima: nota,
       notaEquivalente: nota,
+      // Opcional: vacío = el docente lo escribe en el planeador.
+      descripcion: z
+        .string()
+        .max(RATING_SCALE_DESCRIPCION_MAX, `La descripción no puede superar los ${RATING_SCALE_DESCRIPCION_MAX} caracteres`)
+        .optional(),
     })
     .refine((d) => d.notaMinima <= d.notaMaxima, {
       message: "La nota mínima no puede superar la máxima",
