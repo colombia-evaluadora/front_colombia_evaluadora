@@ -10,7 +10,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
+import { useEstadoPersona } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PlusIcon, ProhibitIcon, StarIcon, XIcon } from "@/components/ui/icons"
@@ -134,7 +137,7 @@ export function MiembrosDialog({
     ...(personas.data ?? []),
     ...todos
       .filter((m) => !personas.data?.some((p) => p.id === m.id))
-      .map((m) => ({ id: m.id, nombre: m.nombre, correo: "" })),
+      .map((m) => ({ id: m.id, nombre: m.nombre, correo: "", perfil: m.perfil, cargo: m.cargo })),
   ]
   const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA))
   const actual = Math.min(pagina, paginas - 1)
@@ -205,7 +208,7 @@ export function MiembrosDialog({
                 <span className="flex items-center gap-3">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{p.nombre}</span>
-                    {p.correo && <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>}
+                    {rolVisible(p) && <span className="block truncate text-xs text-muted-foreground">{rolVisible(p)}</span>}
                   </span>
                   {invitados.get(p.id) === "INVITADO" ? (
                     <span className="shrink-0 rounded-full bg-blue-22 px-2 py-0.5 text-xs text-blue">Invitación pendiente</span>
@@ -454,7 +457,7 @@ function FilaMiembro({
     return (
       <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
         <span className="flex min-w-0 flex-1 basis-40 items-center gap-3 opacity-80">
-          <AvatarPersona nombre={m.nombre} />
+          <AvatarPersona miembro={m} sinEstado />
           <span className="min-w-0 leading-tight">
             <span className="block truncate">{m.nombre}</span>
             <span className="block truncate text-sm text-muted-foreground">Acudiente</span>
@@ -497,12 +500,11 @@ function FilaMiembro({
         />
       )}
       <span className={cn("flex min-w-0 flex-1 items-center gap-3", m.bloqueado && "opacity-45")}>
-        <AvatarPersona nombre={m.nombre} enLinea={m.enLinea} />
+        <AvatarPersona miembro={m} />
         <span className="min-w-0 leading-tight">
           <span className="block truncate">{m.nombre}</span>
           <span className="block truncate text-sm text-muted-foreground">
-            {m.rol}
-            {m.bloqueado && " · No puede escribir"}
+            {[rolVisible(m), m.esAdmin && "Administrador", m.bloqueado && "No puede escribir"].filter(Boolean).join(" · ")}
           </span>
         </span>
       </span>
@@ -554,13 +556,14 @@ function FilaMiembro({
   )
 }
 
-function AvatarPersona({ nombre, enLinea }: { nombre: string; enLinea?: boolean }) {
+function AvatarPersona({ miembro, sinEstado = false }: { miembro: Miembro; sinEstado?: boolean }) {
+  const estado = useEstadoPersona(miembro.id, miembro)
   return (
     <Avatar>
       <AvatarFallback className="bg-navy-22 text-[0.65rem] font-semibold text-navy">
-        {iniciales(nombre)}
+        {iniciales(miembro.nombre)}
       </AvatarFallback>
-      {enLinea && <AvatarBadge className="bg-green" />}
+      {!sinEstado && <PuntoDisponibilidad estado={estado} />}
     </Avatar>
   )
 }

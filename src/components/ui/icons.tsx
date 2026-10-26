@@ -64,6 +64,7 @@ import {
   MdErrorOutline,
   MdOutlineFilterList,
   MdFolderOpen,
+  MdOutlineFolderZip,
   MdOutlinePermMedia,
   MdFormatBold,
   MdFormatItalic,
@@ -155,6 +156,8 @@ import {
   MdOutlineMarkChatRead,
   MdOutlineMarkChatUnread,
   MdOutlineNotificationsOff,
+  MdOutlineNotificationsActive,
+  MdOutlineVolumeUp,
   MdOutlineTerminal,
   MdOutlineUnarchive,
   MdOutlineVideocam,
@@ -284,6 +287,7 @@ export const EyeSlashIcon = makeIcon(MdVisibilityOff)
 export const FileDownloadOutlinedIcon = makeIcon(MdOutlineFileDownload)
 export const FileUploadOutlinedIcon = makeIcon(MdOutlineFileUpload)
 export const FilePdfIcon = makeIcon(MdPictureAsPdf)
+export const FileZipIcon = makeIcon(MdOutlineFolderZip)
 export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
 export const FolderOpenIcon = makeIcon(MdFolderOpen)
@@ -390,6 +394,8 @@ export const SmileyIcon = makeIcon(MdOutlineEmojiEmotions)
 export const VideoCameraIcon = makeIcon(MdOutlineVideocam)
 export const MicrophoneIcon = makeIcon(MdMicNone)
 export const BellSlashIcon = makeIcon(MdOutlineNotificationsOff)
+export const BellRingingIcon = makeIcon(MdOutlineNotificationsActive)
+export const SpeakerHighIcon = makeIcon(MdOutlineVolumeUp)
 export const ChatUnreadIcon = makeIcon(MdOutlineMarkChatUnread)
 export const ChatReadIcon = makeIcon(MdOutlineMarkChatRead)
 export const TerminalIcon = makeIcon(MdOutlineTerminal)

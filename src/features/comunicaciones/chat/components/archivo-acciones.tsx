@@ -10,11 +10,13 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { ArchivoCompartido } from "@/features/comunicaciones/chat/api/types"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { fetchDocumento, useDocumentoQuery } from "@/features/comunicaciones/chat/api/query/use-documento-query"
 import { useEliminarArchivo } from "@/features/comunicaciones/chat/api/mutations/use-acciones-archivo"
+import { useRegistrarDescarga } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { descargarDocumento } from "@/features/comunicaciones/chat/lib/documento"
-import { descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { ReproductorAudio } from "@/features/comunicaciones/chat/components/reproductor-audio"
+import { AVISO_YA_DESCARGADO, descargarAdjunto, esAudio } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 
@@ -33,12 +35,18 @@ export function ArchivoAcciones({
   const { notify } = useNotify()
   const queryClient = useQueryClient()
   const eliminar = useEliminarArchivo()
+  const registrar = useRegistrarDescarga()
   const [viendo, setViendo] = useState(false)
 
   // Los documentos editables (mock) se descargan con su contenido actual; el
-  // resto, el binario de file-service.
+  // resto, el binario de file-service. Un archivo ajeno registra la descarga antes
+  // (desde ahí quien lo compartió ya no puede eliminarlo).
   const descargar = async () => {
     try {
+      if (!a.esPropio && a.adjuntoId != null && a.mensajeId != null) {
+        await registrar.mutateAsync({ mensajeId: a.mensajeId, adjuntoId: a.adjuntoId })
+        if (!a.descargado) void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
+      }
       if (a.archivoId != null) {
         await descargarAdjunto(a.archivoId, a.nombre)
         return
@@ -75,7 +83,19 @@ export function ArchivoAcciones({
       <Accion etiqueta={`Ver ${a.nombre}`} titulo="Ver" onClick={() => setViendo(true)}>
         <EyeIcon />
       </Accion>
-      {a.esPropio && (
+      {a.esPropio && a.descargado && (
+        // Deshabilitado con la razón: un botón `disabled` no recibe el puntero, el título va afuera.
+        <span title={AVISO_YA_DESCARGADO} className="grid size-8 place-items-center">
+          <ConfirmRemoveButton
+            label={`Eliminar ${a.nombre}. ${AVISO_YA_DESCARGADO}`}
+            description={AVISO_YA_DESCARGADO}
+            onConfirm={() => false}
+            disabled
+            className="size-8 rounded-none text-muted-foreground"
+          />
+        </span>
+      )}
+      {a.esPropio && !a.descargado && (
         <ConfirmRemoveButton
           label={`Eliminar ${a.nombre}`}
           title="Eliminar archivo"
@@ -133,7 +153,7 @@ function Accion({
 
 function VistaPrevia({ archivo: a, onClose }: { archivo: ArchivoCompartido; onClose: () => void }) {
   const documento = useDocumentoQuery(a.editable ? a.id : undefined)
-  const { Icono, color, tipo } = ICONO_ARCHIVO[a.formato]
+  const { Icono, color, tipo } = iconoArchivo(a.formato, a.nombre)
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -174,8 +194,18 @@ export function VistaBinario({
   icono: ReactNode
   tipo: string
 }) {
-  const visible = a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
+  // Notas de voz y audios (formato OTRO por extensión): reproductor inline.
+  const audio = a.archivoId != null && esAudio(a.nombre)
+  const visible = !audio && a.archivoId != null && (a.formato === "IMAGEN" || a.formato === "PDF" || a.formato === "VIDEO")
   const { data: url, isPending, isError } = useArchivoViewUrl(visible ? a.archivoId : null)
+  if (audio) {
+    return (
+      <div className="grid place-items-center gap-4 rounded-lg border border-dashed px-4 py-10">
+        {icono}
+        <ReproductorAudio archivoId={a.archivoId} nombre={a.nombre} className="w-full max-w-md justify-center" />
+      </div>
+    )
+  }
   if (visible && isPending) return <Skeleton className="h-80 w-full" />
   if (!visible || isError || !url) {
     return (

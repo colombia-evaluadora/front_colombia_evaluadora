@@ -16,12 +16,14 @@ import {
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import type { ArchivoCompartido, FormatoArchivo } from "@/features/comunicaciones/chat/api/types"
-import { ICONO_ARCHIVO } from "@/features/comunicaciones/chat/api/ui-mappings"
+import { iconoArchivo } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { useArchivosQuery } from "@/features/comunicaciones/chat/api/query/use-archivos-query"
 import { fechaLarga } from "@/features/comunicaciones/chat/lib/chat-format"
 import { SquaresFourIcon, ListIcon } from "@/components/ui/icons"
 import { VistaEncabezado } from "@/features/comunicaciones/chat/components/vista-encabezado"
 import { ArchivoAcciones } from "@/features/comunicaciones/chat/components/archivo-acciones"
+import { ReproductorAudio } from "@/features/comunicaciones/chat/components/reproductor-audio"
+import { AVISO_YA_DESCARGADO, esAudio } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { DocumentoEditor } from "@/features/comunicaciones/chat/components/documento-editor"
 
 // Mismo estilo de item que el menú de conversaciones (en oración, no mayúsculas).
@@ -160,7 +162,7 @@ function ListaArchivos({
             className={chip(soloMisCanales)}
           >
             {soloMisCanales && <CheckIcon aria-hidden className="size-4" />}
-            Solo mis canales
+            Solo mis foros y grupos
           </button>
 
           <div
@@ -239,7 +241,7 @@ function ListaArchivos({
                 </button>
               </>
             ) : (
-              <p>Los archivos que se compartan en tus canales aparecerán aquí.</p>
+              <p>Los archivos que se compartan en tus foros y grupos aparecerán aquí.</p>
             )}
           </div>
         ) : (
@@ -333,7 +335,7 @@ function TarjetaArchivo({
   cuadricula: boolean
   onEditar: () => void
 }) {
-  const { Icono, color, tipo } = ICONO_ARCHIVO[a.formato]
+  const { Icono, color, tipo } = iconoArchivo(a.formato, a.nombre)
   const detalle = `Compartido por ${a.esPropio ? "ti" : a.compartidoPor} el ${fechaLarga(a.fecha)}`
   return (
     <article
@@ -359,6 +361,15 @@ function TarjetaArchivo({
           <span className="sr-only">{tipo}. </span>
           {detalle}
         </p>
+        {a.esPropio && a.descargado && (
+          <p className="truncate text-xs text-muted-foreground" title={AVISO_YA_DESCARGADO}>
+            {AVISO_YA_DESCARGADO}
+          </p>
+        )}
+        {/* Notas de voz: se escuchan desde la tarjeta (también en "Ver"). */}
+        {esAudio(a.nombre) && a.archivoId != null && (
+          <ReproductorAudio archivoId={a.archivoId} nombre={a.nombre} className="mt-2" />
+        )}
       </div>
       {/* Visible al pasar el cursor o al llegar con el teclado. */}
       <ArchivoAcciones

@@ -4,6 +4,7 @@ import { fetchSedeOptions } from "@/features/establishment/academic-period/api/q
 import { fetchEstablishmentsOptions } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import { proveedorMeta } from "@/lib/offline/query-meta"
 
 /** Los nombres de los colegios, solo para rotular; sin ellos la sede sale
  *  con su nombre, que sigue sirviendo porque el valor es el id. */
@@ -16,7 +17,7 @@ async function nombresDeColegios(): Promise<Map<number, string>> {
   }
 }
 
-async function fetchMatriculaCampuses(): Promise<MatriculaCampusCatalog> {
+export async function fetchMatriculaCampuses(): Promise<MatriculaCampusCatalog> {
   const sedes = await fetchSedeOptions()
   const variosColegios = new Set(sedes.map((sede) => sede.fk_establecimiento)).size > 1
   const colegios = variosColegios ? await nombresDeColegios() : new Map<number, string>()
@@ -39,6 +40,8 @@ export function useMatriculaCampusesQuery() {
   return useQuery({
     queryKey: matriculaKeys.campuses(),
     queryFn: fetchMatriculaCampuses,
+    // Solo nombres de sedes y colegios: el filtro de la lista sin conexión.
+    meta: proveedorMeta(),
     staleTime: 0,
   })
 }

@@ -1,5 +1,6 @@
 // Cada tarea usa la MISMA key, queryFn y meta que la pantalla: otra key es otra query y sin red no aparece.
 // Lo que depende del rol (puede dar 403) va como opcional.
+// Matrícula (P6): solo la lista por defecto, recortada a datos básicos (`MATRICULA_OFFLINE_FIELDS`).
 import type { QueryClient, QueryKey } from "@tanstack/react-query"
 
 import type { PlanillaTarget, PrepareSelection } from "@/components/offline/prepare-offline-plan"
@@ -115,6 +116,7 @@ import {
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchConversaciones } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { fetchPoliticaChat } from "@/features/comunicaciones/chat/api/query/use-politica-chat-query"
+import { fetchInvitaciones } from "@/features/comunicaciones/chat/api/query/use-invitaciones-query"
 import { contadorQueryKey, fetchContador } from "@/features/notificaciones/api/query/use-contador-query"
 import {
   fetchNotificaciones,
@@ -136,6 +138,14 @@ import { fetchEvaluationPeriods } from "@/features/establishment/academic-period
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { fetchSedePreviousPeriods } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
+// Cobertura › Matrícula (solo consulta, datos básicos: P6)
+import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import {
+  fetchMatricula,
+  MATRICULA_LISTA_POR_DEFECTO,
+  matriculaListaMeta,
+} from "@/features/coverage/matricula/api/query/use-matricula-query"
+import { fetchMatriculaCampuses } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 
 // ---- Piezas -----------------------------------------------------------------
 
@@ -624,6 +634,8 @@ function comunicacionesTasks(): PrepareTask[] {
   return [
     seed(chatKeys.conversaciones, fetchConversaciones, offlineMeta(TTL_OFFLINE.detalle)),
     seed(chatKeys.politica, fetchPoliticaChat, catalogoMeta(), { optional: true }),
+    // Invitaciones pendientes a grupos: la pantalla de chat las pide al abrir.
+    seed(chatKeys.invitaciones, fetchInvitaciones, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
   ]
 }
 
@@ -711,6 +723,29 @@ function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]
     )
   }
   return tasks
+}
+
+/**
+ * Matrícula (P6: solo consulta con datos básicos). La vista por defecto de la
+ * lista, con la misma key y meta que la pantalla: el persister la guarda
+ * recortada a `MATRICULA_OFFLINE_FIELDS` (sin acudiente ni nada sensible). El
+ * backend la acota a las sedes del usuario. Más los catálogos que la pantalla
+ * pide al abrir (rótulo de grado, sedes y estados del filtro). Detalle,
+ * edición y escrituras siguen solo en línea.
+ */
+function matriculaTasks(queryClient: QueryClient): PrepareTask[] {
+  if (!menuIncludes(queryClient, "/app/cobertura/matricula")) return []
+  return [
+    seed(
+      matriculaKeys.lista(MATRICULA_LISTA_POR_DEFECTO),
+      () => fetchMatricula(MATRICULA_LISTA_POR_DEFECTO),
+      matriculaListaMeta(),
+    ),
+    seedListaValor("GRADOS", { optional: true }),
+    seed(academicPeriodKeys.sedeOptions(), fetchSedeOptions, proveedorMeta(), { optional: true }),
+    seed(matriculaKeys.campuses(), fetchMatriculaCampuses, proveedorMeta(), { optional: true }),
+    seedListaValor("ESTADO_MATRICULA", { optional: true }),
+  ]
 }
 
 /** Rector/coordinador ven el planeador de sus docentes (aviso de lectura). */
@@ -806,5 +841,6 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   if (menuIncludes(queryClient, "/app/gestion-academica/referentes-curriculares")) tasks.push(...referentesTasks())
   if (menuIncludes(queryClient, "/app/comunicaciones/chat")) tasks.push(...comunicacionesTasks())
   tasks.push(...establecimientoTasks(queryClient, input.roles))
+  tasks.push(...matriculaTasks(queryClient))
   return tasks
 }

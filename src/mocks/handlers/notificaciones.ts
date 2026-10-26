@@ -22,6 +22,8 @@ function buscar(id: unknown) {
   return notificacionesDb.find((n) => n.id === id && !n.archivada)
 }
 
+const TIPOS_MENSAJE_CHAT = new Set(["CHAT_MENSAJE", "CHAT_DIRECTO", "CHAT_MENCION", "CHAT_RESPUESTA", "CHAT_REACCION"])
+
 const noEncontrada = () => HttpResponse.json({ message: "La notificación no existe." }, { status: 404 })
 
 export const notificacionesHandlers = [
@@ -36,6 +38,20 @@ export const notificacionesHandlers = [
     const ahora = new Date().toISOString()
     for (const n of visibles()) {
       if (!n.leida_en && (!body?.categoria || n.categoria === body.categoria)) n.leida_en = ahora
+    }
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  // Leer una conversación del chat deja leídos sus avisos de mensajes (notification-service filtra
+  // por `datos.canal`; acá se lee del deep link, que lleva el mismo canal).
+  http.post(RUTA("/leer-conversacion/:canal"), async ({ params, request }) => {
+    await delay(100)
+    const ahora = new Date().toISOString()
+    const canal = new RegExp(`[?&]canal=${String(params.canal)}(&|$)`)
+    for (const n of visibles(request)) {
+      if (!n.leida_en && n.categoria === "CHAT" && TIPOS_MENSAJE_CHAT.has(n.tipo) && canal.test(n.deep_link ?? "")) {
+        n.leida_en = ahora
+      }
     }
     return new HttpResponse(null, { status: 204 })
   }),

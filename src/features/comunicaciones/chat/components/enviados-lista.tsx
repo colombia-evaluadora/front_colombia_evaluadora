@@ -12,7 +12,7 @@ import { UserIcon } from "@/components/ui/icons"
 const FILTROS: Array<{ tipo: TipoEnviado | undefined; etiqueta: string }> = [
   { tipo: undefined, etiqueta: "Todos" },
   { tipo: "DIRECTO", etiqueta: "Directos" },
-  { tipo: "CANAL", etiqueta: "Canales" },
+  { tipo: "CANAL", etiqueta: "Foros y grupos" },
   { tipo: "COMUNICADO", etiqueta: "Comunicados" },
   { tipo: "ENCUESTA", etiqueta: "Encuestas" },
   { tipo: "ELECCION", etiqueta: "Elecciones" },
@@ -21,7 +21,7 @@ const FILTROS: Array<{ tipo: TipoEnviado | undefined; etiqueta: string }> = [
 
 const ETIQUETA: Record<TipoEnviado, string> = {
   DIRECTO: "Mensaje directo",
-  CANAL: "Mensaje en canal",
+  CANAL: "Mensaje en foro o grupo",
   COMUNICADO: "Comunicado",
   ENCUESTA: "Encuesta",
   ELECCION: "Elección",

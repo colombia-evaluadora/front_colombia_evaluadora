@@ -44,11 +44,19 @@ export function useReaccionarMensaje() {
   })
 }
 
+/**
+ * Quita un archivo del mensaje para todos (queda el aviso "Archivo eliminado"). Con
+ * `adjuntoId` quita ese; sin él (adjuntos anteriores a `tmensaje_adjunto`) quita el del mensaje.
+ * comms-service responde 409 si otra persona ya lo descargó.
+ */
 export function useEliminarAdjunto() {
   const queryClient = useQueryClient()
   const actualizar = useActualizarEnCache()
   return useMutation({
-    mutationFn: (id: number) => evalCol.patchRow<Mensaje>(`${base(id)}/adjunto/eliminar`),
+    mutationFn: ({ mensajeId, adjuntoId }: { mensajeId: number; adjuntoId?: number | null }) =>
+      evalCol.patchRow<Mensaje>(
+        adjuntoId != null ? `${base(mensajeId)}/adjuntos/${adjuntoId}/eliminar` : `${base(mensajeId)}/adjunto/eliminar`,
+      ),
     onSuccess: (m) => {
       actualizar(m)
       queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
@@ -68,5 +76,19 @@ export function useEliminarMensaje() {
       )
       queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
     },
+  })
+}
+
+/**
+ * Registra que el usuario descargó un archivo de un mensaje ajeno. Con la primera descarga
+ * de otra persona el autor ya no puede quitarlo (llega por `mensaje.actualizado`). Sin
+ * `adjuntoId` (adjuntos anteriores a `tmensaje_adjunto`) no hay qué registrar.
+ */
+export function useRegistrarDescarga() {
+  const actualizar = useActualizarEnCache()
+  return useMutation({
+    mutationFn: ({ mensajeId, adjuntoId }: { mensajeId: number; adjuntoId: number }) =>
+      evalCol.postRow<Mensaje>(`${base(mensajeId)}/adjuntos/${adjuntoId}/descargas`),
+    onSuccess: actualizar,
   })
 }

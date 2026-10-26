@@ -43,7 +43,7 @@ export const comunicacionesEncuestasHandlers = [
   http.patch(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
     await delay(250)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una encuesta." }, { status: 404 })
     if (usuarioDe(request)?.role !== "ADMIN") {
       return HttpResponse.json({ message: "Solo quien creó la encuesta puede editarla." }, { status: 403 })
     }
@@ -70,13 +70,15 @@ export const comunicacionesEncuestasHandlers = [
     })
     const conv = conversaciones.find((c) => c.id === e.conversacionId)
     if (conv) conv.nombre = nombre
+    // Guardar la edición desde su borrador (?borrador) lo elimina, como comms-service.
+    consumirBorradorActividad(request)
     return HttpResponse.json({ rows: [vistaDe(e, request)] })
   }),
 
   http.get(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
     await delay(200)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
-    if (!e) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una encuesta." }, { status: 404 })
     // Cerró por fecha: el aviso de resultados sale una vez (comms-service lo revisa con su job).
     if (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now()) notificarResultados(e.conversacionId, "ENCUESTA", e.nombre)
     return HttpResponse.json({ rows: [vistaDe(e, request)] })
@@ -86,7 +88,7 @@ export const comunicacionesEncuestasHandlers = [
     await delay(300)
     const e = encuestas.find((x) => x.conversacionId === Number(params.id))
     const user = usuarioDe(request)
-    if (!e || !user) return HttpResponse.json({ message: "Este canal no tiene una encuesta." }, { status: 404 })
+    if (!e || !user) return HttpResponse.json({ message: "Esta conversación no tiene una encuesta." }, { status: 404 })
     if (estadoEleccion(e) !== "ACTIVA") {
       return HttpResponse.json({ message: "La encuesta no está abierta." }, { status: 409 })
     }
@@ -120,7 +122,7 @@ export const comunicacionesEncuestasHandlers = [
       return HttpResponse.json({ message: "Agrega al menos una pregunta." }, { status: 400 })
     }
     if (conversaciones.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${nombre}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe una conversación llamada ${nombre}.` }, { status: 409 })
     }
     const canal: Conversacion = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
@@ -140,7 +142,7 @@ export const comunicacionesEncuestasHandlers = [
     conversaciones.push(canal)
     consumirBorradorActividad(request)
     // Aviso a quienes la responden (comms-service: CHAT_ENCUESTA al abrir).
-    notificarActividad(canal.id, "CHAT_ENCUESTA", `Encuesta abierta: ${nombre}`, "Entra al canal y respóndela.")
+    notificarActividad(canal.id, "CHAT_ENCUESTA", `Encuesta abierta: ${nombre}`, "Abre la encuesta y respóndela.")
     encuestas.push({
       conversacionId: canal.id,
       nombre,

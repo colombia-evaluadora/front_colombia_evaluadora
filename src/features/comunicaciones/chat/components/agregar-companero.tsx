@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PlusIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
@@ -100,7 +101,7 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
                     </Avatar>
                     <span className="min-w-0 leading-tight">
                       <span className="block truncate">{p.nombre}</span>
-                      <span className="block truncate text-sm text-muted-foreground">{p.correo}</span>
+                      <span className="block truncate text-sm text-muted-foreground">{rolVisible(p)}</span>
                       {reglaDirectoCon(p.perfil) === "CON_COPIA" && (
                         <span className="block text-xs text-muted-foreground">
                           Coordinación podrá ver esta conversación

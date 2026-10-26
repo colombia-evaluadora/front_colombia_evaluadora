@@ -50,6 +50,7 @@ import {
 } from "@/features/planeador/components/forms/form-editar-actividad/recursos-section"
 import { ProgramacionSection } from "@/features/planeador/components/forms/form-editar-actividad/programacion-section"
 import { EvaluacionSection } from "@/features/planeador/components/forms/form-editar-actividad/evaluacion-section"
+import { SeguimientoFormativoSection } from "@/features/planeador/components/forms/form-editar-actividad/seguimiento-formativo-section"
 import {
   AdaptacionesSection,
   SeguimientoSection,
@@ -334,6 +335,8 @@ export function EditarActividadForm({
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
       />
+      {/* Bloque 5 alternativo: referente formativo (preescolar) sin instrumento ni nota. */}
+      {esFormativa && <SeguimientoFormativoSection />}
       {/* Adaptaciones siempre visible (Regla 49): el Decreto 1421/PIAR exige documentar ajustes
       razonables también en referentes formativos. */}
       <AdaptacionesSection form={form} matriculas={matriculas} disabled={disabled} actividadId={actividad.id} />

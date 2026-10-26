@@ -44,6 +44,7 @@ import {
 import { toSelectItemsMap, type SelectOption } from "@/lib/catalog-options"
 import { cn } from "@/lib/utils"
 import { NoticeOutlet } from "@/components/notice/notice-context"
+import { usePuedeGestionarDirectivosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-directivos"
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import {
   permissionDraftSchema,
@@ -144,6 +145,9 @@ export function PermissionsDialog({
   onSave,
   isSaving,
 }: PermissionsDialogProps) {
+  // El permiso que da el cargo de rector o secretaria solo lo quita quien tiene
+  // Eliminar en ESTABLECIMIENTO, el mismo que cambia a los directivos.
+  const { data: puedeGestionarDirectivos } = usePuedeGestionarDirectivosQuery()
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   const sortedPermissions = (() => {
@@ -429,7 +433,25 @@ export function PermissionsDialog({
                   {PERMISSION_ACTIONS_SPACER_CELL}
                   <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
                     <div className={permissionActionsOverlayClass()}>
-                      {permission.role.code === DIRECTOR_GRUPO_ROLE_CODE ? (
+                      {permission.principalDe && !puedeGestionarDirectivos ? (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <span
+                                className="inline-flex size-8 items-center justify-center text-muted-foreground"
+                                aria-label={`Permiso principal de ${permission.principalDe === "RECTOR" ? "rector" : "secretaria"}: solo lo quita quien gestiona los directivos del establecimiento`}
+                              />
+                            }
+                          >
+                            <LockIcon />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {permission.principalDe === "RECTOR"
+                              ? "Es el permiso de rector del establecimiento: solo lo quita quien gestiona los directivos del establecimiento."
+                              : "Es el permiso de la secretaria del establecimiento: solo lo quita quien gestiona los directivos del establecimiento."}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : permission.role.code === DIRECTOR_GRUPO_ROLE_CODE ? (
                         <Tooltip>
                           <TooltipTrigger
                             render={

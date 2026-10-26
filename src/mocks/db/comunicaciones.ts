@@ -9,6 +9,7 @@ import type {
   TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
 import { ETIQUETAS_VOTACION_RAPIDA } from "@/features/comunicaciones/chat/lib/votacion-rapida"
+import { ultimoMensajeDe } from "@/features/comunicaciones/chat/lib/vista-previa"
 import {
   POLITICA_CHAT_SUGERIDA,
   type PoliticaChat,
@@ -230,12 +231,35 @@ export const mensajes: Mensaje[] = [
     formato: "WORD",
     eliminadoEn: null,
   }),
-  mensaje(
-    1,
-    colevabot,
-    "Hola, soy Colevabot. Puedo ayudarte a encontrar planillas, informes y fechas del calendario académico.",
-    haceDias(0, 6, 45),
-  ),
+  // Colevabot (comms-service BotService): bienvenida y tarjeta de aprobación (diseño 4428:64360).
+  {
+    ...mensaje(1, colevabot, "Hola, soy Colevabot", haceDias(1, 6, 40)),
+    bot: {
+      clave: "bienvenida",
+      encabezado: "👋 BIENVENIDA",
+      titulo: "Hola, soy Colevabot",
+      descripcion:
+        "Aquí te aviso de lo que necesita tu atención en Colombia Evaluadora, como las solicitudes de aprobación pendientes. En el chat escribe «/» para crear encuestas, votaciones rápidas, elecciones o comunicados, adjuntar archivos o programar un mensaje.",
+      campos: [],
+      acciones: [{ etiqueta: "Ver notificaciones", url: "/app/notificaciones" }],
+    },
+  },
+  {
+    ...mensaje(1, colevabot, "Solicitud de aprobación: corrección de resultado", haceDias(0, 6, 45)),
+    bot: {
+      clave: "aprobaciones:1:mock",
+      encabezado: "📣 NUEVA SOLICITUD DE APROBACIÓN",
+      titulo: "Solicitud de aprobación: corrección de resultado",
+      descripcion: null,
+      campos: [
+        { etiqueta: "Docente", valor: "Jesús Torres" },
+        { etiqueta: "Curso", valor: "6° - 601 - Matemáticas" },
+        { etiqueta: "Periodo", valor: "Parcial 2024 (Cerrado)" },
+        { etiqueta: "Motivo", valor: "\"Corrección de errores al registrar notas\"" },
+      ],
+      acciones: [{ etiqueta: "Revisar en el planeador", url: "/app/planeador/actividades?modo=approval" }],
+    },
+  },
   mensaje(
     2,
     marta,
@@ -256,6 +280,21 @@ export const mensajes: Mensaje[] = [
   const borrado = mensaje(3, marta, "Les comparto mi número personal para coordinar: 300 000 0000.", haceDias(0, 7, 35))
   Object.assign(borrado, { eliminado: true, eliminadoEn: haceDias(0, 7, 36) })
   mensajes.splice(mensajes.findIndex((m) => m.texto.startsWith("Les dejo la versión")), 0, borrado)
+  // Varios adjuntos (V560): el propio con dos archivos, uno ya descargado por otra persona
+  // (no se puede eliminar), y el ajeno con su id para registrar la descarga.
+  const conVersion = mensajes.find((m) => m.texto.startsWith("Les dejo la versión"))
+  if (conVersion?.adjunto) {
+    conVersion.adjunto = { ...conVersion.adjunto, id: 9001, descargado: true }
+    conVersion.adjuntos = [
+      conVersion.adjunto,
+      { nombre: "rubrica_fracciones.pdf", formato: "PDF", eliminadoEn: null, id: 9002, descargado: false, peso: 182_000 },
+    ]
+  }
+  const ajeno = mensajes.find((m) => m.texto.startsWith("Listo, ya te la adjunté"))
+  if (ajeno?.adjunto) {
+    ajeno.adjunto = { ...ajeno.adjunto, id: 9003, descargado: false }
+    ajeno.adjuntos = [ajeno.adjunto]
+  }
 }
 
 // Votación rápida nueva del usuario actual, publicada como mensaje.
@@ -378,16 +417,16 @@ export const borradores: Borrador[] = [
 ]
 
 export const personas: Persona[] = [
-  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co", perfil: "DOCENTE" },
-  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co", perfil: "DOCENTE" },
+  { id: 2, nombre: "Darlene Robertson", correo: "darlene.robertson@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 3, nombre: "Marta Lucía Ríos", correo: "marta.rios@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 4, nombre: "Fernney Antonio Jaramillo Gomez", correo: "fernney.jaramillo@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 5, nombre: "Munera Gomez Carlos Antonio", correo: "carlos.munera@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 6, nombre: "Jorge Pineda", correo: "jorge.pineda@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 7, nombre: "Natalia Restrepo Vélez", correo: "natalia.restrepo@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
+  { id: 8, nombre: "Pedro Castaño Ruiz", correo: "pedro.castano@iesimonbolivar.edu.co", perfil: "DOCENTE", cargo: "Docente" },
   // Para probar la política de DMs (pendiente de aprobación, ver `politicaChat`).
-  { id: 9, nombre: "Luis Fernando Henao", correo: "luis.henao@correo.com", perfil: "ACUDIENTE" },
-  { id: 10, nombre: "Sofía Henao Ruiz", correo: "sofia.henao@iesimonbolivar.edu.co", perfil: "ESTUDIANTE" },
+  { id: 9, nombre: "Luis Fernando Henao", correo: "luis.henao@correo.com", perfil: "ACUDIENTE", cargo: "Acudiente" },
+  { id: 10, nombre: "Sofía Henao Ruiz", correo: "sofia.henao@iesimonbolivar.edu.co", perfil: "ESTUDIANTE", cargo: "Estudiante" },
 ]
 
 // "X se ha unido a <canal>."
@@ -437,11 +476,12 @@ export function miembrosDe(conversacionId: number): Miembro[] {
   if (!lista) {
     lista = [
       // Algunas personas del colegio quedan fuera para poder añadirlas.
-      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", perfil: "DOCENTE" as const, enLinea: i % 3 !== 2, bloqueado: false })),
+      ...personas.slice(0, 3).map((p, i) => ({ id: p.id, nombre: p.nombre, rol: "Docente", cargo: "Docente", perfil: "DOCENTE" as const, enLinea: i % 3 !== 2, bloqueado: false })),
       ...EXTRA_MIEMBROS.map((nombre, i) => ({
         id: 100 + i,
         nombre,
         rol: i % 4 === 3 ? "Coordinador" : "Docente",
+        cargo: i % 4 === 3 ? "Coordinador" : "Docente",
         perfil: i % 4 === 3 ? ("DIRECTIVO" as const) : ("DOCENTE" as const),
         enLinea: i % 2 === 0,
         bloqueado: i === 0,
@@ -467,4 +507,17 @@ for (const c of conversaciones) {
   const propios = mensajes.filter((m) => m.conversacionId === c.id && m.esPropio && !m.votacion)
   const ultimo = propios.at(-1)
   c.leidoHasta = ultimo ? ultimo.id - 1 : Math.max(0, ...mensajes.filter((m) => m.conversacionId === c.id).map((m) => m.id))
+}
+
+/**
+ * Conversación con la vista previa del último mensaje visible, como la arma comms-service
+ * (`ChatDtos.UltimoMensaje`): el mock la calcula al leer, a partir de `mensajes`.
+ */
+export function conVistaPrevia<T extends Conversacion>(c: T, usuarioId: number = USUARIO_ACTUAL.id): T {
+  let ultimo: Mensaje | undefined
+  for (const m of mensajes) {
+    if (m.conversacionId !== c.id || m.eliminado) continue
+    if (!ultimo || m.id > ultimo.id) ultimo = m
+  }
+  return { ...c, ultimoMensaje: ultimo ? ultimoMensajeDe(ultimo, usuarioId) : null }
 }

@@ -175,6 +175,20 @@ const UNIDAD_TABS_URL = "/api/eval-col/planeador/unidades/tabs"
 // Mismo motivo que `UNIDAD_TABS_URL`: registrada antes que `UNIDAD_DETAIL_URL`
 // para que "enunciados" no calce ahí como si fuera un `:id`.
 const UNIDAD_ENUNCIADO_UNLINK_URL = "/api/eval-col/planeador/unidades/enunciados/:id"
+/**
+ * El detalle de la actividad (`planeadorDb`) y la tabla de la unidad
+ * (`unidadesTematicasDb`) son dos arrays: tras vincular/desvincular se copia
+ * la unidad actual al detalle, como lo devuelve el backend real (`fk_tunidad`
+ * del detalle). Sin esto el mock no deja ver el bug de invalidación del
+ * detalle (seguía mostrando la unidad vieja aunque se refrescara).
+ */
+function sincronizarUnidadDeActividad(actividadId: number) {
+  const actividad = planeadorDb.find((row) => row.id === actividadId)
+  if (!actividad) return
+  const unidad = unidadesTematicasDb.find((u) => u.actividades.some((a) => a.actividadId === actividadId))
+  actividad.unidad = unidad ? { id: unidad.id, nombre: unidad.nombre } : { id: 0, nombre: "" }
+}
+
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
@@ -335,18 +349,24 @@ function toActividadExportada(actividad: Actividad): ActividadExportada {
   } else if (esCotejo) {
     exportada.cotejo = actividad.listaCotejo.items.map((item) => item.descripcion)
   } else if (esEscala) {
-    exportada.escala =
-      actividad.escalaValoracion.tipo === "Numérica"
+    const esNumerica = actividad.escalaValoracion.tipo === "Numérica"
+    exportada.escala = actividad.escalaValoracion.criterios.map((criterio) =>
+      esNumerica
         ? {
-            minimo: actividad.escalaValoracion.valorMinimo,
-            maximo: actividad.escalaValoracion.valorMaximo,
-            interpretacion: actividad.escalaValoracion.interpretacionRangos,
+            nombre: criterio.nombre,
+            minimo: criterio.valorMinimo,
+            maximo: criterio.valorMaximo,
+            interpretacion: criterio.interpretacion,
           }
-        : actividad.escalaValoracion.niveles.map((nivel) => ({
-            nombre: nivel.nombre,
-            descriptor: nivel.descripcion,
-            ponderacion: nivel.ponderacion ?? 0,
-          }))
+        : {
+            nombre: criterio.nombre,
+            niveles: criterio.niveles.map((nivel) => ({
+              nombre: nivel.nombre,
+              descriptor: nivel.descripcion,
+              ponderacion: nivel.ponderacion ?? 0,
+            })),
+          },
+    )
   }
 
   if (actividad.unidad.id !== 0) {
@@ -412,10 +432,8 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     listaCotejo: { id: 0, items: [] },
     escalaValoracion: {
       id: 0,
-      criteriosGenerales: "",
       tipo: "Cualitativa",
-      interpretacionRangos: "",
-      niveles: [],
+      criterios: [],
     },
     instrumentoPersonalizado: {
       descripcion: "",
@@ -1750,6 +1768,7 @@ export const planeadorHandlers = [
         { status: 409 },
       )
     }
+    sincronizarUnidadDeActividad(actividadId)
     return HttpResponse.json({ status: "ok", actividad: created })
   }),
 
@@ -1766,6 +1785,7 @@ export const planeadorHandlers = [
         { status: 404 },
       )
     }
+    sincronizarUnidadDeActividad(actividadId)
     return HttpResponse.json({ status: "ok" })
   }),
 

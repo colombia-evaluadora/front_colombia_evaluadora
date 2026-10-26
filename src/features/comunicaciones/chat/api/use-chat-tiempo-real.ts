@@ -4,11 +4,19 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { topicoUsuario } from "@/lib/auth-mapper"
 import { realtime } from "@/lib/realtime"
-import { useRealtimeTopic } from "@/lib/realtime/use-realtime"
+import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import type { RealtimeEvent } from "@/lib/realtime/protocol"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { SALIR_MUTATION_KEY } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
-import type { Conversacion, Mensaje, Miembro } from "@/features/comunicaciones/chat/api/types"
+import type { MapaPresencia } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import type {
+  Conversacion,
+  Mensaje,
+  Miembro,
+  MiDisponibilidad,
+  RespuestaAutomatica,
+} from "@/features/comunicaciones/chat/api/types"
+import { estadoDe } from "@/features/comunicaciones/chat/lib/disponibilidad"
 import { comoEliminado } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 
 /**
@@ -45,12 +53,25 @@ export function upsertMensaje(prev: Mensaje[] | undefined, m: Mensaje): Mensaje[
   return [...prev, m].sort((a, b) => a.fecha.localeCompare(b.fecha))
 }
 
-function setEnLinea(queryClient: QueryClient, usuarioId: number, enLinea: boolean) {
+/**
+ * `presencia.actualizada`: el servidor ya manda el estado que le toca ver a este usuario
+ * (Invisible o un perfil sin permiso llegan como DESCONECTADO). Queda en el mapa de presencia y
+ * se parchea en miembros y autores para quien lea `enLinea`.
+ */
+export function aplicarPresencia(queryClient: QueryClient, data: unknown) {
+  const d = (data ?? {}) as { usuarioId?: number; enLinea?: boolean; estado?: string }
+  const estado = estadoDe(d)
+  if (d.usuarioId == null || !estado) return
+  const usuarioId = d.usuarioId
+  const enLinea = estado !== "DESCONECTADO"
+  queryClient.setQueryData<MapaPresencia>(chatKeys.presencia, (prev) => ({ ...prev, [usuarioId]: estado }))
   queryClient.setQueriesData<Miembro[]>({ queryKey: chatKeys.all, predicate: esMiembros }, (prev) =>
-    prev?.map((m) => (m.id === usuarioId ? { ...m, enLinea } : m)),
+    prev?.map((m) => (m.id === usuarioId ? { ...m, enLinea, disponibilidad: estado } : m)),
   )
   queryClient.setQueriesData<Mensaje[]>({ queryKey: chatKeys.all, predicate: esMensajes }, (prev) =>
-    prev?.map((m) => (m.autor.id === usuarioId ? { ...m, autor: { ...m.autor, enLinea } } : m)),
+    prev?.map((m) =>
+      m.autor.id === usuarioId ? { ...m, autor: { ...m.autor, enLinea, disponibilidad: estado } } : m,
+    ),
   )
 }
 
@@ -106,6 +127,20 @@ export function aplicarEventoUsuario(
     if (conversacionId) void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(conversacionId) })
     return null
   }
+  // Cambio del propio estado de disponibilidad (otra pestaña, o Ausente por inactividad).
+  if (e.event === "disponibilidad.actualizada") {
+    queryClient.setQueryData<MiDisponibilidad>(chatKeys.disponibilidad, e.data as MiDisponibilidad)
+    return null
+  }
+  // La otra persona del directo está Ausente: su respuesta automática se muestra en esa conversación.
+  if (e.event === "respuesta.automatica") {
+    const r = e.data as RespuestaAutomatica
+    queryClient.setQueryData<RespuestaAutomatica[]>(chatKeys.respuestasAutomaticas, (prev = []) => [
+      ...prev.filter((x) => x.conversacionId !== r.conversacionId || x.usuarioId !== r.usuarioId),
+      r,
+    ])
+    return null
+  }
   if (e.event === "conversacion.eliminada") {
     const { id, motivo } = e.data as { id: number; motivo?: string }
     const nombre = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.find((x) => x.id === id)?.nombre
@@ -134,10 +169,21 @@ export function useChatTiempoRealUsuario(onEliminada?: (c: ConversacionEliminada
     "presencia",
     (e) => {
       if (e.event !== "presencia.actualizada") return
-      const { usuarioId, enLinea } = e.data as { usuarioId: number; enLinea: boolean }
-      setEnLinea(queryClient, usuarioId, enLinea)
+      aplicarPresencia(queryClient, e.data)
     },
   )
+
+  // Al reconectar pudo perderse cualquier cambio: el mapa se vacía y mandan las filas REST.
+  const status = useRealtimeStatus()
+  const abiertoAntes = useRef(false)
+  useEffect(() => {
+    if (status !== "open") return
+    if (abiertoAntes.current) {
+      queryClient.setQueryData<MapaPresencia>(chatKeys.presencia, {})
+      void queryClient.invalidateQueries({ queryKey: chatKeys.disponibilidad })
+    }
+    abiertoAntes.current = true
+  }, [status, queryClient])
 }
 
 interface Escribiendo {
@@ -161,6 +207,10 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
       case "mensaje.actualizado": {
         const m = e.data as Mensaje
         queryClient.setQueryData<Mensaje[]>(key, (prev) => upsertMensaje(prev, m))
+        // Un adjunto nuevo (de otro miembro) también entra a "Archivos".
+        if (e.event === "mensaje.creado" && m.adjunto) {
+          void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
+        }
         // Llegó el mensaje: quien lo escribió ya no está "escribiendo".
         if (e.event === "mensaje.creado") {
           setEscribiendo((prev) => prev.filter((x) => x.usuarioId !== m.autor.id))
@@ -202,6 +252,13 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
           prev?.map((c) => (c.id === id ? { ...c, leidoHasta: Math.max(c.leidoHasta ?? 0, leidoHasta) } : c)),
         )
+        return
+      }
+      case "mensaje.confirmacion": {
+        // Confirmación de lectura (HU 7): un receptor recibió o leyó un mensaje que la pidió. El
+        // evento no trae quién; el autor vuelve a pedir el historial (sus checks y "leído por").
+        const { conversacionId: id } = e.data as { conversacionId: number }
+        void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(id) })
         return
       }
       case "actividad.actualizada": {

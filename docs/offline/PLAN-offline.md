@@ -34,8 +34,9 @@ Subsecciones de §8: [8.1 Públicas](#81-rutas-públicas) · [8.2 `/app` y sin-a
 |---|---|---|---|
 | 0.1 | **Cambios de esquema aprobados para este plan**: columna de versión/`updated_at` para concurrencia optimista (BE-3 **opción B**) e **índice único en asistencia** (BE-5). | Aprobado | D6 pasa a usar `VERSION`/`UPDATED_AT` en actividad y unidad (fase 3–4) y conserva el CAS por valor (BE-2) para planilla. BE-5 entra en fase 2. **Cada cambio va en su propio PR del repo `sso`, ajustando la migración Flyway que posee el objeto (sin migraciones duplicadas), y se revisa antes de mergear.** La aprobación cubre solo esos dos objetos; cualquier otra columna o tabla vuelve a requerir OK explícito. |
 | 0.2 | **Tiempo máximo escribiendo sin conexión sin reautenticar: 14 días** desde `session.lastOnlineAuthAt`. | Aprobado | Al vencer, la outbox deja de **aceptar** ops nuevas (las que ya están se conservan y se envían al reconectar). Copy: **"Llevas 14 días sin conectarte. Conéctate para seguir registrando sin conexión; lo que ya guardaste está a salvo."** A los 12 días, chip de aviso: **"Conéctate antes del {fecha} para seguir trabajando sin conexión."** La lectura sigue los TTL de §8. |
-| 0.3 | **Política institucional sobre datos de menores en equipos personales.** | **PENDIENTE — bloqueador** | Mientras no se resuelva: (a) la escritura offline se habilita **solo para el piloto** (3–5 docentes con consentimiento explícito, feature flag por usuario); (b) el modo por defecto para todos los demás es el **más conservador**: `deviceMode = "compartido"` (no se persisten queries ni outbox más allá de la pestaña), y el modo personal solo se ofrece a usuarios del piloto; (c) en el piloto se persiste lo mínimo (nombre + pk del estudiante, §9 C-72), y los borradores de matrícula no guardan documentos. Habilitar escrituras offline fuera del piloto **requiere** cerrar P6. |
+| 0.3 | **Política institucional sobre datos de menores en equipos personales.** | **PENDIENTE — bloqueador** (para Cobertura/Matrícula ya decidida: ver 0.5) | Mientras no se resuelva: (a) la escritura offline se habilita **solo para el piloto** (3–5 docentes con consentimiento explícito, feature flag por usuario); (b) el modo por defecto para todos los demás es el **más conservador**: `deviceMode = "compartido"` (no se persisten queries ni outbox más allá de la pestaña), y el modo personal solo se ofrece a usuarios del piloto; (c) en el piloto se persiste lo mínimo (nombre + pk del estudiante, §9 C-72), y los borradores de matrícula no guardan documentos. Habilitar escrituras offline fuera del piloto **requiere** cerrar P6. |
 | 0.4 | **Tamaño máximo de archivo offline: 10 MB por archivo**, nunca mayor que el límite online de la superficie. | Decidido aquí (justificación abajo) | Reemplaza el "25 MB a confirmar" anterior. |
+| 0.5 | **P6 para Cobertura/Matrícula: solo consulta offline con datos básicos.** | Decidido (2026-10-22) | La **lista** de matrícula (`/app/cobertura/matricula`) se abre sin red, solo lectura, para los roles que la tienen en su menú. Lo que se guarda en el equipo pasa por una **lista blanca** en el persister (`persistSelect = selectRowFields(MATRICULA_OFFLINE_FIELDS)`): nombre, tipo y número de documento, colegio, sede, jornada, nivel, grado, grupo, estado y fecha de matrícula. **Nunca** se persisten salud, dirección, teléfono, correo, acudiente, fotos ni ningún otro campo. Con red la pantalla muestra todo como hoy. Detalle, edición y todas las escrituras (agregar, retirar, reingresar, mover, homologar, documentos, exportar, configuración), reserva de cupo, pre-matrícula e inscritos siguen **solo en línea**. "Preparar" incluye la vista por defecto de la lista (el backend la acota a las sedes del usuario) con el incremental/ETag de siempre. El resto de 0.3 (escritura offline fuera del piloto, borradores de matrícula) no cambia con esta decisión. |
 
 **Justificación de 0.4.** Límites existentes:
 
@@ -432,16 +433,20 @@ Convenciones: **L** = lectura offline (cache), **E** = escritura en cola, **SO**
 - **`/app/sin-acceso`** (`router.tsx:449-455`, `features/navigation/pages/sin-acceso-page.tsx:20-40`): copy actual "No tienes acceso a este módulo" / "Tu rol no tiene permiso para ver esta sección…". Funciona offline (solo lee el menú). Corner: si se llega acá offline porque el menú persistido es de antes de un cambio de rol, se agrega debajo: **"Tu menú se actualizó por última vez el {fecha}. Si te asignaron este módulo hace poco, conéctate para actualizarlo."**
 - Sidebar offline: los ítems de vistas SO llevan `CloudOffIcon` y tooltip **"Necesita conexión"**; siguen navegables (muestran el empty state).
 
-### 8.3 Cobertura (`features/coverage`) — **SO**
+### 8.3 Cobertura (`features/coverage`) — **SO** (lista de matrícula: solo consulta, P6)
 
-Nada de cobertura se persiste (datos de menores y acudientes, §5.2).
+Nada de cobertura se persiste (datos de menores y acudientes, §5.2), **salvo la
+lista de matrícula** desde la decisión de P6 (§0.5): se persiste la vista por
+defecto con lista blanca de datos básicos (`MATRICULA_OFFLINE_FIELDS`, en
+`use-matricula-query.ts`), sin acudiente ni datos sensibles, y la ruta es de
+solo consulta sin red (`READ_ONLY_OFFLINE_PATTERNS` en `online-only-paths.ts`).
 
 | Ruta | Llamadas reales (cita) | Notas offline |
 |---|---|---|
 | `cobertura/reserva-de-cupo` | `api.query("/coverage/reservations/query")`, `/stats`, `GET /coverage/reservations/catalogs`, `POST /coverage/reservations`, export `/coverage/reservations/export[-all]` (`api/query/use-reservations-query.ts:14`, `use-reservations-stats-query.ts:7`, `use-reservation-catalogs-query.ts:20`, `api/mutations/create-reservation.ts:8`, `export-reservations.ts:13`) | **Solo existen en MSW**: en `test`/`production` ya fallan con red. Offline: *[texto SO]*. No vale la pena tratarla. |
 | `cobertura/pre-matricula` | `api.query("/coverage/pre-matricula/query")`, `/catalogs`, `PUT`/`DELETE /coverage/pre-matricula/:id` (`use-pre-matricula-query.ts:19`, `update-pre-matricula.ts:14`, `delete-pre-matricula.ts:12`) | Solo MSW. *[texto SO]*. |
 | `cobertura/inscritos`, `inscritos/$id` | `api.query("/coverage/enrollments/query")`, `PUT`/`DELETE /coverage/enrollments/:id` (`use-enrollments-query.ts:18`, `update-enrollment.ts:14`, `delete-enrollment.ts:12`) | Solo MSW; el detalle es un stub. *[texto SO]*. |
-| `cobertura/matricula` (lista) | `POST /eval-col/matricula/query` (`api/query/use-matricula-query.ts:105`); export seleccionado `POST /coverage/matricula/export` (`export-selected-matricula.ts:13`, **solo MSW**) | SO. Retirar `PUT .../matricula/:id/retirar`, reingresar `PUT .../:id/reingresar` (`retire-matricula.ts:10`, `reingresar-matricula.ts:10`), eliminar `PUT /eval-col/cobertura-academica/matricula/:id` (`delete-matricula.ts:8`): botones deshabilitados con *[texto SO]*. |
+| `cobertura/matricula` (lista) | `POST /eval-col/matricula/query` (`api/query/use-matricula-query.ts:105`); export seleccionado `POST /coverage/matricula/export` (`export-selected-matricula.ts:13`, **solo MSW**) | **Solo consulta** (P6, §0.5): la lista se persiste recortada a datos básicos. Retirar `PUT .../matricula/:id/retirar`, reingresar `PUT .../:id/reingresar` (`retire-matricula.ts:10`, `reingresar-matricula.ts:10`), eliminar `PUT /eval-col/cobertura-academica/matricula/:id` (`delete-matricula.ts:8`), agregar, configuración, documentos y exportar: deshabilitados sin red con *[texto SO]* (`OnlineOnlyAction`). |
 | Cambios masivos (sede/grado/grupo) | `move-matricula.ts:24-27`: `POST /eval-col/cobertura-academica/matricula/{kind}` con `{IDS, GRUPO_DESTINO}`; con soporte, multipart `api.post("/files"+path)` (`:65`); límite 25 MB en los diálogos (`dialog-cambio-sede-matricula.tsx:179`, `dialog-cambio-grado-matricula.tsx:214`, `dialog-grade-change.tsx:199`) | SO. Operación masiva sobre cupos: no idempotente a nivel de negocio y de alto impacto. |
 | `matricula/agregar` | Saga de `create-matricula.ts` (abajo) | SO + **borrador local**. |
 | `matricula/editar/$id` | detalle `GET /eval-col/cobertura-academica/matricula/:id` (`use-matricula-detail-query.ts:134`) + `PATCH` multipart | SO + borrador local. |
@@ -763,7 +768,8 @@ Cada resolver debe leer primero del cache persistido. Si falta: **"Faltan datos 
 | `/verificar/b/$codigo` | — (nunca) | — | todo | 0 (copy) |
 | Login / recuperación / activar | shell | — | todo | 0 |
 | `/app` guard + sin-acceso | menú y permisos | — | — | 1 |
-| Cobertura (todas) | — | — (borrador local de matrícula sin adjuntos) | todo | 1 (borrador) |
+| Cobertura › Matrícula (lista) | datos básicos (P6, lista blanca) | — | todo | P6 |
+| Cobertura (resto) | — | — (borrador local de matrícula sin adjuntos) | todo | 1 (borrador) |
 | Auditoría | — | — | todo | — |
 | Roles/menús | — | — | todo | — |
 | Establecimiento general/sedes/funcionarios/EE | sedes como catálogo | — | todo | 1 |
@@ -1074,8 +1080,8 @@ Registradas en el ring log y, si se aprueba, enviadas en lote a un endpoint `POS
 | P3 | ¿Aceptan que la sync ocurra solo con la app abierta (no en segundo plano real)? | Sí. |
 | P4 | ~~¿Se aprueban cambios de esquema BE-3B/BE-5?~~ | **Resuelta: aprobados**, en PRs separados revisados antes del merge (§0.1). |
 | P5 | ¿Cifrado con PIN offline o solo minimización + modo compartido? | Minimización + modo compartido; reevaluar al cerrar P6. |
-| P6 | **¿Hay política institucional sobre datos de menores en equipos personales?** | **PENDIENTE — bloqueador** para habilitar escrituras offline fuera del piloto. Mientras tanto: modo compartido por defecto (§0.3). |
-| P7 | ¿Matrícula necesita lectura offline (lista)? | No. ¿Se acepta el **borrador local sin adjuntos** de agregar/editar matrícula, o también debe esperar a P6? (propuesta: esperar a P6; solo piloto) |
+| P6 | **¿Hay política institucional sobre datos de menores en equipos personales?** | **Decidida para Cobertura (2026-10-22)**: la matrícula se puede **consultar** sin conexión, **solo lectura** y **solo con datos básicos** (nombre, tipo y número de documento, grado, grupo, sede, jornada, estado y fechas); **no** se guarda salud, dirección, teléfono, correo, acudiente ni fotos (§0.5, §8.3). Sigue pendiente para habilitar escrituras offline fuera del piloto: mientras tanto, modo compartido por defecto (§0.3). |
+| P7 | ~~¿Matrícula necesita lectura offline (lista)?~~ | **Resuelta con P6: sí, solo consulta y datos básicos** (§0.5). ¿Se acepta el **borrador local sin adjuntos** de agregar/editar matrícula, o también debe esperar a P6? (propuesta: esperar a P6; solo piloto) |
 | P8 | ¿Observaciones cualitativas de informes editables offline? | No en v1 (además, docentes solo consultan informes: `reports-page.tsx:418-421`). |
 | P9 | ~~Límite de tamaño de archivo de soporte~~ | **Resuelta: 10 MB offline**, 150 MB / 60 archivos por usuario (§0.4). |
 | P10 | ¿Las ops se identifican por funcionario (pk) o por email (`sub`)? Afecta cambio de correo | Por `sub`, con confirmación si cambia. |

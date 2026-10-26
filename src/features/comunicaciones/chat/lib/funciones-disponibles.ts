@@ -19,6 +19,9 @@ export const CHAT_FUNCIONES = {
   // endpoints de comms-service quedan dormidos (no se borran tablas): volver a `true` las trae.
   menciones: false,
   reacciones: false,
+  // "Activar notificaciones" de una conversación silenciada: `PATCH /conversaciones/{id}/silenciar`
+  // con DURACION NINGUNA (comms-service, SSO#798).
+  activarNotificaciones: true,
 } as const
 
 export const PROXIMAMENTE = "Próximamente"

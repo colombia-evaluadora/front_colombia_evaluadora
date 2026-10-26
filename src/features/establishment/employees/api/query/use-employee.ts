@@ -32,6 +32,8 @@ interface RealPermissionRow {
   }
   workSchedule: CatalogItem
   status: PermissionStatus
+  /** V599: 'RECTOR'/'SECRETARIA' si es el permiso que da ese cargo en el EE. */
+  principalDe?: "RECTOR" | "SECRETARIA" | null
 }
 
 /** Fila de `fn_usu_empleado_buscar_por_pk`: catálogos como `fk_x` + `x_nombre`. */
@@ -98,6 +100,7 @@ function toPermission(row: RealPermissionRow): Permission {
     campus: toCampus(row.campus),
     workSchedule: row.workSchedule,
     status: row.status,
+    principalDe: row.principalDe ?? null,
   }
 }
 

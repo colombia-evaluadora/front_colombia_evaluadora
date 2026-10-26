@@ -57,10 +57,18 @@ export function useEditarEncuesta(conversacionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (v: Omit<CrearEncuestaInput, "participantes">) =>
-      evalCol.patchRow<Encuesta>(`/comunicaciones/conversaciones/${conversacionId}/encuesta`, cuerpoEncuesta(v)),
+      evalCol.patchRow<Encuesta>(
+        `/comunicaciones/conversaciones/${conversacionId}/encuesta`,
+        cuerpoEncuesta(v),
+        conBorrador(v.borradorId),
+      ),
     onSuccess: (encuesta) => {
       queryClient.setQueryData(chatKeys.encuesta(conversacionId), encuesta)
-      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
+        queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+      ])
     },
   })
 }

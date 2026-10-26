@@ -69,13 +69,18 @@ function EnLinea({ linea, menciones }: { linea: string; menciones?: Mencion[] })
           <MencionChip key={`${i}-${j}`} mencion={p.mencion} />
         ) : (
           // Sin menciones en la UI: el nombre como texto, sin resaltar.
-          <span key={`${i}-${j}`}>@{p.mencion.nombre}</span>
+          <span key={`${i}-${j}`}>@{nombreMencion(p.mencion)}</span>
         ),
       )
     ) : (
       <Pieza key={i} segmento={s} />
     ),
   )
+}
+
+// La mención masiva siempre se muestra "@todos" (también la vieja "@canal").
+function nombreMencion(m: Mencion) {
+  return m.tipo === "USUARIO" ? m.nombre : "todos"
 }
 
 function MencionChip({ mencion }: { mencion: Mencion }) {
@@ -87,7 +92,7 @@ function MencionChip({ mencion }: { mencion: Mencion }) {
         masiva ? "bg-yellow-22 text-yellow-foreground" : "bg-primary/15 text-primary",
       )}
     >
-      @{mencion.nombre}
+      @{nombreMencion(mencion)}
     </span>
   )
 }

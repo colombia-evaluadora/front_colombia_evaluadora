@@ -394,7 +394,6 @@ export function Actividades({
   const columns = React.useMemo(
     () =>
       createUnidadActividadesColumns(
-        unidad.id,
         unidad.metodoCalculo,
         totalPonderacion,
         esFormativa,
@@ -405,7 +404,6 @@ export function Actividades({
         { sede: sedeId, ano: anio, jornada: jornadaId, docente: funcionario },
       ),
     [
-      unidad.id,
       unidad.metodoCalculo,
       totalPonderacion,
       esFormativa,

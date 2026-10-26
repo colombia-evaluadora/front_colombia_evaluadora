@@ -91,7 +91,7 @@ export function vistaGrupo(c: Conversacion, personaId: number): Conversacion | n
     esCreador: c.creadoPor === nombreDe(personaId),
     totalMiembros: lista.length,
     miembrosDestacados: lista.filter((m) => m.id !== personaId).slice(0, 3).map((m) => m.nombre),
-    noLeidos: ajenos.filter((m) => m.id > leidos).length,
+    noLeidos: Math.max(ajenos.filter((m) => m.id > leidos).length, marcadosNoLeido.has(`${c.id}:${personaId}`) ? 1 : 0),
     silenciadoHasta: yo.silenciado ? "9999-12-31T00:00:00.000Z" : null,
   }
 }
@@ -117,6 +117,8 @@ export function filtrarGrupos(rows: Conversacion[], request: Request) {
 }
 
 const leidosPor = new Map<string, number>()
+// "Marcar como no leído" (tcanal_miembro.marcado_no_leido): `<canal>:<persona>`; leer lo limpia.
+const marcadosNoLeido = new Set<string>()
 
 function nombreDe(id: number) {
   return id === USUARIO_ACTUAL.id ? USUARIO_ACTUAL.nombre : (personaChat(id)?.nombre ?? "?")
@@ -519,10 +521,20 @@ export const comunicacionesGruposHandlers = [
     return HttpResponse.json({ rows: [vistaGrupo(c, yo.id)] })
   }),
 
+  http.patch(URL("conversaciones/:id/no-leido"), async ({ params, request }) => {
+    const c = grupo(params.id)
+    if (!c) return undefined
+    const yo = personaDe(request).id
+    if (!vistaGrupo(c, yo)) return error("La conversación no existe.", 404)
+    marcadosNoLeido.add(`${c.id}:${yo}`)
+    return HttpResponse.json({ rows: [vistaGrupo(c, yo)] })
+  }),
+
   http.patch(URL("conversaciones/:id/leido"), async ({ params, request }) => {
     const c = grupo(params.id)
     if (!c) return undefined
     const yo = personaDe(request).id
+    marcadosNoLeido.delete(`${c.id}:${yo}`)
     leidosPor.set(`${c.id}:${yo}`, Math.max(0, ...mensajes.filter((m) => m.conversacionId === c.id).map((m) => m.id)))
     return HttpResponse.json({ rows: [vistaGrupo(c, yo) ?? c] })
   }),

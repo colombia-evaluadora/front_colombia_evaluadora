@@ -13,6 +13,9 @@ export const chatKeys = {
   personas: [...all, "personas"] as const,
   comunicado: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "comunicado"] as const,
+  // Bajo el comunicado: `actividad.actualizada` (alguien lo vio) también la refresca.
+  recepcion: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "comunicado", "recepcion"] as const,
   evaluacion: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "evaluacion"] as const,
   entregas: (conversacionId: number | "none") =>
@@ -20,7 +23,15 @@ export const chatKeys = {
   miembros: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "miembros"] as const,
   politica: [...all, "politica"] as const,
+  // Ajustes del chat del usuario: confirmación de lectura y sonido.
+  ajustes: [...all, "ajustes"] as const,
+  // Disponibilidad propia, la de los directos y el mapa usuarioId → estado que alimenta el socket.
+  disponibilidad: [...all, "disponibilidad"] as const,
+  disponibilidadDirectos: [...all, "disponibilidad", "directos"] as const,
+  presencia: [...all, "presencia"] as const,
+  respuestasAutomaticas: [...all, "respuestas-automaticas"] as const,
   votantesOpciones: [...all, "votantes", "opciones"] as const,
+  jornadasEleccion: [...all, "elecciones", "jornadas"] as const,
   seleccionOpciones: [...all, "grupos", "seleccion", "opciones"] as const,
   votantes: (grupo: string, valor: string) => [...all, "votantes", grupo, valor] as const,
   borradores: [...all, "borradores"] as const,

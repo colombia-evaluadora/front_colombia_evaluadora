@@ -1,6 +1,11 @@
 import { EditarActividad } from "@/features/comunicaciones/chat/components/editar-actividad"
 import { EditarGrupoDialog } from "@/features/comunicaciones/chat/components/editar-grupo-dialog"
-import { ETIQUETA_EDITAR, esActividadEditable } from "@/features/comunicaciones/chat/lib/actividad-editable"
+import {
+  ETIQUETA_EDITAR,
+  esActividadEditable,
+  esCategoriaActividad,
+  gestionaActividad,
+} from "@/features/comunicaciones/chat/lib/actividad-editable"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
@@ -32,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
+  DropdownMenuCheckboxItem,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
@@ -40,7 +46,10 @@ import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
-import type { Conversacion, SilencioDuracion } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
+import { SILENCIOS } from "@/features/comunicaciones/chat/lib/silencios"
+import { MEDIOS_ALERTA, alertasDe, describirAlertas } from "@/features/comunicaciones/chat/lib/alertas"
+import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
 import {
   useArchivarConversacion,
   useDuplicarConversacion,
@@ -62,6 +71,8 @@ import {
   ChatUnreadIcon,
   SignOutIcon,
   BellSlashIcon,
+  BellIcon,
+  BellRingingIcon,
   LightningIcon,
   XSquareIcon,
 } from "@/components/ui/icons"
@@ -69,11 +80,6 @@ import {
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
-const SILENCIOS: Array<{ valor: SilencioDuracion; etiqueta: string; aviso: string }> = [
-  { valor: "8H", etiqueta: "8 horas", aviso: "Notificaciones silenciadas por 8 horas." },
-  { valor: "1S", etiqueta: "1 semana", aviso: "Notificaciones silenciadas por 1 semana." },
-  { valor: "SIEMPRE", etiqueta: "Siempre", aviso: "Notificaciones silenciadas." },
-]
 
 type Dialogo = "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
@@ -99,6 +105,8 @@ export function ConversacionAcciones({
   const [nombre, setNombre] = useState(c.nombre)
 
   const silenciar = useSilenciarConversacion()
+  const cambiarAlertas = useAlertasConversacion()
+  const alertas = alertasDe(c)
   const marcarLeido = useMarcarLeido()
   const marcarNoLeido = useMarcarNoLeido()
   const duplicar = useDuplicarConversacion()
@@ -108,17 +116,19 @@ export function ConversacionAcciones({
   const salir = useSalirConversacion()
   const cerrarEleccion = useCerrarEleccion()
 
-  const { puedeGestionar } = useChatAccess()
-  // Foros (CANAL) y grupos se administran igual: solo quien administra (`esAdmin`).
+  const { puedeGestionar, perfil } = useChatAccess()
+  // Foros (CANAL) y grupos se administran igual: solo quien administra (`esAdmin`). El canal de una
+  // actividad lo gestiona además su creador (mientras siga dentro) y los directivos miembros.
   const esCanal = c.tipo === "CANAL" || c.tipo === "GRUPO"
-  const gestionaCanal = esCanal && (c.esAdmin ?? puedeGestionar)
+  const gestionaCanal =
+    esCanal && (esCategoriaActividad(c.categoria) ? gestionaActividad(c, perfil) : (c.esAdmin ?? puedeGestionar))
   const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
   // Elección, encuesta, evaluación o comunicado propios: el lápiz abre "Editar …" con todos sus
   // datos; un grupo, "Editar grupo" (descripción, imagen y quién escribe); un foro solo se renombra.
-  const actividadEditable = esActividadEditable(c)
+  const actividadEditable = esActividadEditable(c, perfil)
   const abrirRenombrar = () => {
     if (actividadEditable) {
       setDialogo("editarActividad")
@@ -187,17 +197,36 @@ export function ConversacionAcciones({
               {ETIQUETA_EDITAR[c.categoria as keyof typeof ETIQUETA_EDITAR]}
             </DropdownMenuItem>
           )}
-          {/* Solo quien creó la elección puede cerrarla, y solo mientras sigue abierta. */}
-          {c.categoria === "VOTACION" && c.esCreador && c.actividadAbierta && (
+          {/* Solo quien gestiona la elección puede cerrarla, y solo mientras sigue abierta. */}
+          {c.categoria === "VOTACION" && gestionaCanal && c.actividadAbierta && (
             <DropdownMenuItem className={ITEM} onClick={() => setDialogo("cerrarEleccion")}>
               <XSquareIcon />
               Cerrar proceso electoral
             </DropdownMenuItem>
           )}
+          {/* Toggle según el estado real: comms-service solo devuelve `silenciadoHasta` mientras
+              el silencio está vigente. Silenciada: "Activar notificaciones" (DURACION NINGUNA) y
+              "Cambiar silencio" para otra duración. */}
+          {c.silenciadoHasta && (
+            <DropdownMenuItem
+              className={ITEM}
+              disabled={!CHAT_FUNCIONES.activarNotificaciones || silenciar.isPending}
+              onClick={() =>
+                silenciar.mutate(
+                  { id: c.id, duracion: "NINGUNA" },
+                  { onSuccess: () => notify(`Notificaciones activadas en ${c.nombre}.`), onError },
+                )
+              }
+            >
+              <BellIcon />
+              <span className="flex-1">Activar notificaciones</span>
+              {!CHAT_FUNCIONES.activarNotificaciones && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className={ITEM}>
               <BellSlashIcon />
-              Silenciar notificaciones
+              {c.silenciadoHasta ? "Cambiar silencio" : "Silenciar notificaciones"}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-36">
               {SILENCIOS.map((s) => (
@@ -216,6 +245,32 @@ export function ConversacionAcciones({
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+          {/* Tipo de alerta (HU 7): por qué medios avisa esta conversación. El sonido va con la campana. */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className={ITEM}>
+              <BellRingingIcon />
+              Tipo de alerta
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="min-w-40">
+              {MEDIOS_ALERTA.map((medio) => (
+                <DropdownMenuCheckboxItem
+                  key={medio.clave}
+                  className={ITEM}
+                  checked={alertas[medio.clave]}
+                  disabled={cambiarAlertas.isPending || (medio.clave === "sonido" && !alertas.campana)}
+                  onCheckedChange={(v) => {
+                    const nuevas = { ...alertas, [medio.clave]: v }
+                    cambiarAlertas.mutate(
+                      { id: c.id, alertas: nuevas },
+                      { onSuccess: () => notify(`Alertas de ${c.nombre}: ${describirAlertas(nuevas).toLowerCase()}.`), onError },
+                    )
+                  }}
+                >
+                  {medio.etiqueta}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           {c.noLeidos > 0 ? (
             <DropdownMenuItem
               className={ITEM}
@@ -227,15 +282,16 @@ export function ConversacionAcciones({
           ) : (
             <DropdownMenuItem
               className={ITEM}
-              onClick={() =>
-                marcarNoLeido.mutate(c.id, {
-                  onSuccess: () => {
-                    notify(`${c.nombre} quedó como no leído.`)
-                    if (activa) onSalida()
-                  },
-                  onError,
-                })
-              }
+              onClick={() => {
+                // La conversación abierta se cierra ANTES de marcarla: abierta y a la vista, la
+                // página la vuelve a leer apenas su contador sube (chat-page) y la marca se perdía
+                // en el acto. `mutateAsync` porque este menú se desmonta al cerrar (el aviso igual sale).
+                if (activa) onSalida()
+                marcarNoLeido
+                  .mutateAsync(c.id)
+                  .then(() => notify(`${c.nombre} quedó como no leído.`))
+                  .catch(onError)
+              }}
             >
               <ChatUnreadIcon />
               Marcar como no leído

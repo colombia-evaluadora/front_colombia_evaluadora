@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { useSelector } from "@tanstack/react-form"
 import { Card } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -50,6 +51,8 @@ export function EvaluacionSection({
 
   // Filtrado por `instrumentosPermitidos`; sin config o lista vacía se muestra el catálogo completo.
   const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
+  // Regla del form: un campo se pinta inválido si se tocó o si ya se intentó guardar.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const instrumentosPermitidos = camposEfectivos?.evaluacion.instrumentosPermitidos
   const instrumentosPermitidosLabels = instrumentosPermitidos?.map(instrumentoPermitidoLabel)
   const instrumentosDisponibles =
@@ -89,33 +92,42 @@ export function EvaluacionSection({
         {/* Regla: un referente formativo nunca tiene instrumento de evaluación. */}
         {!esFormativa && (
           <form.Field name="instrumento">
-            {(field) => (
-              <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>
-                  Instrumento de evaluación{camposEfectivos?.evaluacion.requerido ? " *" : ""}
-                </FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(v) => v && field.handleChange(v)}
-                  disabled={disabled}
-                >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccione">
-                      {(value) =>
-                        !value ? "Seleccione" : value === "Otro" ? "Otro (personalizado)" : (value as string)
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {instrumentosDisponibles.map((instrumento) => (
-                      <SelectItem key={instrumento} value={instrumento}>
-                        {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
+            {(field) => {
+              // Solo se exige si el backend lo pide (`evaluacion.requerido`), la misma regla de
+              // `camposObligatoriosFaltantes`; antes el aviso lo nombraba pero el Select no se marcaba.
+              const instrumentoInvalido =
+                Boolean(camposEfectivos?.evaluacion.requerido) &&
+                !field.state.value &&
+                (field.state.meta.isTouched || submissionAttempts > 0)
+              return (
+                <Field variant="outlined" data-invalid={instrumentoInvalido}>
+                  <FieldLabel htmlFor={field.name}>
+                    Instrumento de evaluación{camposEfectivos?.evaluacion.requerido ? " *" : ""}
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(v) => v && field.handleChange(v)}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger id={field.name} aria-invalid={instrumentoInvalido}>
+                      <SelectValue placeholder="Seleccione">
+                        {(value) =>
+                          !value ? "Seleccione" : value === "Otro" ? "Otro (personalizado)" : (value as string)
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {instrumentosDisponibles.map((instrumento) => (
+                        <SelectItem key={instrumento} value={instrumento}>
+                          {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {instrumentoInvalido && <FieldError errors={[{ message: "Selecciona el instrumento de evaluación." }]} />}
+                </Field>
+              )
+            }}
           </form.Field>
         )}
 
@@ -151,15 +163,22 @@ export function EvaluacionSection({
                     <form.Field
                       name="notaMaxima"
                       validators={{
+                        // Obligatorio solo si el backend lo pide (`requerido`): el campo existe
+                        // únicamente con sumativa + "Suma de puntos", así que oculto no valida.
                         onChange: ({ value }) => {
-                          if (value == null || Number.isNaN(value)) return undefined
+                          if (value == null || Number.isNaN(value)) {
+                            return ponderacionInfo.requerido ? { message: "Ingresa el puntaje." } : undefined
+                          }
                           if (value <= 0) return { message: "El puntaje debe ser mayor a 0." }
                           return undefined
                         },
                       }}
                     >
                       {(notaMaximaField) => {
-                        const isInvalid = notaMaximaField.state.meta.isTouched && !notaMaximaField.state.meta.isValid
+                        // Misma regla que el resto del form: también en rojo tras intentar guardar.
+                        const isInvalid =
+                          (notaMaximaField.state.meta.isTouched || submissionAttempts > 0) &&
+                          !notaMaximaField.state.meta.isValid
                         return (
                           <Field variant="outlined" data-invalid={isInvalid}>
                             <FieldLabel htmlFor={notaMaximaField.name}>
@@ -174,6 +193,7 @@ export function EvaluacionSection({
                                 const raw = e.target.value
                                 notaMaximaField.handleChange(raw === "" ? undefined : Number(raw))
                               }}
+                              onBlur={notaMaximaField.handleBlur}
                               disabled={disabled}
                               aria-invalid={isInvalid}
                             />
@@ -191,8 +211,12 @@ export function EvaluacionSection({
                   <form.Field
                     name="ponderacion"
                     validators={{
+                      // `NaN` = vacío; 0 tampoco se envía (`PONDERACION` solo viaja si es > 0), así que
+                      // con `requerido` ambos cuentan como faltante. Oculto (otro método, formativa) no valida.
                       onChange: ({ value }) => {
-                        if (Number.isNaN(value)) return undefined
+                        if (value == null || Number.isNaN(value) || value === 0) {
+                          return ponderacionInfo.requerido ? { message: "Ingresa la ponderación (mayor a 0%)." } : undefined
+                        }
                         if (value < 0 || value > 100) {
                           return { message: "La ponderación debe estar entre 0 y 100%." }
                         }
@@ -201,7 +225,9 @@ export function EvaluacionSection({
                     }}
                   >
                     {(ponderacionField) => {
-                      const isInvalid = ponderacionField.state.meta.isTouched && !ponderacionField.state.meta.isValid
+                      const isInvalid =
+                        (ponderacionField.state.meta.isTouched || submissionAttempts > 0) &&
+                        !ponderacionField.state.meta.isValid
                       return (
                         <Field variant="outlined" data-invalid={isInvalid}>
                           <FieldLabel htmlFor={ponderacionField.name}>
@@ -212,8 +238,13 @@ export function EvaluacionSection({
                             type="number"
                             min={0}
                             max={100}
-                            value={ponderacionField.state.value}
-                            onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                            value={Number.isNaN(ponderacionField.state.value) ? "" : (ponderacionField.state.value ?? "")}
+                            // Vacío → `NaN` (no 0): así el validador distingue "no lo llenó".
+                            onChange={(e) => {
+                              const raw = e.target.value
+                              ponderacionField.handleChange(raw === "" ? Number.NaN : Number(raw))
+                            }}
+                            onBlur={ponderacionField.handleBlur}
                             disabled={disabled}
                             aria-invalid={isInvalid}
                           />
@@ -258,7 +289,6 @@ function InstrumentoEvaluacionSection({
         ) : instrumento === "Escala de valoración" ? (
           <EscalaValoracionSection
             form={form}
-            unidades={unidades}
             tipoEvaluacion={tipoEvaluacion}
             disabled={disabled}
           />

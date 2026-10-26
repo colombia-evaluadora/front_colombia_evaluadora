@@ -10,7 +10,8 @@ import { upsertMensaje } from "@/features/comunicaciones/chat/api/use-chat-tiemp
 export interface EnviarMensajeInput {
   conversacionId: number
   texto: string
-  archivo?: File | null
+  // Hasta 10 (`MAX_ADJUNTOS`), en el orden en que se muestran.
+  archivos?: File[]
   // Mensaje al que responde (respuesta citada).
   respuestaA?: number | null
   /**
@@ -19,25 +20,36 @@ export interface EnviarMensajeInput {
    * mismo valor; si falta se genera uno nuevo.
    */
   clientMessageId?: string
+  /** Pedir confirmación de lectura (HU 7). Sin valor, comms-service usa el ajuste por defecto. */
+  solicitaConfirmacion?: boolean
 }
 
 /**
  * Con archivo, el mismo POST viaja como multipart por file-service
  * (`/files/eval-col/...`): sube el binario, lo registra en TARCHIVO y reenvía
- * el JSON a comms-service con `ADJUNTO` = su `pk_tarchivo`. Nombre, formato y
- * peso los toma el servidor del archivo, no del cliente.
+ * el JSON a comms-service con `ADJUNTO` = su `pk_tarchivo`. Con varios archivos el
+ * campo `ADJUNTO` se repite y llega como lista (`TransformadorMultipart`). Nombre,
+ * formato y peso los toma el servidor del archivo, no del cliente.
  */
-async function enviarMensaje({ conversacionId, texto, archivo, respuestaA, clientMessageId }: EnviarMensajeInput) {
+async function enviarMensaje({
+  conversacionId,
+  texto,
+  archivos = [],
+  respuestaA,
+  clientMessageId,
+  solicitaConfirmacion,
+}: EnviarMensajeInput) {
   const ruta = `/comunicaciones/conversaciones/${conversacionId}/mensajes`
   const campos = {
     // Las menciones viajan dentro del texto como `<@id>`; el servidor las valida.
     TEXTO: texto,
     CLIENT_MESSAGE_ID: clientMessageId ?? crypto.randomUUID(),
     ...(respuestaA && { FK_MENSAJE_RESPUESTA: respuestaA }),
+    ...(solicitaConfirmacion !== undefined && { SOLICITA_CONFIRMACION_LECTURA: solicitaConfirmacion ? "S" : "N" }),
   }
-  if (!archivo) return evalCol.postRow<Mensaje>(ruta, campos)
+  if (archivos.length === 0) return evalCol.postRow<Mensaje>(ruta, campos)
   const crudo = await postMultipart<string | { rows: Mensaje[] } | Mensaje[]>(`/eval-col${ruta}`, campos, {
-    ADJUNTO: archivo,
+    ADJUNTO: archivos,
   })
   // file-service reenvía el cuerpo de comms-service tal cual; por si llega como texto.
   const body = typeof crudo === "string" ? (JSON.parse(crudo) as { rows: Mensaje[] }) : crudo
@@ -60,6 +72,9 @@ export function useEnviarMensaje({
       queryClient.setQueryData<Mensaje[]>(chatKeys.mensajes(mensaje.conversacionId), (prev) =>
         prev ? upsertMensaje(prev, mensaje) : [mensaje],
       )
+      // Con adjunto, el archivo aparece en "Archivos": se refresca su lista (`chatKeys.archivos` es
+      // la key exacta de `useArchivosQuery`). Sin esto solo se veía al recargar.
+      if (mensaje.adjunto) void queryClient.invalidateQueries({ queryKey: chatKeys.archivos })
       onSuccess?.(mensaje, ...args)
     },
   })

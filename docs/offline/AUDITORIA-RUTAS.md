@@ -79,8 +79,9 @@ usuario.
 | Asistencia | Calendario por sede y mes (todas y "mis clases"), resumen semanal del mes en curso y el siguiente, listas de estudiantes de cada sesión de los próximos 14 días, catálogo de tipos |
 | Informes | Cascada sede → año → jornadas → periodos y grupos; informe de cada grupo con los periodos por defecto (otras combinaciones, solo con red) |
 | Referentes curriculares | Todas las páginas, catálogos del filtro y el detalle como se abre: áreas, grados, enunciados del área y grado por defecto y evidencias del primer enunciado |
-| Comunicaciones / Notificaciones | Foros, conversaciones, política del chat, bandeja, contador y preferencias |
+| Comunicaciones / Notificaciones | Conversaciones, invitaciones pendientes a grupos, política del chat, bandeja, contador y preferencias |
 | Establecimiento (solo consulta) | Lista de EE, sedes, periodos (con detalle y periodos de evaluación) y sus catálogos |
+| Cobertura › Matrícula (solo consulta, P6) | Vista por defecto de la lista (primera página, sin filtros; el backend ya la acota a las sedes del usuario), rótulos de grado, sedes y estados del filtro. Se guarda **recortada a datos básicos** (ver abajo) |
 
 - **Autopreparación** (default revisable): en un equipo personal, con red
   estable, se repite sola e incremental al entrar, cada 4 h y dentro de la
@@ -96,6 +97,35 @@ usuario.
   año" ninguna query de la vista por defecto quede sin datos;
   `e2e/offline-app-instalada.spec.ts` recorre la app instalada (matchMedia
   `standalone`).
+
+## Matrícula sin conexión: solo consulta con datos básicos (P6)
+
+Decisión de la institución sobre datos de menores (P6) para Cobertura: la
+lista de matrícula **se puede consultar** sin conexión, **solo lectura** y
+**solo con datos básicos**.
+
+- **Dónde se recorta**: en la copia persistida, no en la pantalla. La query de
+  la lista declara `meta.persistSelect = selectRowFields(MATRICULA_OFFLINE_FIELDS)`
+  (`lib/offline/query-meta.ts` → `listaBlancaMeta`), y el persister lo aplica
+  antes de cifrar y escribir en IndexedDB. Es **lista blanca**: un campo nuevo
+  del backend no se guarda hasta que alguien lo agregue a la lista; solo pasan
+  valores primitivos, y una forma de respuesta desconocida no se guarda.
+- **Lista blanca** (`features/coverage/matricula/api/query/use-matricula-query.ts`):
+  `id`, `documentType`, `documentNumber`, `firstName`, `lastName`,
+  `institution`, `campus`, `shift`, `educationLevel`, `grade`, `group`,
+  `status`, `enrollmentDate`. Fuera: `guardian` (acudiente), `hasGrades` y
+  todo lo demás. `documentType` hoy no viene en `/matricula/query`.
+- **Con red** la pantalla muestra todo como siempre (incluido el acudiente):
+  la query tiene `staleTime: 0`, así que lo restaurado del equipo (recortado)
+  se reemplaza por la lista completa al montar.
+- **Preparar** baja la vista por defecto con la misma key que la pantalla y
+  respeta el incremental (ventana de frescura de datos de grupo, sondeo con
+  ETag/`If-None-Match` y no reescribir lo que no cambió).
+- **Prueba**: `matricula-offline.test.ts` (lo persistido tiene solo campos de
+  la lista blanca, también tras pasar por IndexedDB) y
+  `e2e/offline-matricula.spec.ts` (preparar → sin red se ve la lista, el
+  detalle muestra el aviso estándar y lo guardado, descifrado con la bóveda de
+  la app, no tiene acudiente ni claves fuera de la lista).
 
 ## Tabla
 
@@ -121,7 +151,9 @@ usuario.
 | `/app/comunicaciones/chat` | Solo consulta | Conversaciones, mensajes y comunicados persistidos (este PR) | Enviar sin red: follow-up (outbox) |
 | `/app/notificaciones` | Solo consulta | Persistidas | — |
 | `/app/notificaciones/preferencias` | Solo consulta | Persistidas (este PR); cambiar requiere red | — |
-| `/app/cobertura/*` (reserva, pre-matrícula, inscritos, matrícula, configuración) | No | Datos personales de menores (documento, acudiente, salud) y procesos administrativos; P6 pendiente | Revisable con P6 |
+| `/app/cobertura/matricula` (lista) | Solo consulta, datos básicos | **P6 decidido**: la lista se guarda con lista blanca `MATRICULA_OFFLINE_FIELDS` (nombre, documento, colegio, sede, jornada, nivel, grado, grupo, estado, fecha de matrícula); sin acudiente, salud, dirección, teléfono, correo ni fotos | Agregar, configuración, exportar, mover, documentos, editar, retirar, reingresar y eliminar deshabilitados sin red (`OnlineOnlyAction`) |
+| `/app/cobertura/matricula/detalle/$id` (+ `/editar`), `agregar`, `configuracion` | No | Ficha completa del menor (acudiente, salud, residencia) y escrituras | Empty state "Esta sección necesita conexión" |
+| `/app/cobertura/reserva-de-cupo`, `pre-matricula`, `inscritos` | No | Procesos administrativos (endpoints solo en MSW) | — |
 | `/app/registro-de-actividad/*` | No | Auditoría en ClickHouse, solo admin | — |
 | `/app/administracion/roles-menus`, `listas-valor`, `areas-oficiales`, `parametros-edad` | No (`listas-valor`/`parametros-edad` sin datos guardados) | Admin | — |
 | `/verificar/b/$codigo` | No | Verificación pública de boletines contra servidor | — |

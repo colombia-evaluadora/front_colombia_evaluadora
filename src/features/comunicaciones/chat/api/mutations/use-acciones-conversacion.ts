@@ -12,6 +12,7 @@ import type { CuerpoSeleccion } from "@/features/comunicaciones/chat/lib/selecci
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { cuerpoModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import { patchMultipart } from "@/lib/files"
+import { leerNotificacionesConversacion } from "@/features/notificaciones/api/mutations/leer-conversacion"
 
 const base = (id: number) => `/comunicaciones/conversaciones/${id}`
 
@@ -20,12 +21,23 @@ function useInvalidarConversaciones() {
   return () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
 }
 
+/**
+ * Silenciar por una duración o, con `NINGUNA`, activar de nuevo las notificaciones. La lista se
+ * actualiza al instante con el `silenciadoHasta` que devuelve comms-service (campana tachada y menú
+ * "Activar notificaciones"/"Silenciar"), y luego se revalida.
+ */
 export function useSilenciarConversacion() {
+  const queryClient = useQueryClient()
   const invalidar = useInvalidarConversaciones()
   return useMutation({
     mutationFn: ({ id, duracion }: { id: number; duracion: SilencioDuracion }) =>
       evalCol.patchRow<Conversacion>(`${base(id)}/silenciar`, { DURACION: duracion }),
-    onSuccess: invalidar,
+    onSuccess: (c, { id }) => {
+      queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+        prev?.map((x) => (x.id === id ? { ...x, silenciadoHasta: c?.silenciadoHasta ?? null } : x)),
+      )
+      return invalidar()
+    },
   })
 }
 
@@ -37,11 +49,27 @@ export function useMarcarNoLeido() {
   })
 }
 
+/**
+ * Leer la conversación (abrirla, tenerla abierta y visible cuando llega un mensaje, o "Marcar como
+ * leído") también deja leídos sus avisos de mensajes en la campana: comms-service y
+ * notification-service no comparten estado, así que el front avisa a los dos.
+ */
+export async function marcarConversacionLeida(id: number) {
+  const c = await evalCol.patchRow<Conversacion>(`${base(id)}/leido`)
+  await leerNotificacionesConversacion(id)
+  return c
+}
+
 export function useMarcarLeido() {
+  const queryClient = useQueryClient()
   const invalidar = useInvalidarConversaciones()
   return useMutation({
-    mutationFn: (id: number) => evalCol.patchRow<Conversacion>(`${base(id)}/leido`),
-    onSuccess: invalidar,
+    mutationFn: marcarConversacionLeida,
+    onSuccess: () => {
+      // notification-service ya avisa con `notification.read_all`; esto cubre el mock y un socket caído.
+      void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+      return invalidar()
+    },
   })
 }
 

@@ -1,6 +1,6 @@
 /**
  * Prefijos de `/app` que son **solo en línea** (plan offline §8.3–8.6 y §8.11):
- * cobertura, auditoría, roles-menús, áreas oficiales, criterios de prioridad, superadministradores y establecimiento (general, sedes,
+ * cobertura (salvo la lista de matrícula, ver abajo), auditoría, roles-menús, áreas oficiales, criterios de prioridad, superadministradores y establecimiento (general, sedes,
  * funcionarios, alta/edición de EE, periodos). Nada de esto se persiste, así
  * que sin red no hay qué mostrar.
  */
@@ -35,6 +35,13 @@ const READ_ONLY_OFFLINE_PATTERNS = [
   /^\/app\/establecimiento-educativo\/general\/?$/,
   /^\/app\/establecimiento-educativo\/detalle\/[^/]+\/?$/,
   /^\/app\/establecimiento-educativo\/sedes\/?$/,
+  // P6 (política de datos de menores, decidida): la LISTA de matrícula se
+  // consulta sin red con datos básicos (lista blanca `MATRICULA_OFFLINE_FIELDS`
+  // aplicada por el persister). Detalle, edición, agregar, configuración,
+  // reserva de cupo, pre-matrícula e inscritos siguen solo en línea; retirar,
+  // reingresar, mover, homologar, documentos y exportar se deshabilitan sin
+  // red con `OnlineOnlyAction`.
+  /^\/app\/cobertura\/matricula\/?$/,
 ] as const
 
 export function isReadOnlyOfflinePath(pathname: string): boolean {

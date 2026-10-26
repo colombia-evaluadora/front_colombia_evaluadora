@@ -7,13 +7,14 @@ import { EstablishmentsDataTable } from "@/features/establishment/institution/co
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 export function EstablishmentsPage() {
-  const { puedeCrear } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
+  // Un EE nace con su rector: crearlo pide Eliminar, igual que cambiar directivos.
+  const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
 
   return (
     <EstablishmentsDataTable
       title="Establecimiento educativo"
       action={
-        puedeCrear ? (
+        puedeEliminar ? (
           <Button
             render={<Link to={paths.app.establishments.add.getHref()} />}
             variant="fill"

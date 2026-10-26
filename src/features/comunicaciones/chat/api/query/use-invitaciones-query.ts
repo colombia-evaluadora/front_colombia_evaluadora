@@ -4,6 +4,9 @@ import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion, Invitacion } from "@/features/comunicaciones/chat/api/types"
+import { offlineMeta, TTL_OFFLINE } from "@/lib/offline/query-meta"
+
+export const fetchInvitaciones = () => evalCol.getRows<Invitacion>("/comunicaciones/invitaciones")
 
 /**
  * Invitaciones pendientes a grupos (decisión de Natalia: un acudiente entra a un grupo solo si
@@ -13,7 +16,10 @@ import type { Conversacion, Invitacion } from "@/features/comunicaciones/chat/ap
 export function useInvitacionesQuery(enabled = true) {
   return useQuery({
     queryKey: chatKeys.invitaciones,
-    queryFn: () => evalCol.getRows<Invitacion>("/comunicaciones/invitaciones"),
+    queryFn: fetchInvitaciones,
+    // Se guarda en el equipo (y la prepara "Preparar") para que el chat sin
+    // red no quede con un dato faltante; aceptar o rechazar sigue con red.
+    meta: offlineMeta(TTL_OFFLINE.detalle),
     enabled,
     staleTime: 30_000,
   })

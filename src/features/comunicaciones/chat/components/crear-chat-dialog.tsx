@@ -9,9 +9,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { HashIcon } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import type { Conversacion, Persona } from "@/features/comunicaciones/chat/api/types"
 import { useCrearCanal } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
@@ -139,23 +142,37 @@ export function CrearChatDialog({
               e.preventDefault()
               if (limpio && (!esGrupo || modoValido(opciones.modo, opciones.rolesEscritura))) setPaso(2)
             }}
-            className="max-h-[65dvh] space-y-1.5 overflow-y-auto"
+            className="space-y-1.5"
           >
-            <label className="relative flex items-center gap-3 rounded-lg border px-4 pt-3.5 pb-2.5 focus-within:border-primary">
-              <span className="absolute -top-2.5 left-3 bg-popover px-1 text-sm font-medium">
+            {/* Label flotante con los componentes estándar (como el login). El form NO scrollea: el
+                único scroll es el del `DialogContent` (ya con `max-h` + `overflow-y-auto` y padding).
+                Con un `overflow-y-auto` propio, el label (que sobresale por encima del borde del
+                input) quedaba a 2 px del borde de recorte del form: bastaba que el form tuviera
+                scroll (redondeo de fuentes/zoom, las opciones del grupo en pantallas bajas) y que el
+                foco del `autoFocus` o la rueda lo desplazaran para cortar "Nombre" por arriba (QA
+                testv2, input enfocado). `bg-popover` funde el label con el fondo del diálogo (en
+                oscuro `background` ≠ `popover`). */}
+            <Field variant="outlined">
+              <FieldLabel htmlFor="crear-chat-nombre" className="bg-popover">
                 Nombre
-              </span>
-              {!esGrupo && <HashIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />}
-              <input
-                autoFocus
-                value={nombre}
-                maxLength={80}
-                onChange={(e) => setNombre(esGrupo ? e.target.value.replace(/^\s+/, "") : aNombreCanal(e.target.value))}
-                placeholder={esGrupo ? "Por ejemplo, Proyecto feria de ciencias" : "Por ejemplo, planificacion-presupuesto"}
-                aria-describedby="crear-chat-ayuda"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-            </label>
+              </FieldLabel>
+              <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+                {!esGrupo && (
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <HashIcon aria-hidden className="size-5 text-muted-foreground" />
+                  </InputGroupAddon>
+                )}
+                <InputGroupInput
+                  id="crear-chat-nombre"
+                  autoFocus
+                  value={nombre}
+                  maxLength={80}
+                  onChange={(e) => setNombre(esGrupo ? e.target.value.replace(/^\s+/, "") : aNombreCanal(e.target.value))}
+                  placeholder={esGrupo ? "Por ejemplo, Proyecto feria de ciencias" : "Por ejemplo, planificacion-presupuesto"}
+                  aria-describedby="crear-chat-ayuda"
+                />
+              </InputGroup>
+            </Field>
             <p id="crear-chat-ayuda" className="text-xs text-muted-foreground">
               {esGrupo ? AYUDA_GRUPO : AYUDA}
             </p>
@@ -241,7 +258,7 @@ export function CrearChatDialog({
   )
 }
 
-function SelectorPersonas({
+export function SelectorPersonas({
   personas,
   cargando,
   delServidor,
@@ -249,6 +266,7 @@ function SelectorPersonas({
   value,
   onChange,
   paraGrupo = false,
+  autoFocus = true,
 }: {
   personas: Persona[]
   cargando: boolean
@@ -257,6 +275,7 @@ function SelectorPersonas({
   value: Persona[]
   onChange: (v: Persona[]) => void
   paraGrupo?: boolean
+  autoFocus?: boolean
 }) {
   return (
     <SelectorChips
@@ -268,7 +287,7 @@ function SelectorPersonas({
       filtrar={(p, t) => coincidePersona(p, t, delServidor)}
       onConsulta={onConsulta}
       cargando={cargando}
-      autoFocus
+      autoFocus={autoFocus}
       ariaLabel="Buscar personas"
       placeholder="P. ej.: Natalia o pedro@iesimonbolivar.edu.co"
       vacio="Nadie coincide con la búsqueda."
@@ -281,7 +300,7 @@ function SelectorPersonas({
           </Avatar>
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium">{p.nombre}</span>
-            <span className="block truncate text-xs text-muted-foreground">{p.correo}</span>
+            <span className="block truncate text-xs text-muted-foreground">{rolVisible(p)}</span>
           </span>
           {paraGrupo && <EtiquetaInvitacion perfil={p.perfil} />}
         </span>

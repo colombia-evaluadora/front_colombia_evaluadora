@@ -165,7 +165,13 @@ function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: Votaci
       <p className="text-xs text-muted-foreground">
         {yaVoto
           ? "Tu voto quedó registrado. Verás los resultados cuando se cierre."
-          : `Esta es una votación rápida. Se cerrará automáticamente en ${v.minutos} ${v.minutos === 1 ? "minuto" : "minutos"}.`}
+          : (
+              <>
+                Esta es una votación rápida.
+                <br />
+                {`Se cerrará automáticamente en ${v.minutos} ${v.minutos === 1 ? "minuto" : "minutos"}.`}
+              </>
+            )}
       </p>
       {votar.isError && (
         <p role="alert" className="text-sm text-red">

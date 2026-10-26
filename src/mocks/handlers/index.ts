@@ -45,6 +45,7 @@ import { planeadorHandlers } from "@/mocks/handlers/planeador"
 import { planeadorDocentesHandlers } from "@/mocks/handlers/planeador/docentes"
 import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
+import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { informesHandlers } from "@/mocks/handlers/informes"
 import {
@@ -53,10 +54,12 @@ import {
   comunicacionesMensajesHandlers,
 } from "@/mocks/handlers/comunicaciones"
 import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicaciones-elecciones"
+import { comunicacionesFiltrosHandlers } from "@/mocks/handlers/comunicaciones-filtros"
 import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
 import { comunicacionesComunicadosHandlers } from "@/mocks/handlers/comunicaciones-comunicados"
 import { comunicacionesBorradoresActividadHandlers } from "@/mocks/handlers/comunicaciones-borradores-actividad"
+import { comunicacionesDisponibilidadHandlers } from "@/mocks/handlers/comunicaciones-disponibilidad"
 import { pushHandlers } from "@/mocks/handlers/notificaciones/push"
 import { realtimeHandlers } from "@/mocks/handlers/realtime"
 import { agenteHandlers } from "@/mocks/handlers/agente"
@@ -102,6 +105,7 @@ export const handlers = [
   ...preMatriculaHandlers,
   ...enrollmentsHandlers,
   // Antes de `planeadorHandlers`: MSW usa el primer match.
+  ...planeadorEscalaPrecargaHandlers,
   ...planeadorValidacionCoordinadorHandlers,
   ...planeadorHandlers,
   ...planeadorDocentesHandlers,
@@ -112,11 +116,13 @@ export const handlers = [
   ...asistenciaHandlers,
   ...informesHandlers,
   ...comunicacionesArchivosHandlers,
+  ...comunicacionesFiltrosHandlers,
   ...comunicacionesEleccionesHandlers,
   ...comunicacionesEncuestasHandlers,
   ...comunicacionesEvaluacionesHandlers,
   ...comunicacionesComunicadosHandlers,
   ...comunicacionesBorradoresActividadHandlers,
+  ...comunicacionesDisponibilidadHandlers,
   ...pushHandlers,
   ...realtimeHandlers,
   ...comunicacionesMensajesHandlers,

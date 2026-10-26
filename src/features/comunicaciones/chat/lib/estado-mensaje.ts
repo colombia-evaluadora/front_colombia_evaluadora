@@ -22,6 +22,7 @@ export function comoEliminado(m: Mensaje, eliminadoEn: string | null | undefined
     ...m,
     texto: "",
     adjunto: null,
+    adjuntos: [],
     fijado: false,
     reacciones: [],
     menciones: [],
@@ -33,7 +34,7 @@ export function comoEliminado(m: Mensaje, eliminadoEn: string | null | undefined
   }
 }
 
-export type EstadoLectura = "ENVIADO" | "LEIDO"
+export type EstadoLectura = "ENVIADO" | "ENTREGADO" | "LEIDO"
 
 /**
  * Confirmación de lectura de un mensaje propio: ✓ enviado, ✓✓ leído por todos. `leidoHasta` es el
@@ -45,6 +46,8 @@ export function estadoLectura(
   c: Pick<Conversacion, "leidoHasta" | "totalMiembros"> | undefined,
 ): EstadoLectura | null {
   if (!m.esPropio || m.sistema || m.eliminado || !c || c.totalMiembros < 2) return null
+  // Pidió confirmación de lectura (HU 7): el estado lo calcula comms-service por receptor.
+  if (m.confirmacion) return m.confirmacion.estado
   return c.leidoHasta != null && m.id <= c.leidoHasta ? "LEIDO" : "ENVIADO"
 }
 
@@ -71,10 +74,11 @@ export function mensajesFijados(mensajes: Mensaje[]): Mensaje[] {
 /**
  * Quien vota ve el aviso "La votación fue modificada y se reiniciaron los votos" mientras siga
  * abierta y no haya vuelto a votar. Editar la votación marca el mensaje como editado (comms-service
- * `reemplazarVotacion`) y borra los votos.
+ * `reemplazarVotacion`) y borra los votos de TODOS, incluido el del creador: por eso el Figma
+ * (4123:67058) muestra el aviso también en la tarjeta propia, junto a editar/eliminar.
  */
 export function votacionModificada(m: Mensaje, v: VotacionRapida, abierta: boolean) {
-  return abierta && m.editado && !m.esPropio && v.miVoto == null
+  return abierta && m.editado && v.miVoto == null
 }
 
 export const ETIQUETA_PERFIL: Record<PerfilChat, string> = {
@@ -82,6 +86,15 @@ export const ETIQUETA_PERFIL: Record<PerfilChat, string> = {
   DOCENTE: "Docente",
   ACUDIENTE: "Acudiente",
   ESTUDIANTE: "Estudiante",
+}
+
+/**
+ * Rol que acompaña al nombre en los listados de personas del chat (QA 57: solo nombre y rol, nunca
+ * correo ni documento). `cargo` lo calcula comms-service desde los roles del SSO (Rector,
+ * Coordinador…); sin él, la etiqueta del perfil de la política.
+ */
+export function rolVisible(p: { cargo?: string; perfil?: PerfilChat }): string {
+  return p.cargo || (p.perfil ? ETIQUETA_PERFIL[p.perfil] : "")
 }
 
 const MAX_RECIENTES = 5

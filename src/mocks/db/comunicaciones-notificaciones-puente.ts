@@ -49,7 +49,7 @@ export function notificarEleccionAbierta(conversacionId: number, nombre: string,
     tipo: "CHAT_ELECCION",
     categoria: "CHAT",
     titulo: `Elección abierta: ${nombre}`,
-    cuerpo_corto: "Entra al canal para votar.",
+    cuerpo_corto: "Entra a la elección para votar.",
     deep_link: `/app/comunicaciones/chat?canal=${conversacionId}`,
     prioridad: "ALTA",
     creada_en: fecha,
@@ -106,8 +106,8 @@ export function notificarResultados(conversacionId: number, tipo: "ELECCION" | "
     eleccion ? "CHAT_RESULTADOS_ELECCION" : "CHAT_RESULTADOS_ENCUESTA",
     `Resultados disponibles: ${nombre}`,
     eleccion
-      ? "La elección cerró. Entra al canal para ver los resultados."
-      : "La encuesta cerró. Entra al canal para ver los resultados.",
+      ? "La elección cerró. Entra a la elección para ver los resultados."
+      : "La encuesta cerró. Entra a la encuesta para ver los resultados.",
     "resultados",
   )
   return true

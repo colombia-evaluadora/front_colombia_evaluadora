@@ -7,6 +7,7 @@ import type {
   AdjuntoMensaje,
   Mensaje,
   CategoriaCanal,
+  AjustesChat,
   SilencioDuracion,
   TipoVotacionRapida,
 } from "@/features/comunicaciones/chat/api/types"
@@ -23,6 +24,7 @@ import {
   contenidoDocumentos,
   politicaChat,
   USUARIO_ACTUAL,
+  conVistaPrevia,
 } from "@/mocks/db/comunicaciones"
 import { formatoDeArchivo } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { registrarArchivoMaterial } from "@/mocks/db/planeador"
@@ -100,6 +102,10 @@ if (typeof window !== "undefined") {
 /** `CLIENT_MESSAGE_ID` → id del mensaje creado (reintentos idempotentes). */
 const enviadosPorCliente = new Map<string, number>()
 
+// `pk_tmensaje_adjunto` de los archivos enviados con el mock (los de la semilla usan 9000+).
+let siguienteAdjuntoMock = 9100
+const YA_DESCARGADO = "No puedes eliminar este archivo porque otra persona ya lo descargó."
+
 function buscar(id: string | readonly string[] | undefined) {
   return conversaciones.find((c) => c.id === Number(id))
 }
@@ -132,29 +138,37 @@ function verEliminados(conversacionId: number, request: Request) {
 
 export function vistaMensaje(m: Mensaje, ver: boolean): Mensaje {
   if (!m.eliminado || ver) return m
-  return { ...m, texto: "", adjunto: null, fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
+  return { ...m, texto: "", adjunto: null, adjuntos: [], fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
 }
 
 function hastaSilencio(duracion: SilencioDuracion) {
+  if (duracion === "NINGUNA") return null
   if (duracion === "SIEMPRE") return "9999-12-31T00:00:00.000Z"
   const d = new Date()
-  if (duracion === "8H") d.setHours(d.getHours() + 8)
+  if (duracion === "1H") d.setHours(d.getHours() + 1)
+  else if (duracion === "FIN_DIA") d.setHours(24, 0, 0, 0)
+  else if (duracion === "8H") d.setHours(d.getHours() + 8)
   else d.setDate(d.getDate() + 7)
   return d.toISOString()
 }
+
+// Ajustes del chat del usuario (en memoria, uno para toda la sesión del mock).
+const ajustesChatMock: AjustesChat = { confirmacionLecturaPermitir: true, confirmacionLecturaSolicitar: false, sonido: true }
 
 interface CuerpoMensaje {
   TEXTO?: string
   FK_MENSAJE_RESPUESTA?: number | null
   CLIENT_MESSAGE_ID?: string
+  SOLICITA_CONFIRMACION_LECTURA?: "S" | "N"
 }
 
 function enviarMensajeMock(
   id: string | readonly string[] | undefined,
   body: CuerpoMensaje,
   request: Request,
-  adjunto: AdjuntoMensaje | null = null,
+  adjuntos: AdjuntoMensaje[] = [],
 ) {
+  const adjunto = adjuntos[0] ?? null
   const conv = buscar(id)
   if (!conv) return noEncontrada()
   // Reintento idempotente: el mismo `CLIENT_MESSAGE_ID` devuelve el mensaje ya creado.
@@ -175,6 +189,10 @@ function enviarMensajeMock(
     respuestaA: original ? citaDe(original) : null,
     menciones: mencionesDe(texto, conv.id, request),
   })
+  if (adjuntos.length > 0) m.adjuntos = adjuntos
+  // Confirmación de lectura (HU 7): en el mock queda Enviado; comms-service la avanza por receptor.
+  const confirmar = body.SOLICITA_CONFIRMACION_LECTURA ? body.SOLICITA_CONFIRMACION_LECTURA === "S" : ajustesChatMock.confirmacionLecturaSolicitar
+  if (confirmar) m.confirmacion = { estado: "ENVIADO", total: Math.max(conv.totalMiembros - 1, 1), entregados: 0, leidos: 0, lectores: [] }
   if (body.CLIENT_MESSAGE_ID) enviadosPorCliente.set(body.CLIENT_MESSAGE_ID, m.id)
   // Como comms-service: el borrador del canal pasa a "Enviados".
   const borrador = borradores.find((b) => b.conversacionId === conv.id && b.estado === "BORRADOR")
@@ -191,11 +209,20 @@ export const comunicacionesHandlers = [
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       const rows = conversaciones
         .filter((c) => c.esBot || c.categoria === "VOTACION" || c.categoria === "EXAMEN" || c.categoria === "ENCUESTA")
-        .map((c) => ({ ...c, esCreador: false }))
+        .map((c) => conVistaPrevia({ ...c, esCreador: false }))
       return HttpResponse.json({ rows })
     }
     // Los grupos solo para sus miembros, con `esAdmin` de quien pide.
-    return HttpResponse.json({ rows: filtrarGrupos(conversaciones, request) })
+    return HttpResponse.json({ rows: filtrarGrupos(conversaciones, request).map((c) => conVistaPrevia(c)) })
+  }),
+
+  // Colevabot (comms-service BotService): asegura su conversación y devuelve su fila. Las tarjetas
+  // del mock ya están en `mensajes` (bienvenida y una solicitud de aprobación).
+  http.post(URL("bot/sincronizar"), async () => {
+    await delay(150)
+    const bot = conversaciones.find((c) => c.esBot)
+    if (!bot) return HttpResponse.json({ message: "Sin Colevabot" }, { status: 404 })
+    return HttpResponse.json({ rows: [conVistaPrevia(bot)] })
   }),
 
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).
@@ -209,7 +236,7 @@ export const comunicacionesHandlers = [
   http.get(URL("personas"), async () => {
     await delay(200)
     return HttpResponse.json({
-      rows: personas.map((p) => (esAcudienteMock(p.id) ? { ...p, perfil: "ACUDIENTE" as const } : p)),
+      rows: personas.map((p) => (esAcudienteMock(p.id) ? { ...p, perfil: "ACUDIENTE" as const, cargo: "Acudiente" } : p)),
     })
   }),
 
@@ -222,10 +249,10 @@ export const comunicacionesHandlers = [
     }
     const nombre = body.NOMBRE?.trim()
     if (!nombre) {
-      return HttpResponse.json({ message: "Escribe un nombre para el canal." }, { status: 400 })
+      return HttpResponse.json({ message: "Escribe un nombre." }, { status: 400 })
     }
     if (conversaciones.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
-      return HttpResponse.json({ message: `Ya existe un canal llamado ${nombre}.` }, { status: 409 })
+      return HttpResponse.json({ message: `Ya existe un foro llamado ${nombre}.` }, { status: 409 })
     }
     const canal = {
       id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
@@ -268,7 +295,7 @@ export const comunicacionesHandlers = [
     if (conv.tipo === "DIRECTO") {
       const rows = participantes(conv)
         .filter((p) => p.id !== USUARIO_ACTUAL.id)
-        .map((p) => ({ ...p, rol: "Miembro", perfil: personas.find((x) => x.id === p.id)?.perfil, bloqueado: false }))
+        .map((p) => ({ ...p, rol: "Miembro", perfil: personas.find((x) => x.id === p.id)?.perfil, cargo: personas.find((x) => x.id === p.id)?.cargo, bloqueado: false }))
       return HttpResponse.json({ rows })
     }
     return HttpResponse.json({ rows: miembrosDe(conv.id) })
@@ -293,7 +320,7 @@ export const comunicacionesHandlers = [
     await delay(150)
     const conv = buscar(params.id)
     const m = conv && miembrosDe(conv.id).find((x) => x.id === Number(params.miembro))
-    if (!m) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    if (!m) return HttpResponse.json({ message: "La persona ya no está en la conversación." }, { status: 404 })
     const body = (await request.json()) as { BLOQUEADO: boolean }
     m.bloqueado = body.BLOQUEADO
     return HttpResponse.json({ rows: [m] })
@@ -305,7 +332,7 @@ export const comunicacionesHandlers = [
     if (!conv) return noEncontrada()
     const lista = miembrosDe(conv.id)
     const i = lista.findIndex((x) => x.id === Number(params.miembro))
-    if (i < 0) return HttpResponse.json({ message: "La persona ya no está en el canal." }, { status: 404 })
+    if (i < 0) return HttpResponse.json({ message: "La persona ya no está en la conversación." }, { status: 404 })
     const [m] = lista.splice(i, 1)
     conv.totalMiembros = Math.max(1, conv.totalMiembros - 1)
     return HttpResponse.json({ rows: [m] })
@@ -371,45 +398,56 @@ export const comunicacionesHandlers = [
   http.post(`*/api/files/eval-col/comunicaciones/conversaciones/:id/mensajes`, async ({ params, request }) => {
     await delay(400)
     const form = await request.formData()
-    const archivo = form.get("ADJUNTO")
+    // Varios archivos: el campo `ADJUNTO` se repite (file-service los reenvía como lista).
     const texto = form.get("TEXTO")
     const respuesta = form.get("FK_MENSAJE_RESPUESTA")
     const clientId = form.get("CLIENT_MESSAGE_ID")
-    const adjunto =
-      archivo instanceof File
-        ? {
-            nombre: archivo.name,
-            formato: formatoDeArchivo(archivo),
-            eliminadoEn: null,
-            archivoId: registrarArchivoMaterial(archivo),
-            peso: archivo.size,
-          }
-        : null
+    const confirmacion = form.get("SOLICITA_CONFIRMACION_LECTURA")
+    const subidos = form.getAll("ADJUNTO").filter((x): x is File => x instanceof File)
+    if (subidos.length > 10) {
+      return HttpResponse.json({ message: "Puedes adjuntar hasta 10 archivos por mensaje." }, { status: 400 })
+    }
+    const adjuntos: AdjuntoMensaje[] = subidos.map((archivo) => ({
+      nombre: archivo.name,
+      formato: formatoDeArchivo(archivo),
+      eliminadoEn: null,
+      archivoId: registrarArchivoMaterial(archivo),
+      peso: archivo.size,
+      id: siguienteAdjuntoMock++,
+      descargado: false,
+    }))
     const res = enviarMensajeMock(
       params.id,
       {
         TEXTO: typeof texto === "string" ? texto : "",
         FK_MENSAJE_RESPUESTA: typeof respuesta === "string" ? Number(respuesta) : null,
         CLIENT_MESSAGE_ID: typeof clientId === "string" ? clientId : undefined,
+        SOLICITA_CONFIRMACION_LECTURA: confirmacion === "S" || confirmacion === "N" ? confirmacion : undefined,
       },
       request,
-      adjunto,
+      adjuntos,
     )
     const conv = buscar(params.id)
-    if (res.status === 200 && adjunto && conv) {
-      archivos.unshift({
-        id: adjunto.archivoId,
-        archivoId: adjunto.archivoId,
-        nombre: adjunto.nombre,
-        formato: adjunto.formato,
-        peso: adjunto.peso,
-        compartidoPor: "Tú",
-        esPropio: true,
-        fecha: new Date().toISOString(),
-        conversacionId: conv.id,
-        conversacionNombre: conv.nombre,
-        enMiCanal: true,
-      })
+    const enviado = adjuntos.length > 0 ? mensajes.find((x) => x.adjuntos?.[0]?.id === adjuntos[0].id) : undefined
+    if (res.status === 200 && conv) {
+      for (const adjunto of [...adjuntos].reverse()) {
+        archivos.unshift({
+          id: adjunto.archivoId as number,
+          archivoId: adjunto.archivoId,
+          nombre: adjunto.nombre,
+          formato: adjunto.formato,
+          peso: adjunto.peso,
+          compartidoPor: "Tú",
+          esPropio: true,
+          fecha: new Date().toISOString(),
+          conversacionId: conv.id,
+          conversacionNombre: conv.nombre,
+          enMiCanal: true,
+          mensajeId: enviado?.id,
+          adjuntoId: adjunto.id,
+          descargado: false,
+        })
+      }
     }
     return res
   }),
@@ -447,7 +485,35 @@ export const comunicacionesHandlers = [
     if (!conv) return noEncontrada()
     const body = (await request.json()) as { DURACION: SilencioDuracion }
     conv.silenciadoHasta = hastaSilencio(body.DURACION)
+    conv.silencioDuracion = body.DURACION === "NINGUNA" ? null : body.DURACION
     return HttpResponse.json({ rows: [conv] })
+  }),
+
+  // Medios de aviso de la conversación (HU 7).
+  http.patch(URL("conversaciones/:id/alertas"), async ({ params, request }) => {
+    await delay(150)
+    const conv = buscar(params.id)
+    if (!conv) return noEncontrada()
+    const body = (await request.json()) as { CAMPANA: "S" | "N"; SONIDO: "S" | "N"; CORREO: "S" | "N" }
+    conv.alertaCampana = body.CAMPANA === "S"
+    conv.alertaSonido = body.SONIDO === "S"
+    conv.alertaCorreo = body.CORREO === "S"
+    return HttpResponse.json({ rows: [conv] })
+  }),
+
+  // Ajustes del chat del usuario (confirmación de lectura y sonido).
+  http.get(URL("ajustes"), async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [ajustesChatMock] })
+  }),
+
+  http.put(URL("ajustes"), async ({ request }) => {
+    await delay(150)
+    const body = (await request.json()) as Record<string, "S" | "N" | undefined>
+    if (body.CONFIRMACION_LECTURA_PERMITIR) ajustesChatMock.confirmacionLecturaPermitir = body.CONFIRMACION_LECTURA_PERMITIR === "S"
+    if (body.CONFIRMACION_LECTURA_SOLICITAR) ajustesChatMock.confirmacionLecturaSolicitar = body.CONFIRMACION_LECTURA_SOLICITAR === "S"
+    if (body.SONIDO) ajustesChatMock.sonido = body.SONIDO === "S"
+    return HttpResponse.json({ rows: [ajustesChatMock] })
   }),
 
   http.patch(URL("conversaciones/:id/no-leido"), async ({ params }) => {
@@ -515,7 +581,7 @@ export const comunicacionesHandlers = [
     const body = (await request.json()) as { NOMBRE?: string }
     const nombre = body.NOMBRE?.trim()
     if (!nombre) {
-      return HttpResponse.json({ message: "Escribe un nombre para el canal." }, { status: 400 })
+      return HttpResponse.json({ message: "Escribe un nombre." }, { status: 400 })
     }
     conv.nombre = nombre
     return HttpResponse.json({ rows: [conv] })
@@ -559,8 +625,18 @@ export const comunicacionesArchivosHandlers = [
       archivos.splice(idx, 0, a)
       return HttpResponse.json({ message: "Solo puedes eliminar archivos que compartiste tú." }, { status: 403 })
     }
+    if (a.descargado) {
+      archivos.splice(idx, 0, a)
+      return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    }
     // El mensaje donde se compartió conserva el aviso.
     for (const m of mensajes) {
+      const enLista = m.adjuntos?.find((x) => x.id != null && x.id === a.adjuntoId)
+      if (enLista) {
+        enLista.eliminadoEn = new Date().toISOString()
+        m.adjunto = m.adjuntos?.find((x) => !x.eliminadoEn) ?? m.adjunto
+        continue
+      }
       if (m.conversacionId === a.conversacionId && m.adjunto?.nombre === a.nombre) {
         m.adjunto.eliminadoEn = new Date().toISOString()
       }
@@ -783,7 +859,43 @@ export const comunicacionesMensajesHandlers = [
     await delay(150)
     const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
     if (!m?.adjunto) return mensajeNoEncontrado()
-    m.adjunto.eliminadoEn = new Date().toISOString()
+    if (m.adjuntos?.some((a) => !a.eliminadoEn && a.descargado)) {
+      return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    }
+    const ahora = new Date().toISOString()
+    m.adjunto.eliminadoEn = ahora
+    for (const a of m.adjuntos ?? []) a.eliminadoEn ??= ahora
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  // Como comms-service (V560): quitar un archivo puntual, salvo que otra persona ya lo descargó.
+  http.patch(URL("mensajes/:id/adjuntos/:adjunto/eliminar"), async ({ params }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    const a = m?.adjuntos?.find((x) => x.id === Number(params.adjunto) && !x.eliminadoEn)
+    if (!m || !a) return HttpResponse.json({ message: "El archivo ya no existe." }, { status: 404 })
+    if (!m.esPropio) {
+      return HttpResponse.json({ message: "Solo puedes quitar archivos de tus mensajes." }, { status: 403 })
+    }
+    if (a.descargado) return HttpResponse.json({ message: YA_DESCARGADO }, { status: 409 })
+    a.eliminadoEn = new Date().toISOString()
+    m.adjunto = m.adjuntos?.find((x) => !x.eliminadoEn) ?? a
+    const i = archivos.findIndex((x) => x.adjuntoId === a.id)
+    if (i !== -1) archivos.splice(i, 1)
+    publicarMensajeActualizado(m)
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  // Registro de descarga: la del autor no cuenta.
+  http.post(URL("mensajes/:id/adjuntos/:adjunto/descargas"), async ({ params }) => {
+    await delay(100)
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    const a = m?.adjuntos?.find((x) => x.id === Number(params.adjunto) && !x.eliminadoEn)
+    if (!m || !a) return HttpResponse.json({ message: "El archivo ya no existe." }, { status: 404 })
+    if (!m.esPropio && !a.descargado) {
+      a.descargado = true
+      publicarMensajeActualizado(m)
+    }
     return HttpResponse.json({ rows: [m] })
   }),
 

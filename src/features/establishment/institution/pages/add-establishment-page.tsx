@@ -34,6 +34,7 @@ import {
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
+import { usePuedeGestionarDirectivosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-directivos"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
@@ -118,9 +119,15 @@ export function AddEstablishmentPage() {
   const establishmentId = establishmentIdParam !== null ? Number(establishmentIdParam) : null
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
-  const { puedeCrear, puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
+  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO: con
+  // Guardar se editan los datos del EE con ese panel en solo lectura, y no se
+  // crean EE (uno nace con su rector).
+  const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarDirectivosQuery()
+  const directivosSoloLectura = puedeGestionarDirectivos !== true
   useEffect(() => {
-    if (permisoCargando || (isEditMode ? puedeEditar : puedeCrear)) return
+    if (permisoCargando || directivosCargando) return
+    if (isEditMode ? puedeEditar : puedeGestionarDirectivos) return
     navigate({
       to: isEditMode
         ? paths.app.establishments.detail.getHref(establishmentId)
@@ -128,7 +135,7 @@ export function AddEstablishmentPage() {
       search: (prev) => prev,
       replace: true,
     })
-  }, [permisoCargando, isEditMode, puedeCrear, puedeEditar, establishmentId, navigate])
+  }, [permisoCargando, directivosCargando, isEditMode, puedeEditar, puedeGestionarDirectivos, establishmentId, navigate])
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // `null` en edición = conservar el escudo guardado.
   const [shield, setShield] = useState<File | null>(null)
@@ -170,7 +177,7 @@ export function AddEstablishmentPage() {
   }, [establishmentQuery.data, isEditMode])
 
   // Tras el primer intento de guardar se revalida en cada cambio.
-  const validacionVisible = hasSubmitted ? validateEstablishmentForm(formValues, { logo: shield, photos }) : null
+  const validacionVisible = hasSubmitted ? validateEstablishmentForm(formValues, { logo: shield, photos }, { validarDirectivos: !directivosSoloLectura }) : null
   const fieldErrors = validacionVisible?.fieldErrors ?? {}
   const invalidFields = validacionVisible?.invalidFields ?? []
 
@@ -380,13 +387,15 @@ export function AddEstablishmentPage() {
   }
 
   async function submit() {
+    // Sin saber todavía si el panel es editable no se guarda: se perdería el rector.
+    if (directivosCargando) return
     activationNoticesRef.current = []
     activationFailedRef.current = false
     invitationWarningRef.current = false
     registradosRef.current = []
     setHasSubmitted(true)
 
-    const validation = validateEstablishmentForm(formValues, { logo: shield, photos })
+    const validation = validateEstablishmentForm(formValues, { logo: shield, photos }, { validarDirectivos: !directivosSoloLectura })
 
     if (validation.errors.length > 0) {
       notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })
@@ -397,34 +406,40 @@ export function AddEstablishmentPage() {
     let nextSecretary = formValues.secretary
     const pendingInvitations: PendingInvitation[] = []
 
-    try {
-      const persistedPrincipal = await persistPersonIfAny(
-        nextPrincipal,
-        principalEmployee,
-        "Rector",
-        photos["principal"] ?? null,
-        principalMatchRef.current,
-      )
-      if (persistedPrincipal) {
-        nextPrincipal = persistedPrincipal.person
-        if (persistedPrincipal.pendingInvitation) pendingInvitations.push(persistedPrincipal.pendingInvitation)
-      }
+    // En solo lectura no se toca a rector ni a secretaria: el PATCH del EE
+    // reenvía los mismos ids, que el back no cuenta como cambio. Además, el
+    // PATCH de la persona pasaría por el rango de Funcionarios, y un jefe de
+    // sistema o un auxiliar no alcanzan al rector: no podrían guardar nunca.
+    if (!directivosSoloLectura) {
+      try {
+        const persistedPrincipal = await persistPersonIfAny(
+          nextPrincipal,
+          principalEmployee,
+          "Rector",
+          photos["principal"] ?? null,
+          principalMatchRef.current,
+        )
+        if (persistedPrincipal) {
+          nextPrincipal = persistedPrincipal.person
+          if (persistedPrincipal.pendingInvitation) pendingInvitations.push(persistedPrincipal.pendingInvitation)
+        }
 
-      const persistedSecretary = await persistPersonIfAny(
-        nextSecretary,
-        secretaryEmployee,
-        "Secretaria",
-        photos["secretary"] ?? null,
-        secretaryMatchRef.current,
-      )
-      if (persistedSecretary) {
-        nextSecretary = persistedSecretary.person
-        if (persistedSecretary.pendingInvitation) pendingInvitations.push(persistedSecretary.pendingInvitation)
+        const persistedSecretary = await persistPersonIfAny(
+          nextSecretary,
+          secretaryEmployee,
+          "Secretaria",
+          photos["secretary"] ?? null,
+          secretaryMatchRef.current,
+        )
+        if (persistedSecretary) {
+          nextSecretary = persistedSecretary.person
+          if (persistedSecretary.pendingInvitation) pendingInvitations.push(persistedSecretary.pendingInvitation)
+        }
+      } catch {
+        // Si el rector se guardó y la secretaria no, se deshace el rector.
+        await cancelarPendientesRegistrados()
+        return
       }
-    } catch {
-      // Si el rector se guardó y la secretaria no, se deshace el rector.
-      await cancelarPendientesRegistrados()
-      return
     }
 
     const nextValues: EstablishmentDetails = {
@@ -502,7 +517,7 @@ export function AddEstablishmentPage() {
     navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
   }
 
-  const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending
+  const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending || directivosCargando
 
   return (
     <TableScreen>
@@ -567,11 +582,18 @@ export function AddEstablishmentPage() {
               <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
+                  {directivosSoloLectura && !directivosCargando ? (
+                    <p className="text-sm text-muted-foreground">
+                      Solo un usuario con permiso de eliminar en Establecimiento puede cambiar el rector o la
+                      secretaria del establecimiento.
+                    </p>
+                  ) : null}
                   <Card className={accordionCardClassName}>
                     <CardContent>
                       <UserDetailsForm
                         role="RECTOR"
                         fieldPrefix="principal"
+                        disabled={directivosSoloLectura}
                         value={formValues.principal}
                         onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
                         invalidFields={invalidFields}
@@ -599,6 +621,7 @@ export function AddEstablishmentPage() {
                         errors={fieldErrors}
                         showValidation={hasSubmitted}
                         required={false}
+                        disabled={directivosSoloLectura}
                         photo={photos["secretary"] ?? null}
                         onPhotoChange={(file) =>
                           setPhotos((current) => ({ ...current, secretary: file }))

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
+import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
@@ -18,8 +19,33 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
 import type { VistaChat } from "@/features/comunicaciones/chat/api/schema"
 import { useArchivarConversacion } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
-import { agregarReciente } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { agregarReciente, rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { InvitacionesSeccion } from "@/features/comunicaciones/chat/components/invitaciones-seccion"
+import { chatRoute } from "@/router"
+import { FiltrosChatPopover } from "@/features/comunicaciones/chat/components/filtros-chat-popover"
+import { FavoritosFiltrosPopover } from "@/features/comunicaciones/chat/components/favoritos-filtros-popover"
+import { ResultadosBusqueda } from "@/features/comunicaciones/chat/components/resultados-busqueda"
+import {
+  useBusquedaChatQuery,
+  useOpcionesFiltroQuery,
+} from "@/features/comunicaciones/chat/api/query/use-busqueda-chat-query"
+import {
+  FILTROS_VACIOS,
+  contarFiltrosAvanzados,
+  describirFiltros,
+  filtrosAUrl,
+  filtrosDeUrl,
+  filtrosEfectivos,
+  hayFiltros,
+  hayFiltrosDeAutor,
+  type FiltrosChat,
+} from "@/features/comunicaciones/chat/lib/filtros-chat"
+import {
+  useDisponibilidadDirectosQuery,
+  usePresenciaMap,
+} from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import { PuntoSuelto } from "@/features/comunicaciones/chat/components/disponibilidad"
+import type { EstadoDisponibilidad } from "@/features/comunicaciones/chat/api/types"
 
 const CLAVE_RECIENTES = "chat-busquedas-recientes"
 
@@ -53,6 +79,7 @@ import {
   ArchiveIcon,
   UnarchiveIcon,
   ClockCounterClockwiseIcon,
+  WarningCircleIcon,
   type Icon,
 } from "@/components/ui/icons"
 
@@ -65,6 +92,8 @@ interface ChatSidebarProps {
   vista: VistaChat | undefined
   onVista: (vista: VistaChat) => void
   onSeleccionar: (id: number | undefined) => void
+  // Resultado del historial filtrado: abre la conversación en ese mensaje.
+  onAbrirMensaje?: (conversacionId: number, mensajeId: number) => void
   // Invitación resaltada (`?invitacion=` del deep link de la notificación).
   invitacionDestacada?: number
   className?: string
@@ -79,6 +108,7 @@ export function ChatSidebar({
   vista,
   onVista,
   onSeleccionar,
+  onAbrirMensaje,
   invitacionDestacada,
   className,
 }: ChatSidebarProps) {
@@ -86,7 +116,30 @@ export function ChatSidebar({
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
   const { puedeGestionar, reglaDirectoCon } = useChatAccess()
   const { notify } = useNotify()
-  const [texto, setTexto] = useState("")
+  // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
+  // marcador. El texto del buscador vive también en estado local para no perder el cursor.
+  const filtrosUrl = chatRoute.useSearch()
+  const navigate = chatRoute.useNavigate()
+  const [texto, setTextoLocal] = useState(filtrosUrl.q ?? "")
+  const setTexto = (v: string) => {
+    setTextoLocal(v)
+    navigate({ search: (prev) => ({ ...prev, q: v || undefined }), replace: true })
+  }
+  const filtros: FiltrosChat = { ...filtrosDeUrl(filtrosUrl), q: texto }
+  const aplicarFiltros = (f: FiltrosChat) => {
+    setTextoLocal(f.q)
+    navigate({ search: (prev) => ({ ...prev, ...filtrosAUrl(f) }), replace: true })
+  }
+  const buscando = hayFiltros(filtros)
+  // Filtros del panel (tipo, fechas, estado, persona, rol, grupo): la lista es la del servidor.
+  const conPanel = contarFiltrosAvanzados(filtros) > 0
+  const busqueda = useBusquedaChatQuery(filtros)
+  const paginas = buscando ? busqueda.data?.pages : undefined
+  const delServidor = new Set(paginas?.[0]?.conversaciones ?? [])
+  const resultados = paginas?.flatMap((p) => p.mensajes) ?? []
+  const opcionesFiltro = useOpcionesFiltroQuery(hayFiltrosDeAutor(filtros))
+  const nombreGrupo = (id: number) => opcionesFiltro.data?.grupos.find((g) => Number(g.valor) === id)?.etiqueta
+  const resumenFiltros = conPanel ? describirFiltros(filtros, nombreGrupo) : ""
   const [crearGrupo, setCrearGrupo] = useState(false)
   // Búsquedas recientes (diseño 4501:66442): por navegador, solo una comodidad.
   const [recientes, setRecientes] = useState<string[]>(leerRecientes)
@@ -100,7 +153,13 @@ export function ChatSidebar({
   const t = texto.trim().toLowerCase()
   // El buscador (en lugar del nombre del establecimiento) filtra la lista en el lugar y,
   // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
-  const visibles = t ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t)) : conversaciones
+  // Con filtros del panel la lista es la que devuelve el servidor; con solo palabras, las que
+  // coinciden por nombre más las que tienen mensajes con esas palabras.
+  const visibles = conPanel
+    ? conversaciones.filter((c) => delServidor.has(c.id))
+    : t
+      ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t) || delServidor.has(c.id))
+      : conversaciones
   const personasQuery = usePersonasQuery(t.length >= 2, texto)
   const conDirecto = new Set(conversaciones.filter((c) => c.tipo === "DIRECTO").map((c) => c.nombre))
   const personas =
@@ -111,6 +170,15 @@ export function ChatSidebar({
           .slice(0, 8)
       : []
   const abrirDirecto = useAbrirDirecto()
+  // Disponibilidad de la otra persona de cada directo: la del socket gana sobre la de la carga.
+  const { data: contactos = [] } = useDisponibilidadDirectosQuery(
+    conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id),
+  )
+  const presencia = usePresenciaMap()
+  const disponibilidadDe = (c: Conversacion): EstadoDisponibilidad | undefined => {
+    const k = c.tipo === "DIRECTO" ? contactos.find((x) => x.conversacionId === c.id) : undefined
+    return k ? (presencia[k.usuarioId] ?? k.estado) : undefined
+  }
 
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
@@ -122,6 +190,7 @@ export function ChatSidebar({
     <ItemConversacion
       key={c.id}
       conversacion={c}
+      disponibilidad={disponibilidadDe(c)}
       activa={c.id === activaId}
       onClick={() => {
         if (t) recordar()
@@ -133,8 +202,8 @@ export function ChatSidebar({
 
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
-      <div className="relative flex h-16 shrink-0 items-center border-b px-3">
-        <label className="flex h-10 w-full items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+      <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
+        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>
           <input
@@ -147,7 +216,7 @@ export function ChatSidebar({
               if (e.key === "Escape") setTexto("")
               if (e.key === "Enter") recordar()
             }}
-            placeholder="Buscar conversaciones y personas"
+            placeholder="Buscar conversaciones, personas y mensajes"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
           {texto && (
@@ -161,6 +230,8 @@ export function ChatSidebar({
             </button>
           )}
         </label>
+        <FiltrosChatPopover filtros={filtros} onFiltros={aplicarFiltros} />
+        <FavoritosFiltrosPopover filtros={filtros} onFiltros={aplicarFiltros} />
         {verRecientes && (
           <div className="absolute inset-x-3 top-full z-30 -mt-2 overflow-hidden rounded-lg border bg-popover py-2 text-popover-foreground shadow-md">
             <p className="px-4 pb-1 text-xs text-muted-foreground">Búsquedas recientes</p>
@@ -184,6 +255,20 @@ export function ChatSidebar({
         )}
       </div>
 
+      {conPanel && (
+        <div role="status" className="flex items-center gap-2 border-b bg-primary/5 px-3 py-1.5 text-xs">
+          <span className="min-w-0 flex-1 truncate" title={resumenFiltros}>
+            Filtrando: {resumenFiltros}
+          </span>
+          <button
+            type="button"
+            onClick={() => aplicarFiltros({ ...FILTROS_VACIOS, q: texto })}
+            className="shrink-0 font-medium text-primary underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            Quitar filtros
+          </button>
+        </div>
+      )}
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
           <InvitacionesSeccion destacada={invitacionDestacada} onAceptada={onSeleccionar} />
           {/* Archivados arriba, con contador y desarchivar por fila (diseño 4742:72681). */}
@@ -247,12 +332,31 @@ export function ChatSidebar({
               Reintentar
             </button>
           </div>
-        ) : t && visibles.length === 0 && personas.length === 0 ? (
+        ) : t && !buscando && visibles.length === 0 && personas.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
             {personasQuery.isFetching ? "Buscando…" : `Ninguna conversación o persona coincide con “${texto.trim()}”.`}
           </p>
         ) : (
           <>
+            {buscando && (
+              <Seccion titulo="Mensajes" icono={MagnifyingGlassIcon}>
+                <ResultadosBusqueda
+                  mensajes={resultados}
+                  termino={filtrosEfectivos(filtros).q}
+                  cargando={busqueda.isPending || (busqueda.isPlaceholderData && resultados.length === 0)}
+                  error={busqueda.isError}
+                  hayMas={!!busqueda.hasNextPage}
+                  cargandoMas={busqueda.isFetchingNextPage}
+                  onMas={() => void busqueda.fetchNextPage()}
+                  onReintentar={() => void busqueda.refetch()}
+                  onAbrir={(m) => {
+                    if (t) recordar()
+                    if (onAbrirMensaje) onAbrirMensaje(m.conversacionId, m.id)
+                    else onSeleccionar(m.conversacionId)
+                  }}
+                />
+              </Seccion>
+            )}
             {personas.length > 0 && (
               <Seccion titulo="Personas">
                 {personas.map((p) => (
@@ -274,6 +378,9 @@ export function ChatSidebar({
                     >
                       <UserIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate">{p.nombre}</span>
+                      {rolVisible(p) && (
+                        <span className="shrink-0 text-xs text-muted-foreground">{rolVisible(p)}</span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -410,8 +517,11 @@ function ItemConversacion({
   onClick,
   onSalida,
   desarchivar = false,
+  disponibilidad,
 }: {
   conversacion: Conversacion
+  // Solo directos: estado de la otra persona (punto sobre sus iniciales).
+  disponibilidad?: EstadoDisponibilidad
   activa: boolean
   onClick: () => void
   onSalida: () => void
@@ -434,7 +544,8 @@ function ItemConversacion({
         onClick={onClick}
         aria-current={activa ? "page" : undefined}
         className={cn(
-          "flex h-9 min-w-0 flex-1 items-center gap-3 rounded-lg px-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
+          "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 text-left text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
+          c.ultimoMensaje ? "min-h-12 py-1.5" : "h-9",
           conPendientes && "font-semibold",
         )}
       >
@@ -446,12 +557,15 @@ function ItemConversacion({
             C
           </span>
         ) : c.tipo === "DIRECTO" ? (
-          // Mensaje directo: iniciales de la persona (diseño 4516:68095).
-          <span
-            aria-hidden
-            className="grid size-5 shrink-0 place-items-center rounded-full bg-navy-22 text-[9px] font-semibold text-navy"
-          >
-            {iniciales(c.nombre)}
+          // Mensaje directo: iniciales de la persona (diseño 4516:68095) y su disponibilidad.
+          <span className="relative shrink-0">
+            <span
+              aria-hidden
+              className="grid size-5 place-items-center rounded-full bg-navy-22 text-[9px] font-semibold text-navy"
+            >
+              {iniciales(c.nombre)}
+            </span>
+            <PuntoSuelto estado={disponibilidad} className="size-2" />
           </span>
         ) : (
           <Icono
@@ -459,7 +573,42 @@ function ItemConversacion({
             className={cn("size-5 shrink-0", activa ? "opacity-100" : "text-muted-foreground")}
           />
         )}
-        <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        {c.ultimoMensaje ? (
+          // Vista previa del último mensaje y su hora (diseño 4516:68095).
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 items-baseline gap-2">
+              <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+              <time
+                dateTime={c.ultimoMensaje.enviadoEn}
+                className={cn(
+                  "shrink-0 text-[11px] font-normal",
+                  activa ? "text-primary-foreground/80" : "text-muted-foreground",
+                )}
+              >
+                {horaVistaPrevia(c.ultimoMensaje.enviadoEn)}
+              </time>
+            </span>
+            <span
+              className={cn(
+                "truncate text-xs",
+                activa ? "text-primary-foreground/80" : conPendientes ? "text-foreground" : "text-muted-foreground",
+                !conPendientes && "font-normal",
+              )}
+            >
+              {lineaVistaPrevia(c)}
+            </span>
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+        )}
+        {c.importante && (
+          // Comunicado marcado como importante por quien lo publicó.
+          <WarningCircleIcon
+            aria-label="Importante"
+            role="img"
+            className={cn("size-4 shrink-0", activa ? "opacity-100" : "text-red")}
+          />
+        )}
         {c.silenciadoHasta && (
           <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 opacity-60" />
         )}

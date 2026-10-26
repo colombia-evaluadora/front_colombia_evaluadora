@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { topicoUsuario } from "@/lib/auth-mapper"
 import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
+import { useAjustesChatQuery } from "@/features/comunicaciones/chat/api/query/use-ajustes-chat-query"
+import { debeSonar, reproducirSonidoAviso } from "@/features/notificaciones/lib/sonido-aviso"
 
 /**
  * Eventos de la bandeja en el tópico personal `user:<sub>` (notification-service,
@@ -27,12 +29,29 @@ const EVENTOS = new Set([
   "notification.read_all",
 ])
 
+/** Ventana en la que se juntan los eventos de una ráfaga antes de refrescar la campana. */
+export const REFRESCO_MS = 400
+
 export function useNotificacionesTiempoReal() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
+  // Apagado global del sonido (ajustes del chat). Mientras carga, el defecto: suena.
+  const ajustes = useAjustesChatQuery({ enabled: !!user && !user.offline })
+  const sonidoActivo = ajustes.data?.sonido ?? true
 
-  // Prefijo de todas las keys de la bandeja (lista, contador, preferencias).
-  const refrescar = () => void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+  // Prefijo de todas las keys de la bandeja (lista, contador, preferencias). Un mensaje del chat
+  // trae en ráfaga `conversacion.actualizada` + `notification.created` (+ `read_all` si se lee en
+  // el acto): se juntan en un solo refetch en vez de pedir lista y contador tres veces, que sumaba
+  // carga al gateway justo cuando el mensaje tiene que verse en vivo.
+  const pendiente = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const refrescar = () => {
+    if (pendiente.current) return
+    pendiente.current = setTimeout(() => {
+      pendiente.current = undefined
+      void queryClient.invalidateQueries({ queryKey: ["notificaciones"] })
+    }, REFRESCO_MS)
+  }
+  useEffect(() => () => clearTimeout(pendiente.current), [])
 
   useRealtimeTopic(
     user && !user.offline ? topicoUsuario(user) : null,
@@ -42,6 +61,9 @@ export function useNotificacionesTiempoReal() {
       // `conversacion.actualizada` en este mismo tópico. Si el
       // `notification.created` se pierde (gateway best-effort), la campana se
       // pone al día igual.
+      // Alerta sonora (HU 7): notification-service marca `sonar` (sin Ocupado, sin horario
+      // silencioso, con el sonido de la conversación encendido); acá, el apagado global.
+      if (e.event === "notification.created" && debeSonar(e.data, sonidoActivo)) reproducirSonidoAviso()
       if (EVENTOS.has(e.event) || e.event === "conversacion.actualizada") refrescar()
     },
     () => refrescar(),

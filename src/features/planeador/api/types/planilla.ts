@@ -136,9 +136,25 @@ export interface InstrumentoCotejoItem {
   descripcion: string
 }
 
+/** Un criterio de la escala por criterio (Reglas 40-42, `TACTIVIDAD_ESCALA_CRITERIO`):
+ *  numérica con su propio rango, cualitativa con sus propios niveles. */
+export interface InstrumentoEscalaCriterio {
+  pk: number
+  orden: number
+  nombre: string
+  valorMin: number | null
+  valorMax: number | null
+  interpretacion: string | null
+  niveles: InstrumentoNivel[]
+}
+
 export interface InstrumentoEscala {
   pk: number
+  /** Solo los niveles de una escala ANTERIOR (sin criterios): con `criterios`
+   *  cada criterio trae los suyos. Ver `criteriosDeEscala`. */
   niveles: InstrumentoNivel[]
+  /** Escala por criterio; `[]`/ausente en una escala anterior. */
+  criterios?: InstrumentoEscalaCriterio[]
   /** El resto de los campos de una escala NUMÉRICA (`tipoEscala` — el ID
    *  numérico, no el código —, `tipoEscalaValor`, `valorMin`/`valorMax`,
    *  etc.) también vienen en la respuesta real, pero esta interfaz solo

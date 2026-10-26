@@ -60,6 +60,11 @@ interface UserFormProps {
      */
     required?: boolean
     /**
+     * Solo lectura: se ven los datos pero no se cambian (ni la foto). Base UI
+     * ignora `<fieldset disabled>`, por eso cada control lo recibe explícito.
+     */
+    disabled?: boolean
+    /**
      * Foto recién elegida, todavía sin subir. Igual que el escudo del
      * establecimiento, vive en el padre: es él quien la manda como
      * `fkTarchivoFoto` del multipart al registrar o actualizar. Sin estas dos
@@ -131,6 +136,7 @@ export function UserDetailsForm({
     invalidFields = [], errors = {},
     showValidation = false,
     required = true,
+    disabled = false,
     photo: photoProp,
     onPhotoChange,
     onRemovePhoto,
@@ -277,6 +283,7 @@ export function UserDetailsForm({
                     deleteLabel="Eliminar foto"
                     error={errorFor(`${fieldPrefix}.photo`)}
                     className="md:row-span-3"
+                    disabled={disabled}
                     existingPreview={
                         person.photoArchivoId != null ? (
                             <ArchivoImage
@@ -288,7 +295,7 @@ export function UserDetailsForm({
                         ) : undefined
                     }
                     onRemoveExisting={
-                        person.photoArchivoId == null && !uploadedPhoto
+                        disabled || (person.photoArchivoId == null && !uploadedPhoto)
                             ? undefined
                             : () => {
                                   emitChange({ photoArchivoId: null })
@@ -305,6 +312,7 @@ export function UserDetailsForm({
 
                     <ComboboxField
                         id="document-type"
+                        disabled={disabled}
                         items={documentTypeLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
                         value={person.documentType?.id ?? null}
@@ -340,6 +348,7 @@ export function UserDetailsForm({
                     <Input
                         id="document-number"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         // TUSUARIO.IDENTIFICACION es VARCHAR(30) (@Size(max=30)
                         // en RegisterUsuarioRequest), acotado a 15 acá. Solo
@@ -362,6 +371,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
@@ -375,6 +385,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-second-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
                         aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
@@ -388,6 +399,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-last-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
@@ -401,6 +413,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-second-last-name"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
                         aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
@@ -415,6 +428,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-email"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
@@ -433,6 +447,7 @@ export function UserDetailsForm({
                     <Input
                         id="user-phone"
                         size="sm"
+                        disabled={disabled}
                         placeholder="Agregar"
                         type="tel"
                         // La columna aguanta VARCHAR(30), pero solo se opera
@@ -462,6 +477,7 @@ export function UserDetailsForm({
                         id="birth-date"
                         mode="date"
                         size="sm"
+                        disabled={disabled}
                         maxDate={getMaxBirthDate()}
                         value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
@@ -475,6 +491,7 @@ export function UserDetailsForm({
                     </FieldLabel>
                     <ComboboxField
                         id="gender-user"
+                        disabled={disabled}
                         items={genderLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
                         value={person.gender?.id ?? null}

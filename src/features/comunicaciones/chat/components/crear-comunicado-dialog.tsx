@@ -17,15 +17,24 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import type { Audiencia, Comunicado } from "@/features/comunicaciones/chat/api/types"
-import { AUDIENCIAS } from "@/features/comunicaciones/chat/api/ui-mappings"
 import {
+  textoFallidos,
   useCrearComunicado,
   useEditarComunicado,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { EditorTexto } from "@/features/comunicaciones/chat/components/editor-texto"
-import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
+import { DestinatariosComunicado } from "@/features/comunicaciones/chat/components/destinatarios-comunicado"
+import { AdjuntosComunicadoCampo } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { htmlSeguro, htmlVacio } from "@/features/comunicaciones/chat/lib/html-seguro"
 import { ahoraLocal, isoALocal } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import {
+  aDestinos,
+  deDestinos,
+  DESTINOS_VACIOS,
+  hayDestinos,
+  resumenDestinatarios,
+  type DestinosLocal,
+} from "@/features/comunicaciones/chat/lib/destinos-comunicado"
 import {
   useAutoguardadoActividad,
   useEliminarBorradorActividad,
@@ -37,11 +46,14 @@ import { datosDe, hayContenido } from "@/features/comunicaciones/chat/lib/borrad
 const datosSchema = z.object({
   titulo: z.string().trim().min(1, required("El título")).max(120, maxLength(120, "El título")),
   descripcion: z.string().max(300, maxLength(300, "La descripción")),
-  audiencia: z.array(z.string()).min(1, "Elige al menos un grupo."),
+  // La audiencia por rol puede ir vacía si hay otros destinatarios (se valida aparte).
+  audiencia: z.array(z.string()),
   publicarEn: z
     .string()
     .nullable()
     .refine((v) => !!v, required("La fecha de publicación", { femenino: true })),
+  importante: z.boolean(),
+  permitirRespuestas: z.boolean(),
 })
 
 type Datos = z.infer<typeof datosSchema>
@@ -57,61 +69,101 @@ export function CrearComunicadoDialog({
   open: boolean
   onClose: () => void
   onCreado: (conversacionId: number) => void
-  // "Editar Comunicado" (diseño 4062:67938). Ya publicado, la audiencia y la fecha no cambian.
+  // "Editar Comunicado" (diseño 4062:67938). Ya publicado, los destinatarios y la fecha no cambian.
   // Quien lo abre lo monta con `key` para que los valores iniciales se lean una vez.
   editar?: Comunicado
-  // Borrador retomado desde "Borradores y enviados" (montado con `key`).
+  // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
+  // cambios sin guardar de esa edición (se aplican sobre lo publicado).
   borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
   const [html, setHtml] = useState(
-    editar?.contenidoHtml ?? (typeof borrador?.datos?.html === "string" ? borrador.datos.html : ""),
+    typeof borrador?.datos?.html === "string" ? borrador.datos.html : (editar?.contenidoHtml ?? ""),
   )
+  // Personas, grupos del chat y grados/grupos/cargos (además de la audiencia por rol).
+  const [destinos, setDestinos] = useState<DestinosLocal>(() =>
+    borrador?.datos?.destinos
+      ? deDestinos(borrador.datos.destinos as Parameters<typeof deDestinos>[0])
+      : deDestinos(editar?.destinos),
+  )
+  // Archivos nuevos (se suben al guardar) y guardados que se quitan (edición).
+  const [archivos, setArchivos] = useState<File[]>([])
+  const [quitados, setQuitados] = useState<number[]>([])
   const [intentado, setIntentado] = useState(false)
+  const [sinDestinatarios, setSinDestinatarios] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crearNuevo = useCrearComunicado()
   const editarComunicado = useEditarComunicado(editar?.conversacionId ?? 0)
   const crear = editar ? editarComunicado : crearNuevo
   const contenidoVacio = htmlVacio(html)
-  // Ya publicado: solo se corrigen título, descripción y contenido.
+  // Ya publicado: los destinatarios y la fecha no cambian.
   const publicado = !!editar && new Date(editar.publicarEn) <= new Date()
 
   const datos = useAppForm({
     defaultValues: (editar
-      ? {
+      ? datosDe(borrador?.datos, {
           titulo: editar.titulo,
           descripcion: editar.descripcion,
-          audiencia: editar.audiencia,
-          publicarEn: isoALocal(editar.publicarEn),
-        }
+          audiencia: editar.audiencia as string[],
+          publicarEn: isoALocal(editar.publicarEn) as string | null,
+          importante: !!editar.importante,
+          permitirRespuestas: !!editar.permiteRespuestas,
+        })
       : datosDe(borrador?.datos, {
           titulo: "",
           descripcion: "",
           audiencia: [] as string[],
           publicarEn: ahoraLocal() as string | null,
+          importante: false,
+          permitirRespuestas: false,
         })) as Datos,
     validators: { onSubmit: datosSchema },
-    onSubmit: () => setPaso(2),
+    onSubmit: ({ value }) => {
+      if (!publicado && value.audiencia.length === 0 && !hayDestinos(destinos)) {
+        setSinDestinatarios(true)
+        return
+      }
+      setPaso(2)
+    },
   })
 
-  // Comunicado nuevo: lo escrito se autoguarda como borrador (comms-service).
+  // Lo escrito se autoguarda como borrador (comms-service); al editar uno publicado, atado a él.
+  // Los archivos no viajan en el borrador (se vuelven a adjuntar al retomarlo).
   const valores = useStore(datos.store, (s) => s.values)
   const autoguardado = useAutoguardadoActividad({
     tipo: "COMUNICADO",
-    habilitado: open && !editar,
+    habilitado: open,
     titulo: valores.titulo,
-    datos: { ...valores, html },
-    conContenido: hayContenido(valores.titulo, valores.descripcion, valores.audiencia, contenidoVacio ? "" : html),
+    datos: { ...valores, html, destinos: aDestinos(destinos) },
+    conContenido: hayContenido(
+      valores.titulo,
+      valores.descripcion,
+      valores.audiencia,
+      contenidoVacio ? "" : html,
+      hayDestinos(destinos) ? "destinos" : "",
+    ),
     borradorInicial: borrador?.id,
+    conversacionId: editar?.conversacionId,
   })
   const eliminarBorrador = useEliminarBorradorActividad()
 
   const reiniciar = () => {
     autoguardado.reiniciar()
-    datos.reset({ titulo: "", descripcion: "", audiencia: [], publicarEn: ahoraLocal() })
+    datos.reset({
+      titulo: "",
+      descripcion: "",
+      audiencia: [],
+      publicarEn: ahoraLocal(),
+      importante: false,
+      permitirRespuestas: false,
+    })
     setHtml("")
+    setDestinos(DESTINOS_VACIOS)
+    setArchivos([])
+    setQuitados([])
     setIntentado(false)
+    setSinDestinatarios(false)
     setPaso(1)
     crear.reset()
     onClose()
@@ -119,15 +171,21 @@ export function CrearComunicadoDialog({
 
   const intentarCerrar = async () => {
     if (crear.isPending) return
-    if (!editar) {
-      // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados".
-      const id = await autoguardado.guardarYa()
-      if (id) notify("El comunicado quedó guardado en Borradores y enviados.")
-      reiniciar()
-      return
+    // Cerrar no pierde nada: lo escrito queda en "Borradores y enviados" (los archivos no).
+    const id = await autoguardado.guardarYa()
+    if (id) {
+      notify(
+        editar
+          ? "Tus cambios sin guardar quedaron en Borradores y enviados."
+          : "El comunicado quedó guardado en Borradores y enviados.",
+      )
     }
-    if (datos.state.isDirty || !contenidoVacio) setDescartar(true)
-    else reiniciar()
+    reiniciar()
+  }
+
+  const avisarFallidos = (fallidos: { nombre: string; error: string }[]) => {
+    const texto = textoFallidos(fallidos)
+    if (texto) notify(texto, { variant: "warning" })
   }
 
   const crearComunicado = async () => {
@@ -138,30 +196,44 @@ export function CrearComunicadoDialog({
       titulo: v.titulo.trim(),
       descripcion: v.descripcion.trim(),
       audiencia: v.audiencia as Audiencia[],
+      destinos: aDestinos(destinos),
       // Ya publicado se reenvía la fecha original exacta (el backend rechaza cambiarla).
       publicarEn: publicado && editar ? editar.publicarEn : new Date(v.publicarEn as string).toISOString(),
       contenidoHtml: htmlSeguro(html),
+      importante: v.importante,
+      permitirRespuestas: v.permitirRespuestas,
+      archivos,
     }
     if (editar) {
-      editarComunicado.mutate(cuerpo, {
-        onSuccess: (c) => {
-          notify(`Se guardaron los cambios de ${c.titulo}.`)
-          reiniciar()
+      // Guardar desde el borrador de la edición lo elimina (?borrador).
+      const borradorId = await autoguardado.guardarYa()
+      editarComunicado.mutate(
+        // Ya publicado se reenvían los destinatarios guardados tal cual (no cambian).
+        publicado && editar.destinos
+          ? { ...cuerpo, audiencia: editar.audiencia, destinos: editar.destinos, quitarAdjuntos: quitados, borradorId }
+          : { ...cuerpo, quitarAdjuntos: quitados, borradorId },
+        {
+          onSuccess: ({ dato, fallidos }) => {
+            notify(`Se guardaron los cambios de ${dato.titulo}.`)
+            avisarFallidos(fallidos)
+            reiniciar()
+          },
         },
-      })
+      )
       return
     }
     const borradorId = await autoguardado.guardarYa()
     crearNuevo.mutate(
       { ...cuerpo, borradorId },
       {
-        onSuccess: (canal) => {
+        onSuccess: ({ dato: canal, fallidos }) => {
           const programado = new Date(v.publicarEn as string) > new Date()
           notify(
             programado
               ? `Se programó el comunicado ${canal.nombre}.`
               : `Se publicó el comunicado ${canal.nombre}.`,
           )
+          avisarFallidos(fallidos)
           reiniciar()
           onCreado(canal.id)
         },
@@ -200,36 +272,33 @@ export function CrearComunicadoDialog({
               <datos.AppField name="descripcion">
                 {(f) => <f.TextareaField label="Descripción" maxLength={300} />}
               </datos.AppField>
-              <datos.Field name="audiencia">
-                {(f) => {
-                  const invalido = f.state.meta.errors.length > 0
-                  return (
-                    <div className="relative">
-                      <span className="absolute -top-2.5 left-3 z-10 bg-popover px-1 text-sm font-medium">
-                        Audiencia<span className="text-red"> *</span>
-                      </span>
-                      <SelectorChips
-                        items={AUDIENCIAS}
-                        value={AUDIENCIAS.filter((a) => f.state.value.includes(a.value))}
-                        onChange={(v) => f.handleChange(v.map((a) => a.value))}
-                        getId={(a) => a.value}
-                        getLabel={(a) => a.label}
-                        visibles={3}
-                        conFlecha
-                        invalido={invalido}
-                        deshabilitado={publicado ? () => true : undefined}
-                        ariaLabel="Audiencia"
-                        placeholder="Elige quién recibe el comunicado"
-                      />
-                      {invalido && (
-                        <p role="alert" className="mt-1 text-xs text-red">
-                          Elige al menos un grupo.
-                        </p>
-                      )}
-                    </div>
-                  )
-                }}
-              </datos.Field>
+              {publicado && editar ? (
+                <div className="rounded-lg border px-3 py-2 text-sm">
+                  <p className="font-medium">Destinatarios</p>
+                  <p className="text-muted-foreground">
+                    {resumenDestinatarios(editar.audiencia, editar.destinos) || "—"}
+                  </p>
+                </div>
+              ) : (
+                <datos.Field name="audiencia">
+                  {(f) => (
+                    <DestinatariosComunicado
+                      enabled={open && paso === 1}
+                      audiencia={f.state.value as Audiencia[]}
+                      onAudiencia={(v) => {
+                        setSinDestinatarios(false)
+                        f.handleChange(v)
+                      }}
+                      destinos={destinos}
+                      onDestinos={(v) => {
+                        setSinDestinatarios(false)
+                        setDestinos(v)
+                      }}
+                      invalido={sinDestinatarios}
+                    />
+                  )}
+                </datos.Field>
+              )}
               <datos.AppField name="publicarEn">
                 {(f) => (
                   <f.DateField
@@ -240,21 +309,48 @@ export function CrearComunicadoDialog({
                     disabled={publicado}
                     description={
                       publicado
-                        ? "Ya se publicó: la audiencia y la fecha no se pueden cambiar."
+                        ? "Ya se publicó: los destinatarios y la fecha no se pueden cambiar."
                         : "Si eliges una fecha futura, el comunicado queda programado."
                     }
                   />
                 )}
               </datos.AppField>
+              {/* Mismo patrón "Permitir" de la elección (diseño 4062:67999). */}
+              <fieldset className="rounded-lg border px-3 pt-1 pb-3">
+                <legend className="px-1 text-sm font-medium">Opciones</legend>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  <datos.AppField name="importante">
+                    {(f) => <f.CheckboxField label="Marcar como importante" />}
+                  </datos.AppField>
+                  <datos.AppField name="permitirRespuestas">
+                    {(f) => <f.CheckboxField label="Permitir respuestas" />}
+                  </datos.AppField>
+                </div>
+              </fieldset>
             </form>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-              <EditorTexto etiqueta="Contenido del comunicado" valor={html} onCambio={setHtml} invalido={intentado && contenidoVacio} />
-              {intentado && contenidoVacio && (
-                <p role="alert" className="text-xs text-red">
-                  Escribe el contenido del comunicado.
-                </p>
-              )}
+            <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1 py-1">
+              <div className="flex min-h-64 flex-col gap-1.5">
+                <EditorTexto
+                  etiqueta="Contenido del comunicado"
+                  valor={html}
+                  onCambio={setHtml}
+                  invalido={intentado && contenidoVacio}
+                />
+                {intentado && contenidoVacio && (
+                  <p role="alert" className="text-xs text-red">
+                    Escribe el contenido del comunicado.
+                  </p>
+                )}
+              </div>
+              <AdjuntosComunicadoCampo
+                archivos={archivos}
+                onArchivos={setArchivos}
+                guardados={editar?.adjuntos ?? []}
+                quitados={quitados}
+                onQuitados={setQuitados}
+                deshabilitado={crear.isPending}
+              />
             </div>
           )}
 
@@ -264,14 +360,13 @@ export function CrearComunicadoDialog({
             </p>
           )}
 
-          {!editar && (
-            <BarraBorrador
-              estado={autoguardado.estado}
-              hayBorrador={!!autoguardado.borradorId}
-              onDescartar={() => setDescartar(true)}
-              deshabilitado={crear.isPending}
-            />
-          )}
+          <BarraBorrador
+            estado={autoguardado.estado}
+            hayBorrador={!!autoguardado.borradorId}
+            onDescartar={() => setDescartar(true)}
+            deshabilitado={crear.isPending}
+            edicion={!!editar}
+          />
 
           <DialogFooter className="sm:justify-between">
             {paso === 1 ? (
@@ -292,7 +387,11 @@ export function CrearComunicadoDialog({
                     disabled={crear.isPending}
                     aria-busy={crear.isPending}
                   >
-                    {editar ? "Guardar" : "Crear"}
+                    {crear.isPending && archivos.length > 0
+                      ? "Subiendo archivos…"
+                      : editar
+                        ? "Guardar"
+                        : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
                   </Button>
                   <Button
@@ -316,11 +415,13 @@ export function CrearComunicadoDialog({
         onOpenChange={setDescartar}
         onConfirm={() => {
           setDescartar(false)
-          if (!editar && autoguardado.borradorId) {
-            eliminarBorrador.mutate(autoguardado.borradorId, {
-              onSuccess: () => notify("Borrador descartado."),
-              onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
-            })
+          if (autoguardado.borradorId) {
+            // Promesa y no callbacks de `mutate`: al descartar, el diálogo puede desmontarse (sale de
+            // "Borradores y enviados" o cambia su `key`) y React Query no llama los callbacks por llamada.
+            eliminarBorrador
+              .mutateAsync(autoguardado.borradorId)
+              .then(() => notify("Borrador descartado."))
+              .catch((error: unknown) => notify(getErrorMessage(error), { variant: "error" }))
           }
           reiniciar()
         }}

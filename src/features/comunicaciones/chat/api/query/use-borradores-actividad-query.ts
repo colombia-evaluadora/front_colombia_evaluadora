@@ -6,11 +6,11 @@ import type { BorradorActividad } from "@/features/comunicaciones/chat/api/types
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 
 /** Borradores de comunicados, encuestas, elecciones y evaluaciones del usuario (sin `datos`). */
-export function useBorradoresActividadQuery() {
+export function useBorradoresActividadQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: chatKeys.borradoresActividad,
     queryFn: () => evalCol.getRows<BorradorActividad>("/comunicaciones/borradores-actividad"),
-    enabled: CHAT_FUNCIONES.borradores,
+    enabled: CHAT_FUNCIONES.borradores && enabled,
     meta: { offlineOptional: true },
   })
 }

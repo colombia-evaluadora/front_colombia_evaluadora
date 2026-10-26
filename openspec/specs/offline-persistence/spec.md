@@ -6,7 +6,7 @@ Describe qué lecturas se guardan en el equipo para usarlas sin conexión (Index
 ## Requirements
 
 ### Requirement: Persistencia por lista blanca
-El sistema SHALL persistir en IndexedDB (`ce-offline`, store `queries`, una fila por query particionada por `userSub`) solo las queries exitosas que declaran `meta.offline: { ttl, scope }`, con `buster = "${userSub}:${SCHEMA_VERSION}"`, y MUST NOT persistir tokens, URLs de vista de archivos, respuestas de `/audit-cval`, `/sso-admin`, funcionarios, matrícula, reportes, IA ni errores.
+El sistema SHALL persistir en IndexedDB (`ce-offline`, store `queries`, una fila por query particionada por `userSub`) solo las queries exitosas que declaran `meta.offline: { ttl, scope }`, con `buster = "${userSub}:${SCHEMA_VERSION}"`, y MUST NOT persistir tokens, URLs de vista de archivos, respuestas de `/audit-cval`, `/sso-admin`, funcionarios, matrícula (salvo la lista con datos básicos, ver "Matrícula sin conexión: solo consulta con datos básicos"), reportes, IA ni errores.
 
 #### Scenario: Query sin meta.offline
 - **WHEN** se carga la lista de funcionarios
@@ -17,11 +17,26 @@ El sistema SHALL persistir en IndexedDB (`ce-offline`, store `queries`, una fila
 - **THEN** se descartan las queries persistidas
 
 ### Requirement: Minimización de datos de menores
-Las queries persistidas con datos de estudiantes SHALL recortarse con `persistSelect` a nombre y pk; documento, acudiente, dirección y salud MUST NOT persistirse.
+Las queries persistidas con datos de estudiantes SHALL recortarse con `persistSelect` a nombre y pk; documento, acudiente, dirección y salud MUST NOT persistirse. La única excepción es la lista de matrícula, que por decisión de P6 conserva tipo y número de documento (ver el requisito siguiente); acudiente, dirección y salud tampoco se persisten ahí.
 
 #### Scenario: Roster de planilla
 - **WHEN** se persiste el roster de un grupo
 - **THEN** cada estudiante guarda solo pk y nombre
+
+### Requirement: Matrícula sin conexión: solo consulta con datos básicos
+Por la decisión de P6 para Cobertura, la lista de matrícula (`/app/cobertura/matricula`) SHALL persistirse y abrirse sin red en solo lectura, recortada por una **lista blanca** aplicada en el persister (`persistSelect = selectRowFields(MATRICULA_OFFLINE_FIELDS)`): `id`, `documentType`, `documentNumber`, `firstName`, `lastName`, `institution`, `campus`, `shift`, `educationLevel`, `grade`, `group`, `status` y `enrollmentDate`, solo con valores primitivos. El acudiente, la salud, la dirección, el teléfono, el correo, las fotos y cualquier otro campo MUST NOT llegar a IndexedDB; una respuesta con forma desconocida MUST NOT persistirse. Con red la pantalla SHALL mostrar la lista completa (el recorte aplica solo a la copia persistida). "Preparar" SHALL incluir la vista por defecto de la lista (primera página, sin filtros, acotada por el backend a las sedes del usuario) solo si el menú del usuario incluye Matrícula, con la frescura incremental y el sondeo con ETag de las demás tareas.
+
+#### Scenario: Copia persistida
+- **WHEN** se persiste la lista de matrícula y el backend trae acudiente y campos que no están en la lista blanca
+- **THEN** la fila de IndexedDB, descifrada, solo tiene claves de la lista blanca y ningún acudiente
+
+#### Scenario: Consulta sin red
+- **WHEN** un rector preparó el equipo y abre la lista de matrícula sin conexión
+- **THEN** ve los estudiantes con sus datos básicos y las acciones de escritura deshabilitadas con "Necesitas conexión para esta acción."
+
+#### Scenario: Con red
+- **WHEN** se abre la lista con conexión después de restaurar la copia recortada
+- **THEN** la lista se vuelve a pedir al montar y se muestra completa, incluido el acudiente
 
 ### Requirement: Modo equipo compartido por defecto
 Mientras la política institucional sobre datos de menores (P6) siga pendiente, el login SHALL marcar por defecto "Este es un equipo compartido", en cuyo caso no se persisten queries; solo usuarios del piloto MAY desmarcarlo y MUST ver "Al desmarcar, este equipo guardará nombres de tus estudiantes y tus registros sin conexión. Úsalo solo en un equipo personal."

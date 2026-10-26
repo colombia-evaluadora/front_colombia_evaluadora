@@ -3,8 +3,7 @@ import { writeConfig, type WriteRequest } from "@/lib/offline/outbox/write-reque
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarVinculoActividadUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 export interface LinkActividadInput {
   unidadId: number
@@ -55,10 +54,9 @@ interface UseLinkActividadUnidadOptions {
 
 /**
  * Vincula una actividad ya existente a una unidad, con su peso dentro de
- * ella. Invalida TODO lo que cuelga de `planeadorKeys.unidad.detalle(unidadId)`
- * (prefix match de React Query) — detalle, actividades vinculadas y
- * disponibles — para que la tabla de "Actividades" y el "% disponible" del
- * diálogo reflejen el nuevo vínculo apenas se confirma.
+ * ella. Refresca la unidad (tabla de "Actividades", "% disponible" del
+ * diálogo) y también el detalle y los listados de la actividad: ver
+ * `invalidarVinculoActividadUnidad`.
  */
 export function useLinkActividadUnidad({ mutationConfig }: UseLinkActividadUnidadOptions = {}) {
   const queryClient = useQueryClient()
@@ -67,9 +65,7 @@ export function useLinkActividadUnidad({ mutationConfig }: UseLinkActividadUnida
   return useMutation({
     mutationFn: (input: LinkActividadInput) => linkActividadUnidad(input),
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
+      invalidarVinculoActividadUnidad(queryClient, variables.actividadId)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

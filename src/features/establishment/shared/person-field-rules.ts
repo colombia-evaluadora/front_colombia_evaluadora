@@ -1,6 +1,8 @@
 import { format } from "date-fns"
 import { z } from "zod"
 
+import { CORREO_REGEX, MENSAJE_CORREO_INVALIDO } from "@/lib/email-address"
+
 /**
  * Las reglas de los campos de una persona, en un solo lugar.
  *
@@ -49,12 +51,12 @@ export function toDocumentoInput(value: string, codigo: string | null | undefine
 export const TELEFONO = /^(\d{7}|\d{10})$/
 
 /**
- * Correo. Se usa el mismo patrón que el contacto del establecimiento en vez
- * de `z.string().email()`: aquel es más permisivo que el `@Email` de Java, y
- * la diferencia se paga con un error del backend en lugar de un mensaje
- * debajo del campo.
+ * Correo: la regla compartida con el SSO (`@/lib/email-address`), que
+ * rechaza tildes y ñ antes de la @. Un patrón propio acá se desalinea del
+ * backend y la diferencia se paga con un error al guardar en lugar de un
+ * mensaje debajo del campo.
  */
-export const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const CORREO = CORREO_REGEX
 
 /**
  * Nombres y apellidos: palabras de letras de cualquier alfabeto (tildes,
@@ -80,7 +82,7 @@ export const MENSAJES = {
   documentoAlfanumerico:
     "El documento debe tener entre 3 y 15 letras o números, con al menos un número y sin símbolos.",
   telefono: "El teléfono debe tener 7 dígitos (fijo) o 10 (celular o fijo con indicativo).",
-  correo: "Ingresa un correo electrónico válido.",
+  correo: MENSAJE_CORREO_INVALIDO,
   menorDeEdad: "La persona debe ser mayor de edad.",
   nombre: (campo: string) =>
     `${campo} solo admite letras, espacios, apóstrofo y guion entre letras (ej. D'Angelo, Jean-Pierre).`,

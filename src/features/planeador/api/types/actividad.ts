@@ -125,32 +125,41 @@ export interface ListaCotejo {
 export type EscalaValoracionTipo = "Numérica" | "Cualitativa"
 
 /**
- * Escala de valoración — alternativa a la rúbrica y a la lista de
- * cotejo cuando `instrumento === "Escala de valoración"`. Empieza con
- * un bloque de "Criterios generales" (qué se evalúa en general, y con
- * qué tipo de escala) y después se ramifica según `tipo`:
- * - "Numérica" → `valorMinimo`/`valorMaximo` + `interpretacionRangos`
- *   (un texto libre: qué significa cada tramo del rango).
- * - "Cualitativa" → `niveles` ("Definiciones cualitativas": Bajo/
- *   Medio/Alto/…, editable —a diferencia del nivel de un criterio de
- *   rúbrica, acá el `nombre` también es un input, no una etiqueta
- *   fija—). Reusa `Nivel.ponderacion`: cuando la actividad es sumativa,
- *   cada nivel pondera individualmente, al lado de su descripción —
- *   mismo patrón que los niveles intermedios de `CriterioItem`.
+ * Un criterio de la escala de valoración (Reglas 40-42): bloque independiente con su
+ * nombre y, según `EscalaValoracion.tipo`,
+ * - "Numérica" → "Valor Asignado (Escala)": `valorMinimo`/`valorMaximo` (el máximo se
+ *   autocompleta desde el formato de calificación del criterio de evaluación del período
+ *   y es editable) + `interpretacion` (texto libre único).
+ * - "Cualitativa" → "Escala de Niveles": `niveles` propios (Etiqueta = `nombre`,
+ *   Descriptor = `descripcion`, Puntaje = `ponderacion`), precargados desde la escala de
+ *   valoración del nivel de enseñanza del grado. Lo que el docente cambie acá queda SOLO
+ *   en este criterio de esta actividad. Su valor máximo es el puntaje más alto.
  */
-export interface EscalaValoracion {
+export interface EscalaCriterio {
   id: number
-  /** Texto libre separado por coma — ej. "Puntualidad, Participación". */
-  criteriosGenerales: string
-  tipo: EscalaValoracionTipo
+  nombre: string
   /** Solo aplica con `tipo === "Numérica"`. */
   valorMinimo?: number
   /** Solo aplica con `tipo === "Numérica"`. */
   valorMaximo?: number
   /** Solo aplica con `tipo === "Numérica"`. */
-  interpretacionRangos: string
+  interpretacion: string
   /** Solo aplica con `tipo === "Cualitativa"`. */
   niveles: Nivel[]
+}
+
+/**
+ * Escala de valoración — alternativa a la rúbrica y a la lista de cotejo cuando
+ * `instrumento === "Escala de valoración"` (o "Otro" con ese método). El tipo
+ * (Numérica/Cualitativa) es de toda la escala; cada criterio es un bloque
+ * independiente (`TACTIVIDAD_ESCALA_CRITERIO`, V226). Una escala guardada con la forma
+ * anterior (criterios por coma + un solo juego de niveles/rango) se lee como criterios
+ * que copian ese juego, y al guardar queda con la forma nueva.
+ */
+export interface EscalaValoracion {
+  id: number
+  tipo: EscalaValoracionTipo
+  criterios: EscalaCriterio[]
 }
 
 /**

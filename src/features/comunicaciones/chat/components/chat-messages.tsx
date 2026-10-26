@@ -1,7 +1,9 @@
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
-import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
+import { useEstadoPersona } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   ArrowBendUpLeftIcon,
@@ -12,15 +14,15 @@ import {
   PushPinFillIcon,
   TrashIcon,
 } from "@/components/ui/icons"
-import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
-import { useEliminarAdjunto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
+
 import { BARRA_ACCIONES, MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
-import type { Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
+import type { AutorMensaje, Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
-import { AdjuntoMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
+import { AdjuntosMensaje } from "@/features/comunicaciones/chat/components/adjunto-mensaje"
+import { adjuntosDe } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { VotacionRapidaCard } from "@/features/comunicaciones/chat/components/votacion-rapida-card"
+import { TarjetaBotMensaje } from "@/features/comunicaciones/chat/components/tarjeta-bot"
 import {
   BotonReaccionar,
   ReaccionesMensaje,
@@ -265,19 +267,34 @@ function BotonAccionesTactil({ abiertas, onClick }: { abiertas: boolean; onClick
   )
 }
 
-// ✓ enviado / ✓✓ leído por todos, abajo a la derecha de la burbuja (diseño 3731:41577).
-function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectura> }) {
+const ETIQUETA_LECTURA = { ENVIADO: "Enviado", ENTREGADO: "Entregado", LEIDO: "Leído" } as const
+
+// ✓ enviado / ✓✓ gris entregado / ✓✓ azul leído por todos, abajo a la derecha de la burbuja
+// (diseño 3731:41577). Con confirmación de lectura (HU 7) el título detalla quién lo leyó.
+function ConfirmacionLectura({ mensaje: m, estado }: { mensaje: Mensaje; estado: ReturnType<typeof estadoLectura> }) {
   if (!estado) return null
   const leido = estado === "LEIDO"
-  const Icono = leido ? ChecksIcon : CheckIcon
+  const Icono = estado === "ENVIADO" ? CheckIcon : ChecksIcon
+  const c = m.confirmacion
+  const detalle = c
+    ? [
+        `${ETIQUETA_LECTURA[estado]} · leído por ${c.leidos} de ${c.total}`,
+        ...c.lectores.map((l) =>
+          l.leidoEn
+            ? `${l.nombre}: leído ${horaMensaje(l.leidoEn)}`
+            : `${l.nombre}: ${l.entregadoEn ? "entregado" : "enviado"}`,
+        ),
+      ].join("\n")
+    : ETIQUETA_LECTURA[estado]
   return (
     <span
-      title={leido ? "Leído" : "Enviado"}
+      title={detalle}
       data-lectura={estado}
-      className={cn("-mr-1 -mb-1 flex justify-end", leido ? "text-primary" : "text-muted-foreground")}
+      className={cn("-mr-1 -mb-1 flex items-center justify-end gap-1", leido ? "text-primary" : "text-muted-foreground")}
     >
+      {c && <span className="text-[11px]">{ETIQUETA_LECTURA[estado]}</span>}
       <Icono aria-hidden className="size-4" />
-      <span className="sr-only">{leido ? "Leído" : "Enviado"}</span>
+      <span className="sr-only">{c ? detalle : ETIQUETA_LECTURA[estado]}</span>
     </span>
   )
 }
@@ -286,7 +303,8 @@ function ConfirmacionLectura({ estado }: { estado: ReturnType<typeof estadoLectu
 // conversación recibe el original del servidor (comms-service `puedeVerEliminados`, decisión de
 // Natalia) y lo ve debajo del aviso; el autor y los demás, solo "Este mensaje fue eliminado".
 function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
-  const original = m.texto.trim() !== "" || !!m.adjunto
+  const adjuntos = adjuntosDe(m)
+  const original = m.texto.trim() !== "" || adjuntos.length > 0
   return (
     <div className={cn("w-fit max-w-[85%] md:max-w-[70%]", m.esPropio && "ml-auto")}>
       <article className="rounded-xl bg-orange-22 px-4 py-3 text-sm" aria-label="Mensaje eliminado">
@@ -310,7 +328,11 @@ function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
           <div className="mt-2 border-t border-orange-stroke pt-2">
             <p className="mb-1 text-xs text-muted-foreground">Mensaje original</p>
             {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-            {m.adjunto && <p className="text-xs text-muted-foreground">Adjunto: {m.adjunto.nombre}</p>}
+            {adjuntos.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {adjuntos.length === 1 ? "Adjunto" : "Adjuntos"}: {adjuntos.map((a) => a.nombre).join(", ")}
+              </p>
+            )}
           </div>
         )}
       </article>
@@ -344,6 +366,9 @@ function MensajeItem({
   }
 
   if (m.eliminado) return <MensajeEliminado mensaje={m} />
+
+  // Colevabot: tarjeta estructurada, sin acciones de mensaje (no se responde ni se edita).
+  if (m.bot) return <TarjetaBotMensaje mensaje={m} tarjeta={m.bot} />
 
   if (m.votacion) {
     return (
@@ -390,8 +415,8 @@ function MensajeItem({
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-          {m.adjunto && <Adjunto mensaje={m} propio />}
-          <ConfirmacionLectura estado={estadoLectura(m, conversacion)} />
+          <AdjuntosMensaje mensaje={m} propio />
+          <ConfirmacionLectura mensaje={m} estado={estadoLectura(m, conversacion)} />
         </article>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
@@ -404,11 +429,7 @@ function MensajeItem({
         <AvatarFallback className="bg-navy-22 text-xs font-semibold text-navy">
           {iniciales(m.autor.nombre)}
         </AvatarFallback>
-        {m.autor.enLinea && (
-          <AvatarBadge className="bg-green">
-            <span className="sr-only">En línea</span>
-          </AvatarBadge>
-        )}
+        <PuntoAutor autor={m.autor} />
       </Avatar>
       <div className="min-w-0">
         <div
@@ -430,7 +451,7 @@ function MensajeItem({
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
-          {m.adjunto && <Adjunto mensaje={m} />}
+          <AdjuntosMensaje mensaje={m} />
         </div>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>
@@ -438,19 +459,7 @@ function MensajeItem({
   )
 }
 
-// En el chat solo el autor quita su archivo.
-function Adjunto({ mensaje: m, propio = false }: { mensaje: Mensaje; propio?: boolean }) {
-  const { notify } = useNotify()
-  const eliminar = useEliminarAdjunto()
-  return (
-    <AdjuntoMensaje
-      mensaje={m}
-      eliminando={eliminar.isPending}
-      onEliminar={
-        propio
-          ? () => eliminar.mutate(m.id, { onError: (error) => notify(getErrorMessage(error), { variant: "error" }) })
-          : undefined
-      }
-    />
-  )
+/** Disponibilidad del autor de un mensaje ajeno (socket o, si no, la que trajo el historial). */
+function PuntoAutor({ autor }: { autor: AutorMensaje }) {
+  return <PuntoDisponibilidad estado={useEstadoPersona(autor.id, autor)} />
 }

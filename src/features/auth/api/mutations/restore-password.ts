@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { resetTokenStatusQueryKey } from "@/features/auth/api/query/use-reset-token-status-query"
@@ -10,7 +11,10 @@ interface RestorePasswordInput {
 }
 
 function restorePassword(data: RestorePasswordInput): Promise<void> {
-  return api.post("/sso-admin/restorePassword", data)
+  // `app`: el SSO arma el correo de confirmación con la marca, el remitente y
+  // la mesa de ayuda de la app desde la que se hizo. Sin ella la deducía de
+  // los roles, y a un usuario con roles de CE y de PIGSE le llegaba como PIGSE.
+  return api.post("/sso-admin/restorePassword", data, { params: { app: env.NAME } })
 }
 
 interface UseRestorePasswordOptions {
