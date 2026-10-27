@@ -11,6 +11,10 @@ const alertVariants = cva(
         default: "bg-card text-card-foreground after:bg-foreground",
         destructive:
           "bg-card text-red after:bg-red *:data-[slot=alert-description]:text-red/90 *:[svg]:text-current",
+        // Advertencia estática (no se cierra): misma familia que la variante
+        // `warning` de NoticeBanner. El ícono lleva el color; el texto, el normal.
+        warning:
+          "border-transparent bg-yellow-22 text-foreground after:bg-yellow *:data-[slot=alert-description]:text-foreground/80 *:[svg]:text-yellow",
       },
     },
     defaultVariants: {
