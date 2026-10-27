@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { concordanciaRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { Link } from "@tanstack/react-router"
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
@@ -50,7 +51,7 @@ import {
 } from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import {
@@ -234,13 +235,13 @@ export function PlaneadorPlanillaPage() {
                     color="primary"
                     size="sm"
                     variant="fill"
-                    aria-label={`Nueva ${rotuloEnMinuscula(rotulo)}`}
+                    aria-label={`Nuev${concordanciaRotulo(rotulo)} ${rotuloEnFrase(rotulo)}`}
                     nativeButton={false}
                     className="rounded-r-none border-r-0"
                     render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
                   >
                     <PlusCircleIcon data-icon="inline-start" />
-                    Nueva {rotuloEnMinuscula(rotulo)}
+                    Nuev{concordanciaRotulo(rotulo)} {rotuloEnFrase(rotulo)}
                   </Button>
                 )}
                 <DropdownMenu>
@@ -315,7 +316,7 @@ export function PlaneadorPlanillaPage() {
                   <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="buscar-planilla"
-                    placeholder={verPor === "unidad" ? "Buscar unidad" : `Buscar ${rotuloEnMinuscula(rotulo)}`}
+                    placeholder={verPor === "unidad" ? "Buscar unidad" : `Buscar ${rotuloEnFrase(rotulo)}`}
                     value={buscar}
                     onChange={(e) => setBuscar(e.target.value)}
                     className="pl-9"

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { useNavigate } from "@tanstack/react-router"
 
 import type { Actividad } from "@/features/planeador/api/types/actividad"
@@ -21,7 +22,7 @@ import { esActividadFormativa } from "@/features/planeador/lib/actividad-formati
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
@@ -125,13 +126,13 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
   const unidadLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
   const subjectLabel = useStudyPlanSubjectLabel(actividad.gradoId, false)
   // Rótulo real (Regla 13, sso V452/V511) — nunca "actividad" fijo.
-  const rotuloLabelLower = rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLabelLower = rotuloEnFrase(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
   return (
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
-      <Section title={`Identificación de la ${rotuloLabelLower}`}>
+      <Section title={`Identificación ${deArticuloRotulo(rotuloLabelLower)} ${rotuloLabelLower}`}>
         <DefinitionGrid cols={3}>
-          <Definition term={`Nombre de la ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
+          <Definition term={`Nombre ${deArticuloRotulo(rotuloLabelLower)} ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
           <Definition term={`Tipo de ${rotuloLabelLower}`}>{actividad.tipo}</Definition>
           <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
           {/* Docente dueño (sso V553: quien dicta el grupo+asignatura o, sin
@@ -280,7 +281,7 @@ function EvaluacionDetalle({ actividad }: { actividad: Actividad }) {
     <Section title="Evaluación">
       <DefinitionGrid cols={2}>
         <Definition
-          term={`¿Es ${rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)} evaluativa?`}
+          term={`¿Es ${rotuloEnFrase(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)} evaluativa?`}
         >
           {actividad.esEvaluativa ? "Sí" : "No"}
         </Definition>

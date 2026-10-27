@@ -31,9 +31,9 @@ import {
 } from "@/features/planeador/lib/unidad-instrumento-label"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
-import { pluralizarRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+import { concordanciaRotulo, pluralizarRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 interface DialogDeleteUnidadProps {
   unidad: Pick<UnidadTematica, "id" | "nombre" | "gradoId" | "rotuloEjecucion">
@@ -79,14 +79,14 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
   // `unidad.instrumento` es un campo homónimo pero DISTINTO (Instrumento de
   // evaluación: Rúbrica/Lista de cotejo/Escala), no sirve acá.
   const instrumentoLabel = useRotuloUnidad(unidad, rotuloUnidad)
-  const instrumentoLower = rotuloEnMinuscula(instrumentoLabel)
+  const instrumentoLower = rotuloEnFrase(instrumentoLabel)
   const articulo = articuloDefinido(instrumentoLabel)
   // Concordancia de género del rótulo: "cederlo/cederla", "suyo/suya".
-  const o = articulo === "el" ? "o" : "a"
+  const o = concordanciaRotulo(instrumentoLabel)
   // Rótulo de la actividad (Regla 13) para "sus criterios y actividades
   // vinculadas" — en plural concordado (`pluralizarRotulo`).
   const rotuloActividad = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
-  const actividadLower = rotuloEnMinuscula(rotuloActividad)
+  const actividadLower = rotuloEnFrase(rotuloActividad)
   const actividadesLower = pluralizarRotulo(actividadLower)
   const vinculadas = `vinculad${terminacionRotulo(rotuloActividad)}s`
 
@@ -114,7 +114,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
           setConflictMessage(getErrorMessage(error))
           return
         }
-        notify(`No se pudo eliminar ${articulo === "el" ? "el" : "la"} ${instrumentoLower}.`, { variant: "error" })
+        notify(`No se pudo eliminar ${articulo} ${instrumentoLower}.`, { variant: "error" })
       },
     },
   })
@@ -215,7 +215,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                     {usoDe(cesion.colega) && (
                       <span className="text-muted-foreground"> ({usoDe(cesion.colega)})</span>
                     )}
-                    . {articulo === "el" ? "El" : "La"} {instrumentoLower} no se elimina: pasa a ser suy{o} y usted
+                    . {articulo.charAt(0).toUpperCase() + articulo.slice(1)} {instrumentoLower} no se elimina: pasa a ser suy{o} y usted
                     deja de administrarl{o}.
                   </span>
                 ) : cesion?.modo === "elegir" ? (
@@ -293,7 +293,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
             <AlertDialogHeader>
               <AlertDialogTitle>Eliminar {instrumentoLower}</AlertDialogTitle>
               <AlertDialogDescription>
-                Se eliminará permanentemente {articulo === "el" ? "el" : "la"} {instrumentoLower} &ldquo;
+                Se eliminará permanentemente {articulo} {instrumentoLower} &ldquo;
                 {unidad.nombre}&rdquo;, junto con sus criterios y {actividadesLower} {vinculadas}. Esta
                 acción no se puede deshacer.
               </AlertDialogDescription>

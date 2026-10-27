@@ -1,5 +1,6 @@
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnFrase } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { recuperacionFaltantes } from "@/features/planeador/lib/recuperacion-faltantes"
 
@@ -50,13 +51,13 @@ export function camposObligatoriosFaltantes(
   { camposEfectivos, esFormativa, grupoTieneEstudiantes, subjectLabel = "Asignatura" }: CamposObligatoriosContexto,
 ): string[] {
   // Regla 13: el rótulo de la actividad, nunca "actividad" fija.
-  const rotuloLower = rotuloEnMinuscula(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnFrase(values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
   // "Es una recuperación" va primero en el form: sus campos encabezan la lista.
   const faltantes: string[] = recuperacionFaltantes(values, rotuloLower)
   if (values.grupoId == null) faltantes.push("Grado / Grupo")
   if (values.asignaturaId == null) faltantes.push(subjectLabel)
-  if (faltanEstudiantes(values, grupoTieneEstudiantes)) faltantes.push(`Estudiantes de la ${rotuloLower}`)
-  if (!values.nombre?.trim()) faltantes.push(`Nombre de la ${rotuloLower}`)
+  if (faltanEstudiantes(values, grupoTieneEstudiantes)) faltantes.push(`Estudiantes ${deArticuloRotulo(rotuloLower)} ${rotuloLower}`)
+  if (!values.nombre?.trim()) faltantes.push(`Nombre ${deArticuloRotulo(rotuloLower)} ${rotuloLower}`)
   if (!values.tipo) faltantes.push(`Tipo de ${rotuloLower}`)
   if (!values.fechaInicio) faltantes.push("Fecha inicio")
   if (!values.fechaCierre) faltantes.push("Fecha de entrega o cierre")

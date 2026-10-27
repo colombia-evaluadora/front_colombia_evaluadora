@@ -105,7 +105,7 @@ export function UnidadCard({
                 </span>
               }
             />
-            <TooltipContent>{`El referente curricular de ${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()} ya no está activo.`}</TooltipContent>
+            <TooltipContent>{`El referente curricular de ${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad} ya no está activo.`}</TooltipContent>
           </Tooltip>
         )}
       </div>
