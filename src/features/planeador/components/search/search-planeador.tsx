@@ -95,7 +95,7 @@ export function SearchPlaneador({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        label={`Buscar por nombre, ${rotuloUnidad ?? "unidad"}, estado o instrumento…`}
+        label={`Buscar por nombre, ${(rotuloUnidad ?? "unidad").toLowerCase()}, estado o instrumento…`}
         placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}

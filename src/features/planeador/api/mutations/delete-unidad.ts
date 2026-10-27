@@ -13,11 +13,22 @@ import { invalidarUnidad } from "@/features/planeador/api/query/invalidar-listad
 // como error HTTP, no como `status: "error"` en un 200: ese caso lo atrapa
 // `onError`, con un mensaje genérico en vez del texto específico del
 // backend (pendiente si hace falta mostrarlo tal cual).
-async function deleteUnidad(id: number): Promise<ExportResult> {
+//
+// Reglas 38/39 (sso V492.2): `eliminarActividades` = eliminar la unidad junto
+// con sus actividades sin notas (las que no se pueden borrar quedan sin
+// asignar); sin él las actividades solo se desvinculan. Con alguna actividad
+// con resultados el backend rechaza ambas opciones (409).
+export interface DeleteUnidadVariables {
+  id: number
+  eliminarActividades?: boolean
+}
+
+async function deleteUnidad({ id, eliminarActividades = false }: DeleteUnidadVariables): Promise<ExportResult> {
+  const body = { ELIMINAR_ACTIVIDADES: eliminarActividades }
   if (env.ENABLE_API_MOCKING) {
-    return api.patch(`/eval-col/planeador/unidades/${id}`)
+    return api.patch(`/eval-col/planeador/unidades/${id}`, body)
   }
-  await api.patch(`/eval-col/planeador/unidades/${id}`)
+  await api.patch(`/eval-col/planeador/unidades/${id}`, body)
   return { status: "ok", message: "Unidad temática eliminada correctamente." }
 }
 

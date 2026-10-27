@@ -54,10 +54,14 @@ export async function fetchRotuloActividad(
  * resolver el rótulo todavía (queda en `ROTULO_ACTIVIDAD_FALLBACK` vía
  * `data` en `undefined`, que cada caller cubre con `??`).
  */
-/** El rótulo se muestra EXACTAMENTE como lo escribió el usuario en el
- *  referente (sin minúscula ni capitalización forzadas). Re-exportado acá
- *  porque es desde donde lo importan los callers. */
-export { rotuloEnFrase } from "@/features/planeador/lib/rotulo-gramatica"
+/** El backend lo devuelve con mayúscula inicial ("Actividad"/"Experiencia de
+ *  aprendizaje", pensado para arrancar una oración o un `<Select>`) — para
+ *  embeberlo a mitad de frase ("Identificación de la actividad") hace falta
+ *  la variante en minúscula, sin tocar el resto del texto (por si el rótulo
+ *  trae una sigla propia más adelante). */
+export function rotuloEnMinuscula(rotulo: string): string {
+  return rotulo.charAt(0).toLowerCase() + rotulo.slice(1)
+}
 
 export function useRotuloActividadQuery(
   gradoId: number | undefined,

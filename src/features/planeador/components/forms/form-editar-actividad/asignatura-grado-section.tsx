@@ -1,5 +1,4 @@
 import { type ReactNode, useEffect, useMemo } from "react"
-import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { useSelector } from "@tanstack/react-form"
 import { useQueries } from "@tanstack/react-query"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { referenteCurricularQueryOptions } from "@/features/planeador/api/query/use-referente-curricular-query"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnFrase,
+  rotuloEnMinuscula,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
@@ -38,6 +37,7 @@ function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string
 export function AsignaturaGradoSection({
   form,
   bloqueadoPorRecuperacion,
+  soloLectura = false,
   unidadBloqueada = false,
   unidadSlot,
   tab,
@@ -45,6 +45,8 @@ export function AsignaturaGradoSection({
   form: FormActividad
   /** Ver `useRecuperacionBloqueaCampos`. */
   bloqueadoPorRecuperacion: boolean
+  /** Solo lectura: bloquea también Estudiantes, que el refuerzo sí deja editar. */
+  soloLectura?: boolean
   /**
    * `true` en el alta desde una Unidad: Grado/Grupo y Asignatura quedan deshabilitados
    * (se toma el primer grupo del grado; otro grupo se cambia editando la actividad).
@@ -110,7 +112,7 @@ export function AsignaturaGradoSection({
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
   // Rótulo real (Regla 13): nunca "actividad" fijo.
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoId, asignaturaId)
-  const rotuloLower = rotuloEnFrase(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
@@ -326,7 +328,7 @@ export function AsignaturaGradoSection({
         <form.Field name="matriculasIds">
           {(field) => (
             <Field variant="outlined" data-invalid={estudiantesInvalido}>
-              <FieldLabel htmlFor={field.name}>Estudiantes {deArticuloRotulo(rotuloLower)} {rotuloLower} *</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower} *</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
                 invalid={estudiantesInvalido}
@@ -337,7 +339,9 @@ export function AsignaturaGradoSection({
                   field.handleChange(matriculaIds)
                   form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
-                disabled={!hasGradoAsignatura || bloqueadoPorRecuperacion}
+                // Regla 66: el refuerzo hereda grado/grupo, asignatura, unidad y título, pero sus
+                // estudiantes se eligen (el backend solo exige la Regla 97, un intento abierto por estudiante).
+                disabled={!hasGradoAsignatura || soloLectura}
                 // `isPending` de una query deshabilitada queda `true` para siempre: solo cuenta si está habilitada.
                 isPending={hasGradoAsignatura && isPendingMatriculas}
                 placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}

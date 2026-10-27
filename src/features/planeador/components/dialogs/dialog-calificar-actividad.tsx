@@ -215,7 +215,7 @@ export function DialogCalificarActividad({
       </Tooltip>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Calificar {rotuloLabel}</DialogTitle>
+          <DialogTitle>Calificar {rotuloLabel.toLowerCase()}</DialogTitle>
           <p className="text-muted-foreground text-sm">
             Instrumento: {instrumento?.instrumentoNombre ?? "…"}
           </p>

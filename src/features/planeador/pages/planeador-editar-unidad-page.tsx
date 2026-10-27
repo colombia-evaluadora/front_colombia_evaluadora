@@ -47,9 +47,10 @@ import {
 } from "@/features/planeador/lib/unidad-instrumento-label"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnFrase,
+  rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import {
+  articuloIndefinidoRotulo,
   pluralizarRotulo,
   terminacionRotulo,
 } from "@/features/planeador/lib/rotulo-gramatica"
@@ -119,10 +120,10 @@ function EditarUnidadPageContent({
   // ?instrumento= = pestaña de origen; sin él se resuelve por el referente de la unidad.
   const search = useSearch({ from: planeadorUnidadEditarRoute.id })
   const instrumento = useRotuloUnidad(unidad, search.instrumento)
-  const instrumentoLower = rotuloEnFrase(instrumento)
+  const instrumentoLower = rotuloEnMinuscula(instrumento)
   // Rótulo de la actividad (Regla 13) para el aviso de cambio de método.
   const rotuloActividad = unidad?.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
-  const rotuloActividadLower = rotuloEnFrase(rotuloActividad)
+  const rotuloActividadLower = rotuloEnMinuscula(rotuloActividad)
   const rotuloActividadGenero = terminacionRotulo(rotuloActividad)
 
   // Sin "editar" en Planeador redirige al listado.
@@ -206,7 +207,7 @@ function EditarUnidadPageContent({
             </Button>
           }
         >
-          {`Editar ${instrumento}`}
+          {`Editar ${instrumento.toLowerCase()}`}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -306,7 +307,7 @@ function EditarUnidadPageContent({
                 ? `${articuloDefinido(rotuloActividad)} siguiente ${rotuloActividadLower} vinculad${rotuloActividadGenero} no tiene`
                 : `${rotuloActividadGenero === "o" ? "los" : "las"} siguientes ${pluralizarRotulo(rotuloActividadLower)} vinculad${rotuloActividadGenero}s no tienen`}{" "}
               {confirmacionCambioMetodo?.data.metodoCalculo === "Suma de puntos" ? "puntaje" : "ponderación"} capturado
-              y quedarán en 0 hasta que se edite cada {terminacionRotulo(rotuloActividad) === "o" ? "uno" : "una"}:{" "}
+              y quedarán en 0 hasta que se edite cada {articuloIndefinidoRotulo(rotuloActividad) === "un" ? "uno" : "una"}:{" "}
               <strong>{confirmacionCambioMetodo?.sinPeso.map((a) => a.nombre).join(", ")}</strong>. ¿Guardar de todas
               formas?
             </AlertDialogDescription>

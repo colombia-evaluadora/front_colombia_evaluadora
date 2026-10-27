@@ -38,8 +38,8 @@ describe("camposObligatoriosFaltantes", () => {
     expect(camposObligatoriosFaltantes(vacia, contexto)).toEqual([
       "Grado / Grupo",
       "Asignatura",
-      "Nombre de la Actividad",
-      "Tipo de Actividad",
+      "Nombre de la actividad",
+      "Tipo de actividad",
       "Fecha inicio",
       "Fecha de entrega o cierre",
       "Instrumento de evaluación",
@@ -52,7 +52,7 @@ describe("camposObligatoriosFaltantes", () => {
 
   it("usa el rótulo de la actividad en los nombres", () => {
     const faltantes = camposObligatoriosFaltantes(completa({ nombre: " ", rotuloEjecucion: "Experiencia" }), contexto)
-    expect(faltantes).toEqual(["Nombre de la Experiencia"])
+    expect(faltantes).toEqual(["Nombre de la experiencia"])
   })
 
   it("el instrumento no se exige con referente formativo ni si el referente no lo pide", () => {
@@ -66,7 +66,7 @@ describe("camposObligatoriosFaltantes", () => {
 
   it("exige estudiantes cuando se destildó a todos y el grupo tiene a quién asignar", () => {
     const ninguno = completa({ asignarTodoElGrupo: false, matriculasIds: [] })
-    expect(camposObligatoriosFaltantes(ninguno, contexto)).toEqual(["Estudiantes de la Actividad"])
+    expect(camposObligatoriosFaltantes(ninguno, contexto)).toEqual(["Estudiantes de la actividad"])
     expect(camposObligatoriosFaltantes(ninguno, { ...contexto, grupoTieneEstudiantes: false })).toEqual([])
   })
 

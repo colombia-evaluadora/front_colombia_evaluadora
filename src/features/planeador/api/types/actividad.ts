@@ -358,6 +358,9 @@ export interface Actividad {
    *  `motivo_no_editable`), o `undefined` si se puede. Ver
    *  `lib/actividad-editable.ts`. */
   motivoNoEditable?: string
+  /** Reglas 38/39: tiene resultados registrados (sso `tiene_resultados`); no
+   *  se elimina. `undefined` = el backend no lo dijo. Ver `lib/actividad-editable.ts`. */
+  tieneResultados?: boolean
   /**
    * `PK_TMATRICULA` (no `Estudiante.id`/`PK_TESTUDIANTE`) de los
    * estudiantes elegidos a mano en "Estudiantes" — mutuamente excluyente

@@ -90,7 +90,7 @@ function PlaneadorUnidadesPageContent() {
 
   // El rótulo varía por referente ("Unidad temática"/"Proyecto pedagógico"); `tabLabel` es la versión en minúscula.
   const rotuloUnidad = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? UNIDAD_TAB_FALLBACK
-  const tabLabel = rotuloUnidad
+  const tabLabel = rotuloUnidad.toLowerCase()
   const tabLabelPlural = pluralizarRotulo(tabLabel)
   const exportarLabel = `Exportar ${tabLabelPlural} filtrad${terminacionRotulo(rotuloUnidad)}s`
   // Viaja al crear para acotar Grado/Asignatura desde el primer render.

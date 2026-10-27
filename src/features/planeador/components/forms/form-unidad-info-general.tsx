@@ -33,13 +33,11 @@ import {
   ROTULO_ACTIVIDAD_FALLBACK,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import {
   articuloIndefinidoRotulo,
-  concordanciaRotulo,
   deArticuloRotulo,
-  generoRotulo,
   pluralizarRotulo,
-  terminacionRotulo,
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { metodoCalculoInfo } from "@/features/planeador/lib/metodo-calculo-info"
@@ -209,11 +207,11 @@ export function UnidadInfoGeneralFields({
   // a mano rompe con cualquiera que no termine en consonante simple (ver el
   // bug de "Actividad2s").
   const rotuloActividadLabel = rotuloActividad?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
-  const rotuloActividadLower = rotuloActividadLabel
-  const rotuloActividadGenero = concordanciaRotulo(rotuloActividadLabel)
+  const rotuloActividadLower = rotuloActividadLabel.toLowerCase()
+  const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
   const rotuloActividadIndefinido = articuloIndefinidoRotulo(rotuloActividadLabel)
   const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLower)
-  const todasLas = generoRotulo(rotuloActividadLabel) === "m" ? "todos los" : "todas las"
+  const todasLas = rotuloActividadGenero === "o" ? "todos los" : "todas las"
   const metodoInfo = metodoCalculoInfo(rotuloActividadLabel)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
@@ -443,7 +441,7 @@ export function UnidadInfoGeneralFields({
       />
 
       <ContenidosCaja
-        title={`Estructura ${deArticuloRotulo(rotuloUnidad)} ${rotuloUnidad}`}
+        title={`Estructura ${deArticuloRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()}`}
         description="Agrega las secciones (fases, recursos, metodología…) que la componen, con un título opcional para cada una."
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
@@ -531,7 +529,7 @@ export function UnidadInfoGeneralFields({
               <InfoIcon className="mt-0.5 size-4 shrink-0" />
               Al vincular {rotuloActividadIndefinido} {rotuloActividadLower} no necesitas asignarle un
               porcentaje: el resultado se calcula como el promedio simple de {todasLas}{" "}
-              {rotuloActividadPluralLower} vinculad{terminacionRotulo(rotuloActividadLabel)}s.
+              {rotuloActividadPluralLower} vinculad{rotuloActividadGenero}s.
             </div>
           )}
 

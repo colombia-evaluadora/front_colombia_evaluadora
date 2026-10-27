@@ -39,6 +39,35 @@ export function motivoNoEditable(
   return (actividad.evaluados ?? 0) > 0 ? MENSAJE_ACTIVIDAD_NO_EDITABLE : undefined
 }
 
+/**
+ * Reglas 38/39: por normativa de conservación de datos una actividad con
+ * resultados no se elimina (sso `fn_actividad_validar_sin_notas`, 23503). El
+ * botón llega deshabilitado con este texto, sin esperar el rechazo.
+ */
+export const MENSAJE_ACTIVIDAD_CON_RESULTADOS_NO_ELIMINABLE =
+  "No se puede eliminar una actividad con resultados registrados por normativa de conservación de datos"
+
+/**
+ * Motivo preventivo para deshabilitar "Eliminar", o `undefined` si se puede
+ * intentar. Manda `tieneResultados` del backend; si una respuesta vieja no lo
+ * trae se infiere de `evaluados`. Otros bloqueos (asistencias, base de un
+ * refuerzo) siguen saliendo del 23503 del backend al confirmar.
+ */
+export function motivoNoEliminable(
+  actividad: Pick<Actividad, "tieneResultados" | "evaluados"> | null | undefined,
+): string | undefined {
+  if (!actividad) return undefined
+  const conResultados = actividad.tieneResultados ?? (actividad.evaluados ?? 0) > 0
+  return conResultados ? MENSAJE_ACTIVIDAD_CON_RESULTADOS_NO_ELIMINABLE : undefined
+}
+
+/** `tiene_resultados` de una fila del backend; `undefined` si no viene. */
+export function tieneResultadosDeFila(row: { tiene_resultados?: "S" | "N" | null }): boolean | undefined {
+  if (row.tiene_resultados === "S") return true
+  if (row.tiene_resultados === "N") return false
+  return undefined
+}
+
 /** `motivo_no_editable`/`editable` de una fila del backend (detalle o listados). */
 export function motivoNoEditableDeFila(row: {
   motivo_no_editable?: string | null

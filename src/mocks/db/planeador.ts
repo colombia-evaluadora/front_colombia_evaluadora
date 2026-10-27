@@ -950,6 +950,12 @@ export function registrarResultadoMock(actividadId: number): void {
 export const MENSAJE_BASE_RECUPERACION_MOCK =
   "No puedes editar esta actividad porque es la base de una recuperación."
 
+/** Reglas 38/39: con resultados la actividad no se elimina (sso `tiene_resultados`). */
+export function tieneResultadosMock(actividadId: number): boolean {
+  const actividad = planeadorDb.find((row) => row.id === actividadId)
+  return Boolean(actividad && (actividad.evaluados > 0 || conResultadoEnSesion.has(actividadId)))
+}
+
 export function motivoNoEditableMock(actividadId: number): string | undefined {
   const actividad = planeadorDb.find((row) => row.id === actividadId)
   if (!actividad) return undefined

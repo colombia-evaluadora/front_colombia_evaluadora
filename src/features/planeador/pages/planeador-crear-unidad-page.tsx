@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { articuloIndefinidoRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +28,7 @@ import {
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import { UnidadFormTabs } from "@/features/planeador/components/forms/unidad-form-tabs"
 import {
+  articuloDefinido,
   mensajeUnidadGuardada,
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
@@ -71,7 +71,7 @@ function PlaneadorCrearUnidadPageContent() {
     draft.asignaturaId,
   )
   // Título "Crear X" (no "Nuevo/a X") para no concordar género con el instrumento.
-  const indefinidoInstrumento = articuloIndefinidoRotulo(instrumento)
+  const esMasculino = articuloDefinido(instrumento) === "el"
   // `draft` es estado plano: "hay cambios" = distinto del borrador vacío inicial.
   const isDirty = JSON.stringify(draft) !== JSON.stringify(UNIDAD_DRAFT_VACIO)
 
@@ -98,7 +98,7 @@ function PlaneadorCrearUnidadPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          description={`Completa la información para crear ${indefinidoInstrumento} ${instrumento}`}
+          description={`Completa la información para crear ${esMasculino ? "un" : "una"} ${instrumento.toLowerCase()}`}
           action={
             <Button
               color="neutral"
@@ -111,7 +111,7 @@ function PlaneadorCrearUnidadPageContent() {
             </Button>
           }
         >
-          {`Crear ${instrumento}`}
+          {`Crear ${instrumento.toLowerCase()}`}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
