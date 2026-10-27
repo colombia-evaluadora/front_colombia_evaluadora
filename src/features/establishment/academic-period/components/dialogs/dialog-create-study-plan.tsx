@@ -339,7 +339,7 @@ export function CreateStudyPlanDialog({
           notice={notice}
           onClose={() => setNotice(null)}
           variant={notice?.variant}
-          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+          autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
         />
 
         <form

@@ -366,7 +366,7 @@ export function ManageCurricularReferenceDialog({
             notice={notice}
             onClose={() => setNotice(null)}
             variant={notice?.variant}
-            autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+            autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
             className="mt-2"
           />
         </DialogHeader>

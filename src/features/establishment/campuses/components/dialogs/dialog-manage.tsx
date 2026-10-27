@@ -51,17 +51,6 @@ function createInitialCampusValues(): CampusDraft {
   }
 }
 
-/**
- * Obligatorios: los tres campos con asterisco (más el establecimiento, cuando
- * el selector está visible). El resto es opcional, pero si se llena pasa por
- * las mismas reglas de composición que el establecimiento (`text-field-rules`):
- * sin relleno de símbolos, dirección con estructura, teléfono de 7 o 10.
- *
- * `requireEstablishment`: `FK_TESTABLECIMIENTO` es obligatorio en el alta
- * real. El selector ahora se muestra para cualquier rol en el alta (ver
- * `showEstablishmentPicker` más abajo), así que esto también aplica para
- * cualquier rol — ya no es un caso especial de super admin.
- */
 /** Campo opcional validado por una regla de `text-field-rules` (mensaje o `null`). */
 function regla(check: (value: string) => string | null) {
   return z.string().nullish().superRefine((value, ctx) => {
@@ -87,11 +76,7 @@ function buildCampusSchema(requireEstablishment: boolean) {
     phone: regla((v) => (v.trim() && !TELEFONO.test(v.trim()) ? MENSAJES.telefono : null)),
     georeference: regla(validarUbicacion),
     dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
-    // Mismo criterio que `requiredCatalogItem` en
-    // `institution/utils/validate-form.ts`: `.nullish()` + chequear
-    // `.id != null` en vez de `z.object({ id: z.number() }).nullable()` —
-    // así un `{ id: undefined }` cae en el mensaje amigable en vez de
-    // reventar con el error genérico de Zod por forma inválida.
+    // `.nullish()` + refine: un `{ id: undefined }` da el mensaje amigable.
     zone: z
       .object({ id: z.number().nullish() })
       .nullish()
@@ -130,11 +115,7 @@ export function ManageCampusDialog({
   const [formValues, setFormValues] = useState<CampusDraft>(createInitialCampusValues)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  // Aviso local, propio del diálogo: mientras sigue abierto, cualquier
-  // mensaje de esta pantalla pasa por acá y no por el `notify()` global —ese
-  // queda para el aviso de "Guardar" que se ve en la página una vez que el
-  // diálogo se cierra— o el mismo mensaje se veía duplicado (uno detrás del
-  // overlay, otro acá).
+  // Aviso local del diálogo; el `notify()` de página queda para el éxito.
   const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
   const noticeIdRef = useRef(0)
 
@@ -143,39 +124,13 @@ export function ManageCampusDialog({
     setNotice({ id: noticeIdRef.current, message, variant })
   }
 
-  // El selector de EE solo aplica al alta (FK_TESTABLECIMIENTO es inmutable
-  // después de creada la sede) — REV: antes solo se mostraba para super
-  // admin (el resto de roles dependía de que el backend resolviera "el
-  // único EE" al que pertenecían, vía fn_resolver_establecimiento_unico).
-  // Eso se rompía si la persona administraba más de un EE a la vez (rector/
-  // secretaria/jefe de sistema de 2+ establecimientos, algo que dejó de ser
-  // raro con el cambio de modelo de TFUNCIONARIO — ver V51 REV5/REV6): el
-  // backend no podía adivinar cuál, y `fn_sed_crear` rechazaba con 42501.
-  // Ahora el select se muestra SIEMPRE en el alta, para cualquier rol —
-  // aunque solo tenga una opción, el usuario la elige explícitamente y el
-  // front manda el EE sin ambigüedad. `useEstablishmentsOptionsQuery` ya
-  // resuelve del lado del backend qué EE le corresponden a quien pide
-  // (`fn_est_listar_todos`: todos para super admin, solo los suyos —
-  // rector/secretaria/jefe de sistema— para el resto), así que no hace
-  // falta ninguna otra condición acá.
+  // El EE se elige solo en el alta (es inmutable); se muestra para todo rol.
   const showEstablishmentPicker = !isEditMode
   const { data: establishments = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
-  // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
-  // vivir montado junto a la tabla, la query se dispararía en cada render.
+  // Solo en edición y abierto: el diálogo vive montado.
   const campusQuery = useCampusQuery(campusId, isEditMode && open)
 
-  // La zona de una sede se subordina a la del establecimiento (V414 en el
-  // backend): EE Urbana → sede Urbana, EE Rural → sede Rural, EE "Urbana y
-  // Rural" → cualquiera de las dos, y "Urbana y Rural" nunca es válida para
-  // una sede —describe al conjunto, no a un edificio—. Se pide el catálogo
-  // filtrado por ese EE para que el select no ofrezca justo lo que
-  // `fn_sed_crear`/`fn_sed_actualizar` van a rechazar.
-  //
-  // De dónde sale el EE: en alta, del selector que se acaba de elegir; en
-  // edición, del de la sede cargada (es inmutable, no se edita). Mientras
-  // no haya ninguno —alta sin EE elegido todavía, o el detalle aún
-  // cargando— salen Urbana y Rural, que son las dos que una sede puede
-  // tener; "Urbana y Rural" no se ofrece nunca, porque es del EE.
+  // Zonas válidas según el EE (V414): del selector en alta, de la sede en edición.
   const zonesEstablishmentId = isEditMode
     ? (campusQuery.data?.status === "ok" ? (campusQuery.data.campus.establishmentId ?? null) : null)
     : formValues.establishmentId
@@ -183,7 +138,11 @@ export function ManageCampusDialog({
 
   // El formulario se resetea al abrir (alta) o cuando llega la sede a editar.
   useEffect(() => {
-    if (!open) return
+    // El diálogo vive montado: sin esto el aviso reaparecía al reabrirlo.
+    if (!open) {
+      setNotice(null)
+      return
+    }
 
     if (!isEditMode) {
       setFormValues(createInitialCampusValues())
@@ -193,32 +152,14 @@ export function ManageCampusDialog({
 
     if (campusQuery.data?.status === "ok") {
       const campus = campusQuery.data.campus
-      // `zone` llega solo con el id (la query no resuelve contra
-      // TLISTA_VALOR — ver use-campus.ts). Se completa abajo, en el efecto
-      // de `zones`, para que ESTE no dependa del catálogo. El EE no viaja
-      // en `Campus` (es inmutable, no se pide en edición).
+      // `zone` llega solo con id; la completa el efecto de `zones`.
       setFormValues({ ...campus, zone: campus.zone, establishmentId: null })
       setFieldErrors({})
     }
-    // OJO con las dependencias: `zones` NO puede estar acá. El catálogo se
-    // vuelve a pedir cada vez que cambia el establecimiento elegido, así que
-    // al elegir uno en el alta este efecto volvía a correr y reseteaba el
-    // formulario entero — el select se veía vacío otra vez, como si no
-    // hubiera seleccionado nada, y se perdía lo ya escrito.
+    // `zones` no va en deps: resetearía el form al cambiar de EE.
   }, [campusQuery.data, isEditMode, open])
 
-  // La zona, contra el catálogo ya cargado. Dos cosas, las dos acá porque
-  // este es el único efecto que puede depender de `zones` sin pisar lo que
-  // el usuario escribió (solo toca `zone`, nunca el resto del formulario):
-  //
-  //  - Si dejó de estar en la lista, se limpia. Pasa en alta al cambiar de
-  //    establecimiento después de haber elegido zona, y en edición con las
-  //    sedes viejas que quedaron con una zona que la regla nueva ya no
-  //    permite (p. ej. "Urbana y Rural"). Esos datos no se migraron a
-  //    propósito: la validación es de escritura, así que la sede sigue viva
-  //    hasta que alguien la edite —y ahí tiene que elegir una válida.
-  //  - Si sigue estando, se completa con el ítem del catálogo: el detalle
-  //    trae solo el id.
+  // Limpia la zona si ya no es válida o la completa con el ítem del catálogo.
   useEffect(() => {
     if (zones.length === 0) return
 
@@ -264,10 +205,7 @@ export function ManageCampusDialog({
     },
   })
 
-  // Después de un intento de guardar fallido, cada cambio vuelve a validar
-  // para que el mensaje/borde rojo de un campo desaparezca apenas se
-  // completa, en vez de quedar pegado hasta el siguiente submit (antes
-  // `fieldErrors` solo se recalculaba al enviar el form).
+  // Tras un submit fallido, revalida en cada cambio.
   function handleFormChange(next: CampusDraft) {
     setFormValues(next)
 
@@ -321,7 +259,8 @@ export function ManageCampusDialog({
             notice={notice}
             onClose={() => setNotice(null)}
             variant={notice?.variant}
-            autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+            // Mismo tiempo que el error del `notify()` global; antes quedaba fijo.
+            autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
             className="mb-2"
           />
 

@@ -148,16 +148,12 @@ function DialogConfirmRevertChangesInner({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {/* Mismo patrón que `dialog-create-evaluation-period`: el aviso va
-            pegado debajo del header, dentro del modal, no en el toast global
-            que queda detrás del overlay. El error no se autocierra — se queda
-            hasta que el usuario lo descarte o reintente — y el éxito sí, con
-            el mismo `autoCloseMs` de 4s que ya usa academic-period. */}
+        {/* Aviso dentro del modal (el toast global queda detrás del overlay). */}
         <NoticeBanner
           notice={notice}
           onClose={() => setNotice(null)}
           variant={notice?.variant}
-          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+          autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
         />
 
         <AlertDialogFooter>
