@@ -8,7 +8,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { contenidosABody, type UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { invalidarUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 /**
  * El autor sale del token. `FK_REFERENTE_CURRICULAR` no se manda: se deriva del grado
@@ -59,9 +59,7 @@ export function useCreateUnidad({ mutationConfig }: UseCreateUnidadOptions = {})
   return useMutation({
     mutationFn: (data: UnidadInfoGeneral) => createUnidad(data),
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
-      // `unidades.tabs` vive fuera de `unidades.all`; sin alcance es prefijo de todas.
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
+      invalidarUnidad(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,

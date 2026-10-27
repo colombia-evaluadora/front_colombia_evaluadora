@@ -37,9 +37,9 @@ export function precargaEscalaMock() {
     valorMaximo: 5,
     rango: { valorMinimo: 0, valorMaximo: 5 },
     niveles: [
-      nivel(1, "BAJO", "Bajo", 0, 59.99, 1.5, "No alcanza los desempeños básicos propuestos."),
-      nivel(2, "BASICO", "Básico", 60, 79.99, 3.5, "Alcanza los desempeños mínimos necesarios."),
-      nivel(3, "ALTO", "Alto", 80, 94.99, 4.4, "Alcanza satisfactoriamente los desempeños propuestos."),
+      nivel(1, "BAJO", "Bajo", 0, 59.99, 1.5, null),
+      nivel(2, "BASICO", "Básico", 60, 79.99, 3.5, null),
+      nivel(3, "ALTO", "Alto", 80, 94.99, 4.4, null),
       nivel(4, "SUPERIOR", "Superior", 95, 100, 4.9, null),
     ],
   }

@@ -20,6 +20,7 @@ import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
 
 import { useCreateStatement, useUpdateStatement } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
+import { toReferenteLongTextInput } from "@/features/academic-management/curricular-references/utils/catalogs"
 import type { CurricularStatement } from "@/features/academic-management/curricular-references/api/types/statement"
 
 interface ManageStatementDialogProps {
@@ -138,7 +139,7 @@ export function ManageStatementDialog({
               value={text}
               maxLength={500}
               aria-invalid={Boolean(error)}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => setText(toReferenteLongTextInput(event.target.value))}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
               className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />

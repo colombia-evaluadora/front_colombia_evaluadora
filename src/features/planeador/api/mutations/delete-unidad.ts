@@ -4,8 +4,7 @@ import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ExportResult } from "@/features/planeador/api/types/actividad"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 // `PATCH`, no `DELETE` — el motor real no admite ese verbo (soft-delete).
 // El mock devuelve `{status, message}` directo; el real envuelve el id
@@ -35,12 +34,7 @@ export function useDeleteUnidad({ mutationConfig }: UseDeleteUnidadOptions = {})
     onSuccess: (...args) => {
       // Invalida el listado para que la unidad desaparezca del rail al
       // volver a la pestaña (mismo criterio que `useDeleteActividad`).
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
-      // X1: las pestañas por referente (`unidades.tabs`) viven fuera de
-      // `unidades.all`; sin alcance la key es prefijo de todas sus variantes.
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
+      invalidarUnidad(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,

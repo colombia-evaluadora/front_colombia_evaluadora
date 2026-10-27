@@ -46,18 +46,13 @@ test("cualitativa: precarga del período por criterio y cambios solo en ese crit
   await page.getByText("Cualitativa", { exact: true }).click()
   await page.getByRole("button", { name: "Agregar más" }).click()
   await expect(criterios).toHaveCount(3)
-  // Cada criterio nace con la escala del período: etiqueta, puntaje y descriptor (la descripción del
-  // nivel en la escala del período, TESCALA_VALORACION.DESCRIPCION; "Superior" llega sin ella).
+  // Cada criterio nace con la escala del período: etiqueta y puntaje (el descriptor no existe en el período).
   for (const i of [0, 1, 2]) {
     const niveles = criterios.nth(i).getByTestId("escala-nivel")
     await expect(niveles).toHaveCount(4)
     await expect(niveles.nth(0).getByLabel("Etiqueta")).toHaveValue("Bajo")
     await expect(niveles.nth(3).getByLabel("Etiqueta")).toHaveValue("Superior")
     await expect(niveles.nth(3).getByLabel("Puntaje *")).toHaveValue("4.9")
-    await expect(niveles.nth(0).getByLabel("Descriptor *")).toHaveValue(
-      "No alcanza los desempeños básicos propuestos.",
-    )
-    await expect(niveles.nth(3).getByLabel("Descriptor *")).toHaveValue("")
     await expect(criterios.nth(i).getByLabel("Valor máximo")).toHaveValue("4.9")
   }
   const nuevo = criterios.nth(2)
@@ -69,12 +64,6 @@ test("cualitativa: precarga del período por criterio y cambios solo en ese crit
   await niveles.nth(4).getByLabel("Puntaje *").fill("2")
   await niveles.nth(4).getByLabel("Descriptor *").fill("Participa con apoyo")
   await niveles.nth(3).getByLabel("Puntaje *").fill("6")
-  // El descriptor precargado se edita solo en este criterio; el vacío lo escribe el docente.
-  await niveles.nth(0).getByLabel("Descriptor *").fill("No participa aún en las actividades.")
-  await niveles.nth(3).getByLabel("Descriptor *").fill("Lidera la participación del grupo.")
-  await expect(
-    criterios.nth(0).getByTestId("escala-nivel").nth(0).getByLabel("Descriptor *"),
-  ).toHaveValue("No alcanza los desempeños básicos propuestos.")
   await expect(nuevo.getByLabel("Valor máximo")).toHaveValue("6")
   // Los otros criterios no cambian.
   await expect(criterios.nth(0).getByTestId("escala-nivel")).toHaveCount(4)

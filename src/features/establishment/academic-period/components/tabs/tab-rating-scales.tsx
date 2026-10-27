@@ -9,7 +9,6 @@ import { PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
   ComboboxField,
@@ -51,7 +50,6 @@ import {
 import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
-  RATING_SCALE_DESCRIPCION_MAX,
   type GradingRange,
 } from "@/features/establishment/academic-period/utils/grading-range"
 import {
@@ -227,7 +225,6 @@ function makeEmptyScaleDraft(range: GradingRange): ScaleDraft {
     notaEquivalente: range.min,
     tipo: "" as RatingScaleType,
     iconografia: "",
-    descripcion: "",
   }
 }
 
@@ -565,17 +562,6 @@ function ScalesSubTable({
                     symbols={symbols}
                     value={addDraft.iconografia}
                     onChange={(valor) => patchAddDraft({ iconografia: valor })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Textarea
-                    aria-label="Descripción"
-                    placeholder="Opcional"
-                    maxLength={RATING_SCALE_DESCRIPCION_MAX}
-                    rows={2}
-                    value={addDraft.descripcion ?? ""}
-                    onChange={(e) => patchAddDraft({ descripcion: e.target.value })}
-                    className="min-w-48"
                   />
                 </TableCell>
                 {spacer}
