@@ -23,6 +23,7 @@ import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa
 import { todayDateOnly } from "@/features/planeador/lib/format-date"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
+import { NotaRefuerzo } from "@/features/academic-management/reports/components/table/nota-recuperada"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
@@ -58,6 +59,23 @@ function agruparPorUnidad(columnas: PlanillaColumna[]): GrupoUnidad[] {
     grupo.columnas.push(columna)
   }
   return grupos
+}
+
+type CeldaEnOrden =
+  | { tipo: "actividad"; columna: PlanillaColumna }
+  | { tipo: "promedio"; fkTunidad: number }
+
+/** Promedio de la unidad del estudiante (sso V469.3 `notaUnidadHomologada`):
+ *  viene repetido en cada celda de la unidad y ya refleja los Refuerzos. */
+function CeldaPromedioUnidad({ fila, fkTunidad }: { fila: PlanillaFila; fkTunidad: number }) {
+  const promedio =
+    fila.celdas.find((c) => c.pkTunidad === fkTunidad && c.notaUnidadHomologada != null)
+      ?.notaUnidadHomologada ?? null
+  return (
+    <td className="bg-muted/20 px-4 py-1.5 align-middle font-semibold" data-testid="promedio-unidad">
+      {promedio != null ? promedio.toFixed(2) : <span className="text-muted-foreground">—</span>}
+    </td>
+  )
 }
 
 export function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
@@ -113,6 +131,14 @@ export function PlanillaGrid({
 
   const grupos = verPor === "unidad" ? agruparPorUnidad(columnas) : null
   const mostrarDefinitiva = filas.some((fila) => fila.definitivaProyectada !== null)
+  // Por unidad, cada unidad cierra con su promedio (Reglas 70/71): mismo
+  // orden que el encabezado agrupado.
+  const celdasEnOrden: CeldaEnOrden[] = grupos
+    ? grupos.flatMap((grupo) => [
+        ...grupo.columnas.map((columna) => ({ tipo: "actividad" as const, columna })),
+        ...(grupo.fkTunidad != null ? [{ tipo: "promedio" as const, fkTunidad: grupo.fkTunidad }] : []),
+      ])
+    : columnas.map((columna) => ({ tipo: "actividad" as const, columna }))
 
   return (
     <div className="border-input overflow-auto rounded-md border">
@@ -138,7 +164,7 @@ export function PlanillaGrid({
                 {grupos.map((grupo) => (
                   <th
                     key={grupo.fkTunidad ?? "sin-unidad"}
-                    colSpan={grupo.columnas.length}
+                    colSpan={grupo.columnas.length + (grupo.fkTunidad != null ? 1 : 0)}
                     title={grupo.nombre}
                     className="border-b px-4 py-2 text-center font-semibold uppercase"
                   >
@@ -147,15 +173,24 @@ export function PlanillaGrid({
                 ))}
               </tr>
               <tr>
-                {grupos.map((grupo) =>
-                  grupo.columnas.map((columna) => (
+                {grupos.map((grupo) => [
+                  ...grupo.columnas.map((columna) => (
                     <ColumnaHeader
                       key={columna.pkTactividad}
                       columna={columna}
                       onAbrirBulk={onAbrirBulk}
                     />
                   )),
-                )}
+                  grupo.fkTunidad != null && (
+                    <th
+                      key={`promedio-${grupo.fkTunidad}`}
+                      className="w-24 px-4 py-3 text-left font-semibold uppercase"
+                      title={`Promedio de ${grupo.nombre} con las notas que computan (incluye los Refuerzos aprobados)`}
+                    >
+                      Prom. unidad
+                    </th>
+                  ),
+                ])}
               </tr>
             </>
           ) : (
@@ -199,7 +234,17 @@ export function PlanillaGrid({
                     )}
                   </td>
                 )}
-                {columnas.map((columna) => {
+                {celdasEnOrden.map((item) => {
+                  if (item.tipo === "promedio") {
+                    return (
+                      <CeldaPromedioUnidad
+                        key={`promedio-${item.fkTunidad}`}
+                        fila={fila}
+                        fkTunidad={item.fkTunidad}
+                      />
+                    )
+                  }
+                  const columna = item.columna
                   const celda = celdaDe(fila, columna)
                   if (celda?.estado === "NO_ASIGNADA") {
                     return (
@@ -300,6 +345,13 @@ export function PlanillaGrid({
                           <div className="w-12">
                             <NotaConCambio nota={propuesta} anterior={nota} titulo={tituloCambio} />
                           </div>
+                        ) : nota !== null && celda?.calificacionHomologada != null && celda.recuperacionHomologada != null ? (
+                          <NotaRefuerzo
+                            original={celda.calificacionHomologada}
+                            refuerzo={celda.recuperacionHomologada}
+                            computa={nota}
+                            formato={(n) => n.toFixed(2)}
+                          />
                         ) : nota !== null ? (
                           <span className="w-12 font-medium">{nota.toFixed(2)}</span>
                         ) : (

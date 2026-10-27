@@ -83,6 +83,7 @@ import {
 import { ObservacionesTable } from "@/features/academic-management/reports/components/table/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/sheets/observacion-sheet"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { InformeDesactualizadoAviso } from "@/features/academic-management/reports/components/informe-desactualizado-aviso"
 import {
   PendingChangesBanners,
   type DestinoPlanilla,
@@ -772,6 +773,13 @@ function ReportsPageContent() {
           planillasPendientes={planillasPendientes.data ?? []}
           cambiosPendientes={cambiosPendientes.data ?? []}
           onIrAPlanilla={handleIrAPlanilla}
+        />
+
+        {/* Regla 71: el informe del grupo activo se emitió antes de una aprobación. */}
+        <InformeDesactualizadoAviso
+          grupoId={gruposAbiertos.length > 0 && grupoActivoId > 0 ? grupoActivoId : null}
+          periodos={periodos}
+          nombrePeriodo={(id) => periodosDisponibles.find((p) => p.id === id)?.nombre}
         />
 
         <HistorialCambiosSheet

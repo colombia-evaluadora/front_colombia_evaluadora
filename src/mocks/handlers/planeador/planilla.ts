@@ -142,23 +142,35 @@ export const planeadorPlanillaHandlers = [
       }
     }
 
-    const rows = [...roster.values()].map((estudiante) => {
+    const rows = [...roster.values()].map((estudiante, indiceEstudiante) => {
+      // Reglas 70/71: el primer estudiante tiene un Refuerzo aprobado en su
+      // primera actividad sumativa calificada: +30 puntos sobre la original.
+      let refuerzoAsignado = indiceEstudiante !== 0
       const celdas = actividades.map((actividad, index) => {
         const base = porActividad.get(actividad.id)!.find((e) => e.id === estudiante.id)
         const noAsistio = base?.asistencia.estado === "no-asistio"
         const notas = getOverride(actividad.id, estudiante.id) ?? base?.notas ?? []
-        const porcentaje = actividad.esEvaluativa
+        const original = actividad.esEvaluativa
           ? porcentajeFinal(notas, itemsPonderables(actividad))
           : null
+        const conRefuerzo =
+          !refuerzoAsignado && original !== null && !noAsistio && !esFormativaMock(actividad)
+        if (conRefuerzo) refuerzoAsignado = true
+        const recuperacion = conRefuerzo ? Math.min(100, original + 30) : null
+        const porcentaje = recuperacion ?? original
         return {
           ordenColumna: index + 1,
           pkTactividad: actividad.id,
           pkTunidad: actividad.unidad.id || null,
           pkTactividadEstudiante: pkTactividadEstudianteDe(actividad.id, estudiante.id),
           estado: noAsistio ? "NO_CALIFICABLE" : porcentaje === null ? "SIN_CALIFICAR" : "CALIFICADA",
-          calificacion: porcentaje,
-          recuperacion: null,
+          calificacion: original,
+          recuperacion,
           definitiva: porcentaje,
+          calificacionHomologada:
+            recuperacion !== null && original !== null ? notaEnEscalaCinco(original) : null,
+          recuperacionHomologada: recuperacion !== null ? notaEnEscalaCinco(recuperacion) : null,
+          notaUnidadHomologada: null as number | null,
           nota: porcentaje,
           notaHomologada: porcentaje !== null ? notaEnEscalaCinco(porcentaje) : null,
           calificable: noAsistio ? "N" : "S",
@@ -172,6 +184,19 @@ export const planeadorPlanillaHandlers = [
           evidencias: getEvidencias(actividad.id, estudiante.id),
         }
       })
+
+      // Promedio simple por unidad de lo que computa (ya con el refuerzo).
+      const porUnidad = new Map<number, number[]>()
+      for (const celda of celdas) {
+        if (celda.pkTunidad == null || celda.definitiva === null || celda.esFormativa) continue
+        porUnidad.set(celda.pkTunidad, [...(porUnidad.get(celda.pkTunidad) ?? []), celda.definitiva])
+      }
+      for (const celda of celdas) {
+        const notasUnidad = celda.pkTunidad != null ? porUnidad.get(celda.pkTunidad) : undefined
+        celda.notaUnidadHomologada = notasUnidad?.length
+          ? notaEnEscalaCinco(notasUnidad.reduce((x, y) => x + y, 0) / notasUnidad.length)
+          : null
+      }
 
       const entradasDefinitiva = actividades.map((actividad) => ({
         actividad,

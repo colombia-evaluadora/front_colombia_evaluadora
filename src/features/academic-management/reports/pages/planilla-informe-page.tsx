@@ -58,6 +58,7 @@ import type {
 } from "@/features/academic-management/reports/api/types"
 import { NOTA_MINIMA_APROBATORIA } from "@/features/planeador/api/types/calificacion"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { NotaRefuerzo } from "@/features/academic-management/reports/components/table/nota-recuperada"
 
 function formatNota(valor: number | null): string {
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
@@ -216,6 +217,16 @@ function CeldaActividad({ celda }: { celda: CeldaPlanilla | undefined }) {
           <CambioNota anterior={celda.notaAnterior} nueva={celda.nota} />
         </TooltipContent>
       </Tooltip>
+    )
+  }
+  if (celda.notaOriginal != null && celda.notaRefuerzo != null) {
+    return (
+      <NotaRefuerzo
+        original={celda.notaOriginal}
+        refuerzo={celda.notaRefuerzo}
+        computa={celda.nota}
+        formato={formatNota}
+      />
     )
   }
   return <span>{formatNota(celda.nota)}</span>

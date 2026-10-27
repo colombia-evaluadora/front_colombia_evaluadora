@@ -63,6 +63,13 @@ export interface PlanillaCelda {
    *  el resultado crudo del instrumento (0-100). Es lo que debe pintar la
    *  celda, nunca `calificacion` sin convertir. */
   notaHomologada: number | null
+  /** Refuerzo aplicado (Reglas 70/71; sso V469.3): la original y la del refuerzo
+   *  vigente, homologadas. Solo vienen cuando la actividad tiene un Refuerzo aplicado. */
+  calificacionHomologada?: number | null
+  recuperacionHomologada?: number | null
+  /** Promedio de la unidad de esta actividad para el estudiante, con las notas que
+   *  computan (ya con el refuerzo): se repite en cada celda de la unidad. */
+  notaUnidadHomologada?: number | null
   calificable: "S" | "N" | null
   observacion: string | null
   /** Versión de la nota (sso V469.3/V496.7, `NONE` sin nota): CAS de la escritura offline. */
