@@ -8,6 +8,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
+import { toReferenteTextInput } from "@/features/academic-management/curricular-references/utils/catalogs"
 
 import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import { useCreateSubjectLabelOption } from "@/features/academic-management/curricular-references/api/mutations/use-create-subject-label"
@@ -138,8 +139,8 @@ export function SubjectLabelSelect({
             <InputGroup className="h-11 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
               <InputGroupInput
                 value={nuevo}
-                maxLength={100}
-                onChange={(e) => setNuevo(e.target.value)}
+                maxLength={50}
+                onChange={(e) => setNuevo(toReferenteTextInput(e.target.value))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault()
