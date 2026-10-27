@@ -1,5 +1,5 @@
 import type { MetodoCalculo } from "@/features/planeador/api/types/unidad-tematica"
-import { generoRotulo, pluralizarRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+import { articuloDefinidoRotulo, pluralizarRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 /**
  * `METODO_CALCULO_INFO` con el rótulo real de la actividad (Regla 13) en vez
@@ -10,9 +10,9 @@ import { generoRotulo, pluralizarRotulo } from "@/features/planeador/lib/rotulo-
 export function metodoCalculoInfo(
   rotuloActividad: string,
 ): Record<MetodoCalculo, { label: string; description: string }> {
-  const lower = rotuloActividad.trim()
+  const lower = rotuloActividad.charAt(0).toLowerCase() + rotuloActividad.slice(1)
   const plural = pluralizarRotulo(lower)
-  const todas = generoRotulo(rotuloActividad) === "m" ? "todos los" : "todas las"
+  const todas = articuloDefinidoRotulo(rotuloActividad) === "el" ? "todos los" : "todas las"
   return {
     Ponderado: {
       label: `Ponderar ${plural}`,

@@ -1,5 +1,4 @@
 import { useSelector } from "@tanstack/react-form"
-import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Input } from "@/components/ui/input"
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnFrase,
+  rotuloEnMinuscula,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
@@ -39,14 +38,14 @@ export function IdentificacionSection({
   const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoIdSel, asignaturaIdSel)
-  const rotuloLower = rotuloEnFrase(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
 
   return (
     <>
         <form.Field name="nombre">
           {(field) => (
             <Field variant="outlined" data-invalid={nombreInvalido}>
-              <FieldLabel htmlFor={field.name}>Nombre {deArticuloRotulo(rotuloLower)} {rotuloLower} *</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Nombre de la {rotuloLower} *</FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}

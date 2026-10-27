@@ -13,7 +13,7 @@ import {
   type PlaneadorAlcanceParams,
 } from "@/features/planeador/hooks/use-planeador-docente-scope"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
-import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
+import { motivoNoEditableDeFila, tieneResultadosDeFila } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * `GET /planeador/actividades/mias` (V250, ver colección Postman
@@ -75,6 +75,8 @@ interface ActividadMiaRow extends DocenteDuenoRow {
    *  Opcionales: una respuesta vieja sin ellos cae a `evaluados`. */
   editable?: "S" | "N" | null
   motivo_no_editable?: string | null
+  /** Reglas 38/39 (sso V553/V492.4): 'S' si tiene resultados; "Eliminar" llega deshabilitado. */
+  tiene_resultados?: "S" | "N" | null
   total_count: number
   // Presentes (no NULL) solo cuando se manda `?dia=` — sin él, "nada cambia
   // del comportamiento anterior" y vienen NULL (colección Postman 4.1/8.3).
@@ -125,6 +127,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     evaluados: row.estudiantes_evaluados,
     totalEstudiantes: row.estudiantes_asignados,
     motivoNoEditable: motivoNoEditableDeFila(row),
+    tieneResultados: tieneResultadosDeFila(row),
     materiales: "",
     recursos: [],
     duracionEstimada: "",

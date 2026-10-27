@@ -4,6 +4,7 @@ import {
   addActividad,
   deleteActividadById,
   motivoNoEditableMock,
+  tieneResultadosMock,
   nombreArchivoMaterial,
   planeadorDb,
   registrarArchivoMaterial,
@@ -85,20 +86,7 @@ function asignaturaIdMock(asignatura: string): number {
  * que ya usa `UNIDAD_TABS_URL` para "instrumento"): un grado con unidades
  * Formativas es "Experiencia de aprendizaje", el resto "Actividad".
  */
-/** Solo E2E: `localStorage["ce-mock-rotulo-ejecucion"]` fuerza el Rótulo de
- *  Ejecución (p. ej. "Tareas") para probar que la UI lo muestra tal cual lo
- *  escribió el usuario. Los handlers de MSW corren en la página. */
-function rotuloEjecucionOverride(): string | undefined {
-  try {
-    return localStorage.getItem("ce-mock-rotulo-ejecucion") || undefined
-  } catch {
-    return undefined
-  }
-}
-
 function rotuloEjecucionMock(grado: string): string {
-  const override = rotuloEjecucionOverride()
-  if (override) return override
   const esFormativo = unidadesTematicasDb.some(
     (u) => u.grado === grado && u.enfoquePedagogico === "Formativo",
   )
@@ -1798,7 +1786,7 @@ export const planeadorHandlers = [
   // Borrado (soft-delete) de la unidad. `PATCH`, no `DELETE` — el motor real
   // no admite ese verbo (`ck_query_http_method` solo permite GET/POST/PUT/
   // PATCH). 404 si no existe, igual que el de actividad.
-  http.patch(UNIDAD_DELETE_URL, async ({ params }) => {
+  http.patch(UNIDAD_DELETE_URL, async ({ params, request }) => {
     await delay(250)
     const id = Number(params.id)
     const found = unidadesTematicasDb.find((row) => row.id === id)
@@ -1821,6 +1809,29 @@ export const planeadorHandlers = [
         },
         { status: 409 },
       )
+    }
+    // Reglas 38/39 (sso fn_unidad_validar_eliminable / fn_unidad_eliminar_interno):
+    // con resultados vinculados se rechaza (409); con ELIMINAR_ACTIVIDADES se
+    // borran las que se pueden (sin resultados ni base de un refuerzo) y el
+    // resto queda sin asignar.
+    const conResultados = found.actividades.filter((a) => tieneResultadosMock(a.actividadId))
+    if (conResultados.length > 0) {
+      return HttpResponse.json(
+        {
+          status: 409,
+          code: "FK_NOT_FOUND",
+          message: `No se puede eliminar la unidad temática "${found.nombre}": tiene actividades con resultados registrados (${conResultados
+            .map((a) => `"${a.nombre}"`)
+            .join(", ")}). Desvincúlelas primero.`,
+        },
+        { status: 409 },
+      )
+    }
+    const body = (await request.json().catch(() => null)) as { ELIMINAR_ACTIVIDADES?: boolean } | null
+    if (body?.ELIMINAR_ACTIVIDADES) {
+      for (const a of found.actividades) {
+        if (!motivoNoEditableMock(a.actividadId)) deleteActividadById(a.actividadId)
+      }
     }
 
     deleteUnidadById(id)
@@ -2054,7 +2065,7 @@ export const planeadorHandlers = [
     await delay(80)
     const grado = Number(new URL(request.url).searchParams.get("grado"))
     return HttpResponse.json({
-      rows: [{ fk_tgrado: grado, pk_referente_curricular: null, rotulo_ejecucion: rotuloEjecucionOverride() ?? "Actividad" }],
+      rows: [{ fk_tgrado: grado, pk_referente_curricular: null, rotulo_ejecucion: "Actividad" }],
     })
   }),
 

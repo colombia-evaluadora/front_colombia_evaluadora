@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { useForm, useSelector } from "@tanstack/react-form"
 import { Card } from "@/components/ui/card"
 import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
@@ -300,6 +299,7 @@ export function EditarActividadForm({
             form={form}
             // En solo lectura se reusa el candado de la recuperación.
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion || readOnly}
+            soloLectura={readOnly}
             unidadBloqueada={unidadBloqueada}
             tab={tab}
             unidadSlot={
@@ -314,7 +314,7 @@ export function EditarActividadForm({
         </div>
       </Card>
       <Card className="gap-4 p-4">
-        <h3 className="text-base font-semibold">Identificación y Estructura de Datos {deArticuloRotulo(rotuloUnidad)} {rotuloUnidad}</h3>
+        <h3 className="text-base font-semibold">Identificación y Estructura de Datos de la {rotuloUnidad}</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <IdentificacionSection
             form={form}

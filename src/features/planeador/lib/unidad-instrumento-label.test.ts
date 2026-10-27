@@ -35,10 +35,10 @@ describe("resolverRotuloUnidad", () => {
 })
 
 describe("mensajeUnidadGuardada", () => {
-  it("concuerda el artículo y respeta el rótulo tal cual lo escribió el usuario", () => {
-    expect(mensajeUnidadGuardada("creado", "Unidad temática")).toBe("Se ha creado con éxito la Unidad temática.")
+  it("concuerda el artículo y baja la mayúscula inicial", () => {
+    expect(mensajeUnidadGuardada("creado", "Unidad temática")).toBe("Se ha creado con éxito la unidad temática.")
     expect(mensajeUnidadGuardada("actualizado", "Proyecto pedagógico")).toBe(
-      "Se ha actualizado con éxito el Proyecto pedagógico.",
+      "Se ha actualizado con éxito el proyecto pedagógico.",
     )
   })
 })

@@ -61,7 +61,7 @@ export function CrearUnidadPopover({
   const [isSaving, setIsSaving] = React.useState(false)
   const { notify } = useNotify()
   // Sin "nuevo/nueva": el rótulo varía y no se concuerda el género.
-  const crearLabel = `Crear ${instrumentoLabel}`
+  const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
 
   const {
     enunciados: enunciadosDisponibles,

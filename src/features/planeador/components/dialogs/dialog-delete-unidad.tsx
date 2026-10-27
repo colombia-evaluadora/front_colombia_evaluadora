@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getErrorMessage, isConflictError } from "@/lib/api-client"
 
 import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unidad"
+import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useCederUnidad } from "@/features/planeador/api/mutations/ceder-unidad"
 import { useUnidadColegasQuery, type UnidadColega } from "@/features/planeador/api/query/use-unidad-colegas-query"
@@ -31,9 +32,9 @@ import {
 } from "@/features/planeador/lib/unidad-instrumento-label"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnFrase,
+  rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
-import { concordanciaRotulo, pluralizarRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
+import { pluralizarRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 interface DialogDeleteUnidadProps {
   unidad: Pick<UnidadTematica, "id" | "nombre" | "gradoId" | "rotuloEjecucion">
@@ -66,6 +67,14 @@ interface DialogDeleteUnidadProps {
  * con varios, el dueño elige de la lista. La unidad no se elimina: cambia de
  * dueño y quien cedió deja de administrarla. El backend
  * (`fn_unidad_validar_cesion`) sigue validando al elegido.
+ *
+ * Reglas 38/39 (dueño solo, sin colegas): si alguna actividad vinculada tiene
+ * resultados la eliminación se bloquea (el backend también lo rechaza con
+ * 23503 nombrándolas) y el docente debe desvincularlas primero. Sin notas, la
+ * confirmación ofrece dos acciones: eliminar solo la unidad (las actividades
+ * quedan sin asignar) o eliminarla junto con sus actividades sin notas
+ * (`ELIMINAR_ACTIVIDADES`: el backend aplica la misma regla que eliminar una
+ * actividad y desvincula las que no puede borrar, p. ej. base de un refuerzo).
  */
 export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerProps }: DialogDeleteUnidadProps) {
   const [open, setOpen] = useState(false)
@@ -79,16 +88,28 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
   // `unidad.instrumento` es un campo homónimo pero DISTINTO (Instrumento de
   // evaluación: Rúbrica/Lista de cotejo/Escala), no sirve acá.
   const instrumentoLabel = useRotuloUnidad(unidad, rotuloUnidad)
-  const instrumentoLower = rotuloEnFrase(instrumentoLabel)
+  const instrumentoLower = rotuloEnMinuscula(instrumentoLabel)
   const articulo = articuloDefinido(instrumentoLabel)
   // Concordancia de género del rótulo: "cederlo/cederla", "suyo/suya".
-  const o = concordanciaRotulo(instrumentoLabel)
+  const o = articulo === "el" ? "o" : "a"
   // Rótulo de la actividad (Regla 13) para "sus criterios y actividades
   // vinculadas" — en plural concordado (`pluralizarRotulo`).
   const rotuloActividad = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
-  const actividadLower = rotuloEnFrase(rotuloActividad)
+  const actividadLower = rotuloEnMinuscula(rotuloActividad)
   const actividadesLower = pluralizarRotulo(actividadLower)
   const vinculadas = `vinculad${terminacionRotulo(rotuloActividad)}s`
+  const articuloActividades = terminacionRotulo(rotuloActividad) === "o" ? "los" : "las"
+  const laUnidad = `${articulo === "el" ? "el" : "la"} ${instrumentoLower}`
+
+  // Solo con el diálogo abierto: decide la pregunta (hay actividades o no) y
+  // el bloqueo preventivo por resultados.
+  const { data: actividadesVinculadas, isPending: isPendingActividades } = useUnidadActividadesQuery(
+    open ? unidad.id : undefined,
+  )
+  const actividadesConResultados = (actividadesVinculadas ?? []).filter((a) => a.tieneResultados)
+  // El 409 del backend también puede ser por resultados (lista vieja en caché):
+  // ahí la cesión no aplica, solo se muestra el motivo.
+  const conflictoPorResultados = conflictMessage != null && /resultados registrados/i.test(conflictMessage)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -114,7 +135,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
           setConflictMessage(getErrorMessage(error))
           return
         }
-        notify(`No se pudo eliminar ${articulo} ${instrumentoLower}.`, { variant: "error" })
+        notify(`No se pudo eliminar ${articulo === "el" ? "el" : "la"} ${instrumentoLower}.`, { variant: "error" })
       },
     },
   })
@@ -135,7 +156,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
 
   // Solo se consulta en el paso "ceder" (tras el 409): es la foto de quién
   // usa la unidad en ese momento.
-  const colegasQuery = useUnidadColegasQuery(unidad.id, { enabled: open && conflictMessage != null })
+  const colegasQuery = useUnidadColegasQuery(unidad.id, { enabled: open && conflictMessage != null && !conflictoPorResultados })
   const cesion = colegasQuery.data ? resolverCesion(colegasQuery.data) : null
   const destino: UnidadColega | null =
     cesion?.modo === "automatica"
@@ -150,6 +171,9 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
     if (destino?.funcionarioId == null) return
     cederMutation.mutate({ unidadId: unidad.id, nuevoFuncionarioId: destino.funcionarioId })
   }
+
+  const tieneActividades = (actividadesVinculadas?.length ?? 0) > 0
+  const bloqueadaPorResultados = conflictoPorResultados || actividadesConResultados.length > 0
 
   const { puedeEliminar } = usePlaneadorSoloLectura()
   // Fase 1 offline es solo lectura: eliminar/ceder necesitan red.
@@ -181,7 +205,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
         <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${unidad.nombre}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent className={conflictMessage ? "sm:max-w-lg" : undefined}>
-        {conflictMessage ? (
+        {conflictMessage && !conflictoPorResultados ? (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>
@@ -215,7 +239,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                     {usoDe(cesion.colega) && (
                       <span className="text-muted-foreground"> ({usoDe(cesion.colega)})</span>
                     )}
-                    . {articulo.charAt(0).toUpperCase() + articulo.slice(1)} {instrumentoLower} no se elimina: pasa a ser suy{o} y usted
+                    . {articulo === "el" ? "El" : "La"} {instrumentoLower} no se elimina: pasa a ser suy{o} y usted
                     deja de administrarl{o}.
                   </span>
                 ) : cesion?.modo === "elegir" ? (
@@ -261,7 +285,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                   disabled={deleteMutation.isPending}
                   onClick={() => {
                     setConflictMessage(null)
-                    deleteMutation.mutate(unidad.id)
+                    deleteMutation.mutate({ id: unidad.id })
                   }}
                 >
                   <TrashIcon data-icon="inline-start" />
@@ -288,33 +312,95 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
               </AlertDialogCancel>
             </AlertDialogFooter>
           </>
+        ) : bloqueadaPorResultados ? (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>No se puede eliminar {laUnidad}</AlertDialogTitle>
+              <AlertDialogDescription render={<div className="flex flex-col gap-3 text-left" />}>
+                <div className="border-red-stroke bg-red-22 text-red rounded-md border p-3 text-sm">
+                  {conflictoPorResultados
+                    ? conflictMessage
+                    : `${articuloActividades === "los" ? "Estos" : "Estas"} ${actividadesLower} ${vinculadas} tienen resultados registrados: ${actividadesConResultados
+                        .map((a) => `“${a.nombre}”`)
+                        .join(", ")}. Desvincúlel${articuloActividades === "los" ? "o" : "a"}s primero para poder eliminar ${laUnidad}.`}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel variant="fill" color="neutral">
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </AlertDialogCancel>
+            </AlertDialogFooter>
+          </>
         ) : (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>Eliminar {instrumentoLower}</AlertDialogTitle>
               <AlertDialogDescription>
-                Se eliminará permanentemente {articulo} {instrumentoLower} &ldquo;
-                {unidad.nombre}&rdquo;, junto con sus criterios y {actividadesLower} {vinculadas}. Esta
-                acción no se puede deshacer.
+                {tieneActividades ? (
+                  <>
+                    ¿Desea eliminar únicamente {laUnidad} ({articuloActividades} {actividadesLower} quedarán sin
+                    asignar) o eliminar {laUnidad} junto con todas sus {actividadesLower} sin notas? Esta acción
+                    no se puede deshacer.
+                  </>
+                ) : (
+                  <>
+                    Se eliminará permanentemente {laUnidad} &ldquo;{unidad.nombre}&rdquo; junto con sus
+                    criterios. Esta acción no se puede deshacer.
+                  </>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogAction
-                color="destructive"
-                disabled={deleteMutation.isPending}
-                aria-busy={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate(unidad.id)}
-              >
-                {deleteMutation.isPending ? (
-                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <CheckIcon data-icon="inline-start" />
-                )}
-                Si
-              </AlertDialogAction>
+              {tieneActividades ? (
+                <>
+                  <AlertDialogAction
+                    color="destructive"
+                    variant="outline"
+                    disabled={deleteMutation.isPending}
+                    aria-busy={deleteMutation.isPending && !deleteMutation.variables?.eliminarActividades}
+                    onClick={() => deleteMutation.mutate({ id: unidad.id, eliminarActividades: false })}
+                  >
+                    {deleteMutation.isPending && !deleteMutation.variables?.eliminarActividades ? (
+                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <TrashIcon data-icon="inline-start" />
+                    )}
+                    Eliminar solo {laUnidad}
+                  </AlertDialogAction>
+                  <AlertDialogAction
+                    color="destructive"
+                    disabled={deleteMutation.isPending}
+                    aria-busy={deleteMutation.isPending && deleteMutation.variables?.eliminarActividades}
+                    onClick={() => deleteMutation.mutate({ id: unidad.id, eliminarActividades: true })}
+                  >
+                    {deleteMutation.isPending && deleteMutation.variables?.eliminarActividades ? (
+                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <TrashIcon data-icon="inline-start" />
+                    )}
+                    Eliminar con sus {actividadesLower}
+                  </AlertDialogAction>
+                </>
+              ) : (
+                <AlertDialogAction
+                  color="destructive"
+                  disabled={deleteMutation.isPending || isPendingActividades}
+                  aria-busy={deleteMutation.isPending}
+                  onClick={() => deleteMutation.mutate({ id: unidad.id })}
+                >
+                  {deleteMutation.isPending ? (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
+                  )}
+                  Si
+                </AlertDialogAction>
+              )}
               <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
                 <XIcon data-icon="inline-start" />
-                No
+                {tieneActividades ? "Cancelar" : "No"}
               </AlertDialogCancel>
             </AlertDialogFooter>
           </>

@@ -1,6 +1,6 @@
 import { HttpResponse } from "msw"
 
-import { motivoNoEditableMock } from "@/mocks/db/planeador"
+import { motivoNoEditableMock, tieneResultadosMock } from "@/mocks/db/planeador"
 
 /**
  * Regla 37 (sso `fn_actividad_validar_editable`): con resultados (o siendo
@@ -17,8 +17,12 @@ export function rechazoNoEditable(actividadId: number) {
     : null
 }
 
-/** `editable`/`motivo_no_editable` de una fila de listado, como el real (sso V553/V492.4). */
+/** `editable`/`motivo_no_editable`/`tiene_resultados` de una fila de listado, como el real (sso V553/V492.4). */
 export function editableFila(actividadId: number) {
   const motivo = motivoNoEditableMock(actividadId)
-  return { editable: motivo ? "N" : "S", motivo_no_editable: motivo ?? null }
+  return {
+    editable: motivo ? "N" : "S",
+    motivo_no_editable: motivo ?? null,
+    tiene_resultados: tieneResultadosMock(actividadId) ? "S" : "N",
+  }
 }

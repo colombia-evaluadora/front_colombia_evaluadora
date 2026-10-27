@@ -38,7 +38,7 @@ import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unl
 import type { MetodoCalculo, UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnFrase,
+  rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinidoRotulo, terminacionRotulo } from "@/features/planeador/lib/rotulo-gramatica"
@@ -286,7 +286,7 @@ function BotonDesvincular({
 }) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
-  const actividadLower = rotuloEnFrase(rotuloActividad)
+  const actividadLower = rotuloEnMinuscula(rotuloActividad)
   const desvincularLabel = `Desvincular ${actividadLower}`
   const soloEnLinea = useOnlineOnly()
   const genero = terminacionRotulo(rotuloActividad)
@@ -353,7 +353,7 @@ function BotonDesvincular({
         <AlertDialogHeader>
           <AlertDialogTitle>{desvincularLabel}</AlertDialogTitle>
           <AlertDialogDescription>
-            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin {rotuloUnidad}{" "}
+            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin {rotuloUnidad.toLowerCase()}{" "}
             (huérfan{genero}). Podés volver a vincularl{genero} más adelante.
           </AlertDialogDescription>
         </AlertDialogHeader>

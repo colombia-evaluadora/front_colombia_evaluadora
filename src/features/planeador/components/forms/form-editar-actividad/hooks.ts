@@ -7,7 +7,7 @@ import {
   useConfiguracionContextoActividadQuery,
 } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
-import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnFrase } from "@/features/planeador/api/query/use-rotulo-actividad-query"
+import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { type CampoRecuperacion, erroresRecuperacion } from "@/features/planeador/lib/recuperacion-faltantes"
 import type { FormActividad } from "@/features/planeador/components/forms/form-editar-actividad/types"
@@ -22,7 +22,7 @@ export const ERROR_OBLIGATORIO = [{ message: "Este campo es obligatorio." }]
 export function useErrorRecuperacion(form: FormActividad, campo: CampoRecuperacion): string | undefined {
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const rotuloLower = useSelector(form.store, (state) =>
-    rotuloEnFrase(state.values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK),
+    rotuloEnMinuscula(state.values.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK),
   )
   const error = useSelector(form.store, (state) => erroresRecuperacion(state.values, rotuloLower)[campo])
   return submissionAttempts > 0 ? error : undefined
@@ -37,7 +37,8 @@ export function useHasGradoAsignatura(form: FormActividad): boolean {
 
 /**
  * `true` cuando la recuperación hereda de otra actividad (`destino = ACTIVIDAD` con origen
- * elegido): Grado/Grupo, Asignatura, Nombre y Estudiantes quedan bloqueados.
+ * elegido): Grado/Grupo, Asignatura, Unidad, Nombre y "¿Es sumativa?" quedan bloqueados (heredados);
+ * estudiantes, recursos, fechas e instrumento siguen editables.
  */
 export function useRecuperacionBloqueaCampos(form: FormActividad): boolean {
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)
