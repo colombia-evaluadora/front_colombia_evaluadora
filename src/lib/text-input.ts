@@ -94,3 +94,23 @@ export function toSafeTextInput(value: string, maxLength?: number): string {
   const cleaned = value.replace(/[^\p{L}\p{N}\s.,'()&#/-]/gu, "")
   return maxLength ? cleaned.slice(0, maxLength) : cleaned
 }
+
+/**
+ * Texto "plano" del planeador (nombre, descripción, objetivos y estructura de
+ * la unidad): letras sin y con tilde (á é í ó ú), con diéresis (ä ë ï ö ü), ñ,
+ * dígitos, espacios (incluye saltos de línea), guiones y apóstrofos (' y ’).
+ * A diferencia de `SAFE_TEXT_PATTERN` NO admite puntuación (. , : ; ( ) & # /):
+ * así lo pide el documento de reglas de la unidad. Es el mismo conjunto que
+ * valida el back (`fn_texto_plano`, sso V492.1). Se usa como validación (marca
+ * el campo en rojo con un mensaje), no como sanitizador silencioso.
+ */
+export const PLAIN_TEXT_PATTERN = /^[A-Za-zÁÉÍÓÚáéíóúÄËÏÖÜäëïöüÑñ0-9\s'’-]*$/
+
+/** Caracteres de `value` que `PLAIN_TEXT_PATTERN` no admite, sin repetir y en orden de aparición. */
+export function plainTextInvalidChars(value: string): string[] {
+  const invalidos = new Set<string>()
+  for (const ch of value ?? "") {
+    if (!PLAIN_TEXT_PATTERN.test(ch)) invalidos.add(ch)
+  }
+  return [...invalidos]
+}

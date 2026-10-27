@@ -32,6 +32,11 @@ import {
   mensajeUnidadGuardada,
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
+import {
+  UNIDAD_ERRORES_MENSAJE,
+  enfocarPrimerError,
+  validarUnidadDraft,
+} from "@/features/planeador/lib/unidad-validaciones"
 import { planeadorUnidadCrearRoute } from "@/router"
 
 const FORM_ID = "crear-unidad-form"
@@ -49,6 +54,9 @@ function PlaneadorCrearUnidadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
+  // Validación en front (los mensajes del back quedan de respaldo).
+  const [intentosEnvio, setIntentosEnvio] = useState(0)
+  const errores = validarUnidadDraft(draft)
 
   // El router solo gatea por sesión: sin "crear" se redirige al listado.
   const { puedeCrear, isLoading: isLoadingPermiso } = usePlaneadorSoloLectura()
@@ -125,6 +133,12 @@ function PlaneadorCrearUnidadPageContent() {
             id={FORM_ID}
             onSubmit={(e) => {
               e.preventDefault()
+              setIntentosEnvio((n) => n + 1)
+              if (Object.keys(errores).length > 0) {
+                notify(UNIDAD_ERRORES_MENSAJE, { variant: "error" })
+                enfocarPrimerError(errores)
+                return
+              }
               createMutation.mutate(draftToPayload(draft))
             }}
           >
@@ -138,6 +152,8 @@ function PlaneadorCrearUnidadPageContent() {
                   onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
                   tab={tabDesdeAgregar}
                   rotuloUnidad={instrumento}
+                  errores={errores}
+                  intentosEnvio={intentosEnvio}
                 />
               }
             />
@@ -155,7 +171,7 @@ function PlaneadorCrearUnidadPageContent() {
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!draft.nombre.trim() || createMutation.isPending || escritura.disabled}
+              disabled={createMutation.isPending || escritura.disabled}
               title={escritura.tooltip ?? undefined}
             >
               {createMutation.isPending ? (

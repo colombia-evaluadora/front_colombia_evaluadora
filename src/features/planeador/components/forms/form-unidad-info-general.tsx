@@ -1,8 +1,9 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field"
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -41,6 +43,11 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { metodoCalculoInfo } from "@/features/planeador/lib/metodo-calculo-info"
+import {
+  UNIDAD_LIMITES,
+  unidadCampoId,
+  type UnidadErrores,
+} from "@/features/planeador/lib/unidad-validaciones"
 import { useAsistenteUnidad } from "@/features/planeador/hooks/use-asistente-unidad"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
@@ -174,7 +181,15 @@ export function UnidadInfoGeneralFields({
   tab,
   rotuloUnidad = UNIDAD_TAB_FALLBACK,
   unidadId,
+  errores = {},
+  intentosEnvio = 0,
 }: {
+  /** Errores de `validarUnidadDraft` (clave = id del control). */
+  errores?: UnidadErrores
+  /** Veces que se intentó guardar: con > 0 se muestran todos los errores,
+   *  aunque el campo no se haya tocado (mismo criterio que
+   *  `isTouched || submissionAttempts > 0` de TanStack Form). */
+  intentosEnvio?: number
   /** Id de la unidad que se edita (para el asistente); sin él es un alta. */
   unidadId?: number
   draft: UnidadDraft
@@ -289,6 +304,15 @@ export function UnidadInfoGeneralFields({
 
   const disabled = !hasGradoAsignatura
 
+  // Campos ya visitados (blur): su error se muestra aunque no se haya
+  // intentado guardar todavía.
+  const [tocados, setTocados] = useState<ReadonlySet<string>>(() => new Set())
+  const tocar = (id: string) => {
+    if (!tocados.has(id)) setTocados(new Set(tocados).add(id))
+  }
+  const errorDe = (id: string): string | undefined =>
+    intentosEnvio > 0 || tocados.has(id) ? errores[id] : undefined
+
   // UI asistida (`planeador.unidad`): rellenar/limpiar/señalar, nunca guardar.
   useAsistenteUnidad({
     draft,
@@ -300,7 +324,7 @@ export function UnidadInfoGeneralFields({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field variant="outlined">
+        <Field variant="outlined" data-invalid={Boolean(errorDe(unidadCampoId.grado)) || undefined}>
           <FieldLabel>Grado</FieldLabel>
           <Select
             value={draft.gradoId != null ? String(draft.gradoId) : "__none__"}
@@ -323,7 +347,7 @@ export function UnidadInfoGeneralFields({
               })
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger id={unidadCampoId.grado} aria-invalid={Boolean(errorDe(unidadCampoId.grado)) || undefined}>
               {/* El catálogo `grados` solo trae lo que este docente dicta:
                   una unidad de otro docente (o de un grado que este ya no
                   tiene asignado) no matchea ningún `SelectItem` — sin este
@@ -360,8 +384,9 @@ export function UnidadInfoGeneralFields({
               ))}
             </SelectContent>
           </Select>
+          <FieldError>{errorDe(unidadCampoId.grado)}</FieldError>
         </Field>
-        <Field variant="outlined">
+        <Field variant="outlined" data-invalid={Boolean(errorDe(unidadCampoId.asignatura)) || undefined}>
           <FieldLabel>{subjectLabel}</FieldLabel>
           <Select
             value={draft.asignaturaId != null ? String(draft.asignaturaId) : "__none__"}
@@ -377,7 +402,10 @@ export function UnidadInfoGeneralFields({
             }}
             disabled={!draft.gradoId}
           >
-            <SelectTrigger>
+            <SelectTrigger
+              id={unidadCampoId.asignatura}
+              aria-invalid={Boolean(errorDe(unidadCampoId.asignatura)) || undefined}
+            >
               <SelectValue placeholder="Seleccione">
                 {(value) =>
                   value === "__none__"
@@ -402,32 +430,41 @@ export function UnidadInfoGeneralFields({
               ))}
             </SelectContent>
           </Select>
+          <FieldError>{errorDe(unidadCampoId.asignatura)}</FieldError>
         </Field>
-        <Field variant="outlined">
-          <FieldLabel>Nombre</FieldLabel>
+        <Field variant="outlined" data-invalid={Boolean(errorDe(unidadCampoId.nombre)) || undefined}>
+          <FieldLabel htmlFor={unidadCampoId.nombre}>Nombre</FieldLabel>
           <Input
             placeholder="Ej: Diseño de prototipo"
-            maxLength={50}
+            maxLength={UNIDAD_LIMITES.nombre}
             value={draft.nombre}
             onChange={(e) => onChange({ nombre: e.target.value })}
-            id="unidad-nombre"
+            onBlur={() => tocar(unidadCampoId.nombre)}
+            id={unidadCampoId.nombre}
+            aria-invalid={Boolean(errorDe(unidadCampoId.nombre)) || undefined}
             disabled={disabled}
           />
+          <CharacterCounter value={draft.nombre ?? ""} max={UNIDAD_LIMITES.nombre} />
+          <FieldError>{errorDe(unidadCampoId.nombre)}</FieldError>
         </Field>
       </div>
 
-      <Field variant="outlined">
-        <FieldLabel>Descripción</FieldLabel>
+      <Field variant="outlined" data-invalid={Boolean(errorDe(unidadCampoId.descripcion)) || undefined}>
+        <FieldLabel htmlFor={unidadCampoId.descripcion}>Descripción</FieldLabel>
         <Textarea
           className={TEXTAREA_OUTLINED}
           rows={3}
           placeholder="Propósito pedagógico y dinámica general"
-          maxLength={500}
+          maxLength={UNIDAD_LIMITES.descripcion}
           disabled={disabled}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
-          id="unidad-descripcion"
+          onBlur={() => tocar(unidadCampoId.descripcion)}
+          id={unidadCampoId.descripcion}
+          aria-invalid={Boolean(errorDe(unidadCampoId.descripcion)) || undefined}
         />
+        <CharacterCounter value={draft.descripcion ?? ""} max={UNIDAD_LIMITES.descripcion} />
+        <FieldError>{errorDe(unidadCampoId.descripcion)}</FieldError>
       </Field>
 
       <ListaAgregableCaja
@@ -438,6 +475,10 @@ export function UnidadInfoGeneralFields({
         onChange={(objetivos) => onChange({ objetivos })}
         placeholder="Escribe un nuevo objetivo"
         disabled={disabled}
+        maxLength={UNIDAD_LIMITES.objetivo}
+        itemId={unidadCampoId.objetivo}
+        errorDe={(i) => errorDe(unidadCampoId.objetivo(i))}
+        onItemBlur={(i) => tocar(unidadCampoId.objetivo(i))}
       />
 
       <ContenidosCaja
@@ -446,6 +487,12 @@ export function UnidadInfoGeneralFields({
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
         disabled={disabled}
+        errorDe={(i, parte) =>
+          errorDe(parte === "titulo" ? unidadCampoId.seccionTitulo(i) : unidadCampoId.seccionDescripcion(i))
+        }
+        onItemBlur={(i, parte) =>
+          tocar(parte === "titulo" ? unidadCampoId.seccionTitulo(i) : unidadCampoId.seccionDescripcion(i))
+        }
       />
 
       {/* Enunciados de DBA ofrecidos según el Grado de la unidad: grado →
