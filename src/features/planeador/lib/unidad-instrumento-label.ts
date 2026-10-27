@@ -73,7 +73,7 @@ export function useRotuloUnidad(
  * (`rotulo-gramatica.ts`), que ya no trata como femenino todo lo que no
  * empiece por "proyecto" (un rótulo "Taller" daba "la taller").
  */
-export function articuloDefinido(instrumento: string): "la" | "el" {
+export function articuloDefinido(instrumento: string): "la" | "el" | "las" | "los" {
   return articuloDefinidoRotulo(instrumento)
 }
 
@@ -82,10 +82,10 @@ export function articuloDefinido(instrumento: string): "la" | "el" {
  * vez de "Unidad temática" fijo. El participio ("creado"/"actualizado")
  * queda invariable —es la construcción impersonal "se ha creado", no un
  * adjetivo que concuerde con el sustantivo— así que solo el artículo
- * cambia según el género de `instrumento`. El rótulo va en minúscula
- * inicial: queda a mitad de oración.
+ * cambia según el género de `instrumento`. El rótulo va EXACTAMENTE
+ * como lo escribió el usuario (sin bajar a minúscula).
  */
 export function mensajeUnidadGuardada(accion: "creado" | "actualizado", instrumento: string): string {
-  const rotulo = instrumento.charAt(0).toLowerCase() + instrumento.slice(1)
+  const rotulo = instrumento.trim()
   return `Se ha ${accion} con éxito ${articuloDefinido(instrumento)} ${rotulo}.`
 }

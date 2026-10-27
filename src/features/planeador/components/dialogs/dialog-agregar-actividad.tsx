@@ -32,8 +32,15 @@ import {
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import {
+  articuloIndefinidoRotulo,
+  concordanciaRotulo,
+  deArticuloRotulo,
+  demostrativoRotulo,
+  ningunRotulo,
+} from "@/features/planeador/lib/rotulo-gramatica"
+import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUpdatePuntajeActividadUnidad } from "@/features/planeador/api/mutations/update-puntaje-actividad-unidad"
@@ -74,20 +81,22 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
   const { data: unidadTabs } = useUnidadesTabsQuery()
   const instrumentoLabel =
     rotuloUnidad || instrumentoLabelFromReferente(unidadReferente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
-  const instrumentoLabelLower = instrumentoLabel.toLowerCase()
+  const instrumentoLabelLower = instrumentoLabel
   // Artículos del rótulo para el copy; "del" va a mano porque "de el" no contrae.
   const articulo = articuloDefinido(instrumentoLabel)
   const instrumentoConArticulo = `${articulo} ${instrumentoLabelLower}`
-  const demostrativo = articulo === "el" ? "Este" : "Esta"
-  const deInstrumento = articulo === "el" ? "del" : "de la"
+  // Concordado en género y número con el rótulo tal cual lo escribió el usuario.
+  const demostrativoRaw = demostrativoRotulo(instrumentoLabel)
+  const demostrativo = demostrativoRaw.charAt(0).toUpperCase() + demostrativoRaw.slice(1)
+  const deInstrumento = deArticuloRotulo(instrumentoLabel)
 
   // Rótulo de "actividad" por grado (Regla 13, V488/V511); el indefinido sale del mismo género.
   const rotuloLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
-  const rotuloLabelLower = rotuloEnMinuscula(rotuloLabel)
-  const rotuloIndefinido = articuloDefinido(rotuloLabel) === "el" ? "un" : "una"
-  // Solo género, nunca plural: el rótulo es texto libre (ver "Actividads").
-  const rotuloGenero = rotuloIndefinido === "un" ? "o" : "a"
-  const rotuloNingun = rotuloGenero === "o" ? "ningún" : "ninguna"
+  const rotuloLabelLower = rotuloEnFrase(rotuloLabel)
+  const rotuloIndefinido = articuloIndefinidoRotulo(rotuloLabel)
+  // Género y número del rótulo tal cual lo escribió el usuario ("Tareas" → "creadas").
+  const rotuloGenero = concordanciaRotulo(rotuloLabel)
+  const rotuloNingun = ningunRotulo(rotuloLabel)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)

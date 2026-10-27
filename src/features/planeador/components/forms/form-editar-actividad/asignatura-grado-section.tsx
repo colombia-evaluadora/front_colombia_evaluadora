@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useMemo } from "react"
+import { deArticuloRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { useSelector } from "@tanstack/react-form"
 import { useQueries } from "@tanstack/react-query"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { referenteCurricularQueryOptions } from "@/features/planeador/api/query/use-referente-curricular-query"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
   useRotuloActividadQuery,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import type { ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
@@ -109,7 +110,7 @@ export function AsignaturaGradoSection({
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
   // Rótulo real (Regla 13): nunca "actividad" fijo.
   const { data: rotuloActividad } = useRotuloActividadQuery(gradoId, asignaturaId)
-  const rotuloLower = rotuloEnMinuscula(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLower = rotuloEnFrase(rotuloActividad?.rotulo ?? tab?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK)
   const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
@@ -325,7 +326,7 @@ export function AsignaturaGradoSection({
         <form.Field name="matriculasIds">
           {(field) => (
             <Field variant="outlined" data-invalid={estudiantesInvalido}>
-              <FieldLabel htmlFor={field.name}>Estudiantes de la {rotuloLower} *</FieldLabel>
+              <FieldLabel htmlFor={field.name}>Estudiantes {deArticuloRotulo(rotuloLower)} {rotuloLower} *</FieldLabel>
               <EstudiantesMultiSelect
                 id={field.name}
                 invalid={estudiantesInvalido}

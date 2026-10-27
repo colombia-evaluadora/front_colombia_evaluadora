@@ -7,7 +7,7 @@ import {
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 
@@ -34,7 +34,7 @@ export function DialogExportActividades({ rows, filters, rotulos }: DialogExport
   const rotuloLabel =
     rotulos?.actividad ??
     (rotulosUnicos.size === 1 ? [...rotulosUnicos][0]! : ROTULO_ACTIVIDAD_FALLBACK)
-  const rotuloLower = rotuloEnMinuscula(rotuloLabel)
+  const rotuloLower = rotuloEnFrase(rotuloLabel)
 
   return (
     <ExportDialog

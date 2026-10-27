@@ -193,7 +193,7 @@ export function EnunciadosEvidenciasChecklist({
   // evidencias" fijo (lo que decía antes): el título tiene que salir de
   // `nivel1Etiqueta`/`nivel2Etiqueta`, los mismos rótulos reales que ya
   // resuelve `EnunciadosEvidenciasChecklist` para el resto de sus textos.
-  const titulo = capitalizar(`${pluralizar(nivel1Etiqueta)} y ${pluralizar(nivel2Etiqueta)} del ${instrumentoLabel.toLowerCase()}`)
+  const titulo = capitalizar(`${pluralizar(nivel1Etiqueta)} y ${pluralizar(nivel2Etiqueta)} del ${instrumentoLabel}`)
 
   if (enunciados.length === 0) {
     return (

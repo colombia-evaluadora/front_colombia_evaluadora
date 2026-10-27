@@ -33,11 +33,13 @@ import { useResolvedSubjectLabelQuery } from "@/features/academic-management/cur
 import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadValoracionesQuery } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
-import { articuloDefinido, useRotuloUnidad } from "@/features/planeador/lib/unidad-instrumento-label"
+import { useRotuloUnidad } from "@/features/planeador/lib/unidad-instrumento-label"
 import { ROTULO_ACTIVIDAD_FALLBACK } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import {
+  concordanciaRotulo,
   deArticuloRotulo,
   demostrativoRotulo,
+  ningunRotulo,
   pluralizarRotulo,
   terminacionRotulo,
 } from "@/features/planeador/lib/rotulo-gramatica"
@@ -219,7 +221,7 @@ function ResumenItem({
 }
 
 function conDemostrativo(rotuloUnidad: string): string {
-  return `${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad.toLowerCase()}`
+  return `${demostrativoRotulo(rotuloUnidad)} ${rotuloUnidad}`
 }
 
 function capitalizar(texto: string): string {
@@ -235,7 +237,7 @@ function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: 
   const { data: resolvedSubjectLabel } = useResolvedSubjectLabelQuery(unidadReferente?.id)
   const subjectLabel = resolvedSubjectLabel ?? (esFormativa ? "Dimensión" : "Asignatura")
   // Regla 13: rótulo real, siempre en singular (concatenar "s" rompe, ej. "Actividads").
-  const rotuloActividadLower = (unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK).toLowerCase()
+  const rotuloActividadLower = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
 
   return (
     <div className="flex flex-col gap-6">
@@ -270,7 +272,7 @@ function InformacionGeneral({ unidad, rotuloUnidad: rotuloConocido }: { unidad: 
           <>
             <h4 className="text-sm font-semibold">
               Forma en que se calcula cada {rotuloActividadLower} dentro {deArticuloRotulo(rotuloUnidad)}{" "}
-              {rotuloUnidad.toLowerCase()}
+              {rotuloUnidad}
             </h4>
             <p className="text-muted-foreground text-sm">
               Método Seleccionado:{" "}
@@ -436,8 +438,8 @@ export function Actividades({
   // Con instrumento único: "Actividades en {instrumento}"; si no, genérico simple.
   // Regla 13 (sso V488/V511): rótulo real, siempre en singular.
   const rotuloActividadLabel = unidad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK
-  const rotuloActividadGenero = articuloDefinido(rotuloActividadLabel) === "el" ? "o" : "a"
-  const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLabel.toLowerCase())
+  const rotuloActividadGenero = concordanciaRotulo(rotuloActividadLabel)
+  const rotuloActividadPluralLower = pluralizarRotulo(rotuloActividadLabel)
   const tituloActividades = instrumentoLabel
     ? `${rotuloActividadLabel} en ${instrumentoLabel}`
     : rotuloActividadLabel
@@ -468,7 +470,7 @@ export function Actividades({
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage={`${capitalizar(conDemostrativo(rotuloUnidad))} todavía no tiene ningun${rotuloActividadGenero === "o" ? "" : "a"} ${rotuloActividadLabel.toLowerCase()} vinculad${rotuloActividadGenero}.`}
+        emptyMessage={`${capitalizar(conDemostrativo(rotuloUnidad))} todavía no tiene ${ningunRotulo(rotuloActividadLabel)} ${rotuloActividadLabel} vinculad${rotuloActividadGenero}.`}
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
     </div>

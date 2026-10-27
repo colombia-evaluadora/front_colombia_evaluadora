@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { articuloDefinidoRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -23,7 +24,7 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogDeleteActividadProps {
@@ -55,7 +56,7 @@ export function DialogDeleteActividad({
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
   // Rótulo real (Regla 13) — nunca "actividad" fijo.
-  const rotuloLabelLower = rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
+  const rotuloLabelLower = rotuloEnFrase(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)
 
   const deleteMutation = useDeleteActividad({
     mutationConfig: {
@@ -112,7 +113,7 @@ export function DialogDeleteActividad({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar {rotuloLabelLower}</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente la {rotuloLabelLower} &ldquo;{actividad.nombre}&rdquo;.
+            Se eliminará permanentemente {articuloDefinidoRotulo(rotuloLabelLower)} {rotuloLabelLower} &ldquo;{actividad.nombre}&rdquo;.
             Esta acción
             no se puede deshacer.
           </AlertDialogDescription>

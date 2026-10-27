@@ -51,9 +51,9 @@ import { SearchPlaneador } from "@/features/planeador/components/search/search-p
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
-  rotuloEnMinuscula,
+  rotuloEnFrase,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
-import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import { concordanciaRotulo } from "@/features/planeador/lib/rotulo-gramatica"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
@@ -180,7 +180,7 @@ function PlaneadorPageContent() {
     })
   // Género vía `articuloDefinido`: un rótulo futuro puede ser masculino ("Proyecto").
   const nuevoRotuloLabel = tabActiva?.rotulo ?? ROTULO_ACTIVIDAD_FALLBACK
-  const nuevoGenero = articuloDefinido(nuevoRotuloLabel) === "el" ? "o" : "a"
+  const nuevoGenero = concordanciaRotulo(nuevoRotuloLabel)
 
   // `search`/`estados`/`instrumento` se filtran en el servidor.
   const {
@@ -349,7 +349,7 @@ function PlaneadorPageContent() {
                     color="primary"
                     size="sm"
                     variant="fill"
-                    aria-label={`Nuev${nuevoGenero} ${rotuloEnMinuscula(nuevoRotuloLabel)}`}
+                    aria-label={`Nuev${nuevoGenero} ${rotuloEnFrase(nuevoRotuloLabel)}`}
                     className="rounded-r-none border-r-0"
                     nativeButton={false}
                     render={
@@ -360,7 +360,7 @@ function PlaneadorPageContent() {
                     }
                   >
                     <PlusCircleIcon data-icon="inline-start" />
-                    Nuev{nuevoGenero} {rotuloEnMinuscula(nuevoRotuloLabel)}
+                    Nuev{nuevoGenero} {rotuloEnFrase(nuevoRotuloLabel)}
                   </Button>
                 )}
                 <DropdownMenu>

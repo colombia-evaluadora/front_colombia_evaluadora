@@ -31,41 +31,102 @@ function primeraPalabra(rotulo: string): string {
   return sinTildes(rotulo.trim().split(/\s+/)[0] ?? "").toLowerCase()
 }
 
+/** Palabras terminadas en "-s" que son singulares (no se leen como plural
+ *  del rótulo): además de las "-is"/"-us" ("Análisis", "Tesis", "Virus"). */
+const SINGULARES_EN_S = new Set(["mes", "compas", "lunes", "martes", "miercoles", "jueves", "viernes"])
+
+/** ¿El rótulo ya viene en plural? El usuario escribe el rótulo libremente
+ *  ("Tareas", "Proyectos") y antes lo tratábamos siempre como singular, lo
+ *  que daba "Nombre de la tareas". Heurística sobre el sustantivo núcleo:
+ *  termina en "-s" y no es un singular conocido en "-s". */
+export function esPluralRotulo(rotulo: string): boolean {
+  const palabra = primeraPalabra(rotulo)
+  if (palabra.length < 3 || !palabra.endsWith("s")) return false
+  if (SINGULARES_EN_S.has(palabra) || /(is|us)$/.test(palabra)) return false
+  return true
+}
+
+/** Singular aproximado del sustantivo núcleo, SOLO para decidir el género
+ *  ("tareas" → "tarea", "talleres" → "taller", "actividades" → "actividad").
+ *  Nunca se muestra: el texto visible usa el rótulo tal cual. */
+function singularNucleo(palabra: string): string {
+  const sinS = palabra.slice(0, -1)
+  if (/[ao]$/.test(sinS) || FEMENINOS_EN_E.has(sinS)) return sinS
+  if (palabra.endsWith("ces")) return `${palabra.slice(0, -3)}z`
+  if (/[^aeiou]es$/.test(palabra)) return palabra.slice(0, -2)
+  return sinS
+}
+
 /** Género del sustantivo núcleo del rótulo. Sin palabra (rótulo vacío) cae
  *  a femenino, el de los dos genéricos ("Actividad"/"Unidad temática"). */
 export function generoRotulo(rotulo: string): GeneroRotulo {
-  const palabra = primeraPalabra(rotulo)
-  if (!palabra) return "f"
+  const crudo = primeraPalabra(rotulo)
+  if (!crudo) return "f"
+  const palabra = esPluralRotulo(rotulo) ? singularNucleo(crudo) : crudo
   if (MASCULINOS_EN_A.has(palabra)) return "m"
   if (FEMENINOS_EN_E.has(palabra) || FEMENINOS_EN_O.has(palabra)) return "f"
   if (/(a|dad|tad|tud|ion|umbre|sis|ez)$/.test(palabra)) return "f"
   return "m"
 }
 
-/** "la"/"el" — artículo definido singular. */
-export function articuloDefinidoRotulo(rotulo: string): "la" | "el" {
-  return generoRotulo(rotulo) === "m" ? "el" : "la"
+/** "la"/"el"/"las"/"los" — artículo definido concordado en género y número. */
+export function articuloDefinidoRotulo(rotulo: string): "la" | "el" | "las" | "los" {
+  const m = generoRotulo(rotulo) === "m"
+  if (esPluralRotulo(rotulo)) return m ? "los" : "las"
+  return m ? "el" : "la"
 }
 
-/** "una"/"un" — artículo indefinido singular. */
-export function articuloIndefinidoRotulo(rotulo: string): "una" | "un" {
-  return generoRotulo(rotulo) === "m" ? "un" : "una"
+/** "una"/"un"/"unas"/"unos" — artículo indefinido concordado. */
+export function articuloIndefinidoRotulo(rotulo: string): "una" | "un" | "unas" | "unos" {
+  const m = generoRotulo(rotulo) === "m"
+  if (esPluralRotulo(rotulo)) return m ? "unos" : "unas"
+  return m ? "un" : "una"
 }
 
-/** "esta"/"este" — demostrativo singular. */
-export function demostrativoRotulo(rotulo: string): "esta" | "este" {
-  return generoRotulo(rotulo) === "m" ? "este" : "esta"
+/** "esta"/"este"/"estas"/"estos" — demostrativo concordado. */
+export function demostrativoRotulo(rotulo: string): "esta" | "este" | "estas" | "estos" {
+  const m = generoRotulo(rotulo) === "m"
+  if (esPluralRotulo(rotulo)) return m ? "estos" : "estas"
+  return m ? "este" : "esta"
 }
 
-/** "de la"/"del" — "de el" no se escribe, se contrae. */
-export function deArticuloRotulo(rotulo: string): "de la" | "del" {
-  return generoRotulo(rotulo) === "m" ? "del" : "de la"
+/** "de la"/"del"/"de las"/"de los" — "de el" no se escribe, se contrae. */
+export function deArticuloRotulo(rotulo: string): "de la" | "del" | "de las" | "de los" {
+  const m = generoRotulo(rotulo) === "m"
+  if (esPluralRotulo(rotulo)) return m ? "de los" : "de las"
+  return m ? "del" : "de la"
 }
 
-/** Terminación de género para participios/adjetivos ("vinculada"/
- *  "vinculado"). */
+/** Terminación de GÉNERO para participios/adjetivos en un texto que ya se
+ *  arma en plural (`vinculad${t}s`, `tod${t}s`). */
 export function terminacionRotulo(rotulo: string): "a" | "o" {
   return generoRotulo(rotulo) === "m" ? "o" : "a"
+}
+
+/** Terminación concordada en género Y número para un adjetivo/participio que
+ *  acompaña al rótulo tal cual lo escribió el usuario ("Nueva Actividad" /
+ *  "Nuevas Tareas", "vinculado" / "vinculados"). */
+export function concordanciaRotulo(rotulo: string): "a" | "o" | "as" | "os" {
+  const t = terminacionRotulo(rotulo)
+  if (!esPluralRotulo(rotulo)) return t
+  return t === "o" ? "os" : "as"
+}
+
+/** "ningún"/"ninguna"/"ningunos"/"ningunas" concordado con el rótulo. */
+export function ningunRotulo(rotulo: string): string {
+  const m = generoRotulo(rotulo) === "m"
+  if (esPluralRotulo(rotulo)) return m ? "ningunos" : "ningunas"
+  return m ? "ningún" : "ninguna"
+}
+
+/**
+ * El rótulo tal como lo escribió el usuario en el referente curricular, para
+ * embeberlo a mitad de oración. NUNCA se baja a minúscula: si el usuario
+ * escribió "Tareas" o "Proyecto STEM", así se muestra en labels, botones y
+ * mensajes (antes se forzaba `toLowerCase()` → "Nombre de la tareas").
+ */
+export function rotuloEnFrase(rotulo: string): string {
+  return rotulo.trim()
 }
 
 /** Plural de UNA palabra. Reglas generales del español; las palabras
@@ -96,6 +157,8 @@ function pluralizarPalabra(palabra: string): string {
  * "Experiencias de aprendizaje". Respeta mayúsculas/minúsculas de entrada.
  */
 export function pluralizarRotulo(rotulo: string): string {
+  // Ya plural ("Tareas"): se respeta tal cual lo escribió el usuario.
+  if (esPluralRotulo(rotulo)) return rotulo.trim()
   const palabras = rotulo.trim().split(/(\s+)/)
   let cortado = false
   return palabras

@@ -83,7 +83,20 @@ function asignaturaIdMock(asignatura: string): number {
  * que ya usa `UNIDAD_TABS_URL` para "instrumento"): un grado con unidades
  * Formativas es "Experiencia de aprendizaje", el resto "Actividad".
  */
+/** Solo E2E: `localStorage["ce-mock-rotulo-ejecucion"]` fuerza el Rótulo de
+ *  Ejecución (p. ej. "Tareas") para probar que la UI lo muestra tal cual lo
+ *  escribió el usuario. Los handlers de MSW corren en la página. */
+function rotuloEjecucionOverride(): string | undefined {
+  try {
+    return localStorage.getItem("ce-mock-rotulo-ejecucion") || undefined
+  } catch {
+    return undefined
+  }
+}
+
 function rotuloEjecucionMock(grado: string): string {
+  const override = rotuloEjecucionOverride()
+  if (override) return override
   const esFormativo = unidadesTematicasDb.some(
     (u) => u.grado === grado && u.enfoquePedagogico === "Formativo",
   )
@@ -1995,7 +2008,7 @@ export const planeadorHandlers = [
     await delay(80)
     const grado = Number(new URL(request.url).searchParams.get("grado"))
     return HttpResponse.json({
-      rows: [{ fk_tgrado: grado, pk_referente_curricular: null, rotulo_ejecucion: "Actividad" }],
+      rows: [{ fk_tgrado: grado, pk_referente_curricular: null, rotulo_ejecucion: rotuloEjecucionOverride() ?? "Actividad" }],
     })
   }),
 
