@@ -2,6 +2,11 @@ import { format } from "date-fns"
 import { z } from "zod"
 
 import { CORREO_REGEX, MENSAJE_CORREO_INVALIDO } from "@/lib/email-address"
+import {
+  esPalabraSinSentido,
+  limpiarEspacios,
+  normalizarApostrofos,
+} from "@/features/establishment/shared/text-field-rules"
 
 /**
  * Las reglas de los campos de una persona, en un solo lugar.
@@ -69,9 +74,13 @@ export const NOMBRE = /^\p{L}+(?:[ '’-]\p{L}+)*$/u
 /** Letras útiles mínimas de un nombre: los símbolos no cuentan. */
 const MIN_LETRAS_NOMBRE = 2
 
-/** Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`. */
+/**
+ * Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`.
+ * El `´` de muchos teclados entra como apóstrofo, y no se puede empezar con
+ * espacios ni repetirlos (un nombre "solo de espacios" no llega a escribirse).
+ */
 export function limpiarNombre(value: string): string {
-  return value.replace(/[^\p{L}\s'’-]/gu, "")
+  return limpiarEspacios(normalizarApostrofos(value).replace(/[^\p{L}\s'’-]/gu, ""))
 }
 
 /** `limpiarNombre` en mayúsculas, como escriben los nombres establecimiento y funcionarios. */
@@ -87,6 +96,8 @@ export const MENSAJES = {
   nombre: (campo: string) =>
     `${campo} solo admite letras, espacios, apóstrofo y guion entre letras (ej. D'Angelo, Jean-Pierre).`,
   nombreCorto: (campo: string) => `${campo} debe tener al menos ${MIN_LETRAS_NOMBRE} letras.`,
+  nombreSinSentido: (campo: string) =>
+    `${campo} no parece un nombre: tiene la misma letra tres veces seguidas o una palabra sin vocales.`,
 } as const
 
 /** Años que se exigen para considerar mayor de edad. */
@@ -100,6 +111,7 @@ export function validarNombrePersona(valor: string | null | undefined, campo: st
   const texto = (valor ?? "").trim().replace(/\s+/g, " ")
   if (!NOMBRE.test(texto)) return MENSAJES.nombre(campo)
   if ((texto.match(/\p{L}/gu)?.length ?? 0) < MIN_LETRAS_NOMBRE) return MENSAJES.nombreCorto(campo)
+  if (texto.split(/[ '’-]/).some(esPalabraSinSentido)) return MENSAJES.nombreSinSentido(campo)
   return null
 }
 

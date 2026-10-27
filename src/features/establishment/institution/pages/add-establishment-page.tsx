@@ -573,6 +573,8 @@ export function AddEstablishmentPage() {
         [SUCCESS_MESSAGES.establishment.updated, ...avisos].join(" "),
         variant ? { variant } : undefined,
       )
+      // Es el aviso del guardado (aunque sea "error" por la activación): sigue en la tabla.
+      lastNoticeIsErrorRef.current = false
       navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
       return
     }
@@ -598,6 +600,7 @@ export function AddEstablishmentPage() {
       [SUCCESS_MESSAGES.establishment.created, ...avisos].join(" "),
       variant ? { variant } : undefined,
     )
+    lastNoticeIsErrorRef.current = false
     navigate({ to: paths.app.establishments.general.getHref(), search: (prev) => prev })
   }
 

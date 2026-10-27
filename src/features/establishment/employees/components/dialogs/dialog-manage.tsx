@@ -375,11 +375,12 @@ function ManageEmployeeDialogContent({
   }
 
   useEffect(() => {
+    // El diálogo vive montado junto a la tabla (y con él su `NoticeProvider`):
+    // el aviso se borra al cerrar para que no reaparezca un instante al reabrir.
     if (!open) {
+      dismiss()
       return
     }
-
-    dismiss()
 
     if (!isEditMode) {
       resetDraft()
