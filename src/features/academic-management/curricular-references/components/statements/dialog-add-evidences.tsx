@@ -23,6 +23,7 @@ import {
   useCreateEvidences,
   useUpdateEvidence,
 } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
+import { toReferenteLongTextInput } from "@/features/academic-management/curricular-references/utils/catalogs"
 import type { CurricularEvidence } from "@/features/academic-management/curricular-references/api/types/statement"
 
 interface AddEvidencesDialogProps {
@@ -129,7 +130,7 @@ export function AddEvidencesDialog({
               value={text}
               maxLength={500}
               aria-invalid={Boolean(error)}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => setText(toReferenteLongTextInput(event.target.value))}
               placeholder={`Escribe la ${levelLabel.toLowerCase()}...`}
               className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
             />

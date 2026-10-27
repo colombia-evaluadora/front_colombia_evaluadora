@@ -102,7 +102,7 @@ export function SubjectLabelSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
-          {error && <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>}
+          {error && <p className="border-b border-border px-2 py-1.5 text-xs wrap-anywhere text-red">{error}</p>}
           <div className="max-h-64 overflow-x-hidden overflow-y-auto">
             {options.map((option) => (
               <div
