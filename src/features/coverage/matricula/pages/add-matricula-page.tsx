@@ -151,6 +151,16 @@ function AddMatriculaPageContent() {
   // Cuenta ya existente de estudiante/acudiente que va en el create.
   const pkUsuarioEstudianteRef = useRef<number | null>(null)
   const pkUsuarioAcudienteRef = useRef<number | null>(null)
+  // Valores previos al autocompletado: si el documento cambia, se restauran
+  // para no dejar datos de otra persona en el form.
+  const preMatchEstudianteRef = useRef<{
+    student: Partial<typeof values.student>
+    studentContact: Partial<typeof values.studentContact>
+  } | null>(null)
+  const preMatchAcudienteRef = useRef<{
+    guardian: Partial<typeof values.guardian>
+    guardianContact: Partial<typeof values.guardianContact>
+  } | null>(null)
 
   // `false` hace obligatorio el correo (cuenta nueva); `null` = sin resolver.
   const [studentAccountFound, setStudentAccountFound] = useState<boolean | null>(null)
@@ -222,6 +232,15 @@ function AddMatriculaPageContent() {
   useEffect(() => {
     pkUsuarioEstudianteRef.current = null
     setStudentAccountFound(null)
+    const preMatchEstudiante = preMatchEstudianteRef.current
+    if (preMatchEstudiante) {
+      preMatchEstudianteRef.current = null
+      setValues((prev) => ({
+        ...prev,
+        student: { ...prev.student, ...preMatchEstudiante.student },
+        studentContact: { ...prev.studentContact, ...preMatchEstudiante.studentContact },
+      }))
+    }
     const trimmed = documentNumber.trim()
     const documentTypeId = Number(documentType)
     if (!documentTypeId || trimmed.length < 6) return
@@ -237,7 +256,13 @@ function AddMatriculaPageContent() {
           }
           setStudentAccountFound(true)
           pkUsuarioEstudianteRef.current = found.pkTusuario
-          setValues((prev) => ({
+          setValues((prev) => {
+            const { firstName, secondName, lastName, secondLastName, birthDate, gender } = prev.student
+            preMatchEstudianteRef.current = {
+              student: { firstName, secondName, lastName, secondLastName, birthDate, gender },
+              studentContact: { phone: prev.studentContact.phone, email: prev.studentContact.email },
+            }
+            return {
             ...prev,
             student: {
               ...prev.student,
@@ -253,7 +278,8 @@ function AddMatriculaPageContent() {
               phone: found.phone,
               email: found.email,
             },
-          }))
+            }
+          })
         })
         .catch(() => {
         })
@@ -268,6 +294,15 @@ function AddMatriculaPageContent() {
   useEffect(() => {
     pkUsuarioAcudienteRef.current = null
     setGuardianAccountFound(null)
+    const preMatchAcudiente = preMatchAcudienteRef.current
+    if (preMatchAcudiente) {
+      preMatchAcudienteRef.current = null
+      setValues((prev) => ({
+        ...prev,
+        guardian: { ...prev.guardian, ...preMatchAcudiente.guardian },
+        guardianContact: { ...prev.guardianContact, ...preMatchAcudiente.guardianContact },
+      }))
+    }
     const trimmed = guardianDocumentNumber.trim()
     const documentTypeId = Number(guardianDocumentType)
     if (!documentTypeId || trimmed.length < 6) return
@@ -283,7 +318,13 @@ function AddMatriculaPageContent() {
           }
           setGuardianAccountFound(true)
           pkUsuarioAcudienteRef.current = found.pkTusuario
-          setValues((prev) => ({
+          setValues((prev) => {
+            const { firstName, secondName, lastName, secondLastName, gender } = prev.guardian
+            preMatchAcudienteRef.current = {
+              guardian: { firstName, secondName, lastName, secondLastName, gender },
+              guardianContact: { phone: prev.guardianContact.phone, email: prev.guardianContact.email },
+            }
+            return {
             ...prev,
             guardian: {
               ...prev.guardian,
@@ -299,7 +340,8 @@ function AddMatriculaPageContent() {
               phone: found.phone,
               email: found.email,
             },
-          }))
+            }
+          })
         })
         .catch(() => {
         })
