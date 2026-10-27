@@ -37,7 +37,6 @@ async function updateRatingScale({
         notaMaxima: values.notaMaxima,
         notaMinima: values.notaMinima,
         notaEquivalente: values.notaEquivalente,
-        descripcion: values.descripcion?.trim() || null,
       },
     ]),
   })
