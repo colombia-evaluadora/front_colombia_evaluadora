@@ -102,7 +102,7 @@ function toOutgoingPayload(values: Employee) {
  * Sin foto nueva se manda el JSON plano de siempre: no se pasa por
  * `file-service` al pedo, y así tampoco se pisa la foto ya guardada.
  */
-export function update(
+export async function update(
   employeeId: number,
   values: Employee,
   foto?: File | null,
@@ -111,7 +111,16 @@ export function update(
   const url = apiPath(`/establishments/employees/${employeeId}`, `/establecimientos/funcionarios/${employeeId}`)
 
   if (env.ENABLE_API_MOCKING) {
-    return api.put(url, toOutgoingPayload(values))
+    // Quitar la foto ya viaja en el JSON (`person.photoArchivoId: null`). La
+    // foto nueva va aparte, en multipart, para que el mock la guarde con un
+    // `fk_tarchivo` propio y al reabrir se vea como foto ya guardada (sin
+    // esto el caso "editar con foto guardada → quitar" no se podía probar).
+    const result = await api.put<{ status: "ok" | "error"; message: string; employee: Employee }>(
+      url,
+      toOutgoingPayload(values),
+    )
+    if (!foto || result.status !== "ok") return result
+    return patchMultipart(`/establishments/employees/${employeeId}/foto`, {}, { fkTarchivoFoto: foto })
   }
 
   if (foto) {
@@ -120,8 +129,11 @@ export function update(
     })
   }
 
+  // Quitar la foto: `fkTarchivoFoto: null` no sirve, `fn_fun_actualizar`
+  // trata un NULL como "no tocar" (COALESCE) y la foto seguía ahí al
+  // reabrir. El borrado va con su propio flag (`p_limpiar_foto`, sso V72/V93).
   if (removePhoto) {
-    return api.patch(url, { ...toOutgoingPayload(values), fkTarchivoFoto: null })
+    return api.patch(url, { ...toOutgoingPayload(values), limpiarFoto: true })
   }
 
   return api.patch(url, toOutgoingPayload(values))

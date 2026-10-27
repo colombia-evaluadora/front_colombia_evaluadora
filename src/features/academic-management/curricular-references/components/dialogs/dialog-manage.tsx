@@ -42,7 +42,12 @@ import type { CurricularReferenceDraft } from "@/features/academic-management/cu
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
-import { esEnfoqueFormativo, esEvaluacionCuantitativa } from "@/features/academic-management/curricular-references/utils/catalogs"
+import {
+  esEnfoqueFormativo,
+  esEvaluacionCualitativa,
+  REFERENTE_LONG_TEXT_PATTERN,
+  REFERENTE_TEXT_PATTERN,
+} from "@/features/academic-management/curricular-references/utils/catalogs"
 import { findPredeterminado } from "@/features/establishment/employees/api/query/use-catalogs"
 
 interface ManageCurricularReferenceDialogProps {
@@ -75,18 +80,22 @@ function createInitialValues(): CurricularReferenceDraft {
   }
 }
 
+// Solo letras, espacio, guion y apóstrofo (ver REFERENTE_TEXT_PATTERN).
+const safeText = () =>
+  z.string().trim().regex(REFERENTE_TEXT_PATTERN, "No se permiten caracteres especiales.")
+const safeLongText = () =>
+  z.string().trim().regex(REFERENTE_LONG_TEXT_PATTERN, "No se permiten caracteres especiales.")
+
 const curricularReferenceSchema = z.object({
-  name: z.string().trim().min(1, "Ingresa el nombre del referente.").max(150, "Máximo 150 caracteres."),
+  name: safeText().min(1, "Ingresa el nombre del referente.").max(150, "Máximo 150 caracteres."),
   educationLevels: z
     .array(z.object({ id: z.number() }))
     .min(1, "Selecciona al menos un nivel educativo."),
-  description: z
-    .string()
-    .trim()
+  description: safeLongText()
     .min(1, "Ingresa la descripción o finalidad.")
     .max(400, "Máximo 400 caracteres."),
-  level1: z.string().trim().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
-  level2: z.string().trim().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
+  level1: safeText().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
+  level2: safeText().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
     .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
@@ -95,11 +104,16 @@ const curricularReferenceSchema = z.object({
     .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
-  instrument: z.string().trim().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
-  executionLabel: z.string().trim().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
-  regulation: z.string().trim().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
+  instrument: safeText().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
+  executionLabel: safeText().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
+  instrumentDescription: safeLongText().max(400, "Máximo 400 caracteres."),
+  regulation: safeLongText().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
 }).superRefine((values, ctx) => {
-  if (esEnfoqueFormativo(values.pedagogicalApproach) && esEvaluacionCuantitativa(values.evaluationType)) {
+  if (
+    esEnfoqueFormativo(values.pedagogicalApproach) &&
+    values.evaluationType?.id != null &&
+    !esEvaluacionCualitativa(values.evaluationType)
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["evaluationType"],
@@ -366,7 +380,7 @@ export function ManageCurricularReferenceDialog({
             notice={notice}
             onClose={() => setNotice(null)}
             variant={notice?.variant}
-            autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+            autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
             className="mt-2"
           />
         </DialogHeader>
@@ -433,7 +447,6 @@ export function ManageCurricularReferenceDialog({
           setFormValues(inactive)
           save(inactive)
         }}
-        onLeave={() => onOpenChange(false)}
         onCancel={() => setLevelConflict(null)}
       />
 

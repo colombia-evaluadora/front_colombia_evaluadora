@@ -297,7 +297,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
             notice={localNotice}
             onClose={() => setLocalNotice(null)}
             variant={localNotice?.variant}
-            autoCloseMs={localNotice?.variant === "error" ? undefined : 4000}
+            autoCloseMs={localNotice?.variant === "error" ? 12000 : 4000}
           />
 
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
