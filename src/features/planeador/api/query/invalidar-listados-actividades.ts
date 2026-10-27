@@ -30,6 +30,12 @@ export function invalidarListadosActividades(
   if (options?.detalleId != null) {
     queryClient.invalidateQueries({ queryKey: planeadorKeys.actividad.detalle(options.detalleId) })
   }
+  // La actividad también se ve desde su unidad (tabla de vinculadas y
+  // disponibles, totales de peso/puntaje) y como columna de la planilla:
+  // eliminarla dejaba ambas mostrando la actividad borrada hasta recargar.
+  queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.all })
+  queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
+  queryClient.invalidateQueries({ queryKey: planeadorKeys.planilla.all })
   // Editar, eliminar o importar actividades mueve la nota de la asignatura:
   // la tabla y las alertas de Informes (cambios y planillas pendientes).
   invalidarInformes(queryClient)
@@ -64,5 +70,42 @@ export function invalidarVinculoActividadUnidad(queryClient: QueryClient, activi
   queryClient.invalidateQueries({ predicate: (q) => esDetalleDeActividad(q.queryKey) })
   queryClient.invalidateQueries({ queryKey: planeadorKeys.actividades.all })
   // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
+  invalidarInformes(queryClient)
+}
+
+/**
+ * Crear, editar o eliminar una unidad temática. Eliminar es el caso más
+ * amplio: el backend da de baja la unidad y desvincula sus actividades, así
+ * que cambia todo lo que muestra la unidad o sus actividades:
+ *
+ * - Unidades: listado (`unidades.all`), tabs por referente (`unidades.tabs()`
+ *   es prefijo de las tabs con alcance) y todo lo que cuelga de cualquier
+ *   unidad (`unidad.all`: detalle, actividades vinculadas/disponibles,
+ *   criterios, configuración…).
+ * - Actividades: rail, calendario, cards y programación (`actividades.all`),
+ *   las tabs (`actividades.tabs()`, fuera de `actividades.all` a propósito) y
+ *   `actividad.all` — detalle, instrumento y contextos de configuración de
+ *   las actividades vinculadas, cuyos ids no se conocen acá. Solo se vuelve a
+ *   pedir lo montado; lo demás queda marcado (también en la cache offline
+ *   persistida, ver `query-persister.ts`).
+ * - Planilla (`planilla.all`): las columnas se agrupan por unidad.
+ * - Informes: la nota de la asignatura cambia.
+ *
+ * Bug de QA: borrar una unidad solo invalidaba `unidades.*` e Informes; el
+ * calendario, el rail, las cards y el detalle de las actividades vinculadas
+ * seguían mostrando la unidad borrada hasta recargar.
+ */
+export function invalidarUnidad(queryClient: QueryClient): void {
+  for (const queryKey of [
+    planeadorKeys.unidades.all,
+    planeadorKeys.unidades.tabs(),
+    planeadorKeys.unidad.all,
+    planeadorKeys.actividades.all,
+    planeadorKeys.actividades.tabs(),
+    planeadorKeys.actividad.all,
+    planeadorKeys.planilla.all,
+  ]) {
+    queryClient.invalidateQueries({ queryKey })
+  }
   invalidarInformes(queryClient)
 }

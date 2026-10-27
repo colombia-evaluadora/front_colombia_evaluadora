@@ -1770,6 +1770,11 @@ export const planeadorHandlers = [
     }
 
     deleteUnidadById(id)
+    // Como `fn_unidad_eliminar_interno` (sso V492.2): las actividades del
+    // dueño se desvinculan (quedan huérfanas), no se borran.
+    for (const actividad of planeadorDb) {
+      if (actividad.unidad.id === id) actividad.unidad = { id: 0, nombre: "" }
+    }
 
     return HttpResponse.json<ExportResult>({
       status: "ok",
