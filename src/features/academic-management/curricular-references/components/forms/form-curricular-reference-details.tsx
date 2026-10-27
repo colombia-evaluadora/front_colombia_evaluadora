@@ -16,15 +16,17 @@ import { SelectGeneralAreasDialog } from "@/features/academic-management/curricu
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/fields/subjects-multi-select"
 import { SubjectLabelSelect } from "@/features/academic-management/curricular-references/components/forms/subject-label-select"
 
+import {
+  esEnfoqueFormativo,
+  esEvaluacionCualitativa,
+  toReferenteLongTextInput,
+  toReferenteTextInput,
+} from "@/features/academic-management/curricular-references/utils/catalogs"
+
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full break-all")
-
-// Regla 2: id del enfoque pedagógico "Formativo" en el catálogo (ver catalogs.ts).
-const FORMATIVO_APPROACH_ID = 122
-// Regla 2: id del tipo de evaluación "Cualitativa" en el catálogo (ver catalogs.ts).
-const CUALITATIVA_EVALUATION_ID = 111
 
 interface CurricularReferenceDetailsFormProps {
   value: CurricularReferenceDraft
@@ -55,7 +57,7 @@ export function CurricularReferenceDetailsForm({
   for (const area of areasOficiales)
     areaById.set(area.pkAreaOficial, { id: area.pkAreaOficial, code: "", name: area.nombre })
 
-  const isFormativo = value.pedagogicalApproach?.id === FORMATIVO_APPROACH_ID
+  const isFormativo = esEnfoqueFormativo(value.pedagogicalApproach)
 
   return (
     <div className="flex flex-col gap-4 [&_::placeholder]:opacity-60">
@@ -73,7 +75,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={150}
             value={value.name}
             aria-invalid={Boolean(errors["name"])}
-            onChange={(event) => onChange({ ...value, name: event.target.value })}
+            onChange={(event) => onChange({ ...value, name: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. DBA - Primaria"
           />
           <CharacterCounter value={value.name} max={150} />
@@ -116,7 +118,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={400}
             value={value.description}
             aria-invalid={Boolean(errors["description"])}
-            onChange={(event) => onChange({ ...value, description: event.target.value })}
+            onChange={(event) => onChange({ ...value, description: toReferenteLongTextInput(event.target.value) })}
             placeholder="Describe la finalidad o propósito de este referente curricular."
             className={TEXTAREA_OUTLINE_CLASS}
           />
@@ -138,9 +140,10 @@ export function CurricularReferenceDetailsForm({
             value={value.pedagogicalApproach?.id ?? null}
             onValueChange={(selectedValue) => {
               const option = pedagogicalApproaches.find((item) => item.id === selectedValue)
-              if (option?.id === FORMATIVO_APPROACH_ID) {
+              if (option && esEnfoqueFormativo(option)) {
                 // Regla 2: al pasar a Formativo, el tipo de evaluación se fija en Cualitativa y se bloquea.
-                const cualitativa = evaluationTypes.find((item) => item.id === CUALITATIVA_EVALUATION_ID)
+                // Por código/nombre: en el back real los ids son pk_lista_valor, no los del seed.
+                const cualitativa = evaluationTypes.find(esEvaluacionCualitativa)
                 onChange({ ...value, pedagogicalApproach: option, evaluationType: cualitativa ?? value.evaluationType })
                 return
               }
@@ -219,7 +222,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={50}
             value={value.level1}
             aria-invalid={Boolean(errors["level1"])}
-            onChange={(event) => onChange({ ...value, level1: event.target.value })}
+            onChange={(event) => onChange({ ...value, level1: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. Enunciado / Propósito"
           />
           <FieldError>{errors["level1"]}</FieldError>
@@ -238,7 +241,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={50}
             value={value.level2}
             aria-invalid={Boolean(errors["level2"])}
-            onChange={(event) => onChange({ ...value, level2: event.target.value })}
+            onChange={(event) => onChange({ ...value, level2: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. Evidencia / Imprescindible"
           />
           <FieldError>{errors["level2"]}</FieldError>
@@ -292,7 +295,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={50}
             value={value.instrument}
             aria-invalid={Boolean(errors["instrument"])}
-            onChange={(event) => onChange({ ...value, instrument: event.target.value })}
+            onChange={(event) => onChange({ ...value, instrument: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. Unidad temática"
           />
           <FieldError>{errors["instrument"]}</FieldError>
@@ -311,7 +314,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={50}
             value={value.executionLabel}
             aria-invalid={Boolean(errors["executionLabel"])}
-            onChange={(event) => onChange({ ...value, executionLabel: event.target.value })}
+            onChange={(event) => onChange({ ...value, executionLabel: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. Actividad"
           />
           <FieldError>{errors["executionLabel"]}</FieldError>
@@ -326,7 +329,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={400}
             value={value.instrumentDescription}
             onChange={(event) => {
-              const raw = event.target.value
+              const raw = toReferenteLongTextInput(event.target.value)
               const next = raw.trim() === "" ? "" : raw
               onChange({ ...value, instrumentDescription: next })
             }}
@@ -348,7 +351,7 @@ export function CurricularReferenceDetailsForm({
             maxLength={400}
             value={value.regulation}
             aria-invalid={Boolean(errors["regulation"])}
-            onChange={(event) => onChange({ ...value, regulation: event.target.value })}
+            onChange={(event) => onChange({ ...value, regulation: toReferenteLongTextInput(event.target.value) })}
             placeholder="Escribe una o varias normas que aplican a este referente curricular..."
             className={TEXTAREA_OUTLINE_CLASS}
           />

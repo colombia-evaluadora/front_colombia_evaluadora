@@ -8,6 +8,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
+import { toReferenteTextInput } from "@/features/academic-management/curricular-references/utils/catalogs"
 
 import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import { useCreateSubjectLabelOption } from "@/features/academic-management/curricular-references/api/mutations/use-create-subject-label"
@@ -102,11 +103,11 @@ export function SubjectLabelSelect({
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
           {error && <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-x-hidden overflow-y-auto">
             {options.map((option) => (
               <div
                 key={option.id}
-                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
+                className="hover:bg-foreground/10 flex min-w-0 items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
               >
                 <button
                   type="button"
@@ -114,15 +115,15 @@ export function SubjectLabelSelect({
                     onChange({ id: option.id, code: option.code, name: option.name })
                     setOpen(false)
                   }}
-                  className="flex flex-1 items-center gap-2 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  <span className="flex-1 truncate">{option.name}</span>
+                  <span className="min-w-0 flex-1 truncate" title={option.name}>{option.name}</span>
                   {option.id === value?.id && <CheckIcon className="size-4 shrink-0" />}
                 </button>
                 {!option.isSeed && (
                   <ConfirmRemoveButton
                     size="icon-xs"
-                    className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                    className="size-5 shrink-0 [&_svg:not([class*='size-'])]:size-3"
                     label={`Eliminar ${option.name}`}
                     title="Eliminar valor"
                     description={`¿Eliminar "${option.name}"? Esta acción no se puede deshacer.`}
@@ -138,8 +139,8 @@ export function SubjectLabelSelect({
             <InputGroup className="h-11 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
               <InputGroupInput
                 value={nuevo}
-                maxLength={100}
-                onChange={(e) => setNuevo(e.target.value)}
+                maxLength={50}
+                onChange={(e) => setNuevo(toReferenteTextInput(e.target.value))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault()
