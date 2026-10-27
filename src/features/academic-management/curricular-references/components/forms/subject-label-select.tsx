@@ -103,11 +103,11 @@ export function SubjectLabelSelect({
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
           {error && <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-x-hidden overflow-y-auto">
             {options.map((option) => (
               <div
                 key={option.id}
-                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
+                className="hover:bg-foreground/10 flex min-w-0 items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
               >
                 <button
                   type="button"
@@ -115,15 +115,15 @@ export function SubjectLabelSelect({
                     onChange({ id: option.id, code: option.code, name: option.name })
                     setOpen(false)
                   }}
-                  className="flex flex-1 items-center gap-2 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  <span className="flex-1 truncate">{option.name}</span>
+                  <span className="min-w-0 flex-1 truncate" title={option.name}>{option.name}</span>
                   {option.id === value?.id && <CheckIcon className="size-4 shrink-0" />}
                 </button>
                 {!option.isSeed && (
                   <ConfirmRemoveButton
                     size="icon-xs"
-                    className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                    className="size-5 shrink-0 [&_svg:not([class*='size-'])]:size-3"
                     label={`Eliminar ${option.name}`}
                     title="Eliminar valor"
                     description={`¿Eliminar "${option.name}"? Esta acción no se puede deshacer.`}
