@@ -17,18 +17,24 @@ function issuesDe(persona: Parameters<typeof validarFormatoPersona>[0]) {
 
 // Ejemplos del caso de prueba E04HU02 (Mantis 0000694).
 describe("validarNombrePersona", () => {
-  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "Li"])(
+  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "Li", "O'Connor", "Lluvia", "Wu", "Ng", "李明"])(
     "acepta %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).toBeNull(),
   )
 
-  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A"])(
+  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A", "3K3K3K3SKKSÇ++++ÇÇ", "KKKSKKS", "AAA", "Jjjj", "S22K22K"])(
     "rechaza %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).not.toBeNull(),
   )
 
   it("el input deja letras, espacios, apóstrofos y guion, en mayúsculas", () => {
     expect(toNombreInput("d'angelo 2+<")).toBe("D'ANGELO ")
+  })
+
+  it("el acento agudo entra como apóstrofo y no se puede llenar de espacios", () => {
+    expect(toNombreInput("d´angelo")).toBe("D'ANGELO")
+    expect(toNombreInput("   ")).toBe("")
+    expect(toNombreInput("maría  josé")).toBe("MARÍA JOSÉ")
   })
 })
 
@@ -48,6 +54,16 @@ describe("documento según el tipo", () => {
   it("no rechaza una longitud poco habitual dentro del rango", () => {
     expect(issuesDe({ documentType: { code: "CC" }, identification: "123" })).toEqual({})
   })
+})
+
+describe("correo", () => {
+  it.each(["ana.perez@gmail.com", "a+b@colegio.edu.co", "rector@institución.co"])("acepta %s", (email) =>
+    expect(issuesDe({ email })).toEqual({}),
+  )
+  it.each(["K2K2K2K23@KDJDJ++¨.COM", "ana@gmail", "ana..perez@gmail.com", ".ana@gmail.com", "ana@-gmail.com", "ana@gmail.c0m"])(
+    "rechaza %s",
+    (email) => expect(issuesDe({ email })).toHaveProperty("email"),
+  )
 })
 
 describe("teléfono", () => {

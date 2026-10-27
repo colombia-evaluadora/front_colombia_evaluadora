@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   toDireccionInput,
+  toTextoInput,
   validarDireccion,
   validarIdentificacionAdministrativa,
   validarLugar,
@@ -26,25 +27,37 @@ describe("validarNombreEstablecimiento", () => {
   })
 })
 
+describe("toTextoInput", () => {
+  it("convierte el acento agudo en apóstrofo y no deja solo espacios", () => {
+    expect(toTextoInput("O´Higgins")).toBe("O'Higgins")
+    expect(toTextoInput("     ")).toBe("")
+  })
+})
+
 describe("validarLugar", () => {
-  it.each(["El Prado", "Comuna 5", "5", "Localidad de Suba"])("acepta %s", (valor) =>
+  it.each(["El Prado", "Comuna 5", "5", "Localidad de Suba", "20 de Julio", "Sector 12A", "Usaquén", "Barrio O'Higgins"])("acepta %s", (valor) =>
     expect(validarLugar(valor, "El barrio")).toBeNull(),
   )
 
-  it.each(["cccccccccccc----", "99998uuu+cç", "-+-+-", "..."])("rechaza %s", (valor) =>
+  it.each(["cccccccccccc----", "99998uuu+cç", "-+-+-", "...", "99998uuucç", "ç çç/f", "Comuna 99999", "aaa", "Ghhggh", "Bbb 5"])("rechaza %s", (valor) =>
     expect(validarLugar(valor, "El barrio")).not.toBeNull(),
   )
 })
 
 describe("validarDireccion", () => {
-  it.each(["CR 5 # 26D-7A", "CL 10 # 15-20", "Mz A L 27", "Km 5 vía al mar", "Calle 45BIS # 12-30"])(
+  it.each(["CR 5 # 26D-7A", "CL 10 # 15-20", "Mz A L 27", "Km 5 vía al mar", "Calle 45BIS # 12-30", "Vereda El Rosal", "KR 7 # 45-12 Apto 301", "CL 100 # 15-20 Torre III"])(
     "acepta %s",
     (valor) => expect(validarDireccion(valor)).toBeNull(),
   )
 
-  it.each(["`6767676ghhggh+++```", "6767676ghhggh", "12345", "## --", "Calle"])("rechaza %s", (valor) =>
+  it.each(["`6767676ghhggh+++```", "6767676ghhggh", "12345", "## --", "Calle", "CL CL", "6767676 ghhggh", "Calle 1234567", "aaa 1"])("rechaza %s", (valor) =>
     expect(validarDireccion(valor)).not.toBeNull(),
   )
+
+  it("el input no deja empezar con espacios ni repetirlos", () => {
+    expect(toDireccionInput("   ")).toBe("")
+    expect(toDireccionInput(" CL  10")).toBe("CL 10")
+  })
 
   it("el input descarta comillas invertidas y signos de más", () => {
     expect(toDireccionInput("`6767676ghhggh+++```")).toBe("6767676ghhggh")

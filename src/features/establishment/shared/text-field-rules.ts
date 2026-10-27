@@ -23,13 +23,27 @@ const DIRECCION = /^[\p{L}\p{N}\s.,#/º°-]*$/u
 /** Identificación administrativa (`Resolución 1234 de 2010`, `0045/2019`, `No. 12-A`). */
 const IDENTIFICACION = /^[\p{L}\p{N}\s.,#/º°()-]*$/u
 
+/**
+ * El acento agudo, la comilla invertida y la comilla de apertura son el
+ * apóstrofo que dan muchos teclados (`D´ANGELO`): se escriben como `'` en
+ * vez de borrarse, para que no parezca que el campo no acepta apóstrofos.
+ */
+export const normalizarApostrofos = (value: string) => value.replace(/[´`‘ʼ]/g, "'")
+
+/**
+ * Sin espacios al inicio ni dobles: así un campo no se puede llenar solo de
+ * espacios (y guardarse "en blanco" con contenido).
+ */
+export const limpiarEspacios = (value: string) =>
+  value.replace(/\s/g, " ").replace(/^ +/, "").replace(/ {2,}/g, " ")
+
 /** Lo que el input deja escribir en cada tipo de campo; la forma la dicen los `validar*`. */
 export const toTextoInput = (value: string, max = 130) =>
-  value.replace(/[^\p{L}\p{N}\s.,'’()&#/º°-]/gu, "").slice(0, max)
+  limpiarEspacios(normalizarApostrofos(value).replace(/[^\p{L}\p{N}\s.,'’()&#/º°-]/gu, "")).slice(0, max)
 export const toDireccionInput = (value: string, max = 130) =>
-  value.replace(/[^\p{L}\p{N}\s.,#/º°-]/gu, "").slice(0, max)
+  limpiarEspacios(value.replace(/[^\p{L}\p{N}\s.,#/º°-]/gu, "")).slice(0, max)
 export const toIdentificacionInput = (value: string, max = 130) =>
-  value.replace(/[^\p{L}\p{N}\s.,#/º°()-]/gu, "").slice(0, max)
+  limpiarEspacios(value.replace(/[^\p{L}\p{N}\s.,#/º°()-]/gu, "")).slice(0, max)
 
 const contarLetras = (texto: string) => texto.match(LETRA)?.length ?? 0
 
@@ -42,8 +56,31 @@ function tieneSimbolosSeguidos(texto: string): boolean {
   return /([^\p{L}\p{N}])\1/u.test(compacto) || /[^\p{L}\p{N}]{3,}/u.test(compacto)
 }
 
-/** La misma letra cuatro veces seguidas (`cccc`): ninguna palabra la tiene. */
-const tieneLetraRepetida = (texto: string) => /(\p{L})\1{3,}/iu.test(texto)
+/** Partes del texto separadas por espacios y signos. */
+const partesDe = (texto: string) => texto.split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+
+const ROMANO = /^[IVXLCDM]+$/i
+const VOCAL = /[aeiouyw]/i
+const esLatina = (letras: string) => /^\p{Script=Latin}+$/u.test(letras)
+
+/**
+ * Una palabra que no se lee: la misma letra tres veces seguidas (`aaa`,
+ * `cccc`; salvo un romano como `III`) o cuatro letras latinas o más sin
+ * ninguna vocal (`ghhggh`, `KKSK`). Las abreviaturas de tres (`CRA`, `BLQ`)
+ * pasan, y un alfabeto sin vocales escritas (chino, árabe) no se mira.
+ */
+export function esPalabraSinSentido(parte: string): boolean {
+  if (/(\p{L})\1{2,}/iu.test(parte) && !ROMANO.test(parte)) return true
+  const letras = parte.normalize("NFD").replace(/[^\p{L}]/gu, "")
+  if (letras.length < 4 || !esLatina(letras) || ROMANO.test(letras)) return false
+  return !VOCAL.test(letras)
+}
+
+const tieneLetraRepetida = (texto: string) => partesDe(texto).some(esPalabraSinSentido)
+
+/** Una palabra que se lee: tres letras o más, con vocal (`Prado`, `Suba`, `Comuna`). */
+const esPalabraLegible = (parte: string) =>
+  /^\p{L}{3,}$/u.test(parte) && (!esLatina(parte) || VOCAL.test(parte.normalize("NFD")))
 
 const empiezaBien = (texto: string) => /^[\p{L}\p{N}]/u.test(texto)
 
@@ -51,7 +88,7 @@ const empiezaBien = (texto: string) => /^[\p{L}\p{N}]/u.test(texto)
 function relleno(texto: string, campo: string): string | null {
   if (!empiezaBien(texto)) return `${campo} debe empezar por una letra o un número.`
   if (tieneSimbolosSeguidos(texto)) return `${campo} no puede tener símbolos seguidos.`
-  if (tieneLetraRepetida(texto)) return `${campo} no puede repetir la misma letra tantas veces.`
+  if (tieneLetraRepetida(texto)) return `${campo} tiene palabras que no se leen (letras repetidas o sin vocales).`
   return null
 }
 
@@ -69,12 +106,28 @@ export function validarNombreEstablecimiento(valor: string | null | undefined): 
   return relleno(texto, "El nombre")
 }
 
-/** Barrio, comuna y localidad: "Comuna 5", "5" o "El Prado" valen; símbolos sueltos no. */
+/** Número corto, solo o con sufijo de letra: `5`, `12A`, `2026`. */
+const esNumeroCorto = (parte: string) => /^\p{N}{1,4}\p{L}{0,2}$/u.test(parte)
+
+/**
+ * Barrio, comuna y localidad: "Comuna 5", "5", "20 de Julio" o "El Prado"
+ * valen. Cada parte es una palabra o un número corto, y al menos una se lee
+ * o es número: `99998uuu` o `ç çç/f` no.
+ */
 export function validarLugar(valor: string | null | undefined, campo: string): string | null {
   if (enBlanco(valor)) return null
   const texto = (valor ?? "").trim()
   if (!TEXTO.test(texto)) return `${campo} solo admite letras, números y . , ' ( ) & # / -`
-  return relleno(texto, campo)
+  const comun = relleno(texto, campo)
+  if (comun) return comun
+  const partes = partesDe(texto)
+  if (!partes.every((p) => /^\p{L}+$/u.test(p) || esNumeroCorto(p))) {
+    return `${campo} no puede mezclar así números y letras (ej. Comuna 5, Sector 12A).`
+  }
+  if (!partes.some((p) => esPalabraLegible(p) || esNumeroCorto(p))) {
+    return `${campo} debe ser un nombre o un número (ej. El Prado, Comuna 5).`
+  }
+  return null
 }
 
 /**
@@ -89,10 +142,15 @@ export function validarDireccion(valor: string | null | undefined): string | nul
   if (!DIRECCION.test(texto)) return "La dirección solo admite letras, números y # - . , / º"
   const comun = relleno(texto, "La dirección")
   if (comun) return comun
-  const partes = texto.split(/[\s#.,/º°-]+/u).filter(Boolean)
+  const partes = partesDe(texto)
   if (partes.length < 2 || contarLetras(texto) === 0) return ejemplo
-  const placaRara = partes.some((p) => DIGITO.test(p) && contarLetras(p) > 3)
-  return placaRara ? ejemplo : null
+  // Ninguna parte de una dirección tiene más de 6 cifras.
+  const placaRara = partes.some(
+    (p) => DIGITO.test(p) && (contarLetras(p) > 3 || p.replace(/\D/g, "").length > 6),
+  )
+  if (placaRara) return ejemplo
+  // La urbana lleva números (`CL 10`); la rural, palabras que se lean (`Vereda El Rosal`).
+  return DIGITO.test(texto) || partes.some(esPalabraLegible) ? null : ejemplo
 }
 
 /** Lo que deja escribir la ubicación: dígitos, punto, coma, signo y espacios. */
