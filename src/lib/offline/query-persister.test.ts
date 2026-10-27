@@ -174,6 +174,27 @@ describe("restauración y buster", () => {
     expect(fresh.getQueryData(["planeador", "x"])).toEqual({ ok: 1 })
   })
 
+  it("restaura invalidada una query que una escritura invalidó sin volver a pedirla", async () => {
+    await setDeviceMode("personal")
+    const client = newClient()
+    await activatePersistUser(client, A)
+    const key = ["planeador", "actividades", "calendario", { mes: "2026-10" }]
+    await fetchAndFlush(client, key, { unidad: "borrada" }, offlineMeta)
+    // Borrar una unidad invalida el calendario aunque no esté montado.
+    await client.invalidateQueries({ queryKey: ["planeador", "actividades"], refetchType: "none" })
+    await flushPersistQueue()
+    expect((await rows(A))[0].invalidated).toBe(true)
+
+    const fresh = new QueryClient()
+    expect(await restoreUserQueries(fresh, A)).toBe(1)
+    expect(fresh.getQueryState(key)?.isInvalidated).toBe(true)
+
+    // Al volver a pedirla bien, la marca se limpia aunque el dato no cambie.
+    await client.refetchQueries({ queryKey: key })
+    await flushPersistQueue()
+    expect((await rows(A))[0].invalidated).toBeUndefined()
+  })
+
   it("descarta filas con otro SCHEMA_VERSION (buster)", async () => {
     await setDeviceMode("personal")
     const client = newClient()

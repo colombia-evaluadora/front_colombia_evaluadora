@@ -6,8 +6,7 @@ import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/catalogos-lista-valor"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 /** Sin `criterios`/`actividades`: se editan aparte en sus pestañas. */
 export type UnidadInfoGeneral = Omit<UnidadTematica, "id" | "criterios" | "actividades">
@@ -85,7 +84,7 @@ interface UseUpdateUnidadOptions {
   mutationConfig?: MutationConfig<typeof updateUnidad>
 }
 
-/** Invalida detalle y listado: el nombre/área de la card también puede cambiar. */
+/** Invalida unidades y todo lo que muestra sus actividades (`invalidarUnidad`). */
 export function useUpdateUnidad({ mutationConfig }: UseUpdateUnidadOptions = {}) {
   const queryClient = useQueryClient()
   const { onSuccess, ...restConfig } = mutationConfig ?? {}
@@ -93,10 +92,9 @@ export function useUpdateUnidad({ mutationConfig }: UseUpdateUnidadOptions = {})
   return useMutation({
     mutationFn: (input: UpdateUnidadInput) => updateUnidad(input),
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidad.detalle(variables.unidadId) })
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
+      // Nombre, método de cálculo (convierte pesos/puntajes, Regla 28) y
+      // grado/asignatura se ven en las actividades, el calendario y la planilla.
+      invalidarUnidad(queryClient)
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

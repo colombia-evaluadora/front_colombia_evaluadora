@@ -64,6 +64,12 @@ export interface PersistedQueryRow {
    * opcional del valor: no hace falta subir `DB_VERSION`.
    */
   validators?: string
+  /**
+   * La query estaba invalidada al escribirse (una escritura la dejó vieja y
+   * no estaba montada para volver a pedirla). Se restaura invalidada, así la
+   * primera pantalla que la monte la refresca. Opcional: sin `DB_VERSION`.
+   */
+  invalidated?: boolean
 }
 
 export interface OutboxRowShape {

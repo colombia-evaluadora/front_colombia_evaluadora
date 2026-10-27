@@ -113,6 +113,8 @@ interface PersistedEntry {
   sig: string
   /** Huella de los validadores guardados. */
   vsig: string
+  /** `isInvalidated` con el que se escribió la fila. */
+  inv: boolean
 }
 
 /** Por `queryHash` del usuario activo. Se vacía al cambiar de usuario. */
@@ -332,6 +334,11 @@ function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | 
     updatedAt: now,
     ttl: offline.ttl,
     size,
+    // Una escritura (p. ej. borrar una unidad temática) invalida queries que
+    // no están montadas y por eso no se vuelven a pedir: sin esta marca la
+    // fila de IndexedDB se restauraría como fresca tras recargar/re-login y
+    // mostraría el dato borrado hasta que venciera su `staleTime`.
+    ...(query.state.isInvalidated && { invalidated: true }),
   }
 }
 
@@ -349,9 +356,10 @@ function pendingWrite(query: Query, userSub: string, now: number): PendingWrite 
   const prev = persisted.get(hash)
   const vjson = validatorsJson(hash)
   const vsig = vjson ? hashString(vjson) : ""
+  const inv = query.state.isInvalidated
   // Mismo objeto que la última vez (TanStack conserva la referencia si el
   // dato nuevo es igual, `structuralSharing`): ni siquiera se serializa.
-  if (prev && prev.ref === query.state.data && prev.vsig === vsig) {
+  if (prev && prev.ref === query.state.data && prev.vsig === vsig && prev.inv === inv) {
     persistStats.unchanged++
     markVerified(hash, query.state.dataUpdatedAt || now)
     return null
@@ -359,14 +367,14 @@ function pendingWrite(query: Query, userSub: string, now: number): PendingWrite 
   const row = toRow(query, userSub, now)
   if (!row) return null
   const sig = hashString(row.data)
-  if (prev && prev.sig === sig && prev.vsig === vsig) {
+  if (prev && prev.sig === sig && prev.vsig === vsig && prev.inv === inv) {
     prev.ref = query.state.data
     persistStats.unchanged++
     markVerified(hash, query.state.dataUpdatedAt || now)
     return null
   }
   if (vjson) row.validators = vjson
-  return { row, entry: { ref: query.state.data, sig, vsig } }
+  return { row, entry: { ref: query.state.data, sig, vsig, inv } }
 }
 
 /** Escribe ya lo pendiente (lo usa el throttle; exportado para tests). */
@@ -447,7 +455,9 @@ async function enforceBudget(userSub: string, now: number) {
 export function startQueryPersister(queryClient: QueryClient): () => void {
   unsubscribe?.()
   const unsub = queryClient.getQueryCache().subscribe((event) => {
-    if (event.type !== "updated" || event.action.type !== "success") return
+    if (event.type !== "updated") return
+    // `invalidate` también: la marca se guarda en la fila (ver `toRow`).
+    if (event.action.type !== "success" && event.action.type !== "invalidate") return
     if (!(event.query.meta as OfflineQueryMeta | undefined)?.offline) return
     if (!canPersist()) return
     dirty.set(event.query.queryHash, event.query)
@@ -526,7 +536,7 @@ export async function restoreUserQueries(
         fetchFailureCount: 0,
         fetchFailureReason: null,
         fetchMeta: null,
-        isInvalidated: false,
+        isInvalidated: row.invalidated === true,
         status: "success",
         fetchStatus: "idle",
       },
@@ -556,7 +566,12 @@ export async function restoreUserQueries(
           // Validadores ilegibles: la query se baja completa la próxima vez.
         }
       }
-      persisted.set(row.queryHash, { ref, sig: hashString(json), vsig: vjson ? hashString(vjson) : "" })
+      persisted.set(row.queryHash, {
+        ref,
+        sig: hashString(json),
+        vsig: vjson ? hashString(vjson) : "",
+        inv: row.invalidated === true,
+      })
     }
   }
   return valid.length
