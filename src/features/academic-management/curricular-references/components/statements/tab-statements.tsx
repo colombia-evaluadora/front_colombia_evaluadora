@@ -114,6 +114,10 @@ export function TabStatements({ reference }: TabStatementsProps) {
     evidence.text.toLowerCase().includes(evidenceSearch.trim().toLowerCase()),
   )
   const sortedEvidences = sortBySortKey(filteredEvidences, evidenceSort)
+  // El # es fijo por evidencia (orden de creación): viaja con la fila al ordenar o buscar.
+  const evidenceNumberById = new Map(
+    [...evidences].sort((a, b) => a.id - b.id).map((evidence, index) => [evidence.id, index + 1]),
+  )
 
   const evidencePageCount = Math.max(1, Math.ceil(sortedEvidences.length / evidencePageSize))
   const clampedEvidencePageIndex = Math.min(evidencePageIndex, evidencePageCount - 1)
@@ -421,10 +425,10 @@ export function TabStatements({ reference }: TabStatementsProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              pagedEvidences.map((evidence, index) => (
+              pagedEvidences.map((evidence) => (
                 <TableRow key={evidence.id} className="group">
                   <TableCell className="text-center font-bold">
-                    {clampedEvidencePageIndex * evidencePageSize + index + 1}
+                    {evidenceNumberById.get(evidence.id)}
                   </TableCell>
                   <TableCell className="whitespace-normal break-words">{evidence.text}</TableCell>
                   <TableCell>
