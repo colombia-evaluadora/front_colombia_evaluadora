@@ -115,7 +115,19 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
 export function AddEstablishmentPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { notify } = useNotify()
+  const { notify: notifyLayout, dismiss } = useNotify()
+  // Al salir se borra un error pendiente (vive en el layout); el éxito se mantiene.
+  const lastNoticeIsErrorRef = useRef(false)
+  function notify(message: string, options?: Parameters<typeof notifyLayout>[1]) {
+    lastNoticeIsErrorRef.current = options?.variant === "error"
+    notifyLayout(message, options)
+  }
+  useEffect(
+    () => () => {
+      if (lastNoticeIsErrorRef.current) dismiss()
+    },
+    [dismiss],
+  )
   const establishmentIdParam = location.pathname.includes("/editar/")
     ? location.pathname.split("/editar/").at(1) ?? null
     : null
@@ -123,9 +135,7 @@ export function AddEstablishmentPage() {
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   // Sin Guardar, entrar por URL lleva al detalle (editar) o a la lista (agregar).
   const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("ESTABLECIMIENTO")
-  // Rector y secretaria solo se cambian con Eliminar en ESTABLECIMIENTO y nivel
-  // territorial (V574): el resto edita los datos del EE con ese panel en solo
-  // lectura, y no crea EE (uno nace con su rector).
+  // Rector/secretaria solo los cambia quien tiene Eliminar y nivel territorial (V574).
   const { data: puedeGestionarDirectivos, isLoading: directivosCargando } = usePuedeGestionarEstablecimientosQuery()
   const directivosSoloLectura = puedeGestionarDirectivos !== true
   useEffect(() => {
@@ -483,10 +493,7 @@ export function AddEstablishmentPage() {
     let nextSecretary = formValues.secretary
     const pendingInvitations: PendingInvitation[] = []
 
-    // En solo lectura no se toca a rector ni a secretaria: el PATCH del EE
-    // reenvía los mismos ids, que el back no cuenta como cambio. Además, el
-    // PATCH de la persona pasaría por el rango de Funcionarios, y un jefe de
-    // sistema o un auxiliar no alcanzan al rector: no podrían guardar nunca.
+    // En solo lectura no se toca a rector/secretaria: su PATCH no pasaría el rango de Funcionarios.
     if (!directivosSoloLectura) {
       try {
         const persistedPrincipal = await persistPersonIfAny(
