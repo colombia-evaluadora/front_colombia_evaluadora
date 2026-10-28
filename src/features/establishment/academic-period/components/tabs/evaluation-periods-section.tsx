@@ -195,6 +195,9 @@ export function EvaluationPeriodsSection({
       <ConfirmDiscardDialog
         open={tabPendiente != null}
         onOpenChange={(open) => !open && setTabPendiente(null)}
+        title="¿Cambiar de pestaña sin guardar?"
+        description="Los cambios de Criterios de evaluación que no guardaste se descartarán."
+        confirmLabel="Sí, descartar"
         onConfirm={() => {
           criteriaRef?.current?.discard()
           setTabActiva(tabPendiente ?? tabActiva)

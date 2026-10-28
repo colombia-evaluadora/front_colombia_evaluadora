@@ -258,6 +258,23 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
   const initialGrade = useSelector(form.store, (s) => s.values.initialGrade)
   const weighted = isWeighted(useSelector(form.store, (s) => s.values.recoveryMode))
   const range = rangeOf(gradingFormat)
+  // Formato anterior, para llevar las notas al nuevo al cambiarlo.
+  const prevFormat = useRef(gradingFormat)
+  useEffect(() => {
+    prevFormat.current = gradingFormat
+  }, [gradingFormat])
+  // Mismo % en la escala nueva (las notas se guardan en %), con 1 decimal.
+  function convertGrades(nextFormat: string) {
+    const from = rangeOf(prevFormat.current)
+    const to = rangeOf(nextFormat)
+    if (from.max === from.min) return
+    const convert = (n: number) =>
+      Math.round((to.min + ((n - from.min) / (from.max - from.min)) * (to.max - to.min)) * 10) / 10
+    for (const name of ["initialGrade", "maxRecoveryGrade"] as const) {
+      const value = form.getFieldValue(name)
+      if (Number.isFinite(value)) form.setFieldValue(name, convert(value))
+    }
+  }
   const fmt = (n: number) => gradeFormatter.format(n)
   const initialText = Number.isFinite(initialGrade) ? fmt(initialGrade) : "la nota inicial"
 
@@ -270,9 +287,13 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
     label: string,
     items: CriteriaOption[],
     description?: string,
+    onChange?: (value: string) => void,
   ) {
     return (
-      <form.AppField name={name}>
+      <form.AppField
+        name={name}
+        listeners={onChange ? { onChange: ({ value }) => onChange(String(value)) } : undefined}
+      >
         {(field) => (
           <field.SelectField
             label={label}
@@ -352,6 +373,8 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
               "gradingFormat",
               "Formato de calificación",
               options?.gradingFormat ?? [],
+              undefined,
+              convertGrades,
             )}
             {catalogSelect(
               "studentWithoutGradesPerformance",
