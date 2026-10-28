@@ -138,6 +138,8 @@ interface TextFieldProps extends BaseFieldProps {
   readOnly?: boolean
   /** Sanitizador de `onChange` (`toLettersOnly`, `toSafeTextInput`, `toNitInput`…). */
   transform?: (value: string) => string
+  /** Con `maxLength`, muestra el conteo dentro del input, a la derecha. */
+  showCounter?: boolean
 }
 
 export function TextField({
@@ -148,27 +150,45 @@ export function TextField({
   autoComplete,
   readOnly,
   transform,
+  showCounter = false,
   ...frame
 }: TextFieldProps) {
   const { field, value, invalid, errors, disabled } = useRegisteredField<string>(frame.disabled)
   const id = frame.id ?? field.name
+  const counter = showCounter && maxLength != null
+  const input = (
+    <Input
+      id={id}
+      name={field.name}
+      type={type}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      maxLength={maxLength}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      disabled={disabled}
+      value={value ?? ""}
+      onBlur={field.handleBlur}
+      onChange={(e) => field.handleChange(transform ? transform(e.target.value) : e.target.value)}
+      aria-invalid={invalid}
+      className={counter ? "pr-16" : undefined}
+    />
+  )
   return (
     <FieldFrame {...frame} htmlFor={id} invalid={invalid} errors={errors} disabled={disabled}>
-      <Input
-        id={id}
-        name={field.name}
-        type={type}
-        inputMode={inputMode}
-        autoComplete={autoComplete}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        disabled={disabled}
-        value={value ?? ""}
-        onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(transform ? transform(e.target.value) : e.target.value)}
-        aria-invalid={invalid}
-      />
+      {counter ? (
+        <div className="relative">
+          {input}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground tabular-nums"
+          >
+            {(value ?? "").length} / {maxLength}
+          </span>
+        </div>
+      ) : (
+        input
+      )}
     </FieldFrame>
   )
 }
@@ -234,7 +254,7 @@ export function TextareaField({
 
 /** Mismo borde que un `Input` outlined, para cuando el control lleva sufijo. */
 const OUTLINED_INPUT_GROUP =
-  "h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red"
+  "h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:disabled]:hover:border-input has-[[data-slot=input-group-control]:disabled]:cursor-not-allowed has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red"
 
 interface NumberFieldProps extends BaseFieldProps {
   placeholder?: string
@@ -484,6 +504,35 @@ export function DateField({
       ) : (
         <DatePicker mode="date" {...shared} />
       )}
+    </FieldFrame>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TimeField
+
+interface TimeFieldProps extends BaseFieldProps {
+  placeholder?: string
+}
+
+/** Hora `"HH:mm"` (24h); el picker la muestra en 12h. Vacío → `""`. */
+export function TimeField({ placeholder, ...frame }: TimeFieldProps) {
+  const { field, value, invalid, errors, disabled } = useRegisteredField<string>(frame.disabled)
+  const id = frame.id ?? field.name
+  return (
+    <FieldFrame {...frame} htmlFor={id} invalid={invalid} errors={errors} disabled={disabled}>
+      <DatePicker
+        mode="time"
+        id={id}
+        placeholder={placeholder}
+        disabled={disabled}
+        value={value ?? ""}
+        onChange={(next) => {
+          field.handleChange(next)
+          field.handleBlur()
+        }}
+        aria-invalid={invalid}
+      />
     </FieldFrame>
   )
 }

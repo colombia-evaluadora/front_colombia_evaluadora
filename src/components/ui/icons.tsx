@@ -196,6 +196,8 @@ import {
   MdStarBorder,
   MdDoneAll,
   MdDevices,
+  MdPauseCircleOutline,
+  MdPlayCircleOutline,
 } from "react-icons/md"
 
 /**
@@ -445,3 +447,5 @@ export const HourglassIcon = makeIcon(MdHourglassTop)
 export const StarIcon = makeIcon(MdStarBorder)
 export const StarFillIcon = makeIcon(MdStar)
 export const ChecksIcon = makeIcon(MdDoneAll)
+export const PauseCircleIcon = makeIcon(MdPauseCircleOutline)
+export const PlayCircleIcon = makeIcon(MdPlayCircleOutline)

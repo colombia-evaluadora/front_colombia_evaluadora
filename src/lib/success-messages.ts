@@ -15,6 +15,11 @@ interface EntityMessages {
 }
 
 export const SUCCESS_MESSAGES = {
+  academicCalendar: {
+    created: "Entrada agregada al calendario.",
+    updated: "La entrada del calendario se actualizó correctamente.",
+    deleted: "La entrada del calendario se eliminó correctamente.",
+  },
   listaValorCategoria: {
     created: "La lista se creó correctamente.",
     updated: "La lista se actualizó correctamente.",
@@ -134,6 +139,8 @@ export const SUCCESS_MESSAGES = {
     created: "La asignación académica se creó correctamente.",
     updated: "La asignación académica se actualizó correctamente.",
     deleted: "La asignación académica se eliminó correctamente.",
+    activated: "La asignación académica se activó.",
+    deactivated: "La asignación académica se inactivó.",
   },
   evaluationCriteria: {
     created: "Los criterios de evaluación se guardaron correctamente.",

@@ -22,6 +22,8 @@ export type ReportKey =
   | "periodos-academicos"
   | "periodos-evaluacion"
   | "plan-estudio"
+  | "periodo-planes-estudio"
+  | "periodo-horarios"
   | "grados"
   | "areas"
   | "escalas"
