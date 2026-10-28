@@ -42,6 +42,7 @@ import { useCreateAreaSubject } from "@/features/establishment/academic-period/a
 import { useCreateSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
 import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
+import { toPeriodoTextInput, toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 interface QuickCreateSubjectDialogProps {
   academicPeriodId?: number
@@ -248,7 +249,7 @@ export function QuickCreateSubjectDialog({
 
           <form.AppField name="nombre">
             {(field) => (
-              <field.TextField label={`Nombre de la ${subjectWord}`} required maxLength={100} showCounter placeholder="" />
+              <field.TextField label={`Nombre de la ${subjectWord}`} transform={toPeriodoTextInput} required maxLength={100} showCounter placeholder="" />
             )}
           </form.AppField>
           <form.AppField name="abreviacion">
@@ -258,7 +259,7 @@ export function QuickCreateSubjectDialog({
                 required
                 maxLength={10}
                 placeholder=""
-                transform={(v) => v.toUpperCase()}
+                transform={(v) => toPeriodoLongTextInput(v).toUpperCase()}
               />
             )}
           </form.AppField>

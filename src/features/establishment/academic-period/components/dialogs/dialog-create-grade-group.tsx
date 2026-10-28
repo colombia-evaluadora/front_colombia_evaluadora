@@ -39,6 +39,7 @@ import {
   type GradeGroupFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const FORM_ID = "grade-group-form"
 
@@ -212,7 +213,7 @@ export function CreateGradeGroupDialog({
         >
           <form.AppField name="codigo">
             {(field) => (
-              <field.TextField label="Grupo" required maxLength={20} showCounter placeholder="" />
+              <field.TextField label="Grupo" transform={toPeriodoLongTextInput} required maxLength={20} showCounter placeholder="" />
             )}
           </form.AppField>
 

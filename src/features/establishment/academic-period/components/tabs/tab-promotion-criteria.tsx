@@ -66,6 +66,7 @@ import {
   promotionApprovalSchema,
   type PromotionApprovalValues,
 } from "@/features/establishment/academic-period/api/schema"
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 // Valores con los que nace el registro único del período (columna
 // "Predeterminado" de la Sección 5.5).
@@ -771,7 +772,7 @@ function GradeRequirementsField({
                       aria-invalid={error ? true : undefined}
                       className="pr-16"
                       onChange={(e) => {
-                        setDraft(e.target.value)
+                        setDraft(toPeriodoLongTextInput(e.target.value))
                         setError(null)
                       }}
                       onKeyDown={(e) => {

@@ -25,6 +25,7 @@ import { SelectGeneralAreaDialog } from "@/features/establishment/academic-perio
 import { ColorPickerPopover } from "@/features/establishment/academic-period/components/fields/color-picker"
 import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
+import { toPeriodoTextInput, toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const FORM_ID = "create-area-form"
 
@@ -165,7 +166,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
 
           <form.AppField name="nombre">
             {(field) => (
-              <field.TextField label="Nombre del área" required maxLength={100} showCounter placeholder="" />
+              <field.TextField label="Nombre del área" transform={toPeriodoTextInput} required maxLength={100} showCounter placeholder="" />
             )}
           </form.AppField>
           <form.AppField name="abreviacion">
@@ -175,7 +176,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
                 required
                 maxLength={10}
                 placeholder=""
-                transform={(v) => v.toUpperCase()}
+                transform={(v) => toPeriodoLongTextInput(v).toUpperCase()}
               />
             )}
           </form.AppField>

@@ -13,6 +13,7 @@ import {
   getRecesoTimes,
   RECESO_LABEL_MAX,
 } from "@/features/establishment/academic-period/utils/recesos"
+import { toPeriodoTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 // Campos que comparten el período y el grado con Personalizar horario (Regla 87).
 export interface JornadaScheduleValues {
@@ -118,6 +119,7 @@ export const JornadaScheduleFields = withForm({
                             label="Etiqueta"
                             required
                             placeholder="Recreo, Almuerzo…"
+                            transform={toPeriodoTextInput}
                             maxLength={RECESO_LABEL_MAX}
                             showCounter
                           />

@@ -32,6 +32,7 @@ import {
 } from "@/features/establishment/academic-period/api/schema"
 import { DecimalField } from "@/features/establishment/academic-period/components/fields/decimal-field"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const EMPTY: EvaluationPeriodFormValues = {
   nombre: "",
@@ -229,7 +230,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           >
             {(field) => (
-              <field.TextField label="Nombre" required maxLength={100} placeholder="Primer período" />
+              <field.TextField label="Nombre" transform={toPeriodoLongTextInput} required maxLength={100} showCounter placeholder="Primer período" />
             )}
           </form.AppField>
 
@@ -243,7 +244,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           >
             {(field) => (
-              <field.TextField label="Abreviación" required maxLength={10} placeholder="PE1" />
+              <field.TextField label="Abreviación" transform={toPeriodoLongTextInput} required maxLength={10} showCounter placeholder="PE1" />
             )}
           </form.AppField>
 
