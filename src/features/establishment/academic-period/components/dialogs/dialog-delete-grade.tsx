@@ -24,9 +24,12 @@ import type { Grade } from "@/features/establishment/academic-period/api/types/g
 
 interface DeleteGradeDialogProps {
   grade: Grade
+  // "button": botón con texto, para la cabecera de la pantalla del grado.
+  variant?: "icon" | "button"
+  onDeleted?: () => void
 }
 
-export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
+export function DeleteGradeDialog({ grade, variant = "icon", onDeleted }: DeleteGradeDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -39,6 +42,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
         }
         notify(SUCCESS_MESSAGES.grade.deleted)
         setOpen(false)
+        onDeleted?.()
       },
       onError: (error) => {
         setOpen(false)
@@ -49,17 +53,26 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
-          }
-        >
-          <span className="sr-only">Eliminar grado</span>
-          <TrashIcon />
-        </TooltipTrigger>
-        <TooltipContent>Eliminar grado</TooltipContent>
-      </Tooltip>
+      {variant === "button" ? (
+        <AlertDialogTrigger render={<Button size="sm" variant="outline" color="destructive" />}>
+          <TrashIcon data-icon="inline-start" />
+          Eliminar
+        </AlertDialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <AlertDialogTrigger
+                render={<Button variant="ghost" color="neutral" size="icon-sm" />}
+              />
+            }
+          >
+            <span className="sr-only">Eliminar grado</span>
+            <TrashIcon />
+          </TooltipTrigger>
+          <TooltipContent>Eliminar grado</TooltipContent>
+        </Tooltip>
+      )}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

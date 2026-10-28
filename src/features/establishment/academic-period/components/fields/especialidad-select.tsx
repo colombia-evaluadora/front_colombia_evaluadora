@@ -21,6 +21,7 @@ import { useEspecialidadesQuery } from "@/features/establishment/academic-period
 import { useCreateEnfasis } from "@/features/establishment/academic-period/api/mutations/create-enfasis"
 import { useUpdateEnfasis } from "@/features/establishment/academic-period/api/mutations/update-enfasis"
 import { useDeleteEnfasis } from "@/features/establishment/academic-period/api/mutations/delete-enfasis"
+import { toPeriodoTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 interface EspecialidadSelectProps {
   value: string
@@ -155,7 +156,7 @@ export function EspecialidadSelect({
                       autoFocus
                       maxLength={130}
                       value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
+                      onChange={(e) => setEditingName(toPeriodoTextInput(e.target.value))}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault()

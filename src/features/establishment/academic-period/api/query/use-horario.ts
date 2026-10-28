@@ -39,7 +39,7 @@ function toScheduleEntry(row: HorarioRow): ScheduleEntry | null {
   }
 }
 
-async function fetchHorario(gradeId: number): Promise<ScheduleEntry[]> {
+export async function fetchHorario(gradeId: number): Promise<ScheduleEntry[]> {
   // Path param `:FK_GRADO` (V77); antes iba como `?fkGrado=` en query string
   // y bindeaba a `:QUERY.fkGrado` — el SQL nuevo lo castea desde path.
   // `:QUERY.FK_GRUPO` queda opcional (axios omite `null`/`undefined` de la

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
+import { useSelector } from "@tanstack/react-form"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useAppForm } from "@/lib/forms"
-import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, LockIcon, PencilIcon, PlusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -13,28 +14,20 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import {
-  ComboboxField,
-  ComboboxFieldContent,
-  ComboboxFieldItem,
-  ComboboxFieldTrigger,
-  ComboboxFieldValue,
-  ComboboxGroup,
-} from "@/components/ui/combobox"
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
-
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
 import { useJornadasQuery, useMetodologiasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
@@ -46,13 +39,7 @@ import {
   type GradeGroupFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
-
-const EMPTY: GradeGroupFormValues = {
-  codigo: "",
-  directorId: null,
-  metodologia: "",
-  cupo: 0,
-}
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const FORM_ID = "grade-group-form"
 
@@ -62,6 +49,7 @@ interface CreateGradeGroupDialogProps {
   gradeGroup?: GradeGroup
 }
 
+// Agregar o modificar un grupo del grado (Sección 5.3, Reglas 18, 55, 56 y 108).
 export function CreateGradeGroupDialog({
   gradeId,
   academicPeriodId,
@@ -87,6 +75,7 @@ export function CreateGradeGroupDialog({
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const { data: metodologiaPredeterminada } = usePredeterminadoQuery("MODELO_PEDAGOGICO")
+  // El grupo hereda la jornada del período y no se cambia.
   const jornadaName =
     jornadas.find((j) => j.id === academicPeriod?.config.jornadaId)?.name ??
     gradeGroup?.jornada ??
@@ -104,11 +93,19 @@ export function CreateGradeGroupDialog({
     ? {
         codigo: gradeGroup.codigo,
         directorId: gradeGroup.directorId,
+        dictaTodas: gradeGroup.dictaTodas ?? false,
         metodologia: gradeGroup.metodologia ?? "",
-        cupo: gradeGroup.cupo ?? 0,
+        cupo: gradeGroup.cupo ?? Number.NaN,
       }
-    : // Al crear, metodología arranca en el predeterminado de Listas valor (si hay)
-      { ...EMPTY, metodologia: metodologiaPredeterminada?.valor ?? "" }
+    : {
+        codigo: "",
+        directorId: null,
+        dictaTodas: false,
+        // Metodología arranca en el predeterminado de Listas valor (si hay).
+        metodologia: metodologiaPredeterminada?.valor ?? "",
+        // El Cupo inicia vacío (Regla 56).
+        cupo: Number.NaN,
+      }
 
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
@@ -117,9 +114,7 @@ export function CreateGradeGroupDialog({
         form.reset()
         setOpen(false)
       },
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error))
-      },
+      onError: (error) => notifyInDialog(getErrorMessage(error)),
     },
   })
 
@@ -133,9 +128,7 @@ export function CreateGradeGroupDialog({
         notify(SUCCESS_MESSAGES.gradeGroup.updated)
         setOpen(false)
       },
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error))
-      },
+      onError: (error) => notifyInDialog(getErrorMessage(error)),
     },
   })
 
@@ -145,7 +138,12 @@ export function CreateGradeGroupDialog({
     defaultValues,
     validators: { onSubmit: gradeGroupFormSchema },
     onSubmit: ({ value }) => {
-      const values = { ...gradeGroupFormSchema.parse(value), jornada: jornadaName }
+      const values = {
+        ...value,
+        codigo: value.codigo.trim(),
+        dictaTodas: value.directorId != null && value.dictaTodas,
+        jornada: jornadaName,
+      }
       if (isEditing) {
         updateGradeGroup.mutate({ id: gradeGroup.id, values })
       } else {
@@ -153,6 +151,8 @@ export function CreateGradeGroupDialog({
       }
     },
   })
+
+  const directorId = useSelector(form.store, (s) => s.values.directorId)
 
   function closeDialog() {
     setOpen(false)
@@ -166,16 +166,13 @@ export function CreateGradeGroupDialog({
     onOpen: () => {
       setOpen(true)
       setNotice(null)
-      if (!isEditing) form.reset(defaultValues)
+      form.reset(defaultValues)
     },
     onClose: closeDialog,
   })
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       {isEditing ? (
         <Tooltip>
           <TooltipTrigger
@@ -183,24 +180,20 @@ export function CreateGradeGroupDialog({
               <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
             }
           >
-            <span className="sr-only">Editar grupo</span>
+            <span className="sr-only">Modificar grupo {gradeGroup.codigo}</span>
             <PencilIcon />
           </TooltipTrigger>
-          <TooltipContent>Editar grupo</TooltipContent>
+          <TooltipContent>Modificar grupo</TooltipContent>
         </Tooltip>
       ) : (
         <DialogTrigger render={<Button color="primary" size="sm" />}>
-          <ControlPointIcon data-icon="inline-start" />
-          Agregar
+          <PlusIcon data-icon="inline-start" />
+          Agregar grupo
         </DialogTrigger>
       )}
-      <DialogPortal>
-        <DialogOverlay forceRender className="bg-transparent" />
-      </DialogPortal>
-      <DialogContent className="sm:max-w-3xl" showCloseButton={false} inert={confirmDiscardOpen}>
+      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
-          <DialogDescription>Completa los datos del grupo.</DialogDescription>
+          <DialogTitle>{isEditing ? "Modificar grupo" : "Agregar grupo"}</DialogTitle>
         </DialogHeader>
 
         <NoticeBanner
@@ -216,132 +209,108 @@ export function CreateGradeGroupDialog({
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
+          className="grid gap-x-4 gap-y-5 sm:grid-cols-2"
         >
           <form.AppField name="codigo">
-            {(field) => <field.TextField label="Grupo" required maxLength={2} />}
+            {(field) => (
+              <field.TextField label="Grupo" transform={toPeriodoLongTextInput} required maxLength={20} showCounter placeholder="" />
+            )}
           </form.AppField>
 
           <Field variant="outlined">
-            <FieldLabel htmlFor="grade-group-jornada">Jornada*</FieldLabel>
-            <Input
-              id="grade-group-jornada"
-              readOnly
-              disabled
-              placeholder="Definida en el periodo académico"
-              value={jornadaName}
-            />
+            <FieldLabel htmlFor="grade-group-jornada">
+              Jornada<span className="text-red"> *</span>
+            </FieldLabel>
+            <InputGroup className="h-11 rounded-md border border-input bg-muted/50 px-3">
+              <InputGroupInput
+                id="grade-group-jornada"
+                readOnly
+                disabled
+                className="px-0"
+                value={jornadaName}
+                placeholder="Definida en el período académico"
+              />
+              <InputGroupAddon align="inline-end">
+                <LockIcon className="size-4 text-muted-foreground" aria-label="Solo lectura" />
+              </InputGroupAddon>
+            </InputGroup>
           </Field>
 
-          <form.Field name="directorId">
+          <form.AppField name="cupo">
             {(field) => (
-              <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
-                <ComboboxField
-                  value={field.state.value}
-                  onValueChange={(value) => field.handleChange((value ?? null) as number | null)}
-                >
-                  <ComboboxFieldTrigger id={field.name}>
-                    <ComboboxFieldValue>
-                      {(value) => teachers.find((t) => t.id === value)?.name ?? "Seleccionar"}
-                    </ComboboxFieldValue>
-                  </ComboboxFieldTrigger>
-                  <ComboboxFieldContent>
-                    <ComboboxGroup>
-                      <ComboboxFieldItem value={null}>Seleccionar</ComboboxFieldItem>
-                      {teachers.map((teacher) => (
-                        <ComboboxFieldItem key={teacher.id} value={teacher.id}>
-                          {teacher.name}
-                        </ComboboxFieldItem>
-                      ))}
-                    </ComboboxGroup>
-                  </ComboboxFieldContent>
-                </ComboboxField>
-              </Field>
+              <field.NumberField label="Cupo" required valueAs="number" maxDigits={2} placeholder="" />
             )}
-          </form.Field>
+          </form.AppField>
 
-          <form.Field name="metodologia">
+          <form.AppField
+            name="directorId"
+            listeners={{
+              // Sin responsable la casilla no aplica (Regla 108).
+              onChange: ({ value }) => {
+                if (value == null) form.setFieldValue("dictaTodas", false)
+              },
+            }}
+          >
             {(field) => (
-              <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Metodología*</FieldLabel>
-                <ComboboxField
-                  value={field.state.value}
-                  onValueChange={(value) => value && field.handleChange(value)}
-                >
-                  <ComboboxFieldTrigger id={field.name}>
-                    <ComboboxFieldValue>
-                      {(value) =>
-                        metodologiaOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                      }
-                    </ComboboxFieldValue>
-                  </ComboboxFieldTrigger>
-                  <ComboboxFieldContent>
-                    <ComboboxGroup>
-                      {metodologiaOptions.map((option) => (
-                        <ComboboxFieldItem key={option.key} value={option.key} title={option.label}>
-                          {option.label}
-                        </ComboboxFieldItem>
-                      ))}
-                    </ComboboxGroup>
-                  </ComboboxFieldContent>
-                </ComboboxField>
-              </Field>
+              <field.SelectField
+                label="Responsable de grupo"
+                emptyValue={null}
+                placeholder="Sin designar"
+                clearable
+                description={
+                  academicPeriod
+                    ? `Docentes de ${academicPeriod.sedeName}${jornadaName ? ` · ${jornadaName}` : ""}.`
+                    : undefined
+                }
+                options={teachers.map((t) => ({ value: t.id, label: t.name }))}
+              />
             )}
-          </form.Field>
+          </form.AppField>
 
-          <form.Field name="cupo">
+          <form.AppField name="metodologia">
             {(field) => (
-              <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Cupo*</FieldLabel>
-                <Input
-                  id={field.name}
-                  type="number"
-                  min={1}
-                  max={99}
-                  step={1}
-                  placeholder="Agregar"
-                  value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                  onBlur={field.handleBlur}
-                  onKeyDown={(e) => {
-                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                      e.preventDefault()
-                    }
-                  }}
-                  onChange={(e) => {
-                    const value = e.target.valueAsNumber
-                    if (e.target.value === "" || !Number.isNaN(value)) {
-                      field.handleChange(Number.isFinite(value) ? Math.min(value, 99) : value)
-                    }
-                  }}
+              <field.SelectField
+                label="Metodología"
+                required
+                placeholder="Seleccione..."
+                options={metodologiaOptions.map((o) => ({ value: o.key, label: o.label }))}
+              />
+            )}
+          </form.AppField>
+
+          <form.AppField name="dictaTodas">
+            {(field) => (
+              <div className="flex items-center sm:pt-3">
+                <field.CheckboxField
+                  label="El Responsable de grupo dicta todas las asignaturas del plan"
+                  disabled={directorId == null}
                 />
-              </Field>
+              </div>
             )}
-          </form.Field>
+          </form.AppField>
         </form>
 
         <DialogFooter>
-          <form.Subscribe
-            selector={(state) => gradeGroupFormSchema.safeParse(state.values).success}
-          >
-            {(isComplete) =>
-              isComplete ? (
-                <Button
-                  size="sm"
-                  type="submit"
-                  color="primary"
-                  form={FORM_ID}
-                  disabled={isSaving}
-                  aria-busy={isSaving}
-                >
-                  {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-                  Guardar
-                </Button>
-              ) : null
-            }
-          </form.Subscribe>
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
+          </Button>
+          <Button
+            size="sm"
+            type="submit"
+            color="primary"
+            form={FORM_ID}
+            disabled={isSaving}
+            aria-busy={isSaving}
+          >
+            {isSaving ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : isEditing ? (
+              <FloppyDiskIcon data-icon="inline-start" />
+            ) : (
+              <PlusIcon data-icon="inline-start" />
+            )}
+            {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>
       </DialogContent>

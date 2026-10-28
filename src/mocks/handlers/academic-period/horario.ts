@@ -9,9 +9,10 @@ import { studyPlansDb } from "@/mocks/db/academic-period/study-plans"
 // NINGÚN mock; la pestaña de Horario caía al mismo bug de logout que
 // Criterio de promoción apenas se abría.
 export const horarioHandlers = [
-  http.get("/api/eval-col/horarios", async ({ request }) => {
+  // `fn_horario_listar`: el grado va en el path, como lo llama `use-horario.ts`.
+  http.get("/api/eval-col/horarios/:gradeId", async ({ params }) => {
     await delay(200)
-    const gradeId = Number(new URL(request.url).searchParams.get("fkGrado"))
+    const gradeId = Number(params.gradeId)
     const groupIds = new Set(
       gradeGroupsDb.filter((g) => g.gradeId === gradeId).map((g) => g.id)
     )

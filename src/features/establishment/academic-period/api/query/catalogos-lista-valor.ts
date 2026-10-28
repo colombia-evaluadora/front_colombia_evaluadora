@@ -168,6 +168,8 @@ const CATEGORY_BY_FIELD = {
   areaGradeCriteria: "CRITERIO_AREA",
   studentWithoutGradesPerformance: "DESEMPENIOSUGERIR",
   roundingMode: "MODO_REDONDEAR",
+  ratingScaleMode: "ESCALA_VALORACION",
+  recoveryMode: "MODO_RECUPERACION",
 } as const
 
 const criteriaEntries = Object.entries(CATEGORY_BY_FIELD) as [keyof typeof CATEGORY_BY_FIELD, string][]

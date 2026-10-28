@@ -18,6 +18,16 @@ function formatDate(value: string): string {
   return `${day}/${month}/${year}`
 }
 
+const PESO_FORMAT = new Intl.NumberFormat("es-CO", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+})
+
+/** "25,0 %": mismo formato en la tabla y en la suma de pesos. */
+export function formatPeso(value: number): string {
+  return `${PESO_FORMAT.format(value)} %`
+}
+
 interface CreateEvaluationPeriodColumnsOptions {
   academicPeriodId?: number
 }
@@ -50,18 +60,11 @@ export function createEvaluationPeriodColumns({
       size: 32,
     },
     {
-      id: "codigo",
-      accessorKey: "codigo",
-      meta: { label: "Código" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
-      cell: ({ row }) => <span className="font-medium">{row.original.codigo}</span>,
-    },
-    {
       id: "nombre",
       accessorKey: "nombre",
       meta: { label: "Nombre" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-      cell: ({ row }) => <span className="font-semibold uppercase">{row.original.nombre}</span>,
+      cell: ({ row }) => <span className="font-medium">{row.original.nombre}</span>,
     },
     {
       id: "abreviacion",
@@ -75,21 +78,21 @@ export function createEvaluationPeriodColumns({
       accessorKey: "startDate",
       meta: { label: "Fecha inicio" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha inicio" />,
-      cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>,
+      cell: ({ row }) => <span className="tabular-nums">{formatDate(row.original.startDate)}</span>,
     },
     {
       id: "endDate",
       accessorKey: "endDate",
       meta: { label: "Fecha fin" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha fin" />,
-      cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
+      cell: ({ row }) => <span className="tabular-nums">{formatDate(row.original.endDate)}</span>,
     },
     {
       id: "peso",
       accessorKey: "peso",
-      meta: { label: "Peso porcentual" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Peso porcentual" />,
-      cell: ({ row }) => <span>{row.original.peso}%</span>,
+      meta: { label: "Peso" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Peso" />,
+      cell: ({ row }) => <span className="tabular-nums">{formatPeso(row.original.peso)}</span>,
     },
     {
       id: "estado",
@@ -100,7 +103,10 @@ export function createEvaluationPeriodColumns({
         const estado = row.getValue<EvaluationPeriodStatus>("estado")
         const estadoLabel = row.original.estadoName ?? estado
         return (
-          <Badge {...EVALUATION_PERIOD_STATUS_BADGE[estado]}>{estadoLabel}</Badge>
+          <Badge {...EVALUATION_PERIOD_STATUS_BADGE[estado]}>
+            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+            {estadoLabel}
+          </Badge>
         )
       },
       size: 200,

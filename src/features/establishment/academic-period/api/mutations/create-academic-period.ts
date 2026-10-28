@@ -9,13 +9,13 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/utils/extract-write-result"
+import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 import { invalidateAcademicPeriodRelated } from "./invalidate"
 
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues,
 ): CreateAcademicPeriodRequest {
   // Body plano de `fn_periodo_crear`; nombre, año y usuario los deriva el backend.
-  const breaks = values.breaks ?? []
   return {
     // El backend espera BIGINT.
     FK_SEDE: Number(values.sedeId), 
@@ -30,9 +30,9 @@ export function toCreateAcademicPeriodRequest(
     RESERVA: values.reservationEnabled ? "S" : "N",
     BLOQUES_POR_DEFECTO: values.defaultBlocksCount,
     FK_PERIODO_ANTERIOR: values.previousPeriodId,
-    // `TIME[]` paralelos; `[]` borra todos, `null` sería "no tocar".
-    DESCANSO_INICIO: breaks.map((b) => b.startTime),
-    DESCANSO_FIN: breaks.map((b) => b.endTime),
+    MODALIDAD_MATRICULA: values.enrollmentModality,
+    CICLO: values.cycle,
+    RECESOS: toRecesosBody(values.breaks),
   }
 }
 

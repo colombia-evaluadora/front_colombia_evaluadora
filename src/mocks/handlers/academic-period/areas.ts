@@ -57,6 +57,21 @@ export const areasHandlers = [
   http.post("/api/eval-col/areas", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as AreaWriteBody
+    // Nombre y Abreviación únicos dentro del período, como las asignaturas (Regla 62).
+    const same = (a: string, b: string) => a.trim().toUpperCase() === b.trim().toUpperCase()
+    const siblings = areasDb.filter((a) => a.academicPeriodId === (body.FK_PERIODO ?? 0))
+    if (siblings.some((a) => same(a.nombreInterno, body.NOMBRE_INTERNO))) {
+      return HttpResponse.json(
+        { status: "error", message: `Ya existe un área llamada ${body.NOMBRE_INTERNO} en el período.` },
+        { status: 409 },
+      )
+    }
+    if (siblings.some((a) => same(a.codigo, body.ABREVIACION))) {
+      return HttpResponse.json(
+        { status: "error", message: `Ya existe un área con la abreviación ${body.ABREVIACION} en el período.` },
+        { status: 409 },
+      )
+    }
     const id = nextAreaId()
     const record: AreaRecord = {
       id,

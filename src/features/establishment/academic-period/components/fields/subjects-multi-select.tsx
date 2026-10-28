@@ -90,6 +90,8 @@ export function SubjectsMultiSelect<T extends string | number>({
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
           "relative flex h-auto min-h-11 items-center gap-2 text-left",
+          // El contorno es un div: sin esto seguía resaltando al pasar el mouse.
+          disabled && "cursor-not-allowed bg-muted/50 opacity-70 hover:border-input",
         )}
       >
         <DropdownMenuTrigger

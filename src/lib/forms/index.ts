@@ -13,6 +13,7 @@ import {
   SelectField,
   TextareaField,
   TextField,
+  TimeField,
 } from "@/lib/forms/fields"
 
 /**
@@ -36,6 +37,7 @@ export const { useAppForm, withForm } = createFormHook({
     SelectField,
     DateField,
     CheckboxField,
+    TimeField,
   },
   formComponents: {},
 })

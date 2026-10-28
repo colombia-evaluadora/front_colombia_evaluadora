@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { useForm, useSelector } from "@tanstack/react-form"
+import { useSelector } from "@tanstack/react-form"
+import { useAppForm } from "@/lib/forms"
 import {
-  CaretDownIcon,
   ControlPointIcon,
+  FloppyDiskIcon,
+  InfoIcon,
   PencilIcon,
   PlusIcon,
+  QuestionIcon,
   SpinnerIcon,
+  XIcon,
 } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
@@ -14,47 +18,33 @@ import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-ban
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { getErrorMessage } from "@/lib/api-client"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-  InputGroupText,
-} from "@/components/ui/input-group"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
-  Combobox,
   ComboboxField,
   ComboboxFieldContent,
   ComboboxFieldItem,
   ComboboxFieldTrigger,
   ComboboxFieldValue,
   ComboboxGroup,
+  ComboboxSeparator,
 } from "@/components/ui/combobox"
+import { toFieldErrors } from "@/lib/forms"
 import { useAvailableStudyPlanSubjectsQuery } from "../../api/query/use-available-study-plan-subjects-query"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
-import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
+import { usePromotionCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-promotion-criteria"
 import { QuickCreateSubjectDialog } from "./dialog-quick-create-subject"
-import {
-  SubjectInlineEditFields,
-  type SubjectInlineEditFieldsHandle,
-} from "@/features/establishment/academic-period/components/fields/subject-inline-edit-fields"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
@@ -64,20 +54,8 @@ import {
   studyPlanFormSchema,
   type StudyPlanFormValues,
 } from "@/features/establishment/academic-period/api/schema"
-import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/utils/pluralize-subject-label"
+import { DecimalField } from "@/features/establishment/academic-period/components/fields/decimal-field"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
-
-const EMPTY: StudyPlanFormValues = {
-  asignaturaId: 0,
-  intensidadHoraria: 0,
-  influenciaArea: 0,
-  numeroCreditos: 0,
-  influyeDesempeno: true,
-  matriculaObligatoria: true,
-  aprobacionObligatoria: true,
-  formatoCalificacion: "",
-  criterioNota: "",
-}
 
 const FORM_ID = "study-plan-form"
 const CREATE_SUBJECT_VALUE = "__create_subject__"
@@ -91,6 +69,7 @@ interface CreateStudyPlanDialogProps {
   subjectLabel?: string
 }
 
+// "Agregar asignatura" / "Modificar plan de estudio" (Sección 5.3).
 export function CreateStudyPlanDialog({
   academicPeriodId,
   gradeId,
@@ -101,51 +80,28 @@ export function CreateStudyPlanDialog({
 }: CreateStudyPlanDialogProps) {
   const isEditing = item != null
   const subjectWord = subjectLabel.toLowerCase()
-  const subjectLabelPlural = pluralizeSubjectLabel(subjectLabel)
-
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const pickerAnchorRef = useRef<HTMLDivElement>(null)
-  const [subjectName, setSubjectName] = useState(item?.asignatura ?? "")
 
-  const [notice, setNotice] = useState<{
-    id: number
-    message: string
-    variant: NoticeVariant
-  } | null>(null)
+  const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
   const noticeIdRef = useRef(0)
-
-  function notifyInDialog(message: string, options?: { variant?: NoticeVariant }) {
+  function notifyInDialog(message: string) {
     noticeIdRef.current += 1
-    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
+    setNotice({ id: noticeIdRef.current, message, variant: "error" })
   }
-
-  const tienePersonalizacion =
-    item != null && (item.formatoCalificacion != null || item.criterioNota != null)
-  const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
   const { data: criteriaOptions } = useEvaluationCriteriaOptionsQuery()
-
   const formatoHeredado = criteria?.gradingFormat ?? ""
   const criterioHeredado = criteria?.subjectGradeCriteria ?? ""
-
   const areaCriteriaLabel =
-    criteriaOptions?.areaGradeCriteria.find((o) => o.key === criteria?.areaGradeCriteria)
-      ?.label ?? ""
-  const esCriterioPorcentaje = areaCriteriaLabel.toLowerCase().includes("porcentaje")
-  const showInfluenciaArea = !isPreescolar && esCriterioPorcentaje
-  // Preescolar no maneja créditos.
-  const showNumeroCreditos = !isPreescolar
-  const camposNumericosVisibles = 1 + Number(showInfluenciaArea) + Number(showNumeroCreditos)
-  const camposNumericosGridCols =
-    camposNumericosVisibles >= 3
-      ? "sm:grid-cols-3"
-      : camposNumericosVisibles === 2
-        ? "sm:grid-cols-2"
-        : "sm:grid-cols-1"
+    criteriaOptions?.areaGradeCriteria.find((o) => o.key === criteria?.areaGradeCriteria)?.label ?? ""
+  // El Porcentaje es obligatorio con "Cada asignatura tiene un porcentaje" (Regla 76).
+  const porcentajeRequerido = areaCriteriaLabel.toLowerCase().includes("porcentaje")
+
+  const tienePersonalizacion = item?.formatoCalificacion != null || item?.criterioNota != null
+  const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
 
   const defaultValues: StudyPlanFormValues = item
     ? {
@@ -159,50 +115,41 @@ export function CreateStudyPlanDialog({
         formatoCalificacion: item.formatoCalificacion ?? formatoHeredado,
         criterioNota: item.criterioNota ?? criterioHeredado,
       }
-    : EMPTY
+    : {
+        // Los tres Sí/No arrancan en Sí (Reglas 64 a 66).
+        asignaturaId: 0,
+        intensidadHoraria: Number.NaN,
+        influenciaArea: porcentajeRequerido ? Number.NaN : 100,
+        numeroCreditos: 0,
+        influyeDesempeno: true,
+        matriculaObligatoria: true,
+        aprobacionObligatoria: true,
+        formatoCalificacion: formatoHeredado,
+        criterioNota: criterioHeredado,
+      }
 
-  const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(
-    gradeId,
-    academicPeriodId,
-  )
-  const asignaturaOptions = (() => {
-    if (item && !availableSubjects.some((s) => s.id === item.asignaturaId)) {
-      return [{ id: item.asignaturaId, label: item.asignatura }, ...availableSubjects]
-    }
-    return availableSubjects
-  })()
-
+  const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(gradeId, academicPeriodId)
+  const asignaturaOptions =
+    item && !availableSubjects.some((s) => s.id === item.asignaturaId)
+      ? [{ id: item.asignaturaId, label: item.asignatura }, ...availableSubjects]
+      : availableSubjects
   const { data: subjectDetails = [] } = useSubjectDetailsQuery(academicPeriodId)
 
-  // Todo el plan sin paginar: la suma de `influenciaArea` es de toda el área.
-  const { data: allStudyPlanItemsData } = useStudyPlansQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 1000,
-    academicPeriodId,
-    gradeId,
-    enabled: open,
-  })
-
-  const formatoOptions = criteriaOptions?.gradingFormat ?? []
-  const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
+  // Regla 106: si la asignatura (o su área, con Nodo Área) es obligatoria para
+  // la aprobación, Aprobación obligatoria queda en Sí y bloqueada.
+  const { data: periodPromotion } = usePromotionCriteriaQuery(academicPeriodId)
+  const { data: gradePromotion } = usePromotionCriteriaQuery(academicPeriodId, gradeId)
+  const promotion = gradePromotion ?? periodPromotion
 
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
       onSuccess: () => {
         notify(`${subjectLabel} agregada al plan de estudio.`)
-        form.reset()
-        setPersonalizar(false)
-        setSubjectName("")
-        setOpen(false)
+        close()
       },
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error))
-      },
+      onError: (error) => notifyInDialog(getErrorMessage(error)),
     },
   })
-
   const updateStudyPlanItem = useUpdateStudyPlanItem({
     mutationConfig: {
       onSuccess: (result) => {
@@ -211,29 +158,21 @@ export function CreateStudyPlanDialog({
           return
         }
         notify(SUCCESS_MESSAGES.studyPlan.updated)
-        setOpen(false)
+        close()
       },
-      onError: (error) => {
-        notifyInDialog(getErrorMessage(error))
-      },
+      onError: (error) => notifyInDialog(getErrorMessage(error)),
     },
   })
-
   const isSaving = createStudyPlanItem.isPending || updateStudyPlanItem.isPending
-  const subjectFieldsRef = useRef<SubjectInlineEditFieldsHandle>(null)
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: { onSubmit: studyPlanFormSchema },
-    onSubmit: async ({ value }) => {
-      const subjectSaved = await subjectFieldsRef.current?.save()
-      if (subjectSaved === false) return
-
-      const values = studyPlanFormSchema.parse(value)
-      if (!showInfluenciaArea) values.influenciaArea = 100
+    onSubmit: ({ value }) => {
+      // Con Personalizar en No usa el Formato y el Criterio del período (Regla 61).
       const payload: StudyPlanFormValues = personalizar
-        ? values
-        : { ...values, formatoCalificacion: "", criterioNota: "" }
+        ? value
+        : { ...value, formatoCalificacion: "", criterioNota: "" }
       if (isEditing) {
         updateStudyPlanItem.mutate({
           codigo: item.codigo,
@@ -241,242 +180,148 @@ export function CreateStudyPlanDialog({
           values: { ...payload, codigo: item.codigo },
         })
       } else {
-        createStudyPlanItem.mutate({
-          ...payload,
-          academicPeriodId,
-          gradeId,
-        })
+        createStudyPlanItem.mutate({ ...payload, academicPeriodId, gradeId })
       }
     },
   })
 
-  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
-  const selectedAsignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  const values = useSelector(form.store, (s) => ({
+    asignaturaId: s.values.asignaturaId,
+    aprobacionObligatoria: s.values.aprobacionObligatoria,
+  }))
+  const selected = subjectDetails.find((s) => s.id === values.asignaturaId)
+  const isMandatoryForApproval =
+    promotion != null &&
+    selected != null &&
+    (promotion.curriculumNode === "AR"
+      ? promotion.requiredSubjects.includes(selected.areaId)
+      : promotion.requiredSubjects.includes(selected.id))
 
-  // De `subjectDetails`: las opciones disponibles excluyen las que ya están en el plan.
-  const selectedAreaId = subjectDetails.find((s) => s.id === selectedAsignaturaId)?.areaId
-  const otherAreaInfluenciaSum = (allStudyPlanItemsData?.rows ?? [])
-    .filter((row) => {
-      if (isEditing && row.codigo === item.codigo) return false
-      const rowAreaId = subjectDetails.find((s) => s.id === row.asignaturaId)?.areaId
-      return selectedAreaId != null && rowAreaId === selectedAreaId
-    })
-    .reduce((sum, row) => sum + (row.influenciaArea ?? 0), 0)
-  const maxAllowedInfluenciaArea = Math.max(0, 100 - otherAreaInfluenciaSum)
-
-  // Al prender "Personalizar" el campo arranca con lo heredado, no vacío.
-  useEffect(() => {
-    if (!personalizar) form.setFieldValue("formatoCalificacion", formatoHeredado)
-  }, [formatoHeredado, personalizar, form])
-
-  useEffect(() => {
-    if (!personalizar) form.setFieldValue("criterioNota", criterioHeredado)
-  }, [criterioHeredado, personalizar, form])
-
-  function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
-    form.setFieldValue("asignaturaId", created.id)
-    setSubjectName(created.nombreInterno)
-  }
-
-  function closeDialog() {
+  function close() {
     setOpen(false)
     setNotice(null)
-    form.reset()
+    form.reset(defaultValues)
     setPersonalizar(tienePersonalizacion)
-    setSubjectName(item?.asignatura ?? "")
   }
 
   const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
     isSaving,
-    isDirty: () =>
-      !formValuesEqual(form.state.values, defaultValues) ||
-      personalizar !== tienePersonalizacion,
+    isDirty: () => !formValuesEqual(form.state.values, defaultValues) || personalizar !== tienePersonalizacion,
     onOpen: () => {
+      form.reset(defaultValues)
       setOpen(true)
       setNotice(null)
     },
-    onClose: closeDialog,
+    onClose: close,
   })
 
+  const formatoOptions = (criteriaOptions?.gradingFormat ?? []).map((o) => ({ value: o.key, label: o.label }))
+  const criterioOptions = (criteriaOptions?.subjectGradeCriteria ?? []).map((o) => ({ value: o.key, label: o.label }))
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       {isEditing ? (
         <Tooltip>
           <TooltipTrigger
-            render={
-              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
-            }
+            render={<DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />}
           >
-            <span className="sr-only">Editar plan de estudio</span>
+            <span className="sr-only">Modificar {item.asignatura}</span>
             <PencilIcon />
           </TooltipTrigger>
-          <TooltipContent>Editar plan de estudio</TooltipContent>
+          <TooltipContent>Modificar</TooltipContent>
         </Tooltip>
       ) : (
         <DialogTrigger render={<Button color="primary" size="sm" />}>
           <ControlPointIcon data-icon="inline-start" />
-          Agregar
+          Agregar {subjectWord}
         </DialogTrigger>
       )}
-      <DialogPortal>
-        <DialogOverlay forceRender className="bg-black/30" />
-      </DialogPortal>
       <DialogContent
-        className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl"
-        inert={confirmDiscardOpen}
-        showCloseButton={false}
+        className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl"
+        inert={confirmDiscardOpen || createSubjectOpen}
       >
         <DialogHeader className="shrink-0 px-6 pt-6">
-          <DialogTitle>
-            {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Modificar plan de estudio" : `Agregar ${subjectWord}`}</DialogTitle>
         </DialogHeader>
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
-        <NoticeBanner
-          notice={notice}
-          onClose={() => setNotice(null)}
-          variant={notice?.variant}
-          autoCloseMs={notice?.variant === "error" ? 12000 : 4000}
-        />
 
-        <form
-          id={FORM_ID}
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
-          className="flex min-w-0 flex-col gap-4"
-        >
-          <form.Field name="asignaturaId">
-            {(field) => {
-              const isInvalid =
-                (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-              const hasValue = !!field.state.value
-              const nameMissing = hasValue && submissionAttempts > 0 && !subjectName.trim()
-              const errors = nameMissing
-                ? [...field.state.meta.errors, { message: "El nombre es obligatorio" }]
-                : field.state.meta.errors
-              return (
-                <Field variant="outlined" data-invalid={isInvalid || nameMissing}>
-                  <FieldLabel htmlFor={field.name}>{subjectLabelPlural}*</FieldLabel>
-                  {hasValue ? (
-                    <div ref={pickerAnchorRef}>
-                      <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                        <InputGroupInput
-                          id={field.name}
-                          maxLength={130}
-                          placeholder="Seleccionar"
-                          className="px-0 uppercase placeholder:normal-case"
-                          aria-invalid={isInvalid || nameMissing}
-                          value={subjectName}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => setSubjectName(e.target.value.toUpperCase())}
-                        />
-                        <InputGroupAddon align="inline-end">
-                          <Combobox
-                            open={pickerOpen}
-                            onOpenChange={setPickerOpen}
-                            value={String(field.state.value)}
-                            onValueChange={(value) => {
-                              if (value === CREATE_SUBJECT_VALUE) {
-                                setPickerOpen(false)
-                                setCreateSubjectOpen(true)
-                                return
-                              }
-                              if (!value) return
-                              const id = Number(value)
-                              field.handleChange(id)
-                              setSubjectName(
-                                asignaturaOptions.find((o) => o.id === id)?.label ?? "",
-                              )
-                              setPickerOpen(false)
-                            }}
-                          >
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <InputGroupButton
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label="Mostrar opciones"
-                                    onClick={() => setPickerOpen((o) => !o)}
-                                  />
-                                }
-                              >
-                                <CaretDownIcon className="pointer-events-none size-3.5" />
-                              </TooltipTrigger>
-                              <TooltipContent>Mostrar opciones</TooltipContent>
-                            </Tooltip>
-                            <ComboboxFieldContent anchor={pickerAnchorRef}>
-                              <ComboboxGroup>
-                                {asignaturaOptions.length === 0 ? (
-                                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                    No hay opciones disponibles para este grado.
-                                  </div>
-                                ) : (
-                                  asignaturaOptions.map((option) => (
-                                    <ComboboxFieldItem
-                                      key={option.id}
-                                      value={String(option.id)}
-                                      title={option.label}
-                                    >
-                                      {option.label}
-                                    </ComboboxFieldItem>
-                                  ))
-                                )}
-                                <ComboboxFieldItem value={CREATE_SUBJECT_VALUE}>
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <PlusIcon />
-                                    Crear {subjectWord}
-                                  </span>
-                                </ComboboxFieldItem>
-                              </ComboboxGroup>
-                            </ComboboxFieldContent>
-                          </Combobox>
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </div>
-                  ) : (
+        <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 pb-1">
+          <NoticeBanner
+            notice={notice}
+            onClose={() => setNotice(null)}
+            variant={notice?.variant}
+            autoCloseMs={12000}
+          />
+          {!isFormativo && (
+            <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+              <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
+              Con Personalizar en No, la {subjectWord} usa el Formato y el Criterio del período (Criterios de
+              evaluación).
+            </p>
+          )}
+
+          <form
+            id={FORM_ID}
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+            className="flex flex-col gap-5"
+          >
+            <form.Field
+              name="asignaturaId"
+              listeners={{
+                onChange: ({ value }) => {
+                  const subject = subjectDetails.find((s) => s.id === value)
+                  const forced =
+                    promotion != null &&
+                    subject != null &&
+                    (promotion.curriculumNode === "AR"
+                      ? promotion.requiredSubjects.includes(subject.areaId)
+                      : promotion.requiredSubjects.includes(subject.id))
+                  if (forced) form.setFieldValue("aprobacionObligatoria", true)
+                },
+              }}
+            >
+              {(field) => {
+                const invalid = form.state.submissionAttempts > 0 && !field.state.meta.isValid
+                return (
+                  <Field variant="outlined" data-invalid={invalid || undefined}>
+                    <FieldLabel htmlFor={field.name}>
+                      {subjectLabel}
+                      <span className="text-red"> *</span>
+                    </FieldLabel>
                     <ComboboxField
-                      value=""
+                      items={Object.fromEntries(asignaturaOptions.map((o) => [String(o.id), o.label]))}
+                      value={field.state.value ? String(field.state.value) : ""}
                       onValueChange={(value) => {
                         if (value === CREATE_SUBJECT_VALUE) {
                           setCreateSubjectOpen(true)
                           return
                         }
-                        if (!value) return
-                        const id = Number(value)
-                        field.handleChange(id)
-                        setSubjectName(asignaturaOptions.find((o) => o.id === id)?.label ?? "")
+                        if (value) field.handleChange(Number(value))
                       }}
                     >
-                      <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
-                        <ComboboxFieldValue placeholder="Seleccionar">
-                          {() => "Seleccionar"}
-                        </ComboboxFieldValue>
+                      <ComboboxFieldTrigger id={field.name} aria-invalid={invalid || undefined}>
+                        <ComboboxFieldValue placeholder="Seleccione..." />
                       </ComboboxFieldTrigger>
                       <ComboboxFieldContent>
                         <ComboboxGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              No hay opciones disponibles para este grado.
+                              Todas las {subjectWord}s del período ya están en el plan.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
-                              <ComboboxFieldItem
-                                key={option.id}
-                                value={String(option.id)}
-                                title={option.label}
-                              >
+                              <ComboboxFieldItem key={option.id} value={String(option.id)} title={option.label}>
                                 {option.label}
                               </ComboboxFieldItem>
                             ))
                           )}
-                          <ComboboxFieldItem value={CREATE_SUBJECT_VALUE}>
+                        </ComboboxGroup>
+                        <ComboboxSeparator />
+                        <ComboboxGroup>
+                          <ComboboxFieldItem value={CREATE_SUBJECT_VALUE} className="text-primary">
                             <span className="inline-flex items-center gap-1.5">
                               <PlusIcon />
                               Crear {subjectWord}
@@ -485,354 +330,218 @@ export function CreateStudyPlanDialog({
                         </ComboboxGroup>
                       </ComboboxFieldContent>
                     </ComboboxField>
-                  )}
-                  {(isInvalid || nameMissing) && <FieldError errors={errors} />}
-                  <QuickCreateSubjectDialog
-                    academicPeriodId={academicPeriodId}
-                    open={createSubjectOpen}
-                    onOpenChange={setCreateSubjectOpen}
-                    onSaved={handleSubjectCreated}
-                    isPreescolar={isPreescolar}
-                    subjectLabel={subjectLabel}
-                  />
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => state.values.asignaturaId}>
-            {(asignaturaId) => {
-              const selected = subjectDetails.find((s) => s.id === asignaturaId)
-              if (!selected) return null
-              return (
-                <SubjectInlineEditFields
-                  key={selected.id}
-                  ref={subjectFieldsRef}
-                  subject={selected}
-                  nombre={subjectName}
-                  onNombreChange={setSubjectName}
-                  academicPeriodId={academicPeriodId}
-                  isPreescolar={isPreescolar}
-                  subjectLabel={subjectLabel}
-                  notify={notifyInDialog}
-                  onSaved={(saved) => {
-                    // El detalle de asignaturas ya lo invalidó `useUpdateSubject`.
-                    if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
-                  }}
-                >
-                  <div className={cn("grid gap-4", camposNumericosGridCols)}>
-                    <form.Field name="intensidadHoraria">
-                      {(field) => {
-                        const isInvalid =
-                          (field.state.meta.isTouched || submissionAttempts > 0) &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Intensidad horaria*</FieldLabel>
-                            <Input
-                              id={field.name}
-                              type="number"
-                              min={1}
-                              max={99}
-                              step={1}
-                              placeholder="Agregar"
-                              aria-invalid={isInvalid}
-                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                              onBlur={field.handleBlur}
-                              onKeyDown={(e) => {
-                                if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                                  e.preventDefault()
-                                }
-                              }}
-                              onChange={(e) => {
-                                if (e.target.value.length > 2) return
-                                const value = e.target.valueAsNumber
-                                if (e.target.value === "" || !Number.isNaN(value)) {
-                                  field.handleChange(value)
-                                }
-                              }}
-                            />
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                          </Field>
-                        )
-                      }}
-                    </form.Field>
-
-                    {showInfluenciaArea && (
-                      <form.Field
-                        name="influenciaArea"
-                        validators={{
-                          onChange: ({ value }) => {
-                            if (Number.isNaN(value)) return undefined
-                            if (value > maxAllowedInfluenciaArea) {
-                              return {
-                                message: `La suma de la influencia del área no puede superar el 100%. Disponible: ${maxAllowedInfluenciaArea}%.`,
-                              }
-                            }
-                            return undefined
-                          },
-                        }}
-                      >
-                        {(field) => {
-                          const isInvalid =
-                            (field.state.meta.isTouched || submissionAttempts > 0) &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field variant="outlined" data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
-                              <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                                <InputGroupInput
-                                  id={field.name}
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  placeholder="Agregar"
-                                  className="px-0"
-                                  aria-invalid={isInvalid}
-                                  value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                                  onBlur={field.handleBlur}
-                                  // Admite decimales; solo se bloquea signo y notación científica.
-                                  onKeyDown={(e) => {
-                                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                                  }}
-                                  onChange={(e) => {
-                                    const value = e.target.valueAsNumber
-                                    if (e.target.value === "" || !Number.isNaN(value)) {
-                                      field.handleChange(value)
-                                    }
-                                  }}
-                                />
-                                <InputGroupAddon align="inline-end">
-                                  <InputGroupText>%</InputGroupText>
-                                </InputGroupAddon>
-                              </InputGroup>
-                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                            </Field>
-                          )
-                        }}
-                      </form.Field>
-                    )}
-
-                    {showNumeroCreditos && (
-                      <form.Field name="numeroCreditos">
-                        {(field) => {
-                          const isInvalid =
-                            (field.state.meta.isTouched || submissionAttempts > 0) &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field variant="outlined" data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
-                              <Input
-                                id={field.name}
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Agregar"
-                                aria-invalid={isInvalid}
-                                value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                                onBlur={field.handleBlur}
-                                onKeyDown={(e) => {
-                                  if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                                    e.preventDefault()
-                                  }
-                                }}
-                                onChange={(e) => {
-                                  const value = e.target.valueAsNumber
-                                  if (e.target.value === "" || !Number.isNaN(value)) {
-                                    field.handleChange(value)
-                                  }
-                                }}
-                              />
-                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                            </Field>
-                          )
-                        }}
-                      </form.Field>
-                    )}
-                  </div>
-                </SubjectInlineEditFields>
-              )
-            }}
-          </form.Subscribe>
-
-          <label className="my-2 flex w-fit items-center gap-3 text-sm font-medium">
-            Personalizar
-            <Switch
-              checked={personalizar}
-              onCheckedChange={setPersonalizar}
-              className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-            />
-          </label>
-
-          <div
-            className={cn(
-              "grid gap-4 sm:grid-cols-3",
-              !personalizar && "pointer-events-none opacity-50",
-            )}
-          >
-            {/* Preescolar y formativos no se califican: no hay desempeño que influir. */}
-            {!isPreescolar && !isFormativo && (
-              <form.Field name="influyeDesempeno">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel>Influye en el desempeño académico</FieldLabel>
-                    <RadioGroup
-                      className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                      disabled={!personalizar}
-                      value={field.state.value ? "si" : "no"}
-                      onValueChange={(value) => field.handleChange(value === "si")}
-                    >
-                      <label className="flex items-center gap-2">
-                        <RadioGroupItem value="si" />
-                        Sí
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <RadioGroupItem value="no" />
-                        No
-                      </label>
-                    </RadioGroup>
+                    {invalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
                   </Field>
-                )}
-              </form.Field>
-            )}
-
-            {/*En formativos solo aplica "Matrícula obligatoria". */}
-            <form.Field name="matriculaObligatoria">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel>Matrícula obligatoria</FieldLabel>
-                  <RadioGroup
-                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                    disabled={!personalizar}
-                    value={field.state.value ? "si" : "no"}
-                    onValueChange={(value) => field.handleChange(value === "si")}
-                  >
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="si" />
-                      Sí
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="no" />
-                      No
-                    </label>
-                  </RadioGroup>
-                </Field>
-              )}
+                )
+              }}
             </form.Field>
 
-            {!isFormativo && (
-              <form.Field name="aprobacionObligatoria">
+            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+              {/* Preescolar y formativos no se califican: no hay rendimiento que influir. */}
+              {!isPreescolar && !isFormativo && (
+                <form.Field name="influyeDesempeno">
+                  {(field) => (
+                    <YesNo
+                      label="Influye en el rendimiento académico"
+                      value={field.state.value}
+                      onChange={(v) => field.handleChange(v)}
+                      disabled={!values.aprobacionObligatoria}
+                      description={
+                        values.aprobacionObligatoria ? undefined : "Con Aprobación obligatoria en No, queda en No."
+                      }
+                    />
+                  )}
+                </form.Field>
+              )}
+              <form.Field name="matriculaObligatoria">
                 {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel>Aprobación obligatoria</FieldLabel>
-                    <RadioGroup
-                      className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
-                      disabled={!personalizar}
-                      value={field.state.value ? "si" : "no"}
-                      onValueChange={(value) => field.handleChange(value === "si")}
-                    >
-                      <label className="flex items-center gap-2">
-                        <RadioGroupItem value="si" />
-                        Sí
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <RadioGroupItem value="no" />
-                        No
-                      </label>
-                    </RadioGroup>
-                  </Field>
+                  <YesNo
+                    label="Matrícula obligatoria"
+                    value={field.state.value}
+                    onChange={(v) => field.handleChange(v)}
+                  />
                 )}
               </form.Field>
-            )}
+              {!isFormativo && (
+                <form.Field
+                  name="aprobacionObligatoria"
+                  listeners={{
+                    // Regla 66: sin aprobación obligatoria no influye en el rendimiento.
+                    onChange: ({ value }) => {
+                      if (!value) form.setFieldValue("influyeDesempeno", false)
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <YesNo
+                      label="Aprobación obligatoria"
+                      value={field.state.value}
+                      onChange={(v) => field.handleChange(v)}
+                      disabled={isMandatoryForApproval}
+                      description={
+                        isMandatoryForApproval
+                          ? "Está en las obligatorias para la aprobación de los Criterios de promoción."
+                          : undefined
+                      }
+                    />
+                  )}
+                </form.Field>
+              )}
+            </div>
+
+            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+              <form.AppField name="intensidadHoraria">
+                {(field) => (
+                  <field.NumberField
+                    label="Intensidad horaria"
+                    required
+                    valueAs="number"
+                    maxDigits={2}
+                    suffix="bloques/semana"
+                    placeholder=""
+                    description="Cada hora es un bloque de la jornada."
+                  />
+                )}
+              </form.AppField>
+              {/* Solo con "Cada [Área] tiene un porcentaje"; si no, se guarda 100 y no se usa (Regla 76). */}
+              {porcentajeRequerido && (
+                <form.Field name="influenciaArea">
+                  {(field) => (
+                    <DecimalField
+                      field={field}
+                      label="Porcentaje"
+                      suffix="%"
+                      required
+                      description="Peso de la asignatura dentro de su área."
+                    />
+                  )}
+                </form.Field>
+              )}
+            </div>
 
             {!isFormativo && (
-              <form.Field name="formatoCalificacion">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
-                    <ComboboxField
-                      value={personalizar ? field.state.value : formatoHeredado}
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1 text-sm">
+                    <label htmlFor="study-plan-personalizar">Personalizar</label>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={<button type="button" className="text-muted-foreground" aria-label="Ayuda: Personalizar" />}
+                      >
+                        <QuestionIcon className="size-4" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Con Sí, la {subjectWord} usa su propio Formato de calificación y Criterio solo en este grado.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                  <label className="flex w-fit cursor-pointer items-center gap-2">
+                    <Switch
+                      id="study-plan-personalizar"
+                      checked={personalizar}
+                      onCheckedChange={(checked) => {
+                        setPersonalizar(checked)
+                        if (!checked) {
+                          form.setFieldValue("formatoCalificacion", formatoHeredado)
+                          form.setFieldValue("criterioNota", criterioHeredado)
+                        }
+                      }}
+                      className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+                    />
+                    <span className="text-sm">{personalizar ? "Sí" : "No"}</span>
+                  </label>
+                </div>
+                <form.AppField name="formatoCalificacion">
+                  {(field) => (
+                    <field.SelectField
+                      label="Formato de calificación"
+                      required
                       disabled={!personalizar}
-                      onValueChange={(value) => value && field.handleChange(value)}
-                    >
-                      <ComboboxFieldTrigger id={field.name}>
-                        <ComboboxFieldValue>
-                          {(value) =>
-                            formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                          }
-                        </ComboboxFieldValue>
-                      </ComboboxFieldTrigger>
-                      <ComboboxFieldContent>
-                        <ComboboxGroup>
-                          {formatoOptions.map((option) => (
-                            <ComboboxFieldItem key={option.key} value={option.key}>
-                              {option.label}
-                            </ComboboxFieldItem>
-                          ))}
-                        </ComboboxGroup>
-                      </ComboboxFieldContent>
-                    </ComboboxField>
-                  </Field>
-                )}
-              </form.Field>
-            )}
-
-            {!isFormativo && (
-              <form.Field name="criterioNota">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={field.name}>
-                      Criterio para calcular la nota de la asignatura
-                    </FieldLabel>
-                    <ComboboxField
-                      value={personalizar ? field.state.value : criterioHeredado}
+                      options={formatoOptions}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="criterioNota">
+                  {(field) => (
+                    <field.SelectField
+                      label={`Criterio para calcular la nota de la ${subjectWord}`}
+                      required
                       disabled={!personalizar}
-                      onValueChange={(value) => value && field.handleChange(value)}
-                    >
-                      <ComboboxFieldTrigger id={field.name}>
-                        <ComboboxFieldValue>
-                          {(value) =>
-                            criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                          }
-                        </ComboboxFieldValue>
-                      </ComboboxFieldTrigger>
-                      <ComboboxFieldContent>
-                        <ComboboxGroup>
-                          {criterioOptions.map((option) => (
-                            <ComboboxFieldItem key={option.key} value={option.key}>
-                              {option.label}
-                            </ComboboxFieldItem>
-                          ))}
-                        </ComboboxGroup>
-                      </ComboboxFieldContent>
-                    </ComboboxField>
-                  </Field>
-                )}
-              </form.Field>
+                      options={criterioOptions}
+                    />
+                  )}
+                </form.AppField>
+              </>
             )}
-          </div>
-        </form>
+          </form>
         </div>
 
         <DialogFooter className="shrink-0 px-6 pb-6">
-          <Button
-            size="sm"
-            type="submit"
-            color="primary"
-            form={FORM_ID}
-            disabled={isSaving}
-            aria-busy={isSaving}
-          >
-            {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            Guardar
-          </Button>
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
+          </Button>
+          <Button size="sm" type="submit" color="primary" form={FORM_ID} disabled={isSaving} aria-busy={isSaving}>
+            {isSaving ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : isEditing ? (
+              <FloppyDiskIcon data-icon="inline-start" />
+            ) : (
+              <PlusIcon data-icon="inline-start" />
+            )}
+            {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>
       </DialogContent>
 
+      <QuickCreateSubjectDialog
+        academicPeriodId={academicPeriodId}
+        open={createSubjectOpen}
+        onOpenChange={setCreateSubjectOpen}
+        onSaved={(created) => form.setFieldValue("asignaturaId", created.id)}
+        isPreescolar={isPreescolar}
+        subjectLabel={subjectLabel}
+      />
       <ConfirmDiscardDialog {...discardDialogProps} />
     </Dialog>
+  )
+}
+
+function YesNo({
+  label,
+  value,
+  onChange,
+  disabled,
+  description,
+}: {
+  label: string
+  value: boolean
+  onChange: (value: boolean) => void
+  disabled?: boolean
+  description?: string
+}) {
+  return (
+    <fieldset className="flex flex-col gap-2" disabled={disabled}>
+      <legend className="mb-2 text-sm">
+        {label}
+        <span className="text-red"> *</span>
+      </legend>
+      <RadioGroup
+        className="flex items-center gap-6"
+        value={value ? "si" : "no"}
+        disabled={disabled}
+        onValueChange={(v) => onChange(v === "si")}
+      >
+        <label className="flex items-center gap-2 text-sm">
+          <RadioGroupItem value="si" />
+          Sí
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <RadioGroupItem value="no" />
+          No
+        </label>
+      </RadioGroup>
+      {description && <FieldDescription>{description}</FieldDescription>}
+    </fieldset>
   )
 }

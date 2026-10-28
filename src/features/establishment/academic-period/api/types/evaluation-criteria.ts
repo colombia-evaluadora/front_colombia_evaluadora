@@ -22,6 +22,11 @@ export interface EvaluationCriteria {
   maxRecoveryGrade: number
   roundingMode: string
   initialGrade: number
+  // Sección 5.6: una escala por nivel o una sola para el período (Regla 50).
+  ratingScaleMode: string
+  // Ponderar o Usar nota de recuperación; el % solo aplica con Ponderar (Regla 48).
+  recoveryMode: string
+  recoveryPercentage: number | null
 }
 
 // Opción de un select de criterios: `key` es el valor que se guarda/manda,
@@ -32,7 +37,7 @@ export interface CriteriaOption {
 }
 
 export type EvaluationCriteriaOptions = Record<
-  Exclude<keyof EvaluationCriteria, "gradingScale" | "gradingFormatName">,
+  Exclude<keyof EvaluationCriteria, "gradingScale" | "gradingFormatName" | "recoveryPercentage">,
   CriteriaOption[]
 >
 

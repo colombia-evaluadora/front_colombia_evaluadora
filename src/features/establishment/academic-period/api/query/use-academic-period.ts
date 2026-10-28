@@ -4,7 +4,12 @@ import { api } from "@/lib/api-client"
 import type {
   AcademicPeriodDetail,
   AcademicPeriodStatus,
+  EnrollmentModality,
 } from "@/features/establishment/academic-period/api/types/academic-period"
+import {
+  fromRecesosRows,
+  type RecesoRow,
+} from "@/features/establishment/academic-period/utils/recesos"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
@@ -30,7 +35,10 @@ interface AcademicPeriodDetailRow {
   schedule_end_time: string | null
   // Ya viene camelCase desde el backend (jsonb_build_object arma las llaves
   // así directamente) — el único campo de toda la fila que no es snake_case.
-  descansos: { startTime: string; endTime: string }[]
+  recesos: RecesoRow[]
+  // Pendientes en el backend: sin ellas el periodo se lee como Anual, ciclo 1.
+  enrollment_modality?: EnrollmentModality | null
+  cycle?: number | null
   // Agregado en V71 — antes `fn_periodo_detalle` no lo devolvía aunque
   // create/update sí lo guardaban.
   previous_period_id: number | null
@@ -70,10 +78,9 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
       defaultBlocksCount: row.default_blocks_count,
       scheduleStartTime: row.schedule_start_time?.slice(0, 5) ?? null,
       scheduleEndTime: row.schedule_end_time?.slice(0, 5) ?? null,
-      breaks: (row.descansos ?? []).map((b) => ({
-        startTime: b.startTime.slice(0, 5),
-        endTime: b.endTime.slice(0, 5),
-      })),
+      breaks: fromRecesosRows(row.recesos),
+      enrollmentModality: row.enrollment_modality ?? "ANUAL",
+      cycle: row.cycle ?? 1,
     },
   }
 }

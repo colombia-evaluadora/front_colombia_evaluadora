@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
@@ -32,7 +33,6 @@ function toUpdateRequest(
   detail: import("@/features/establishment/academic-period/api/types/academic-period").AcademicPeriodDetail,
   reservationEnabled: boolean,
 ): CreateAcademicPeriodRequest {
-  const breaks = detail.config.breaks ?? []
   return {
     FK_SEDE: Number(detail.sedeId),
     FK_ESTADO: detail.statusId ?? 0,
@@ -45,8 +45,9 @@ function toUpdateRequest(
     RESERVA: reservationEnabled ? "S" : "N",
     BLOQUES_POR_DEFECTO: detail.config.defaultBlocksCount,
     FK_PERIODO_ANTERIOR: detail.previousPeriodId,
-    DESCANSO_INICIO: breaks.map((b) => b.startTime),
-    DESCANSO_FIN: breaks.map((b) => b.endTime),
+    MODALIDAD_MATRICULA: detail.config.enrollmentModality,
+    CICLO: detail.config.cycle,
+    RECESOS: toRecesosBody(detail.config.breaks),
   }
 }
 

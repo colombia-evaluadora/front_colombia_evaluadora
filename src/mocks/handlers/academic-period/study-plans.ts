@@ -20,6 +20,11 @@ interface StudyPlanWriteBody {
   FK_CRITERIO_NOTA: number | null
 }
 
+function areaNameOf(asignaturaId: number): string | null {
+  const subject = subjectsDb.find((s) => s.id === asignaturaId)
+  return areasDb.find((a) => a.id === subject?.areaId)?.nombreInterno ?? null
+}
+
 function toRawRow(row: StudyPlanRecord, totalCount?: number) {
   return {
     codigo: row.codigo,
@@ -28,6 +33,7 @@ function toRawRow(row: StudyPlanRecord, totalCount?: number) {
     // No hay tabla mock de énfasis (solo `enfasisId` en subjectsDb, sin
     // nombre) — real en el backend, se deja null acá.
     enfasis_nombre: null,
+    area_nombre: areaNameOf(row.asignaturaId),
     intensidad_horaria: row.intensidadHoraria,
     influencia_area: row.influenciaArea,
     numero_creditos: row.numeroCreditos,

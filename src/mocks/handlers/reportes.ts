@@ -53,6 +53,8 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   "periodos-academicos": "periodos-academicos",
   "periodos-evaluacion": "periodos-evaluacion",
   "plan-estudio": "plan-estudio",
+  "periodo-planes-estudio": "planes-de-estudio",
+  "periodo-horarios": "horarios",
   grados: "grados",
   areas: "areas",
   escalas: "escalas",

@@ -40,6 +40,9 @@ function toPromotionCriteriaRequest(gradeId: number | undefined, values: Promoti
     // cual. NO comparar con SCALES en create-rating-scales-bulk.ts: ese sí
     // es JSONB (objetos con nombre/tipoId/...) y se stringifica.
     OBLIGATORIAS: values.requiredSubjects,
+    REQUISITO_COMPLEMENTARIA: values.complementaryRequired ? "S" : "N",
+    REQUISITOS_NORMA: values.normRequirements,
+    REQUISITOS_PROPIOS: values.ownRequirements.map((r) => r.trim()),
   }
 }
 

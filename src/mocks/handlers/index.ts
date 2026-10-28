@@ -23,7 +23,9 @@ import { criteriosPrioridadHandlers } from "@/mocks/handlers/criterios-prioridad
 import { superadministradoresHandlers } from "@/mocks/handlers/superadministradores"
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
+import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
+import { academicCalendarHandlers } from "@/mocks/handlers/academic-period/academic-calendar"
 import { curriculumNodesHandlers } from "@/mocks/handlers/academic-period/curriculum-nodes"
 import { especialidadesHandlers } from "@/mocks/handlers/academic-period/especialidades"
 import { establishmentHandlers } from "@/mocks/handlers/establishments"
@@ -90,8 +92,10 @@ export const handlers = [
   ...criteriosPrioridadHandlers,
   ...superadministradoresHandlers,
   ...parametrosEdadHandlers,
+  ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,
+  ...academicCalendarHandlers,
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,
   ...selectCatalogHandlers,

@@ -23,7 +23,8 @@ function toUpdateEvaluationPeriodRequest(
   values: EvaluationPeriodFormValues
 ): UpdateEvaluationPeriodRequest {
   return {
-    CODIGO: values.codigo,
+    // La abreviación hace de código (Sección 5.1).
+    CODIGO: values.abreviacion,
     NOMBRE: values.nombre,
     ABREVIACION: values.abreviacion,
     FECHA_INICIO: values.startDate,

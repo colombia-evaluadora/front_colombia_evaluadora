@@ -14,4 +14,6 @@ export const funcionariosDb: FuncionarioRecord[] = [
   { id: 1, nombre: "Ana María Restrepo", identificacion: "1000111222" },
   { id: 2, nombre: "Carlos Andrés Gómez", identificacion: "1000333444" },
   { id: 3, nombre: "Laura Sofía Martínez", identificacion: "1000555666" },
+  { id: 4, nombre: "María López Díaz", identificacion: "1000777888" },
+  { id: 5, nombre: "Luis Castro Mejía", identificacion: "1000999000" },
 ]

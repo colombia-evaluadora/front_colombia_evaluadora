@@ -35,6 +35,10 @@ interface EvaluationCriteriaRow {
   // en PORCENTAJE_MAXIMO_RECUPERACION) — antes se leía por error del mismo
   // campo que `initial_grade`, por lo que nunca reflejaba lo guardado.
   max_recovery_grade: number | string | null
+  // Pendientes en el backend (Sección 5.6).
+  rating_scale_mode?: number | null
+  recovery_mode?: number | null
+  recovery_percentage?: number | string | null
 }
 
 interface EvaluationCriteriaResponse {
@@ -68,6 +72,10 @@ function toEvaluationCriteria(row: EvaluationCriteriaRow): EvaluationCriteria {
     maxRecoveryGrade: Number(row.max_recovery_grade) || 0,
     roundingMode: pickId(row.rounding_mode),
     initialGrade: Number(row.initial_grade) || 0,
+    ratingScaleMode: pickId(row.rating_scale_mode ?? null),
+    recoveryMode: pickId(row.recovery_mode ?? null),
+    recoveryPercentage:
+      row.recovery_percentage != null ? Number(row.recovery_percentage) : null,
   }
 }
 
