@@ -1,3 +1,5 @@
+import type { AcademicPeriodBreak } from "@/features/establishment/academic-period/api/types/academic-period"
+
 export interface Grade {
   id: number
   nombre: string
@@ -9,7 +11,19 @@ export interface Grade {
   // adicional al valor `gradoSiguiente`.
   gradoSiguienteName?: string
   tieneGradoSiguiente?: boolean
+  // Jornadas en que el estudiante puede seguir en el grado siguiente (Regla 88).
+  jornadasContinuidad?: { id: number; name: string }[]
+  // Horario propio del grado (Regla 87); con false usa el de la jornada.
+  personalizarHorario?: boolean
+  horaInicio?: string | null
+  horaFin?: string | null
+  bloques?: number | null
+  recesos?: AcademicPeriodBreak[]
+  // Los calcula el sistema con los grupos del grado.
+  gruposCount?: number
+  cupoTotal?: number
 }
+
 
 export interface GradesQueryFilters {
   nombre?: string

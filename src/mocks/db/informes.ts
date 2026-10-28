@@ -324,3 +324,44 @@ export const historialInforme: HistorialSeed[] = [
 export function registrarHistorial(entrada: Omit<HistorialSeed, "id">): void {
   historialInforme.unshift({ ...entrada, id: historialInforme.length + 1 })
 }
+
+/** Regla 71 (sso `TINFORME_DESACTUALIZADO`): informes ya emitidos que una
+ *  aprobación posterior dejó viejos, por `<grupo>-<periodo>`. 502-201 está
+ *  consolidado y luego se aprobó un Refuerzo de Matemáticas. */
+export interface CambioDesactualizadoSeed {
+  pkSolicitud: number
+  tipo: string
+  asignaturaId: number | null
+  asignatura: string | null
+  fechaAprobacion: string
+}
+
+const desactualizados = new Map<string, CambioDesactualizadoSeed[]>([
+  [
+    "502-201",
+    [
+      {
+        pkSolicitud: 7701,
+        tipo: "RECUPERACION_REFUERZO",
+        asignaturaId: 4401,
+        asignatura: "Matemáticas",
+        fechaAprobacion: "2026-10-20T10:15:00",
+      },
+    ],
+  ],
+])
+
+export function cambiosDesactualizados(grupoId: number, periodoId: number): CambioDesactualizadoSeed[] {
+  return desactualizados.get(`${grupoId}-${periodoId}`) ?? []
+}
+
+/** Reemitir limpia la marca, como el trigger del backend: el informe del grupo
+ *  todo; la planilla de una asignatura, solo lo de esa asignatura. */
+export function limpiarDesactualizado(grupoId: number, periodoId: number, asignaturaId: number | null): void {
+  const key = `${grupoId}-${periodoId}`
+  const restantes = (desactualizados.get(key) ?? []).filter(
+    (c) => asignaturaId != null && c.asignaturaId !== asignaturaId,
+  )
+  if (restantes.length > 0) desactualizados.set(key, restantes)
+  else desactualizados.delete(key)
+}

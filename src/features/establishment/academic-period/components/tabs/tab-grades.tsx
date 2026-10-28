@@ -1,119 +1,86 @@
 "use no memo"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { Button } from "@/components/ui/button"
+import { PlusIcon } from "@/components/ui/icons"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import { useDataTable } from "@/hooks/use-data-table"
+import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useGradesQuery } from "@/features/establishment/academic-period/api/query/use-grades"
-import { getErrorMessage } from "@/lib/api-client"
 import { createGradeColumns } from "@/features/establishment/academic-period/components/table/columns-grades"
-import { CreateGradeDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade"
-import { DeleteSelectedGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-grades"
-import { ExportGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-grades"
-import { ExportSelectedGradesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-grades"
-import { NoticeOutlet } from "@/components/notice/notice-context"
+import { paths } from "@/config/paths"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
 
 interface TabGradesProps {
+  // Horario de la jornada del período; el grado lo usa salvo que lo personalice.
   jornada: Jornada
   academicPeriodId?: number
 }
 
-export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
+// Pestaña Grados (Sección 5.3): el listado. Agregar y modificar abren la
+// página del grado (`periodos/$periodId/grados/...`).
+export function TabGrades({ academicPeriodId }: TabGradesProps) {
+  const navigate = useNavigate()
+  const openGrade = (gradeId: number | null) => {
+    if (academicPeriodId == null) return
+    navigate({
+      to:
+        gradeId == null
+          ? paths.app.periodosGradoAgregar.getHref(academicPeriodId)
+          : paths.app.periodosGradoEditar.getHref(academicPeriodId, gradeId),
+    })
+  }
   const [sorting, setSorting] = useState<SortingState>([])
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
 
   const { data, isPending, isError, error, refetch } = useGradesQuery({
     filters: {},
     sorting,
-    pageIndex,
-    pageSize,
+    pageIndex: 0,
+    pageSize: 200,
     academicPeriodId,
   })
 
-  const goToPage = setPageIndex
-  const changePageSize = (size: number) => {
-    setPageSize(size)
-    setPageIndex(0)
-  }
-
-  const columns = useMemo(
-    () => createGradeColumns({ jornada, academicPeriodId }),
-    [jornada, academicPeriodId],
-  )
-
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id) })
+  const page = useLocalPagination(data?.rows ?? [])
+  const { table } = useDataTable({
     columns,
-    data: data?.rows ?? [],
-    pageCount: data?.pageCount ?? -1,
+    data: page.pageRows,
     getRowId: (row) => String(row.id),
-    pageIndex,
-    pageSize,
-    goToPage,
-    setPageSize: changePageSize,
+    ...page.table,
     sorting,
     setSorting,
     columnVisibilityStorageKey: "tab-grades-column-visibility",
   })
 
-  const selectedGradeIds = useMemo(() => selectedIds.map(Number), [selectedIds])
-
-  const namesById = useMemo(
-    () => new Map((data?.rows ?? []).map((row) => [row.id, row.nombre])),
-    [data],
-  )
-
   return (
-    <>
-      <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
-        {hasSelection ? (
-          <>
-            <DeleteSelectedGradesDialog
-              selectedIds={selectedIds}
-              namesById={namesById}
-              resetSelection={resetSelection}
-            />
-            <ExportSelectedGradesDialog
-              selectedIds={selectedGradeIds}
-              resetSelection={resetSelection}
-              academicPeriodId={academicPeriodId}
-            />
-          </>
-        ) : (
-          <>
-            <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
-            <ExportGradesDialog academicPeriodId={academicPeriodId} />
-          </>
-        )}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold">Grados</h3>
+        <Button color="primary" size="sm" onClick={() => openGrade(null)}>
+          <PlusIcon data-icon="inline-start" />
+          Agregar grado
+        </Button>
       </div>
 
-      <NoticeOutlet className="mb-2" />
+      <NoticeOutlet />
 
       <DataTable
         table={table}
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Aún no hay grados."
+        emptyMessage="Aún no hay grados en este período. Use Agregar grado para crear el primero."
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
-      {data && (
-        <Pagination
-          viewOptions={<DataTableViewOptions table={table} />}
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={changePageSize}
-        />
-      )}
-    </>
+
+      <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
+    </div>
   )
 }

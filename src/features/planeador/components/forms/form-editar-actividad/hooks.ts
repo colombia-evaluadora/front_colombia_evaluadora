@@ -37,7 +37,8 @@ export function useHasGradoAsignatura(form: FormActividad): boolean {
 
 /**
  * `true` cuando la recuperación hereda de otra actividad (`destino = ACTIVIDAD` con origen
- * elegido): Grado/Grupo, Asignatura, Nombre y Estudiantes quedan bloqueados.
+ * elegido): Grado/Grupo, Asignatura, Unidad, Nombre y "¿Es sumativa?" quedan bloqueados (heredados);
+ * estudiantes, recursos, fechas e instrumento siguen editables.
  */
 export function useRecuperacionBloqueaCampos(form: FormActividad): boolean {
   const esRecuperacion = useSelector(form.store, (state) => state.values.esRecuperacion)

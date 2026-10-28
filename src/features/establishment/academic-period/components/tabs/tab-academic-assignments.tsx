@@ -1,256 +1,231 @@
 "use no memo"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { SpinnerIcon } from "@/components/ui/icons"
 
-import { Button } from "@/components/ui/button"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+import { Button } from "@/components/ui/button"
+import { InfoIcon, PlusIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
-
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
-import { SearchAcademicAssignments } from "@/features/establishment/academic-period/components/search/search-academic-assignments"
-import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-assignments"
-import { ExportSelectedAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-assignments"
-
-import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
 import { getErrorMessage } from "@/lib/api-client"
-import type {
-  EmployeeListItem,
-  EmployeeStatus,
-} from "@/features/establishment/employees/api/types/employee"
-
-import { useAssignmentSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
-import { useTeacherAssignmentsQuery } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
-import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
-import { useSaveTeacherAssignments } from "@/features/establishment/academic-period/api/mutations/save-teacher-assignments"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+
+import {
+  useDeleteAcademicAssignment,
+  useSetAcademicAssignmentStatus,
+} from "@/features/establishment/academic-period/api/mutations/academic-assignments"
+import { useAcademicAssignmentsQuery } from "@/features/establishment/academic-period/api/query/use-academic-assignments"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import type {
+  AcademicAssignment,
+  AcademicAssignmentFilters,
+} from "@/features/establishment/academic-period/api/types/academic-assignment"
+import { AcademicAssignmentDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-academic-assignment"
+import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-assignments"
+import {
+  EMPTY_ASSIGNMENT_FILTERS,
+  SearchAcademicAssignments,
+} from "@/features/establishment/academic-period/components/search/search-academic-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
-import { AssignmentTransfer } from "@/features/establishment/academic-period/components/fields/assignment-transfer"
+import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
 
 interface TabAcademicAssignmentsProps {
   academicPeriodId?: number
 }
 
+const fold = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+
+// Opciones únicas para los filtros, sacadas de las mismas asignaciones.
+function uniqueOptions(
+  rows: AcademicAssignment[],
+  value: (a: AcademicAssignment) => string,
+  label: (a: AcademicAssignment) => string,
+) {
+  return [...new Map(rows.map((a) => [value(a), label(a)]))]
+    .map(([v, l]) => ({ value: v, label: l }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+// Pestaña Asignaciones académicas (Sección 5.4): la carga académica de cada
+// docente, una fila por Docente + Grupo + Asignatura.
 export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignmentsProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
-  const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<EmployeeStatus | "">("")
   const { notify } = useNotify()
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [filters, setFilters] = useState<AcademicAssignmentFilters>(EMPTY_ASSIGNMENT_FILTERS)
+  const [dialog, setDialog] = useState<{ open: boolean; assignment: AcademicAssignment | null }>({
+    open: false,
+    assignment: null,
+  })
 
-  const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
-  // `sedeId` es string en el dominio de periodo académico; el filtro de
-  // funcionarios espera el id numérico real de la sede.
-  const campusId = academicPeriod?.sedeId ? Number(academicPeriod.sedeId) : undefined
-
-  const queryFilters = useMemo(
-    () => ({
-      search: search.trim() || undefined,
-      statuses: status ? [status] : undefined,
-      campusId,
-    }),
-    [search, status, campusId],
-  )
-
-  const [expanded, setExpanded] = useState<EmployeeListItem | null>(null)
-  const [assignedIds, setAssignedIds] = useState<Record<string, string[]>>({})
-
-  const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
-
-  const { data: savedIds, dataUpdatedAt: savedIdsUpdatedAt } = useTeacherAssignmentsQuery(
-    academicPeriodId,
-    expanded == null ? undefined : String(expanded.id),
-  )
-  // Resincroniza cada vez que la query trae datos nuevos (no solo la primera
-  // vez): si otra pestaña/diálogo invalida "teacher-assignments" (p.ej. un
-  // cambio de director de grupo en preescolar) mientras esta fila sigue
-  // expandida, sin esto el snapshot local se quedaba congelado con el valor
-  // de la primera carga hasta cerrar y volver a abrir la fila.
-  useEffect(() => {
-    if (expanded && savedIds) {
-      setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, savedIdsUpdatedAt])
-
-  // Fase 4 offline: el tab se consulta sin red, pero guardar sigue siendo solo en línea.
+  const { data: period } = useAcademicPeriodQuery(academicPeriodId)
+  const { data: jornadas = [] } = useJornadasQuery()
+  const {
+    data: assignments = [],
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useAcademicAssignmentsQuery(academicPeriodId)
+  const statusMutation = useSetAcademicAssignmentStatus()
+  const deleteMutation = useDeleteAcademicAssignment()
+  // Consulta sin red; guardar sigue siendo solo en línea.
   const soloEnLinea = useOnlineOnly()
-  const saveAssignments = useSaveTeacherAssignments({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(SUCCESS_MESSAGES.academicAssignment.updated)
+
+  // Con el período Cerrado, la carga queda de solo lectura.
+  const readOnly = period?.status === "C"
+  const jornadaName = jornadas.find((j) => j.id === period?.config.jornadaId)?.name
+  const sedeJornada = [period?.sedeName, jornadaName].filter(Boolean).join(" · ")
+  const title = [period?.sedeName, period?.startDate.slice(0, 4), jornadaName]
+    .filter(Boolean)
+    .join(" · ")
+
+  const search = fold(filters.search.trim())
+  const filtered = assignments.filter(
+    (a) =>
+      (!search || fold(a.docente).includes(search) || fold(a.asignatura).includes(search)) &&
+      (!filters.funcionarioId || a.funcionarioId === filters.funcionarioId) &&
+      (filters.gradeId === "" || a.gradeId === filters.gradeId) &&
+      (filters.subjectId === "" || a.subjectId === filters.subjectId) &&
+      (!filters.status || a.status === filters.status),
+  )
+  // Orden del lado del front: la consulta ya trae todo.
+  const [sort] = sorting
+  const sorted = sort
+    ? [...filtered].sort((a, b) => {
+        const key = (sort.id === "estado" ? "status" : sort.id) as keyof AcademicAssignment
+        const cmp = String(a[key]).localeCompare(String(b[key]), "es", { numeric: true })
+        return sort.desc ? -cmp : cmp
+      })
+    : filtered
+
+  function toggleStatus(assignment: AcademicAssignment) {
+    const next = assignment.status === "A" ? "I" : "A"
+    statusMutation.mutate(
+      { id: assignment.id, status: next },
+      {
+        onSuccess: () =>
+          notify(
+            next === "A"
+              ? SUCCESS_MESSAGES.academicAssignment.activated
+              : SUCCESS_MESSAGES.academicAssignment.deactivated,
+          ),
+        onError: (e) => notify(getErrorMessage(e), { variant: "error" }),
       },
-    },
-  })
-
-
-  const { data, isPending, isError, error, refetch } = useAssignmentTeachersQuery({
-    academicPeriodId,
-    search: queryFilters.search,
-    status,
-    sorting,
-    pageIndex,
-    pageSize,
-  })
-
-  const goToPage = setPageIndex
-  const changePageSize = (size: number) => {
-    setPageSize(size)
-    setPageIndex(0)
+    )
   }
 
-  const toggleExpand = useCallback((employee: EmployeeListItem) => {
-    setExpanded((prev) => {
-      const isClosing = prev?.id === employee.id
-      if (isClosing) {
-        setAssignedIds((current) => {
-          const { [employee.id]: _drop, ...rest } = current
-          return rest
-        })
-        return null
-      }
-      return employee
-    })
-  }, [])
+  async function deleteAssignment(assignment: AcademicAssignment) {
+    try {
+      await deleteMutation.mutateAsync({ id: assignment.id })
+      notify(SUCCESS_MESSAGES.academicAssignment.deleted)
+      return true
+    } catch (e) {
+      notify(getErrorMessage(e), { variant: "error" })
+      return false
+    }
+  }
 
-  const columns = useMemo(
-    () =>
-      createAcademicAssignmentColumns({
-        expandedId: expanded?.id ?? null,
-        onToggleExpand: toggleExpand,
-      }),
-    [expanded, toggleExpand],
-  )
-
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const page = useLocalPagination(sorted)
+  const columns = createAcademicAssignmentColumns({
+    readOnly: readOnly || soloEnLinea.disabled,
+    onEdit: (assignment) => setDialog({ open: true, assignment }),
+    onToggleStatus: toggleStatus,
+    onDelete: deleteAssignment,
+  })
+  const { table } = useDataTable({
     columns,
-    data: data?.rows ?? [],
-    pageCount: data?.pageCount ?? -1,
+    data: page.pageRows,
     getRowId: (row) => String(row.id),
-    pageIndex,
-    pageSize,
-    goToPage,
-    setPageSize: changePageSize,
+    ...page.table,
     sorting,
     setSorting,
     columnVisibilityStorageKey: "tab-academic-assignments-column-visibility",
   })
 
-  function assign(employeeId: number, ids: string[]) {
-    setAssignedIds((prev) => ({
-      ...prev,
-      [employeeId]: [...(prev[employeeId] ?? []), ...ids],
-    }))
-  }
-
-  function unassign(employeeId: number, ids: string[]) {
-    setAssignedIds((prev) => ({
-      ...prev,
-      [employeeId]: (prev[employeeId] ?? []).filter((id) => !ids.includes(id)),
-    }))
-  }
+  const hasFilters = filters.search !== "" || filtered.length !== assignments.length
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
-        <SearchAcademicAssignments
-          search={search}
-          onSearchChange={(value) => {
-            setSearch(value)
-            setPageIndex(0)
-          }}
-          status={status}
-          onStatusChange={(value) => {
-            setStatus(value)
-            setPageIndex(0)
-          }}
-        />
+      <h3 className="text-base font-medium">
+        Asignaciones académicas{title ? ` de ${title}` : ""}
+      </h3>
 
-        <div className="flex gap-2">
-          {hasSelection ? (
-            <ExportSelectedAcademicAssignmentsDialog
-              selectedIds={selectedIds.map(Number)}
-              resetSelection={resetSelection}
-              academicPeriodId={academicPeriodId}
-            />
-          ) : (
-            <ExportAcademicAssignmentsDialog academicPeriodId={academicPeriodId} />
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+        <SearchAcademicAssignments
+          filters={filters}
+          onFiltersChange={setFilters}
+          teachers={uniqueOptions(
+            assignments,
+            (a) => a.funcionarioId,
+            (a) => a.docente,
+          )}
+          grades={uniqueOptions(
+            assignments,
+            (a) => String(a.gradeId),
+            (a) => a.grado,
+          )}
+          subjects={uniqueOptions(
+            assignments,
+            (a) => String(a.subjectId),
+            (a) => a.asignatura,
+          )}
+        />
+        <div className="flex items-center gap-2">
+          <ExportAcademicAssignmentsDialog academicPeriodId={academicPeriodId} />
+          {!readOnly && (
+            <Button
+              color="primary"
+              size="sm"
+              disabled={soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
+              onClick={() => setDialog({ open: true, assignment: null })}
+            >
+              <PlusIcon data-icon="inline-start" />
+              Nueva asignación
+            </Button>
           )}
         </div>
       </div>
+
+      <NoticeOutlet />
+
+      {readOnly && (
+        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+          <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
+          El período está cerrado: las asignaciones académicas son de solo lectura.
+        </p>
+      )}
 
       <DataTable
         table={table}
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Sin docentes."
+        emptyMessage={
+          hasFilters
+            ? "Ninguna asignación coincide con la búsqueda. Pruebe con otros filtros."
+            : "Aún no hay asignaciones académicas en este período. Use Nueva asignación para registrar la carga de los Responsables de enseñanza."
+        }
         errorMessage={error ? getErrorMessage(error) : undefined}
-        cellClassName="py-1.5"
-        renderSubRow={(row) => {
-          const employee = row.original as EmployeeListItem
-          if (expanded?.id !== employee.id) return null
-          const ids = new Set(assignedIds[employee.id] ?? [])
-          const assigned = pool.filter((s) => ids.has(s.id))
-          const available = pool.filter(
-            (s) =>
-              !ids.has(s.id) &&
-              (s.funcionarioId == null || s.funcionarioId === String(employee.id)),
-          )
-          return (
-            <div className="-m-4 flex flex-col gap-4 bg-background p-4">
-              <NoticeOutlet />
-              <AssignmentTransfer
-                available={available}
-                assigned={assigned}
-                onAssign={(nextIds) => assign(employee.id, nextIds)}
-                onUnassign={(nextIds) => unassign(employee.id, nextIds)}
-              />
-              <div className="-mx-4 -mb-4 flex justify-end border-t bg-background px-4 py-3">
-                <Button
-                  type="button"
-                  color="primary"
-                  size="sm"
-                  disabled={saveAssignments.isPending || soloEnLinea.disabled}
-                  title={soloEnLinea.tooltip ?? undefined}
-                  aria-busy={saveAssignments.isPending}
-                  onClick={() =>
-                    saveAssignments.mutate({
-                      academicPeriodId: academicPeriodId as number,
-                      funcionarioId: String(employee.id),
-                      subjectIds: assignedIds[employee.id] ?? [],
-                    })
-                  }
-                >
-                  {saveAssignments.isPending && (
-                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                  )}
-                  Guardar asignaturas
-                </Button>
-              </div>
-            </div>
-          )
-        }}
       />
-      {data && (
-        <Pagination
-          viewOptions={<DataTableViewOptions table={table} />}
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={changePageSize}
+      <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
+
+      {academicPeriodId != null && (
+        <AcademicAssignmentDialog
+          key={dialog.assignment?.id ?? "new"}
+          open={dialog.open}
+          onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
+          academicPeriodId={academicPeriodId}
+          sedeJornada={sedeJornada}
+          assignment={dialog.assignment}
         />
       )}
     </div>

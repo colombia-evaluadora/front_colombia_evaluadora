@@ -24,6 +24,8 @@ interface CeldaRow {
   solicitudPendiente?: boolean | null
   notaAnterior?: number | null
   observacionPropuesta?: string | null
+  notaOriginal?: number | null
+  notaRefuerzo?: number | null
   esEvaluativa: boolean | null
   ponderacion: number | null
   notaMaxima: number | null
@@ -55,6 +57,8 @@ function toCelda(row: CeldaRow): CeldaPlanilla {
     solicitudPendiente: row.solicitudPendiente === true,
     notaAnterior: row.notaAnterior ?? null,
     observacionPropuesta: row.observacionPropuesta ?? null,
+    notaOriginal: row.notaOriginal ?? null,
+    notaRefuerzo: row.notaRefuerzo ?? null,
     esEvaluativa: row.esEvaluativa ?? true,
     ponderacion: row.ponderacion,
     notaMaxima: row.notaMaxima,

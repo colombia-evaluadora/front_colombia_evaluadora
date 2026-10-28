@@ -14,6 +14,7 @@ import type {
 } from "@/features/academic-management/reports/utils/agrupar-filas"
 import type { MarcasPeriodo } from "@/features/academic-management/reports/utils/periodos-marcados"
 import { EtiquetaPeriodoMarcable } from "@/features/academic-management/reports/components/marca-periodo"
+import { NotaRecuperada } from "@/features/academic-management/reports/components/table/nota-recuperada"
 import {
   CeldaUltimaActualizacion,
   EncabezadoUltimaActualizacion,
@@ -70,28 +71,25 @@ function CeldaRecuperada({ asignatura }: { asignatura: AsignaturaInforme }) {
     )
 
   return (
-    <Tooltip>
-      <TooltipTrigger className="inline-flex flex-col items-center gap-0.5 leading-tight outline-none">
-        <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1 font-medium">
-          <span className="text-[10px] text-muted-foreground">R</span>
-          {valor(asignatura.nota, asignatura.valoracion, asignatura.simbolo)}
-        </span>
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <span className="text-[10px]">C</span>
-          {valor(asignatura.notaOriginal, asignatura.valoracionOriginal, asignatura.simboloOriginal)}
-          {propone && asignatura.esNumerico && (
-            <span className="italic">
-              → {asignatura.notaPropuesta != null ? formatNota(asignatura.notaPropuesta) : "sin nota"}
-            </span>
-          )}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>
-        {propone
+    <NotaRecuperada
+      vigente={valor(asignatura.nota, asignatura.valoracion, asignatura.simbolo)}
+      original={valor(asignatura.notaOriginal, asignatura.valoracionOriginal, asignatura.simboloOriginal)}
+      etiquetaVigente="R"
+      etiquetaOriginal="C"
+      extraOriginal={
+        propone &&
+        asignatura.esNumerico && (
+          <span className="italic">
+            → {asignatura.notaPropuesta != null ? formatNota(asignatura.notaPropuesta) : "sin nota"}
+          </span>
+        )
+      }
+      tooltip={
+        propone
           ? "Nota recuperada (R) y original (C). El docente cambió la nota después de consolidar: al guardar, la recuperación se vuelve a aplicar sobre la nueva original."
-          : "Nota recuperada (R) y nota original antes de la recuperación (C). El promedio usa la R."}
-      </TooltipContent>
-    </Tooltip>
+          : "Nota recuperada (R) y nota original antes de la recuperación (C). El promedio usa la R."
+      }
+    />
   )
 }
 

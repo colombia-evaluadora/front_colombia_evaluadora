@@ -24,6 +24,7 @@ async function createAreaSubject(
     NOMBRE_INTERNO: input.nombreInterno,
     ABREVIACION: input.abreviacion,
     ORDEN_REPORTES: input.ordenReportes,
+    ...(input.color ? { COLOR: input.color } : {}),
   })
   const areaId = extractWriteResultId(areaRaw)
 

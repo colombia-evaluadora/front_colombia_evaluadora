@@ -1,16 +1,14 @@
 ﻿"use no memo"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useState } from "react"
+import type { SortingState } from "@tanstack/react-table"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
-import type { SortingState } from "@tanstack/react-table"
-import { PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { FieldVariantContext } from "@/hooks/use-field-variant"
+import { Badge } from "@/components/ui/badge"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -19,599 +17,284 @@ import {
   ComboboxFieldValue,
   ComboboxGroup,
 } from "@/components/ui/combobox"
-import { DataTable } from "@/components/data-table"
-import { TableCell } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { PlusIcon, WarningIcon } from "@/components/ui/icons"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
+import { cn } from "@/lib/utils"
 
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
-import { useRatingScaleTypesQuery, useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
-import { useUpdateRatingScale } from "@/features/establishment/academic-period/api/mutations/update-rating-scale"
-import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
+import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { useDeleteRatingScale } from "@/features/establishment/academic-period/api/mutations/delete-rating-scale"
 import {
   bandaIdForLevel,
   type RatingScale,
-  type RatingScaleType,
-  type TeachingLevel,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
-import { CreateRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-rating-scale"
-import { DeleteSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scales"
-import { DeleteSelectedRatingScaleValoracionesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scale-valoraciones"
-import { ExportRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-rating-scales"
-import { ExportSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-rating-scales"
-import { RatingSymbolSelect } from "@/features/establishment/academic-period/components/fields/rating-symbol"
-import { createRatingScaleLevelColumns } from "@/features/establishment/academic-period/components/table/columns-rating-scales"
+import { RatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-rating-scale"
 import {
-  createRatingScaleDetailColumns,
-  type CreateRatingScaleDetailColumnsOptions,
-  toScaleDraft,
-  type EditableScale,
-} from "@/features/establishment/academic-period/components/table/columns-rating-scale-detail"
+  createRatingScaleColumns,
+  getScaleColors,
+  heatColor,
+  heatPastel,
+} from "@/features/establishment/academic-period/components/table/columns-rating-scales"
+import { parseGradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 import {
-  makeRatingScaleGradesSchema,
-  parseGradingRange,
-  RATING_SCALE_DESCRIPCION_MAX,
-  type GradingRange,
-} from "@/features/establishment/academic-period/utils/grading-range"
-import {
-  findDuplicateRatingScale,
-  findOverlappingRatingScale,
-  ratingScaleDuplicateMessage,
-  ratingScaleOverlapMessage,
-} from "@/features/establishment/academic-period/utils/rating-scale-duplicates"
-import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
+  coverageIssueMessage,
+  formatGrade,
+  getCoverageIssues,
+} from "@/features/establishment/academic-period/utils/rating-scale-coverage"
 
 interface TabRatingScalesProps {
   academicPeriodId?: number
 }
 
 export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
-  const {
-    data,
-    isPending: scalesPending,
-    isError,
-    error,
-    refetch,
-  } = useRatingScalesQuery({
+  const { notify } = useNotify()
+  const deleteMutation = useDeleteRatingScale()
+  const { data, isPending, isError, error, refetch } = useRatingScalesQuery({
     filters: {},
     sorting: [],
     academicPeriodId,
   })
-
+  const { data: levels = [] } = useTeachingLevelsQuery()
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
-  const range = useMemo(() => parseGradingRange(criteria?.gradingFormatName), [criteria])
+  const { data: criteriaOptions } = useEvaluationCriteriaOptionsQuery()
 
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [sorting, setSorting] = useState<SortingState>([])
+  const range = parseGradingRange(criteria?.gradingFormatName)
+  // Regla 50: con una sola escala no hay filtro ni campo de nivel.
+  const scaleModeLabel = criteriaOptions?.ratingScaleMode.find(
+    (o) => o.key === criteria?.ratingScaleMode,
+  )?.label
+  const singleScale = scaleModeLabel?.toLowerCase().startsWith("una sola") ?? false
 
   const scales = data?.rows ?? []
+  const [pickedLevelId, setPickedLevelId] = useState<number | null>(null)
+  // Arranca en el primer nivel que ya tiene valoraciones.
+  const levelId =
+    pickedLevelId ??
+    levels.find((l) => scales.some((s) => s.teachingLevelIds.includes(l.id)))?.id ??
+    levels[0]?.id ??
+    null
 
-  const levels = useMemo(() => {
-    const map = new Map<number, TeachingLevel>()
-    for (const scale of scales) {
-      for (const lvl of scale.teachingLevels) {
-        map.set(lvl.id, lvl)
-      }
+  function scalesForLevel(id: number | null): RatingScale[] {
+    if (singleScale || id == null) return scales
+    return scales.filter((s) => s.teachingLevelIds.includes(id))
+  }
+
+  const visible = scalesForLevel(levelId)
+  const [sorting, setSorting] = useState<SortingState>([])
+  const rows = sorting.length
+    ? [...visible].sort((a, b) => {
+        const [{ id, desc }] = sorting
+        const av = a[id as keyof RatingScale]
+        const bv = b[id as keyof RatingScale]
+        const cmp =
+          typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv))
+        return desc ? -cmp : cmp
+      })
+    : [...visible].sort((a, b) => b.notaMinima - a.notaMinima)
+
+  const [dialog, setDialog] = useState<{ key: number; scale: RatingScale | null } | null>(null)
+  const openDialog = (scale: RatingScale | null) =>
+    setDialog((prev) => ({ key: (prev?.key ?? 0) + 1, scale }))
+
+  async function deleteScale(scale: RatingScale): Promise<boolean> {
+    // Con una sola escala la valoración tiene una banda por nivel: se borran todas.
+    const ids = singleScale ? scale.bandaIdsByLevel : [bandaIdForLevel(scale, levelId ?? 0)]
+    try {
+      for (const id of ids) await deleteMutation.mutateAsync(id)
+      notify(SUCCESS_MESSAGES.ratingScale.deleted)
+      return true
+    } catch (e) {
+      notify(getErrorMessage(e), { variant: "error" })
+      return false
     }
-    return Array.from(map.values())
-  }, [scales])
+  }
 
-  const sortedLevels = useMemo(() => {
-    if (!sorting.length) return levels
-    const [{ id, desc }] = sorting
-    const copy = [...levels].sort((a, b) =>
-      String(a[id as keyof TeachingLevel]).localeCompare(String(b[id as keyof TeachingLevel])),
-    )
-    return desc ? copy.reverse() : copy
-  }, [levels, sorting])
-
-  const toggleExpand = useCallback((level: TeachingLevel) => {
-    setExpandedId((prev) => (prev === level.id ? null : level.id))
-  }, [])
-
-  const columns = useMemo(
-    () =>
-      createRatingScaleLevelColumns({
-        expandedId,
-        onToggleExpand: toggleExpand,
-      }),
-    [expandedId, toggleExpand],
-  )
-
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const colors = getScaleColors(visible)
+  const columns = createRatingScaleColumns({ colors, onEdit: openDialog, onDelete: deleteScale })
+  const page = useLocalPagination(rows)
+  const { table } = useDataTable({
     columns,
-    data: sortedLevels,
-    pageCount: 1,
-    getRowId: (level) => String(level.id),
-    pageIndex: 0,
-    pageSize: 10,
-    goToPage: () => {},
-    setPageSize: () => {},
+    data: page.pageRows,
+    getRowId: (scale) => String(scale.codigo),
+    ...page.table,
     sorting,
     setSorting,
     columnVisibilityStorageKey: "tab-rating-scales-column-visibility",
   })
 
-  const selectedScaleCodigos = useMemo(() => {
-    const selected = new Set(selectedIds)
-    const codigos = new Set<number>()
-    for (const scale of scales) {
-      if (scale.teachingLevelIds.some((id) => selected.has(String(id)))) {
-        codigos.add(scale.codigo)
-      }
-    }
-    return Array.from(codigos)
-  }, [selectedIds, scales])
-
-  const selectedTeachingLevelIds = useMemo(
-    () => selectedIds.map((id) => Number(id)),
-    [selectedIds],
-  )
-
-  const levelNamesById = useMemo(
-    () => new Map(levels.map((level) => [level.id, level.nombre])),
-    [levels],
-  )
-
-  function scalesForLevel(levelId: number): RatingScale[] {
-    return scales.filter((scale) => scale.teachingLevelIds.includes(levelId))
-  }
+  const issues = getCoverageIssues(visible, range)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end gap-2 border-b border-border pb-4">
-        {hasSelection ? (
-          <>
-            <DeleteSelectedRatingScalesDialog
-              academicPeriodId={academicPeriodId ?? 0}
-              levelCount={selectedIds.length}
-              teachingLevelIds={selectedTeachingLevelIds}
-              namesById={levelNamesById}
-              resetSelection={resetSelection}
-            />
-            <ExportSelectedRatingScalesDialog
-              levelCount={selectedIds.length}
-              scaleCodigos={selectedScaleCodigos}
-              resetSelection={resetSelection}
-              academicPeriodId={academicPeriodId}
-            />
-          </>
-        ) : (
-          <>
-            <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
-            <ExportRatingScalesDialog academicPeriodId={academicPeriodId} />
-          </>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <h3 className="text-lg font-semibold">Escalas de valoración</h3>
+        {!singleScale && (
+          <Field variant="outlined" className="w-full sm:w-60">
+            <FieldLabel htmlFor="rating-scale-level">Nivel de enseñanza</FieldLabel>
+            <ComboboxField
+              items={Object.fromEntries(levels.map((l) => [String(l.id), l.nombre]))}
+              value={levelId != null ? String(levelId) : ""}
+              onValueChange={(value) => value && setPickedLevelId(Number(value))}
+            >
+              <ComboboxFieldTrigger id="rating-scale-level" size="sm">
+                <ComboboxFieldValue placeholder="Seleccionar" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
+                <ComboboxGroup>
+                  {levels.map((l) => (
+                    <ComboboxFieldItem key={l.id} value={String(l.id)}>
+                      {l.nombre}
+                    </ComboboxFieldItem>
+                  ))}
+                </ComboboxGroup>
+              </ComboboxFieldContent>
+            </ComboboxField>
+          </Field>
         )}
+        <Button color="primary" size="sm" className="ml-auto" onClick={() => openDialog(null)}>
+          <PlusIcon data-icon="inline-start" />
+          Agregar valoración
+        </Button>
       </div>
 
       <NoticeOutlet />
 
       <DataTable
         table={table}
-        isPending={scalesPending}
+        isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        cellClassName="px-1"
         growColumnId="nombre"
-        growColumnClassName="pl-6"
-        emptyMessage="Aún no se agregaron escalas de valoración."
+        emptyMessage="Aún no hay valoraciones para este nivel. Use Agregar valoración para crear la escala."
         errorMessage={error ? getErrorMessage(error) : undefined}
-        renderSubRow={(row) => {
-          const level = row.original as TeachingLevel
-          if (expandedId !== level.id) return null
-          return (
-            <div className="min-w-full max-w-0">
-              <ScalesSubTable
-                levelId={level.id}
-                scales={scalesForLevel(level.id)}
-                range={range}
-                academicPeriodId={academicPeriodId}
-              />
-            </div>
-          )
-        }}
       />
+
+      <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
+
+      {!isPending && !isError && (
+        <ScaleCoverage scales={visible} range={range} issues={issues.map(coverageIssueMessage)} />
+      )}
+
+      {dialog && (
+        <RatingScaleDialog
+          key={dialog.key}
+          open
+          onOpenChange={(open) => !open && setDialog(null)}
+          academicPeriodId={academicPeriodId}
+          range={range}
+          singleScale={singleScale}
+          levels={levels}
+          levelId={levelId}
+          scale={dialog.scale}
+          scalesForLevel={scalesForLevel}
+        />
+      )}
     </div>
   )
 }
 
-type ScaleDraft = EditableScale
+// Marca de la escala: entero sin decimales ("6"), si no con un decimal ("6,5").
+const tick = (n: number) => (Number.isInteger(n) ? String(n) : formatGrade(n))
 
-function makeEmptyScaleDraft(range: GradingRange): ScaleDraft {
-  return {
-    nombre: "",
-    abreviacion: "",
-    notaMaxima: range.max,
-    notaMinima: range.min,
-    notaEquivalente: range.min,
-    tipo: "" as RatingScaleType,
-    iconografia: "",
-    descripcion: "",
-  }
-}
-
-function ScalesSubTable({
-  levelId,
+// Barra de cobertura (Regla 51) como mapa de calor: debajo va el degradado
+// completo del formato, atenuado, y cada valoración pinta su tramo con el color
+// del punto donde cae. Los huecos dejan ver el degradado pálido y los cruces se
+// notan porque un tramo tapa al otro.
+function ScaleCoverage({
   scales,
   range,
-  academicPeriodId,
+  issues,
 }: {
-  levelId: number
   scales: RatingScale[]
-  range: GradingRange
-  academicPeriodId?: number
+  range: { min: number; max: number }
+  issues: string[]
 }) {
-  const { notify } = useNotify()
-  const { data: symbols = [] } = useRatingSymbolsQuery()
-  const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [addDraft, setAddDraft] = useState<ScaleDraft>(() => makeEmptyScaleDraft(range))
-  function patchAddDraft(patch: Partial<ScaleDraft>) {
-    setAddDraft((prev) => ({ ...prev, ...patch }))
-  }
-
-  const createMutation = useCreateRatingScalesBulk({
-    mutationConfig: {
-      onSuccess: () => {
-        notify(SUCCESS_MESSAGES.ratingScale.created)
-        setAddDraft(makeEmptyScaleDraft(range))
-      },
-      onError: () => {
-        notify("No se pudo agregar la escala de valoración.", {
-          variant: "error",
-        })
-      },
-    },
-  })
-
-  function isAddDraftComplete(value: ScaleDraft): boolean {
-    return (
-      value.nombre.trim() !== "" &&
-      value.abreviacion.trim() !== "" &&
-      value.tipo.trim() !== "" &&
-      value.iconografia.trim() !== "" &&
-      Number.isFinite(value.notaMaxima) &&
-      Number.isFinite(value.notaMinima) &&
-      Number.isFinite(value.notaEquivalente)
-    )
-  }
-
-  function commitDraft() {
-    const parsed = makeRatingScaleGradesSchema(range).safeParse(addDraft)
-    if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
-        variant: "error",
-      })
-      return
-    }
-    const duplicate = findDuplicateRatingScale(parsed.data, scales)
-    if (duplicate) {
-      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
-      notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
-      return
-    }
-    const overlapping = findOverlappingRatingScale(parsed.data, scales)
-    if (overlapping) {
-      notify(ratingScaleOverlapMessage(overlapping), { variant: "error" })
-      return
-    }
-    createMutation.mutate({
-      teachingLevelIds: [levelId],
-      scales: [{ ...parsed.data, tipo: parsed.data.tipo as RatingScaleType }],
-      academicPeriodId,
-    })
-  }
-
-  const sortedScales = useMemo(() => {
-    if (!sorting.length) return scales
-    const [{ id, desc }] = sorting
-    const copy = [...scales].sort((a, b) => {
-      const av = a[id as keyof RatingScale]
-      const bv = b[id as keyof RatingScale]
-      if (typeof av === "number" && typeof bv === "number") return av - bv
-      return String(av).localeCompare(String(bv))
-    })
-    return desc ? copy.reverse() : copy
-  }, [scales, sorting])
-
-  const {
-    editingKey: editingCodigo,
-    draft,
-    startEdit: startRowEdit,
-    patchDraft,
-    cancelEdit,
-  } = useRowEdit<EditableScale>()
-
-  const updateMutation = useUpdateRatingScale({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(SUCCESS_MESSAGES.ratingScale.updated)
-        cancelEdit()
-      },
-    },
-  })
-
-  function startEdit(scale: RatingScale) {
-    startRowEdit(scale.codigo, toScaleDraft(scale))
-  }
-
-  function saveEdit(scale: RatingScale) {
-    if (!draft) return
-    const parsed = makeRatingScaleGradesSchema(range).safeParse(draft)
-    if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
-        variant: "error",
-      })
-      return
-    }
-    const duplicate = findDuplicateRatingScale(
-      parsed.data,
-      scales,
-      (s) => s.codigo === scale.codigo,
-    )
-    if (duplicate) {
-      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
-      notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
-      return
-    }
-    const overlapping = findOverlappingRatingScale(
-      parsed.data,
-      scales.filter((s) => s.codigo !== scale.codigo),
-    )
-    if (overlapping) {
-      notify(ratingScaleOverlapMessage(overlapping), { variant: "error" })
-      return
-    }
-    if (academicPeriodId == null) return
-    updateMutation.mutate({
-      codigo: bandaIdForLevel(scale, levelId),
-      academicPeriodId,
-      values: {
-        ...scale,
-        ...parsed.data,
-        tipo: parsed.data.tipo as RatingScaleType,
-      },
-    })
-  }
-
-  const columnOptionsRef = useRef({} as CreateRatingScaleDetailColumnsOptions)
-  columnOptionsRef.current = {
-    range,
-    symbols,
-    tipoOptions,
-    levelId,
-    editingCodigo,
-    draft,
-    patchDraft,
-    onStartEdit: startEdit,
-    onSave: saveEdit,
-    onCancel: cancelEdit,
-    isSaving: updateMutation.isPending,
-  }
-
-  const columns = useMemo(() => createRatingScaleDetailColumns(columnOptionsRef), [])
-
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
-    columns,
-    data: sortedScales,
-    pageCount: 1,
-    getRowId: (scale) => String(scale.codigo),
-    pageIndex: 0,
-    pageSize: 10,
-    goToPage: () => {},
-    setPageSize: () => {},
-    sorting,
-    setSorting,
-    columnVisibilityStorageKey: "tab-rating-scales-detail-column-visibility",
-  })
-
-  const selectedValoracionIds = useMemo(
-    () =>
-      selectedIds
-        .map((id) => scales.find((scale) => String(scale.codigo) === id))
-        .filter((scale): scale is RatingScale => scale != null)
-        .map((scale) => bandaIdForLevel(scale, levelId)),
-    [selectedIds, scales, levelId],
-  )
-
-  const valoracionNamesById = useMemo(
-    () => new Map(scales.map((scale) => [bandaIdForLevel(scale, levelId), scale.nombre])),
-    [scales, levelId],
-  )
+  const span = range.max - range.min || 1
+  const pos = (n: number) => ((n - range.min) / span) * 100
+  const sorted = [...scales].sort((a, b) => a.notaMinima - b.notaMinima)
+  // Marcas: los bordes del formato y el inicio de cada valoración.
+  const ticks = Array.from(
+    new Set([range.min, ...sorted.map((s) => s.notaMinima), range.max].map((n) => Math.round(n * 10) / 10)),
+  ).sort((a, b) => a - b)
+  const complete = scales.length > 0 && issues.length === 0
 
   return (
-    <div className="-m-4 bg-background p-4">
-      {hasSelection && (
-        <div className="mb-2 flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-1 text-sm">
-          <span>
-            {selectedIds.length === 1
-              ? "1 valoración seleccionada"
-              : `${selectedIds.length} valoraciones seleccionadas`}
-          </span>
-          <DeleteSelectedRatingScaleValoracionesDialog
-            valoracionCount={selectedIds.length}
-            valoracionIds={selectedValoracionIds}
-            namesById={valoracionNamesById}
-            resetSelection={resetSelection}
-          />
-        </div>
+    <section aria-label="Cobertura de la escala" className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-medium">
+          Cobertura de la escala (de {tick(range.min)} a {tick(range.max)})
+        </h4>
+        {complete ? (
+          <Badge variant="soft" color="success" className="border border-current/30">
+            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+            Completa: sin huecos ni cruces
+          </Badge>
+        ) : null}
+      </div>
+
+      <div
+        className="relative h-7 overflow-hidden rounded-md"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${[0, 0.25, 0.5, 0.75, 1].map(heatColor).join(", ")})`,
+        }}
+      >
+        <div aria-hidden className="absolute inset-0 bg-background/75" />
+        {sorted.map((s, i) => {
+          const left = pos(s.notaMinima)
+          // El tramo llega hasta donde empieza la nota siguiente (máximo + 0,1).
+          const right = pos(Math.min(s.notaMaxima + 0.1, range.max))
+          return (
+            <div
+              key={s.codigo}
+              title={`${s.nombre}: ${formatGrade(s.notaMinima)} a ${formatGrade(s.notaMaxima)}`}
+              className={cn(
+                "absolute inset-y-0 flex items-center justify-center overflow-hidden border-r-2 border-background text-xs font-medium whitespace-nowrap",
+              )}
+              style={{
+                left: `${left}%`,
+                width: `${Math.max(0, right - left)}%`,
+                ...heatPastel(sorted.length === 1 ? 1 : i / Math.max(1, sorted.length - 1)),
+              }}
+            >
+              {s.nombre}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="relative h-4 text-xs text-muted-foreground tabular-nums">
+        {ticks.map((t) => {
+          const p = pos(t)
+          return (
+            <span
+              key={t}
+              className="absolute"
+              style={{
+                left: `${p}%`,
+                transform: p === 0 ? "none" : p === 100 ? "translateX(-100%)" : "translateX(-50%)",
+              }}
+            >
+              {tick(t)}
+            </span>
+          )
+        })}
+      </div>
+
+      {issues.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {issues.map((issue) => (
+            <li key={issue} className="flex items-start gap-2 text-sm text-orange">
+              <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {issue}
+            </li>
+          ))}
+        </ul>
       )}
-      <FieldVariantContext.Provider value="outlined">
-        <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
-          <DataTable
-            table={table}
-            isPending={false}
-            isError={false}
-            onRetry={() => {}}
-            emptyMessage="Aún no se agregaron escalas de valoración."
-            isRowActive={(row) => (row.original as RatingScale).codigo === editingCodigo}
-            insideSubRow
-            footerRow={({ spacer, actionsCellClassName, actionsOverlayClassName }) => (
-              <>
-                <TableCell />
-                <TableCell>
-                  <Input
-                    aria-label="Nombre"
-                    placeholder="Agregar"
-                    value={addDraft.nombre}
-                    onChange={(e) => patchAddDraft({ nombre: e.target.value })}
-                    className="min-w-32"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Abreviación"
-                    placeholder="Agregar"
-                    value={addDraft.abreviacion}
-                    onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
-                    className="min-w-24"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Nota máximo"
-                    placeholder="Agregar"
-                    type="number"
-                    step="0.1"
-                    min={range.min}
-                    max={range.max}
-                    value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
-                    onKeyDown={(e) => {
-                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                    }}
-                    onChange={(e) => {
-                      const value = e.target.valueAsNumber
-                      if (e.target.value === "" || !Number.isNaN(value)) {
-                        patchAddDraft({ notaMaxima: value })
-                      }
-                    }}
-                    className="w-20"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Nota mínimo"
-                    placeholder="Agregar"
-                    type="number"
-                    step="0.1"
-                    min={range.min}
-                    max={range.max}
-                    value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
-                    onKeyDown={(e) => {
-                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                    }}
-                    onChange={(e) => {
-                      const value = e.target.valueAsNumber
-                      if (e.target.value === "" || !Number.isNaN(value)) {
-                        patchAddDraft({ notaMinima: value })
-                      }
-                    }}
-                    className="w-20"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    aria-label="Nota equivalente"
-                    placeholder="Agregar"
-                    type="number"
-                    step="0.1"
-                    min={range.min}
-                    max={range.max}
-                    value={Number.isNaN(addDraft.notaEquivalente) ? "" : addDraft.notaEquivalente}
-                    onKeyDown={(e) => {
-                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                    }}
-                    onChange={(e) => {
-                      const value = e.target.valueAsNumber
-                      if (e.target.value === "" || !Number.isNaN(value)) {
-                        patchAddDraft({ notaEquivalente: value })
-                      }
-                    }}
-                    className="w-20"
-                  />
-                </TableCell>
-                <TableCell>
-                  <ComboboxField
-                    value={addDraft.tipo}
-                    onValueChange={(value) =>
-                      value && patchAddDraft({ tipo: value as RatingScaleType })
-                    }
-                  >
-                    <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
-                      <ComboboxFieldValue>
-                        {(value) =>
-                          tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
-                        }
-                      </ComboboxFieldValue>
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {tipoOptions.map((option) => (
-                          <ComboboxFieldItem key={option.key} value={option.key}>
-                            {option.label}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                </TableCell>
-                <TableCell>
-                  <RatingSymbolSelect
-                    symbols={symbols}
-                    value={addDraft.iconografia}
-                    onChange={(valor) => patchAddDraft({ iconografia: valor })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Textarea
-                    aria-label="Descripción"
-                    placeholder="Opcional"
-                    maxLength={RATING_SCALE_DESCRIPCION_MAX}
-                    rows={2}
-                    value={addDraft.descripcion ?? ""}
-                    onChange={(e) => patchAddDraft({ descripcion: e.target.value })}
-                    className="min-w-48"
-                  />
-                </TableCell>
-                {spacer}
-                <TableCell className={actionsCellClassName}>
-                  <div className={actionsOverlayClassName}>
-                    {isAddDraftComplete(addDraft) && (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            type="button"
-                            color="primary"
-                            size="icon-sm"
-                            aria-label="Agregar escala de valoración a este nivel"
-                            disabled={editingCodigo !== null || createMutation.isPending}
-                            aria-busy={createMutation.isPending}
-                            onClick={commitDraft}
-                          />
-                        }
-                      >
-                        {createMutation.isPending ? (
-                          <SpinnerIcon className="animate-spin" />
-                        ) : (
-                          <PlusIcon weight="bold" />
-                        )}
-                      </TooltipTrigger>
-                      <TooltipContent>Agregar escala de valoración a este nivel</TooltipContent>
-                    </Tooltip>
-                    )}
-                  </div>
-                </TableCell>
-              </>
-            )}
-          />
-        </div>
-      </FieldVariantContext.Provider>
-    </div>
+    </section>
   )
 }

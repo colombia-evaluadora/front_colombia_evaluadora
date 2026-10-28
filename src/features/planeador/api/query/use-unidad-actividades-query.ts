@@ -4,7 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
-import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
+import { motivoNoEditableDeFila, tieneResultadosDeFila } from "@/features/planeador/lib/actividad-editable"
 
 /**
  * `GET /planeador/unidades/:id/actividades` (real —
@@ -35,6 +35,8 @@ interface UnidadActividadRow {
    *  sigue rechazando el cambio con su motivo. */
   editable?: "S" | "N" | null
   motivo_no_editable?: string | null
+  /** Reglas 38/39 (sso V553/V492.4): 'S' si tiene resultados; "Eliminar" llega deshabilitado. */
+  tiene_resultados?: "S" | "N" | null
 }
 
 function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
@@ -53,6 +55,7 @@ function toUnidadActividad(row: UnidadActividadRow): UnidadActividad {
     ponderacion: row.ponderacion ?? 0,
     notaMaxima: row.nota_maxima,
     motivoNoEditable: motivoNoEditableDeFila(row),
+    tieneResultados: tieneResultadosDeFila(row),
   }
 }
 

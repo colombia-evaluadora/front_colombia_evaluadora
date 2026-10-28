@@ -11,6 +11,7 @@ export interface AcademicPeriod {
   id: number
   sedeId: string
   sedeName: string
+  jornadaName?: string
   previousPeriodId: number | null
   previousPeriodName?: string | null
   schoolYearId: number
@@ -30,12 +31,20 @@ export interface AcademicPeriod {
   scheduleStartTime?: string | null
   scheduleEndTime?: string | null
   breaks?: AcademicPeriodBreak[]
+  enrollmentModality?: EnrollmentModality
+  cycle?: number
 }
 
+/** Receso de la jornada: aparece en el horario con su etiqueta (p. ej. "Recreo"). */
 export interface AcademicPeriodBreak {
-  startTime: string
-  endTime: string
+  label: string
+  // "INICIO", "FINAL" o el número del bloque tras el que va (Regla 28).
+  location: string
+  durationMinutes: number | null
 }
+
+/** Modalidad de matrícula: cuántos ciclos tiene el año (Regla 14). */
+export type EnrollmentModality = "ANUAL" | "SEMESTRAL" | "TRIMESTRAL" | "BIMESTRAL"
 
 export interface PreviousPeriodOption {
   id: number
@@ -55,6 +64,8 @@ export interface AcademicPeriodConfig {
   scheduleStartTime: string | null
   scheduleEndTime: string | null
   breaks: AcademicPeriodBreak[]
+  enrollmentModality: EnrollmentModality
+  cycle: number
 }
 
 export interface AcademicPeriodsQueryFilters {
@@ -90,8 +101,16 @@ export interface CreateAcademicPeriodRequest {
   RESERVA: "S" | "N"
   BLOQUES_POR_DEFECTO: number | null
   FK_PERIODO_ANTERIOR: number | null
-  DESCANSO_INICIO: string[]
-  DESCANSO_FIN: string[]
+  // Pendiente en el backend: modalidad y ciclo forman parte de la identidad del periodo.
+  MODALIDAD_MATRICULA: EnrollmentModality
+  CICLO: number
+  // JSONB `[{label,location,afterBlock,durationMinutes}]`; `[]` borra todos los recesos.
+  RECESOS: {
+    label: string
+    location: "INICIO" | "BLOQUE" | "FINAL"
+    afterBlock: number | null
+    durationMinutes: number
+  }[]
 }
 
 export type UpdateAcademicPeriodRequest = CreateAcademicPeriodRequest

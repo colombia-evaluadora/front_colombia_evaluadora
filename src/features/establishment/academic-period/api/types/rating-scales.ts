@@ -59,10 +59,6 @@ export interface RatingScale {
   notaMaxima: number
   notaMinima: number
   notaEquivalente: number
-  // TESCALA_VALORACION.DESCRIPCION (V71.1): descriptor del nivel, opcional
-  // (máx. 1000). El planeador lo precarga en cada nivel de la escala
-  // cualitativa de una actividad (Reglas 40-42).
-  descripcion?: string
 }
 
 // El PK real de la banda de `scale` PARA `levelId` — no `scale.codigo`, que

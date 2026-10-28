@@ -163,12 +163,15 @@ export function UnidadCard({
             <TooltipContent>{soloEnLinea.tooltip ?? `Editar ${unidad.nombre}`}</TooltipContent>
           </Tooltip>
         )}
-        <DialogDeleteUnidad
-          unidad={unidad}
-          rotuloUnidad={rotuloUnidad}
-          onDeleted={onDeleted}
-          triggerProps={{ className: "size-6" }}
-        />
+        {/* Regla 27: quien cedió la unidad deja de administrarla. */}
+        {!esAjena(unidad) && (
+          <DialogDeleteUnidad
+            unidad={unidad}
+            rotuloUnidad={rotuloUnidad}
+            onDeleted={onDeleted}
+            triggerProps={{ className: "size-6" }}
+          />
+        )}
       </div>
 
       <button

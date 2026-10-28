@@ -33,7 +33,7 @@ interface CalendarRange {
 }
 
 /**
- * Campo de fecha de inicio y final. Mismo control que `BreaksField` (caja con
+ * Campo de fecha de inicio y final. Mismo control que el antiguo campo de descansos (caja con
  * forma de input que abre un popover al hacer click) pero sin su sistema de
  * agregar varios: acá solo hay un rango, así que el valor seleccionado se
  * muestra directo en la caja en vez de como chips.

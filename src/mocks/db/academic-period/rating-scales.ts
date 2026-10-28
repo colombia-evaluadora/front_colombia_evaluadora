@@ -1,3 +1,4 @@
+import { ratingSymbolsDb } from "@/mocks/db/academic-period/rating-symbols"
 import type { TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 export const teachingLevelsDb: TeachingLevel[] = [
@@ -9,10 +10,10 @@ export const teachingLevelsDb: TeachingLevel[] = [
   },
   {
     id: 3,
-    nombre: "Secundaria",
+    nombre: "Básica secundaria",
     grados: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   },
-  { id: 4, nombre: "Educación media", grados: ["Décimo", "Undécimo"] },
+  { id: 4, nombre: "Media", grados: ["Décimo", "Undécimo"] },
   { id: 5, nombre: "Educación superior", grados: [] },
 ]
 
@@ -37,12 +38,41 @@ export interface RatingScaleRow {
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
-  // TESCALA_VALORACION.DESCRIPCION (V71.1): null si no se escribió.
-  descripcion: string | null
   academicPeriodId: number
 }
 
-export const ratingScalesDb: RatingScaleRow[] = []
+// pk sintético de una carita: índice + 1 dentro de GRAFICA_CARITA, igual que
+// lo arma `select-catalog.ts`.
+function caritaId(symbolId: string): number | null {
+  const index = ratingSymbolsDb.filter((s) => s.categoria === "carita").findIndex((s) => s.id === symbolId)
+  return index === -1 ? null : index + 1
+}
+
+// Escala de 0 a 10 del período 1 (Básica primaria y Secundaria), contigua con
+// paso 0,1 como pide la Regla 51. tipoId: 1 Fortaleza, 2 Debilidad.
+const SEED_SCALE = [
+  { nombre: "Superior", abreviacion: "S", tipoId: 1, icono: "carita-02-muy_feliz-verde", min: 9, max: 10, eq: 9.5 },
+  { nombre: "Alto", abreviacion: "A", tipoId: 1, icono: "carita-03-feliz-azul", min: 8, max: 8.9, eq: 8.5 },
+  { nombre: "Básico", abreviacion: "B", tipoId: 1, icono: "carita-05-neutral-amarillo", min: 6, max: 7.9, eq: 7 },
+  { nombre: "Bajo", abreviacion: "BJ", tipoId: 2, icono: "carita-07-triste-rojo", min: 0, max: 5.9, eq: 3 },
+]
+
+export const ratingScalesDb: RatingScaleRow[] = [2, 3].flatMap((teachingLevelId, l) =>
+  SEED_SCALE.map((v, i) => ({
+    id: l * SEED_SCALE.length + i + 1,
+    nombre: v.nombre,
+    abreviacion: v.abreviacion,
+    tipoId: v.tipoId,
+    iconoId: caritaId(v.icono),
+    iconoCategoria: "GRAFICA_CARITA" as const,
+    teachingLevelId,
+    notaMinima: v.min,
+    notaMaxima: v.max,
+    notaEquivalente: v.eq,
+    descripcion: null,
+    academicPeriodId: 1,
+  })),
+)
 
 export function nextRatingScaleId(): number {
   return ratingScalesDb.reduce((max, row) => Math.max(max, row.id), 0) + 1

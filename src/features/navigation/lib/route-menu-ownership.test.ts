@@ -81,6 +81,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/establecimiento-educativo/periodos": MENU.periodos,
   "/app/establecimiento-educativo/periodos/agregar": MENU.periodos,
   "/app/establecimiento-educativo/periodos/$periodId/editar": MENU.periodos,
+  "/app/establecimiento-educativo/periodos/$periodId/grados/agregar": MENU.periodos,
+  "/app/establecimiento-educativo/periodos/$periodId/grados/editar/$gradeId": MENU.periodos,
 
   "/app/gestion-academica/informes": MENU.informes,
   "/app/gestion-academica/informes/planilla/$grupoId/$asignaturaId/$periodoId": MENU.informes,

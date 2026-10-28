@@ -219,7 +219,30 @@ const TIPOS_RESULTADOS = [
   { tipo: "CHAT_RESULTADOS_ENCUESTA", categoria: "CHAT", etiqueta: "Resultados de encuestas", push: true, email: false, silenciable: true },
 ] as const
 
-export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA, ...TIPOS_RESULTADOS].map((t) => ({
+// Regla 71 (sso V496.19 fn_informe_desactualizado_notificar_interno): fuera de TIPOS
+// para no mover la bandeja sembrada con faker; un aviso fijo para el admin (el coordinador del mock no tiene el menú de Informes).
+const TIPOS_INFORMES = [
+  { tipo: "INFORME_DESACTUALIZADO", categoria: "INFORMES", etiqueta: "Informes desactualizados por una aprobación", push: true, email: false, silenciable: true },
+] as const
+
+notificacionesDb.unshift({
+  id: "informe-desactualizado-502-201",
+  tipo: "INFORME_DESACTUALIZADO",
+  categoria: "INFORMES",
+  titulo: "Informe desactualizado: 5°01 - Matemáticas · Primer período",
+  cuerpo_corto:
+    "Se aprobó una recuperación - refuerzo. Quedó desactualizado: Informe del periodo (consolidado del grupo). Vuelve a consolidar para reflejar la nota más reciente.",
+  deep_link: "/app/gestion-academica/informes?sede=1&anio=2026&jornada=11&periodos=%5B201%5D&grupos=%5B502%5D&tab=502",
+  prioridad: "NORMAL",
+  creada_en: new Date(Date.now() - 60_000).toISOString(),
+  leida_en: null,
+  actores: null,
+  conteo: null,
+  archivada: false,
+  usuario: "admin@example.com",
+})
+
+export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA, ...TIPOS_RESULTADOS, ...TIPOS_INFORMES].map((t) => ({
   tipo: t.tipo,
   categoria: t.categoria,
   etiqueta: t.etiqueta,

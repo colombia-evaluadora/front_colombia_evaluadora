@@ -28,6 +28,9 @@ interface PlanillaCeldaRow {
   definitiva: number | null
   nota: number | null
   notaHomologada: number | null
+  calificacionHomologada?: number | null
+  recuperacionHomologada?: number | null
+  notaUnidadHomologada?: number | null
   calificable: "S" | "N" | null
   observacion: string | null
   esFormativa?: boolean | "S" | "N" | null

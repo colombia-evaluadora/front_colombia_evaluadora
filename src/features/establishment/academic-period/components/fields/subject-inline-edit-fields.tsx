@@ -16,6 +16,7 @@ import {
 } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useUpdateSubject } from "@/features/establishment/academic-period/api/mutations/update-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/utils/schedule-data"
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 interface SubjectInlineEditFieldsProps {
   subject: SubjectDetail
@@ -186,7 +187,7 @@ export const SubjectInlineEditFields = forwardRef<
             maxLength={30}
             placeholder="Agregar"
             value={abreviacion}
-            onChange={(e) => setAbreviacion(e.target.value.toUpperCase())}
+            onChange={(e) => setAbreviacion(toPeriodoLongTextInput(e.target.value).toUpperCase())}
             className="uppercase placeholder:normal-case"
             aria-invalid={submitted && (!abreviacion.trim() || !!duplicateAbreviacion)}
           />

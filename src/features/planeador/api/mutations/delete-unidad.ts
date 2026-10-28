@@ -4,8 +4,7 @@ import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ExportResult } from "@/features/planeador/api/types/actividad"
-import { planeadorKeys } from "@/features/planeador/api/query-keys"
-import { invalidarInformes } from "@/features/academic-management/reports/api/query/invalidar-informes"
+import { invalidarUnidad } from "@/features/planeador/api/query/invalidar-listados-actividades"
 
 // `PATCH`, no `DELETE` — el motor real no admite ese verbo (soft-delete).
 // El mock devuelve `{status, message}` directo; el real envuelve el id
@@ -14,11 +13,22 @@ import { invalidarInformes } from "@/features/academic-management/reports/api/qu
 // como error HTTP, no como `status: "error"` en un 200: ese caso lo atrapa
 // `onError`, con un mensaje genérico en vez del texto específico del
 // backend (pendiente si hace falta mostrarlo tal cual).
-async function deleteUnidad(id: number): Promise<ExportResult> {
+//
+// Reglas 38/39 (sso V492.2): `eliminarActividades` = eliminar la unidad junto
+// con sus actividades sin notas (las que no se pueden borrar quedan sin
+// asignar); sin él las actividades solo se desvinculan. Con alguna actividad
+// con resultados el backend rechaza ambas opciones (409).
+export interface DeleteUnidadVariables {
+  id: number
+  eliminarActividades?: boolean
+}
+
+async function deleteUnidad({ id, eliminarActividades = false }: DeleteUnidadVariables): Promise<ExportResult> {
+  const body = { ELIMINAR_ACTIVIDADES: eliminarActividades }
   if (env.ENABLE_API_MOCKING) {
-    return api.patch(`/eval-col/planeador/unidades/${id}`)
+    return api.patch(`/eval-col/planeador/unidades/${id}`, body)
   }
-  await api.patch(`/eval-col/planeador/unidades/${id}`)
+  await api.patch(`/eval-col/planeador/unidades/${id}`, body)
   return { status: "ok", message: "Unidad temática eliminada correctamente." }
 }
 
@@ -35,12 +45,7 @@ export function useDeleteUnidad({ mutationConfig }: UseDeleteUnidadOptions = {})
     onSuccess: (...args) => {
       // Invalida el listado para que la unidad desaparezca del rail al
       // volver a la pestaña (mismo criterio que `useDeleteActividad`).
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.all })
-      // X1: las pestañas por referente (`unidades.tabs`) viven fuera de
-      // `unidades.all`; sin alcance la key es prefijo de todas sus variantes.
-      queryClient.invalidateQueries({ queryKey: planeadorKeys.unidades.tabs() })
-      // La nota de la asignatura puede cambiar: tabla y alertas de Informes.
-      invalidarInformes(queryClient)
+      invalidarUnidad(queryClient)
       onSuccess?.(...args)
     },
     ...restConfig,

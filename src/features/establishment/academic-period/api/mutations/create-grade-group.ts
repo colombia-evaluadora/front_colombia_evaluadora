@@ -18,6 +18,8 @@ async function createGradeGroup(input: CreateGradeGroupRequest): Promise<{ id: n
     FK_MODELO_PEDAGOGICO: fkModeloPedagogico,
     CAPACIDAD: input.cupo,
     FK_FUNCIONARIO: input.directorId,
+    // Pendiente en el backend (Regla 108).
+    DICTA_TODAS: input.directorId != null && input.dictaTodas ? "S" : "N",
   })
   return { id: extractWriteResultId(raw) }
 }

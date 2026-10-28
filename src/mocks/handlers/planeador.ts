@@ -4,6 +4,7 @@ import {
   addActividad,
   deleteActividadById,
   motivoNoEditableMock,
+  tieneResultadosMock,
   nombreArchivoMaterial,
   planeadorDb,
   registrarArchivoMaterial,
@@ -13,6 +14,8 @@ import {
   addActividadToUnidad,
   addCriterioToUnidad,
   addUnidad,
+  cederUnidadMock,
+  colegasDeUnidad,
   deleteUnidadById,
   setPuntajeActividadUnidad,
   unidadesTematicasDb,
@@ -208,6 +211,7 @@ const UNIDAD_ACTIVIDAD_PONDERACION_URL =
 const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
+const UNIDAD_COLEGAS_URL = "/api/eval-col/planeador/unidades/:id/colegas"
 const SEDES_OPCIONES_URL = "/api/eval-col/planeador/sedes/opciones"
 const ROTULO_ACTIVIDAD_URL = "/api/eval-col/planeador/rotulo-actividad"
 
@@ -1742,6 +1746,20 @@ export const planeadorHandlers = [
       BASE_VERSION?: number
     }
     const previa = unidadesTematicasDb.find((row) => row.id === id)
+    // Regla 27: cambiar FK_TFUNCIONARIO cede la unidad; el nuevo dueño debe
+    // ser uno de los colegas que la usan (`fn_unidad_validar_cesion`, 22023 → 422).
+    const fkFuncionario = (body as { FK_TFUNCIONARIO?: number }).FK_TFUNCIONARIO
+    if (previa && fkFuncionario != null) {
+      const cedida = cederUnidadMock(id, Number(fkFuncionario))
+      if (!cedida) {
+        return HttpResponse.json(
+          { message: `No se puede ceder la unidad temática "${previa.nombre}" a ese docente: no la está usando` },
+          { status: 422 },
+        )
+      }
+      subirVersion("unidad", id)
+      return HttpResponse.json({ rows: [{ fn_unidad_actualizar: id, actividades_afectadas: [] }] })
+    }
     const conflicto = previa ? conflictoDeVersion("unidad", id, BASE_VERSION, { nombre: previa.nombre }) : null
     if (conflicto) return HttpResponse.json(conflicto, { status: 409 })
     const updated = updateUnidadInfoGeneral(id, body)
@@ -1755,10 +1773,20 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", unidad: updated })
   }),
 
+  // Regla 27: colegas a quienes ceder la unidad (`fn_unidad_colegas_listar`).
+  http.get(UNIDAD_COLEGAS_URL, async ({ params }) => {
+    await delay(200)
+    const id = Number(params.id)
+    if (!unidadesTematicasDb.some((row) => row.id === id)) {
+      return HttpResponse.json({ message: "La unidad no existe" }, { status: 404 })
+    }
+    return HttpResponse.json({ rows: colegasDeUnidad(id) })
+  }),
+
   // Borrado (soft-delete) de la unidad. `PATCH`, no `DELETE` — el motor real
   // no admite ese verbo (`ck_query_http_method` solo permite GET/POST/PUT/
   // PATCH). 404 si no existe, igual que el de actividad.
-  http.patch(UNIDAD_DELETE_URL, async ({ params }) => {
+  http.patch(UNIDAD_DELETE_URL, async ({ params, request }) => {
     await delay(250)
     const id = Number(params.id)
     const found = unidadesTematicasDb.find((row) => row.id === id)
@@ -1769,7 +1797,49 @@ export const planeadorHandlers = [
       )
     }
 
+    // Regla 27: con colegas usándola no se elimina, se cede (23503 → 409),
+    // mismo texto que `fn_unidad_validar_eliminable`.
+    const colegas = colegasDeUnidad(id)
+    if (colegas.length > 0) {
+      return HttpResponse.json(
+        {
+          message: `No se puede eliminar la unidad temática "${found.nombre}": otros docentes la están usando (${colegas
+            .map((c) => c.nombre)
+            .join(", ")}). Cédala a uno de ellos en lugar de eliminarla.`,
+        },
+        { status: 409 },
+      )
+    }
+    // Reglas 38/39 (sso fn_unidad_validar_eliminable / fn_unidad_eliminar_interno):
+    // con resultados vinculados se rechaza (409); con ELIMINAR_ACTIVIDADES se
+    // borran las que se pueden (sin resultados ni base de un refuerzo) y el
+    // resto queda sin asignar.
+    const conResultados = found.actividades.filter((a) => tieneResultadosMock(a.actividadId))
+    if (conResultados.length > 0) {
+      return HttpResponse.json(
+        {
+          status: 409,
+          code: "FK_NOT_FOUND",
+          message: `No se puede eliminar la unidad temática "${found.nombre}": tiene actividades con resultados registrados (${conResultados
+            .map((a) => `"${a.nombre}"`)
+            .join(", ")}). Desvincúlelas primero.`,
+        },
+        { status: 409 },
+      )
+    }
+    const body = (await request.json().catch(() => null)) as { ELIMINAR_ACTIVIDADES?: boolean } | null
+    if (body?.ELIMINAR_ACTIVIDADES) {
+      for (const a of found.actividades) {
+        if (!motivoNoEditableMock(a.actividadId)) deleteActividadById(a.actividadId)
+      }
+    }
+
     deleteUnidadById(id)
+    // Como `fn_unidad_eliminar_interno` (sso V492.2): las actividades del
+    // dueño se desvinculan (quedan huérfanas), no se borran.
+    for (const actividad of planeadorDb) {
+      if (actividad.unidad.id === id) actividad.unidad = { id: 0, nombre: "" }
+    }
 
     return HttpResponse.json<ExportResult>({
       status: "ok",

@@ -21,13 +21,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useDeleteActividad } from "@/features/planeador/api/mutations/delete-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
+import { motivoNoEliminable } from "@/features/planeador/lib/actividad-editable"
 import {
   ROTULO_ACTIVIDAD_FALLBACK,
   rotuloEnMinuscula,
 } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 
 interface DialogDeleteActividadProps {
-  actividad: Pick<Actividad, "id" | "nombre" | "rotuloEjecucion">
+  actividad: Pick<Actividad, "id" | "nombre" | "rotuloEjecucion" | "tieneResultados" | "evaluados">
   /** Además del toast, la página puede querer reaccionar (limpiar la URL,
    * cerrar el panel, etc.) cuando el delete termina OK. */
   onDeleted?: () => void
@@ -82,6 +83,9 @@ export function DialogDeleteActividad({
   const { puedeEliminar } = usePlaneadorSoloLectura()
   // Sin red no se elimina (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
+  // Reglas 38/39: con resultados el botón llega deshabilitado y el tooltip
+  // explica por qué (el backend igual lo rechazaría con 23503).
+  const bloqueoEliminar = motivoNoEliminable(actividad)
   if (!puedeEliminar) return null
 
   return (
@@ -96,9 +100,9 @@ export function DialogDeleteActividad({
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
-                  aria-label={`Eliminar ${actividad.nombre}`}
+                  aria-label={bloqueoEliminar ? `Eliminar ${actividad.nombre}: ${bloqueoEliminar}` : `Eliminar ${actividad.nombre}`}
                   {...triggerProps}
-                  disabled={soloEnLinea.disabled || triggerProps?.disabled}
+                  disabled={soloEnLinea.disabled || Boolean(bloqueoEliminar) || triggerProps?.disabled}
                 />
               }
             />
@@ -106,7 +110,7 @@ export function DialogDeleteActividad({
         >
           <TrashIcon />
         </TooltipTrigger>
-        <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${actividad.nombre}`}</TooltipContent>
+        <TooltipContent>{soloEnLinea.tooltip ?? bloqueoEliminar ?? `Eliminar ${actividad.nombre}`}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>

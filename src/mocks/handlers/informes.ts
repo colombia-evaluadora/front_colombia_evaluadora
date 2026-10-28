@@ -12,8 +12,10 @@ import {
   JORNADA_INFORME,
   PERIODOS_INFORME,
   SEDE_INFORME,
+  cambiosDesactualizados,
   consolidar,
   deleteObservacion,
+  limpiarDesactualizado,
   estaConsolidado,
   getEstadoObservacion,
   getEstadoObservacionAnio,
@@ -408,6 +410,8 @@ export const informesHandlers = [
       (e) => !body.MATRICULAS?.length || body.MATRICULAS.includes(e.matriculaId),
     )
     consolidar(body.FK_TGRUPO, body.FK_TPERIODO_EVALUACION)
+    // Reemitir el informe del grupo limpia la marca de la Regla 71.
+    limpiarDesactualizado(body.FK_TGRUPO, body.FK_TPERIODO_EVALUACION, null)
     registrarHistorial({
       grupoId: body.FK_TGRUPO,
       asignaturaId: null,
@@ -448,6 +452,35 @@ export const informesHandlers = [
     })
   }),
 
+  // --- Regla 71: informe emitido antes de una aprobación ------------------
+  http.get(URL("desactualizado"), async ({ request }) => {
+    await delay(150)
+    const url = new globalThis.URL(request.url)
+    const cambios = cambiosDesactualizados(
+      Number(url.searchParams.get("grupo")),
+      Number(url.searchParams.get("periodo")),
+    )
+    const desactualizado = cambios.length > 0
+    return HttpResponse.json({
+      rows: [
+        {
+          informe: {
+            desactualizado,
+            mensaje: desactualizado
+              ? "Este informe fue emitido antes de que se aprobara una actividad de Recuperación; los valores mostrados pueden no reflejar la Nota Final o el resultado más reciente del estudiante."
+              : null,
+            cambios: cambios.map(({ pkSolicitud, tipo, asignatura, fechaAprobacion }) => ({
+              pkSolicitud,
+              tipo,
+              asignatura,
+              fechaAprobacion,
+            })),
+          },
+        },
+      ],
+    })
+  }),
+
   // --- Planilla de una asignatura -----------------------------------------
   http.post(URL("planilla"), async ({ request }) => {
     await delay(200)
@@ -482,6 +515,11 @@ export const informesHandlers = [
           instrumento: grupo?.cualitativo ? null : "RUBRICA",
           fechaInicio: "2026-07-06",
           fechaCierre: "2026-09-25",
+          // Reglas 70/71: la Actividad 1 del primer estudiante de 5°01 tiene un
+          // Refuerzo aprobado (3,0 original → 4,5 refuerzo, computa la del refuerzo).
+          ...(orden === 1 && e.matriculaId === 9101 && !grupo?.cualitativo
+            ? { notaOriginal: 3, notaRefuerzo: 4.5, nota: 4.5 }
+            : {}),
         }))
         return {
           fk_tmatricula: e.matriculaId,
@@ -510,6 +548,7 @@ export const informesHandlers = [
         c.fk_tasignatura === body.FK_TASIGNATURA &&
         c.fk_tperiodo_evaluacion === body.FK_TPERIODO_EVALUACION,
     )
+    limpiarDesactualizado(body.FK_TGRUPO, body.FK_TPERIODO_EVALUACION, body.FK_TASIGNATURA)
     const objetivo = estudiantesDe(body.FK_TGRUPO).filter(
       (e) => !body.MATRICULAS?.length || body.MATRICULAS.includes(e.matriculaId),
     )

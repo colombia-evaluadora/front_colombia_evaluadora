@@ -229,6 +229,10 @@ export interface CeldaPlanilla {
   notaAnterior: number | null
   /** Corrección de observación pendiente: el texto propuesto; el vigente, `observacion`. */
   observacionPropuesta: string | null
+  /** Refuerzo aplicado (Reglas 70/71): la nota original de la actividad y la
+   *  del refuerzo vigente, homologadas; `nota` sigue siendo la que computa. */
+  notaOriginal: number | null
+  notaRefuerzo: number | null
   esEvaluativa: boolean
   ponderacion: number | null
   notaMaxima: number | null

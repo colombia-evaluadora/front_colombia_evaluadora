@@ -10,7 +10,7 @@ import { academicPeriodKeys } from "@/features/establishment/academic-period/api
 import { toPaginated } from "@/lib/pagination"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
-interface UseGradeGroupsQueryParams {
+export interface UseGradeGroupsQueryParams {
   filters: GradeGroupsQueryRequest["filters"]
   sorting: GradeGroupsQueryRequest["sorting"]
   pageIndex: number
@@ -29,6 +29,7 @@ interface GradeGroupRow {
   metodologia: string | null
   metodologia_name: string | null
   cupo: number
+  dicta_todas?: "S" | "N" | null
   total_count: number
 }
 interface GradeGroupsRawResponse {
@@ -46,10 +47,11 @@ function toGradeGroup(row: GradeGroupRow): GradeGroup {
     metodologia: row.metodologia ?? undefined,
     metodologiaName: row.metodologia_name ?? undefined,
     cupo: row.cupo,
+    dictaTodas: row.dicta_todas === "S",
   }
 }
 
-async function fetchGradeGroups(
+export async function fetchGradeGroups(
   params: UseGradeGroupsQueryParams
 ): Promise<GradeGroupsQueryResponse> {
   if (params.gradeId == null) return { rows: [], pageCount: 1, totalCount: 0 }

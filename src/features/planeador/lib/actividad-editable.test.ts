@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest"
 
 import type { OutboxOp } from "@/lib/offline/outbox/types"
 import {
+  MENSAJE_ACTIVIDAD_CON_RESULTADOS_NO_ELIMINABLE,
   MENSAJE_ACTIVIDAD_NO_EDITABLE,
+  motivoNoEliminable,
+  tieneResultadosDeFila,
   motivoNoEditable,
   motivoNoEditableDeFila,
   resultadosSinSincronizar,
@@ -88,5 +91,30 @@ describe("resultadosSinSincronizar", () => {
       op("planilla.estado-resultado", { actividadId: 7, estado: "PENDIENTE" }),
     ]
     expect(resultadosSinSincronizar(ops, 7)).toBe(0)
+  })
+})
+
+describe("motivoNoEliminable (Reglas 38/39)", () => {
+  it("con resultados devuelve el texto de conservación de datos", () => {
+    expect(motivoNoEliminable({ tieneResultados: true, evaluados: 0 })).toBe(
+      "No se puede eliminar una actividad con resultados registrados por normativa de conservación de datos",
+    )
+  })
+
+  it("el backend manda sobre evaluados", () => {
+    expect(motivoNoEliminable({ tieneResultados: false, evaluados: 4 })).toBeUndefined()
+  })
+
+  it("sin la columna se infiere de evaluados", () => {
+    expect(motivoNoEliminable({ tieneResultados: undefined, evaluados: 2 })).toBe(
+      MENSAJE_ACTIVIDAD_CON_RESULTADOS_NO_ELIMINABLE,
+    )
+    expect(motivoNoEliminable({ tieneResultados: undefined, evaluados: 0 })).toBeUndefined()
+  })
+
+  it("tieneResultadosDeFila lee S/N y deja undefined si no viene", () => {
+    expect(tieneResultadosDeFila({ tiene_resultados: "S" })).toBe(true)
+    expect(tieneResultadosDeFila({ tiene_resultados: "N" })).toBe(false)
+    expect(tieneResultadosDeFila({})).toBeUndefined()
   })
 })

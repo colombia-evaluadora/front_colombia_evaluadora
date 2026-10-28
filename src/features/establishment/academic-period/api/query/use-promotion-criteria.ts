@@ -1,3 +1,4 @@
+import { NORM_REQUIREMENTS } from "@/features/establishment/academic-period/api/schema"
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
@@ -34,6 +35,10 @@ interface PromotionCriteriaRow {
   absence_percentage: number
   max_leveled_subjects: number
   mandatory_subjects: MandatorySubjectRow[]
+  // Pendientes en el backend (Regla 105): sin ellas, No y ninguno.
+  requisito_complementaria?: "S" | "N" | null
+  requisitos_propios?: string[] | null
+  requisitos_norma?: string[] | null
 }
 
 interface PromotionCriteriaResponse {
@@ -53,6 +58,10 @@ export function toPromotionCriteria(row: PromotionCriteriaRow): PromotionCriteri
     requiredSubjects: (row.mandatory_subjects ?? [])
       .map((o) => (o.type === "subject" ? o.subjectId : o.areaId))
       .filter((id): id is number => id != null),
+    complementaryRequired: row.requisito_complementaria === "S",
+    // Sin la columna, todos los de la norma (antes siempre aplicaban).
+    normRequirements: row.requisitos_norma ?? NORM_REQUIREMENTS.map((r) => r.code),
+    ownRequirements: row.requisitos_propios ?? [],
   }
 }
 

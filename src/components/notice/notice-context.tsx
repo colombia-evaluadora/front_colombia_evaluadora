@@ -116,6 +116,18 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
     }
   }, [notify])
 
+  // El vencimiento vive acá y no en el banner: un `NoticeOutlet` que se
+  // desmonta y vuelve a montar (un diálogo que se cierra y se reabre, un
+  // formulario del que se sale a la tabla del mismo layout) reiniciaba el
+  // temporizador y el aviso viejo reaparecía completo. Así vence a su hora
+  // aunque nadie lo esté mostrando. `autoCloseMs: 0` = no vence.
+  useEffect(() => {
+    if (!notice?.autoCloseMs) return
+    const { id, autoCloseMs } = notice
+    const timeout = setTimeout(() => setNotice((current) => (current?.id === id ? null : current)), autoCloseMs)
+    return () => clearTimeout(timeout)
+  }, [notice])
+
   const dismiss = useCallback(() => setNotice(null), [])
 
   const dispatch = useMemo(() => ({ notify, dismiss }), [notify, dismiss])
@@ -139,7 +151,6 @@ export function NoticeOutlet({ className }: { className?: string }) {
       notice={notice}
       onClose={dismiss}
       variant={notice?.variant}
-      autoCloseMs={notice?.autoCloseMs}
       className={className}
     />
   )

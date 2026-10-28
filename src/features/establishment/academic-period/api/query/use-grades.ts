@@ -8,6 +8,10 @@ import type {
 } from "@/features/establishment/academic-period/api/types/grade"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import {
+  fromRecesosRows,
+  type RecesoRow,
+} from "@/features/establishment/academic-period/utils/recesos"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseGradesQueryParams {
@@ -29,6 +33,15 @@ interface GradeRow {
   grado_siguiente: string | null
   grado_siguiente_name: string | null
   tiene_grado_siguiente: boolean
+  // V43: columnas nuevas de `fn_grado_obtener`/listar (pendientes en el listado).
+  jornadas_continuidad?: { id: number; name: string }[] | null
+  personalizar_horario?: "S" | "N" | null
+  schedule_start_time?: string | null
+  schedule_end_time?: string | null
+  blocks_count?: number | null
+  recesos?: RecesoRow[] | null
+  groups_count?: number | null
+  total_capacity?: number | null
   total_count: number
 }
 interface GradesRawResponse {
@@ -45,6 +58,14 @@ function toGrade(row: GradeRow): Grade {
     gradoSiguiente: row.grado_siguiente ?? undefined,
     gradoSiguienteName: row.grado_siguiente_name ?? undefined,
     tieneGradoSiguiente: row.tiene_grado_siguiente,
+    jornadasContinuidad: row.jornadas_continuidad ?? [],
+    personalizarHorario: row.personalizar_horario === "S",
+    horaInicio: row.schedule_start_time?.slice(0, 5) ?? null,
+    horaFin: row.schedule_end_time?.slice(0, 5) ?? null,
+    bloques: row.blocks_count ?? null,
+    recesos: fromRecesosRows(row.recesos),
+    gruposCount: row.groups_count ?? 0,
+    cupoTotal: row.total_capacity ?? 0,
   }
 }
 

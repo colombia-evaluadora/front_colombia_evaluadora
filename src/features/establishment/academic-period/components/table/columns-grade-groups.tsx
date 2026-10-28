@@ -1,7 +1,10 @@
+"use no memo"
+
 import type { ColumnDef, Table } from "@tanstack/react-table"
 
-import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Button } from "@/components/ui/button"
+import { CalendarIcon } from "@/components/ui/icons"
 
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
 import { DeleteGradeGroupDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-grade-group"
@@ -9,72 +12,64 @@ import { CreateGradeGroupDialog } from "@/features/establishment/academic-period
 
 interface CreateGradeGroupColumnsOptions {
   academicPeriodId?: number
+  gradeName?: string
+  onOpenSchedule: (group: GradeGroup) => void
 }
 
+// Grupos del grado (Sección 5.3): el horario de cada grupo se abre debajo de la tabla.
 export function createGradeGroupColumns({
   academicPeriodId,
-}: CreateGradeGroupColumnsOptions = {}): ColumnDef<GradeGroup>[] {
+  gradeName,
+  onOpenSchedule,
+}: CreateGradeGroupColumnsOptions): ColumnDef<GradeGroup>[] {
   return [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          aria-label="Seleccionar página"
-          className="translate-y-0.5"
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          aria-label={`Seleccionar ${row.original.codigo}`}
-          className="translate-y-0.5"
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 32,
-    },
     {
       id: "codigo",
       accessorKey: "codigo",
       meta: { label: "Grupo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Grupo" />,
-      cell: ({ row }) => <span className="font-medium">{row.original.codigo}</span>,
+      cell: ({ row }) => <span>{row.original.codigo}</span>,
     },
     {
       id: "jornada",
       accessorKey: "jornada",
       meta: { label: "Jornada" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
-      // `jornada` es el código corto (TGRUPO.JORNADA, p.ej. "M"/"T"/"N"),
-      // `jornadaName` es el nombre resuelto por el back (TLISTA_VALOR.NOMBRE,
-      // p.ej. "Mañana"). Mostramos el nombre al usuario y caemos al código
-      // si el back todavía no lo está enviando.
-      cell: ({ row }) => (
-        <span>{row.original.jornadaName ?? row.original.jornada}</span>
-      ),
+      // `jornada` es el código corto; `jornadaName` el nombre que resuelve el back.
+      cell: ({ row }) => <span>{row.original.jornadaName ?? row.original.jornada}</span>,
     },
     {
       id: "director",
       accessorKey: "directorName",
-      meta: { label: "Director de grupo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Director de grupo" />,
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.directorName || "—"}</span>
-      ),
+      meta: { label: "Responsable de grupo" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Responsable de grupo" />,
+      cell: ({ row }) => <span>{row.original.directorName || "—"}</span>,
+    },
+    {
+      id: "metodologia",
+      accessorKey: "metodologiaName",
+      meta: { label: "Metodología" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Metodología" />,
+      cell: ({ row }) => <span>{row.original.metodologiaName ?? row.original.metodologia ?? "—"}</span>,
     },
     {
       id: "cupo",
       accessorKey: "cupo",
       meta: { label: "Cupo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Cupo" />,
+      header: () => <span className="block text-center">Cupo</span>,
+      cell: ({ row }) => <span className="block text-center tabular-nums">{row.original.cupo ?? "—"}</span>,
+    },
+    {
+      id: "horario",
+      meta: { label: "Horario" },
+      header: () => <span>Horario</span>,
       cell: ({ row }) => (
-        <span className="tabular-nums">{row.original.cupo ?? "—"}</span>
+        <Button size="xs" variant="outline" color="neutral" onClick={() => onOpenSchedule(row.original)}>
+          <CalendarIcon data-icon="inline-start" />
+          Ver o editar
+        </Button>
       ),
+      enableSorting: false,
     },
     {
       id: "actions",
@@ -82,7 +77,7 @@ export function createGradeGroupColumns({
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
           <CreateGradeGroupDialog gradeGroup={row.original} academicPeriodId={academicPeriodId} />
-          <DeleteGradeGroupDialog gradeGroup={row.original} />
+          <DeleteGradeGroupDialog gradeGroup={row.original} gradeName={gradeName} />
         </div>
       ),
       enableSorting: false,

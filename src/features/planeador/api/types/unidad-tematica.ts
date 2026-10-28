@@ -101,6 +101,9 @@ export interface UnidadActividad {
    *  `undefined` si se puede. Bloquea su peso/puntaje en línea, "Editar" y
    *  "Desvincular" en la tabla de la unidad. Ver `lib/actividad-editable.ts`. */
   motivoNoEditable?: string
+  /** Reglas 38/39: tiene resultados registrados (sso `tiene_resultados`); no
+   *  se elimina. `undefined` = el backend no lo dijo. Ver `lib/actividad-editable.ts`. */
+  tieneResultados?: boolean
 }
 
 export interface UnidadTematica {

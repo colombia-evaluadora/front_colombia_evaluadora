@@ -5,6 +5,7 @@ import type {
   UnidadActividad,
   UnidadTematica,
 } from "@/features/planeador/api/types/unidad-tematica"
+import type { UnidadColegaRow } from "@/features/planeador/api/query/use-unidad-colegas-query"
 
 /**
  * Seed determinista de unidades temáticas. Cuatro unidades con los cuatro
@@ -433,5 +434,43 @@ export function updateUnidadInfoGeneral(
   const unidad = unidadesTematicasDb.find((row) => row.id === id)
   if (!unidad) return null
   Object.assign(unidad, patch)
+  return unidad
+}
+
+/**
+ * Regla 27: colegas (sin el dueño) que usan cada unidad — actividades propias
+ * vinculadas o criterios propios en su rúbrica —, en la forma snake_case de
+ * `GET /planeador/unidades/:id/colegas`. Seed para ejercitar los tres casos
+ * del paso "ceder": la 1 y la 4 sin colegas (se eliminan), la 2 con uno solo
+ * (cesión automática) y la 3 con varios (el dueño elige).
+ */
+export const unidadColegasDb: Record<number, UnidadColegaRow[]> = {
+  2: [{ fk_tfuncionario: 7102, nombre: "Ana María Ruiz", actividades: 2, criterios: 0 }],
+  3: [
+    { fk_tfuncionario: 7103, nombre: "Beatriz Gómez", actividades: 1, criterios: 2 },
+    { fk_tfuncionario: 7104, nombre: "Carlos Pérez", actividades: 0, criterios: 1 },
+    { fk_tfuncionario: 7105, nombre: "Diana Torres", actividades: 3, criterios: 0 },
+  ],
+}
+
+export function colegasDeUnidad(id: number): UnidadColegaRow[] {
+  return unidadColegasDb[id] ?? []
+}
+
+/**
+ * Cede la unidad a un colega que la usa (lo que valida
+ * `fn_unidad_validar_cesion` en el backend real, sin la rama de "dicta la
+ * asignatura en el grado"). La unidad queda ajena para quien cedió
+ * (`esPropia: false`), igual que el listado real con `es_propia = N`.
+ * Devuelve `null` si el funcionario no es un colega de la unidad.
+ */
+export function cederUnidadMock(id: number, funcionarioId: number): UnidadTematica | null {
+  const unidad = unidadesTematicasDb.find((row) => row.id === id)
+  const colega = colegasDeUnidad(id).find((c) => c.fk_tfuncionario === funcionarioId)
+  if (!unidad || !colega) return null
+  unidad.docenteId = funcionarioId
+  unidad.docenteNombre = colega.nombre ?? undefined
+  unidad.esPropia = false
+  delete unidadColegasDb[id]
   return unidad
 }

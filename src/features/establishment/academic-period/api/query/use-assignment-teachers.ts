@@ -36,7 +36,7 @@ interface AssignmentTeachersResponse {
 }
 
 function toEmployeeStatus(estado: string): EmployeeStatus {
-  return estado === "ACTIVO" ? "ACTIVE" : "SUSPENDED"
+  return estado === "ACTIVO" || estado === "A" ? "ACTIVE" : "SUSPENDED"
 }
 
 // Shapea la fila del docente como `EmployeeListItem` para reusar las mismas

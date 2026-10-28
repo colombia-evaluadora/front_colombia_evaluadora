@@ -6,9 +6,14 @@ import type {
   AcademicPeriodStatus,
   AcademicPeriodsQueryRequest,
   AcademicPeriodsQueryResponse,
+  EnrollmentModality,
 } from "@/features/establishment/academic-period/api/types/academic-period"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { toPaginated } from "@/lib/pagination"
+import {
+  fromRecesosRows,
+  type RecesoRow,
+} from "@/features/establishment/academic-period/utils/recesos"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
 interface UseAcademicPeriodsQueryParams {
@@ -99,7 +104,10 @@ interface AcademicPeriodListRow {
   default_blocks_count: number
   schedule_start_time: string
   schedule_end_time: string
-  descansos: { startTime: string; endTime: string }[]
+  recesos: RecesoRow[]
+  // Pendientes en el backend: sin ellas el periodo se lee como Anual, ciclo 1.
+  enrollment_modality?: EnrollmentModality | null
+  cycle?: number | null
   previous_period_id: number | null
   previous_period_name: string | null
   total_count: number
@@ -119,6 +127,7 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     id: row.id,
     sedeId: String(row.sede_id),
     sedeName: row.sede_name,
+    jornadaName: row.jornada_name,
     previousPeriodId: row.previous_period_id ?? null,
     previousPeriodName: row.previous_period_name ?? null,
     // En el modelo del front `schoolYearId` es el AÑO (no el PK del año lectivo);
@@ -142,10 +151,9 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     defaultBlocksCount: row.default_blocks_count,
     scheduleStartTime: row.schedule_start_time?.slice(0, 5) ?? null,
     scheduleEndTime: row.schedule_end_time?.slice(0, 5) ?? null,
-    breaks: (row.descansos ?? []).map((b) => ({
-      startTime: b.startTime.slice(0, 5),
-      endTime: b.endTime.slice(0, 5),
-    })),
+    breaks: fromRecesosRows(row.recesos),
+    enrollmentModality: row.enrollment_modality ?? "ANUAL",
+    cycle: row.cycle ?? 1,
   }
 }
 

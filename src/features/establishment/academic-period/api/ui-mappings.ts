@@ -10,8 +10,9 @@ type BadgeColor =
   | "warning"
   | "orange"
   | "success"
+  | "neutral"
 interface BadgeProps {
-  variant: "soft"
+  variant: "soft" | "outline"
   color: BadgeColor
 }
 
@@ -20,7 +21,8 @@ export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgePro
   N: { variant: "soft", color: "secondary" },
   I: { variant: "soft", color: "info" },
   P: { variant: "soft", color: "warning" },
-  C: { variant: "soft", color: "destructive" },
+  // Cerrado en gris: ya no admite cambios, no es un error.
+  C: { variant: "soft", color: "muted" },
 }
 
 export const RESERVATION_STATUS_BADGE: Record<
@@ -41,7 +43,7 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
   BadgeProps
 > = {
   "1": { variant: "soft", color: "success" },
-  "2": { variant: "soft", color: "muted" },
+  "2": { variant: "outline", color: "neutral" },
 }
 
 export function evaluationPeriodStatusByDates(

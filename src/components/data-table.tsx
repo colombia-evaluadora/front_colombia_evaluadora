@@ -76,6 +76,11 @@ interface DataTableProps {
    */
   isRowActive?: (row: Row<any>) => boolean
   /**
+   * Fila marcada como la que se está viendo (p. ej. el grupo cuyo horario se
+   * muestra debajo de la tabla). Pinta el fondo y anuncia `aria-current`.
+   */
+  isRowHighlighted?: (row: Row<any>) => boolean
+  /**
    * Filas atenuadas (p. ej. registros inactivos). Solo baja la opacidad del
    * contenido: el overlay de acciones sigue opaco.
    */
@@ -111,6 +116,7 @@ export function DataTable({
   errorMessage = "Ocurrió un error al cargar los datos.",
   renderSubRow,
   isRowActive,
+  isRowHighlighted,
   isRowMuted,
   footerRow,
   cellClassName,
@@ -291,7 +297,11 @@ export function DataTable({
               const subRow = renderSubRow?.(row)
               return (
                 <Fragment key={row.id}>
-                  <TableRow data-state={row.getIsSelected() && "selected"} className="group/row">
+                  <TableRow
+                    data-state={row.getIsSelected() && "selected"}
+                    aria-current={isRowHighlighted?.(row) || undefined}
+                    className={cn("group/row", isRowHighlighted?.(row) && "bg-blue-22 hover:bg-blue-22")}
+                  >
                     {row.getVisibleCells().map((cell) => {
                       const isActions = isActionsColumn(cell.column.id)
                       return (

@@ -37,6 +37,7 @@ function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string
 export function AsignaturaGradoSection({
   form,
   bloqueadoPorRecuperacion,
+  soloLectura = false,
   unidadBloqueada = false,
   unidadSlot,
   tab,
@@ -44,6 +45,8 @@ export function AsignaturaGradoSection({
   form: FormActividad
   /** Ver `useRecuperacionBloqueaCampos`. */
   bloqueadoPorRecuperacion: boolean
+  /** Solo lectura: bloquea también Estudiantes, que el refuerzo sí deja editar. */
+  soloLectura?: boolean
   /**
    * `true` en el alta desde una Unidad: Grado/Grupo y Asignatura quedan deshabilitados
    * (se toma el primer grupo del grado; otro grupo se cambia editando la actividad).
@@ -336,7 +339,9 @@ export function AsignaturaGradoSection({
                   field.handleChange(matriculaIds)
                   form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
-                disabled={!hasGradoAsignatura || bloqueadoPorRecuperacion}
+                // Regla 66: el refuerzo hereda grado/grupo, asignatura, unidad y título, pero sus
+                // estudiantes se eligen (el backend solo exige la Regla 97, un intento abierto por estudiante).
+                disabled={!hasGradoAsignatura || soloLectura}
                 // `isPending` de una query deshabilitada queda `true` para siempre: solo cuenta si está habilitada.
                 isPending={hasGradoAsignatura && isPendingMatriculas}
                 placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}

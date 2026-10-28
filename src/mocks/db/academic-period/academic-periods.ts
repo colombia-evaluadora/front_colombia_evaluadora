@@ -70,6 +70,9 @@ export const academicPeriodsDb: AcademicPeriod[] = [
   // en lugar del "desactivar" (X). El toggle del listado igual funciona
   // contra los otros dos.
   seedPeriod(3, 2, 2025, 2, "2025-01-27", "2025-11-28", "2025-02-28", false),
+  // Nocturna semestral: dos ciclos en orden de la misma Sede + Año + Jornada.
+  seedPeriod(4, 0, 2026, 2, "2026-01-26", "2026-06-19", "2026-02-13"),
+  seedPeriod(5, 0, 2026, 1, "2026-07-13", "2026-11-27", "2026-07-31"),
 ]
 
 function seedConfig(
@@ -78,6 +81,8 @@ function seedConfig(
   scheduleStartTime: string,
   scheduleEndTime: string,
   reservationEnabled = true,
+  enrollmentModality: AcademicPeriodConfig["enrollmentModality"] = "ANUAL",
+  cycle = 1,
 ): AcademicPeriodConfig {
   return {
     academicPeriodId,
@@ -86,9 +91,10 @@ function seedConfig(
     defaultBlocksCount: 6,
     scheduleStartTime,
     scheduleEndTime,
-    // Un solo descanso: alcanza para que el editor de descansos arranque con
-    // algo que mostrar sin volver el horario difícil de leer.
-    breaks: [{ startTime: "09:30", endTime: "10:00" }],
+    // Un solo receso: alcanza para que el editor arranque con algo que mostrar.
+    breaks: [{ label: "Recreo", location: "3", durationMinutes: 30 }],
+    enrollmentModality,
+    cycle,
   }
 }
 
@@ -100,4 +106,6 @@ export const academicPeriodConfigsDb: AcademicPeriodConfig[] = [
   // Acciones cambie al "activar" (✓). El toggle del listado funciona
   // contra los otros dos.
   seedConfig(3, 1, "06:30", "12:30", false),
+  seedConfig(4, 3, "18:00", "22:00", true, "SEMESTRAL", 1),
+  seedConfig(5, 3, "18:00", "22:00", true, "SEMESTRAL", 2),
 ]

@@ -8,6 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/grade"
 import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
 import { invalidateGradeRelated } from "./invalidate"
+import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 
 interface UpdateGradeInput {
   id: number
@@ -25,6 +26,13 @@ async function updateGrade({ id, values }: UpdateGradeInput): Promise<MutationRe
     NOMBRE: values.nombre,
     FK_GRADO_SIGUIENTE: fkGradoSiguiente,
     TIENE_GRADO_SIGUIENTE: values.tieneGradoSiguiente,
+    // V79: jornadas de continuidad y horario propio del grado.
+    JORNADAS_CONTINUIDAD: values.tieneGradoSiguiente ? (values.jornadasContinuidad ?? []).map((j) => j.id) : [],
+    PERSONALIZAR_HORARIO: values.personalizarHorario ? "S" : "N",
+    HORA_INICIO: values.personalizarHorario ? values.horaInicio : null,
+    HORA_FIN: values.personalizarHorario ? values.horaFin : null,
+    BLOQUES: values.personalizarHorario ? values.bloques : null,
+    RECESOS: values.personalizarHorario ? toRecesosBody(values.recesos) : [],
   })
 }
 

@@ -1,9 +1,16 @@
-import { lazy, Suspense, useState } from "react"
+import { lazy, Suspense, useState, type ReactNode, type RefObject } from "react"
+import { useSearch } from "@tanstack/react-router"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
+import {
+  PERIOD_TAB_TRIGGER,
+  ScrollTabsList,
+} from "@/features/establishment/academic-period/components/scroll-tabs-list"
 import { SpinnerIcon } from "@/components/ui/icons"
 
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import type { EvaluationCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
 import { plegarTexto } from "@/features/assistant/lib/campos-ui"
 import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
@@ -11,6 +18,11 @@ import type { Jornada } from "@/features/establishment/academic-period/utils/sch
 const TabEvaluationPeriods = lazy(() =>
   import("@/features/establishment/academic-period/components/tabs/tab-evaluation-periods").then(
     (m) => ({ default: m.TabEvaluationPeriods }),
+  ),
+)
+const TabAcademicCalendar = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-academic-calendar").then(
+    (m) => ({ default: m.TabAcademicCalendar }),
   ),
 )
 const TabPromotionCriteria = lazy(() =>
@@ -49,7 +61,9 @@ function TabFallback() {
 }
 
 const TABS: { value: string; label: string }[] = [
-  { value: "evaluacion", label: "Periodos de evaluación" },
+  { value: "general", label: "General" },
+  { value: "evaluacion", label: "Períodos de evaluación" },
+  { value: "calendario", label: "Calendario" },
   { value: "promocion", label: "Criterios de promoción" },
   { value: "criterios", label: "Criterios de evaluación" },
   { value: "escalas", label: "Escalas de valoración" },
@@ -57,83 +71,139 @@ const TABS: { value: string; label: string }[] = [
   { value: "asignaciones", label: "Asignaciones académicas" },
 ]
 
-const PANEL_BASE =
-  "rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+const PANEL_BASE = "pt-5"
 
 interface EvaluationPeriodsSectionProps {
   jornada: Jornada
   academicPeriodId?: number
+  /** Formulario "Información general del período": primera pestaña. */
+  general: ReactNode
+  /** Criterios de evaluación: el Guardar del encabezado también los guarda. */
+  criteriaRef?: RefObject<EvaluationCriteriaHandle | null>
+  onCriteriaDirtyChange?: (dirty: boolean) => void
 }
 
 export function EvaluationPeriodsSection({
   jornada,
   academicPeriodId,
+  general,
+  criteriaRef,
+  onCriteriaDirtyChange,
 }: EvaluationPeriodsSectionProps) {
   const panel = PANEL_BASE
   // Controlada (antes `defaultValue`) para que el asistente pueda abrir una
   // pestaña por su nombre visible (`ABRIR_PESTANA`).
-  const [tabActiva, setTabActiva] = useState("evaluacion")
+  // `?tab=` abre una pestaña al llegar (p. ej. "grados" al volver de un grado).
+  const { tab } = useSearch({ strict: false }) as { tab?: string }
+  const [tabActiva, setTabActiva] = useState(() =>
+    tab && academicPeriodId != null && TABS.some((t) => t.value === tab) ? tab : "general",
+  )
+  // Salir de Criterios con cambios sin guardar pide confirmar (descarta al aceptar).
+  const [tabPendiente, setTabPendiente] = useState<string | null>(null)
+  const cambiarTab = (value: string) => {
+    if (tabActiva === "criterios" && value !== "criterios" && criteriaRef?.current?.isDirty()) {
+      setTabPendiente(value)
+      return
+    }
+    setTabActiva(value)
+  }
+  // Sin guardar el periodo, las demas pestañas no tienen a que colgarse.
+  const sinPeriodo = academicPeriodId == null
   usePestanasAsistente({
     abrir: (pestana) => {
       const nombre = plegarTexto(pestana)
       const tab = TABS.find((t) => plegarTexto(t.label) === nombre || t.value === nombre)
       if (!tab) return false
-      setTabActiva(tab.value)
+      cambiarTab(tab.value)
       return true
     },
   })
 
   return (
-    <Tabs value={tabActiva} onValueChange={(value) => setTabActiva(String(value))}>
-      <TabsList variant="folder">
-        {TABS.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value}>
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsContent value="evaluacion" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="promocion" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabPromotionCriteria academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="escalas" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabRatingScales academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="criterios" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="grados" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="asignaciones" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabAcademicAssignments academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-    </Tabs>
+    <>
+      <Tabs value={tabActiva} onValueChange={(value) => cambiarTab(String(value))}>
+        <ScrollTabsList>
+          {TABS.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              disabled={sinPeriodo && tab.value !== "general"}
+              className={PERIOD_TAB_TRIGGER}
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </ScrollTabsList>
+        <TabsContent value="general" keepMounted className={panel}>
+          {general}
+        </TabsContent>
+        <TabsContent value="evaluacion" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        <TabsContent value="calendario" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabAcademicCalendar academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        <TabsContent value="promocion" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        <TabsContent value="escalas" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabRatingScales academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        {/* keepMounted: los cambios sin guardar siguen ahí al cambiar de pestaña y el Guardar de arriba los ve. */}
+        <TabsContent value="criterios" className={panel} keepMounted>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabEvaluationCriteria
+                ref={criteriaRef}
+                academicPeriodId={academicPeriodId}
+                onDirtyChange={onCriteriaDirtyChange}
+              />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        <TabsContent value="grados" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+        <TabsContent value="asignaciones" className={panel}>
+          <NoticeProvider>
+            <Suspense fallback={<TabFallback />}>
+              <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+            </Suspense>
+          </NoticeProvider>
+        </TabsContent>
+      </Tabs>
+      <ConfirmDiscardDialog
+        open={tabPendiente != null}
+        onOpenChange={(open) => !open && setTabPendiente(null)}
+        title="¿Cambiar de pestaña sin guardar?"
+        description="Los cambios de Criterios de evaluación que no guardaste se descartarán."
+        confirmLabel="Sí, descartar"
+        onConfirm={() => {
+          criteriaRef?.current?.discard()
+          setTabActiva(tabPendiente ?? tabActiva)
+          setTabPendiente(null)
+        }}
+      />
+    </>
   )
 }

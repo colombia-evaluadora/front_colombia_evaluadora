@@ -105,6 +105,8 @@ export const planeadorKeys = {
     criterios: (id: number | "none") => [...unidadDetalle(id), "criterios"] as const,
     valoraciones: (id: number | "none") => [...unidadDetalle(id), "valoraciones"] as const,
     referente: (id: number | "none") => [...unidadDetalle(id), "referente"] as const,
+    /** Regla 27: docentes que usan la unidad, a quienes cederla. */
+    colegas: (id: number | "none") => [...unidadDetalle(id), "colegas"] as const,
     configuracionActividad: (id: number | "none", esEvaluativa: boolean) =>
       [...unidadDetalle(id), "configuracion-actividad", esEvaluativa] as const,
   },

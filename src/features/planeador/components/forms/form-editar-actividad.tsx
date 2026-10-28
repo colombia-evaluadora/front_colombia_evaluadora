@@ -299,6 +299,7 @@ export function EditarActividadForm({
             form={form}
             // En solo lectura se reusa el candado de la recuperación.
             bloqueadoPorRecuperacion={bloqueadoPorRecuperacion || readOnly}
+            soloLectura={readOnly}
             unidadBloqueada={unidadBloqueada}
             tab={tab}
             unidadSlot={

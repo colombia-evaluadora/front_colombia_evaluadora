@@ -19,7 +19,7 @@ import {
 } from "@/features/planeador/api/types/actividad"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { estudiantesMeta } from "@/lib/offline/query-meta"
-import { motivoNoEditableDeFila } from "@/features/planeador/lib/actividad-editable"
+import { motivoNoEditableDeFila, tieneResultadosDeFila } from "@/features/planeador/lib/actividad-editable"
 
 // Fila real del detalle: `unidad`/`fk_tunidad` vienen null si la actividad es huérfana.
 // No trae el instrumento: vive en `GET .../actividades/:id/instrumento`.
@@ -95,6 +95,8 @@ interface ActividadDetalleRow {
   /** Regla 37: `editable` 'S'/'N' y el motivo cuando es 'N'. */
   editable?: "S" | "N" | null
   motivo_no_editable?: string | null
+  /** Reglas 38/39 (sso V553/V492.4): 'S' si tiene resultados; "Eliminar" llega deshabilitado. */
+  tiene_resultados?: "S" | "N" | null
   /** Versión de la fila para concurrencia optimista. */
   version?: number | null
 }
@@ -408,6 +410,7 @@ function toActividadDetalle(
     docenteId: row.fk_tfuncionario_docente ?? undefined,
     docenteNombre: row.docente_nombre?.trim() || undefined,
     motivoNoEditable: motivoNoEditableDeFila(row),
+    tieneResultados: tieneResultadosDeFila(row),
   }
 }
 
