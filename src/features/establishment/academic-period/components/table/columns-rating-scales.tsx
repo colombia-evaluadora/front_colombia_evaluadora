@@ -24,6 +24,22 @@ export function heatColor(position: number): string {
   return `hsl(${hue.toFixed(0)} 68% ${light.toFixed(0)}%)`
 }
 
+// Versión pastel del mismo tono para la barra de cobertura: fondo claro y
+// texto oscuro del mismo color, para que se lea sin texto blanco.
+export function heatPastel(position: number): { background: string; color: string } {
+  const hue = (4 + Math.min(1, Math.max(0, position)) * 141).toFixed(0)
+  return { background: `hsl(${hue} 75% 88%)`, color: `hsl(${hue} 60% 28%)` }
+}
+
+// Lo que cabe en el círculo: la primera letra y la primera consonante que le
+// sigue, máximo dos ("SUP" → "SP", "BS" → "BS", "A" → "A"). El tooltip
+// muestra la abreviación completa.
+export function shortAbbreviation(abreviacion: string): string {
+  const letters = abreviacion.trim().toUpperCase()
+  const consonant = [...letters.slice(1)].find((c) => /[A-ZÑ]/.test(c) && !/[AEIOUÁÉÍÓÚÜ]/.test(c))
+  return letters.charAt(0) + (consonant ?? "")
+}
+
 export function isFailingScale(scale: RatingScale): boolean {
   return (scale.tipoName ?? scale.tipo).toLowerCase().startsWith("debil")
 }
@@ -70,8 +86,9 @@ export function createRatingScaleColumns({
           <span
             className="inline-flex size-8 items-center justify-center rounded-full text-sm font-medium text-white"
             style={{ backgroundColor: colors.get(row.original.codigo) }}
+            title={row.original.abreviacion}
           >
-            {row.original.abreviacion}
+            {shortAbbreviation(row.original.abreviacion)}
           </span>
         )
       },

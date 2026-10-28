@@ -81,6 +81,15 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     ),
   },
   {
+    id: "jornadaName",
+    accessorKey: "jornadaName",
+    meta: { label: "Jornada" },
+    // El listado del SSO no ordena por jornada.
+    enableSorting: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
+    cell: ({ row }) => row.original.jornadaName ?? "",
+  },
+  {
     id: "status",
     accessorKey: "status",
     meta: { label: "Estado" },

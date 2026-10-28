@@ -43,6 +43,7 @@ import {
   findOverlappingRatingScale,
 } from "@/features/establishment/academic-period/utils/rating-scale-duplicates"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
+import { toPeriodoTextInput, toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const FORM_ID = "rating-scale-form"
 
@@ -322,12 +323,12 @@ export function RatingScaleDialog({
           <div className="grid gap-x-4 gap-y-5 sm:grid-cols-3">
             <form.AppField name="nombre">
               {(field) => (
-                <field.TextField label="Nombre" required maxLength={50} showCounter placeholder="" />
+                <field.TextField label="Nombre" transform={toPeriodoTextInput} required maxLength={50} showCounter placeholder="" />
               )}
             </form.AppField>
             <form.AppField name="abreviacion">
               {(field) => (
-                <field.TextField label="Abreviación" required maxLength={10} showCounter placeholder="" />
+                <field.TextField label="Abreviación" transform={toPeriodoLongTextInput} required maxLength={10} showCounter placeholder="" />
               )}
             </form.AppField>
             <form.Field name="iconografia">
@@ -356,10 +357,28 @@ export function RatingScaleDialog({
           </div>
 
           <div className="grid gap-x-4 gap-y-5 sm:grid-cols-3">
-            <form.Field name="notaMinima">
+            <form.Field
+              name="notaMinima"
+              listeners={{
+                // La Nota equivalente sigue a la mínima: así siempre cae dentro del rango.
+                onChange: ({ value }) => {
+                  if (Number.isFinite(value)) form.setFieldValue("notaEquivalente", value)
+                },
+              }}
+            >
               {(field) => <DecimalField field={field} label="Nota mínima" required />}
             </form.Field>
-            <form.Field name="notaMaxima">
+            <form.Field
+              name="notaMaxima"
+              listeners={{
+                // Si la máxima baja por debajo de la equivalente, la equivalente se ajusta.
+                onChange: ({ value }) => {
+                  if (Number.isFinite(value) && form.getFieldValue("notaEquivalente") > value) {
+                    form.setFieldValue("notaEquivalente", value)
+                  }
+                },
+              }}
+            >
               {(field) => <DecimalField field={field} label="Nota máxima" required />}
             </form.Field>
             <form.Field name="notaEquivalente">

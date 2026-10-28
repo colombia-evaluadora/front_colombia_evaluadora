@@ -11,6 +11,7 @@ export interface AcademicPeriod {
   id: number
   sedeId: string
   sedeName: string
+  jornadaName?: string
   previousPeriodId: number | null
   previousPeriodName?: string | null
   schoolYearId: number

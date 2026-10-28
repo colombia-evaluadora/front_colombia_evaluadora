@@ -38,6 +38,7 @@ import {
   createRatingScaleColumns,
   getScaleColors,
   heatColor,
+  heatPastel,
 } from "@/features/establishment/academic-period/components/table/columns-rating-scales"
 import { parseGradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 import {
@@ -176,7 +177,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
       <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
 
       {!isPending && !isError && (
-        <ScaleCoverage scales={visible} colors={colors} range={range} issues={issues.map(coverageIssueMessage)} />
+        <ScaleCoverage scales={visible} range={range} issues={issues.map(coverageIssueMessage)} />
       )}
 
       {dialog && (
@@ -206,12 +207,10 @@ const tick = (n: number) => (Number.isInteger(n) ? String(n) : formatGrade(n))
 // notan porque un tramo tapa al otro.
 function ScaleCoverage({
   scales,
-  colors,
   range,
   issues,
 }: {
   scales: RatingScale[]
-  colors: Map<number, string>
   range: { min: number; max: number }
   issues: string[]
 }) {
@@ -245,7 +244,7 @@ function ScaleCoverage({
         }}
       >
         <div aria-hidden className="absolute inset-0 bg-background/75" />
-        {sorted.map((s) => {
+        {sorted.map((s, i) => {
           const left = pos(s.notaMinima)
           // El tramo llega hasta donde empieza la nota siguiente (máximo + 0,1).
           const right = pos(Math.min(s.notaMaxima + 0.1, range.max))
@@ -254,12 +253,12 @@ function ScaleCoverage({
               key={s.codigo}
               title={`${s.nombre}: ${formatGrade(s.notaMinima)} a ${formatGrade(s.notaMaxima)}`}
               className={cn(
-                "absolute inset-y-0 flex items-center justify-center overflow-hidden border-r-2 border-background text-xs font-medium whitespace-nowrap text-white",
+                "absolute inset-y-0 flex items-center justify-center overflow-hidden border-r-2 border-background text-xs font-medium whitespace-nowrap",
               )}
               style={{
                 left: `${left}%`,
                 width: `${Math.max(0, right - left)}%`,
-                backgroundColor: colors.get(s.codigo),
+                ...heatPastel(sorted.length === 1 ? 1 : i / Math.max(1, sorted.length - 1)),
               }}
             >
               {s.nombre}

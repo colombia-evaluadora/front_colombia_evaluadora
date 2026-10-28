@@ -32,6 +32,7 @@ import {
   REGISTERED_ENTRY_TYPES,
 } from "@/features/establishment/academic-period/utils/academic-calendar"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
+import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
 
 const FORM_ID = "calendar-entry-form"
 
@@ -141,7 +142,7 @@ export function CalendarEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent className="sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modificar entrada del calendario" : "Agregar al calendario"}
@@ -165,12 +166,12 @@ export function CalendarEntryDialog({
                   Tipo<span className="text-red"> *</span>
                 </legend>
                 <RadioGroup
-                  className="flex flex-wrap items-center gap-x-6 gap-y-2"
+                  className="flex flex-wrap items-center gap-x-6 gap-y-2 md:flex-nowrap"
                   value={field.state.value}
                   onValueChange={(v) => field.handleChange(v as CalendarEntryInput["type"])}
                 >
                   {REGISTERED_ENTRY_TYPES.map((type) => (
-                    <label key={type} className="flex items-center gap-2 text-sm">
+                    <label key={type} className="flex items-center gap-2 text-sm whitespace-nowrap">
                       <RadioGroupItem value={type} />
                       {CALENDAR_ENTRY_TYPE_LABELS[type]}
                     </label>
@@ -214,6 +215,7 @@ export function CalendarEntryDialog({
                   required
                   maxLength={150}
                   showCounter
+                  transform={toPeriodoLongTextInput}
                   placeholder="P. ej. Semana de receso"
                 />
               )}
@@ -222,12 +224,11 @@ export function CalendarEntryDialog({
         </form>
 
         <DialogFooter>
-          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+          <Button type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
-            size="sm"
             type="submit"
             color="primary"
             form={FORM_ID}

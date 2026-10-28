@@ -127,6 +127,7 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     id: row.id,
     sedeId: String(row.sede_id),
     sedeName: row.sede_name,
+    jornadaName: row.jornada_name,
     previousPeriodId: row.previous_period_id ?? null,
     previousPeriodName: row.previous_period_name ?? null,
     // En el modelo del front `schoolYearId` es el AÑO (no el PK del año lectivo);

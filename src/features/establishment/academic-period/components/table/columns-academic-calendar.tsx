@@ -81,9 +81,10 @@ export function createAcademicCalendarColumns({
   return [
     ...columns,
     {
-      id: "acciones",
+      // `actions`: la DataTable muestra los botones solo al pasar por la fila.
+      id: "actions",
       meta: { label: "Acciones" },
-      header: () => <span>Acciones</span>,
+      header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const entry = row.original
         if (entry.origin === "FESTIVO") {
@@ -105,7 +106,7 @@ export function createAcademicCalendarColumns({
         }
         const range = formatCalendarRange(entry.from, entry.to)
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-end gap-1">
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -133,7 +134,7 @@ export function createAcademicCalendarColumns({
       },
       enableSorting: false,
       enableHiding: false,
-      size: 170,
+      size: 96,
     },
   ]
 }
