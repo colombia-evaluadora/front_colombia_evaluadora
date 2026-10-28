@@ -1,128 +1,100 @@
 "use no memo"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
 import { NoticeOutlet } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
-import { getErrorMessage } from "@/lib/api-client"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { createGradeGroupColumns } from "@/features/establishment/academic-period/components/table/columns-grade-groups"
 import { CreateGradeGroupDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade-group"
-import { DeleteSelectedGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-grade-groups"
-import { ExportSelectedGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-grade-groups"
-import { ExportGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-grade-groups"
+import {
+  GroupSchedule,
+  type GroupScheduleSource,
+} from "@/features/establishment/academic-period/components/fields/group-schedule"
 
 interface TabGradeGroupsProps {
   gradeId?: number
   academicPeriodId?: number
+  grade?: Grade
 }
 
-export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProps) {
+export function TabGradeGroups({ gradeId, academicPeriodId, grade }: TabGradeGroupsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSize] = useState(10)
-
-  const columns = useMemo(
-    () => createGradeGroupColumns({ academicPeriodId }),
-    [academicPeriodId],
-  )
+  const [scheduleGroupId, setScheduleGroupId] = useState<number | null>(null)
 
   const { data, isPending, isError, error, refetch } = useGradeGroupsQuery({
     filters: {},
     sorting,
-    pageIndex,
-    pageSize,
+    pageIndex: 0,
+    pageSize: 100,
     gradeId,
   })
+  const { data: period } = useAcademicPeriodQuery(academicPeriodId)
 
-  const goToPage = setPageIndex
-  const changePageSize = (size: number) => {
-    setPageSize(size)
-    setPageIndex(0)
-  }
-
-  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+  const columns = createGradeGroupColumns({
+    academicPeriodId,
+    gradeName: grade?.nombre,
+    onOpenSchedule: (group) => setScheduleGroupId(group.id),
+  })
+  const page = useLocalPagination(data?.rows ?? [])
+  const { table } = useDataTable({
     columns,
-    data: data?.rows ?? [],
-    pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.codigo,
-    pageIndex,
-    pageSize,
-    goToPage,
-    setPageSize: changePageSize,
+    data: page.pageRows,
+    getRowId: (row) => String(row.id),
+    ...page.table,
     sorting,
     setSorting,
     columnVisibilityStorageKey: "tab-grade-groups-column-visibility",
   })
 
-  const idByCodigo = useMemo(
-    () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.id])),
-    [data],
-  )
-  const namesById = useMemo(
-    () => new Map((data?.rows ?? []).map((row) => [row.id, row.codigo])),
-    [data],
-  )
-  const selectedGroupIds = useMemo(
-    () =>
-      selectedIds
-        .map((codigo) => idByCodigo.get(codigo))
-        .filter((id): id is number => id != null),
-    [selectedIds, idByCodigo],
-  )
+  const scheduleGroup = data?.rows.find((g) => g.id === scheduleGroupId)
+  // El horario del grado si lo personaliza; si no, el de la jornada (Regla 87).
+  const schedule: GroupScheduleSource = grade?.personalizarHorario
+    ? {
+        startTime: grade.horaInicio ?? "",
+        endTime: grade.horaFin ?? "",
+        blocks: grade.bloques ?? null,
+        breaks: grade.recesos ?? [],
+      }
+    : {
+        startTime: period?.config.scheduleStartTime ?? "",
+        endTime: period?.config.scheduleEndTime ?? "",
+        blocks: period?.config.defaultBlocksCount ?? null,
+        breaks: period?.config.breaks ?? [],
+      }
 
   return (
-    <>
-      <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
-        {hasSelection ? (
-          <>
-            <DeleteSelectedGradeGroupsDialog
-              groupCount={selectedIds.length}
-              groupIds={selectedGroupIds}
-              namesById={namesById}
-              resetSelection={resetSelection}
-            />
-            <ExportSelectedGradeGroupsDialog
-              selectedIds={selectedGroupIds}
-              resetSelection={resetSelection}
-              academicPeriodId={academicPeriodId}
-            />
-          </>
-        ) : (
-          <>
-            <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />
-            <ExportGradeGroupsDialog filters={{}} />
-          </>
-        )}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h4 className="text-lg font-semibold">Grupos</h4>
+        <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />
       </div>
 
-      <NoticeOutlet className="mb-2" />
+      <NoticeOutlet />
 
       <DataTable
         table={table}
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Aún no hay grupos."
+        isRowHighlighted={(row) => row.original.id === scheduleGroupId}
+        emptyMessage="El grado aún no tiene grupos. Use Agregar grupo para crear el primero."
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
-      {data && (
-        <Pagination
-          viewOptions={<DataTableViewOptions table={table} />}
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={changePageSize}
-        />
+
+      <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
+
+      {scheduleGroup && gradeId != null && (
+        <GroupSchedule key={scheduleGroup.id} gradeId={gradeId} group={scheduleGroup} schedule={schedule} />
       )}
-    </>
+    </div>
   )
 }

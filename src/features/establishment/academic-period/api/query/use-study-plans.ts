@@ -10,7 +10,7 @@ import { academicPeriodKeys } from "@/features/establishment/academic-period/api
 import { toPaginated } from "@/lib/pagination"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
-interface UseStudyPlansQueryParams {
+export interface UseStudyPlansQueryParams {
   filters: StudyPlanQueryRequest["filters"]
   sorting: StudyPlanQueryRequest["sorting"]
   pageIndex: number
@@ -29,6 +29,7 @@ interface StudyPlanRow {
   asignatura_id: number
   asignatura: string
   enfasis_nombre: string | null
+  area_nombre?: string | null
   intensidad_horaria: number
   influencia_area: number
   numero_creditos: number
@@ -49,6 +50,7 @@ function toStudyPlanItem(row: StudyPlanRow): StudyPlanItem {
     codigo: row.codigo,
     asignaturaId: row.asignatura_id,
     asignatura: row.enfasis_nombre ? `${row.asignatura} (${row.enfasis_nombre})` : row.asignatura,
+    areaNombre: row.area_nombre ?? undefined,
     intensidadHoraria: row.intensidad_horaria,
     influenciaArea: row.influencia_area,
     numeroCreditos: row.numero_creditos,
@@ -61,7 +63,7 @@ function toStudyPlanItem(row: StudyPlanRow): StudyPlanItem {
   }
 }
 
-async function fetchStudyPlans(
+export async function fetchStudyPlans(
   params: UseStudyPlansQueryParams
 ): Promise<StudyPlanQueryResponse> {
   if (params.gradeId == null) return { rows: [], pageCount: 1, totalCount: 0 }

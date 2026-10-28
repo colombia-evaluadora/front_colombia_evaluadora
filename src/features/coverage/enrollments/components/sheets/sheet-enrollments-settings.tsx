@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -98,8 +99,9 @@ function toUpdateRequest(
     RESERVA: reservationEnabled ? "S" : "N",
     BLOQUES_POR_DEFECTO: config.defaultBlocksCount,
     FK_PERIODO_ANTERIOR: detail.previousPeriodId,
-    DESCANSO_INICIO: (config.breaks ?? []).map((item) => item.startTime),
-    DESCANSO_FIN: (config.breaks ?? []).map((item) => item.endTime),
+    MODALIDAD_MATRICULA: config.enrollmentModality,
+    CICLO: config.cycle,
+    RECESOS: toRecesosBody(config.breaks),
   }
 }
 

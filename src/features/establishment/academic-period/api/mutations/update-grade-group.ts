@@ -24,6 +24,8 @@ async function updateGradeGroup({
     FK_MODELO_PEDAGOGICO: fkModeloPedagogico,
     CAPACIDAD: values.cupo,
     FK_FUNCIONARIO: values.directorId,
+    // Pendiente en el backend (Regla 108).
+    DICTA_TODAS: values.directorId != null && values.dictaTodas ? "S" : "N",
   })
 }
 

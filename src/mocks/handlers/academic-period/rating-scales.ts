@@ -71,6 +71,8 @@ export const ratingScalesHandlers = [
         id: level.id,
         codigo: String(level.id),
         nombre: level.nombre,
+        // Grados del nivel: el formulario del grado lista solo los de su nivel.
+        grados: level.grados ?? [],
       })),
     })
   }),
@@ -101,11 +103,47 @@ export const ratingScalesHandlers = [
     const body = (await request.json()) as {
       ACADEMIC_PERIOD_ID: number
       TEACHING_LEVEL_IDS: number[]
-      SCALES: ScaleWriteItem[]
+      SCALES: ScaleWriteItem[] | string
+    }
+    // El front manda SCALES como string JSON (`CAST(:BODY.SCALES AS JSONB)`).
+    const scales: ScaleWriteItem[] =
+      typeof body.SCALES === "string" ? JSON.parse(body.SCALES) : body.SCALES
+    // Regla 51: nombre y abreviación únicos por nivel, y rangos sin cruces.
+    for (const levelId of body.TEACHING_LEVEL_IDS) {
+      const existing = ratingScalesDb.filter(
+        (row) => row.academicPeriodId === body.ACADEMIC_PERIOD_ID && row.teachingLevelId === levelId
+      )
+      for (const scale of scales) {
+        const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+        const dup = existing.find(
+          (row) => same(row.nombre, scale.nombre) || same(row.abreviacion, scale.abreviacion)
+        )
+        if (dup) {
+          const campo = same(dup.nombre, scale.nombre) ? "ese nombre" : "esa abreviación"
+          return HttpResponse.json(
+            { status: "error", message: `Ya existe una valoración con ${campo} en este nivel de enseñanza.` },
+            { status: 409 }
+          )
+        }
+        const cross = existing.find(
+          (row) => scale.notaMinima <= row.notaMaxima && row.notaMinima <= scale.notaMaxima
+        )
+        if (cross) {
+          const from = Math.max(scale.notaMinima, cross.notaMinima).toFixed(1).replace(".", ",")
+          const to = Math.min(scale.notaMaxima, cross.notaMaxima).toFixed(1).replace(".", ",")
+          return HttpResponse.json(
+            {
+              status: "error",
+              message: `Las valoraciones ${scale.nombre} y ${cross.nombre} se cruzan entre ${from} y ${to}.`,
+            },
+            { status: 409 }
+          )
+        }
+      }
     }
     let count = 0
     for (const levelId of body.TEACHING_LEVEL_IDS) {
-      for (const scale of body.SCALES) {
+      for (const scale of scales) {
         const id = nextRatingScaleId()
         ratingScalesDb.push({
           id,
@@ -180,5 +218,31 @@ export const ratingScalesHandlers = [
       status: "ok",
       message: `${ratingScalesDb.length} escala(s) de valoración exportada(s).`,
     })
+  }),
+
+  // Listado real (`fn_escala_listar`): POST con el período en el path, como lo
+  // llama `use-rating-scales.ts`. Va al final para no tapar `/escalas/bulk-delete`.
+  // Sin él la request salía al back real y el 401 cerraba la sesión.
+  http.post("/api/eval-col/escalas/:academicPeriodId", async ({ params, request }) => {
+    await delay(250)
+    const academicPeriodId = Number(params.academicPeriodId)
+    const body = (await request.json()) as { FILTRO: string | null; TEACHING_LEVEL_ID: number | null }
+    const filtro = body.FILTRO?.toLowerCase()
+    const scoped = ratingScalesDb
+      .filter((row) => row.academicPeriodId === academicPeriodId)
+      .filter((row) => body.TEACHING_LEVEL_ID == null || row.teachingLevelId === body.TEACHING_LEVEL_ID)
+      .filter(
+        (row) =>
+          !filtro ||
+          row.nombre.toLowerCase().includes(filtro) ||
+          row.abreviacion.toLowerCase().includes(filtro)
+      )
+    const rows = scoped.map((row) => ({
+      ...toRawRow(row),
+      // Una TESCALA por período y nivel.
+      escala_id: academicPeriodId * 1000 + row.teachingLevelId,
+      total_count: scoped.length,
+    }))
+    return HttpResponse.json({ rows })
   }),
 ]

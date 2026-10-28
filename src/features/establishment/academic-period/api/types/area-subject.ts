@@ -46,6 +46,8 @@ export interface AreaSubjectsQueryResponse {
 
 export type CreateAreaSubjectRequest = Omit<AreaSubject, "codigo"> & {
   academicPeriodId?: number
+  // Color del área (Regla 67); pendiente en el backend.
+  color?: string
 }
 
 export type UpdateAreaSubjectRequest = AreaSubject

@@ -6,6 +6,8 @@ import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-
 import { ratingScaleTypesDb } from "../../db/academic-period/rating-scale-types"
 import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
 import { metodologiasDb } from "../../db/academic-period/metodologias"
+import { GRADE_NAMES } from "../../db/academic-period/grades"
+import { EVALUATION_CRITERIA_CATALOGS } from "../../db/academic-period/evaluation-criteria"
 import { GRADES } from "../../db/reservations"
 import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
@@ -72,10 +74,11 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: option.key,
       accion: null,
     })),
+  // Nombres como en la Lista de Valores real ("Sexto"), VALOR "0".."11".
   GRADOS: () =>
     GRADES.map((grade, i) => ({
       pk_lista_valor: i + 1,
-      nombre: formatGrade(grade),
+      nombre: GRADE_NAMES[grade] ?? formatGrade(grade),
       valor: String(grade),
       accion: null,
     })),
@@ -238,7 +241,11 @@ export const selectCatalogHandlers = [
   http.get("/api/eval-col/select/:categoria", async ({ params }) => {
     await delay(150)
     const categoria = String(params.categoria).toUpperCase()
-    const rows = CATALOGS_BY_CATEGORIA[categoria]?.() ?? []
+    const criteria = EVALUATION_CRITERIA_CATALOGS[categoria as keyof typeof EVALUATION_CRITERIA_CATALOGS]
+    const rows =
+      CATALOGS_BY_CATEGORIA[categoria]?.() ??
+      criteria?.map((o) => ({ pk_lista_valor: o.id, nombre: o.nombre, valor: o.nombre, accion: null })) ??
+      []
     return HttpResponse.json({ rows })
   }),
 ]

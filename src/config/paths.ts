@@ -143,6 +143,17 @@ export const paths = {
       getHref: (periodId: number | string) =>
         `/app/establecimiento-educativo/periodos/${periodId}/editar`,
     },
+    // Pantalla del grado (Sección 5.3), fuera de las pestañas del período.
+    periodosGradoAgregar: {
+      path: "establecimiento-educativo/periodos/$periodId/grados/agregar",
+      getHref: (periodId: number | string) =>
+        `/app/establecimiento-educativo/periodos/${periodId}/grados/agregar`,
+    },
+    periodosGradoEditar: {
+      path: "establecimiento-educativo/periodos/$periodId/grados/editar/$gradeId",
+      getHref: (periodId: number | string, gradeId: number | string) =>
+        `/app/establecimiento-educativo/periodos/${periodId}/grados/editar/${gradeId}`,
+    },
     establishments: {
       root: {
           path: "establecimiento-educativo",

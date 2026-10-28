@@ -1,103 +1,165 @@
-import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
+"use no memo"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import type { ColumnDef } from "@tanstack/react-table"
+
 import { DataTableColumnHeader } from "@/components/data-table"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { PauseCircleIcon, PencilIcon, PlayCircleIcon, TrashIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { renderStatusCell } from "@/features/establishment/employees/components/table/columns-employees"
-import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
+import type { AcademicAssignment } from "@/features/establishment/academic-period/api/types/academic-assignment"
 
 interface CreateColumnsOptions {
-  expandedId: number | null
-  onToggleExpand: (employee: EmployeeListItem) => void
+  readOnly: boolean
+  onEdit: (assignment: AcademicAssignment) => void
+  onToggleStatus: (assignment: AcademicAssignment) => void
+  onDelete: (assignment: AcademicAssignment) => Promise<boolean>
+}
+
+// Botón de acción con tooltip; las automáticas (Regla 108) lo muestran
+// deshabilitado con "Se gestiona desde el grupo [Grupo]".
+function ActionButton({
+  label,
+  hint,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string
+  hint: string
+  disabled?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span tabIndex={disabled ? 0 : -1} />}>
+        <Button
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          disabled={disabled}
+          onClick={onClick}
+        >
+          <span className="sr-only">{label}</span>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 export function createAcademicAssignmentColumns({
-  expandedId,
-  onToggleExpand,
-}: CreateColumnsOptions): ColumnDef<EmployeeListItem>[] {
-  return [
+  readOnly,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+}: CreateColumnsOptions): ColumnDef<AcademicAssignment>[] {
+  const columns: ColumnDef<AcademicAssignment>[] = [
     {
-      id: "expand",
-      header: () => <span className="sr-only">Expandir</span>,
+      id: "docente",
+      accessorKey: "docente",
+      meta: { label: "Docente" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Docente" />,
+      cell: ({ row }) => (
+        <span className="flex flex-wrap items-center gap-2">
+          {row.original.docente}
+          {row.original.automatica && (
+            <Badge variant="soft" color="info" className="text-xs">
+              Automática
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "grado",
+      accessorKey: "grado",
+      meta: { label: "Grado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
+    },
+    {
+      id: "grupo",
+      accessorKey: "grupo",
+      meta: { label: "Grupo" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grupo" />,
+    },
+    {
+      id: "asignatura",
+      accessorKey: "asignatura",
+      meta: { label: "Asignatura" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Asignatura" />,
+    },
+    {
+      id: "estado",
+      accessorKey: "status",
+      meta: { label: "Estado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+      cell: ({ row }) =>
+        row.original.status === "A" ? (
+          <Badge variant="soft" color="success" className="border border-current/30">
+            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+            Activa
+          </Badge>
+        ) : (
+          <Badge variant="outline" color="neutral">
+            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+            Inactiva
+          </Badge>
+        ),
+    },
+  ]
+  if (readOnly) return columns
+
+  return [
+    ...columns,
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
-        const isOpen = expandedId === row.original.id
+        const a = row.original
+        const name = `${a.asignatura} en ${a.grupo}`
+        const locked = a.automatica ? `Se gestiona desde el grupo ${a.grupo}` : null
+        const active = a.status === "A"
         return (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={isOpen ? "Contraer" : "Expandir"}
-                  aria-expanded={isOpen}
-                  onClick={() => onToggleExpand(row.original)}
-                />
-              }
+          <div className="flex items-center justify-end gap-1">
+            <ActionButton
+              label={`Modificar ${name}`}
+              hint={locked ?? "Modificar"}
+              disabled={a.automatica}
+              onClick={() => onEdit(a)}
             >
-              {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
-            </TooltipTrigger>
-            <TooltipContent>{isOpen ? "Contraer" : "Expandir"}</TooltipContent>
-          </Tooltip>
+              <PencilIcon />
+            </ActionButton>
+            <ActionButton
+              label={`${active ? "Inactivar" : "Activar"} ${name}`}
+              hint={locked ?? (active ? "Inactivar" : "Activar")}
+              disabled={a.automatica}
+              onClick={() => onToggleStatus(a)}
+            >
+              {active ? <PauseCircleIcon /> : <PlayCircleIcon />}
+            </ActionButton>
+            {a.automatica ? (
+              <ActionButton label={`Eliminar ${name}`} hint={locked!} disabled onClick={() => {}}>
+                <TrashIcon />
+              </ActionButton>
+            ) : (
+              <ConfirmRemoveButton
+                label={`Eliminar ${name}`}
+                title={`Eliminar la asignación de ${name}`}
+                description="Esta información quedará sin propietario y los Responsables de enseñanza no podrán consultarla hasta que se haga una nueva asignación."
+                onConfirm={() => onDelete(a)}
+              />
+            )}
+          </div>
         )
       },
       enableSorting: false,
       enableHiding: false,
-      size: 40,
-    },
-    {
-      // `-ml-4` en ambos checkboxes: pega la casilla contra el chevron de
-      // "expandir", cancelando el `px-4` que trae la celda por defecto (así
-      // no depende de que `cellClassName` a nivel tabla logre pisar ese
-      // padding vía twMerge, que no estaba surtiendo efecto acá).
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          aria-label="Seleccionar página"
-          className="-ml-7 translate-y-0.5"
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          aria-label={`Seleccionar ${row.original.name}`}
-          className="-ml-7 translate-y-0.5"
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 32,
-    },
-    {
-      id: "documentNumber",
-      accessorKey: "documentNumber",
-      meta: { label: "Documento" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Documento" />,
-      cell: ({ row }) => <span className="tabular-nums">{row.original.documentNumber}</span>,
-    },
-    {
-      id: "name",
-      accessorKey: "name",
-      meta: { label: "Nombre" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-      cell: ({ row }) => <div className="max-w-md truncate font-medium">{row.original.name}</div>,
-    },
-    {
-      id: "status",
-      accessorKey: "status",
-      meta: { label: "Estado" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-      cell: ({ row }) => (
-        <span className="text-sm text-foreground">{renderStatusCell(row.original.statuses)}</span>
-      ),
+      size: 144,
     },
   ]
 }
-
-export type AcademicAssignmentTable = Table<EmployeeListItem>

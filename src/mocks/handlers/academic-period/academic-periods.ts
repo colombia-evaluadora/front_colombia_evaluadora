@@ -8,6 +8,12 @@ import {
 } from "../../db/academic-period/academic-periods"
 import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
 import { jornadasDb } from "../../db/academic-period/jornadas"
+import { ENROLLMENT_MODALITIES, getModalityCycles } from "@/features/establishment/academic-period/api/schema"
+import { formatDateValue } from "@/lib/date-value"
+import {
+  fromRecesosRows,
+  toRecesosBody,
+} from "@/features/establishment/academic-period/utils/recesos"
 import { tableOperationChangesDb, tableOperationsDb } from "@/mocks/db/table-operations"
 import type { OperationChange, TableOperation } from "@/features/administration/audits/api/types/audit-table"
 import type {
@@ -27,8 +33,8 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
 
 // El front manda el body PLANO con las llaves de `fn_periodo_crear`. El mock
 // mantiene su modelo interno (periodo + config), así que aquí revertimos ese
-// shaping: llaves UPPER_SNAKE → campos del dominio, "S"/"N" → boolean y los
-// `TIME[]` paralelos → `breaks[]`.
+// shaping: llaves UPPER_SNAKE → campos del dominio, "S"/"N" → boolean y
+// `RECESOS` → `breaks[]`.
 function fromCreateRequest(body: CreateAcademicPeriodRequest): {
   period: Pick<
     AcademicPeriod,
@@ -41,8 +47,6 @@ function fromCreateRequest(body: CreateAcademicPeriodRequest): {
   >
   config: Omit<AcademicPeriodConfig, "academicPeriodId">
 } {
-  const starts = body.DESCANSO_INICIO ?? []
-  const ends = body.DESCANSO_FIN ?? []
   return {
     period: {
       sedeId: String(body.FK_SEDE),
@@ -58,10 +62,9 @@ function fromCreateRequest(body: CreateAcademicPeriodRequest): {
       defaultBlocksCount: body.BLOQUES_POR_DEFECTO,
       scheduleStartTime: body.HORA_INICIO,
       scheduleEndTime: body.HORA_FIN,
-      breaks: starts.map((startTime, i) => ({
-        startTime,
-        endTime: ends[i] ?? "",
-      })),
+      breaks: fromRecesosRows(body.RECESOS),
+      enrollmentModality: body.MODALIDAD_MATRICULA ?? "ANUAL",
+      cycle: body.CICLO ?? 1,
     },
   }
 }
@@ -118,6 +121,89 @@ function applySorting(
   return desc ? sorted.reverse() : sorted
 }
 
+// Regla 15: el estado sale de las fechas (antes del inicio, Inscripciones).
+function statusByDates(startDate: string, endDate: string) {
+  const today = formatDateValue(new Date())
+  const key = today < startDate ? "I" : today > endDate ? "C" : "A"
+  return academicPeriodStatusesDb.find((s) => s.key === key)!
+}
+
+function toMinutes(value: string) {
+  const [h, m] = value.split(":").map(Number)
+  return h * 60 + m
+}
+
+function validationError(message: string) {
+  return HttpResponse.json({ status: "error", message }, { status: 409 })
+}
+
+// Reglas 14, 27, 28 y 29 tal como las aplicaría `fn_periodo_crear/actualizar`.
+function validatePeriod(
+  body: CreateAcademicPeriodRequest,
+  excludeId: number | null
+): string | null {
+  const { FECHA_INICIO: start, FECHA_FIN: end } = body
+  if (start && end && end <= start) {
+    return "El Fin del período académico debe ser posterior al Inicio."
+  }
+  if (end && body.FECHA_LIMITE_MATRICULA && body.FECHA_LIMITE_MATRICULA > end) {
+    return "La Fecha límite de matrícula no puede ser posterior al Fin del período académico."
+  }
+  if (body.HORA_INICIO && body.HORA_FIN && body.HORA_FIN <= body.HORA_INICIO) {
+    return "La Hora final debe ser posterior a la Hora inicio."
+  }
+  const recesos = body.RECESOS ?? []
+  const nameOf = (i: number) => recesos[i].label
+  for (let i = 0; i < recesos.length; i++) {
+    const r = recesos[i]
+    if (r.location === "BLOQUE" && body.BLOQUES_POR_DEFECTO != null && (r.afterBlock ?? 0) > body.BLOQUES_POR_DEFECTO) {
+      return `El receso ${nameOf(i)} va después del bloque ${r.afterBlock}, pero la jornada tiene ${body.BLOQUES_POR_DEFECTO} bloques. Corrija su ubicación.`
+    }
+    const j = recesos.findIndex(
+      (o, k) => k < i && o.location === r.location && o.afterBlock === r.afterBlock
+    )
+    if (j !== -1) {
+      return `Los recesos ${nameOf(j)} y ${nameOf(i)} tienen la misma ubicación.`
+    }
+  }
+  if (body.HORA_INICIO && body.HORA_FIN) {
+    const total = recesos.reduce((sum, r) => sum + r.durationMinutes, 0)
+    if (total >= toMinutes(body.HORA_FIN) - toMinutes(body.HORA_INICIO)) {
+      return `Los recesos suman ${total} minutos y no dejan tiempo para los bloques de la jornada.`
+    }
+  }
+
+  const modality = body.MODALIDAD_MATRICULA ?? "ANUAL"
+  const cycle = body.CICLO ?? 1
+  if (cycle < 1 || cycle > getModalityCycles(modality)) {
+    return `El ciclo debe estar entre 1 y ${getModalityCycles(modality)}.`
+  }
+
+  const year = start ? start.slice(0, 4) : null
+  const siblings = academicPeriodsDb.filter((p) => {
+    if (p.id === excludeId || String(p.sedeId) !== String(body.FK_SEDE)) return false
+    if (year && String(p.schoolYearId) !== year) return false
+    const c = academicPeriodConfigsDb.find((x) => x.academicPeriodId === p.id)
+    return c?.jornadaId === body.FK_JORNADA && c.enrollmentModality === modality
+  })
+  for (const p of siblings) {
+    const c = academicPeriodConfigsDb.find((x) => x.academicPeriodId === p.id)!
+    if (c.cycle === cycle) {
+      const sede = sedesLookup.find((s) => s.id === Number(body.FK_SEDE))
+      const jornada = jornadasDb.find((j) => j.id === body.FK_JORNADA)
+      const label = ENROLLMENT_MODALITIES.find((m) => m.value === modality)?.label
+      return `Ya existe un período académico para ${sede?.name ?? "la sede"} · ${year} · ${jornada?.name ?? ""} · ${label} · Ciclo ${cycle}.`
+    }
+    // Ciclos en orden y sin cruzarse.
+    const overlaps = start <= p.endDate && p.startDate <= end
+    const outOfOrder = c.cycle < cycle ? start <= p.endDate : end >= p.startDate
+    if (start && end && (overlaps || outOfOrder)) {
+      return `Las fechas se cruzan con el ciclo ${c.cycle} de la misma modalidad.`
+    }
+  }
+  return null
+}
+
 export const academicPeriodsHandlers = [
   http.post("/api/eval-col/periodos-academicos/query", async ({ request }) => {
     await delay(250)
@@ -171,6 +257,11 @@ export const academicPeriodsHandlers = [
         enrollment_deadline: row.enrollmentDeadline,
         name: row.name,
         jornada_id: config?.jornadaId ?? null,
+        jornada_name:
+          jornadasDb.find((j) => j.id === config?.jornadaId)?.name ?? "",
+        enrollment_modality: config?.enrollmentModality ?? "ANUAL",
+        cycle: config?.cycle ?? 1,
+        recesos: toRecesosBody(config?.breaks),
         reserva: config?.reservationEnabled ? "S" : "N",
         default_blocks_count: config?.defaultBlocksCount ?? 0,
         schedule_start_time: config?.scheduleStartTime ?? null,
@@ -210,16 +301,15 @@ export const academicPeriodsHandlers = [
   http.post("/api/eval-col/periodos-academicos", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateAcademicPeriodRequest
+    const error = validatePeriod(body, null)
+    if (error) return validationError(error)
     const { period: periodData, config } = fromCreateRequest(body)
     // `sedeId` viaja como string en el dominio de periodo académico
     // (`fromCreateRequest` hace `String(body.FK_SEDE)`) y las sedes tienen id
     // numérico: sin el cast la comparación nunca es cierta y `sede` queda
     // siempre `undefined`.
     const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
-    // El back guarda el estado por id; resolvemos el código/etiqueta para el listado.
-    const statusOption = academicPeriodStatusesDb.find(
-      (s) => s.id === periodData.statusId
-    )
+    const statusOption = statusByDates(periodData.startDate, periodData.endDate)
     // El back DERIVA el año lectivo (del año de inicio) y el nombre.
     const schoolYearId = periodData.startDate
       ? new Date(periodData.startDate).getFullYear()
@@ -230,8 +320,8 @@ export const academicPeriodsHandlers = [
     const newPeriod: AcademicPeriod = {
       id,
       sedeName: sede?.name ?? "—",
-      status: statusOption?.key ?? "A",
-      statusName: statusOption?.label,
+      status: statusOption.key,
+      statusName: statusOption.label,
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,
       minAbsences: null,
@@ -242,6 +332,7 @@ export const academicPeriodsHandlers = [
       // toggle de la tabla.
       reservationEnabled: config.reservationEnabled,
       ...periodData,
+      statusId: statusOption.id,
     }
     academicPeriodsDb.push(newPeriod)
     academicPeriodConfigsDb.push({ academicPeriodId: id, ...config })
@@ -303,6 +394,8 @@ export const academicPeriodsHandlers = [
         scheduleStartTime: null,
         scheduleEndTime: null,
         breaks: [],
+        enrollmentModality: "ANUAL",
+        cycle: 1,
       } satisfies AcademicPeriodConfig)
     const jornada = jornadasDb.find((j) => j.id === config.jornadaId)
 
@@ -333,7 +426,9 @@ export const academicPeriodsHandlers = [
           default_blocks_count: config.defaultBlocksCount,
           schedule_start_time: config.scheduleStartTime,
           schedule_end_time: config.scheduleEndTime,
-          descansos: config.breaks,
+          recesos: toRecesosBody(config.breaks),
+          enrollment_modality: config.enrollmentModality,
+          cycle: config.cycle,
           previous_period_id: period.previousPeriodId,
         },
       ],
@@ -358,6 +453,8 @@ export const academicPeriodsHandlers = [
     }
 
     const body = (await request.json()) as UpdateAcademicPeriodRequest
+    const error = validatePeriod(body, academicPeriodsDb[index].id)
+    if (error) return validationError(error)
     const { period: periodData, config } = fromCreateRequest(body)
     const previousReservationEnabled = academicPeriodsDb[index].reservationEnabled
 
@@ -392,9 +489,7 @@ export const academicPeriodsHandlers = [
     // Mismo cast que en el alta: `sedeId` es string y las sedes tienen id
     // numérico, así que sin `Number(...)` la sede nunca se encuentra.
     const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
-    const statusOption = academicPeriodStatusesDb.find(
-      (s) => s.id === periodData.statusId
-    )
+    const statusOption = statusByDates(periodData.startDate, periodData.endDate)
     // El back re-deriva año lectivo/nombre al cambiar la fecha de inicio.
     const schoolYearId = periodData.startDate
       ? new Date(periodData.startDate).getFullYear()
@@ -404,8 +499,9 @@ export const academicPeriodsHandlers = [
       ...academicPeriodsDb[index],
       ...periodData,
       id,
-      status: statusOption?.key ?? academicPeriodsDb[index].status,
-      statusName: statusOption?.label ?? academicPeriodsDb[index].statusName,
+      statusId: statusOption.id,
+      status: statusOption.key,
+      statusName: statusOption.label,
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,
       sedeName: sede?.name ?? academicPeriodsDb[index].sedeName,

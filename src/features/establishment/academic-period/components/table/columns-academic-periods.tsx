@@ -1,11 +1,11 @@
+import { ENROLLMENT_MODALITIES } from "@/features/establishment/academic-period/api/schema"
 import type { ColumnDef, Table } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { RESERVATION_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
   AcademicPeriod,
   AcademicPeriodStatus,
@@ -20,20 +20,19 @@ import { Authorization } from "@/lib/authorization"
 function StatusCell({ status }: { status: AcademicPeriodStatus }) {
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const label = statusOptions.find((o) => o.key === status)?.label ?? status
-  return <span>{label}</span>
-}
-
-function ReservationStatusCell({ enabled }: { enabled: boolean }) {
-  // Badge dedicado (no reutiliza el de estado de periodo) porque "Activo"/
-  // "Inactivo" se refiere al flag de reserva de cupos, no al `ESTADOPERIODO`.
   return (
-    <Badge {...RESERVATION_STATUS_BADGE[enabled ? "active" : "inactive"]}>
-      {enabled ? "Activo" : "Inactivo"}
+    <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]} className="border border-current/30">
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />
+      {label}
     </Badge>
   )
 }
 
-const VISIBLE_BREAKS = 2
+function ReservationStatusCell({ enabled }: { enabled: boolean }) {
+  // Texto plano: el badge queda para el estado del período (`ESTADOPERIODO`).
+  return <span>{enabled ? "Activo" : "Inactivo"}</span>
+}
+
 
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split("-")
@@ -144,40 +143,22 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     cell: ({ row }) => <span>{row.original.defaultBlocksCount ?? "—"}</span>,
   },
   {
-    id: "breaks",
-    accessorKey: "breaks",
-    meta: { label: "Descansos" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Descansos" />,
-    cell: ({ row }) => {
-      const breaks = row.original.breaks ?? []
-      if (breaks.length === 0) return <span>—</span>
-      const visible = breaks.slice(0, VISIBLE_BREAKS)
-      const remaining = breaks.slice(VISIBLE_BREAKS)
-      const extra = remaining.length
-      return (
-        <div className="flex flex-nowrap items-center gap-1">
-          {visible.map((b) => (
-            <Badge key={`${b.startTime}-${b.endTime}`} variant="outline" color="neutral">
-              {b.startTime}-{b.endTime}
-            </Badge>
-          ))}
-          {extra > 0 ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Badge variant="outline" color="neutral" className="cursor-default">
-                    +{extra}
-                  </Badge>
-                }
-              />
-              <TooltipContent>
-                {remaining.map((b) => `${b.startTime}-${b.endTime}`).join(", ")}
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
-        </div>
-      )
-    },
+    id: "enrollmentModality",
+    accessorKey: "enrollmentModality",
+    meta: { label: "Modalidad de matrícula" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Modalidad de matrícula" />,
+    cell: ({ row }) => (
+      <span>
+        {ENROLLMENT_MODALITIES.find((m) => m.value === row.original.enrollmentModality)?.label ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "cycle",
+    accessorKey: "cycle",
+    meta: { label: "Ciclo" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ciclo" />,
+    cell: ({ row }) => <span>{row.original.cycle != null ? `C${row.original.cycle}` : "—"}</span>,
   },
   {
     id: "actions",

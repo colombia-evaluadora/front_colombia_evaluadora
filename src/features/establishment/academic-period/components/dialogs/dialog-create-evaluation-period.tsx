@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { addDays } from "date-fns"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useAppForm } from "@/lib/forms"
-import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FloppyDiskIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 import { getErrorMessage } from "@/lib/api-client"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,38 +22,37 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
-import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
-import { formatDateValue, parseDateValue } from "@/lib/date-value"
-import {
-  EVALUATION_PERIOD_STATUS_BADGE,
-  evaluationPeriodStatusByDates,
-} from "@/features/establishment/academic-period/api/ui-mappings"
+import { parseDateValue } from "@/lib/date-value"
 import {
   evaluationPeriodFormSchema,
   type EvaluationPeriodFormValues,
 } from "@/features/establishment/academic-period/api/schema"
+import { DecimalField } from "@/features/establishment/academic-period/components/fields/decimal-field"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 
 const EMPTY: EvaluationPeriodFormValues = {
-  codigo: "",
   nombre: "",
   abreviacion: "",
   startDate: "",
   endDate: "",
-  peso: 0,
-  estadoId: 0,
+  peso: Number.NaN,
 }
 
 const FORM_ID = "evaluation-period-form"
+
+const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 
 interface CreateEvaluationPeriodDialogProps {
   academicPeriodId?: number
   period?: EvaluationPeriod
 }
 
+// Agregar y Modificar período de evaluación (Sección 5.1; Reglas 30, 34, 35 y 36).
+// Los errores salen bajo cada campo con los mensajes del back; el estado no se
+// captura (lo calculan las fechas, Regla 37).
 export function CreateEvaluationPeriodDialog({
   academicPeriodId,
   period,
@@ -75,9 +73,6 @@ export function CreateEvaluationPeriodDialog({
     setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
   }
 
-  const { data: statusOptions = [] } = useEvaluationPeriodStatusesQuery()
-  const statusSelectOptions = statusOptions.map((o) => ({ value: o.id, label: o.label }))
-
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const academicPeriodStart = academicPeriod?.startDate ?? ""
   const academicPeriodEnd = academicPeriod?.endDate ?? ""
@@ -93,14 +88,13 @@ export function CreateEvaluationPeriodDialog({
     (row) => !isEditing || row.id !== period.id,
   )
   const otherPeriodsWeightSum = otherPeriods.reduce((sum, row) => sum + (row.peso ?? 0), 0)
-  const maxAllowedWeight = Math.max(0, 100 - otherPeriodsWeightSum)
 
-  function dateWithinOtherPeriod(date: string): boolean {
-    return otherPeriods.some((p) => date >= p.startDate && date <= p.endDate)
-  }
-
-  function rangeOverlapsOtherPeriod(start: string, end: string): boolean {
-    return otherPeriods.some((p) => start <= p.endDate && p.startDate <= end)
+  // Regla 34: el primero (por fecha) con el que se cruza el rango.
+  function overlappingPeriod(start: string, end: string) {
+    const to = end && end >= start ? end : start
+    return otherPeriods
+      .filter((p) => start <= p.endDate && p.startDate <= to)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0]
   }
 
   function nextOtherPeriodStart(start: string): string | undefined {
@@ -108,16 +102,6 @@ export function CreateEvaluationPeriodDialog({
       .map((p) => p.startDate)
       .filter((s) => s > start)
       .sort()[0]
-  }
-
-  function hasAvailableEndDate(startDateValue: string): boolean {
-    if (!startDateValue) return true
-    const dayAfterStart = formatDateValue(addDays(parseDateValue(startDateValue) as Date, 1))
-    const nextStart = nextOtherPeriodStart(startDateValue)
-    const maxEnd = nextStart
-      ? formatDateValue(addDays(parseDateValue(nextStart) as Date, -1))
-      : academicPeriodEnd
-    return !maxEnd || dayAfterStart <= maxEnd
   }
 
   const otherPeriodsDateRanges = otherPeriods.map((p) => ({
@@ -129,13 +113,11 @@ export function CreateEvaluationPeriodDialog({
 
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
-        codigo: period.codigo,
         nombre: period.nombre,
         abreviacion: period.abreviacion,
         startDate: period.startDate,
         endDate: period.endDate,
-        peso: period.peso,
-        estadoId: period.estadoId ?? 0,
+        peso: period.peso ?? Number.NaN,
       }
     : EMPTY
 
@@ -172,17 +154,12 @@ export function CreateEvaluationPeriodDialog({
       onChange: evaluationPeriodFormSchema,
       onSubmit: evaluationPeriodFormSchema,
     },
-    // El validador ya pasó y el schema no transforma.
     onSubmit: ({ value }) => {
-      const payload = { ...value }
+      const values = { ...value, nombre: value.nombre.trim(), abreviacion: value.abreviacion.trim() }
       if (isEditing) {
-        updateEvaluation.mutate({
-          academicPeriodId,
-          id: period.id,
-          values: payload,
-        })
+        updateEvaluation.mutate({ academicPeriodId, id: period.id, values })
       } else {
-        createEvaluation.mutate({ ...payload, academicPeriodId })
+        createEvaluation.mutate({ ...values, academicPeriodId })
       }
     },
   })
@@ -193,35 +170,17 @@ export function CreateEvaluationPeriodDialog({
     setOpen(next)
   }
 
-  useEffect(() => {
-    if (isEditing || !open) return
-    function syncEstado() {
-      const { startDate, endDate, estadoId } = form.state.values
-      const key = evaluationPeriodStatusByDates(startDate, endDate, formatDateValue(new Date()))
-      const status = statusOptions.find((o) => o.key === key)
-      if (status && status.id !== estadoId) form.setFieldValue("estadoId", status.id)
-    }
-    syncEstado()
-    const subscription = form.store.subscribe(syncEstado)
-    return () => subscription.unsubscribe()
-  }, [isEditing, open, statusOptions, form])
-
   const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
     isSaving,
-    isDirty: () => {
-      const { estadoId: _a, ...current } = form.state.values
-      const { estadoId: _b, ...initial } = defaultValues
-      return !formValuesEqual(current, initial)
-    },
+    isDirty: () => !formValuesEqual(form.state.values, defaultValues),
     onOpen: () => handleOpenChange(true),
     onClose: () => handleOpenChange(false),
   })
 
+  const title = isEditing ? "Modificar período de evaluación" : "Agregar período de evaluación"
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       {isEditing ? (
         <Tooltip>
           <TooltipTrigger
@@ -229,22 +188,20 @@ export function CreateEvaluationPeriodDialog({
               <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
             }
           >
-            <span className="sr-only">Editar periodo de evaluación</span>
+            <span className="sr-only">Modificar período de evaluación</span>
             <PencilIcon />
           </TooltipTrigger>
-          <TooltipContent>Editar periodo de evaluación</TooltipContent>
+          <TooltipContent>Modificar</TooltipContent>
         </Tooltip>
       ) : (
         <DialogTrigger render={<Button color="primary" size="sm" />}>
           <ControlPointIcon data-icon="inline-start" />
-          Agregar
+          Agregar período de evaluación
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-3xl" inert={confirmDiscardOpen}>
+      <DialogContent className="sm:max-w-lg" inert={confirmDiscardOpen}>
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar periodo de evaluación" : "Agregar periodos de evaluación"}
-          </DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <NoticeBanner
@@ -260,101 +217,78 @@ export function CreateEvaluationPeriodDialog({
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
+          className="grid gap-x-4 gap-y-5 sm:grid-cols-2"
         >
-          <form.AppField name="codigo">
-            {(field) => <field.TextField label="Código" required maxLength={30} />}
+          <form.AppField
+            name="nombre"
+            validators={{
+              onChange: ({ value }) =>
+                otherPeriods.some((p) => sameText(p.nombre, value))
+                  ? { message: "Ya existe un período de evaluación con ese Nombre." }
+                  : undefined,
+            }}
+          >
+            {(field) => (
+              <field.TextField label="Nombre" required maxLength={100} placeholder="Primer período" />
+            )}
           </form.AppField>
 
-          <form.AppField name="nombre">
-            {(field) => <field.TextField label="Nombre" required maxLength={130} />}
-          </form.AppField>
-
-          <form.AppField name="abreviacion">
-            {(field) => <field.TextField label="Abreviación" required maxLength={30} />}
+          <form.AppField
+            name="abreviacion"
+            validators={{
+              onChange: ({ value }) =>
+                otherPeriods.some((p) => sameText(p.abreviacion, value))
+                  ? { message: "Ya existe un período de evaluación con esa Abreviación." }
+                  : undefined,
+            }}
+          >
+            {(field) => (
+              <field.TextField label="Abreviación" required maxLength={10} placeholder="PE1" />
+            )}
           </form.AppField>
 
           <form.AppField
             name="startDate"
             validators={{
-              onChange: ({ value }) => {
+              onChangeListenTo: ["endDate"],
+              onChange: ({ value, fieldApi }) => {
                 if (!value) return undefined
                 if (academicPeriodStart && value < academicPeriodStart) {
                   return {
                     message:
-                      "La fecha de inicio no puede ser anterior a la fecha de inicio del período académico.",
+                      "El primer período de evaluación no puede empezar antes del Inicio del período académico.",
                   }
                 }
                 if (academicPeriodEnd && value > academicPeriodEnd) {
-                  return {
-                    message:
-                      "La fecha de inicio no puede ser posterior a la fecha de fin del período académico.",
-                  }
+                  return { message: "Las fechas deben estar dentro del período académico." }
                 }
-                if (dateWithinOtherPeriod(value)) {
-                  return {
-                    message: "Ya existe un periodo de evaluación con esta fecha.",
-                  }
+                const cruce = overlappingPeriod(value, fieldApi.form.getFieldValue("endDate"))
+                if (cruce) {
+                  return { message: `Las fechas se cruzan con el período de evaluación ${cruce.nombre}.` }
                 }
                 return undefined
               },
             }}
           >
             {(field) => (
-              <form.Subscribe selector={(state) => [state.values.startDate, state.values.endDate]}>
-                {([startDate, endDate]) => {
-                  // Avisos no bloqueantes; se ocultan si el campo tiene error.
-                  const outOfRange = !!startDate && !!endDate && startDate >= endDate
-                  const noAvailableEndDate = !!startDate && !hasAvailableEndDate(startDate)
-                  return (
-                    <field.DateField
-                      label="Fecha inicio"
-                      required
-                      disabledRanges={otherPeriodsDateRanges}
-                      minDate={academicPeriodMinDate}
-                      maxDate={academicPeriodMaxDate}
-                      description={
-                        noAvailableEndDate ? (
-                          <p role="alert" className="text-red text-xs">
-                            No queda ningún día disponible para la fecha de fin después de esta
-                            fecha de inicio: el siguiente día ya pertenece a otro periodo de
-                            evaluación. Elige otra fecha de inicio.
-                          </p>
-                        ) : outOfRange ? (
-                          <p role="alert" className="text-muted-foreground text-xs">
-                            La fecha de inicio debe ser anterior a la fecha de fin del período de
-                            evaluación.
-                          </p>
-                        ) : null
-                      }
-                    />
-                  )
-                }}
-              </form.Subscribe>
+              <field.DateField
+                label="Fecha inicio"
+                required
+                disabledRanges={otherPeriodsDateRanges}
+                minDate={academicPeriodMinDate}
+                maxDate={academicPeriodMaxDate}
+              />
             )}
           </form.AppField>
 
           <form.AppField
             name="endDate"
             validators={{
+              onChangeListenTo: ["startDate"],
               onChange: ({ value }) => {
                 if (!value) return undefined
-                if (academicPeriodStart && value < academicPeriodStart) {
-                  return {
-                    message:
-                      "La fecha de fin no puede ser anterior a la fecha de inicio del período académico.",
-                  }
-                }
                 if (academicPeriodEnd && value > academicPeriodEnd) {
-                  return {
-                    message:
-                      "La fecha de fin no puede ser posterior a la fecha de fin del período académico.",
-                  }
-                }
-                if (dateWithinOtherPeriod(value)) {
-                  return {
-                    message: "Ya existe un periodo de evaluación con esta fecha.",
-                  }
+                  return { message: "Las fechas deben estar dentro del período académico." }
                 }
                 return undefined
               },
@@ -393,94 +327,53 @@ export function CreateEvaluationPeriodDialog({
             )}
           </form.AppField>
 
-          <form.AppField
+          <form.Field
             name="peso"
             validators={{
-              onChange: ({ value }) => {
-                if (Number.isNaN(value)) return undefined
-                if (value > maxAllowedWeight) {
-                  return {
-                    message: `La suma de los pesos no puede superar el 100%. Disponible: ${maxAllowedWeight}%.`,
-                  }
-                }
-                return undefined
-              },
+              onChange: ({ value }) =>
+                Number.isFinite(value) && otherPeriodsWeightSum + value > 100
+                  ? { message: "La suma de los pesos no puede superar el 100 %." }
+                  : undefined,
             }}
           >
             {(field) => (
-              <field.NumberField
-                label="Peso porcentual (%)"
-                required
-                valueAs="number"
-                maxDigits={3}
-                suffix="%"
-              />
+              <div className="sm:col-span-2">
+                <DecimalField
+                  field={field}
+                  label="Peso porcentual (%)"
+                  required
+                  suffix="%"
+                  description={`Los demás períodos suman ${otherPeriodsWeightSum.toLocaleString("es-CO")} %.`}
+                />
+              </div>
             )}
-          </form.AppField>
-
-          <form.AppField name="estadoId">
-            {(field) => (
-              <field.SelectField
-                label="Estado"
-                options={statusSelectOptions}
-                emptyValue={0}
-                placeholder="Seleccionar"
-                disabled
-                renderValue={(option) => {
-                  const status = statusOptions.find((o) => o.id === option.value)
-                  const badge = status ? EVALUATION_PERIOD_STATUS_BADGE[status.key] : undefined
-                  return (
-                    <Badge {...badge} className="text-xs">
-                      {option.label}
-                    </Badge>
-                  )
-                }}
-              />
-            )}
-          </form.AppField>
+          </form.Field>
         </form>
+
         <DialogFooter>
-          <form.Subscribe selector={(state) => state.values}>
-            {(values) => {
-              const allRequiredFilled =
-                values.codigo.trim().length > 0 &&
-                values.nombre.trim().length > 0 &&
-                values.abreviacion.trim().length > 0 &&
-                values.startDate.length > 0 &&
-                values.endDate.length > 0 &&
-                !Number.isNaN(values.peso) &&
-                values.peso <= maxAllowedWeight
-              const datesWithinAcademicPeriod =
-                (!academicPeriodStart || values.startDate >= academicPeriodStart) &&
-                (!academicPeriodEnd || values.startDate <= academicPeriodEnd) &&
-                (!academicPeriodStart || values.endDate >= academicPeriodStart) &&
-                (!academicPeriodEnd || values.endDate <= academicPeriodEnd)
-              const noOverlap = !rangeOverlapsOtherPeriod(values.startDate, values.endDate)
-              return (
-                <Button
-                  size="sm"
-                  type="submit"
-                  color="primary"
-                  form={FORM_ID}
-                  disabled={
-                    isSaving || !allRequiredFilled || !datesWithinAcademicPeriod || !noOverlap
-                  }
-                  aria-busy={isSaving}
-                >
-                  {isSaving ? (
-                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                  ) : (
-                    <CheckIcon data-icon="inline-start" />
-                  )}
-                  Guardar
-                </Button>
-              )
-            }}
-          </form.Subscribe>
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
+          <form.Subscribe selector={(state) => state.canSubmit}>
+            {(canSubmit) => (
+              <Button
+                size="sm"
+                type="submit"
+                color="primary"
+                form={FORM_ID}
+                disabled={isSaving || !canSubmit}
+                aria-busy={isSaving}
+              >
+                {isSaving ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <FloppyDiskIcon data-icon="inline-start" />
+                )}
+                Guardar
+              </Button>
+            )}
+          </form.Subscribe>
         </DialogFooter>
       </DialogContent>
 

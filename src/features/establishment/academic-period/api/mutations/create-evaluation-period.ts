@@ -21,7 +21,8 @@ export function toCreateEvaluationPeriodRequest(
   // Body plano de `fn_periodo_eval_crear`; el usuario sale del contexto.
   return {
     FK_PERIODO: values.academicPeriodId ?? 0,
-    CODIGO: values.codigo,
+    // La abreviación hace de código (Sección 5.1).
+    CODIGO: values.abreviacion,
     NOMBRE: values.nombre,
     ABREVIACION: values.abreviacion,
     FECHA_INICIO: values.startDate,

@@ -1,22 +1,28 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { toPeriodTitle } from "@/features/establishment/academic-period/utils/period-title"
+import { toJornadaBreaks } from "@/features/establishment/academic-period/utils/recesos"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CaretRightIcon, FloppyDiskIcon, PrinterIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import { PeriodStatusStepper } from "@/features/establishment/academic-period/components/period-status-stepper"
+import { GeneratePeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-generate-period"
+import type { GenerateKind } from "@/features/establishment/academic-period/api/query/use-period-generate-data"
+import { Badge } from "@/components/ui/badge"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
-  TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { paths } from "@/config/paths"
@@ -27,13 +33,14 @@ import { useUpdateAcademicPeriod } from "@/features/establishment/academic-perio
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { useAcademicPeriodStatusesQuery, useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
-import type {
-  AcademicPeriodFormInput,
-  AcademicPeriodFormValues,
+import {
+  type AcademicPeriodFormInput,
+  type AcademicPeriodFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
 import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
 import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/tabs/evaluation-periods-section"
+import type { EvaluationCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
@@ -56,15 +63,26 @@ function toFormValues(detail: AcademicPeriodDetail): Partial<AcademicPeriodFormI
     scheduleStartTime: detail.config.scheduleStartTime ?? "",
     scheduleEndTime: detail.config.scheduleEndTime ?? "",
     breaks: detail.config.breaks,
+    enrollmentModality: detail.config.enrollmentModality,
+    cycle: detail.config.cycle,
   }
 }
+
+// Estados automaticos del periodo (Regla 15), en el orden en que ocurren.
+const STATUS_STEPS = ["Inscripciones", "Abierto", "Cerrado"]
+const STATUS_STEP_INDEX: Partial<Record<string, number>> = { I: 0, A: 1, C: 2 }
 
 function toJornada(detail: AcademicPeriodDetail): Jornada {
   return {
     startTime: detail.config.scheduleStartTime ?? "",
     endTime: detail.config.scheduleEndTime ?? "",
     blocksCount: detail.config.defaultBlocksCount,
-    breaks: detail.config.breaks,
+    breaks: toJornadaBreaks(
+      detail.config.scheduleStartTime ?? "",
+      detail.config.scheduleEndTime ?? "",
+      detail.config.defaultBlocksCount,
+      detail.config.breaks,
+    ),
   }
 }
 
@@ -95,10 +113,15 @@ function AcademicPeriodConfigPageContent() {
   const [saved, setSaved] = useState(false)
   const [createdPeriodId, setCreatedPeriodId] = useState<number | null>(null)
   const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
-  const [configOpen, setConfigOpen] = useState(true)
   const [isFormDirty, setIsFormDirty] = useState(false)
   const [isFormValid, setIsFormValid] = useState(false)
   const [savedToken, setSavedToken] = useState(0)
+  // Criterios de evaluación: el Guardar de arriba también guarda esa pestaña.
+  const criteriaRef = useRef<EvaluationCriteriaHandle>(null)
+  const [isCriteriaDirty, setIsCriteriaDirty] = useState(false)
+  const [isSavingCriteria, setIsSavingCriteria] = useState(false)
+  // "Generar › Planes de estudio / Horarios" (Sección 5.7).
+  const [generateKind, setGenerateKind] = useState<GenerateKind | null>(null)
 
   const {
     data: detail,
@@ -108,7 +131,7 @@ function AcademicPeriodConfigPageContent() {
   } = useAcademicPeriodQuery(numericPeriodId)
 
   useSedeOptionsQuery()
-  useJornadasQuery()
+  const { data: jornadas = [] } = useJornadasQuery()
   useAcademicPeriodStatusesQuery()
 
   const createPeriod = useCreateAcademicPeriod({
@@ -157,7 +180,12 @@ function AcademicPeriodConfigPageContent() {
       startTime: values.scheduleStartTime,
       endTime: values.scheduleEndTime,
       blocksCount: values.defaultBlocksCount,
-      breaks: values.breaks,
+      breaks: toJornadaBreaks(
+        values.scheduleStartTime,
+        values.scheduleEndTime,
+        values.defaultBlocksCount,
+        values.breaks,
+      ),
     })
     if (academicPeriodId != null) {
       updatePeriod.mutate({ id: academicPeriodId, values })
@@ -166,105 +194,149 @@ function AcademicPeriodConfigPageContent() {
     }
   }
 
-  const isSaving = createPeriod.isPending || updatePeriod.isPending
-  const showSecondForm = saved || (isEditing && !!detail)
-  // Al editar, solo si hay cambios; al agregar, siempre (deshabilitado si falta algo).
-  const showSaveAction = isEditing ? isFormDirty || isSaving : true
+  const isSaving = createPeriod.isPending || updatePeriod.isPending || isSavingCriteria
 
-  const configBody = (
-    <Accordion
-      value={configOpen ? ["config"] : []}
-      onValueChange={(value) => setConfigOpen(value.includes("config"))}
-    >
-      <AccordionItem value="config" className="rounded-md border border-border">
-        <AccordionTrigger className="items-center gap-3 px-4 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:size-5">
-          Información general del periodo
-        </AccordionTrigger>
-        <AccordionContent keepMounted className="px-4 pb-4">
-          {isEditing && isLoadingDetail ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground">
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              Cargando periodo…
-            </div>
-          ) : isEditing && isDetailError ? (
-            <p className="py-10 text-center text-destructive">
-              {getErrorMessage(detailError)}
-            </p>
-          ) : (
-            <>
-              <AcademicPeriodForm
-                id={FORM_ID}
-                defaultValues={detail ? toFormValues(detail) : undefined}
-                onSubmit={handleSubmit}
-                onDirtyChange={setIsFormDirty}
-                onValidChange={setIsFormValid}
-                savedToken={savedToken}
-                currentPeriodId={numericPeriodId}
-              />
-              {showSaveAction && (
-                <div className="mt-6 flex justify-end">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="fill"
-                    color="primary"
-                    form={FORM_ID}
-                    disabled={isSaving || (!isEditing && !isFormValid)}
-                    aria-busy={isSaving}
-                  >
-                    {isSaving ? (
-                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                    ) : (
-                      <CheckIcon data-icon="inline-start" />
-                    )}
-                    {isEditing
-                      ? isSaving
-                        ? "Guardando..."
-                        : "Guardar"
-                      : isSaving
-                        ? "Guardando..."
-                        : "Guardar"}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
-  )
+  // Envía el formulario del período solo si cambió (al agregar siempre) y, si
+  // hay cambios en Criterios de evaluación, los guarda también.
+  async function handleHeaderSave() {
+    if (!isEditing || isFormDirty) {
+      const periodForm = document.getElementById(FORM_ID)
+      if (periodForm instanceof HTMLFormElement) periodForm.requestSubmit()
+    }
+    if (isCriteriaDirty && criteriaRef.current) {
+      setIsSavingCriteria(true)
+      try {
+        await criteriaRef.current.save(notify)
+      } finally {
+        setIsSavingCriteria(false)
+      }
+    }
+  }
+  const showTabs = saved || (isEditing && !!detail)
+  const stepIndex = detail ? STATUS_STEP_INDEX[detail.status] : undefined
+  const title = detail
+    ? toPeriodTitle(detail, jornadas.find((j) => j.id === detail.config.jornadaId)?.name)
+    : isEditing
+      ? "Editar período académico"
+      : "Agregar período académico"
+
+  const generalBody =
+    isEditing && isLoadingDetail ? (
+      <div className="flex items-center justify-center py-10 text-muted-foreground">
+        <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+        Cargando período…
+      </div>
+    ) : isEditing && isDetailError ? (
+      <p className="py-10 text-center text-red">{getErrorMessage(detailError)}</p>
+    ) : (
+      <AcademicPeriodForm
+        id={FORM_ID}
+        defaultValues={detail ? toFormValues(detail) : undefined}
+        onSubmit={handleSubmit}
+        onDirtyChange={setIsFormDirty}
+        onValidChange={setIsFormValid}
+        savedToken={savedToken}
+        currentPeriodId={numericPeriodId}
+      />
+    )
 
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-table-screen-title px-(--screen-spacing) py-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <nav aria-label="Ruta">
+              <Link
+                to={paths.app.periodosAcademicos.getHref()}
+                search={(prev) => prev}
+                className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:underline focus-visible:outline-none"
+              >
+                Períodos académicos
+                <CaretRightIcon className="size-4" aria-hidden />
+              </Link>
+            </nav>
+            <h1 className="font-heading truncate text-2xl font-bold">{title}</h1>
+            {detail && (
+              <p className="flex flex-wrap items-center gap-2 text-sm">
+                <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[detail.status]} className="border border-current/30">
+                  <span aria-hidden className="size-1.5 rounded-full bg-current" />
+                  {detail.statusName}
+                </Badge>
+                <span className="text-muted-foreground">El estado cambia solo, con las fechas.</span>
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {detail && academicPeriodId != null && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button size="sm" variant="outline" color="neutral" />}
+                >
+                  <PrinterIcon data-icon="inline-start" />
+                  Generar
+                  <CaretDownIcon data-icon="inline-end" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuItem onClick={() => setGenerateKind("planes")}>Planes de estudio</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setGenerateKind("horarios")}>Horarios</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               size="sm"
-              variant="fill"
+              variant="outline"
               color="neutral"
               render={<Link to={paths.app.periodosAcademicos.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >
-              Cerrar
+              <XIcon data-icon="inline-start" />
+              Cancelar
             </Button>
-          }
-        >
-          {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
-        </TableScreenTitle>
+            <Button
+              type="button"
+              size="sm"
+              variant="fill"
+              color="primary"
+              onClick={handleHeaderSave}
+              // Al editar, con cambios en el período o en Criterios de evaluación;
+              // al agregar, cuando el formulario está completo.
+              disabled={isSaving || (isEditing ? !isFormDirty && !isCriteriaDirty : !isFormValid)}
+              aria-busy={isSaving}
+            >
+              {isSaving ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <FloppyDiskIcon data-icon="inline-start" />
+              )}
+              {isSaving ? "Guardando…" : "Guardar"}
+            </Button>
+          </div>
+        </div>
+        {stepIndex != null && (
+          <div className="border-b border-border px-(--screen-spacing) py-3">
+            <PeriodStatusStepper steps={STATUS_STEPS} currentStep={stepIndex} />
+          </div>
+        )}
       </TableScreenHeader>
       <TableScreenBody>
         <NoticeOutlet className="mb-4" />
-        {configBody}
-        {showSecondForm && (
-          <div className="mt-6">
-            <EvaluationPeriodsSection
-              academicPeriodId={academicPeriodId}
-              jornada={saved || !detailJornada ? jornada : detailJornada}
-            />
-          </div>
-        )}
+        <EvaluationPeriodsSection
+          academicPeriodId={showTabs ? academicPeriodId : undefined}
+          jornada={saved || !detailJornada ? jornada : detailJornada}
+          general={generalBody}
+          criteriaRef={criteriaRef}
+          onCriteriaDirtyChange={setIsCriteriaDirty}
+        />
       </TableScreenBody>
+      {detail && academicPeriodId != null && generateKind && (
+        <GeneratePeriodDialog
+          kind={generateKind}
+          open
+          onOpenChange={(open) => !open && setGenerateKind(null)}
+          academicPeriodId={academicPeriodId}
+          periodTitle={title}
+        />
+      )}
     </TableScreen>
   )
 }

@@ -35,6 +35,7 @@ export interface Slot {
 }
 
 export interface JornadaBreak {
+  label?: string
   startTime: string
   endTime: string
 }
@@ -51,8 +52,8 @@ export const DEFAULT_JORNADA: Jornada = {
   endTime: "12:45",
   blocksCount: 6,
   breaks: [
-    { startTime: "08:15", endTime: "09:00" },
-    { startTime: "10:30", endTime: "11:15" },
+    { label: "Recreo", startTime: "08:15", endTime: "09:00" },
+    { label: "Refrigerio", startTime: "10:30", endTime: "11:15" },
   ],
 }
 

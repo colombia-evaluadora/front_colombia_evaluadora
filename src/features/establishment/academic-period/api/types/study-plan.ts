@@ -4,6 +4,8 @@ export interface StudyPlanItem {
   // Etiqueta para mostrar (incluye el énfasis cuando la asignatura lo tiene,
   // ver toStudyPlanItem en use-study-plans.ts) — no es identidad, solo display.
   asignatura: string
+  // Área de la asignatura en el catálogo del período (pendiente en el listado).
+  areaNombre?: string
   intensidadHoraria: number
   influenciaArea: number
   numeroCreditos: number

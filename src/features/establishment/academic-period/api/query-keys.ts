@@ -10,7 +10,9 @@ const withoutEnabled = <P extends WithEnabled>(params: P) => {
 
 const academicPeriodsAll = ["academic-periods"] as const
 const academicPeriodAll = ["academic-period"] as const
+const academicCalendarAll = ["academic-calendar"] as const
 const areaSubjectsAll = ["area-subjects"] as const
+const academicAssignmentsAll = ["academic-assignments"] as const
 const assignmentSubjectsAll = ["assignment-subjects"] as const
 const assignmentTeachersAll = ["assignment-teachers"] as const
 const studyPlanAvailableAll = ["study-plan-available"] as const
@@ -45,6 +47,10 @@ export const academicPeriodKeys = {
     all: areaSubjectsAll,
     list: <P extends WithEnabled>(params: P) => [...areaSubjectsAll, withoutEnabled(params)] as const,
   },
+  academicAssignments: {
+    all: academicAssignmentsAll,
+    byPeriod: (academicPeriodId: number) => [...academicAssignmentsAll, academicPeriodId] as const,
+  },
   assignmentSubjects: {
     all: assignmentSubjectsAll,
     byPeriod: (academicPeriodId: number) => [...assignmentSubjectsAll, academicPeriodId] as const,
@@ -75,6 +81,7 @@ export const academicPeriodKeys = {
   gradeGroups: {
     all: gradeGroupsAll,
     list: <P extends WithEnabled>(params: P) => [...gradeGroupsAll, withoutEnabled(params)] as const,
+    dependencies: (id: number) => [...gradeGroupsAll, "dependencies", id] as const,
   },
   grades: {
     all: gradesAll,
@@ -82,6 +89,10 @@ export const academicPeriodKeys = {
   },
   gradeRotulos: {
     byGrade: (gradeId?: number) => ["grade-rotulos-referente", gradeId] as const,
+  },
+  academicCalendar: {
+    all: academicCalendarAll,
+    byPeriod: (academicPeriodId: number) => [...academicCalendarAll, academicPeriodId] as const,
   },
   horario: {
     all: horarioAll,

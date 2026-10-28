@@ -10,6 +10,7 @@ interface SubjectRow {
   nombre_interno: string
   enfasis_nombre: string | null
   asignatura_general_id: number | null
+  area_id: number | null
 }
 interface SubjectsResponse {
   rows: SubjectRow[]
@@ -18,6 +19,8 @@ interface SubjectsResponse {
 export interface SubjectOption {
   id: number
   label: string
+  // Área del período a la que pertenece (agrupa el selector de obligatorias).
+  areaId: number | null
 }
 
 async function fetchSubjectRows(academicPeriodId?: number): Promise<SubjectRow[]> {
@@ -52,6 +55,7 @@ export function useSubjectsQuery(academicPeriodId?: number) {
         : undefined) ?? row.nombre_interno
     return {
       id: row.id,
+      areaId: row.area_id ?? null,
       label: row.enfasis_nombre ? `${nombreBase} (${row.enfasis_nombre})` : nombreBase,
     }
   })

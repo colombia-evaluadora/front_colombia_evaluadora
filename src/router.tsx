@@ -135,6 +135,10 @@ const AcademicPeriodConfigPage = lazyRouteComponent(
   () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
   "AcademicPeriodConfigPage"
 )
+const GradePage = lazyRouteComponent(
+  () => import("@/features/establishment/academic-period/pages/grade-page"),
+  "GradePage"
+)
 const EstablishmentsPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/establishments-page"),
   "EstablishmentsPage"
@@ -823,6 +827,31 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+const gradeCrumbs = (periodId: string, label: string) => [
+  ESTABLECIMIENTO_CRUMB,
+  PERIODOS_CRUMB,
+  { label: "Editar", to: paths.app.periodosAcademicosEditar.getHref(periodId) },
+  { label },
+]
+
+export const periodosGradoAgregarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosGradoAgregar.path,
+  staticData: {
+    breadcrumb: (params) => gradeCrumbs(params.periodId, "Nuevo grado"),
+  },
+  component: GradePage,
+})
+
+export const periodosGradoEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosGradoEditar.path,
+  staticData: {
+    breadcrumb: (params) => gradeCrumbs(params.periodId, "Grado"),
+  },
+  component: GradePage,
+})
+
 const ReportsPage = lazyRouteComponent(
   () => import("@/features/academic-management/reports/pages/reports-page"),
   "ReportsPage",
@@ -1146,6 +1175,8 @@ const routeTree = rootRoute.addChildren([
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
+    periodosGradoAgregarRoute,
+    periodosGradoEditarRoute,
     gestionAcademicaInformesRoute,
     planillaInformeRoute,
     gestionAcademicaReferentesCurricularesRoute,

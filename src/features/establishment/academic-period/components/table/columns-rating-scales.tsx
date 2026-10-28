@@ -1,85 +1,159 @@
-import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
+"use no memo"
 
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import type { ColumnDef } from "@tanstack/react-table"
+
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { PencilIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 
-import type { TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
+import type { RatingScale } from "@/features/establishment/academic-period/api/types/rating-scales"
+import { RATING_SCALE_TYPE_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import { RatingSymbolView } from "@/features/establishment/academic-period/components/fields/rating-symbol"
+import { formatGrade } from "@/features/establishment/academic-period/utils/rating-scale-coverage"
 
-interface CreateColumnsOptions {
-  expandedId: number | null
-  onToggleExpand: (level: TeachingLevel) => void
+// Mapa de calor de la escala, de rojo (nota más baja) a verde (más alta). La misma tinta pinta la barra de cobertura y la abreviación.
+export function heatColor(position: number): string {
+  const t = Math.min(1, Math.max(0, position))
+  // Tono 4 (rojo) → 40 (ámbar) → 145 (verde); un poco más oscuro en el medio
+  // para que el texto blanco se siga leyendo sobre amarillo.
+  const hue = 4 + t * 141
+  const light = 46 - Math.sin(t * Math.PI) * 8
+  return `hsl(${hue.toFixed(0)} 68% ${light.toFixed(0)}%)`
 }
 
-export function createRatingScaleLevelColumns({
-  expandedId,
-  onToggleExpand,
-}: CreateColumnsOptions): ColumnDef<TeachingLevel>[] {
+export function isFailingScale(scale: RatingScale): boolean {
+  return (scale.tipoName ?? scale.tipo).toLowerCase().startsWith("debil")
+}
+
+// Color de cada valoración según su lugar en la escala: la más baja en rojo,
+// la más alta en verde y las del medio repartidas parejo entre ambos. Por
+// posición numérica un tramo largo como "Bajo" (0 a 5,9) quedaba ocre.
+export function getScaleColors(scales: RatingScale[]): Map<number, string> {
+  const sorted = [...scales].sort((x, y) => x.notaMinima - y.notaMinima)
+  const last = Math.max(1, sorted.length - 1)
+  return new Map(sorted.map((s, i) => [s.codigo, heatColor(sorted.length === 1 ? 1 : i / last)]))
+}
+
+interface CreateRatingScaleColumnsOptions {
+  colors: Map<number, string>
+  onEdit: (scale: RatingScale) => void
+  onDelete: (scale: RatingScale) => Promise<boolean>
+}
+
+const gradeCell = (value: number) => (
+  <span className="block text-center tabular-nums">{formatGrade(value)}</span>
+)
+
+export function createRatingScaleColumns({
+  colors,
+  onEdit,
+  onDelete,
+}: CreateRatingScaleColumnsOptions): ColumnDef<RatingScale>[] {
   return [
     {
-      id: "expand",
-      header: () => <span className="sr-only">Expandir</span>,
+      id: "nombre",
+      accessorKey: "nombre",
+      meta: { label: "Nombre" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
+      cell: ({ row }) => <span>{row.original.nombre}</span>,
+    },
+    {
+      id: "abreviacion",
+      accessorKey: "abreviacion",
+      meta: { label: "Abreviación" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Abreviación" />,
       cell: ({ row }) => {
-        const isOpen = expandedId === row.original.id
         return (
+          <span
+            className="inline-flex size-8 items-center justify-center rounded-full text-sm font-medium text-white"
+            style={{ backgroundColor: colors.get(row.original.codigo) }}
+          >
+            {row.original.abreviacion}
+          </span>
+        )
+      },
+    },
+    {
+      id: "tipo",
+      accessorKey: "tipoName",
+      meta: { label: "Tipo" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
+      cell: ({ row }) => {
+        const label = row.original.tipoName ?? row.original.tipo
+        return (
+          <Badge {...RATING_SCALE_TYPE_BADGE[label]} className="border border-current/30">
+            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+            {label}
+          </Badge>
+        )
+      },
+    },
+    {
+      id: "iconografia",
+      accessorKey: "iconografia",
+      meta: { label: "Ícono" },
+      header: () => <span>Ícono</span>,
+      cell: ({ row }) => (
+        <RatingSymbolView value={row.original.iconografia} label={row.original.nombre} className="text-xl" />
+      ),
+      enableSorting: false,
+    },
+    {
+      id: "notaMinima",
+      accessorKey: "notaMinima",
+      meta: { label: "Nota mínima" },
+      header: () => <span className="block text-center">Nota mínima</span>,
+      cell: ({ row }) => gradeCell(row.original.notaMinima),
+    },
+    {
+      id: "notaMaxima",
+      accessorKey: "notaMaxima",
+      meta: { label: "Nota máxima" },
+      header: () => <span className="block text-center">Nota máxima</span>,
+      cell: ({ row }) => gradeCell(row.original.notaMaxima),
+    },
+    {
+      id: "notaEquivalente",
+      accessorKey: "notaEquivalente",
+      meta: { label: "Nota equivalente" },
+      header: () => <span className="block text-center">Nota equivalente</span>,
+      cell: ({ row }) => gradeCell(row.original.notaEquivalente),
+    },
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
                   variant="ghost"
+                  color="neutral"
                   size="icon-sm"
-                  aria-label={isOpen ? "Contraer" : "Expandir"}
-                  aria-expanded={isOpen}
-                  onClick={() => onToggleExpand(row.original)}
+                  onClick={() => onEdit(row.original)}
                 />
               }
             >
-              {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
+              <span className="sr-only">Modificar {row.original.nombre}</span>
+              <PencilIcon />
             </TooltipTrigger>
-            <TooltipContent>{isOpen ? "Contraer" : "Expandir"}</TooltipContent>
+            <TooltipContent>Modificar</TooltipContent>
           </Tooltip>
-        )
-      },
-      enableSorting: false,
-      enableHiding: false,
-      size: 40,
-    },
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          aria-label="Seleccionar página"
-          className="translate-y-0.5"
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          aria-label={`Seleccionar ${row.original.nombre}`}
-          className="translate-y-0.5"
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-        />
+          <ConfirmRemoveButton
+            label={`Eliminar ${row.original.nombre}`}
+            title={`Eliminar ${row.original.nombre}`}
+            description={`Se eliminará la valoración ${row.original.nombre} de esta escala.`}
+            onConfirm={() => onDelete(row.original)}
+          />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
-      size: 32,
-    },
-    {
-      id: "nombre",
-      accessorKey: "nombre",
-      meta: { label: "Niveles de enseñanza" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Niveles de enseñanza" />
-      ),
-      cell: ({ row }) => <span className="font-semibold uppercase">{row.original.nombre}</span>,
-      enableHiding: false,
+      size: 96,
     },
   ]
 }
-
-export type RatingScaleLevelTable = Table<TeachingLevel>

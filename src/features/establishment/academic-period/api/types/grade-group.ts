@@ -15,6 +15,8 @@ export interface GradeGroup {
   // adicional al valor `metodologia`.
   metodologiaName?: string
   cupo?: number
+  // Regla 108: el Responsable de grupo dicta todas las asignaturas del plan.
+  dictaTodas?: boolean
 }
 
 export interface GradeGroupsQueryFilters {

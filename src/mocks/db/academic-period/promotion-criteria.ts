@@ -16,6 +16,29 @@ export interface PromotionCriteriaWriteBody {
   // V73 — array plano de ids (BIGINT[]), no JSONB de {asignaturaId|areaId}:
   // `NODO_CURRICULAR` ("AS"|"AR") ya dice de qué tabla son los ids.
   OBLIGATORIAS: number[]
+  REQUISITO_COMPLEMENTARIA?: "S" | "N"
+  REQUISITOS_PROPIOS?: string[]
+  REQUISITOS_NORMA?: string[] | null
+}
+
+// Registro único (Regla 38): el período nace con estos valores, así que leerlo
+// sin haberlo guardado nunca devuelve vacío.
+export function defaultPromotionCriteria(): PromotionCriteriaWriteBody {
+  return {
+    FK_GRADO: null,
+    NODO_CURRICULAR: "AS",
+    CANTIDAD_NIVELAR: 2,
+    ASIGNATURA_OBLIGATORIA: "N",
+    APROBACION_PROMEDIO: "N",
+    DESEMPENHO_MIN_GENERAL: 25,
+    DESEMPENHO_MINIMO: 25,
+    MAX_ASIG_PROMEDIO: 1,
+    MINIMO_INASISTENCIAS: 25,
+    MAX_ASIG_NIVELAR_PROM: 2,
+    OBLIGATORIAS: [],
+    REQUISITO_COMPLEMENTARIA: "N",
+    REQUISITOS_PROPIOS: [],
+  }
 }
 
 // Clave = periodo + grado (`undefined` = criterio por defecto del periodo,
@@ -25,5 +48,11 @@ function criteriaKey(academicPeriodId: number, gradeId?: number): string {
   return `${academicPeriodId}:${gradeId ?? "period"}`
 }
 
-export const promotionCriteriaDb: Record<string, PromotionCriteriaWriteBody> = {}
+export const promotionCriteriaDb: Record<string, PromotionCriteriaWriteBody> = {
+  // El período 1 trae un requisito propio para que la sección no arranque vacía.
+  [criteriaKey(1)]: {
+    ...defaultPromotionCriteria(),
+    REQUISITOS_PROPIOS: ["Presentó la prueba Saber 11"],
+  },
+}
 export { criteriaKey as promotionCriteriaKey }

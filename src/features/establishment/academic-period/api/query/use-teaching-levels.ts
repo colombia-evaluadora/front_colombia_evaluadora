@@ -9,6 +9,8 @@ interface TeachingLevelRow {
   id: number
   codigo: string
   nombre: string
+  // Nombres de los grados del nivel, si el back los trae.
+  grados?: string[] | null
 }
 interface TeachingLevelsResponse {
   rows: TeachingLevelRow[]
@@ -27,7 +29,7 @@ export async function fetchTeachingLevels(): Promise<TeachingLevel[]> {
   return (raw.rows ?? [])
     .slice()
     .sort((a, b) => teachingLevelOrderCollator.compare(a.codigo, b.codigo))
-    .map((row) => ({ id: row.id, nombre: row.nombre }))
+    .map((row) => ({ id: row.id, nombre: row.nombre, grados: row.grados ?? undefined }))
 }
 
 export function useTeachingLevelsQuery() {

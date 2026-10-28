@@ -5,6 +5,7 @@ import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-
 import { evaluationPeriodsDb } from "@/mocks/db/academic-period/evaluation-periods"
 import { evaluationPeriodStatusByDates } from "@/features/establishment/academic-period/api/ui-mappings"
 import { formatDateValue } from "@/lib/date-value"
+import { academicPeriodsDb } from "@/mocks/db/academic-period/academic-periods"
 
 import type {
   EvaluationPeriod,
@@ -73,6 +74,44 @@ function applySort(
     return av > bv ? 1 : -1
   })
   return sortDir === "desc" ? sorted.reverse() : sorted
+}
+
+// Reglas 30, 34, 35 y 36 tal como las aplicaría `fn_periodo_eval_crear/actualizar`.
+function validateEvaluationPeriod(
+  body: EvaluationPeriodWriteBody,
+  academicPeriodId: number,
+  excludeId: number | null
+): string | null {
+  const { FECHA_INICIO: start, FECHA_FIN: end } = body
+  if (end <= start) return "La Fecha fin debe ser posterior a la Fecha inicio."
+  const period = academicPeriodsDb.find((p) => p.id === academicPeriodId)
+  const siblings = evaluationPeriodsDb.filter(
+    (p) => p.academicPeriodId === academicPeriodId && p.id !== excludeId
+  )
+  if (period) {
+    if (start < period.startDate) {
+      return "El primer período de evaluación no puede empezar antes del Inicio del período académico."
+    }
+    if (end > period.endDate) {
+      return "Las fechas deben estar dentro del período académico."
+    }
+  }
+  const crossed = siblings.find((p) => start <= p.endDate && p.startDate <= end)
+  if (crossed) return `Las fechas se cruzan con el período de evaluación ${crossed.nombre}.`
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+  if (siblings.some((p) => same(p.nombre, body.NOMBRE))) {
+    return "Ya existe un período de evaluación con ese Nombre."
+  }
+  if (siblings.some((p) => same(p.abreviacion, body.ABREVIACION))) {
+    return "Ya existe un período de evaluación con esa Abreviación."
+  }
+  const total = siblings.reduce((sum, p) => sum + (p.peso ?? 0), 0) + (body.PORCENTAJE ?? 0)
+  if (total > 100) return "La suma de los pesos no puede superar el 100 %."
+  return null
+}
+
+function validationError(message: string) {
+  return HttpResponse.json({ status: "error", message }, { status: 409 })
 }
 
 export const evaluationPeriodsHandlers = [
@@ -158,6 +197,8 @@ export const evaluationPeriodsHandlers = [
     await delay(400)
 
     const body = (await request.json()) as EvaluationPeriodWriteBody
+    const error = validateEvaluationPeriod(body, body.FK_PERIODO ?? 0, null)
+    if (error) return validationError(error)
     const estado = evaluationPeriodStatusByDates(
       body.FECHA_INICIO,
       body.FECHA_FIN,
@@ -213,8 +254,20 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
+    const current = evaluationPeriodsDb[index]
+    const error = validateEvaluationPeriod(body, current.academicPeriodId ?? 0, current.id)
+    if (error) return validationError(error)
+    const estado = evaluationPeriodStatusByDates(
+      body.FECHA_INICIO,
+      body.FECHA_FIN,
+      formatDateValue(new Date())
+    )
+    const statusOption = evaluationPeriodStatusesDb.find((s) => s.key === estado)
     evaluationPeriodsDb[index] = {
-      ...evaluationPeriodsDb[index],
+      ...current,
+      estado,
+      estadoId: statusOption?.id,
+      estadoName: statusOption?.label,
       codigo: body.CODIGO,
       nombre: body.NOMBRE,
       abreviacion: body.ABREVIACION,
