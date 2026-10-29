@@ -12,7 +12,6 @@ import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { useDeleteCriterioUnidad } from "@/features/planeador/api/mutations/delete-criterio-unidad"
 
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
-import { NIVELES_DESEMPENO_DEFAULT_NOMBRES } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { NivelTexto } from "@/features/planeador/components/table/criterio-nivel-texto"
 
 /**
@@ -26,9 +25,10 @@ import { NivelTexto } from "@/features/planeador/components/table/criterio-nivel
  * valoración de la unidad (`useUnidadValoracionesQuery`, `GET /planeador/
  * unidades/:id/valoraciones`) — MISMA query que ya usa
  * `DialogAgregarCriterio`, para que la tabla y el modal de alta no queden
- * con nombres ni cantidad de niveles distinta para lo mismo. Cae a
- * `NIVELES_DESEMPENO_DEFAULT_NOMBRES` (4 bandas fijas) solo mientras esa
- * query no resolvió todavía. Cada columna de nivel lee
+ * con nombres ni cantidad de niveles distinta para lo mismo. No hay
+ * ninguna columna de nivel (nada de bandas por defecto) mientras esa
+ * query no resolvió o si la escala no tiene niveles (el panel avisa con
+ * `SinEscalaAviso`). Cada columna de nivel lee
  * `criterio.niveles[index]` posicionalmente: el índice `i` de
  * `nombresNiveles` es el mismo nivel (banda) en toda la unidad.
  *
@@ -119,7 +119,7 @@ export function createUnidadCriteriosColumns(
   nombresNiveles: string[],
   acciones?: UnidadCriteriosAcciones,
 ): ColumnDef<CriterioUnidad>[] {
-  const niveles = nombresNiveles.length > 0 ? nombresNiveles : NIVELES_DESEMPENO_DEFAULT_NOMBRES
+  const niveles = nombresNiveles
   return [
     {
       id: "nombre",

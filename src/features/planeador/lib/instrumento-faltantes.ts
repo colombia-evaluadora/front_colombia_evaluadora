@@ -123,8 +123,12 @@ function valorEscalaValido(valor: number): boolean {
   return Number.isFinite(valor) && Math.abs(valor) < 1000
 }
 
+/** Aviso cuando el período no tiene escala de valoración utilizable (lo muestra `SinEscalaAviso`). */
+export const SIN_ESCALA_MENSAJE = "Configure primero la escala de valoración del período."
+
 /** Mismas reglas que `fn_actividad_validar_escala_definicion` (V496.5), por criterio. */
 export function faltantesEscala(escala: EscalaValoracion): string[] {
+  if (escala.sinEscala) return [SIN_ESCALA_MENSAJE]
   const { criterios } = escala
   if (criterios.length === 0) return ["La escala de valoración necesita al menos un criterio."]
   const faltantes: string[] = []

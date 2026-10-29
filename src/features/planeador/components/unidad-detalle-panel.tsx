@@ -43,6 +43,7 @@ import {
 } from "@/features/planeador/lib/rotulo-gramatica"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
+import { SinEscalaAviso } from "@/features/planeador/components/sin-escala-aviso"
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import type { CriterioUnidad, UnidadActividad, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -315,11 +316,21 @@ export function Rubricas({
 }) {
   // Misma query que `DialogAgregarCriterio` para que tabla y modal tengan las mismas columnas.
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
-  const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
-  const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
+  const { data: valoraciones = [], isSuccess: valoracionesCargadas } = useUnidadValoracionesQuery(unidad.id)
+  // Sin escala (o sin niveles activos) no se muestran bandas por defecto: se avisa.
+  const sinEscala = valoracionesCargadas && valoraciones.length === 0
   const { puedeCrear, puedeEditar, puedeEliminar } = usePlaneadorSoloLectura()
   // QA 71: criterio abierto en "Editar criterio" (null = cerrado).
   const [editando, setEditando] = React.useState<CriterioUnidad | null>(null)
+  // `unidad.criterios` llega vacío del backend real: viven en este endpoint.
+  const { data: criterios = [], isPending, isError, error, refetch } = useUnidadCriteriosQuery(unidad.id)
+  // Columnas de nivel: las bandas de la escala; sin escala, las que ya traen los criterios
+  // guardados (datos reales, no bandas por defecto).
+  const nombresNiveles = React.useMemo(
+    () =>
+      valoraciones.length > 0 ? valoraciones.map((v) => v.nombre) : (criterios[0]?.niveles ?? []).map((n) => n.nombre),
+    [valoraciones, criterios],
+  )
   const columns = React.useMemo(
     () =>
       createUnidadCriteriosColumns(nombresNiveles, {
@@ -330,8 +341,6 @@ export function Rubricas({
       }),
     [nombresNiveles, unidad.id, puedeEditar, puedeEliminar],
   )
-  // `unidad.criterios` llega vacío del backend real: viven en este endpoint.
-  const { data: criterios = [], isPending, isError, error, refetch } = useUnidadCriteriosQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
@@ -355,9 +364,10 @@ export function Rubricas({
       <TabHeader
         title={instrumentoLabel ? `Criterios en ${instrumentoLabel}` : "Criterios"}
         actionLabel="Agregar criterio"
-        onAction={() => setDialogOpen(true)}
+        onAction={sinEscala ? undefined : () => setDialogOpen(true)}
         hideAction={!puedeCrear}
       />
+      {sinEscala && <SinEscalaAviso className="mb-3" />}
       <DataTable
         table={table}
         isPending={isPending}

@@ -160,6 +160,9 @@ export interface EscalaValoracion {
   id: number
   tipo: EscalaValoracionTipo
   criterios: EscalaCriterio[]
+  /** Solo front (no viaja al backend): el período no tiene escala aplicable o no tiene
+   *  niveles activos. Lo fija `EscalaValoracionSection`; `faltantesEscala` frena el guardado. */
+  sinEscala?: boolean
 }
 
 /**
