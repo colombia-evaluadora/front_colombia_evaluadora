@@ -16,6 +16,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { CheckIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
+import { SinEscalaAviso } from "@/features/planeador/components/sin-escala-aviso"
 
 import { useAddCriterioUnidad } from "@/features/planeador/api/mutations/add-criterio-unidad"
 import { useUpdateCriterioUnidad } from "@/features/planeador/api/mutations/update-criterio-unidad"
@@ -59,16 +60,6 @@ function draftVacio(valoraciones: UnidadValoracion[]): CriterioDraft {
 // del `Field` que la envuelve.
 const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
-
-/** Escala de la unidad sin valoraciones activas: el back rechaza el criterio
- *  (INVALID_VALUE "La escala de valoración … no tiene niveles activos"), así
- *  que se anticipa y se explica dónde corregirlo. */
-const SIN_NIVELES_NOTICE: Notice = {
-  id: 0,
-  message:
-    "La escala de valoración que aplica a esta unidad no tiene niveles activos, por eso no se pueden agregar criterios. " +
-    "Configura los niveles de la escala del período en Período académico › Escalas de valoración (o pídeselo al administrador).",
-}
 
 function isDraftCompleto(draft: CriterioDraft): boolean {
   return (
@@ -217,7 +208,8 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange, criterio }
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {sinNiveles && !editando && <NoticeBanner notice={SIN_NIVELES_NOTICE} onClose={() => handleOpenChange(false)} variant="warning" />}
+          {/* Escala sin valoraciones activas: el back rechazaría el criterio ("… no tiene niveles activos"). */}
+          {sinNiveles && !editando && <SinEscalaAviso />}
           <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
           <Field variant="outlined" data-invalid={Boolean(errorNombre) || undefined}>
             <FieldLabel htmlFor="agregar-criterio-nombre">Criterio *</FieldLabel>

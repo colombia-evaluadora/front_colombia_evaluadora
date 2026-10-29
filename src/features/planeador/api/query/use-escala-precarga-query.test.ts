@@ -70,3 +70,40 @@ describe("toEscalaVariantesConfig", () => {
     expect(toEscalaVariantesConfig([])).toBeNull()
   })
 })
+
+// Sin escala de valoración (o sin niveles activos) no se precarga nada: `sinEscala` hace que
+// el form avise y no deje guardar, aunque el backend rellene `valorMaximo` (nota máxima o 100).
+describe("sinEscala", () => {
+  const nivel = { fkTescalaValoracion: 41, orden: 1, codigo: "BAJO", etiqueta: "Bajo", descriptor: null, puntaje: 1.5 }
+
+  it("GET escala-precarga: fkTescala null o niveles [] es sin escala", () => {
+    expect(toEscalaPrecarga(null).sinEscala).toBe(true)
+    expect(
+      toEscalaPrecarga({
+        contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: null, escala: null },
+        valorMaximo: 100,
+        niveles: [],
+      }).sinEscala,
+    ).toBe(true)
+    expect(toEscalaPrecarga({ contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: 3, escala: "X" }, niveles: [] }).sinEscala).toBe(true)
+    expect(toEscalaPrecarga({ contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: 3, escala: "X" }, niveles: [nivel] }).sinEscala).toBe(false)
+  })
+
+  it("variantes: precarga null o niveles [] es sin escala", () => {
+    const config = toEscalaVariantesConfig([
+      { pk: 1, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: { niveles: [] } },
+      { pk: 2, valor: "NUMERICA", nombre: "Numérica", precarga: null },
+    ])
+    expect(config?.precargas?.Cualitativa?.sinEscala).toBe(true)
+    expect(config?.precargas?.Numérica?.sinEscala).toBe(true)
+    const conEscala = toEscalaVariantesConfig([
+      { pk: 1, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: { niveles: [nivel] } },
+    ])
+    expect(conEscala?.precargas?.Cualitativa?.sinEscala).toBe(false)
+    // NUMERICA nunca trae niveles: cuenta como escala si trae el rango.
+    const numerica = toEscalaVariantesConfig([
+      { pk: 2, valor: "NUMERICA", nombre: "Numérica", precarga: { valorMinimo: 0, valorMaximo: 5 } },
+    ])
+    expect(numerica?.precargas?.Numérica?.sinEscala).toBe(false)
+  })
+})

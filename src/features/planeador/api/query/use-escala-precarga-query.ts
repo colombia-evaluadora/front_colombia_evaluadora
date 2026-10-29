@@ -51,6 +51,14 @@ export interface EscalaPrecarga {
   /** Valor máximo inicial de la variante numérica. */
   valorMaximo: number | undefined
   niveles: EscalaPrecargaNivel[]
+  /**
+   * `true` si no hay escala de valoración aplicable (`precarga` null, `contexto.fkTescala`
+   * null) o la escala no tiene niveles activos (`niveles: []`). En ese caso el backend
+   * igual rellena `valorMaximo` con la nota máxima del formato o 100
+   * (`fn_actividad_escala_precarga_interno`, sso V496.2): el form NO usa esos valores,
+   * muestra `SinEscalaAviso` y no deja guardar el instrumento.
+   */
+  sinEscala: boolean
 }
 
 export interface EscalaPrecargaParams {
@@ -75,12 +83,14 @@ function toNiveles(niveles: EscalaPrecargaNivelRaw[] | undefined): EscalaPrecarg
 
 /** Respuesta de `GET escala-precarga`. El rango de las bandas tiene prioridad sobre la nota máxima. */
 export function toEscalaPrecarga(raw: RawPrecarga | null | undefined): EscalaPrecarga {
+  const niveles = toNiveles(raw?.niveles)
   return {
     escala: raw?.contexto?.escala ?? null,
     formato: raw?.formato?.nombre ?? null,
     valorMinimo: redondear(raw?.rango?.valorMinimo) ?? 0,
     valorMaximo: redondear(raw?.rango?.valorMaximo) ?? redondear(raw?.valorMaximo),
-    niveles: toNiveles(raw?.niveles),
+    niveles,
+    sinEscala: raw == null || (raw.contexto != null && raw.contexto.fkTescala == null) || niveles.length === 0,
   }
 }
 
@@ -99,7 +109,7 @@ export interface EscalaVariantesConfig {
 
 /**
  * `variantes[]` de `ESCALA_VALORACION` → modos permitidos y precarga por modo. `precarga:
- * null` → form vacío; `niveles: []` → el docente agrega los niveles a mano. Devuelve
+ * null` o `niveles: []` → `sinEscala` (el form avisa y no deja guardar). Devuelve
  * `null` si no hay variantes reconocibles (sin configuración): el form decide por
  * `tipoEvaluacion` y la petición de respaldo.
  */
@@ -111,12 +121,18 @@ export function toEscalaVariantesConfig(
   const conPrecarga = reconocidas.some((v) => v.precarga !== undefined)
   const precargas: Partial<Record<EscalaValoracionTipo, EscalaPrecarga>> = {}
   for (const v of reconocidas) {
+    const niveles = toNiveles(v.precarga?.niveles)
     precargas[TIPO_POR_VARIANTE[v.valor]!] = {
       escala: null,
       formato: null,
       valorMinimo: redondear(v.precarga?.valorMinimo) ?? 0,
       valorMaximo: redondear(v.precarga?.valorMaximo),
-      niveles: toNiveles(v.precarga?.niveles),
+      niveles,
+      // `precarga: null`, CUALITATIVA sin niveles activos o NUMERICA sin rango: el período no
+      // tiene escala utilizable (NUMERICA nunca trae `niveles`, solo `valorMinimo`/`valorMaximo`).
+      sinEscala:
+        v.precarga == null ||
+        (v.valor === "CUALITATIVA" ? niveles.length === 0 : v.precarga.valorMaximo == null),
     }
   }
   return {

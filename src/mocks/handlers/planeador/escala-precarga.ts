@@ -1,5 +1,36 @@
 import { http, HttpResponse, delay } from "msw"
 
+/**
+ * Caso "sin escala" (el período no tiene escala de valoración, o la escala no tiene niveles
+ * activos). Se activa desde la consola del navegador, como los demás interruptores del mock:
+ *   localStorage.setItem("mock:sin-escala", "1")
+ * (`mock:escala-sin-niveles`, que vacía `GET unidades/:id/valoraciones`, también lo activa).
+ */
+export function sinEscalaMock(): boolean {
+  try {
+    const ls = globalThis.localStorage
+    return ls?.getItem("mock:sin-escala") === "1" || ls?.getItem("mock:escala-sin-niveles") === "1"
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Respuesta real de `fn_actividad_escala_precarga_interno` (V496.2) sin escala aplicable:
+ * `fkTescala` null y `niveles: []`, PERO el backend rellena `valorMaximo` con la nota
+ * máxima del formato (o 100) y `tipoSugerido` con NUMERICA. El front no debe usar esos valores.
+ */
+export function precargaSinEscalaMock() {
+  return {
+    contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: null, escala: null },
+    formato: { valor: null, nombre: null, esNumerico: false, notaMaxima: null, decimales: 1 },
+    tipoSugerido: "NUMERICA" as const,
+    valorMaximo: 100,
+    rango: null,
+    niveles: [],
+  }
+}
+
 /** Nivel de la escala tal como lo arma `fn_actividad_escala_precarga_interno` (V496.2). */
 function nivel(
   orden: number,
@@ -30,6 +61,7 @@ function nivel(
  * descripción para cubrir el caso en que el docente la escribe.
  */
 export function precargaEscalaMock() {
+  if (sinEscalaMock()) return precargaSinEscalaMock()
   return {
     contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: 3, escala: "Escala Básica Secundaria" },
     formato: { valor: "CERO_CINCO", nombre: "De cero a cinco", esNumerico: true, notaMaxima: 5, decimales: 1 },
@@ -52,6 +84,13 @@ export function precargaEscalaMock() {
  */
 export function variantesEscalaMock() {
   const precarga = precargaEscalaMock()
+  if (sinEscalaMock()) {
+    // Igual que el backend sin escala aplicable: `precarga: null` en ambas variantes.
+    return [
+      { pk: 52015, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: null },
+      { pk: 52016, valor: "NUMERICA", nombre: "Numérica", precarga: null },
+    ]
+  }
   return [
     { pk: 52015, valor: "CUALITATIVA", nombre: "Cualitativa", precarga: { niveles: precarga.niveles } },
     { pk: 52016, valor: "NUMERICA", nombre: "Numérica", precarga: precarga.rango },

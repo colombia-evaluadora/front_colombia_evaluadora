@@ -31,10 +31,10 @@ export type EnfoquePedagogico = "Evaluativo" | "Formativo"
 
 /**
  * Descripción de un criterio en UN nivel de desempeño puntual. `nombre` es
- * el nombre de la banda ("Bajo"/"Básico"/"Alto"/"Superior" por default, o
- * el que traiga la escala de valoración configurada para el nivel
- * educativo de la unidad — ver `useNivelesDesempenoNombres` en
- * `use-niveles-desempeno.ts`); `descripcion` es lo que el docente escribe.
+ * el nombre de la banda: el que traiga la escala de valoración configurada
+ * para el nivel educativo de la unidad (`useUnidadValoracionesQuery`; sin
+ * escala no hay niveles por defecto); `descripcion` es lo que el docente
+ * escribe.
  */
 export interface NivelDesempenoCriterio {
   nombre: string
