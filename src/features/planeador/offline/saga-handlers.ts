@@ -7,8 +7,9 @@
  * Orden real (P19, ver `design.md` D-F3-2):
  * - crear: actividad → materiales → instrumento → adaptaciones → criterios
  *   (hermanos, solo dependen de la actividad).
- * - editar: unidad (vincular/desvincular) → PUT actividad (con evidencias y
- *   criterios) → materiales → instrumento → estudiantes → adaptaciones.
+ * - editar: PUT actividad (con la unidad —`FK_TUNIDAD`/`DESVINCULAR_UNIDAD`—,
+ *   evidencias y criterios en el mismo cuerpo, QA 73) → materiales →
+ *   instrumento → estudiantes → adaptaciones.
  *   El instrumento va después del PUT porque necesita
  *   `FK_TLV_INSTRUMENTO_EVALUACION` ya fijado (si no, 400/22023).
  */
@@ -260,6 +261,9 @@ export interface ActividadUnidadPayload extends SagaPayload {
     permitirMoverDeUnidad?: boolean
   } | null
 }
+// Legado (QA 73): el formulario ya no encola este paso — la unidad va dentro
+// del PUT de `actividadEditar`. Se deja registrado solo para que las ops que
+// hayan quedado en la outbox de una versión anterior se puedan enviar.
 step<ActividadUnidadPayload>(
   SAGA_KINDS.actividadUnidad,
   async (p, ctx) => {
@@ -275,15 +279,25 @@ export interface ActividadEditarPayload extends SagaPayload {
   actividadId: Id
   data: Actividad
   check?: VersionCheck
+  /** Unidad al abrir el form: si difiere de `data.unidad.id`, el PUT la asigna/mueve/quita (QA 73). */
+  unidadAnteriorId?: number
+  omitirPonderacion?: boolean
 }
 step<ActividadEditarPayload>(
   SAGA_KINDS.actividadEditar,
   async (p, ctx) => {
     const actividadId = await resolveId(p.actividadId)
     await verificarActividad(actividadId, p.check, ctx)
-    // `check` solo lo lleva el PRIMER paso: si antes hubo otro (vincular la
-    // unidad), ese paso ya subió la versión y el PUT no puede exigir la vieja.
-    return updateActividad({ actividadId, data: p.data, baseVersion: p.check?.baseVersion ?? null }, stepRequest(ctx))
+    return updateActividad(
+      {
+        actividadId,
+        data: p.data,
+        baseVersion: p.check?.baseVersion ?? null,
+        unidadAnteriorId: p.unidadAnteriorId,
+        omitirPonderacion: p.omitirPonderacion,
+      },
+      stepRequest(ctx),
+    )
   },
   { rebase: rebaseCheck },
 )
