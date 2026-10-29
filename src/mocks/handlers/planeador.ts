@@ -237,6 +237,26 @@ function sincronizarUnidadDeActividad(actividadId: number) {
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
+
+/**
+ * Interruptores del mock para reproducir el rechazo real de "Agregar
+ * criterio" (INVALID_VALUE "La escala de valoración … no tiene niveles
+ * activos") sin backend. Se activan desde la consola del navegador:
+ *   localStorage.setItem("mock:escala-sin-niveles", "1")   // GET valoraciones → [] y POST → 400
+ *   localStorage.setItem("mock:criterio-invalid-value", "1") // solo el POST → 400
+ * Los handlers de MSW corren en la página, así que leen el localStorage de la app.
+ */
+function mockFlag(nombre: string): boolean {
+  try {
+    return globalThis.localStorage?.getItem(nombre) === "1"
+  } catch {
+    return false
+  }
+}
+const ESCALA_SIN_NIVELES_ERROR = {
+  code: "INVALID_VALUE",
+  message: "La escala de valoración \"Básica Primaria\" no tiene niveles activos",
+}
 const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
 const UNIDAD_CONFIGURACION_ACTIVIDAD_URL =
   "/api/eval-col/planeador/unidades/:id/configuracion-actividad"
@@ -1444,6 +1464,9 @@ export const planeadorHandlers = [
   // memoria de la unidad. 404 si la unidad no existe.
   http.post(UNIDAD_CRITERIO_CREATE_URL, async ({ params, request }) => {
     await delay(250)
+    if (mockFlag("mock:escala-sin-niveles") || mockFlag("mock:criterio-invalid-value")) {
+      return HttpResponse.json(ESCALA_SIN_NIVELES_ERROR, { status: 400 })
+    }
     const id = Number(params.id)
     const body = (await request.json()) as {
       nombre: string
@@ -1466,6 +1489,7 @@ export const planeadorHandlers = [
   // el modal en mock.
   http.get(UNIDAD_VALORACIONES_URL, async () => {
     await delay(150)
+    if (mockFlag("mock:escala-sin-niveles")) return HttpResponse.json({ rows: [] })
     const rows = ["Bajo", "Básico", "Alto", "Superior"].map((valoracion_nombre, index) => ({
       pk_tescala_valoracion: index + 1,
       valoracion_nombre,
@@ -1756,8 +1780,7 @@ export const planeadorHandlers = [
   http.patch(UNIDAD_ACTIVIDAD_UNLINK_URL, async ({ params }) => {
     await delay(200)
     const actividadId = Number(params.actividadId)
-    const bloqueo = rechazoNoEditable(actividadId)
-    if (bloqueo) return bloqueo
+    // Como el real (sso V492.3): desvincular a mano no aplica la Regla 37.
     const ok = unlinkActividadFromUnidad(actividadId)
     if (!ok) {
       return HttpResponse.json(

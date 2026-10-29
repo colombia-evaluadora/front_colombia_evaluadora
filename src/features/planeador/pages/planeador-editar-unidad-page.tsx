@@ -57,6 +57,11 @@ import {
 import { planeadorUnidadEditarRoute } from "@/router"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { esAjena } from "@/features/planeador/lib/docente-dueno"
+import {
+  UNIDAD_ERRORES_MENSAJE,
+  enfocarPrimerError,
+  validarUnidadDraft,
+} from "@/features/planeador/lib/unidad-validaciones"
 
 /** Actividades sin peso para el método destino (Ponderado→ponderacion, Suma→notaMaxima; 0/null = sin capturar). */
 function actividadesSinPeso(
@@ -114,6 +119,8 @@ function EditarUnidadPageContent({
   onClose: (instrumento: string) => void
 }) {
   const [draft, setDraft] = useState<UnidadDraft | null>(null)
+  // Validación en front (los mensajes del back quedan de respaldo).
+  const [intentosEnvio, setIntentosEnvio] = useState(0)
   // Foto inicial del borrador para "dirty": draftFromUnidad deja enunciadosDba vacío y daría falso dirty.
   const [initialDraft, setInitialDraft] = useState<UnidadDraft | null>(null)
   const { notify } = useNotify()
@@ -229,6 +236,13 @@ function EditarUnidadPageContent({
             id={FORM_ID}
             onSubmit={(e) => {
               e.preventDefault()
+              setIntentosEnvio((n) => n + 1)
+              const errores = validarUnidadDraft(current)
+              if (Object.keys(errores).length > 0) {
+                notify(UNIDAD_ERRORES_MENSAJE, { variant: "error" })
+                enfocarPrimerError(errores)
+                return
+              }
               const data = draftToPayload(current)
               // Método anterior = el guardado en unidad; nuevo = el del form.
               const metodoAnterior = unidad.metodoCalculo
@@ -257,6 +271,8 @@ function EditarUnidadPageContent({
                   onChange={(patch) => setDraft({ ...current, ...patch })}
                   unidadId={unidad.id}
                   rotuloUnidad={instrumento}
+                  errores={validarUnidadDraft(current)}
+                  intentosEnvio={intentosEnvio}
                 />
               }
             />
@@ -274,7 +290,7 @@ function EditarUnidadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={!current?.nombre.trim() || updateMutation.isPending || actividadesPending || escritura.disabled}
+              disabled={updateMutation.isPending || actividadesPending || escritura.disabled}
               title={escritura.tooltip ?? undefined}
             >
               {updateMutation.isPending ? (

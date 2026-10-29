@@ -2,8 +2,6 @@ import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { paths } from "@/config/paths"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -24,6 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/components/ui/icons"
+import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
@@ -58,13 +58,14 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
   const [search, setSearch] = useState("")
   // Borrador de peso/puntaje: no dispara nada hasta "Vincular"; se limpia al cerrar.
   const [pesos, setPesos] = useState<Record<string, string>>({})
+  // Error del back dentro del popover: la página monta un `NoticeProvider`
+  // (toast global de axios suprimido) y el aviso de página queda tapado por
+  // el popover, así que un rechazo al vincular pasaba en silencio.
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const mostrarError = (error: unknown) => setNotice({ id: Date.now(), message: getErrorMessage(error) })
 
   const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
   const linkActividad = useLinkActividadUnidad()
-  // La página de unidades monta un NoticeProvider (suprime el toast global
-  // de axios): sin esto un rechazo del vínculo (p. ej. 22023 "faltan
-  // evidencias", QA 73) no se veía en ningún lado.
-  const { notify } = useNotify()
   // Sin red no se vinculan actividades (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
   const updatePuntaje = useUpdatePuntajeActividadUnidad()
@@ -100,6 +101,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
     if (!next) {
       setSearch("")
       setPesos({})
+      setNotice(null)
     }
   }
 
@@ -107,6 +109,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
     const valorRaw = pesos[actividadId]?.trim()
     const valor = pideValor ? Number(valorRaw) || 0 : 0
 
+    setNotice(null)
     linkActividad.mutate(
       {
         unidadId: unidad.id,
@@ -115,20 +118,22 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
         omitirPonderacion: !esPonderado,
       },
       {
-        onError: (error) => notify(`No se pudo vincular. ${getErrorMessage(error)}`, { variant: "error" }),
         onSuccess: (data) => {
-          if (data.status === "error") {
-            notify(data.message ?? "No se pudo vincular.", { variant: "error" })
+          if (data?.status === "error") {
+            setNotice({ id: Date.now(), message: data.message || "No se pudo vincular." })
             return
           }
           // Suma de puntos: el puntaje se guarda aparte, ya vinculada.
-          if (esSumatoria && valor > 0) updatePuntaje.mutate({ actividadId, puntaje: valor })
+          if (esSumatoria && valor > 0) {
+            updatePuntaje.mutate({ actividadId, puntaje: valor }, { onError: mostrarError })
+          }
           setPesos((prev) => {
             const next = { ...prev }
             delete next[actividadId]
             return next
           })
         },
+        onError: mostrarError,
       },
     )
   }
@@ -166,6 +171,7 @@ export function DialogAgregarActividad({ unidad, rotuloUnidad }: DialogAgregarAc
         {/* Único bloque con scroll; la tabla va en un div aparte porque se mide mal dentro del flex que recorta. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4">
+            <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
             <div className="flex items-end justify-between gap-4">
               <Field variant="outlined" className="min-w-0 flex-1">
                 <FieldLabel htmlFor="buscar-actividad">Buscar por {rotuloLabelLower}</FieldLabel>
