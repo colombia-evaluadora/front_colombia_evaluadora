@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -23,6 +24,56 @@ import {
 import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import type { MetodoCalculo } from "@/features/planeador/api/types/unidad-tematica"
 import { TEXTAREA_OUTLINED } from "@/features/planeador/components/forms/form-editar-actividad/constants"
+import { UNIDAD_LIMITES, validarTexto } from "@/features/planeador/lib/unidad-validaciones"
+
+/**
+ * Mismas reglas que el form completo de la unidad (`validarUnidadDraft`):
+ * nombre sin puntuación; descripción, objetivos y contenidos con puntuación
+ * básica. Errores por campo, en orden visual.
+ */
+function validarPopover({
+  nombre,
+  descripcion,
+  objetivos,
+  contenidos,
+}: {
+  nombre: string
+  descripcion: string
+  objetivos: string[]
+  contenidos: string[]
+}) {
+  const nombreError = validarTexto(nombre, {
+    campo: "El nombre",
+    max: UNIDAD_LIMITES.nombre,
+    obligatorio: true,
+    puntuacion: false,
+  })
+  const descripcionError = validarTexto(descripcion, {
+    campo: "La descripción",
+    max: UNIDAD_LIMITES.descripcion,
+    obligatorio: false,
+  })
+  const objetivosErrores = objetivos.map((o, i) =>
+    validarTexto(o, {
+      campo: `El objetivo ${i + 1}`,
+      max: UNIDAD_LIMITES.objetivo,
+      obligatorio: true,
+      mensajeVacio: `El objetivo ${i + 1} está vacío: escríbelo o quítalo de la lista`,
+    }),
+  )
+  const contenidosErrores = contenidos.map((c, i) =>
+    validarTexto(c, {
+      campo: `El contenido ${i + 1}`,
+      max: UNIDAD_LIMITES.seccionDescripcion,
+      obligatorio: true,
+      mensajeVacio: `El contenido ${i + 1} está vacío: escríbelo o quítalo de la lista`,
+    }),
+  )
+  const hayErrores = Boolean(
+    nombreError || descripcionError || objetivosErrores.some(Boolean) || contenidosErrores.some(Boolean),
+  )
+  return { nombreError, descripcionError, objetivosErrores, contenidosErrores, hayErrores }
+}
 
 /** Botón "+" junto al `Select` de unidad: popover para crear una unidad en el momento. */
 export function CrearUnidadPopover({
@@ -59,6 +110,11 @@ export function CrearUnidadPopover({
   const [enunciadosDba, setEnunciadosDba] = React.useState<{ id: number; text: string }[]>([])
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
+  // Con > 0 se muestran todos los errores (isTouched || submissionAttempts > 0).
+  const [intentosEnvio, setIntentosEnvio] = React.useState(0)
+  const [nombreTocado, setNombreTocado] = React.useState(false)
+  const errores = validarPopover({ nombre, descripcion, objetivos, contenidos })
+  const mostrar = intentosEnvio > 0
   const { notify } = useNotify()
   // Sin "nuevo/nueva": el rótulo varía y no se concuerda el género.
   const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
@@ -84,11 +140,15 @@ export function CrearUnidadPopover({
     setDescripcion("")
     setEnunciadosDba([])
     setMetodoCalculo("Ponderado")
+    setIntentosEnvio(0)
+    setNombreTocado(false)
   }
 
   // Si falla se avisa acá y el popover queda abierto con lo tipeado.
   const guardar = async () => {
-    if (!nombre.trim() || !hasGradoAsignatura || isSaving) return
+    if (!hasGradoAsignatura || isSaving) return
+    setIntentosEnvio((n) => n + 1)
+    if (errores.hayErrores) return
     setIsSaving(true)
     try {
       await onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
@@ -144,26 +204,36 @@ export function CrearUnidadPopover({
         </h3>
 
         <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
-          <Field variant="outlined">
-            <FieldLabel>Nombre</FieldLabel>
+          <Field variant="outlined" data-invalid={Boolean((mostrar || nombreTocado) && errores.nombreError) || undefined}>
+            <FieldLabel htmlFor="crear-unidad-popover-nombre">Nombre</FieldLabel>
             <Input
+              id="crear-unidad-popover-nombre"
               placeholder="Agregar"
-              maxLength={50}
+              maxLength={UNIDAD_LIMITES.nombre}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
+              onBlur={() => setNombreTocado(true)}
+              aria-invalid={Boolean((mostrar || nombreTocado) && errores.nombreError) || undefined}
             />
+            <CharacterCounter value={nombre} max={UNIDAD_LIMITES.nombre} />
+            <FieldError>{mostrar || nombreTocado ? errores.nombreError : undefined}</FieldError>
           </Field>
 
-          <Field variant="outlined">
-            <FieldLabel>Descripción breve</FieldLabel>
+          <Field variant="outlined" data-invalid={Boolean(errores.descripcionError) || undefined}>
+            <FieldLabel htmlFor="crear-unidad-popover-descripcion">Descripción breve</FieldLabel>
             <Textarea
+              id="crear-unidad-popover-descripcion"
               rows={3}
               placeholder="Propósito pedagógico y dinámica general"
-              maxLength={500}
+              maxLength={UNIDAD_LIMITES.descripcion}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               className={TEXTAREA_OUTLINED}
+              aria-invalid={Boolean(errores.descripcionError) || undefined}
             />
+            <CharacterCounter value={descripcion} max={UNIDAD_LIMITES.descripcion} />
+            {/* Los caracteres no permitidos se avisan al escribir, sin esperar al envío. */}
+            <FieldError>{errores.descripcionError}</FieldError>
           </Field>
 
           <div className="flex flex-col gap-4 border-t pt-4">
@@ -171,12 +241,22 @@ export function CrearUnidadPopover({
               label="Objetivos específicos relacionados"
               items={objetivos}
               onChange={setObjetivos}
+              maxLength={UNIDAD_LIMITES.objetivo}
+              errorDe={(i) => {
+                const e = errores.objetivosErrores[i]
+                return mostrar || (e && !e.includes("vacío")) ? e : undefined
+              }}
             />
 
             <ListaAgregableField
               label="Contenidos temáticos vinculados"
               items={contenidos}
               onChange={setContenidos}
+              maxLength={UNIDAD_LIMITES.seccionDescripcion}
+              errorDe={(i) => {
+                const e = errores.contenidosErrores[i]
+                return mostrar || (e && !e.includes("vacío")) ? e : undefined
+              }}
             />
           </div>
 
@@ -223,7 +303,7 @@ export function CrearUnidadPopover({
             size="sm"
             type="button"
             onClick={guardar}
-            disabled={!nombre.trim() || isSaving}
+            disabled={isSaving}
           >
             {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {isSaving ? "Guardando..." : "Guardar"}

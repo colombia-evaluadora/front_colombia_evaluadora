@@ -1,7 +1,8 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { FieldDescription, FieldSet } from "@/components/ui/field"
+import { FieldDescription, FieldError, FieldSet } from "@/components/ui/field"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Input, inputVariants } from "@/components/ui/input"
 import {
   InputGroup,
@@ -45,6 +46,10 @@ interface ListaAgregableFieldProps {
   items: string[]
   onChange: (items: string[]) => void
   placeholder?: string
+  /** Máximo por ítem; se muestra como contador en cada fila. */
+  maxLength?: number
+  /** Error ya "visible" de cada fila. */
+  errorDe?: (index: number) => string | undefined
 }
 
 /**
@@ -70,6 +75,8 @@ export function ListaAgregableField({
   items,
   onChange,
   placeholder = "Agregar",
+  maxLength = 50,
+  errorDe,
 }: ListaAgregableFieldProps) {
   const [draft, setDraft] = useState("")
 
@@ -115,7 +122,7 @@ export function ListaAgregableField({
       <Input
         variant="outlined"
         placeholder={placeholder}
-        maxLength={50}
+        maxLength={maxLength}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -134,7 +141,9 @@ export function ListaAgregableField({
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-1.5">
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const error = errorDe?.(index)
+            return (
             <li key={index}>
               {/* Mismo `InputGroup` "outlined" que Correo/Contraseña del
                   login (`form-login.tsx`): borde completo + anillo de foco
@@ -143,10 +152,11 @@ export function ListaAgregableField({
                   flotando arriba, así que sin este override se veía como un
                   campo "estándar" (subrayado apenas visible) en vez de un
                   campo con caja propia como el resto del form. */}
-              <InputGroup className={cn(FILA_OUTLINED, "bg-card")}>
+              <InputGroup className={cn(FILA_OUTLINED, "bg-card", error && "border-red hover:border-red")}>
                 <InputGroupInput
                   aria-label={`Editar ítem ${index + 1} de "${label}"`}
-                  maxLength={50}
+                  aria-invalid={Boolean(error) || undefined}
+                  maxLength={maxLength}
                   value={item}
                   onChange={(e) => editar(index, e.target.value)}
                 />
@@ -169,8 +179,11 @@ export function ListaAgregableField({
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
+              <CharacterCounter value={item} max={maxLength} />
+              <FieldError>{error}</FieldError>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </div>
@@ -190,6 +203,13 @@ interface ListaAgregableCajaProps {
   /** Deshabilita el input de alta y las filas ya agregadas (editar/quitar)
    *  — mismo criterio que `disabled` en `ListaAgregableCajaSelect`. */
   disabled?: boolean
+  /** Máximo por ítem; se muestra como contador en cada fila. */
+  maxLength?: number
+  /** Id del input de cada fila (para enfocar el primer error al guardar). */
+  itemId?: (index: number) => string
+  /** Error ya "visible" de cada fila (el form decide si está tocada). */
+  errorDe?: (index: number) => string | undefined
+  onItemBlur?: (index: number) => void
 }
 
 /**
@@ -221,6 +241,10 @@ export function ListaAgregableCaja({
   onChange,
   placeholder = "Agregar",
   disabled = false,
+  maxLength = 50,
+  itemId,
+  errorDe,
+  onItemBlur,
 }: ListaAgregableCajaProps) {
   const [draft, setDraft] = useState("")
 
@@ -266,14 +290,19 @@ export function ListaAgregableCaja({
           // el comentario de arriba), así que una línea divisoria extra
           // entre cajas solo agregaba ruido visual pegado a sus bordes.
           <ul className="flex flex-col gap-1.5 p-1.5">
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              const error = errorDe?.(index)
+              return (
               <li key={index}>
-                <InputGroup className={FILA_OUTLINED}>
+                <InputGroup className={cn(FILA_OUTLINED, error && "border-red hover:border-red")}>
                   <InputGroupInput
+                    id={itemId?.(index)}
                     aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
-                    maxLength={50}
+                    aria-invalid={Boolean(error) || undefined}
+                    maxLength={maxLength}
                     value={item}
                     onChange={(e) => editar(index, e.target.value)}
+                    onBlur={() => onItemBlur?.(index)}
                     disabled={disabled}
                   />
                   <InputGroupAddon align="inline-end">
@@ -296,8 +325,11 @@ export function ListaAgregableCaja({
                     </Tooltip>
                   </InputGroupAddon>
                 </InputGroup>
+                <CharacterCounter value={item} max={maxLength} />
+                <FieldError>{error}</FieldError>
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </div>
@@ -307,7 +339,7 @@ export function ListaAgregableCaja({
           variant="outlined"
           className="flex-1"
           placeholder={placeholder}
-          maxLength={50}
+          maxLength={maxLength}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -321,6 +353,7 @@ export function ListaAgregableCaja({
           // perdía el texto en silencio.
           onBlur={agregar}
           disabled={disabled}
+          aria-label={placeholder}
         />
         {draft.trim() && (
           <Button
@@ -351,7 +384,14 @@ interface ContenidosCajaProps {
   items: ContenidoSeccion[]
   onChange: (items: ContenidoSeccion[]) => void
   disabled?: boolean
+  /** Error ya "visible" del título o la descripción de cada sección. */
+  errorDe?: (index: number, parte: "titulo" | "descripcion") => string | undefined
+  onItemBlur?: (index: number, parte: "titulo" | "descripcion") => void
 }
+
+// Mismos máximos que el back (`fn_unidad_validar_textos`, sso V492.1).
+const SECCION_TITULO_MAX = 200
+const SECCION_DESCRIPCION_MAX = 500
 
 /**
  * Variante de `ListaAgregableCaja` para "Estructura de la Unidad/Proyecto"
@@ -370,7 +410,15 @@ interface ContenidosCajaProps {
  * pero no se persisten todavía — evita bloquear el guardado de la
  * Descripción (el dato principal) por un título a medio completar.
  */
-export function ContenidosCaja({ title, description, items, onChange, disabled = false }: ContenidosCajaProps) {
+export function ContenidosCaja({
+  title,
+  description,
+  items,
+  onChange,
+  disabled = false,
+  errorDe,
+  onItemBlur,
+}: ContenidosCajaProps) {
   const [draftTitulo, setDraftTitulo] = useState("")
   const [draftDescripcion, setDraftDescripcion] = useState("")
 
@@ -397,17 +445,23 @@ export function ContenidosCaja({ title, description, items, onChange, disabled =
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const errorTitulo = errorDe?.(index, "titulo")
+            const errorDescripcion = errorDe?.(index, "descripcion")
+            return (
             <li key={index} className="flex flex-col gap-1.5 rounded-md border bg-card p-3">
               <div className="flex items-center gap-2">
                 <Input
                   variant="outlined"
                   className="flex-1"
+                  id={`unidad-seccion-${index}-titulo`}
                   placeholder="Título de la sección (opcional)"
-                  maxLength={200}
+                  maxLength={SECCION_TITULO_MAX}
                   value={item.titulo ?? ""}
                   onChange={(e) => editar(index, { titulo: e.target.value || undefined })}
+                  onBlur={() => onItemBlur?.(index, "titulo")}
                   disabled={disabled}
+                  aria-invalid={Boolean(errorTitulo) || undefined}
                   aria-label={`Título de la sección ${index + 1}`}
                 />
                 <Tooltip>
@@ -429,17 +483,25 @@ export function ContenidosCaja({ title, description, items, onChange, disabled =
                   <TooltipContent>{`Quitar sección ${index + 1}`}</TooltipContent>
                 </Tooltip>
               </div>
+              <CharacterCounter value={item.titulo ?? ""} max={SECCION_TITULO_MAX} />
+              <FieldError>{errorTitulo}</FieldError>
               <Input
                 variant="outlined"
+                id={`unidad-seccion-${index}-descripcion`}
                 placeholder="Descripción de la sección"
-                maxLength={500}
+                maxLength={SECCION_DESCRIPCION_MAX}
                 value={item.descripcion}
                 onChange={(e) => editar(index, { descripcion: e.target.value })}
+                onBlur={() => onItemBlur?.(index, "descripcion")}
                 disabled={disabled}
+                aria-invalid={Boolean(errorDescripcion) || undefined}
                 aria-label={`Descripción de la sección ${index + 1}`}
               />
+              <CharacterCounter value={item.descripcion ?? ""} max={SECCION_DESCRIPCION_MAX} />
+              <FieldError>{errorDescripcion}</FieldError>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 
@@ -447,17 +509,19 @@ export function ContenidosCaja({ title, description, items, onChange, disabled =
         <Input
           variant="outlined"
           placeholder="Título de la sección (opcional)"
-          maxLength={200}
+          maxLength={SECCION_TITULO_MAX}
           value={draftTitulo}
           onChange={(e) => setDraftTitulo(e.target.value)}
           disabled={disabled}
+          aria-label="Título de la nueva sección"
         />
         <div className="flex items-start gap-2">
           <Input
             variant="outlined"
             className="flex-1"
             placeholder="Descripción de la sección"
-            maxLength={500}
+            maxLength={SECCION_DESCRIPCION_MAX}
+            aria-label="Descripción de la nueva sección"
             value={draftDescripcion}
             onChange={(e) => setDraftDescripcion(e.target.value)}
             onKeyDown={(e) => {
