@@ -274,7 +274,13 @@ export function EditarActividadForm({
           nombre: values.instrumento,
           faltantes: faltantesDelInstrumento(values),
         })
-        if (aviso) notify(aviso, { variant: "error" })
+        // "Ir al campo" repite el salto: el docente pudo haber hecho scroll después del aviso.
+        if (aviso) {
+          notify(aviso, {
+            variant: "error",
+            action: { label: "Ir al campo", onClick: () => scrollToFirstInvalidField(formEl) },
+          })
+        }
         // Se espera a `handleSubmit()` (sube `submissionAttempts`) antes de llevar la vista
         // al primer campo inválido.
         void form.handleSubmit().then(() => scrollToFirstInvalidField(formEl))
