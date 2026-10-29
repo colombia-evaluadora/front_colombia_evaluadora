@@ -36,6 +36,10 @@ import type { EstablishmentDetails } from "@/features/establishment/institution/
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
+import {
+  DirectivosReadOnly,
+  DirectivosSoloLecturaNota,
+} from "@/features/establishment/institution/components/directivos-read-only"
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -606,6 +610,8 @@ export function AddEstablishmentPage() {
   const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending || directivosCargando
 
   const listHref = paths.app.establishments.general.getHref()
+  // Solo al editar: al crear, quien llega a esta pantalla siempre puede registrarlos.
+  const directivosEnTabla = isEditMode && directivosSoloLectura && !directivosCargando
 
   return (
     <TableScreen>
@@ -674,16 +680,21 @@ export function AddEstablishmentPage() {
 
             {/* Rector y secretaria en una sola tarjeta, sin acordeones adentro. */}
             <AccordionItem value="datos-rector-secretaria" className={accordionItemClassName}>
-              <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  Datos de rector y secretaria
+                  {directivosEnTabla ? <DirectivosSoloLecturaNota /> : null}
+                </span>
+              </AccordionTrigger>
               <AccordionContent>
                 <div className="-mx-4 border-t border-border px-4 pt-4">
+                  {/* Quien no puede cambiar a los directivos los ve en tabla, como en el detalle. */}
+                  {directivosEnTabla ? (
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <DirectivosReadOnly principal={formValues.principal} secretary={formValues.secretary} />
+                    </div>
+                  ) : (
                   <div className="space-y-5 rounded-lg border border-border bg-card p-4">
-                    {directivosSoloLectura && !directivosCargando ? (
-                      <p className="text-sm text-muted-foreground">
-                        Solo el Superadministrador o un usuario de nivel territorial con permiso de eliminar en
-                        Establecimiento puede cambiar el rector o la secretaria del establecimiento.
-                      </p>
-                    ) : null}
                     <UserDetailsForm
                       role="RECTOR"
                       layout="two-columns"
@@ -726,6 +737,7 @@ export function AddEstablishmentPage() {
                       }}
                     />
                   </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>

@@ -3,7 +3,8 @@ import { z } from "zod"
 
 export const establishmentFiltersFormSchema = z.object({
   search: z.string(),
-  statuses: z.array(z.string()),
+  municipalities: z.array(z.string()),
+  sectors: z.array(z.string()),
 })
 
 export type EstablishmentFiltersFormInput = z.input<
@@ -29,10 +30,11 @@ export const establishmentsSearchSchema = z.object({
 
   search: z.string().optional().catch(undefined),
 
-  statuses: z
-    .array(z.string())
-    .optional()
-    .catch(undefined),
+  /** Códigos DANE de municipio. */
+  municipalities: z.array(z.string()).optional().catch(undefined),
+
+  /** `VALOR` de la lista SECTOR. */
+  sectors: z.array(z.string()).optional().catch(undefined),
 })
 
 export type EstablishmentsSearch = z.infer<

@@ -21,10 +21,15 @@ import { establishmentDetailRoute } from "@/router"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { Person } from "@/features/establishment/employees/api/types/person"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
+import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
+import {
+  DirectivosReadOnly,
+  DirectivosSoloLecturaNota,
+} from "@/features/establishment/institution/components/directivos-read-only"
+import { esSectorNoOficial } from "@/features/establishment/institution/utils/sector"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -49,11 +54,12 @@ export function EstablishmentDetailPage() {
   const { data: idiomas = [] } = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
   const { data: calendarios = [] } = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
   const { data: costRegimen = [] } = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
-  const { data: populationGenders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
-  const { data: rangosTarifas = [] } = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
-  const { data: disabilities = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES_ATTENDED)
+  const { data: modalities = [] } = useCatalogQuery<CatalogItem>(CATALOGS.MODALIDADES_PRESTACION)
+  const { data: puedeGestionarDirectivos } = usePuedeGestionarEstablecimientosQuery()
 
   const establishment = data?.establishment
+  const sector = ownershipTypes.find((item) => item.id === establishment?.basicInfo.ownershipType?.id)?.sector ?? ""
+  const poblacion = establishment?.additionalInfo.population
   const title = establishment ? establishment.basicInfo.name : "Detalle del establecimiento educativo"
 
   return (
@@ -131,8 +137,13 @@ export function EstablishmentDetailPage() {
                           <DetailItem label="Código DANE" value={establishment.basicInfo.dane} />
                           <DetailItem label="NIT" value={establishment.basicInfo.nit} />
                           <DetailItem
-                            label="Propiedad jurídica"
+                            label="Naturaleza jurídica"
                             value={nameOf(ownershipTypes, establishment.basicInfo.ownershipType)}
+                          />
+                          <DetailItem label="Sector" value={sector} />
+                          <DetailItem
+                            label="Modalidad de prestación del servicio"
+                            value={nameOf(modalities, establishment.basicInfo.serviceModality)}
                           />
                         </DetailSection>
                         <DetailSection title="Domicilio">
@@ -163,29 +174,23 @@ export function EstablishmentDetailPage() {
                           value={establishment.additionalInfo.approvalResolution}
                         />
                         <DetailItem
-                          label="Idioma de enseñanza"
-                          value={nameOf(idiomas, establishment.additionalInfo.teachingLanguage)}
-                        />
-                        <DetailItem
                           label="Calendario"
                           value={nameOf(calendarios, establishment.additionalInfo.calendar)}
                         />
-                        <DetailItem
-                          label="Régimen de costo"
-                          value={nameOf(costRegimen, establishment.additionalInfo.costRegime)}
-                        />
-                        <DetailItem
-                          label="Género de la población atendida"
-                          value={nameOf(populationGenders, establishment.additionalInfo.populationGender)}
-                        />
-                        <DetailItem
-                          label="Rango tarifas"
-                          value={nameOf(rangosTarifas, establishment.additionalInfo.tuitionRange)}
-                        />
-                        <DetailItem
-                          label="Discapacidades atendidas"
-                          value={nameOf(disabilities, establishment.additionalInfo.disabilityType)}
-                        />
+                        {/* Solo en el sector No oficial (Regla 90). */}
+                        {esSectorNoOficial(sector) ? (
+                          <>
+                            <DetailItem
+                              label="Idioma de enseñanza"
+                              value={nameOf(idiomas, establishment.additionalInfo.teachingLanguage)}
+                            />
+                            <DetailItem
+                              label="Régimen tarifario"
+                              value={nameOf(costRegimen, establishment.additionalInfo.costRegime)}
+                            />
+                          </>
+                        ) : null}
+                        <DetailItem label="Género de la población atendida" value={poblacion?.gender ?? "Sin estudiantes"} />
                         <DetailItem
                           label="Licencia de funcionamiento"
                           value={establishment.additionalInfo.licenseStatus}
@@ -194,15 +199,16 @@ export function EstablishmentDetailPage() {
                           label="Fecha licencia"
                           value={formatDate(establishment.additionalInfo.licenseDate)}
                         />
+                        {/* Calculados con las matrículas (sso V571.2). */}
                         <DetailItem
-                          label="Atención a población perteneciente a etnias"
-                          value={yesNo(establishment.additionalInfo.ethnicAttention)}
+                          label="Atiende población perteneciente a grupos étnicos"
+                          value={yesNo(poblacion?.ethnicGroups === true)}
                         />
                         <DetailItem
-                          label="Atención a población con talentos adicionales"
-                          value={yesNo(establishment.additionalInfo.giftedAttention)}
+                          label="Atiende población con capacidades o talentos excepcionales"
+                          value={yesNo(poblacion?.exceptionalTalents === true)}
                         />
-                        <DetailItem label="Ofrece subsidio" value={yesNo(establishment.additionalInfo.subsidy)} />
+                        <DetailItem label="Ofrece subsidio" value={yesNo(poblacion?.subsidy === true)} />
                       </DetailSection>
                     </CardContent>
                   </Card>
@@ -211,62 +217,24 @@ export function EstablishmentDetailPage() {
             </AccordionItem>
 
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border">
-              <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  Datos de rector y secretaria
+                  {puedeGestionarDirectivos === true ? null : <DirectivosSoloLecturaNota />}
+                </span>
+              </AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4">
-                  <PersonCard title="Rector" person={establishment.principal} />
-                  <PersonCard title="Secretaria" person={establishment.secretary} />
-                </div>
+                <Card className={accordionCardClassName}>
+                  <CardContent>
+                    <DirectivosReadOnly principal={establishment.principal} secretary={establishment.secretary} />
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         )}
       </TableScreenBody>
     </TableScreen>
-  )
-}
-
-function PersonCard({ title, person }: { title: string; person: Person | null }) {
-  const { data: documentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
-  const { data: genders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
-
-  return (
-    <Card className={accordionCardClassName}>
-      <CardContent>
-        {person ? (
-          <div className="flex flex-col gap-6 md:flex-row">
-            <ArchivoImage
-              archivoId={person.photoArchivoId ?? null}
-              alt={`Foto de ${title.toLowerCase()}`}
-              className="size-24 shrink-0 rounded-full border border-border object-cover"
-              fallback={
-                <div className="grid size-24 shrink-0 place-items-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                  Sin foto
-                </div>
-              }
-            />
-            <DetailSection title={title}>
-              <DetailItem label="Tipo de documento" value={nameOf(documentTypes, person.documentType)} />
-              <DetailItem label="Número de documento" value={person.identification} />
-              <DetailItem
-                label="Nombre"
-                value={[person.firstName, person.middleName, person.lastName, person.secondLastName]
-                  .filter((part) => part?.trim())
-                  .join(" ")}
-              />
-              <DetailItem label="Correo electrónico" value={person.email} />
-              <DetailItem label="Teléfono" value={person.phone} />
-              <DetailItem label="Fecha de nacimiento" value={formatDate(person.birthDate)} />
-              <DetailItem label="Género" value={nameOf(genders, person.gender)} />
-            </DetailSection>
-          </div>
-        ) : (
-          <DetailSection title={title}>
-            <p className="text-sm text-muted-foreground">Sin asignar.</p>
-          </DetailSection>
-        )}
-      </CardContent>
-    </Card>
   )
 }
 

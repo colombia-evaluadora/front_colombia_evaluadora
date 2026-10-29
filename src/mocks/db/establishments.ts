@@ -3,7 +3,6 @@
 import type {
   Establishment,
   EstablishmentDetails,
-  EstablishmentStatus,
 } from "@/features/establishment/institution/api/types/establishment"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
@@ -166,23 +165,19 @@ function createEstablishmentDetails(): EstablishmentDetails {
 }
 
 export function createEstablishmentRow(details: EstablishmentDetails): Establishment {
-  // `status`/`statusLabel` reflejan el mismo par que arma el real
-  // (`fk_estado` como texto + `estado_nombre`) — acá contra el fixture
-  // ENTITY_STATUSES (1=Activo, 2=Suspendido), no un enum propio.
-  const isActive = faker.number.int({ min: 1, max: 100 }) <= 85
-  const status: EstablishmentStatus = isActive ? "1" : "2"
-  const statusLabel = isActive ? "Activo" : "Suspendido"
-
+  const legal = LEGAL_TYPES.find((item) => item.id === details.basicInfo.ownershipType?.id)
+  const rector = details.principal
   return {
     // `details.id` siempre está poblado acá: lo asigna `upsertEstablishmentDetails`
     // antes de llamar a esta función, y los registros semilla ya lo traen.
     id: details.id ?? nextEstablishmentId++,
     dane: details.basicInfo.dane,
     name: details.basicInfo.name,
-    department: details.address.municipality?.department.name ?? "",
+    nit: details.basicInfo.nit,
     municipality: details.address.municipality?.name ?? "",
-    status,
-    statusLabel,
+    department: details.address.municipality?.department.name ?? "",
+    sector: legal?.sector ?? "",
+    rector: rector ? [rector.firstName, rector.middleName, rector.lastName, rector.secondLastName].filter(Boolean).join(" ") : "",
   }
 }
 

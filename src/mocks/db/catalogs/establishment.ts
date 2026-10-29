@@ -5,6 +5,11 @@ export const CALENDARS: CatalogItem[] = [
   { id: 2, code: "B", name: "Calendario B" },
 ]
 
+export const SECTORES: CatalogItem[] = [
+  { id: 95, code: "1", name: "Oficial" },
+  { id: 96, code: "2", name: "No Oficial" },
+]
+
 export const MODALIDADES_PRESTACION: CatalogItem[] = [
   { id: 90, code: "PRESTACION_DIRECTA", name: "Prestación directa" },
   { id: 91, code: "ADMINISTRACION", name: "Administración del servicio educativo" },

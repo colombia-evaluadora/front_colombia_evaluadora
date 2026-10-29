@@ -14,7 +14,7 @@ export function EstablishmentsPage() {
 
   return (
     <EstablishmentsDataTable
-      title="Establecimiento educativo"
+      title="Establecimientos educativos"
       action={
         puedeEliminar && puedeGestionarDirectivos ? (
           <Button
@@ -25,7 +25,7 @@ export function EstablishmentsPage() {
             nativeButton={false}
           >
             <ControlPointIcon data-icon="inline-start" />
-            Agregar
+            Nuevo establecimiento
           </Button>
         ) : undefined
       }
