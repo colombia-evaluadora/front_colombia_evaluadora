@@ -24,7 +24,7 @@ import type { CalendarEntry } from "@/features/establishment/academic-period/api
 import { CalendarEntryDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-calendar-entry"
 import { createAcademicCalendarColumns } from "@/features/establishment/academic-period/components/table/columns-academic-calendar"
 import { getCalendarSummary } from "@/features/establishment/academic-period/utils/academic-calendar"
-import { PeriodReadOnlyNotice, usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabAcademicCalendarProps {
   academicPeriodId?: number
@@ -133,7 +133,6 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
 
       <NoticeOutlet />
 
-      <PeriodReadOnlyNotice what="el calendario" />
 
       <DataTable
         table={table}

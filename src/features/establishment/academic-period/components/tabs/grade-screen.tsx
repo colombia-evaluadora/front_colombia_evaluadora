@@ -277,7 +277,7 @@ export function GradeScreen({
 
       <TableScreenBody className="flex flex-col gap-4">
         <NoticeOutlet />
-        <PeriodReadOnlyNotice what="el grado" />
+        <PeriodReadOnlyNotice what="el grado" className="mb-4" />
 
         <FormDisabledProvider disabled={readOnly}>
           <form

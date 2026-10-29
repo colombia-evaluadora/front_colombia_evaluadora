@@ -12,7 +12,10 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { PeriodStateAction } from "@/features/establishment/academic-period/components/period-state-action"
-import { PeriodReadOnlyProvider } from "@/features/establishment/academic-period/utils/period-read-only"
+import {
+  PeriodReadOnlyNotice,
+  PeriodReadOnlyProvider,
+} from "@/features/establishment/academic-period/utils/period-read-only"
 import { formatCalendarRange } from "@/features/establishment/academic-period/utils/academic-calendar"
 import {
   DropdownMenu,
@@ -367,6 +370,7 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
       <TableScreenBody>
         <NoticeOutlet className="mb-4" />
         <PeriodReadOnlyProvider reason={readOnlyReason}>
+          <PeriodReadOnlyNotice what="el período y todas sus pestañas" plural className="mb-4" />
           <EvaluationPeriodsSection
             academicPeriodId={showTabs ? academicPeriodId : undefined}
             jornada={saved || !detailJornada ? jornada : detailJornada}

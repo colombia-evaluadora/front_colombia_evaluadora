@@ -17,7 +17,7 @@ import { useGradesQuery } from "@/features/establishment/academic-period/api/que
 import { createGradeColumns } from "@/features/establishment/academic-period/components/table/columns-grades"
 import { paths } from "@/config/paths"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
-import { PeriodReadOnlyNotice, usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabGradesProps {
   // Horario de la jornada del período; el grado lo usa salvo que lo personalice.
@@ -29,6 +29,7 @@ interface TabGradesProps {
 // página del grado (`periodos/$periodId/grados/...`).
 export function TabGrades({ academicPeriodId }: TabGradesProps) {
   const navigate = useNavigate()
+  const { readOnly, reason } = usePeriodReadOnly()
   const openGrade = (gradeId: number | null) => {
     if (academicPeriodId == null) return
     navigate({
@@ -36,6 +37,8 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
         gradeId == null
           ? paths.app.periodosGradoAgregar.getHref(academicPeriodId)
           : paths.app.periodosGradoEditar.getHref(academicPeriodId, gradeId),
+      // Desde "Ver", el grado también se abre en solo lectura.
+      search: reason === "ver" ? { ver: 1 } : {},
     })
   }
   const [sorting, setSorting] = useState<SortingState>([])
@@ -48,8 +51,7 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
     academicPeriodId,
   })
 
-  const { readOnly } = usePeriodReadOnly()
-  const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id) })
+  const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id), readOnly })
   const page = useLocalPagination(data?.rows ?? [])
   const { table } = useDataTable({
     columns,
@@ -74,7 +76,6 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
       </div>
 
       <NoticeOutlet />
-      <PeriodReadOnlyNotice what="el grado" />
 
       <DataTable
         table={table}

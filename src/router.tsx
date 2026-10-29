@@ -33,7 +33,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/administration/audits/api/schema"
-import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
+import { academicPeriodsSearchSchema, gradeSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
   planeadorActividadCrearSearchSchema,
   planeadorRecursoPreviewSearchSchema,
@@ -860,6 +860,7 @@ export const periodosGradoAgregarRoute = createRoute({
 export const periodosGradoEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosGradoEditar.path,
+  validateSearch: gradeSearchSchema,
   staticData: {
     breadcrumb: (params) => gradeCrumbs(params.periodId, "Grado"),
   },

@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useSelector } from "@tanstack/react-form"
 
-import { isFieldInvalid, toFieldErrors } from "@/lib/forms"
+import { isFieldInvalid, toFieldErrors, useFormDisabled } from "@/lib/forms"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
@@ -24,7 +24,7 @@ export function DecimalField({
   field,
   label,
   required,
-  disabled,
+  disabled: disabledProp,
   description,
   suffix,
   nullable,
@@ -37,6 +37,8 @@ export function DecimalField({
   suffix?: string
   nullable?: boolean
 }) {
+  // Como los campos registrados: también lo deshabilita un FormDisabledProvider.
+  const disabled = useFormDisabled() || disabledProp
   const value = field.state.value as number | null
   const [draft, setDraft] = useState<string | null>(null)
   const submissionAttempts = useSelector(field.form.store, (s) => s.submissionAttempts)

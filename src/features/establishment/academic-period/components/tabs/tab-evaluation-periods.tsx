@@ -21,7 +21,7 @@ import { ExportSelectedEvaluationPeriodsDialog } from "@/features/establishment/
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { WarningIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import { PeriodReadOnlyNotice, usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
+import { usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Un año tiene pocos cortes: con este tamaño cabe todo en una página y la suma
 // de pesos sale de las filas cargadas.
@@ -139,9 +139,6 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
       </div>
 
       <NoticeOutlet className="mb-2" />
-      <div className="mb-2">
-        <PeriodReadOnlyNotice what="los períodos de evaluación" />
-      </div>
 
       <DataTable
         table={table}

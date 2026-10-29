@@ -32,7 +32,7 @@ import {
 } from "@/features/establishment/academic-period/components/search/search-academic-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
 import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
-import { PeriodReadOnlyNotice, usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabAcademicAssignmentsProps {
   academicPeriodId?: number
@@ -198,7 +198,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
       <NoticeOutlet />
 
-      <PeriodReadOnlyNotice what="la asignación académica" />
 
       <DataTable
         table={table}

@@ -46,7 +46,7 @@ import {
   formatGrade,
   getCoverageIssues,
 } from "@/features/establishment/academic-period/utils/rating-scale-coverage"
-import { PeriodReadOnlyNotice, usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
+import { usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabRatingScalesProps {
   academicPeriodId?: number
@@ -170,7 +170,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
       </div>
 
       <NoticeOutlet />
-      <PeriodReadOnlyNotice what="la escala de valoración" />
 
       <DataTable
         table={table}

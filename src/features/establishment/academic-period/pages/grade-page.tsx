@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "@tanstack/react-router"
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router"
 
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { TableScreen, TableScreenBody } from "@/components/layout/table-screen"
@@ -29,6 +29,8 @@ function GradePageContent() {
     gradeId?: string
   }
   const academicPeriodId = Number(periodId)
+  const { ver } = useSearch({ strict: false }) as { ver?: number }
+  const viewOnly = ver === 1
   const numericGradeId = gradeId != null ? Number(gradeId) : null
 
   const { data, isPending } = useGradesQuery({
@@ -47,7 +49,9 @@ function GradePageContent() {
   // "Grados ›" vuelve a la pestaña Grados del período.
   const backToGrades = () =>
     navigate({
-      to: paths.app.periodosAcademicosEditar.getHref(academicPeriodId),
+      to: viewOnly
+        ? paths.app.periodosAcademicosVer.getHref(academicPeriodId)
+        : paths.app.periodosAcademicosEditar.getHref(academicPeriodId),
       search: { tab: "grados" },
     })
 
@@ -62,7 +66,7 @@ function GradePageContent() {
   }
 
   return (
-    <PeriodReadOnlyProvider reason={period?.status === "C" ? "cerrado" : null}>
+    <PeriodReadOnlyProvider reason={viewOnly ? "ver" : period?.status === "C" ? "cerrado" : null}>
       <TableScreen>
         {numericGradeId != null && isPending ? (
           <TableScreenBody>

@@ -3,7 +3,6 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useSelector } from "@tanstack/react-form"
 import { FormDisabledProvider, isFieldInvalid, toFieldErrors, useAppForm } from "@/lib/forms"
 import {
-  PeriodReadOnlyNotice,
   usePeriodReadOnly,
 } from "@/features/establishment/academic-period/utils/period-read-only"
 import { INCOMPLETE_FORM } from "@/lib/forms/messages"
@@ -323,7 +322,6 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
         >
           <FormDisabledProvider disabled={readOnly}>
             <NoticeOutlet />
-            <PeriodReadOnlyNotice what="los criterios de evaluación" />
 
             <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
               <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
