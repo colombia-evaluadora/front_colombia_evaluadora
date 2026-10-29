@@ -108,6 +108,10 @@ export function UnidadAsociadaSection({
                           const next = unidadesDelGrado.find((u) => String(u.id) === value)
                           if (!next) return
                           field.handleChange({ id: next.id, nombre: next.nombre })
+                          // Al cambiar de unidad el backend suelta las evidencias/criterios de la
+                          // anterior y exige marcar los de la nueva (Regla 36, QA 73): no arrastrarlos.
+                          form.setFieldValue("evidenciasIds", [])
+                          form.setFieldValue("criteriosUnidadIds", [])
                           // Regla: una unidad de enfoque formativo no admite actividades sumativas, así que se
                           // apaga `esEvaluativa` de inmediato. Usa `referenteActual`, no `next.enfoquePedagogico`.
                           if (referenteActual?.esFormativo) {

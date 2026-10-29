@@ -145,27 +145,15 @@ export async function buildEditarActividadSaga(
   const steps: SagaStepInput[] = []
   const unidadAnteriorId = actividad.unidad.id
   const unidadNuevaId = values.unidad.id
-  if (unidadNuevaId !== unidadAnteriorId) {
-    // Formativa (p. ej. preescolar) no lleva peso: un 0 guardado hace fallar el PUT de la actividad.
-    const esPonderado =
-      values.esEvaluativa && unidades.find((u) => u.id === unidadNuevaId)?.metodoCalculo === "Ponderado"
-    steps.push({
-      kind: SAGA_KINDS.actividadUnidad,
-      label: SAGA_LABELS.unidad,
-      payload: {
-        actividadId,
-        link:
-          unidadNuevaId === 0
-            ? null
-            : {
-                unidadId: unidadNuevaId,
-                ponderacion: esPonderado ? values.ponderacion : 0,
-                omitirPonderacion: !esPonderado,
-                permitirMoverDeUnidad: unidadAnteriorId !== 0,
-              },
-      },
-    })
-  }
+  // QA 73: la unidad (asignar, mover o quitar) viaja DENTRO del PUT de la
+  // actividad, junto con sus evidencias y criterios — ya no hay un paso
+  // `actividadUnidad` previo (`PUT /unidades/:ID/actividades/:ACT`) que
+  // quedaba guardado aunque el PUT fallara. Una sola op encolada; si el
+  // backend responde 400/409 la saga se detiene y no escribe nada más.
+  // Formativa (p. ej. preescolar) no lleva peso: un 0 guardado hace fallar el PUT.
+  const omitirPonderacion =
+    unidadNuevaId !== unidadAnteriorId &&
+    !(values.esEvaluativa && unidades.find((u) => u.id === unidadNuevaId)?.metodoCalculo === "Ponderado")
 
   const recursosCambiaron = JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)
   const adaptacionesBase = adaptacionesConEstudiantesDeLaActividad(values)
@@ -182,6 +170,8 @@ export async function buildEditarActividadSaga(
         recursos: recursosCambiaron ? recursos : values.recursos,
         adaptaciones: adaptacionesCambiaron ? adaptaciones : values.adaptaciones,
       },
+      unidadAnteriorId,
+      omitirPonderacion,
     },
   })
   if (recursosCambiaron) {

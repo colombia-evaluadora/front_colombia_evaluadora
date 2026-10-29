@@ -22,18 +22,43 @@ interface UpdateActividadInput {
    * actividad cambió desde entonces. `null`/ausente = sin verificación.
    */
   baseVersion?: number | null
+  /**
+   * Unidad que tenía la actividad al abrir el formulario. Si `data.unidad.id`
+   * es distinta, el MISMO PUT asigna/mueve la unidad (`FK_TUNIDAD`, con sus
+   * `EVIDENCIAS`/`CRITERIOS` en el mismo cuerpo) o la quita
+   * (`DESVINCULAR_UNIDAD: true`). QA 73: antes se vinculaba primero con
+   * `PUT /unidades/:ID/actividades/:ACT` y, si el PUT de la actividad fallaba
+   * (p. ej. sin evidencias marcadas), la actividad quedaba en la unidad con 0
+   * evidencias. Ahora el backend (sso V496.4, `fn_actividad_actualizar`)
+   * valida unidad, evidencias, peso y periodo antes de escribir nada.
+   * `undefined` = no tocar la unidad.
+   */
+  unidadAnteriorId?: number
+  /** La unidad nueva no usa peso (no es "Ponderado" o la actividad es formativa): sin `PONDERACION`. */
+  omitirPonderacion?: boolean
+}
+
+/** Campos de unidad del PUT; `null` si la unidad no cambia (se puede omitir `FK_TUNIDAD`). */
+export function unidadBody(data: Actividad, unidadAnteriorId: number | undefined): Record<string, unknown> | null {
+  if (unidadAnteriorId === undefined || data.unidad.id === unidadAnteriorId) return null
+  // `DESVINCULAR_UNIDAD` es excluyente con `FK_TUNIDAD`/`PONDERACION`.
+  if (data.unidad.id === 0) return { DESVINCULAR_UNIDAD: true }
+  // Mover de A a B no necesita `PERMITIR_MOVER_DE_UNIDAD` (eso es del modal de la unidad).
+  return { FK_TUNIDAD: data.unidad.id }
 }
 
 /**
- * PUT parcial: campo ausente preserva el valor. No manda `FK_TUNIDAD` (lo resuelven link/unlink, que
- * validan la ponderación) ni estudiantes (`PUT .../estudiantes`), materiales o adaptaciones.
+ * PUT parcial: campo ausente preserva el valor. Lleva la unidad (ver `unidadAnteriorId`) con sus
+ * evidencias y criterios; no lleva estudiantes (`PUT .../estudiantes`), materiales ni adaptaciones.
  */
 export async function updateActividad(
-  { actividadId, data, baseVersion }: UpdateActividadInput,
+  { actividadId, data, baseVersion, unidadAnteriorId, omitirPonderacion }: UpdateActividadInput,
   req?: WriteRequest,
 ): Promise<unknown> {
+  const unidad = unidadBody(data, unidadAnteriorId)
   if (env.ENABLE_API_MOCKING) {
-    const mockBody = baseVersion != null ? { ...data, BASE_VERSION: baseVersion } : data
+    const mockBody: Record<string, unknown> = { ...data, ...unidad }
+    if (baseVersion != null) mockBody.BASE_VERSION = baseVersion
     return api.put(`/eval-col/planeador/actividades/${actividadId}`, mockBody, writeConfig(req))
   }
   const body: Record<string, unknown> = {
@@ -69,7 +94,9 @@ export async function updateActividad(
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   // `NOTA_MAXIMA` y `PONDERACION` son excluyentes; el form deja solo uno.
   if (data.esEvaluativa && data.notaMaxima != null) body.NOTA_MAXIMA = data.notaMaxima
-  else if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
+  else if (data.esEvaluativa && data.ponderacion > 0 && !omitirPonderacion && data.unidad.id !== 0) {
+    body.PONDERACION = data.ponderacion
+  }
   // Debe ir antes de `PUT .../instrumento`: ese endpoint exige que el instrumento ya coincida (400/22023).
   if (data.esEvaluativa) {
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
@@ -93,6 +120,7 @@ export async function updateActividad(
     body.EVIDENCIAS = data.evidenciasIds
     body.CRITERIOS = data.criteriosUnidadIds
   }
+  if (unidad) Object.assign(body, unidad)
   if (baseVersion != null) body.BASE_VERSION = baseVersion
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body, writeConfig(req))
 }
