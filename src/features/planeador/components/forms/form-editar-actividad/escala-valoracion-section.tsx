@@ -39,13 +39,14 @@ import type { FormActividad } from "@/features/planeador/components/forms/form-e
 import { cryptoId } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import { ERROR_OBLIGATORIO } from "@/features/planeador/components/forms/form-editar-actividad/hooks"
 import { SoloEdicion } from "@/features/planeador/components/forms/form-editar-actividad/solo-edicion"
+import { SinEscalaAviso } from "@/features/planeador/components/sin-escala-aviso"
 
 /**
  * Niveles con que nace cada criterio cualitativo (Regla 42): una COPIA de la escala de
  * valoración del período para el nivel de enseñanza del grado (etiqueta, descripción y
  * puntaje de cada nivel, `GET /planeador/actividades/escala-precarga`). Al ser copia, lo
  * que el docente edite, agregue o quite queda solo en ese criterio de esta actividad.
- * Sin escala configurada arranca con un nivel en blanco.
+ * Sin escala configurada arranca con un nivel en blanco (y el form muestra `SinEscalaAviso`).
  */
 function nivelesIniciales(precarga: EscalaPrecarga | undefined): Nivel[] {
   const niveles = precarga?.niveles ?? []
@@ -54,12 +55,14 @@ function nivelesIniciales(precarga: EscalaPrecarga | undefined): Nivel[] {
 }
 
 /** Criterio nuevo (Reglas 40/41/42): numérico con el máximo del formato de calificación, o cualitativo con la escala del período. */
-function nuevoCriterio(tipo: EscalaValoracionTipo, precarga: EscalaPrecarga | undefined): EscalaCriterio {
+function nuevoCriterio(tipo: EscalaValoracionTipo, precargaRaw: EscalaPrecarga | undefined): EscalaCriterio {
+  // Sin escala no se inventan valores (ni 0-100 ni la nota máxima del formato).
+  const precarga = precargaRaw?.sinEscala ? undefined : precargaRaw
   return tipo === "Numérica"
     ? {
         id: cryptoId(),
         nombre: "",
-        valorMinimo: precarga?.valorMinimo ?? 0,
+        valorMinimo: precarga?.valorMinimo,
         valorMaximo: precarga?.valorMaximo,
         interpretacion: "",
         niveles: [],
@@ -187,6 +190,22 @@ export function EscalaValoracionSection({
   }
   const nombreEscala = origenRestaurado ?? respaldo.data?.escala ?? null
 
+  // Sin escala aplicable (o sin niveles activos) no se precarga nada: se avisa y el flag
+  // `sinEscala` (solo front, no viaja) hace que `faltantesEscala` frene el guardado. Un
+  // error del respaldo (p. ej. 400 sin contexto) cuenta igual: no hay de dónde precargar.
+  const precargaTipoActual = precargaDe(escalaTipoActual)
+  const sinEscala =
+    !disabled &&
+    configuracionLista &&
+    !cargandoPrecarga &&
+    ((precargaTipoActual?.sinEscala ?? false) || (config?.precargas === undefined && respaldo.isError))
+  const sinEscalaGuardado = useSelector(form.store, (state) => state.values.escalaValoracion.sinEscala ?? false)
+  useEffect(() => {
+    if (sinEscala !== sinEscalaGuardado) {
+      form.setFieldValue("escalaValoracion", (prev) => ({ ...prev, sinEscala }), { dontUpdateMeta: true })
+    }
+  }, [sinEscala, sinEscalaGuardado, form])
+
   return (
     <Card className="gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -205,7 +224,7 @@ export function EscalaValoracionSection({
                   variant="ghost"
                   color="primary"
                   size="sm"
-                  disabled={disabled || cargandoPrecarga || sinContexto}
+                  disabled={disabled || cargandoPrecarga || sinContexto || sinEscala}
                 />
               }
             >
@@ -295,17 +314,19 @@ export function EscalaValoracionSection({
                 </RadioGroup>
               </Field>
 
-              {precargaActual && (
-                <p className="text-muted-foreground text-xs" data-testid="escala-precarga-origen">
-                  {escala.tipo === "Cualitativa"
-                    ? precargaActual.niveles.length > 0
+              {sinEscala ? (
+                <SinEscalaAviso />
+              ) : (
+                precargaActual && (
+                  <p className="text-muted-foreground text-xs" data-testid="escala-precarga-origen">
+                    {escala.tipo === "Cualitativa"
                       ? `Los niveles de cada criterio nuevo se precargan desde ${nombreEscala ? `"${nombreEscala}"` : "la escala de valoración de la institución"}. Los cambios solo aplican a ese criterio de esta actividad.`
-                      : "La institución no tiene niveles para esta escala: agréguelos en cada criterio."
-                    : `Los valores mínimo y máximo se precargan desde la escala de valoración de la institución${precargaActual.formato ? ` ("${precargaActual.formato}")` : ""}; puede ajustarlos en cada criterio.`}
-                </p>
+                      : `Los valores mínimo y máximo se precargan desde la escala de valoración de la institución${precargaActual.formato ? ` ("${precargaActual.formato}")` : ""}; puede ajustarlos en cada criterio.`}
+                  </p>
+                )
               )}
 
-              {escala.criterios.length === 0 && (
+              {escala.criterios.length === 0 && !sinEscala && (
                 <div data-invalid={sinCriterios}>
                   {sinCriterios ? (
                     <FieldError errors={[{ message: "Agrega al menos un criterio." }]} />
@@ -338,7 +359,7 @@ export function EscalaValoracionSection({
                     variant="outline"
                     color="primary"
                     type="button"
-                    disabled={disabled || cargandoPrecarga}
+                    disabled={disabled || cargandoPrecarga || sinEscala}
                     onClick={() => setCriterios([...escala.criterios, nuevoCriterio(escala.tipo, precargaActual)])}
                   >
                     <PlusCircleIcon data-icon="inline-start" />

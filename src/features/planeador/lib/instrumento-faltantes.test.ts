@@ -101,6 +101,13 @@ describe("faltantesListaCotejo", () => {
 })
 
 describe("faltantesEscala", () => {
+  it("sin escala del período no deja guardar, aunque los criterios estén completos", () => {
+    expect(faltantesEscala(escala({}, { sinEscala: true }))).toEqual([
+      "Configure primero la escala de valoración del período.",
+    ])
+    expect(faltantesEscala(escala({}, { sinEscala: false }))).toEqual([])
+  })
+
   it("numérica: exige mínimo y máximo, con mínimo < máximo", () => {
     expect(faltantesEscala(escala())).toEqual([])
     expect(faltantesEscala(escala({ valorMinimo: undefined, valorMaximo: undefined }))).toEqual([
