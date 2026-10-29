@@ -20,6 +20,10 @@ import { useGradeSubjectLabel } from "@/features/establishment/academic-period/a
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
 import { formatPeso } from "@/features/establishment/academic-period/components/table/columns-evaluation-periods"
+import {
+  usePeriodReadOnly,
+  withoutRowActions,
+} from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabStudyPlanProps {
   academicPeriodId?: number
@@ -29,7 +33,13 @@ interface TabStudyPlanProps {
   isFormativo?: boolean
 }
 
-export function TabStudyPlan({ academicPeriodId, gradeId, gradeName, isPreescolar, isFormativo }: TabStudyPlanProps) {
+export function TabStudyPlan({
+  academicPeriodId,
+  gradeId,
+  gradeName,
+  isPreescolar,
+  isFormativo,
+}: TabStudyPlanProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const { data, isPending, isError, error, refetch } = useStudyPlansQuery({
     filters: {},
@@ -44,16 +54,22 @@ export function TabStudyPlan({ academicPeriodId, gradeId, gradeName, isPreescola
 
   const subjectLabel = useGradeSubjectLabel(gradeId, Boolean(isPreescolar))
   // Regla 76: el Porcentaje solo cuenta con "Cada [Área] tiene un porcentaje".
-  const areaCriteria = criteriaOptions?.areaGradeCriteria.find((o) => o.key === criteria?.areaGradeCriteria)?.label
+  const areaCriteria = criteriaOptions?.areaGradeCriteria.find(
+    (o) => o.key === criteria?.areaGradeCriteria,
+  )?.label
   const byPercentage = areaCriteria?.toLowerCase().includes("porcentaje") ?? false
-  const columns = createStudyPlanColumns({
-    academicPeriodId,
-    gradeId,
-    isPreescolar,
-    isFormativo,
-    subjectLabel,
-    showPercentage: byPercentage,
-  })
+  const { readOnly } = usePeriodReadOnly()
+  const columns = withoutRowActions(
+    createStudyPlanColumns({
+      academicPeriodId,
+      gradeId,
+      isPreescolar,
+      isFormativo,
+      subjectLabel,
+      showPercentage: byPercentage,
+    }),
+    readOnly,
+  )
   const page = useLocalPagination(data?.rows ?? [])
   const { table } = useDataTable({
     columns,
@@ -72,14 +88,14 @@ export function TabStudyPlan({ academicPeriodId, gradeId, gradeName, isPreescola
     if (!item.matriculaObligatoria || !item.areaNombre) continue
     sums.set(item.areaNombre, (sums.get(item.areaNombre) ?? 0) + item.influenciaArea)
   }
-  const warnings = byPercentage
-    ? [...sums].filter(([, total]) => Math.abs(total - 100) > 0.05)
-    : []
+  const warnings = byPercentage ? [...sums].filter(([, total]) => Math.abs(total - 100) > 0.05) : []
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h4 className="text-lg font-semibold">Plan de estudio{gradeName ? ` de ${gradeName}` : ""}</h4>
+        <h4 className="text-lg font-semibold">
+          Plan de estudio{gradeName ? ` de ${gradeName}` : ""}
+        </h4>
         <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger render={<span tabIndex={0} />}>
@@ -90,13 +106,15 @@ export function TabStudyPlan({ academicPeriodId, gradeId, gradeName, isPreescola
             </TooltipTrigger>
             <TooltipContent>El PDF del plan de estudio todavía no está disponible.</TooltipContent>
           </Tooltip>
-          <CreateStudyPlanDialog
-            academicPeriodId={academicPeriodId}
-            gradeId={gradeId}
-            isPreescolar={isPreescolar}
-            isFormativo={isFormativo}
-            subjectLabel={subjectLabel}
-          />
+          {!readOnly && (
+            <CreateStudyPlanDialog
+              academicPeriodId={academicPeriodId}
+              gradeId={gradeId}
+              isPreescolar={isPreescolar}
+              isFormativo={isFormativo}
+              subjectLabel={subjectLabel}
+            />
+          )}
         </div>
       </div>
 
@@ -118,8 +136,8 @@ export function TabStudyPlan({ academicPeriodId, gradeId, gradeName, isPreescola
           {warnings.map(([area, total]) => (
             <li key={area} className="flex items-start gap-2 text-sm text-orange">
               <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
-              Los porcentajes de las asignaturas obligatorias de {area} suman {formatPeso(total)}. Se usan
-              como pesos relativos entre las asignaturas que cursa cada estudiante.
+              Los porcentajes de las asignaturas obligatorias de {area} suman {formatPeso(total)}.
+              Se usan como pesos relativos entre las asignaturas que cursa cada estudiante.
             </li>
           ))}
         </ul>

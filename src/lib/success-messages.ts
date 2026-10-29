@@ -12,6 +12,9 @@ interface EntityMessages {
   /** Aprobar o declinar (p. ej. Coordinador en el Planeador). */
   approved?: string
   declined?: string
+  /** Reabrir y volver a cerrar (período académico, Regla 16). */
+  reopened?: string
+  closed?: string
 }
 
 export const SUCCESS_MESSAGES = {
@@ -88,6 +91,8 @@ export const SUCCESS_MESSAGES = {
     // Toggle de la reserva de cupos, separado de `updated`.
     activated: "El periodo de reserva de cupos se activó correctamente.",
     deactivated: "El periodo de reserva de cupos se desactivó correctamente.",
+    reopened: "El período académico se reabrió correctamente.",
+    closed: "El período académico se cerró correctamente.",
   },
   evaluationPeriod: {
     created: "El periodo de evaluación se creó correctamente.",

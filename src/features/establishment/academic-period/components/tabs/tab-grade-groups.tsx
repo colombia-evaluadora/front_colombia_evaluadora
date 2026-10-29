@@ -19,6 +19,7 @@ import {
   GroupSchedule,
   type GroupScheduleSource,
 } from "@/features/establishment/academic-period/components/fields/group-schedule"
+import { usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabGradeGroupsProps {
   gradeId?: number
@@ -39,11 +40,15 @@ export function TabGradeGroups({ gradeId, academicPeriodId, grade }: TabGradeGro
   })
   const { data: period } = useAcademicPeriodQuery(academicPeriodId)
 
-  const columns = createGradeGroupColumns({
-    academicPeriodId,
-    gradeName: grade?.nombre,
-    onOpenSchedule: (group) => setScheduleGroupId(group.id),
-  })
+  const { readOnly } = usePeriodReadOnly()
+  const columns = withoutRowActions(
+    createGradeGroupColumns({
+      academicPeriodId,
+      gradeName: grade?.nombre,
+      onOpenSchedule: (group) => setScheduleGroupId(group.id),
+    }),
+    readOnly,
+  )
   const page = useLocalPagination(data?.rows ?? [])
   const { table } = useDataTable({
     columns,
@@ -75,7 +80,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId, grade }: TabGradeGro
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h4 className="text-lg font-semibold">Grupos</h4>
-        <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />
+        {!readOnly && <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />}
       </div>
 
       <NoticeOutlet />

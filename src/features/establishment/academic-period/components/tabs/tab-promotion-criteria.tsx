@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useSelector } from "@tanstack/react-form"
-import { FormDisabledProvider, useAppForm } from "@/lib/forms"
+import { FormDisabledProvider, useAppForm, useFormDisabled } from "@/lib/forms"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
@@ -67,6 +67,7 @@ import {
   type PromotionApprovalValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Valores con los que nace el registro único del período (columna
 // "Predeterminado" de la Sección 5.5).
@@ -107,9 +108,12 @@ export interface PromotionCriteriaHandle {
 
 export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromotionCriteriaProps>(
   function TabPromotionCriteria(
-    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, gradeName, readOnly = false, periodTitle },
+    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, gradeName, readOnly: formativoReadOnly = false, periodTitle },
     ref,
   ) {
+    // Formativo (prop) o período Cerrado / "Ver" (Regla 16).
+    const { readOnly: periodReadOnly } = usePeriodReadOnly()
+    const readOnly = formativoReadOnly || periodReadOnly
     const isGradeScope = gradeId != null
     const subjectLabel = useGradeSubjectLabel(gradeId, Boolean(isPreescolar))
     const [resetCount, setResetCount] = useState(0)
@@ -203,12 +207,12 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
             </Button>
           )}
         </div>
-        {readOnly && (
+        {formativoReadOnly ? (
           <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
             <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
             El Referente de este grado es Formativo: el cierre promueve siempre.
           </p>
-        )}
+        ) : null}
         {form}
         <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
           <AlertDialogContent>
@@ -357,8 +361,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       <FormDisabledProvider disabled={readOnly}>
         <form
           id={FORM_ID}
-          // Base UI ignora <fieldset disabled>: `inert` bloquea los controles propios.
-          inert={readOnly || undefined}
           className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
@@ -384,6 +386,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                       Nodo curricular<span className="text-red"> *</span>
                     </FieldLabel>
                     <ComboboxField
+                      disabled={readOnly}
                       items={curriculumNodeItems}
                       value={field.state.value}
                       onValueChange={(value) => {
@@ -445,6 +448,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                     <span className="text-red"> *</span>
                   </legend>
                   <RadioGroup
+                    disabled={readOnly}
                     className="flex items-center gap-6"
                     value={field.state.value ? "si" : "no"}
                     onValueChange={(value) => {
@@ -608,6 +612,7 @@ function RequiredSubjectsField({
   subjects: SubjectOption[]
   emptyMessage: string
 }) {
+  const disabled = useFormDisabled()
   // Quita las que ya no están en el catálogo del período (Regla 41).
   useEffect(() => {
     const validIds = new Set((mode === "AR" ? areas : subjects).map((o) => o.id))
@@ -624,6 +629,7 @@ function RequiredSubjectsField({
       value={field.state.value as number[]}
       onChange={(values) => field.handleChange(values)}
       emptyMessage={emptyMessage}
+      disabled={disabled}
     />
   )
 }
@@ -649,6 +655,8 @@ function GradeRequirementsField({
   norm: AnyFieldApi
   own: AnyFieldApi
 }) {
+  // Solo lectura: la lista se puede abrir para consultar, pero no se marca ni se agrega.
+  const disabled = useFormDisabled()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -720,6 +728,7 @@ function GradeRequirementsField({
                     type="button"
                     aria-label={`Quitar ${row.label}`}
                     onClick={() => toggle(row, false)}
+                    disabled={disabled}
                     className="grid size-5 place-items-center rounded-full opacity-70 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                   >
                     <XIcon className="size-3.5" />
@@ -746,6 +755,7 @@ function GradeRequirementsField({
                 <li key={row.key}>
                   <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50">
                     <Checkbox
+                      disabled={disabled}
                       checked={row.checked}
                       onCheckedChange={(checked) => toggle(row, Boolean(checked))}
                     />
@@ -767,7 +777,7 @@ function GradeRequirementsField({
                       id="own-requirement"
                       placeholder="Escriba un requisito..."
                       maxLength={80}
-                      disabled={isFull}
+                      disabled={isFull || disabled}
                       value={draft}
                       aria-invalid={error ? true : undefined}
                       className="pr-16"
@@ -789,7 +799,7 @@ function GradeRequirementsField({
                     />
                   </div>
                 </Field>
-                <Button type="button" color="primary" disabled={isFull} onClick={add} className="h-10">
+                <Button type="button" color="primary" disabled={isFull || disabled} onClick={add} className="h-10">
                   <PlusIcon data-icon="inline-start" />
                   Agregar
                 </Button>

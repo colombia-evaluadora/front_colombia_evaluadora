@@ -163,6 +163,11 @@ export const academicPeriodsFiltersFormSchema = z.object({
 export type AcademicPeriodsFiltersFormInput = z.input<typeof academicPeriodsFiltersFormSchema>
 export type AcademicPeriodsFiltersFormValues = z.infer<typeof academicPeriodsFiltersFormSchema>
 
+// Pantalla del grado: `ver=1` la abre en solo lectura (viene de "Ver" del período).
+export const gradeSearchSchema = z.object({
+  ver: z.coerce.number().optional().catch(undefined),
+})
+
 export const academicPeriodsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
