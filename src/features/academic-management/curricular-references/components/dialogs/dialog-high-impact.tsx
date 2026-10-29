@@ -21,11 +21,25 @@ interface HighImpactDialogProps {
   isPending?: boolean
   onConfirm: () => void
   onCancel: () => void
+  /** Título fijo (p. ej. "Inactivar referente"); por defecto sale de las alertas. */
+  title?: string
+  confirmLabel?: string
+  /** Texto cuando no hay alertas que mostrar. */
+  description?: string
 }
 
 // Modal bloqueante: solo confirma con la casilla marcada.
 // Con alertas "block" no se puede confirmar: solo se cierra.
-export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, onCancel }: HighImpactDialogProps) {
+export function HighImpactDialog({
+  open,
+  alerts,
+  isPending = false,
+  onConfirm,
+  onCancel,
+  title: fixedTitle,
+  confirmLabel = "Confirmar cambio",
+  description,
+}: HighImpactDialogProps) {
   const [understood, setUnderstood] = useState(false)
   // Confirmar siempre escribe (activar/inactivar o guardar el referente).
   const soloEnLinea = useOnlineOnly()
@@ -35,8 +49,11 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
   }, [open])
 
   const isBlocked = alerts.some((alert) => alert.kind === "block")
+  // Sin alertas no hay impacto que aceptar: basta con confirmar.
+  const needsAck = alerts.length > 0
   const title =
-    alerts.length === 1 ? alerts[0].title : isBlocked ? "No es posible aplicar el cambio" : "Cambios de alto impacto"
+    fixedTitle ??
+    (alerts.length === 1 ? alerts[0].title : isBlocked ? "No es posible aplicar el cambio" : "Cambios de alto impacto")
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && !isPending && onCancel()}>
@@ -44,6 +61,7 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription render={<div />} className="flex flex-col gap-3 text-left">
+            {alerts.length === 0 && description ? <p>{description}</p> : null}
             {alerts.map((alert) => (
               <div key={alert.field}>
                 {alerts.length > 1 ? <p className="font-bold text-foreground">{alert.title}</p> : null}
@@ -53,7 +71,7 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {isBlocked ? null : (
+        {isBlocked || !needsAck ? null : (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={understood} onCheckedChange={(checked) => setUnderstood(checked === true)} />
             Entiendo el impacto de este cambio
@@ -79,7 +97,7 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
               size="sm"
               variant="fill"
               color="primary"
-              disabled={!understood || isPending || soloEnLinea.disabled}
+              disabled={(needsAck && !understood) || isPending || soloEnLinea.disabled}
               aria-busy={isPending}
               onClick={onConfirm}
             >
@@ -88,7 +106,7 @@ export function HighImpactDialog({ open, alerts, isPending = false, onConfirm, o
               ) : (
                 <CheckIcon data-icon="inline-start" />
               )}
-              Confirmar cambio
+              {confirmLabel}
             </Button>
             <Button size="sm" variant="fill" color="neutral" disabled={isPending} onClick={onCancel}>
               <XIcon data-icon="inline-start" />

@@ -38,12 +38,19 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
 
   // Inactivar con unidades/actividades pasa por el modal (Regla 5).
   const [impactAlerts, setImpactAlerts] = useState<HighImpactAlert[]>([])
+  // Inactivar siempre pide confirmación, tenga o no impacto.
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [isCheckingImpact, setIsCheckingImpact] = useState(false)
   // Activar sobre un nivel ya gobernado abre el modal de la Regla 7.
   const [levelConflict, setLevelConflict] = useState<LevelConflict | null>(null)
 
-  async function handleError(message: string) {
+  function closeConfirm() {
+    setConfirmOpen(false)
     setImpactAlerts([])
+  }
+
+  async function handleError(message: string) {
+    closeConfirm()
     const conflict = nextActive ? await toLevelConflict(message) : null
     if (conflict) {
       setLevelConflict(conflict)
@@ -59,7 +66,7 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
           void handleError(result.message ?? "")
           return
         }
-        setImpactAlerts([])
+        closeConfirm()
         if (result?.queued) {
           notify(QUEUED_MESSAGE)
           return
@@ -89,17 +96,13 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
         { ...curricularReference, active: false },
         impact,
       )
-      if (alerts.length > 0) {
-        setImpactAlerts(alerts)
-        return
-      }
+      setImpactAlerts(alerts)
+      setConfirmOpen(true)
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
-      return
     } finally {
       setIsCheckingImpact(false)
     }
-    toggle()
   }
 
   const isPending = toggleMutation.isPending || isCheckingImpact
@@ -132,11 +135,14 @@ export function ToggleStatusButton({ curricularReference }: { curricularReferenc
       </Tooltip>
 
       <HighImpactDialog
-        open={impactAlerts.length > 0}
+        open={confirmOpen}
         alerts={impactAlerts}
         isPending={toggleMutation.isPending}
         onConfirm={toggle}
-        onCancel={() => setImpactAlerts([])}
+        onCancel={closeConfirm}
+        title="Inactivar referente"
+        confirmLabel="Inactivar"
+        description={`El referente "${curricularReference.name}" quedará inactivo. Podrá activarlo de nuevo cuando lo necesite.`}
       />
 
       <LevelConflictDialog conflict={levelConflict} onCancel={() => setLevelConflict(null)} />
