@@ -33,6 +33,11 @@ interface UnidadCriterioRow {
   descriptor_prom?: "S" | "N"
   niveles: UnidadCriterioNivelRow[]
   active?: boolean
+  /** PK_TUSUARIO del autor como texto (CREATED_BY). */
+  created_by?: string | null
+  autor?: string | null
+  /** QA 71: autor o no docente puro. Ausente en eval-col anteriores al fix. */
+  puede_gestionar?: boolean | null
 }
 
 function toCriterioUnidad(row: UnidadCriterioRow): CriterioUnidad {
@@ -47,6 +52,8 @@ function toCriterioUnidad(row: UnidadCriterioRow): CriterioUnidad {
         descripcion: nivel.indicador,
         valoracionId: nivel.fkTescalaValoracion,
       })),
+    puedeGestionar: row.puede_gestionar ?? undefined,
+    autor: row.autor ?? null,
   }
 }
 
