@@ -13,6 +13,8 @@ import { FUNCTIONAL_POSITIONS } from "@/mocks/db/catalogs/functional-positions"
 import { EMPLOYMENT_TYPES } from "@/mocks/db/catalogs/employment-types"
 import {
   CALENDARS,
+  MODALIDADES_PRESTACION,
+  SECTORES,
   COST_REGIMEN,
   RANGO_TARIFAS,
   IDIOMAS,
@@ -84,6 +86,14 @@ export const catalogHandlers = [
 
   http.get(`/api/catalogs/${CATALOGS.CALENDARIOS}`, () => {
     return HttpResponse.json(CALENDARS)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.MODALIDADES_PRESTACION}`, () => {
+    return HttpResponse.json(MODALIDADES_PRESTACION)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.SECTORES}`, () => {
+    return HttpResponse.json(SECTORES)
   }),
 
   http.get(`/api/catalogs/${CATALOGS.COST_REGIMEN}`, () => {

@@ -18,6 +18,7 @@ import {
 
 import { useEstablishmentsFilters } from "@/features/establishment/institution/hooks/use-filters"
 import { useEstablishmentsQuery } from "@/features/establishment/institution/api/query/use-establishments"
+import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import {
   useBulkDelete,
   summarizeEstablishmentBulkDelete,
@@ -53,15 +54,8 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEstablishmentsFilters()
 
-  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
-  /** El catálogo dice "Activo"; aquí se muestra en femenino sin tocar el `code`. */
-  const establishmentStatuses = useMemo(
-    () =>
-      entityStatuses.map((status) =>
-        status.code === "ACTIVE" || status.code === "A" ? { ...status, name: "Activa" } : status,
-      ),
-    [entityStatuses],
-  )
+  const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const { data: sectors = [] } = useCatalogQuery<CatalogItem>(CATALOGS.SECTORES)
 
   const { data, isPending, isError, error, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
@@ -126,7 +120,8 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
             activeFilterCount={activeFilterCount}
-            statuses={establishmentStatuses}
+            municipalities={municipalities}
+            sectors={sectors}
           />
 
           <TableScreenActions>
@@ -169,7 +164,12 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
           isPending={isPending}
           isError={isError}
           onRetry={refetch}
-          emptyMessage="Sin resultados."
+          // Sin filtros, la tabla está vacía de verdad; con filtros, nada coincide.
+          emptyMessage={
+            activeFilterCount > 0
+              ? "No hay establecimientos que coincidan con la búsqueda y los filtros aplicados."
+              : "Aún no hay establecimientos. Use Nuevo establecimiento para crear el primero."
+          }
           errorMessage={error ? getErrorMessage(error) : undefined}
         />
 

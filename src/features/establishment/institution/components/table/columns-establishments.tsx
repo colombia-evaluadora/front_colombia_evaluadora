@@ -10,7 +10,6 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { toSentenceCase } from "@/lib/utils"
 import { paths } from "@/config/paths"
 
-import { establishmentStatusBadge, establishmentStatusDisplayLabel } from "@/features/establishment/institution/api/ui-mappings"
 import type { Establishment } from "@/features/establishment/institution/api/types/establishment"
 import { DeleteEstablishmentDialog } from "@/features/establishment/institution/components/dialogs/dialog-delete"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -92,58 +91,76 @@ export const columns: ColumnDef<Establishment>[] = [
     enableHiding: false,
     size: 32,
   },
-  {
-    accessorKey: "dane",
-    id: "dane",
-    meta: { label: "DANE" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="DANE" />
-    ),
-  },
+  // Columnas del informe de diseño, 2: nombre, DANE, NIT, municipio, sector y rector.
   {
     accessorKey: "name",
     id: "name",
-    meta: { label: "Establecimiento" },
+    meta: { label: "Nombre del establecimiento" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Establecimiento" />
+      <DataTableColumnHeader column={column} title="Nombre del establecimiento" />
     ),
     cell: ({ row }) => (
       <p className="font-bold">{toSentenceCase(row.original.name)}</p>
     ),
   },
   {
-    accessorFn: (row) => `${row.department}/${row.municipality}`,
-    id: "departmentMunicipality",
-    meta: { label: "Departamento/Municipio" },
+    accessorKey: "dane",
+    id: "dane",
+    meta: { label: "Código DANE" },
     header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Departamento/Municipio"
-      />
+      <DataTableColumnHeader column={column} title="Código DANE" />
+    ),
+  },
+  {
+    accessorKey: "nit",
+    id: "nit",
+    meta: { label: "NIT" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="NIT" />
+    ),
+  },
+  {
+    accessorKey: "municipality",
+    id: "municipality",
+    meta: { label: "Municipio" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Municipio" />
     ),
     cell: ({ row }) => (
-      <div className="max-w-lg truncate">
-        {toSentenceCase(row.original.department)}/{toSentenceCase(row.original.municipality)}
+      <div className="max-w-xs truncate" title={`${row.original.municipality} (${row.original.department})`}>
+        {toSentenceCase(row.original.municipality)}
       </div>
     ),
   },
   {
-    accessorKey: "statusLabel",
-    id: "status",
-    meta: { label: "Estado" },
+    accessorKey: "sector",
+    id: "sector",
+    meta: { label: "Sector" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Estado" />
+      <DataTableColumnHeader column={column} title="Sector" />
     ),
-    // El nombre ya viene resuelto en la fila (`statusLabel`) — no hace
-    // falta ninguna consulta a catálogo acá, a diferencia de antes.
-    cell: ({ row }) => {
-      const label = row.original.statusLabel
-      return (
-        <Badge {...establishmentStatusBadge(label)}>
-          {establishmentStatusDisplayLabel(label)}
+    cell: ({ row }) =>
+      row.original.sector ? (
+        <Badge variant="soft" color={row.original.sector === "Oficial" ? "info" : "neutral"}>
+          {row.original.sector}
         </Badge>
-      )
-    },
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  },
+  {
+    accessorKey: "rector",
+    id: "rector",
+    meta: { label: "Rector" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Rector" />
+    ),
+    cell: ({ row }) =>
+      row.original.rector ? (
+        <div className="max-w-xs truncate">{toSentenceCase(row.original.rector)}</div>
+      ) : (
+        <span className="text-muted-foreground">Sin rector</span>
+      ),
   },
   {
     id: "actions",

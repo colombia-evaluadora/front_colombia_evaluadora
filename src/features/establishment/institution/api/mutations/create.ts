@@ -50,13 +50,14 @@ function toRealBackendPayload(values: EstablishmentDetails) {
   // `operatingLicense` no tiene columna real detrás (`LICENCIA_FUNCIONAMIENTO`
   // es el VARCHAR que ya cubre `licenseStatus`) ni está declarado en la
   // query — viaja igual si no se saca, y queda como leaf sin tipo.
-  const { operatingLicense: _operatingLicense, ...additionalInfo } = fullAdditionalInfo
+  const { operatingLicense: _operatingLicense, population: _population, ...additionalInfo } = fullAdditionalInfo
 
   return {
     ...rest,
     basicInfo: {
       ...basicInfo,
       ownershipType: basicInfo.ownershipType?.id ?? null,
+      serviceModality: basicInfo.serviceModality?.id ?? null,
     },
     address: {
       ...address,

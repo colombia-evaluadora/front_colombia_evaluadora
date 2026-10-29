@@ -35,25 +35,35 @@ export function esDocumentoNumerico(codigo: string | null | undefined): boolean 
   return DOCUMENTOS_NUMERICOS.has((codigo ?? "").trim().toUpperCase())
 }
 
-/** Documento numérico: entre 3 y 15 dígitos, sin separadores. */
-export const DOCUMENTO = /^\d{3,15}$/
+/** Documento numérico: entre 5 y 20 dígitos, sin separadores (informe de diseño, 2.2). */
+export const DOCUMENTO = /^\d{5,20}$/
 
 /** Documento alfanumérico: letras y dígitos, al menos un dígito, sin separadores. */
-export const DOCUMENTO_ALFANUMERICO = /^(?=.*\d)[A-Za-z\d]{3,15}$/
+export const DOCUMENTO_ALFANUMERICO = /^(?=.*\d)[A-Za-z\d]{5,20}$/
+
+/** Largo máximo del documento (la columna admite 30). */
+export const DOCUMENTO_MAX = 20
 
 /** Lo que el input de documento deja escribir según el tipo elegido. */
 export function toDocumentoInput(value: string, codigo: string | null | undefined): string {
   const limpio = esDocumentoNumerico(codigo)
     ? value.replace(/\D/g, "")
     : value.replace(/[^A-Za-z\d]/g, "").toUpperCase()
-  return limpio.slice(0, 15)
+  return limpio.slice(0, DOCUMENTO_MAX)
 }
 
 /**
- * Teléfono: 7 dígitos (fijo local) o 10 (celular, o fijo con el indicativo
- * 60X del plan de numeración vigente). Menos no marca a ningún lado.
+ * Teléfono: de 7 a 15 dígitos, con un `+` opcional al inicio para el indicativo
+ * internacional (informe de diseño, 2.1 y 2.2). Menos de 7 no marca a ningún lado.
  */
-export const TELEFONO = /^(\d{7}|\d{10})$/
+export const TELEFONO = /^\+?\d{7,15}$/
+
+/** Lo que el input de teléfono deja escribir: un `+` inicial y hasta 15 dígitos. */
+export function toTelefonoInput(value: string): string {
+  const limpio = value.trim()
+  const digitos = limpio.replace(/\D/g, "").slice(0, 15)
+  return limpio.startsWith("+") ? `+${digitos}` : digitos
+}
 
 /**
  * Correo: la regla compartida con el SSO (`@/lib/email-address`), que
@@ -72,7 +82,10 @@ export const CORREO = CORREO_REGEX
 export const NOMBRE = /^\p{L}+(?:[ '’-]\p{L}+)*$/u
 
 /** Letras útiles mínimas de un nombre: los símbolos no cuentan. */
-const MIN_LETRAS_NOMBRE = 2
+const MIN_LETRAS_NOMBRE = 3
+
+/** Largo máximo de un nombre o apellido: el informe pide 50, la columna admite 40. */
+export const NOMBRE_MAX = 40
 
 /**
  * Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`.
@@ -87,12 +100,13 @@ export function limpiarNombre(value: string): string {
 export const toNombreInput = (value: string) => limpiarNombre(value).toUpperCase()
 
 export const MENSAJES = {
-  documento: "El documento debe tener entre 3 y 15 dígitos, sin puntos ni espacios.",
+  documento: "El documento debe tener entre 5 y 20 dígitos, sin puntos ni espacios.",
   documentoAlfanumerico:
-    "El documento debe tener entre 3 y 15 letras o números, con al menos un número y sin símbolos.",
-  telefono: "El teléfono debe tener 7 dígitos (fijo) o 10 (celular o fijo con indicativo).",
+    "El documento debe tener entre 5 y 20 letras o números, con al menos un número y sin símbolos.",
+  telefono: "El teléfono debe tener entre 7 y 15 dígitos; admite + al inicio para el indicativo.",
   correo: MENSAJE_CORREO_INVALIDO,
   menorDeEdad: "La persona debe ser mayor de edad.",
+  nacimientoMuyAntiguo: "La fecha de nacimiento no puede ser de hace más de 80 años.",
   nombre: (campo: string) =>
     `${campo} solo admite letras, espacios, apóstrofo y guion entre letras (ej. D'Angelo, Jean-Pierre).`,
   nombreCorto: (campo: string) => `${campo} debe tener al menos ${MIN_LETRAS_NOMBRE} letras.`,
@@ -103,6 +117,9 @@ export const MENSAJES = {
 /** Años que se exigen para considerar mayor de edad. */
 export const EDAD_MINIMA = 18
 
+/** Antigüedad máxima de la fecha de nacimiento (informe de diseño, 2.2). */
+export const EDAD_MAXIMA = 80
+
 const vacio = (valor: string | null | undefined) => valor == null || valor.trim() === ""
 
 /** Mensaje de error de un nombre o apellido, o `null` si está bien (o vacío). */
@@ -110,7 +127,9 @@ export function validarNombrePersona(valor: string | null | undefined, campo: st
   if (vacio(valor)) return null
   const texto = (valor ?? "").trim().replace(/\s+/g, " ")
   if (!NOMBRE.test(texto)) return MENSAJES.nombre(campo)
-  if ((texto.match(/\p{L}/gu)?.length ?? 0) < MIN_LETRAS_NOMBRE) return MENSAJES.nombreCorto(campo)
+  // El mínimo es de letras latinas: en otros alfabetos (李明) un carácter ya es una sílaba.
+  const latinas = texto.match(/\p{Script=Latin}/gu)?.length ?? 0
+  if (latinas > 0 && latinas < MIN_LETRAS_NOMBRE) return MENSAJES.nombreCorto(campo)
   if (texto.split(/[ '’-]/).some(esPalabraSinSentido)) return MENSAJES.nombreSinSentido(campo)
   return null
 }
@@ -123,6 +142,13 @@ export function validarNombrePersona(valor: string | null | undefined, campo: st
 export function fechaLimiteMayorDeEdad(hoy = new Date()): string {
   const limite = new Date(hoy)
   limite.setFullYear(limite.getFullYear() - EDAD_MINIMA)
+  return format(limite, "yyyy-MM-dd")
+}
+
+/** Fecha (`yyyy-MM-dd`) de nacimiento más antigua que se acepta: hace `EDAD_MAXIMA` años. */
+export function fechaMinimaNacimiento(hoy = new Date()): string {
+  const limite = new Date(hoy)
+  limite.setFullYear(limite.getFullYear() - EDAD_MAXIMA)
   return format(limite, "yyyy-MM-dd")
 }
 
@@ -177,6 +203,8 @@ export function validarFormatoPersona(
     const nacimiento = (persona.birthDate as string).slice(0, 10)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nacimiento) || nacimiento > fechaLimiteMayorDeEdad()) {
       ctx.addIssue({ code: "custom", path: ["birthDate"], message: MENSAJES.menorDeEdad })
+    } else if (nacimiento < fechaMinimaNacimiento()) {
+      ctx.addIssue({ code: "custom", path: ["birthDate"], message: MENSAJES.nacimientoMuyAntiguo })
     }
   }
 }
