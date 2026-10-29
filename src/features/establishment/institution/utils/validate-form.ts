@@ -70,13 +70,32 @@ function textRule(check: (value: string) => string | null) {
   })
 }
 
+/**
+ * Largo de un texto opcional (informe de diseño, 2.1): en blanco no se mide;
+ * con algo escrito, entre `min` y `max` caracteres.
+ */
+function largo(campo: string, min: number, max: number) {
+  return (value: string): string | null => {
+    const texto = value.trim()
+    if (texto === "") return null
+    if (texto.length < min) return `${campo} debe tener al menos ${min} caracteres.`
+    if (texto.length > max) return `${campo} debe tener como máximo ${max} caracteres.`
+    return null
+  }
+}
+
+/** Primero el largo y después la regla de composición del campo. */
+const conLargo = (medir: (value: string) => string | null, regla: (value: string) => string | null) =>
+  (value: string) => medir(value) ?? regla(value)
+
 /** Lugar con forma de `CatalogItem` (barrio, comuna, localidad): se valida su `name`. */
-function placeRule(field: string) {
+function placeRule(field: string, min: number, max: number) {
   return z
     .object({ name: z.string().nullish() })
     .nullish()
     .superRefine((item, ctx) => {
-      const message = validarLugar(item?.name ?? "", field)
+      const nombre = item?.name ?? ""
+      const message = largo(field, min, max)(nombre) ?? validarLugar(nombre, field)
       if (message) ctx.addIssue({ code: "custom", message })
     })
 }
@@ -111,38 +130,52 @@ const establishmentSchema = z.object({
       /^\d{12}$/,
       "El código DANE debe tener 12 dígitos."
     ),
-    nit: requiredPattern("Ingresa el NIT.", /^\d{6,9}-\d$/, "Ingresa un NIT válido."),
-    ownershipType: requiredCatalogItem("Selecciona la propiedad jurídica."),
+    // 9 o 10 dígitos, guion y dígito de verificación (Regla 10).
+    nit: requiredPattern(
+      "Ingresa el NIT.",
+      /^\d{9,10}-\d$/,
+      "El NIT debe tener el número y el dígito de verificación separados por guion (p. ej. 900123456-7).",
+    ),
+    ownershipType: requiredCatalogItem("Selecciona la naturaleza jurídica."),
+    serviceModality: requiredCatalogItem("Selecciona la modalidad de prestación del servicio."),
   }),
   address: z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
-    district: placeRule("El barrio"),
-    address: textRule(validarDireccion),
-    commune: placeRule("La comuna"),
-    locality: placeRule("La localidad"),
+    zone: requiredCatalogItem("Selecciona la zona."),
+    // La dirección pide hasta 150; la columna admite 130.
+    district: placeRule("El barrio", 5, 100),
+    address: textRule(conLargo(largo("La dirección", 8, 130), validarDireccion)),
+    commune: placeRule("La comuna", 1, 50),
+    locality: placeRule("La localidad", 4, 50),
   }),
   additionalInfo: z.object({
-    approvalResolution: textRule((value) =>
+    calendar: requiredCatalogItem("Selecciona el calendario."),
+    approvalResolution: textRule(conLargo(largo("La resolución de aprobación", 5, 100), (value) =>
       validarIdentificacionAdministrativa(value, "La resolución de aprobación"),
-    ),
-    licenseStatus: textRule((value) =>
+    )),
+    licenseStatus: textRule(conLargo(largo("La licencia de funcionamiento", 5, 100), (value) =>
       validarIdentificacionAdministrativa(value, "La licencia de funcionamiento"),
-    ),
-    // Fecha de expedición de la licencia: no puede ser posterior a hoy.
+    )),
+    // Fecha de expedición de la licencia: desde 1900 y no posterior a hoy.
     licenseDate: z
       .string()
       .nullish()
       .refine((value) => isBlank(value) || (value ?? "").slice(0, 10) <= format(new Date(), "yyyy-MM-dd"), {
         message: "La fecha de la licencia no puede ser posterior a hoy.",
+      })
+      .refine((value) => isBlank(value) || (value ?? "").slice(0, 10) >= "1900-01-01", {
+        message: "La fecha de la licencia no puede ser anterior al 01/01/1900.",
       }),
   }),
   contact: z.object({
     email: optionalPattern(CORREO, MENSAJES.correo),
+    // Debe empezar con http:// o https:// (informe de diseño, 2.1).
     website: optionalCheck(
-      (value) => z.string().url().safeParse(value).success,
-      "Ingresa una página web válida (ej. https://ejemplo.com)."
+      (value) => /^https?:\/\//i.test(value) && value.includes(".") && z.string().url().safeParse(value).success,
+      "La página web debe empezar con http:// o https:// (ej. https://www.iecentral.edu.co)."
     ),
     phone: optionalPattern(TELEFONO, MENSAJES.telefono),
+    fax: optionalPattern(TELEFONO, "El fax debe tener entre 7 y 15 dígitos; admite + al inicio para el indicativo.").nullish(),
   }),
 })
 
@@ -165,8 +198,10 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "basicInfo.name": "Nombre del establecimiento",
   "basicInfo.dane": "Código DANE",
   "basicInfo.nit": "NIT",
-  "basicInfo.ownershipType": "Propiedad jurídica",
+  "basicInfo.ownershipType": "Naturaleza jurídica",
+  "basicInfo.serviceModality": "Modalidad de prestación del servicio",
   "address.municipality": "Municipio",
+  "address.zone": "Zona",
   "address.district": "Barrio",
   "address.address": "Dirección",
   "address.commune": "Comuna",
@@ -174,6 +209,8 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "contact.email": "Correo electrónico",
   "contact.website": "Página web",
   "contact.phone": "Teléfono",
+  "contact.fax": "Fax",
+  "additionalInfo.calendar": "Calendario",
   "additionalInfo.approvalResolution": "Resolución de aprobación",
   "additionalInfo.licenseStatus": "Licencia de funcionamiento",
   "additionalInfo.licenseDate": "Fecha licencia",
@@ -197,20 +234,27 @@ function isBlank(value: string | null | undefined): boolean {
 }
 
 /**
- * Una `Person` se considera "vacía" cuando los 4 campos mínimos están vacíos.
- * En ese caso no se exige nada (la persona puede no existir).
+ * Una `Person` está "vacía" si no se escribió ningún dato suyo; entonces no
+ * se exige nada (la secretaria puede no existir). Con cualquier dato escrito
+ * se exigen sus obligatorios (Regla 77): antes solo se miraban 4 campos, y una
+ * secretaria con solo el correo o el teléfono se descartaba sin avisar. Tipo de
+ * documento y género no cuentan: la página los precarga con el predeterminado.
  */
 function isPersonEmpty(person: Person | null): boolean {
   if (!person) {
     return true
   }
 
-  return (
-    isBlank(person.documentType?.name) &&
-    isBlank(person.identification) &&
-    isBlank(person.firstName) &&
-    isBlank(person.lastName)
-  )
+  return [
+    person.identification,
+    person.firstName,
+    person.middleName,
+    person.lastName,
+    person.secondLastName,
+    person.email,
+    person.phone,
+    person.birthDate,
+  ].every(isBlank)
 }
 
 /**

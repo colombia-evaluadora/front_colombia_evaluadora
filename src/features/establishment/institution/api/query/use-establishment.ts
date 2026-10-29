@@ -37,6 +37,12 @@ interface RealEstablishmentDetailRow {
   fax: string | null
   pagina_web: string | null
   fk_tpropiedad_juridica: number | null
+  fk_tlv_modalidad_prestacion: number | null
+  /** Calculados por `fn_est_poblacion_atendida` (sso V571.2). */
+  poblacion_genero: string | null
+  poblacion_etnias: boolean | null
+  poblacion_talentos: boolean | null
+  poblacion_subsidio: boolean | null
   /** Única query que expone el escudo. */
   fk_tarchivo: number | null
   resolucion_aprobacion: string | null
@@ -77,6 +83,7 @@ function toEstablishmentDetails(
       dane: row.codigo,
       nit: row.nit,
       ownershipType: toStub(row.fk_tpropiedad_juridica),
+      serviceModality: toStub(row.fk_tlv_modalidad_prestacion),
       logoArchivoId: row.fk_tarchivo ?? null,
     },
     address: {
@@ -111,6 +118,12 @@ function toEstablishmentDetails(
       ethnicAttention: row.etnias === "S",
       giftedAttention: row.talento === "S",
       subsidy: row.subsidio === "S",
+      population: {
+        gender: row.poblacion_genero ?? "Sin estudiantes",
+        ethnicGroups: row.poblacion_etnias === true,
+        exceptionalTalents: row.poblacion_talentos === true,
+        subsidy: row.poblacion_subsidio === true,
+      },
     },
     // Rector/secretaria se resuelven aparte en `fetchEstablishment`.
     principal: principal?.person ?? null,

@@ -14,11 +14,10 @@ import type {
     EstablishmentsQueryResponse,
 } from "@/features/establishment/institution/api/types/establishment"
 
-// Los Select mandan ids como texto y los binds son BIGINT[]: se convierten.
+// Municipio y sector viajan como códigos (binds TEXT[]); vacíos, como lista vacía.
 // Exportado: la exportación debe aplicar la misma conversión.
 export function toEstablishmentsQueryFilters(filters: EstablishmentsQueryRequest["filters"]) {
-    // `status` viaja como código (bind VARCHAR[]).
-    return { ...filters, status: filters.status ?? [] }
+    return { search: filters.search, municipality: filters.municipality ?? [], sector: filters.sector ?? [] }
 }
 
 interface UseEstablishmentsQueryParams {
@@ -28,17 +27,18 @@ interface UseEstablishmentsQueryParams {
     pageSize: number
 }
 
-/** Fila de `fn_est_listar_paginado`: columnas sueltas en snake_case. */
+/** Fila de `fn_est_listar_paginado` (sso V574): columnas sueltas en snake_case. */
 interface RealEstablishmentRow {
     pk_establecimiento: number
     codigo: string
     nombre: string
-    fk_departamento: number
-    departamento_nombre: string
+    nit: string | null
     fk_municipio: number
     municipio_nombre: string
-    fk_estado: number
-    estado_nombre: string
+    departamento_nombre: string
+    fk_tlv_sector: number | null
+    sector_nombre: string | null
+    rector_nombre: string | null
 }
 
 function toEstablishment(row: RealEstablishmentRow): Establishment {
@@ -46,10 +46,11 @@ function toEstablishment(row: RealEstablishmentRow): Establishment {
         id: row.pk_establecimiento,
         dane: row.codigo,
         name: row.nombre,
-        department: row.departamento_nombre,
+        nit: row.nit ?? "",
         municipality: row.municipio_nombre,
-        status: String(row.fk_estado),
-        statusLabel: row.estado_nombre,
+        department: row.departamento_nombre,
+        sector: row.sector_nombre ?? "",
+        rector: row.rector_nombre ?? "",
     }
 }
 

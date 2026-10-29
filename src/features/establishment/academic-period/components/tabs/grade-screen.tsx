@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
 import { useSelector } from "@tanstack/react-form"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { useAppForm } from "@/lib/forms"
+import { FormDisabledProvider, useAppForm, useFormDisabled } from "@/lib/forms"
+import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 import { cleanErrorMessage, getErrorMessage } from "@/lib/api-client"
 
 import { TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
@@ -19,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PERIOD_TAB_TRIGGER } from "@/features/establishment/academic-period/components/scroll-tabs-list"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
+  ArrowLeftIcon,
   CaretRightIcon,
   FloppyDiskIcon,
   InfoIcon,
@@ -58,6 +60,10 @@ import {
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 import { toPeriodTitle } from "@/features/establishment/academic-period/utils/period-title"
 import { getRecesoTimes } from "@/features/establishment/academic-period/utils/recesos"
+import {
+  PeriodReadOnlyNotice,
+  usePeriodReadOnly,
+} from "@/features/establishment/academic-period/utils/period-read-only"
 
 const FORM_ID = "grade-form"
 
@@ -85,6 +91,8 @@ export function GradeScreen({
   const isEditing = grade != null
 
   const { data: period } = useAcademicPeriodQuery(academicPeriodId)
+  // Regla 16: con el período Cerrado el grado y sus pestañas son de solo lectura.
+  const { readOnly } = usePeriodReadOnly()
   const { data: levels = [] } = useTeachingLevelsQuery()
   const { data: gradosCatalog = [] } = useGradosCatalogQuery()
   const { data: jornadas = [] } = useJornadasQuery()
@@ -139,6 +147,8 @@ export function GradeScreen({
   const form = useAppForm({
     defaultValues,
     validators: { onSubmit: gradeFormSchema },
+    // Sin esto, un error fuera de la vista dejaba Guardar sin respuesta.
+    onSubmitInvalid: () => notify(INCOMPLETE_FORM, { variant: "error" }),
     onSubmit: async ({ value, formApi }) => {
       const payload = {
         nombre: value.nombre,
@@ -233,180 +243,189 @@ export function GradeScreen({
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">
-            {isEditing && (
+            {isEditing && !readOnly && (
               <>
                 <DeleteGradeDialog grade={grade} variant="button" onDeleted={onBack} />
                 <span aria-hidden className="mx-1 h-6 w-px bg-border" />
               </>
             )}
             <Button size="sm" variant="outline" color="neutral" onClick={requestBack}>
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              color="primary"
-              type="submit"
-              form={FORM_ID}
-              disabled={isSaving}
-              aria-busy={isSaving}
-            >
-              {isSaving ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              {readOnly ? (
+                <ArrowLeftIcon data-icon="inline-start" />
               ) : (
-                <FloppyDiskIcon data-icon="inline-start" />
+                <XIcon data-icon="inline-start" />
               )}
-              {isSaving ? "Guardando…" : "Guardar"}
+              {readOnly ? "Volver" : "Cancelar"}
             </Button>
+            {!readOnly && (
+              <Button
+                size="sm"
+                color="primary"
+                type="submit"
+                form={FORM_ID}
+                disabled={isSaving}
+                aria-busy={isSaving}
+              >
+                {isSaving ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <FloppyDiskIcon data-icon="inline-start" />
+                )}
+                {isSaving ? "Guardando…" : "Guardar"}
+              </Button>
+            )}
           </div>
         </div>
       </TableScreenHeader>
 
-      <TableScreenBody className="flex flex-col gap-4">
+      <TableScreenBody contentClassName="flex flex-col gap-4">
         <NoticeOutlet />
+        <PeriodReadOnlyNotice what="el grado" />
 
-        <form
-          id={FORM_ID}
-          onSubmit={(e) => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
-        >
-          <FormSection title="Datos del grado">
-            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-              <form.AppField
-                name="teachingLevelId"
-                listeners={{ onChange: () => form.setFieldValue("nombre", "") }}
-              >
-                {(field) => (
-                  <field.SelectField
-                    label="Nivel de enseñanza"
-                    required
-                    emptyValue={0}
-                    placeholder="Seleccione..."
-                    options={levels.map((l) => ({ value: l.id, label: l.nombre }))}
-                  />
-                )}
-              </form.AppField>
-              <form.AppField name="nombre">
-                {(field) => (
-                  <field.SelectField
-                    label="Nombre"
-                    required
-                    placeholder="Seleccione..."
-                    disabled={!values.teachingLevelId}
-                    options={gradeOptions}
-                  />
-                )}
-              </form.AppField>
-              <form.Field
-                name="tieneGradoSiguiente"
-                listeners={{
-                  // Con No, el grado siguiente y las jornadas quedan vacíos (Reglas 54 y 88).
-                  onChange: ({ value }) => {
-                    if (value) return
-                    form.setFieldValue("gradoSiguiente", "")
-                    form.setFieldValue("jornadasContinuidad", [])
-                  },
-                }}
-              >
-                {(field) => (
-                  <YesNoSwitch
-                    id={field.name}
-                    label="Tiene grado siguiente"
-                    checked={field.state.value}
-                    onChange={(checked) => field.handleChange(checked)}
-                  />
-                )}
-              </form.Field>
-              <form.AppField name="gradoSiguiente">
-                {(field) => (
-                  <field.SelectField
-                    label="Grado siguiente"
-                    required={values.tieneGradoSiguiente}
-                    placeholder="Seleccione..."
-                    disabled={!values.tieneGradoSiguiente}
-                    options={gradosCatalog
-                      .filter((o) => o.valor !== values.nombre)
-                      .map((o) => ({ value: o.valor, label: o.nombre }))}
-                  />
-                )}
-              </form.AppField>
+        <FormDisabledProvider disabled={readOnly}>
+          <form
+            id={FORM_ID}
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+          >
+            <FormSection title="Datos del grado">
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+                <form.AppField
+                  name="teachingLevelId"
+                  listeners={{ onChange: () => form.setFieldValue("nombre", "") }}
+                >
+                  {(field) => (
+                    <field.SelectField
+                      label="Nivel de enseñanza"
+                      required
+                      emptyValue={0}
+                      placeholder="Seleccione..."
+                      options={levels.map((l) => ({ value: l.id, label: l.nombre }))}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="nombre">
+                  {(field) => (
+                    <field.SelectField
+                      label="Nombre"
+                      required
+                      placeholder="Seleccione..."
+                      disabled={!values.teachingLevelId}
+                      options={gradeOptions}
+                    />
+                  )}
+                </form.AppField>
+                <form.Field
+                  name="tieneGradoSiguiente"
+                  listeners={{
+                    // Con No, el grado siguiente y las jornadas quedan vacíos (Reglas 54 y 88).
+                    onChange: ({ value }) => {
+                      if (value) return
+                      form.setFieldValue("gradoSiguiente", "")
+                      form.setFieldValue("jornadasContinuidad", [])
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <YesNoSwitch
+                      id={field.name}
+                      label="Tiene grado siguiente"
+                      checked={field.state.value}
+                      onChange={(checked) => field.handleChange(checked)}
+                    />
+                  )}
+                </form.Field>
+                <form.AppField name="gradoSiguiente">
+                  {(field) => (
+                    <field.SelectField
+                      label="Grado siguiente"
+                      required={values.tieneGradoSiguiente}
+                      placeholder="Seleccione..."
+                      disabled={!values.tieneGradoSiguiente}
+                      options={gradosCatalog
+                        .filter((o) => o.valor !== values.nombre)
+                        .map((o) => ({ value: o.valor, label: o.nombre }))}
+                    />
+                  )}
+                </form.AppField>
 
-              <form.Field
-                name="personalizarHorario"
-                listeners={{
-                  // Al activarlo se precarga con el horario de la jornada (Regla 87).
-                  onChange: ({ value }) => {
-                    if (!value) return
-                    form.setFieldValue("scheduleStartTime", periodSchedule.scheduleStartTime)
-                    form.setFieldValue("scheduleEndTime", periodSchedule.scheduleEndTime)
-                    form.setFieldValue("defaultBlocksCount", periodSchedule.defaultBlocksCount)
-                    form.setFieldValue("breaks", periodSchedule.breaks)
-                  },
-                }}
-              >
-                {(field) => (
-                  <YesNoSwitch
-                    id={field.name}
-                    label="Personalizar horario"
-                    required
-                    help="Con Sí, el grado tiene su propia hora inicio, hora final, bloques y recesos (p. ej. Transición de 7:00 a 11:30)."
-                    checked={field.state.value}
-                    onChange={(checked) => field.handleChange(checked)}
-                  />
-                )}
-              </form.Field>
-              <form.Field name="jornadasContinuidad">
-                {(field) => {
-                  const invalid = form.state.submissionAttempts > 0 && !field.state.meta.isValid
-                  return (
-                    <Field
-                      variant="outlined"
-                      className="sm:col-span-1 lg:col-span-3"
-                      data-invalid={invalid || undefined}
-                    >
-                      <FieldLabel htmlFor="grade-jornadas">
-                        Jornadas de continuidad
-                        {values.tieneGradoSiguiente ? <span className="text-red"> *</span> : null}
-                      </FieldLabel>
-                      <SubjectsMultiSelect
-                        id="grade-jornadas"
-                        options={jornadas.map((j) => ({ id: j.id, label: j.name }))}
-                        value={field.state.value}
-                        onChange={(ids) => field.handleChange(ids)}
-                        placeholder={
-                          values.tieneGradoSiguiente ? "Seleccione..." : "Sin grado siguiente"
-                        }
-                        emptyMessage="La sede no tiene jornadas."
-                        disabled={!values.tieneGradoSiguiente}
-                      />
-                      {invalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-            </div>
-
-            {values.personalizarHorario ? (
-              <div className="mt-5 flex flex-col gap-5">
-                <JornadaScheduleFields
-                  form={asScheduleForm(form)}
-                  blocksLabel="Número de bloques"
-                />
+                <form.Field
+                  name="personalizarHorario"
+                  listeners={{
+                    // Al activarlo se precarga con el horario de la jornada (Regla 87).
+                    onChange: ({ value }) => {
+                      if (!value) return
+                      form.setFieldValue("scheduleStartTime", periodSchedule.scheduleStartTime)
+                      form.setFieldValue("scheduleEndTime", periodSchedule.scheduleEndTime)
+                      form.setFieldValue("defaultBlocksCount", periodSchedule.defaultBlocksCount)
+                      form.setFieldValue("breaks", periodSchedule.breaks)
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <YesNoSwitch
+                      id={field.name}
+                      label="Personalizar horario"
+                      required
+                      help="Con Sí, el grado tiene su propia hora inicio, hora final, bloques y recesos (p. ej. Transición de 7:00 a 11:30)."
+                      checked={field.state.value}
+                      onChange={(checked) => field.handleChange(checked)}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="jornadasContinuidad">
+                  {(field) => {
+                    const invalid = form.state.submissionAttempts > 0 && !field.state.meta.isValid
+                    return (
+                      <Field
+                        variant="outlined"
+                        className="sm:col-span-1 lg:col-span-3"
+                        data-invalid={invalid || undefined}
+                      >
+                        <FieldLabel htmlFor="grade-jornadas">
+                          Jornadas de continuidad
+                          {values.tieneGradoSiguiente ? <span className="text-red"> *</span> : null}
+                        </FieldLabel>
+                        <SubjectsMultiSelect
+                          id="grade-jornadas"
+                          options={jornadas.map((j) => ({ id: j.id, label: j.name }))}
+                          value={field.state.value}
+                          onChange={(ids) => field.handleChange(ids)}
+                          placeholder={
+                            values.tieneGradoSiguiente ? "Seleccione..." : "Sin grado siguiente"
+                          }
+                          emptyMessage="La sede no tiene jornadas."
+                          disabled={!values.tieneGradoSiguiente || readOnly}
+                        />
+                        {invalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               </div>
-            ) : (
-              <p className="mt-5 flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
-                <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
-                Personalizar horario en No: el grado usa el horario de la jornada (
-                {describeSchedule(periodSchedule)}).
-              </p>
-            )}
-          </FormSection>
-        </form>
+
+              {values.personalizarHorario ? (
+                <div className="mt-5 flex flex-col gap-5">
+                  <JornadaScheduleFields
+                    form={asScheduleForm(form)}
+                    blocksLabel="Número de bloques"
+                  />
+                </div>
+              ) : (
+                <p className="mt-5 flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+                  <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
+                  Personalizar horario en No: el grado usa el horario de la jornada (
+                  {describeSchedule(periodSchedule)}).
+                </p>
+              )}
+            </FormSection>
+          </form>
+        </FormDisabledProvider>
 
         {isEditing && gradeId != null && (
-          <Tabs defaultValue="grupos" className="mt-2 w-full min-w-0">
+          <Tabs defaultValue="grupos" className="w-full min-w-0">
             <TabsList
               variant="line"
               className="h-11 w-full justify-start gap-4 border-b border-border p-0"
@@ -514,6 +533,7 @@ function YesNoSwitch({
   checked: boolean
   onChange: (checked: boolean) => void
 }) {
+  const disabled = useFormDisabled()
   return (
     <div className="flex flex-col gap-1.5">
       <span className="flex items-center gap-1 text-sm">
@@ -541,6 +561,7 @@ function YesNoSwitch({
       <label className="flex w-fit cursor-pointer items-center gap-2">
         <Switch
           id={id}
+          disabled={disabled}
           checked={checked}
           onCheckedChange={onChange}
           className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"

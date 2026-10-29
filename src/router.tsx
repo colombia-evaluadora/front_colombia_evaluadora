@@ -33,7 +33,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/administration/audits/api/schema"
-import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
+import { academicPeriodsSearchSchema, gradeSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
   planeadorActividadCrearSearchSchema,
   planeadorRecursoPreviewSearchSchema,
@@ -134,6 +134,10 @@ const AcademicPeriodsPage = lazyRouteComponent(
 const AcademicPeriodConfigPage = lazyRouteComponent(
   () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
   "AcademicPeriodConfigPage"
+)
+const AcademicPeriodViewPage = lazyRouteComponent(
+  () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
+  "AcademicPeriodViewPage"
 )
 const GradePage = lazyRouteComponent(
   () => import("@/features/establishment/academic-period/pages/grade-page"),
@@ -817,6 +821,16 @@ export const periodosAcademicosAgregarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+export const periodosAcademicosVerRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicosVer.path,
+  validateSearch: academicPeriodsSearchSchema,
+  staticData: {
+    breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Ver" }],
+  },
+  component: AcademicPeriodViewPage,
+})
+
 export const periodosAcademicosEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosEditar.path,
@@ -846,6 +860,7 @@ export const periodosGradoAgregarRoute = createRoute({
 export const periodosGradoEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosGradoEditar.path,
+  validateSearch: gradeSearchSchema,
   staticData: {
     breadcrumb: (params) => gradeCrumbs(params.periodId, "Grado"),
   },
@@ -1175,6 +1190,7 @@ const routeTree = rootRoute.addChildren([
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
+    periodosAcademicosVerRoute,
     periodosGradoAgregarRoute,
     periodosGradoEditarRoute,
     gestionAcademicaInformesRoute,

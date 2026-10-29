@@ -17,12 +17,12 @@ function issuesDe(persona: Parameters<typeof validarFormatoPersona>[0]) {
 
 // Ejemplos del caso de prueba E04HU02 (Mantis 0000694).
 describe("validarNombrePersona", () => {
-  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "Li", "O'Connor", "Lluvia", "Wu", "Ng", "李明"])(
+  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "O'Connor", "Lluvia", "Ana", "李明"])(
     "acepta %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).toBeNull(),
   )
 
-  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A", "3K3K3K3SKKSÇ++++ÇÇ", "KKKSKKS", "AAA", "Jjjj", "S22K22K"])(
+  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A", "3K3K3K3SKKSÇ++++ÇÇ", "KKKSKKS", "AAA", "Jjjj", "S22K22K", "Li", "Wu"])(
     "rechaza %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).not.toBeNull(),
   )
@@ -52,7 +52,9 @@ describe("documento según el tipo", () => {
   })
 
   it("no rechaza una longitud poco habitual dentro del rango", () => {
-    expect(issuesDe({ documentType: { code: "CC" }, identification: "123" })).toEqual({})
+    expect(issuesDe({ documentType: { code: "CC" }, identification: "12345" })).toEqual({})
+    expect(issuesDe({ documentType: { code: "CC" }, identification: "12345678901234567890" })).toEqual({})
+    expect(issuesDe({ documentType: { code: "CC" }, identification: "1234" })).toHaveProperty("identification")
   })
 })
 
@@ -67,10 +69,10 @@ describe("correo", () => {
 })
 
 describe("teléfono", () => {
-  it.each(["6012345", "3001234567", "6041234567"])("acepta %s", (phone) =>
+  it.each(["6012345", "3001234567", "6041234567", "12345678", "+573001234567", "123456789012345"])("acepta %s", (phone) =>
     expect(issuesDe({ phone })).toEqual({}),
   )
-  it.each(["77665", "123", "12345678"])("rechaza %s", (phone) =>
+  it.each(["77665", "123", "123456", "1234567890123456", "300+1234567", "++5730012345"])("rechaza %s", (phone) =>
     expect(issuesDe({ phone })).toHaveProperty("phone"),
   )
 })

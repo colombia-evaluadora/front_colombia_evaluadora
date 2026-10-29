@@ -13,6 +13,9 @@ import type {
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { DeleteAcademicPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-academic-period"
 import { EditAcademicPeriodButton } from "@/features/establishment/academic-period/components/table/edit-academic-period-button"
+import { ViewAcademicPeriodButton } from "@/features/establishment/academic-period/components/table/view-academic-period-button"
+import { PeriodStateAction } from "@/features/establishment/academic-period/components/period-state-action"
+import { toPeriodRowTitle } from "@/features/establishment/academic-period/utils/period-title"
 import { DeactivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-deactivate-reservation"
 import { ActivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-activate-reservation"
 import { Authorization } from "@/lib/authorization"
@@ -174,7 +177,15 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
+        <ViewAcademicPeriodButton period={row.original} />
         <EditAcademicPeriodButton period={row.original} />
+        {/* Regla 16: Reabrir un Cerrado o Cerrar uno reabierto. */}
+        <PeriodStateAction
+          periodId={row.original.id}
+          periodTitle={toPeriodRowTitle(row.original)}
+          status={row.original.status}
+          reopenedUntil={row.original.reopenedUntil}
+        />
         <Authorization allowedRoles={["ADMIN"]}>
           {row.original.reservationEnabled ? (
             <DeactivateReservationDialog period={row.original} />
@@ -187,7 +198,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 128,
+    size: 200,
   },
 ]
 

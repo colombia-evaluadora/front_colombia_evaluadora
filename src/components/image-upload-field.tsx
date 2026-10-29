@@ -22,7 +22,9 @@ interface ImageUploadFieldProps {
     accept?: string
     /** Tamaño máximo en bytes. Por defecto `IMAGE_MAX_SIZE`. */
     maxSize?: number
-    /** Segunda línea del dropzone: qué se está cargando. */
+    /** Primera línea del dropzone; por defecto "Arrastra y suelta o haz clic aquí". */
+    title?: ReactNode
+    /** Segunda línea del dropzone: qué se está cargando (`null` la omite). */
     description: ReactNode
     /** Tercera línea: formatos y tamaño permitidos. */
     hint?: ReactNode
@@ -74,6 +76,7 @@ export function ImageUploadField({
     onValueChange,
     accept = IMAGE_ACCEPT,
     maxSize = IMAGE_MAX_SIZE,
+    title,
     description,
     hint = IMAGE_HINT,
     deleteLabel = "Eliminar imagen",
@@ -230,11 +233,17 @@ export function ImageUploadField({
                         */}
                         <div>
                             <p className="m-0! text-xs leading-snug font-semibold text-balance">
-                                Arrastra y suelta o <span className="text-primary">haz clic aquí</span>
+                                {title ?? (
+                                    <>
+                                        Arrastra y suelta o <span className="text-primary">haz clic aquí</span>
+                                    </>
+                                )}
                             </p>
-                            <p className="m-0! text-[11px] leading-snug font-medium text-balance">
-                                {description}
-                            </p>
+                            {description ? (
+                                <p className="m-0! text-[11px] leading-snug font-medium text-balance">
+                                    {description}
+                                </p>
+                            ) : null}
                             {hint ? (
                                 <p className="m-0! text-[10px] leading-snug text-muted-foreground">
                                     {hint}

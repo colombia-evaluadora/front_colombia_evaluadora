@@ -7,11 +7,12 @@ import {
   deleteManyEstablishmentDetails,
   upsertEstablishmentDetails,
 } from "@/mocks/db/establishments"
+import { MUNICIPALITIES } from "@/mocks/db/catalogs/municipalities"
+import { SECTORES } from "@/mocks/db/catalogs/establishment"
 
 import type {
   Establishment,
   EstablishmentDetails,
-  EstablishmentStatus,
   EstablishmentsQueryRequest,
   EstablishmentsQueryResponse,
 } from "@/features/establishment/institution/api/types/establishment"
@@ -39,9 +40,8 @@ function parseEstablishmentsRequest(body: Partial<EstablishmentsQueryRequest> | 
   return {
     filters: {
       search: typeof body?.filters?.search === "string" ? body.filters.search : undefined,
-      status: asStringArray(body?.filters?.status) as EstablishmentStatus[],
-      department: asStringArray(body?.filters?.department),
       municipality: asStringArray(body?.filters?.municipality),
+      sector: asStringArray(body?.filters?.sector),
     },
     sorting: Array.isArray(body?.sorting)
       ? body.sorting
@@ -72,35 +72,25 @@ function applyFilters(
     if (filters.search) {
       const needle = filters.search.toLowerCase()
 
+      // Como el real: nombre, código DANE o NIT.
       const matches =
         row.name.toLowerCase().includes(needle) ||
         row.dane.includes(needle) ||
-        row.department.toLowerCase().includes(needle) ||
-        row.municipality.toLowerCase().includes(needle)
+        row.nit.includes(needle)
 
       if (!matches) {
         return false
       }
     }
 
-    if (
-      filters.status?.length &&
-      !filters.status.includes(row.status)
-    ) {
+    // Los filtros llegan como códigos (DANE del municipio, VALOR del sector).
+    const municipios = MUNICIPALITIES.filter((m) => filters.municipality?.includes(m.code ?? "")).map((m) => m.name)
+    if (filters.municipality?.length && !municipios.includes(row.municipality)) {
       return false
     }
 
-    if (
-      filters.department?.length &&
-      !filters.department.includes(row.department)
-    ) {
-      return false
-    }
-
-    if (
-      filters.municipality?.length &&
-      !filters.municipality.includes(row.municipality)
-    ) {
+    const sectores = SECTORES.filter((s) => filters.sector?.includes(s.code)).map((s) => s.name)
+    if (filters.sector?.length && !sectores.includes(row.sector)) {
       return false
     }
 

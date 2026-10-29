@@ -163,6 +163,11 @@ export const academicPeriodsFiltersFormSchema = z.object({
 export type AcademicPeriodsFiltersFormInput = z.input<typeof academicPeriodsFiltersFormSchema>
 export type AcademicPeriodsFiltersFormValues = z.infer<typeof academicPeriodsFiltersFormSchema>
 
+// Pantalla del grado: `ver=1` la abre en solo lectura (viene de "Ver" del período).
+export const gradeSearchSchema = z.object({
+  ver: z.coerce.number().optional().catch(undefined),
+})
+
 export const academicPeriodsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
@@ -402,7 +407,9 @@ export const gradeFormSchema = z
     scheduleStartTime: z.string(),
     scheduleEndTime: z.string(),
     defaultBlocksCount: z.number().nullable(),
-    breaks: z.array(recesoSchema),
+    breaks: z.array(
+      z.object({ label: z.string(), location: z.string(), durationMinutes: z.number().nullable() }),
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.tieneGradoSiguiente) {
@@ -424,6 +431,13 @@ export const gradeFormSchema = z
       }
     }
     if (!data.personalizarHorario) return
+    data.breaks.forEach((receso, index) => {
+      const result = recesoSchema.safeParse(receso)
+      if (result.success) return
+      for (const issue of result.error.issues) {
+        ctx.addIssue({ code: "custom", message: issue.message, path: ["breaks", index, ...issue.path] })
+      }
+    })
     if (!data.scheduleStartTime) {
       ctx.addIssue({ code: "custom", message: required("La hora inicio", { femenino: true }), path: ["scheduleStartTime"] })
     }
