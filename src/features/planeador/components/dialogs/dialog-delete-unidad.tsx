@@ -384,7 +384,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
   } else {
     const notaAjenas =
       ajenasSinCesion > 0
-        ? ` ${ajenasSinCesion === 1 ? `Hay 1 ${actividadLower}` : `Hay ${ajenasSinCesion} ${actividadesLower}`} de otros autores sin docente activo a quien ceder${o}: ${ajenasSinCesion === 1 ? "queda" : "quedan"} sin asignar, no se ${ajenasSinCesion === 1 ? "elimina" : "eliminan"}.`
+        ? ` ${ajenasSinCesion === 1 ? `Hay 1 ${actividadLower}` : `Hay ${ajenasSinCesion} ${actividadesLower}`} de otros autores sin docente activo a quien cederl${o}: ${ajenasSinCesion === 1 ? "queda" : "quedan"} sin asignar, no se ${ajenasSinCesion === 1 ? "elimina" : "eliminan"}.`
         : ""
     contenido = (
       <>
@@ -481,7 +481,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
         </TooltipTrigger>
         <TooltipContent>{soloEnLinea.tooltip ?? `Eliminar ${unidad.nombre}`}</TooltipContent>
       </Tooltip>
-      <AlertDialogContent className={hayCesionarios || conflictMessage ? "sm:max-w-lg" : undefined}>
+      <AlertDialogContent className={hayCesionarios || conflictMessage || tieneActividades ? "sm:max-w-lg" : undefined}>
         {contenido}
       </AlertDialogContent>
     </AlertDialog>
