@@ -407,7 +407,9 @@ export const gradeFormSchema = z
     scheduleStartTime: z.string(),
     scheduleEndTime: z.string(),
     defaultBlocksCount: z.number().nullable(),
-    breaks: z.array(recesoSchema),
+    breaks: z.array(
+      z.object({ label: z.string(), location: z.string(), durationMinutes: z.number().nullable() }),
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.tieneGradoSiguiente) {
@@ -429,6 +431,13 @@ export const gradeFormSchema = z
       }
     }
     if (!data.personalizarHorario) return
+    data.breaks.forEach((receso, index) => {
+      const result = recesoSchema.safeParse(receso)
+      if (result.success) return
+      for (const issue of result.error.issues) {
+        ctx.addIssue({ code: "custom", message: issue.message, path: ["breaks", index, ...issue.path] })
+      }
+    })
     if (!data.scheduleStartTime) {
       ctx.addIssue({ code: "custom", message: required("La hora inicio", { femenino: true }), path: ["scheduleStartTime"] })
     }

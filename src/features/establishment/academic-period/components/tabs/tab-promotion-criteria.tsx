@@ -36,10 +36,12 @@ import {
   CaretDownIcon,
   InfoIcon,
   PlusIcon,
+  SpinnerIcon,
   WarningIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
 import { formValuesEqual } from "@/features/establishment/academic-period/utils/form-values-equal"
 
 import { usePromotionCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-promotion-criteria"
@@ -119,6 +121,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
     const [resetCount, setResetCount] = useState(0)
     const [confirmReset, setConfirmReset] = useState(false)
     const resetMutation = useResetPromotionCriteria()
+    const { notify } = useNotify()
 
     const { data: periodCriteria, isPending: periodLoading } =
       usePromotionCriteriaQuery(academicPeriodId)
@@ -214,7 +217,8 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
           </p>
         ) : null}
         {form}
-        <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        {/* No se cierra mientras restablece. */}
+        <AlertDialog open={confirmReset} onOpenChange={(next) => !resetMutation.isPending && setConfirmReset(next)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-start gap-2">
@@ -229,21 +233,38 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel variant="outline" color="neutral">
+              <AlertDialogCancel variant="outline" color="neutral" disabled={resetMutation.isPending}>
                 <XIcon data-icon="inline-start" />
                 Cancelar
               </AlertDialogCancel>
+              {/* AlertDialogAction de Base UI no cierra solo: se cierra al terminar. */}
               <AlertDialogAction
                 color="primary"
+                disabled={resetMutation.isPending}
+                aria-busy={resetMutation.isPending}
                 onClick={() => {
                   if (academicPeriodId == null || gradeId == null) return
                   resetMutation.mutate(
                     { academicPeriodId, gradeId },
-                    { onSuccess: () => setResetCount((n) => n + 1) },
+                    {
+                      onSuccess: () => {
+                        setResetCount((n) => n + 1)
+                        setConfirmReset(false)
+                        notify("Los criterios de promoción se restablecieron a los del período.")
+                      },
+                      onError: (error) => {
+                        setConfirmReset(false)
+                        notify(getErrorMessage(error), { variant: "error" })
+                      },
+                    },
                   )
                 }}
               >
-                <ArrowCounterClockwiseIcon data-icon="inline-start" />
+                {resetMutation.isPending ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <ArrowCounterClockwiseIcon data-icon="inline-start" />
+                )}
                 Restablecer
               </AlertDialogAction>
             </AlertDialogFooter>
