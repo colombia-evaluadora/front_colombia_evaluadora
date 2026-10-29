@@ -18,11 +18,16 @@ import {
 } from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
-import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
+import { toEmailInput } from "@/lib/text-input"
 import {
+    DOCUMENTO_MAX,
     esDocumentoNumerico,
+    fechaLimiteMayorDeEdad,
+    fechaMinimaNacimiento,
+    NOMBRE_MAX,
     toDocumentoInput,
     toNombreInput,
+    toTelefonoInput,
 } from "@/features/establishment/shared/person-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -33,11 +38,6 @@ type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
 
 // Sin contraseña: la persona la define desde el correo de activación.
 
-function getMaxBirthDate(): Date {
-  const date = new Date()
-  date.setFullYear(date.getFullYear() - 18)
-  return date
-}
 
 interface UserFormProps {
     role?: EmployeeRoleCode
@@ -254,7 +254,7 @@ export function UserDetailsForm({
                 disabled={disabled}
                 placeholder="Agregar"
                 inputMode={esDocumentoNumerico(documentTypeCode) ? "numeric" : "text"}
-                maxLength={15}
+                maxLength={DOCUMENTO_MAX}
                 value={person.identification}
                 aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                 onChange={(event) => {
@@ -276,6 +276,7 @@ export function UserDetailsForm({
                 placeholder="Agregar"
                 value={person.firstName}
                 aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
+                maxLength={NOMBRE_MAX}
                 onChange={(event) => emitChange({ firstName: toNombreInput(event.target.value) })}
             />
             <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
@@ -292,6 +293,7 @@ export function UserDetailsForm({
                 placeholder="Agregar"
                 value={person.middleName ?? ""}
                 aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
+                maxLength={NOMBRE_MAX}
                 onChange={(event) => emitChange({ middleName: toNombreInput(event.target.value) })}
             />
             <FieldError>{errorFor(`${fieldPrefix}.middleName`)}</FieldError>
@@ -308,6 +310,7 @@ export function UserDetailsForm({
                 placeholder="Agregar"
                 value={person.lastName}
                 aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
+                maxLength={NOMBRE_MAX}
                 onChange={(event) => emitChange({ lastName: toNombreInput(event.target.value) })}
             />
             <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
@@ -324,6 +327,7 @@ export function UserDetailsForm({
                 placeholder="Agregar"
                 value={person.secondLastName ?? ""}
                 aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
+                maxLength={NOMBRE_MAX}
                 onChange={(event) => emitChange({ secondLastName: toNombreInput(event.target.value) })}
             />
             <FieldError>{errorFor(`${fieldPrefix}.secondLastName`)}</FieldError>
@@ -361,14 +365,12 @@ export function UserDetailsForm({
                 disabled={disabled}
                 placeholder="Agregar"
                 type="tel"
-                // Teléfonos de Colombia: máximo 10 dígitos.
-                inputMode="numeric"
-                maxLength={10}
+                // De 7 a 15 dígitos, con + opcional para el indicativo.
+                inputMode="tel"
+                maxLength={16}
                 value={person.phone}
                 aria-invalid={isInvalid(`${fieldPrefix}.phone`)}
-                onChange={(event) =>
-                    emitChange({ phone: toDigitsOnly(event.target.value, 10) })
-                }
+                onChange={(event) => emitChange({ phone: toTelefonoInput(event.target.value) })}
             />
             <FieldError>{errorFor(`${fieldPrefix}.phone`)}</FieldError>
         </Field>
@@ -384,7 +386,9 @@ export function UserDetailsForm({
                 mode="date"
                 size="sm"
                 disabled={disabled}
-                maxDate={getMaxBirthDate()}
+                // Entre hace 80 años y hace 18 (informe de diseño, 2.2).
+                minDate={parseDateValue(fechaMinimaNacimiento())}
+                maxDate={parseDateValue(fechaLimiteMayorDeEdad())}
                 value={parseDateValue(person.birthDate)}
                 aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                 onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}

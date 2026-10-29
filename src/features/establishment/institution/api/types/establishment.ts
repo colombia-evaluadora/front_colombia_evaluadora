@@ -25,6 +25,14 @@ export interface Establishment {
   statusLabel: string
 }
 
+export interface EstablishmentPopulation {
+    /** Femenino, Masculino, Mixto o Sin estudiantes. */
+    gender: string
+    ethnicGroups: boolean
+    exceptionalTalents: boolean
+    subsidy: boolean
+}
+
 export interface EstablishmentDetails {
     /** Ausente hasta que el backend lo asigna (POST /establishments). */
     id?: number
@@ -123,6 +131,13 @@ export interface EstablishmentAdditionalInfo {
     giftedAttention: boolean
 
     subsidy: boolean
+
+    /**
+     * Población atendida que calcula el sistema (`fn_est_poblacion_atendida`,
+     * sso V571.2) con los estudiantes Cursando en periodos Abiertos. Solo de
+     * lectura: no viaja al guardar. Ausente en el alta.
+     */
+    population?: EstablishmentPopulation | null
 }
 
 export interface EstablishmentsQueryFilters {

@@ -267,3 +267,66 @@ describe("validateEstablishmentForm", () => {
     expect(validateEstablishmentForm(values, {}, { validarDirectivos: false }).errors).toEqual([])
   })
 })
+
+// Rangos del informe de diseño del módulo Establecimiento, sección 2.1.
+describe("validateEstablishmentForm — rangos del informe de diseño", () => {
+  const conRector = (overrides: Partial<EstablishmentDetails>) =>
+    validateEstablishmentForm(createValues({ principal: createPerson(), ...overrides })).fieldErrors
+
+  it("NIT: 9 o 10 dígitos, guion y DV", () => {
+    const nit = (valor: string) => conRector({ basicInfo: { ...createValues().basicInfo, nit: valor } })["basicInfo.nit"]
+    expect(nit("900123456-7")).toBeUndefined()
+    expect(nit("9001234567-1")).toBeUndefined()
+    expect(nit("90012345-7")).toBeDefined()
+    expect(nit("900123456")).toBeDefined()
+  })
+
+  it("página web: debe empezar con http:// o https://", () => {
+    const web = (website: string) => conRector({ contact: { ...createValues().contact, website } })["contact.website"]
+    expect(web("https://www.iecentral.edu.co")).toBeUndefined()
+    expect(web("http://iecentral.edu.co")).toBeUndefined()
+    expect(web("www.iecentral.edu.co")).toBeDefined()
+  })
+
+  it("teléfono y fax: 7 a 15 dígitos con + opcional", () => {
+    const errores = conRector({ contact: { ...createValues().contact, phone: "+573001234567", fax: "123" } })
+    expect(errores["contact.phone"]).toBeUndefined()
+    expect(errores["contact.fax"]).toBeDefined()
+  })
+
+  it("barrio, comuna y localidad respetan su mínimo", () => {
+    const errores = conRector({
+      address: {
+        ...createValues().address,
+        district: { id: 0, code: "Sur", name: "Sur" },
+        commune: { id: 0, code: "5", name: "5" },
+        locality: { id: 0, code: "Uba", name: "Uba" },
+      },
+    })
+    expect(errores["address.district"]).toMatch(/al menos 5/)
+    expect(errores["address.commune"]).toBeUndefined()
+    expect(errores["address.locality"]).toMatch(/al menos 4/)
+  })
+
+  it("secretaria con solo el correo exige sus obligatorios (Regla 77)", () => {
+    const errores = conRector({ secretary: { ...createEmptyPerson(), email: "secretaria@iecentral.edu.co" } })
+    expect(errores).toHaveProperty("secretary.identification")
+    expect(errores).toHaveProperty("secretary.firstName")
+  })
+
+  it("secretaria sin datos escritos no exige nada, aunque traiga el tipo de documento precargado", () => {
+    const errores = conRector({ secretary: { ...createEmptyPerson(), documentType: { id: 1, code: "CC", name: "Cédula" } } })
+    expect(Object.keys(errores).filter((k) => k.startsWith("secretary."))).toEqual([])
+  })
+
+  it("modalidad, zona y calendario son obligatorios", () => {
+    const errores = conRector({
+      basicInfo: { ...createValues().basicInfo, serviceModality: null },
+      address: { ...createValues().address, zone: null },
+      additionalInfo: { ...createValues().additionalInfo, calendar: null },
+    })
+    expect(errores).toHaveProperty("basicInfo.serviceModality")
+    expect(errores).toHaveProperty("address.zone")
+    expect(errores).toHaveProperty("additionalInfo.calendar")
+  })
+})

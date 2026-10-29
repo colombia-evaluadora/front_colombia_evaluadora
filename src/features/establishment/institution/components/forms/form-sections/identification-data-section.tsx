@@ -119,11 +119,12 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         id="establishment-nit"
                         placeholder="Agregar"
                         inputMode="numeric"
-                        maxLength={9}
+                        // 9 o 10 dígitos antes del dígito de verificación (Regla 10).
+                        maxLength={10}
                         className="flex-1 rounded-r-none"
                         value={nitNumero}
                         aria-invalid={isInvalid("basicInfo.nit")}
-                        onChange={(event) => setNit(toDigitsOnly(event.target.value, 9), nitDv)}
+                        onChange={(event) => setNit(toDigitsOnly(event.target.value, 10), nitDv)}
                     />
                     <span className="flex items-center border-y border-input px-2 text-muted-foreground">-</span>
                     <Input

@@ -4,6 +4,7 @@ import { DomicilioDataFormSection } from "@/features/establishment/institution/c
 import { ContactDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/contact-data-section"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 
 interface EstablishmentDetailsFormProps {
     value: EstablishmentDetails
@@ -30,6 +31,9 @@ const triggerClassName =
  */
 export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange }: EstablishmentDetailsFormProps) {
     const comunes = { invalidFields, errors, showValidation }
+    // El detalle trae la naturaleza solo con su id: el sector sale del catálogo.
+    const { data: legalTypes = [] } = useOwnershipTypesQuery()
+    const sector = legalTypes.find((item) => item.id === value.basicInfo.ownershipType?.id)?.sector ?? ""
     const secciones = [
         {
             key: "identificacion",
@@ -65,6 +69,7 @@ export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], 
                 <ComplementaryDataFormSection
                     {...comunes}
                     value={value.additionalInfo}
+                    sector={sector}
                     onChange={(additionalInfo) => onChange({ ...value, additionalInfo })}
                 />
             ),

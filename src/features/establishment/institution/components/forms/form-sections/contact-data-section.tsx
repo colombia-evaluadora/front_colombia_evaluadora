@@ -1,6 +1,7 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
+import { toEmailInput } from "@/lib/text-input"
+import { toTelefonoInput } from "@/features/establishment/shared/person-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface ContactDataFormSectionProps {
@@ -12,26 +13,40 @@ interface ContactDataFormSectionProps {
     showValidation?: boolean
 }
 
-/** Teléfono, correo y página web. El fax ya no se muestra: el valor guardado se conserva. */
 export function ContactDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: ContactDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
 
     return (
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-4">
             <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.phone") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-phone">Teléfono</FieldLabel>
                 <Input
                     id="establishment-phone"
                     placeholder="Ej.: 6076543210"
-                    // Un teléfono colombiano (fijo o celular) no supera los 10 dígitos.
-                    inputMode="numeric"
-                    maxLength={10}
+                    // De 7 a 15 dígitos, con + opcional para el indicativo.
+                    inputMode="tel"
+                    maxLength={16}
                     value={value.phone}
                     aria-invalid={isInvalid("contact.phone")}
-                    onChange={(event) => onChange({ ...value, phone: toDigitsOnly(event.target.value, 10) })}
+                    onChange={(event) => onChange({ ...value, phone: toTelefonoInput(event.target.value) })}
                 />
                 <FieldError>{errorFor("contact.phone")}</FieldError>
+            </Field>
+
+            <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.fax") ? "true" : undefined}>
+                <FieldLabel htmlFor="establishment-fax">Fax</FieldLabel>
+                <Input
+                    id="establishment-fax"
+                    placeholder="Agregar"
+                    // Mismo formato que el teléfono.
+                    inputMode="tel"
+                    maxLength={16}
+                    value={value.fax ?? ""}
+                    aria-invalid={isInvalid("contact.fax")}
+                    onChange={(event) => onChange({ ...value, fax: toTelefonoInput(event.target.value) })}
+                />
+                <FieldError>{errorFor("contact.fax")}</FieldError>
             </Field>
 
             <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.email") ? "true" : undefined}>
@@ -53,7 +68,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], er
                 <FieldLabel htmlFor="establishment-website">Página web</FieldLabel>
                 <Input
                     id="establishment-website"
-                    placeholder="Ej.: www.iecentral.edu.co"
+                    placeholder="Ej.: https://www.iecentral.edu.co"
                     // TESTABLECIMIENTO.PAGINA_WEB es VARCHAR(130).
                     maxLength={130}
                     value={value.website}

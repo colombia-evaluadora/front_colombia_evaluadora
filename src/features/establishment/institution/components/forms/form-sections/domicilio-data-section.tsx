@@ -98,11 +98,10 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <Input
                     id="establishment-barrio"
                     placeholder="Agregar"
-                    // TESTABLECIMIENTO.BARRIO es VARCHAR(130).
-                    maxLength={130}
+                    maxLength={100}
                     value={value.district?.name ?? ""}
                     aria-invalid={isInvalid("address.district")}
-                    onChange={(event) => onChange({ ...value, district: textoLibre(toTextoInput(event.target.value)) })}
+                    onChange={(event) => onChange({ ...value, district: textoLibre(toTextoInput(event.target.value, 100)) })}
                 />
                 <FieldError>{errorFor("address.district")}</FieldError>
             </Field>
@@ -112,11 +111,10 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <Input
                     id="establishment-comuna"
                     placeholder="Agregar"
-                    // TESTABLECIMIENTO.COMUNA es VARCHAR(130).
-                    maxLength={130}
+                    maxLength={50}
                     value={value.commune?.name ?? ""}
                     aria-invalid={isInvalid("address.commune")}
-                    onChange={(event) => onChange({ ...value, commune: textoLibre(toTextoInput(event.target.value)) })}
+                    onChange={(event) => onChange({ ...value, commune: textoLibre(toTextoInput(event.target.value, 50)) })}
                 />
                 <FieldError>{errorFor("address.commune")}</FieldError>
             </Field>
@@ -126,11 +124,10 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <Input
                     id="establishment-localidad"
                     placeholder="Agregar"
-                    // TESTABLECIMIENTO.LOCALIDAD es VARCHAR(130).
-                    maxLength={130}
+                    maxLength={50}
                     value={value.locality?.name ?? ""}
                     aria-invalid={isInvalid("address.locality")}
-                    onChange={(event) => onChange({ ...value, locality: textoLibre(toTextoInput(event.target.value)) })}
+                    onChange={(event) => onChange({ ...value, locality: textoLibre(toTextoInput(event.target.value, 50)) })}
                 />
                 <FieldError>{errorFor("address.locality")}</FieldError>
             </Field>

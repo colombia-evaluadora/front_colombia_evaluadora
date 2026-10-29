@@ -9,6 +9,7 @@ import {
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
 import { toDigitsOnly } from "@/lib/text-input"
+import { toTelefonoInput } from "@/features/establishment/shared/person-field-rules"
 import {
   toDireccionInput,
   toTextoInput,
@@ -82,7 +83,7 @@ export function CampusDetailsForm({
     props: {
       maxLength: number
       clean: (raw: string) => string
-      inputMode?: "numeric" | "decimal"
+      inputMode?: "numeric" | "decimal" | "tel"
       description?: string
       placeholder?: string
     },
@@ -230,11 +231,11 @@ export function CampusDetailsForm({
         {textField("commune", "campus-commune", "Comuna", { maxLength: 130, clean: (v) => toTextoInput(v) })}
         {textField("neighborhood", "campus-neighborhood", "Barrio", { maxLength: 130, clean: (v) => toTextoInput(v) })}
         {textField("address", "campus-address", "Dirección de la sede", { maxLength: 130, clean: (v) => toDireccionInput(v) })}
-        {/* Fijo de 7 o celular/fijo con indicativo de 10, como el del establecimiento. */}
+        {/* De 7 a 15 dígitos con + opcional, como el del establecimiento. */}
         {textField("phone", "campus-phone", "Teléfono de la sede", {
-          maxLength: 10,
-          inputMode: "numeric",
-          clean: (v) => toDigitsOnly(v, 10),
+          maxLength: 16,
+          inputMode: "tel",
+          clean: toTelefonoInput,
         })}
         {textField("georeference", "campus-georeference", "Ubicación de la sede", {
           maxLength: 60,
