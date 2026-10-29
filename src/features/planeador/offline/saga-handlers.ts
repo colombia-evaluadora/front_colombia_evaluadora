@@ -31,7 +31,11 @@ import { isTmpId, TmpIdLeakError, type TmpId } from "@/lib/offline/outbox/tmp-id
 import type { ClassifiedError, OutboxConflict, OutboxHandler, SendCtx } from "@/lib/offline/outbox/types"
 
 import { createActividad } from "@/features/planeador/api/mutations/create-actividad"
-import { updateActividad } from "@/features/planeador/api/mutations/update-actividad"
+import { unidadBody, updateActividad } from "@/features/planeador/api/mutations/update-actividad"
+import {
+  invalidarListadosActividades,
+  invalidarVinculoActividadUnidad,
+} from "@/features/planeador/api/query/invalidar-listados-actividades"
 import { linkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { unlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
 import { updateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
@@ -288,7 +292,7 @@ step<ActividadEditarPayload>(
   async (p, ctx) => {
     const actividadId = await resolveId(p.actividadId)
     await verificarActividad(actividadId, p.check, ctx)
-    return updateActividad(
+    const result = await updateActividad(
       {
         actividadId,
         data: p.data,
@@ -298,6 +302,14 @@ step<ActividadEditarPayload>(
       },
       stepRequest(ctx),
     )
+    // Solo si el PUT fue OK. Con cambio de unidad (QA 73) también se mueven
+    // la planilla, los informes y los % de las demás actividades de la unidad:
+    // las keys de `INVALIDA` no los cubren.
+    if (unidadBody(p.data, p.unidadAnteriorId)) {
+      invalidarListadosActividades(queryClient, { detalleId: actividadId })
+      invalidarVinculoActividadUnidad(queryClient, actividadId)
+    }
+    return result
   },
   { rebase: rebaseCheck },
 )
