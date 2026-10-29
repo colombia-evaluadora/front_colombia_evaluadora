@@ -18,6 +18,7 @@ export const CATALOGS = {
   FUNCTIONAL_POSITIONS: "functional-positions",
   EMPLOYMENT_TYPES: "employment-types",
   CALENDARIOS: "calendarios",
+  MODALIDADES_PRESTACION: "modalidades-prestacion",
   COST_REGIMEN: "cost-regimen",
   RANGO_TARIFAS: "rango-tarifas",
   IDIOMAS: "idiomas",

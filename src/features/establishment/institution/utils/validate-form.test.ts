@@ -48,6 +48,7 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
       dane: "123456789012",
       nit: "900123456-7",
       ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
+      serviceModality: { id: 90, code: "PRESTACION_DIRECTA", name: "Prestación directa" },
     },
     address: {
       municipality: {
@@ -71,7 +72,7 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
     additionalInfo: {
       approvalResolution: "",
       teachingLanguage: null,
-      calendar: null,
+      calendar: { id: 1, code: "A", name: "Calendario A" },
       costRegime: null,
       populationGender: null,
       tuitionRange: null,
@@ -125,6 +126,7 @@ describe("validateEstablishmentForm", () => {
         dane: "123456789012",
         nit: "900123456-7",
         ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
+        serviceModality: { id: 90, code: "PRESTACION_DIRECTA", name: "Prestación directa" },
       },
     })
 

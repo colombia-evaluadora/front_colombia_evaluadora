@@ -8,7 +8,7 @@ import type {
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import type { Person } from "@/features/establishment/employees/api/types/person"
-import { CALENDARS, COST_REGIMEN, DISABILITIES, IDIOMAS, LEGAL_TYPES, LICENSE_STATUSES, RANGO_TARIFAS, ZONES } from "@/mocks/db/catalogs/establishment"
+import { CALENDARS, COST_REGIMEN, DISABILITIES, IDIOMAS, LEGAL_TYPES, LICENSE_STATUSES, MODALIDADES_PRESTACION, RANGO_TARIFAS, ZONES } from "@/mocks/db/catalogs/establishment"
 import { DOCUMENT_TYPES } from "@/mocks/db/catalogs/document-types"
 import { GENDERS } from "@/mocks/db/catalogs/genders"
 import { POPULATION_GENDERS } from "@/mocks/db/catalogs/population-genders"
@@ -125,6 +125,8 @@ function createEstablishmentDetails(): EstablishmentDetails {
       dane: generateDane(),
       nit: generateNit(),
       ownershipType: createCatalogItem(LEGAL_TYPES),
+      // Fija (sin faker) para no correr la secuencia sembrada del resto.
+      serviceModality: MODALIDADES_PRESTACION[0],
     },
     address: {
       municipality,

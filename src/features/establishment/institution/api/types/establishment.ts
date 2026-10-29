@@ -53,6 +53,13 @@ export interface EstablishmentBasicInfo {
     ownershipType: CatalogItem | null
 
     /**
+     * Modalidad de prestación del servicio (`FK_TLV_MODALIDAD_PRESTACION`,
+     * lista MODALIDAD_PRESTACION, sso V571.1). Obligatoria; los EE anteriores
+     * la traen en `null` hasta que alguien los edite.
+     */
+    serviceModality: CatalogItem | null
+
+    /**
      * `pk_tarchivo` del escudo ya cargado (`TESTABLECIMIENTO.FK_TARCHIVO`).
      * Solo de LECTURA: para verlo se pasa a `ArchivoImage`, que resuelve el
      * token de vista. Al guardar no viaja en el JSON — el escudo se manda como

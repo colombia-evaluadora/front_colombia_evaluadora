@@ -12,16 +12,23 @@ interface RealOwnershipTypeRow {
   pk_propiedad_juridica: number
   codigo: string
   nombre: string
+  /** `TPROPIEDAD_JURIDICA.FK_TLV_ZECTOR` resuelto (sso V58): Oficial / No Oficial. */
+  sector: string | null
 }
 
-async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
+/** Naturaleza jurídica con su sector, que el formulario muestra derivado de ella. */
+export interface OwnershipType extends CatalogItem {
+  sector?: string | null
+}
+
+async function fetchOwnershipTypes(): Promise<OwnershipType[]> {
   // TPROPIEDAD_JURIDICA no es TLISTA_VALOR: no lo cubre el catálogo
   // genérico `/select/:categoria` (ver use-catalogs.ts). Ojo: existe una
   // categoría "PROPIEDAD_JURIDICA_OFICIAL" en tlista_valor, pero es otra
   // cosa — el FK real que usa fn_est_crear (p_fk_propiedad_juridica)
   // apunta a TPROPIEDAD_JURIDICA, no a esa categoría.
   if (env.ENABLE_API_MOCKING) {
-    return getCatalog<CatalogItem>(CATALOGS.LEGAL_TYPES)
+    return getCatalog<OwnershipType>(CATALOGS.LEGAL_TYPES)
   }
   // `api` (no `fetch` crudo): agrega el `Authorization: Bearer <token>` que
   // el gateway real exige — sin eso responde 403 antes de llegar a la query.
@@ -33,6 +40,7 @@ async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
     id: row.pk_propiedad_juridica,
     code: row.codigo,
     name: row.nombre,
+    sector: row.sector,
   }))
 }
 

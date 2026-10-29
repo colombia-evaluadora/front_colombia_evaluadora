@@ -37,6 +37,7 @@ interface RealEstablishmentDetailRow {
   fax: string | null
   pagina_web: string | null
   fk_tpropiedad_juridica: number | null
+  fk_tlv_modalidad_prestacion: number | null
   /** Única query que expone el escudo. */
   fk_tarchivo: number | null
   resolucion_aprobacion: string | null
@@ -77,6 +78,7 @@ function toEstablishmentDetails(
       dane: row.codigo,
       nit: row.nit,
       ownershipType: toStub(row.fk_tpropiedad_juridica),
+      serviceModality: toStub(row.fk_tlv_modalidad_prestacion),
       logoArchivoId: row.fk_tarchivo ?? null,
     },
     address: {

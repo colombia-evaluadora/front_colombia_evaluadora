@@ -112,16 +112,19 @@ const establishmentSchema = z.object({
       "El código DANE debe tener 12 dígitos."
     ),
     nit: requiredPattern("Ingresa el NIT.", /^\d{6,9}-\d$/, "Ingresa un NIT válido."),
-    ownershipType: requiredCatalogItem("Selecciona la propiedad jurídica."),
+    ownershipType: requiredCatalogItem("Selecciona la naturaleza jurídica."),
+    serviceModality: requiredCatalogItem("Selecciona la modalidad de prestación del servicio."),
   }),
   address: z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
+    zone: requiredCatalogItem("Selecciona la zona."),
     district: placeRule("El barrio"),
     address: textRule(validarDireccion),
     commune: placeRule("La comuna"),
     locality: placeRule("La localidad"),
   }),
   additionalInfo: z.object({
+    calendar: requiredCatalogItem("Selecciona el calendario."),
     approvalResolution: textRule((value) =>
       validarIdentificacionAdministrativa(value, "La resolución de aprobación"),
     ),
@@ -138,9 +141,12 @@ const establishmentSchema = z.object({
   }),
   contact: z.object({
     email: optionalPattern(CORREO, MENSAJES.correo),
+    // Sin protocolo también vale (`www.iecentral.edu.co`): se valida como si llevara https.
     website: optionalCheck(
-      (value) => z.string().url().safeParse(value).success,
-      "Ingresa una página web válida (ej. https://ejemplo.com)."
+      (value) =>
+        value.includes(".") &&
+        z.string().url().safeParse(/^[a-z][a-z\d+.-]*:\/\//i.test(value) ? value : `https://${value}`).success,
+      "Ingresa una página web válida (ej. www.iecentral.edu.co)."
     ),
     phone: optionalPattern(TELEFONO, MENSAJES.telefono),
   }),
@@ -165,8 +171,10 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "basicInfo.name": "Nombre del establecimiento",
   "basicInfo.dane": "Código DANE",
   "basicInfo.nit": "NIT",
-  "basicInfo.ownershipType": "Propiedad jurídica",
+  "basicInfo.ownershipType": "Naturaleza jurídica",
+  "basicInfo.serviceModality": "Modalidad de prestación del servicio",
   "address.municipality": "Municipio",
+  "address.zone": "Zona",
   "address.district": "Barrio",
   "address.address": "Dirección",
   "address.commune": "Comuna",
@@ -174,6 +182,7 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "contact.email": "Correo electrónico",
   "contact.website": "Página web",
   "contact.phone": "Teléfono",
+  "additionalInfo.calendar": "Calendario",
   "additionalInfo.approvalResolution": "Resolución de aprobación",
   "additionalInfo.licenseStatus": "Licencia de funcionamiento",
   "additionalInfo.licenseDate": "Fecha licencia",

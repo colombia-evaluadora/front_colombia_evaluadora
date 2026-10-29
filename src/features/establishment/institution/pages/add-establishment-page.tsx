@@ -1,16 +1,14 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef, useState, type FormEvent } from "react"
 
-import { Card, CardContent } from "@/components/ui/card"
 import {
   TableScreen,
   TableScreenBody,
-  TableScreenFooter,
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { CheckIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
@@ -19,7 +17,6 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage, isConflictError } from "@/lib/api-client"
 import { toEmailInput } from "@/lib/text-input"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
-import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
 import {
   cancelarFuncionarioPendiente,
@@ -49,9 +46,10 @@ import { createEmptyPerson } from "@/features/establishment/employees/components
 
 /** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
 const accordionTriggerClassName =
-  "flex-row-reverse justify-end items-center gap-3 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
+  "flex-row-reverse justify-end items-center gap-2 py-3 text-base **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-4"
 
-const accordionCardClassName = "py-5"
+/** Los dos bloques de la página: cabecera gris y adentro sus tarjetas blancas. */
+const accordionItemClassName = "rounded-lg border border-border bg-muted/40 not-last:border-b"
 
 /** Catálogos en `null` = "no cambiar" para el COALESCE de `fn_fun_actualizar`; fallback si falta `existingEmployee`. */
 function createEmptyEmployeeShell(): Omit<Employee, "person"> {
@@ -77,6 +75,7 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
       dane: "",
       nit: "",
       ownershipType: null,
+      serviceModality: null,
     },
     address: {
       municipality: null,
@@ -606,140 +605,133 @@ export function AddEstablishmentPage() {
 
   const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending || directivosCargando
 
+  const listHref = paths.app.establishments.general.getHref()
+
   return (
     <TableScreen>
+      {/* El encabezado es sticky: Cancelar y Guardar quedan a mano en todo el formulario. */}
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            <Button
-              render={<Link to={paths.app.establishments.general.getHref()} search={(prev) => prev} />}
-              variant="fill"
-              color="neutral"
-              size="sm"
-              nativeButton={false}
-            >
-              Cerrar
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                render={<Link to={listHref} search={(prev) => prev} />}
+                variant="outline"
+                color="neutral"
+                size="sm"
+                nativeButton={false}
+              >
+                <XIcon data-icon="inline-start" />
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form="create-establishment-form"
+                variant="fill"
+                color="primary"
+                size="sm"
+                disabled={isPending}
+              >
+                <FloppyDiskIcon data-icon="inline-start" />
+                {isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            </div>
           }
         >
-          {isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}
+          <span className="flex min-w-0 items-baseline gap-2">
+            <Link
+              to={listHref}
+              search={(prev) => prev}
+              className="shrink-0 text-sm font-normal text-muted-foreground hover:text-foreground"
+            >
+              Establecimientos educativos ›
+            </Link>
+            <span className="truncate">{isEditMode ? "Editar establecimiento" : "Nuevo establecimiento"}</span>
+          </span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
 
-      {/* Sin borde abajo: ahí se acopla la barra de acciones. */}
-      <TableScreenBody className="rounded-b-none border-b-0">
+      <TableScreenBody>
         <form id="create-establishment-form" onSubmit={handleSubmit}>
-          <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
-            <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
+          <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="gap-4">
+            <AccordionItem value="datos-establecimiento" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4">
-                  <Card className={accordionCardClassName}>
-                    <CardContent>
-                      <EstablishmentDetailsForm
-                        value={formValues}
-                        onChange={setFormValues}
-                        invalidFields={invalidFields}
-                        errors={fieldErrors}
-                        showValidation={hasSubmitted}
-                        shield={shield}
-                        onShieldChange={setShield}
-                      />
-                    </CardContent>
-                  </Card>
-                  <Card className={accordionCardClassName}>
-                    <CardContent>
-                      <ComplementaryDataFormSection
-                        value={formValues.additionalInfo}
-                        onChange={(additionalInfo) =>
-                          setFormValues((current) => ({ ...current, additionalInfo }))
-                        }
-                        invalidFields={invalidFields}
-                        errors={fieldErrors}
-                        showValidation={hasSubmitted}
-                      />
-                    </CardContent>
-                  </Card>
+                <div className="-mx-4 border-t border-border px-4 pt-4">
+                  <EstablishmentDetailsForm
+                    value={formValues}
+                    onChange={setFormValues}
+                    invalidFields={invalidFields}
+                    errors={fieldErrors}
+                    showValidation={hasSubmitted}
+                    shield={shield}
+                    onShieldChange={setShield}
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
+            {/* Rector y secretaria en una sola tarjeta, sin acordeones adentro. */}
+            <AccordionItem value="datos-rector-secretaria" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4">
-                  {directivosSoloLectura && !directivosCargando ? (
-                    <p className="text-sm text-muted-foreground">
-                      Solo el Superadministrador o un usuario de nivel territorial con permiso de eliminar en
-                      Establecimiento puede cambiar el rector o la secretaria del establecimiento.
-                    </p>
-                  ) : null}
-                  <Card className={accordionCardClassName}>
-                    <CardContent>
-                      <UserDetailsForm
-                        role="RECTOR"
-                        fieldPrefix="principal"
-                        disabled={directivosSoloLectura}
-                        value={formValues.principal}
-                        onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
-                        invalidFields={invalidFields}
-                        errors={fieldErrors}
-                        showValidation={hasSubmitted}
-                        photo={photos["principal"] ?? null}
-                        onPhotoChange={(file) =>
-                          setPhotos((current) => ({ ...current, principal: file }))
-                        }
-                        onMatched={(found) => {
-                          // Solo sin `id`: con `id` se edita directo por PK.
-                          principalMatchRef.current = found && !found.id ? found : null
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                  <Card className={accordionCardClassName}>
-                    <CardContent>
-                      <UserDetailsForm
-                        role="SECRETARY"
-                        fieldPrefix="secretary"
-                        value={formValues.secretary}
-                        onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
-                        invalidFields={invalidFields}
-                        errors={fieldErrors}
-                        showValidation={hasSubmitted}
-                        required={false}
-                        disabled={directivosSoloLectura}
-                        photo={photos["secretary"] ?? null}
-                        onPhotoChange={(file) =>
-                          setPhotos((current) => ({ ...current, secretary: file }))
-                        }
-                        onMatched={(found) => {
-                          secretaryMatchRef.current = found && !found.id ? found : null
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
+                <div className="-mx-4 border-t border-border px-4 pt-4">
+                  <div className="space-y-5 rounded-lg border border-border bg-card p-4">
+                    {directivosSoloLectura && !directivosCargando ? (
+                      <p className="text-sm text-muted-foreground">
+                        Solo el Superadministrador o un usuario de nivel territorial con permiso de eliminar en
+                        Establecimiento puede cambiar el rector o la secretaria del establecimiento.
+                      </p>
+                    ) : null}
+                    <UserDetailsForm
+                      role="RECTOR"
+                      layout="two-columns"
+                      title="Rector"
+                      fieldPrefix="principal"
+                      disabled={directivosSoloLectura}
+                      value={formValues.principal}
+                      onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
+                      invalidFields={invalidFields}
+                      errors={fieldErrors}
+                      showValidation={hasSubmitted}
+                      photo={photos["principal"] ?? null}
+                      onPhotoChange={(file) =>
+                        setPhotos((current) => ({ ...current, principal: file }))
+                      }
+                      onMatched={(found) => {
+                        // Solo sin `id`: con `id` se edita directo por PK.
+                        principalMatchRef.current = found && !found.id ? found : null
+                      }}
+                    />
+                    <hr className="border-border" />
+                    <UserDetailsForm
+                      role="SECRETARY"
+                      layout="two-columns"
+                      title="Secretaria (opcional)"
+                      fieldPrefix="secretary"
+                      value={formValues.secretary}
+                      onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
+                      invalidFields={invalidFields}
+                      errors={fieldErrors}
+                      showValidation={hasSubmitted}
+                      required={false}
+                      disabled={directivosSoloLectura}
+                      photo={photos["secretary"] ?? null}
+                      onPhotoChange={(file) =>
+                        setPhotos((current) => ({ ...current, secretary: file }))
+                      }
+                      onMatched={(found) => {
+                        secretaryMatchRef.current = found && !found.id ? found : null
+                      }}
+                    />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </form>
       </TableScreenBody>
-
-      <TableScreenFooter>
-        <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
-        <Button
-          type="submit"
-          form="create-establishment-form"
-          variant="fill"
-          color="primary"
-          size="sm"
-          disabled={isPending}
-        >
-          <CheckIcon />
-          {isPending ? "Guardando..." : "Guardar"}
-        </Button>
-      </TableScreenFooter>
     </TableScreen>
   )
 }

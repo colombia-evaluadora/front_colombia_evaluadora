@@ -57,6 +57,7 @@ function toRealBackendPayload(values: EstablishmentDetails) {
     basicInfo: {
       ...basicInfo,
       ownershipType: basicInfo.ownershipType?.id ?? null,
+      serviceModality: basicInfo.serviceModality?.id ?? null,
     },
     address: {
       ...address,

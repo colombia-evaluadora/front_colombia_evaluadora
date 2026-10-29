@@ -60,6 +60,13 @@ interface UserFormProps {
     uploadedPhoto?: File | null
     /** Patch del autocompletado por documento; `null` al perder la coincidencia. */
     onMatched?: (found: Partial<Person> | null) => void
+    /**
+     * `two-columns`: foto a la izquierda y los campos de a dos (formulario del
+     * establecimiento). Por defecto, la grilla de tres del modal de funcionarios.
+     */
+    layout?: "default" | "two-columns"
+    /** Título del bloque; por defecto el nombre del rol (`role`). */
+    title?: string
 }
 
 function createEmptyPerson(): Person {
@@ -103,8 +110,11 @@ export function UserDetailsForm({
     onRemovePhoto,
     uploadedPhoto,
     onMatched,
+    layout = "default",
+    title,
 }: UserFormProps) {
-    const roleName = EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
+    const roleName = title ?? EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
+    const twoColumns = layout === "two-columns"
 
     // Aviso local: rector y secretaria comparten pantalla.
     const [accountNotice, setAccountNotice] = useState<{ id: number; message: string } | null>(
@@ -195,6 +205,292 @@ export function UserDetailsForm({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cambia con el documento.
     }, [documentTypeId, identification])
 
+    const documentTypeField = (
+        <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.documentType`) ? "true" : undefined}>
+            <FieldLabel htmlFor="document-type">
+                Tipo de documento{required ? "*" : ""}
+            </FieldLabel>
+
+            <ComboboxField
+                id="document-type"
+                disabled={disabled}
+                items={documentTypeLabels}
+                aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
+                value={person.documentType?.id ?? null}
+                onValueChange={(selectedValue) => {
+                    isUserEditingDocument.current = true
+                    if (selectedValue === null) {
+                        emitChange({ documentType: null })
+                        return
+                    }
+                    const option = documentTypes.find((item) => item.id === selectedValue)
+                    if (option) {
+                        emitChange({ documentType: option })
+                    }
+                }}
+            >
+                <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
+                    <ComboboxFieldValue placeholder="Seleccione" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                    <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
+                    {documentTypes.map((item) => (
+                        <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
+                            {item.name}
+                        </ComboboxFieldItem>
+                    ))}
+                </ComboboxFieldContent>
+            </ComboboxField>
+            <FieldError>{errorFor(`${fieldPrefix}.documentType`)}</FieldError>
+        </Field>
+    )
+
+    const identificationField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.identification`) ? "true" : undefined}>
+            <FieldLabel htmlFor="document-number">Número de documento{required ? "*" : ""}</FieldLabel>
+            <Input
+                id="document-number"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                inputMode={esDocumentoNumerico(documentTypeCode) ? "numeric" : "text"}
+                maxLength={15}
+                value={person.identification}
+                aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
+                onChange={(event) => {
+                    isUserEditingDocument.current = true
+                    emitChange({ identification: toDocumentoInput(event.target.value, documentTypeCode) })
+                }}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
+        </Field>
+    )
+
+    const firstNameField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.firstName`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-name">Primer nombre{required ? "*" : ""}</FieldLabel>
+            <Input
+                id="user-name"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                value={person.firstName}
+                aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
+                onChange={(event) => emitChange({ firstName: toNombreInput(event.target.value) })}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
+        </Field>
+    )
+
+    const middleNameField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.middleName`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-second-name">Segundo nombre</FieldLabel>
+            <Input
+                id="user-second-name"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                value={person.middleName ?? ""}
+                aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
+                onChange={(event) => emitChange({ middleName: toNombreInput(event.target.value) })}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.middleName`)}</FieldError>
+        </Field>
+    )
+
+    const lastNameField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-last-name">Primer apellido{required ? "*" : ""}</FieldLabel>
+            <Input
+                id="user-last-name"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                value={person.lastName}
+                aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
+                onChange={(event) => emitChange({ lastName: toNombreInput(event.target.value) })}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
+        </Field>
+    )
+
+    const secondLastNameField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.secondLastName`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-second-last-name">Segundo apellido</FieldLabel>
+            <Input
+                id="user-second-last-name"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                value={person.secondLastName ?? ""}
+                aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
+                onChange={(event) => emitChange({ secondLastName: toNombreInput(event.target.value) })}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.secondLastName`)}</FieldError>
+        </Field>
+    )
+
+    const emailField = (
+        <Field orientation="vertical" variant="outlined" className={twoColumns ? "w-full" : "w-full md:col-span-2"} data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-email">Correo electrónico{required ? "*" : ""}</FieldLabel>
+            <Input
+                id="user-email"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                value={person.email}
+                aria-invalid={isInvalid(`${fieldPrefix}.email`)}
+                onChange={(event) => emitChange({ email: toEmailInput(event.target.value) })}
+            />
+            {errorFor(`${fieldPrefix}.email`) ? (
+                <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
+            ) : isNewAccount ? (
+                <FieldDescription>
+                    A este correo llegará el enlace para activar la cuenta y crear la contraseña.
+                </FieldDescription>
+            ) : null}
+        </Field>
+    )
+
+    const phoneField = (
+        <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
+            <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
+            <Input
+                id="user-phone"
+                size="sm"
+                disabled={disabled}
+                placeholder="Agregar"
+                type="tel"
+                // Teléfonos de Colombia: máximo 10 dígitos.
+                inputMode="numeric"
+                maxLength={10}
+                value={person.phone}
+                aria-invalid={isInvalid(`${fieldPrefix}.phone`)}
+                onChange={(event) =>
+                    emitChange({ phone: toDigitsOnly(event.target.value, 10) })
+                }
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.phone`)}</FieldError>
+        </Field>
+    )
+
+    const birthDateField = (
+        <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.birthDate`) ? "true" : undefined}>
+            <FieldLabel htmlFor="birth-date">
+                Fecha de nacimiento
+            </FieldLabel>
+            <DatePicker
+                id="birth-date"
+                mode="date"
+                size="sm"
+                disabled={disabled}
+                maxDate={getMaxBirthDate()}
+                value={parseDateValue(person.birthDate)}
+                aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
+                onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
+            />
+            <FieldError>{errorFor(`${fieldPrefix}.birthDate`)}</FieldError>
+        </Field>
+    )
+
+    const genderField = (
+        <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
+            <FieldLabel htmlFor="gender-user">
+                Género{required ? "*" : ""}
+            </FieldLabel>
+            <ComboboxField
+                id="gender-user"
+                disabled={disabled}
+                items={genderLabels}
+                aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
+                value={person.gender?.id ?? null}
+                onValueChange={(selectedValue) => {
+                    const option = genders.find((item) => item.id === selectedValue)
+                    emitChange({ gender: option ?? null })
+                }}
+            >
+                <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
+                    <ComboboxFieldValue placeholder="Seleccione" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                    <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
+                    {genders.map((item) => (
+                        <ComboboxFieldItem key={item.id} value={item.id}>
+                            {item.name}
+                        </ComboboxFieldItem>
+                    ))}
+                </ComboboxFieldContent>
+            </ComboboxField>
+            <FieldError>{errorFor(`${fieldPrefix}.gender`)}</FieldError>
+        </Field>
+    )
+
+    const photoField = (
+        <ImageUploadField
+            value={photo}
+            onValueChange={setPhoto}
+            description={twoColumns ? null : "para cargar la foto del usuario"}
+            title={twoColumns ? "Foto" : undefined}
+            hint={twoColumns ? "JPG, PNG o SVG · 2 MB" : undefined}
+            deleteLabel="Eliminar foto"
+            error={errorFor(`${fieldPrefix}.photo`)}
+            className={twoColumns ? "h-36" : "md:row-span-3"}
+            disabled={disabled}
+            existingPreview={
+                person.photoArchivoId != null ? (
+                    <ArchivoImage
+                        archivoId={person.photoArchivoId}
+                        alt="Foto de perfil"
+                    />
+                ) : uploadedPhoto ? (
+                    <LocalImage file={uploadedPhoto} alt="Foto de perfil" />
+                ) : undefined
+            }
+            onRemoveExisting={
+                disabled || (person.photoArchivoId == null && !uploadedPhoto)
+                    ? undefined
+                    : () => {
+                          emitChange({ photoArchivoId: null })
+                          onRemovePhoto?.()
+                      }
+            }
+        />
+    )
+
+    if (twoColumns) {
+        return (
+            <div className="grid grid-cols-1 gap-3">
+                <NoticeBanner
+                    notice={accountNotice}
+                    onClose={() => setAccountNotice(null)}
+                    variant="success"
+                    autoCloseMs={7000}
+                />
+                {roleName ? <h3 className="text-sm font-semibold">{roleName}</h3> : null}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-[11rem_1fr]">
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-xs text-muted-foreground">Foto del usuario</span>
+                        {photoField}
+                    </div>
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:col-span-2 md:grid-cols-[1fr_2fr]">
+                            {documentTypeField}
+                            {identificationField}
+                        </div>
+                        {firstNameField}
+                        {middleNameField}
+                        {lastNameField}
+                        {secondLastNameField}
+                        {emailField}
+                        {genderField}
+                        {birthDateField}
+                        {phoneField}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="grid grid-cols-1 gap-2">
 
@@ -206,233 +502,21 @@ export function UserDetailsForm({
             />
             {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
-                <ImageUploadField
-                    value={photo}
-                    onValueChange={setPhoto}
-                    description="para cargar la foto del usuario"
-                    deleteLabel="Eliminar foto"
-                    error={errorFor(`${fieldPrefix}.photo`)}
-                    className="md:row-span-3"
-                    disabled={disabled}
-                    existingPreview={
-                        person.photoArchivoId != null ? (
-                            <ArchivoImage
-                                archivoId={person.photoArchivoId}
-                                alt="Foto de perfil"
-                            />
-                        ) : uploadedPhoto ? (
-                            <LocalImage file={uploadedPhoto} alt="Foto de perfil" />
-                        ) : undefined
-                    }
-                    onRemoveExisting={
-                        disabled || (person.photoArchivoId == null && !uploadedPhoto)
-                            ? undefined
-                            : () => {
-                                  emitChange({ photoArchivoId: null })
-                                  onRemovePhoto?.()
-                              }
-                    }
-                />
-
-                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.documentType`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="document-type">
-                        Tipo de documento{required ? "*" : ""}
-                    </FieldLabel>
-
-                    <ComboboxField
-                        id="document-type"
-                        disabled={disabled}
-                        items={documentTypeLabels}
-                        aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
-                        value={person.documentType?.id ?? null}
-                        onValueChange={(selectedValue) => {
-                            isUserEditingDocument.current = true
-                            if (selectedValue === null) {
-                                emitChange({ documentType: null })
-                                return
-                            }
-                            const option = documentTypes.find((item) => item.id === selectedValue)
-                            if (option) {
-                                emitChange({ documentType: option })
-                            }
-                        }}
-                    >
-                        <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
-                            <ComboboxFieldValue placeholder="Seleccione" />
-                        </ComboboxFieldTrigger>
-                        <ComboboxFieldContent>
-                            <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
-                            {documentTypes.map((item) => (
-                                <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
-                                    {item.name}
-                                </ComboboxFieldItem>
-                            ))}
-                        </ComboboxFieldContent>
-                    </ComboboxField>
-                    <FieldError>{errorFor(`${fieldPrefix}.documentType`)}</FieldError>
-                </Field>
-
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.identification`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="document-number">Número de documento{required ? "*" : ""}</FieldLabel>
-                    <Input
-                        id="document-number"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        inputMode={esDocumentoNumerico(documentTypeCode) ? "numeric" : "text"}
-                        maxLength={15}
-                        value={person.identification}
-                        aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
-                        onChange={(event) => {
-                            isUserEditingDocument.current = true
-                            emitChange({ identification: toDocumentoInput(event.target.value, documentTypeCode) })
-                        }}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
-                </Field>
-
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.firstName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-name">Primer Nombre{required ? "*" : ""}</FieldLabel>
-                    <Input
-                        id="user-name"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        value={person.firstName}
-                        aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: toNombreInput(event.target.value) })}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
-                </Field>
-
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.middleName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
-                    <Input
-                        id="user-second-name"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        value={person.middleName ?? ""}
-                        aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
-                        onChange={(event) => emitChange({ middleName: toNombreInput(event.target.value) })}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.middleName`)}</FieldError>
-                </Field>
-
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-last-name">Primer Apellido{required ? "*" : ""}</FieldLabel>
-                    <Input
-                        id="user-last-name"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        value={person.lastName}
-                        aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: toNombreInput(event.target.value) })}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
-                </Field>
-
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.secondLastName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
-                    <Input
-                        id="user-second-last-name"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        value={person.secondLastName ?? ""}
-                        aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
-                        onChange={(event) => emitChange({ secondLastName: toNombreInput(event.target.value) })}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.secondLastName`)}</FieldError>
-                </Field>
+                {photoField}
+                {documentTypeField}
+                {identificationField}
+                {firstNameField}
+                {middleNameField}
+                {lastNameField}
+                {secondLastNameField}
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
-                <Field orientation="vertical" variant="outlined" className="w-full md:col-span-2" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-email">Correo Electrónico{required ? "*" : ""}</FieldLabel>
-                    <Input
-                        id="user-email"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        value={person.email}
-                        aria-invalid={isInvalid(`${fieldPrefix}.email`)}
-                        onChange={(event) => emitChange({ email: toEmailInput(event.target.value) })}
-                    />
-                    {errorFor(`${fieldPrefix}.email`) ? (
-                        <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
-                    ) : isNewAccount ? (
-                        <FieldDescription>
-                            A este correo llegará el enlace para activar la cuenta y crear la contraseña.
-                        </FieldDescription>
-                    ) : null}
-                </Field>
-                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
-                    <Input
-                        id="user-phone"
-                        size="sm"
-                        disabled={disabled}
-                        placeholder="Agregar"
-                        type="tel"
-                        // Teléfonos de Colombia: máximo 10 dígitos.
-                        inputMode="numeric"
-                        maxLength={10}
-                        value={person.phone}
-                        aria-invalid={isInvalid(`${fieldPrefix}.phone`)}
-                        onChange={(event) =>
-                            emitChange({ phone: toDigitsOnly(event.target.value, 10) })
-                        }
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.phone`)}</FieldError>
-                </Field>
+                {emailField}
+                {phoneField}
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
-                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.birthDate`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="birth-date">
-                        Fecha de nacimiento
-                    </FieldLabel>
-                    <DatePicker
-                        id="birth-date"
-                        mode="date"
-                        size="sm"
-                        disabled={disabled}
-                        maxDate={getMaxBirthDate()}
-                        value={parseDateValue(person.birthDate)}
-                        aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
-                        onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
-                    />
-                    <FieldError>{errorFor(`${fieldPrefix}.birthDate`)}</FieldError>
-                </Field>
-                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="gender-user">
-                        Género{required ? "*" : ""}
-                    </FieldLabel>
-                    <ComboboxField
-                        id="gender-user"
-                        disabled={disabled}
-                        items={genderLabels}
-                        aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
-                        value={person.gender?.id ?? null}
-                        onValueChange={(selectedValue) => {
-                            const option = genders.find((item) => item.id === selectedValue)
-                            emitChange({ gender: option ?? null })
-                        }}
-                    >
-                        <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
-                            <ComboboxFieldValue placeholder="Seleccione" />
-                        </ComboboxFieldTrigger>
-                        <ComboboxFieldContent>
-                            <ComboboxFieldItem value={null}>Seleccione</ComboboxFieldItem>
-                            {genders.map((item) => (
-                                <ComboboxFieldItem key={item.id} value={item.id}>
-                                    {item.name}
-                                </ComboboxFieldItem>
-                            ))}
-                        </ComboboxFieldContent>
-                    </ComboboxField>
-                    <FieldError>{errorFor(`${fieldPrefix}.gender`)}</FieldError>
-                </Field>
+                {birthDateField}
+                {genderField}
             </div>
         </div>
     )
