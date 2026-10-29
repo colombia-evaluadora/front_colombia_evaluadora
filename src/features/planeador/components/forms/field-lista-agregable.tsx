@@ -46,6 +46,10 @@ interface ListaAgregableFieldProps {
   items: string[]
   onChange: (items: string[]) => void
   placeholder?: string
+  /** Máximo por ítem; se muestra como contador en cada fila. */
+  maxLength?: number
+  /** Error ya "visible" de cada fila. */
+  errorDe?: (index: number) => string | undefined
 }
 
 /**
@@ -71,6 +75,8 @@ export function ListaAgregableField({
   items,
   onChange,
   placeholder = "Agregar",
+  maxLength = 50,
+  errorDe,
 }: ListaAgregableFieldProps) {
   const [draft, setDraft] = useState("")
 
@@ -116,7 +122,7 @@ export function ListaAgregableField({
       <Input
         variant="outlined"
         placeholder={placeholder}
-        maxLength={50}
+        maxLength={maxLength}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -135,7 +141,9 @@ export function ListaAgregableField({
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-1.5">
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const error = errorDe?.(index)
+            return (
             <li key={index}>
               {/* Mismo `InputGroup` "outlined" que Correo/Contraseña del
                   login (`form-login.tsx`): borde completo + anillo de foco
@@ -144,10 +152,11 @@ export function ListaAgregableField({
                   flotando arriba, así que sin este override se veía como un
                   campo "estándar" (subrayado apenas visible) en vez de un
                   campo con caja propia como el resto del form. */}
-              <InputGroup className={cn(FILA_OUTLINED, "bg-card")}>
+              <InputGroup className={cn(FILA_OUTLINED, "bg-card", error && "border-red hover:border-red")}>
                 <InputGroupInput
                   aria-label={`Editar ítem ${index + 1} de "${label}"`}
-                  maxLength={50}
+                  aria-invalid={Boolean(error) || undefined}
+                  maxLength={maxLength}
                   value={item}
                   onChange={(e) => editar(index, e.target.value)}
                 />
@@ -170,8 +179,11 @@ export function ListaAgregableField({
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
+              <CharacterCounter value={item} max={maxLength} />
+              <FieldError>{error}</FieldError>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </div>

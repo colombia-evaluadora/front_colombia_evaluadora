@@ -30,23 +30,35 @@ export const unidadCampoId = {
 
 export type UnidadErrores = Record<string, string>
 
-function mensajeCaracteres(campo: string, invalidos: string[]): string {
+function mensajeCaracteres(campo: string, invalidos: string[], puntuacion: boolean): string {
   const lista = invalidos.map((c) => (c.trim() ? `"${c}"` : "salto o tabulación")).join(" ")
-  return `${campo} solo admite letras (con tilde, diéresis o ñ), números, espacios, guiones y apóstrofos. Quita: ${lista}`
+  const extra = puntuacion ? ", además de . , : ; ¿ ? ¡ ! ( )" : ""
+  return `${campo} solo admite letras (con tilde, diéresis o ñ), números, espacios, guiones y apóstrofos${extra}. Quita: ${lista}`
 }
 
-/** Valida un texto: vacío (si es obligatorio), largo máximo y caracteres permitidos. */
-function validarTexto(
+/**
+ * Valida un texto: vacío (si es obligatorio), largo máximo y caracteres
+ * permitidos. `puntuacion` (por defecto sí) admite además . , : ; ¿ ? ¡ ! ( );
+ * solo el nombre va sin ella (mismo criterio que `fn_unidad_validar_caracteres`).
+ * Exportada: la reusa `CrearUnidadPopover` (alta rápida desde la actividad).
+ */
+export function validarTexto(
   valor: string | undefined,
-  { campo, max, obligatorio, mensajeVacio }: { campo: string; max: number; obligatorio: boolean; mensajeVacio?: string },
+  {
+    campo,
+    max,
+    obligatorio,
+    mensajeVacio,
+    puntuacion = true,
+  }: { campo: string; max: number; obligatorio: boolean; mensajeVacio?: string; puntuacion?: boolean },
 ): string | undefined {
   const texto = (valor ?? "").trim()
   if (!texto) return obligatorio ? (mensajeVacio ?? `${campo} es obligatorio`) : undefined
   if (texto.length > max) return `${campo} admite máximo ${max} caracteres (tiene ${texto.length})`
   // Los saltos de línea se permiten (descripciones en textarea); el resto de
   // "espacios" raros (tabulación) también, mismo `\s` que el back.
-  const invalidos = plainTextInvalidChars(texto)
-  if (invalidos.length > 0) return mensajeCaracteres(campo, invalidos)
+  const invalidos = plainTextInvalidChars(texto, { puntuacion })
+  if (invalidos.length > 0) return mensajeCaracteres(campo, invalidos, puntuacion)
   return undefined
 }
 
@@ -67,7 +79,7 @@ export function validarUnidadDraft(draft: UnidadInfoGeneral): UnidadErrores {
 
   poner(
     unidadCampoId.nombre,
-    validarTexto(draft.nombre, { campo: "El nombre", max: UNIDAD_LIMITES.nombre, obligatorio: true }),
+    validarTexto(draft.nombre, { campo: "El nombre", max: UNIDAD_LIMITES.nombre, obligatorio: true, puntuacion: false }),
   )
   poner(
     unidadCampoId.descripcion,

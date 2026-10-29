@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { PLAIN_TEXT_PATTERN, plainTextInvalidChars } from "@/lib/text-input"
+import { PLAIN_TEXT_PATTERN, PLAIN_TEXT_PUNCT_PATTERN, plainTextInvalidChars } from "@/lib/text-input"
 import { UNIDAD_DRAFT_VACIO } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
   UNIDAD_LIMITES,
@@ -15,22 +15,31 @@ const valido = {
   asignaturaId: 2,
   asignatura: "Ciencias",
   nombre: "Ecosistemas del Caribe 2",
-  descripcion: "Proyecto de aula sobre el niño y el pingüino\ncon diéresis y d'Artagnan",
-  objetivos: ["Reconocer seres vivos", "Comparar hábitats - año 2026"],
-  contenidos: [{ titulo: "Fase uno", descripcion: "Exploración del entorno" }],
+  descripcion: "Proyecto de aula: el niño y el pingüino.\n¿Con diéresis? ¡Sí! (d'Artagnan); fin",
+  objetivos: ["Reconocer seres vivos.", "Comparar hábitats - año 2026"],
+  contenidos: [{ titulo: "Fase uno: exploración", descripcion: "Exploración del entorno, paso a paso." }],
 }
 
-describe("PLAIN_TEXT_PATTERN", () => {
+describe("PLAIN_TEXT_PATTERN (nombre)", () => {
   it("admite letras con tilde, diéresis, ñ, números, espacios, guiones y apóstrofos", () => {
     expect(PLAIN_TEXT_PATTERN.test("Áéíóú ÄËÏÖÜ ñÑ 0123 - ' ’ abc\nxyz")).toBe(true)
   })
-  it.each([".", ",", ":", ";", "(", ")", "#", "/", "&", "?", "!", "@", "😀", "<", "\"", "ç", "à"])(
+  it.each([".", ",", ":", ";", "(", ")", "¿", "?", "¡", "!", "#", "/", "&", "@", "😀", "<", '"', "ç", "à"])(
     "rechaza %s",
     (ch) => {
       expect(PLAIN_TEXT_PATTERN.test(`abc${ch}`)).toBe(false)
       expect(plainTextInvalidChars(`abc${ch}`)).toEqual([ch])
     },
   )
+})
+
+describe("PLAIN_TEXT_PUNCT_PATTERN (descripción, objetivos, estructura)", () => {
+  it("admite además . , : ; ¿ ? ¡ ! ( )", () => {
+    expect(PLAIN_TEXT_PUNCT_PATTERN.test("¿Qué es? ¡Sí! Uno, dos: tres; (cuatro).")).toBe(true)
+  })
+  it.each(["#", "/", "&", "@", "😀", "<", '"', "%"])("rechaza %s", (ch) => {
+    expect(plainTextInvalidChars(`abc.${ch}`, { puntuacion: true })).toEqual([ch])
+  })
 })
 
 describe("validarUnidadDraft", () => {
@@ -55,19 +64,25 @@ describe("validarUnidadDraft", () => {
     expect(errores[unidadCampoId.objetivo(0)]).toMatch(/objetivo 1 está vacío/)
   })
 
-  it("rechaza caracteres no permitidos en cada texto", () => {
+  it("el nombre no admite puntuación; los textos largos sí", () => {
+    const errores = validarUnidadDraft({ ...valido, nombre: "Unidad uno.", descripcion: "Uno, dos: tres." })
+    expect(errores[unidadCampoId.nombre]).toMatch(/Quita: "\."/)
+    expect(errores[unidadCampoId.descripcion]).toBeUndefined()
+  })
+
+  it("rechaza símbolos fuera de la puntuación básica en cada texto", () => {
     const errores = validarUnidadDraft({
       ...valido,
       nombre: "Unidad #1",
-      descripcion: "Hola, mundo.",
-      objetivos: ["ok", "Objetivo: leer"],
-      contenidos: [{ titulo: "Fase (1)", descripcion: "a/b" }],
+      descripcion: "Hola, mundo # dos",
+      objetivos: ["Objetivo: leer (bien).", "Objetivo @ leer"],
+      contenidos: [{ titulo: "Fase & uno", descripcion: "a/b" }],
     })
     expect(errores[unidadCampoId.nombre]).toMatch(/Quita: "#"/)
-    expect(errores[unidadCampoId.descripcion]).toMatch(/Quita: "," "."/)
-    expect(errores[unidadCampoId.objetivo(1)]).toMatch(/Quita: ":"/)
+    expect(errores[unidadCampoId.descripcion]).toMatch(/además de .*Quita: "#"/)
     expect(errores[unidadCampoId.objetivo(0)]).toBeUndefined()
-    expect(errores[unidadCampoId.seccionTitulo(0)]).toMatch(/Quita: "\(" "\)"/)
+    expect(errores[unidadCampoId.objetivo(1)]).toMatch(/Quita: "@"/)
+    expect(errores[unidadCampoId.seccionTitulo(0)]).toMatch(/Quita: "&"/)
     expect(errores[unidadCampoId.seccionDescripcion(0)]).toMatch(/Quita: "\/"/)
   })
 

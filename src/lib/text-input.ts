@@ -99,18 +99,26 @@ export function toSafeTextInput(value: string, maxLength?: number): string {
  * Texto "plano" del planeador (nombre, descripción, objetivos y estructura de
  * la unidad): letras sin y con tilde (á é í ó ú), con diéresis (ä ë ï ö ü), ñ,
  * dígitos, espacios (incluye saltos de línea), guiones y apóstrofos (' y ’).
- * A diferencia de `SAFE_TEXT_PATTERN` NO admite puntuación (. , : ; ( ) & # /):
- * así lo pide el documento de reglas de la unidad. Es el mismo conjunto que
- * valida el back (`fn_texto_plano`, sso V492.1). Se usa como validación (marca
- * el campo en rojo con un mensaje), no como sanitizador silencioso.
+ * Sin puntuación: es la regla del NOMBRE de la unidad. Para los textos largos
+ * (descripción, objetivos, estructura) va `PLAIN_TEXT_PUNCT_PATTERN`. Son los
+ * mismos conjuntos que valida el back (`fn_unidad_validar_caracteres`, sso
+ * V492.1). Se usan como validación (marca el campo en rojo con un mensaje),
+ * no como sanitizador silencioso.
  */
 export const PLAIN_TEXT_PATTERN = /^[A-Za-zÁÉÍÓÚáéíóúÄËÏÖÜäëïöüÑñ0-9\s'’-]*$/
 
-/** Caracteres de `value` que `PLAIN_TEXT_PATTERN` no admite, sin repetir y en orden de aparición. */
-export function plainTextInvalidChars(value: string): string[] {
+/** `PLAIN_TEXT_PATTERN` más la puntuación básica: . , : ; ¿ ? ¡ ! ( ) */
+export const PLAIN_TEXT_PUNCT_PATTERN = /^[A-Za-zÁÉÍÓÚáéíóúÄËÏÖÜäëïöüÑñ0-9\s'’.,:;¿?¡!()-]*$/
+
+/**
+ * Caracteres de `value` que el patrón no admite, sin repetir y en orden de
+ * aparición. `puntuacion: true` usa `PLAIN_TEXT_PUNCT_PATTERN`.
+ */
+export function plainTextInvalidChars(value: string, { puntuacion = false }: { puntuacion?: boolean } = {}): string[] {
+  const patron = puntuacion ? PLAIN_TEXT_PUNCT_PATTERN : PLAIN_TEXT_PATTERN
   const invalidos = new Set<string>()
   for (const ch of value ?? "") {
-    if (!PLAIN_TEXT_PATTERN.test(ch)) invalidos.add(ch)
+    if (!patron.test(ch)) invalidos.add(ch)
   }
   return [...invalidos]
 }

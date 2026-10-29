@@ -76,11 +76,14 @@ test("crear: vacíos, caracteres no permitidos y límites", async ({ page }) => 
   // Caracteres no permitidos.
   await nombre.fill("Unidad #1")
   await expect(page.getByText(/El nombre solo admite letras.*Quita: "#"/)).toBeVisible()
-  await page.locator("#unidad-descripcion").fill("Hola, mundo.")
-  await expect(page.getByText(/La descripción solo admite.*Quita: "," "\."/)).toBeVisible()
-  await page.locator("#unidad-objetivo-0").fill("Objetivo: leer")
-  await expect(page.getByText(/El objetivo 1 solo admite.*Quita: ":"/)).toBeVisible()
-  await page.locator("#unidad-seccion-0-titulo").fill("Fase (1)")
+  await nombre.fill("Unidad uno.")
+  await expect(page.getByText(/El nombre solo admite letras.*Quita: "\."/)).toBeVisible()
+  // Descripción, objetivos y estructura admiten puntuación básica, no otros símbolos.
+  await page.locator("#unidad-descripcion").fill("Hola, mundo: ¿bien? (sí). #")
+  await expect(page.getByText(/La descripción solo admite.*Quita: "#"/)).toBeVisible()
+  await page.locator("#unidad-objetivo-0").fill("Objetivo: leer @ casa")
+  await expect(page.getByText(/El objetivo 1 solo admite.*Quita: "@"/)).toBeVisible()
+  await page.locator("#unidad-seccion-0-titulo").fill("Fase & uno")
   await expect(page.getByText(/El título de la sección 1 solo admite/)).toBeVisible()
   await shot(page, "despues-crear-caracteres")
 
@@ -95,8 +98,8 @@ test("crear: vacíos, caracteres no permitidos y límites", async ({ page }) => 
 
   // Corregido: guarda y vuelve al listado.
   await nombre.fill("Ecosistemas del Caribe")
-  await page.locator("#unidad-descripcion").fill("Proyecto de aula del niño y el pingüino")
-  await page.locator("#unidad-objetivo-0").fill("Reconocer seres vivos")
+  await page.locator("#unidad-descripcion").fill("Proyecto de aula: el niño y el pingüino.")
+  await page.locator("#unidad-objetivo-0").fill("Reconocer seres vivos (plantas, animales).")
   await page.locator("#unidad-seccion-0-titulo").fill("Fase uno")
   await page.locator("#unidad-seccion-0-descripcion").fill("Exploración del entorno")
   await page.getByRole("button", { name: "Guardar" }).click()
@@ -114,9 +117,11 @@ test("editar: datos con caracteres no permitidos y vacíos", async ({ page }) =>
   await expect(page.getByText("El nombre es obligatorio")).toBeVisible()
   await page.getByRole("button", { name: "Guardar" }).click()
   await expect(nombre).toBeFocused()
-  // La descripción del mock trae puntos: se marca como no permitida.
-  await expect(page.getByText(/La descripción solo admite/)).toBeVisible()
-  await expect(page.getByText(/El objetivo 1 solo admite/)).toBeVisible()
+  // Los textos del mock traen puntos y ¿?: ya no son error.
+  await expect(page.getByText(/La descripción solo admite/)).toHaveCount(0)
+  await expect(page.getByText(/El objetivo 1 solo admite/)).toHaveCount(0)
+  await page.locator("#unidad-objetivo-0").fill("Comprender # el DCU.")
+  await expect(page.getByText(/El objetivo 1 solo admite.*Quita: "#"/)).toBeVisible()
   await expect(page).toHaveURL(/\/unidades\/editar\/1/)
   await shot(page, "despues-editar-errores")
 
