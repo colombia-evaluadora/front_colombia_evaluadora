@@ -45,7 +45,7 @@ import { createUnidadCriteriosColumns } from "@/features/planeador/components/ta
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
 import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
 import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
-import type { UnidadActividad, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type { CriterioUnidad, UnidadActividad, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import { usePlaneadorSoloLectura } from "@/features/planeador/hooks/use-planeador-solo-lectura"
 import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
@@ -317,15 +317,23 @@ export function Rubricas({
   const rotuloUnidad = useRotuloUnidad(unidad, rotuloConocido)
   const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidad.id)
   const nombresNiveles = React.useMemo(() => valoraciones.map((v) => v.nombre), [valoraciones])
+  const { puedeCrear, puedeEditar, puedeEliminar } = usePlaneadorSoloLectura()
+  // QA 71: criterio abierto en "Editar criterio" (null = cerrado).
+  const [editando, setEditando] = React.useState<CriterioUnidad | null>(null)
   const columns = React.useMemo(
-    () => createUnidadCriteriosColumns(nombresNiveles),
-    [nombresNiveles],
+    () =>
+      createUnidadCriteriosColumns(nombresNiveles, {
+        unidadId: unidad.id,
+        puedeEditar,
+        puedeEliminar,
+        onEdit: setEditando,
+      }),
+    [nombresNiveles, unidad.id, puedeEditar, puedeEliminar],
   )
   // `unidad.criterios` llega vacío del backend real: viven en este endpoint.
   const { data: criterios = [], isPending, isError, error, refetch } = useUnidadCriteriosQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
-  const { puedeCrear } = usePlaneadorSoloLectura()
 
   // Sin `Pagination`: son pocos y vienen enteros.
   const { table } = useDataTable({
@@ -360,6 +368,17 @@ export function Rubricas({
       />
       {puedeCrear && (
         <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
+      )}
+      {editando && (
+        <DialogAgregarCriterio
+          key={editando.id}
+          unidadId={unidad.id}
+          criterio={editando}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditando(null)
+          }}
+        />
       )}
     </div>
   )

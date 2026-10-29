@@ -5,9 +5,12 @@ import { planeadorKeys } from "@/features/planeador/api/query-keys"
 
 /** Fila de `GET /planeador/unidades/:id/colegas` (`fn_unidad_colegas_listar`). */
 export interface UnidadColegaRow {
-  /** NULL si el autor no es funcionario: bloquea el borrado pero no se le puede ceder. */
+  /** NULL si el autor no es funcionario activo (p. ej. carga masiva): no se
+   *  le puede ceder y tampoco obliga a ceder (`fn_unidad_validar_eliminable`). */
   fk_tfuncionario: number | null
   nombre: string | null
+  /** Documento del usuario (TUSUARIO.IDENTIFICACION), para el buscador. */
+  identificacion?: string | null
   actividades: number | null
   criterios: number | null
 }
@@ -15,6 +18,8 @@ export interface UnidadColegaRow {
 export interface UnidadColega {
   funcionarioId: number | null
   nombre: string
+  /** Documento; `null` si el backend no lo trae. */
+  identificacion: string | null
   /** Actividades activas suyas vinculadas a la unidad. */
   actividades: number
   /** Criterios propios activos en la rúbrica de la unidad. */
@@ -25,6 +30,7 @@ export function toUnidadColega(row: UnidadColegaRow): UnidadColega {
   return {
     funcionarioId: row.fk_tfuncionario ?? null,
     nombre: row.nombre?.trim() || "Docente sin nombre",
+    identificacion: row.identificacion?.trim() || null,
     actividades: Number(row.actividades ?? 0),
     criterios: Number(row.criterios ?? 0),
   }

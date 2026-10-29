@@ -324,7 +324,12 @@ function PlaneadorPageContent() {
   })()
 
   return (
-    <TableScreen>
+    // Desde `md` la pantalla ocupa exactamente el alto restante del viewport (header `h-14` + `pb-4` del layout =
+    // 4.5rem) y la cadena `flex-1 min-h-0` (cuerpo → contenedor → grid de una fila `minmax(0,1fr)`) lleva ese alto
+    // hasta el rail y el panel: con poco contenido ya no quedan cortos, y con mucho scrollean por dentro sin scroll
+    // de página. Antes se acotaba con `calc(100dvh-16rem)`, que no conocía el alto real de toolbar/tarjetas.
+    // `min-h` es el piso para pantallas bajas (ahí sí scrollea la página). Bajo `md` todo vuelve al flujo normal.
+    <TableScreen className="md:h-[calc(100dvh-4.5rem)] md:min-h-[40rem] md:flex-none">
       <TableScreenHeader>
         <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
         <DatosDelBadge updatedAt={miasUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
@@ -418,7 +423,10 @@ function PlaneadorPageContent() {
       </TableScreenHeader>
 
       <PendingCreations tipo="actividad" />
-      <TableScreenBody>
+      <TableScreenBody
+        className="md:flex md:min-h-0 md:flex-1 md:flex-col"
+        contentClassName="md:flex md:min-h-0 md:flex-1 md:flex-col"
+      >
           <>
             <PlaneadorLecturaBanner className="mb-4" />
             {/* Resumen de `/actividades/stats` con los filtros del buscador (ver `conteosVisibles`). */}
@@ -429,7 +437,7 @@ function PlaneadorPageContent() {
             </div>
 
             {/* `minmax(0,1fr)` y no `1fr`: `1fr` no baja del mínimo del contenido y una tabla ancha desborda. */}
-            <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
+            <div className="grid gap-6 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
               {/* Rail: desde `md` sale del flujo (`absolute inset-0`) para que el calendario fije el alto de la fila
                 y la lista mida contra él; bajo `md` vuelve al flujo. */}
               <section aria-label="Listado de actividades" className="relative min-h-0">
@@ -562,11 +570,11 @@ function PlaneadorPageContent() {
                 </div>
               </section>
 
-              {/* Acotada a la ventana: un mes largo scrollea por dentro sin arrastrar el header del rail. `max-h` (no `h`)
-                evita el hueco en blanco; por eso el hijo usa `flex-1 min-h-0` y no `h-full`. */}
+              {/* Mide lo que deja la fila del grid (no su contenido): un mes largo o un detalle extenso scrollean por
+                dentro y uno corto igual se estira hasta abajo. El hijo usa `flex-1 min-h-0`. */}
               <section
                 aria-label={actividadId ? "Detalle de la actividad" : "Calendario del planeador"}
-                className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
+                className="md:flex md:min-h-0 md:flex-col"
               >
                 {actividadId ? (
                   <PlaneadorSoloLecturaScope activo={actividadAbiertaAjena}>

@@ -192,7 +192,16 @@ function TableScreenFooter({ children, className }: { children: ReactNode; class
  * Cuando debajo va un `TableScreenFooter`, también pierde el de abajo:
  * `<TableScreenBody className="rounded-b-none border-b-0">`.
  */
-function TableScreenBody({ children, className }: { children: ReactNode; className?: string }) {
+function TableScreenBody({
+  children,
+  className,
+  contentClassName,
+}: {
+  children: ReactNode
+  className?: string
+  /** Clases del contenedor interno (el del padding), p. ej. para encadenar `flex-1 min-h-0` hasta el contenido. */
+  contentClassName?: string
+}) {
   return (
     <div
       className={cn(
@@ -200,7 +209,7 @@ function TableScreenBody({ children, className }: { children: ReactNode; classNa
         className,
       )}
     >
-      <div className="px-(--screen-spacing)">{children}</div>
+      <div className={cn("px-(--screen-spacing)", contentClassName)}>{children}</div>
     </div>
   )
 }

@@ -10,12 +10,17 @@ import {
   registrarArchivoMaterial,
   urlArchivoMaterial,
 } from "@/mocks/db/planeador"
+import { findUserByEmail, findUserByToken } from "@/mocks/db/auth"
 import {
+  AUTOR_CRITERIO_SEED,
+  criterioAutorDb,
+  findCriterioUnidad,
   addActividadToUnidad,
   addCriterioToUnidad,
   addUnidad,
   cederUnidadMock,
   colegasDeUnidad,
+  colegasOverrideE2E,
   deleteUnidadById,
   setPuntajeActividadUnidad,
   unidadesTematicasDb,
@@ -236,6 +241,37 @@ function sincronizarUnidadDeActividad(actividadId: number) {
 
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
+const UNIDAD_CRITERIO_URL = "/api/eval-col/planeador/unidades/criterios/:id"
+
+// QA 71 (paridad con sso fn_unidad_assert_criterio_propietario): el docente
+// puro solo edita/elimina los criterios que creó; los directivos, todos. Sin
+// token (tests de handlers en node) no hay a quién restringir.
+function usuarioCriterioMock(request: Request) {
+  const token = request.headers.get("Authorization")?.replace(/^Bearer /i, "") ?? ""
+  return findUserByToken(token)
+}
+function esDocentePuroMock(roles: string[]) {
+  return roles.includes("CEVAL-DOCENTE") && !roles.some((r) => /ADMIN|COORDINADOR|RECTOR/.test(r))
+}
+function puedeGestionarCriterioMock(request: Request, criterioId: number) {
+  const user = usuarioCriterioMock(request)
+  if (!user || !esDocentePuroMock(user.roles ?? [])) return true
+  return criterioAutorDb.get(criterioId) === user.email
+}
+function autorCriterioMock(criterioId: number) {
+  const email = criterioAutorDb.get(criterioId)
+  if (!email) return AUTOR_CRITERIO_SEED
+  return findUserByEmail(email)?.name ?? email
+}
+function rechazoCriterioAjeno(criterioId: number, descripcion: string) {
+  return HttpResponse.json(
+    {
+      code: "42501",
+      message: `El criterio "${descripcion}" lo creó ${autorCriterioMock(criterioId)}: puede usarlo, pero solo su autor lo edita o elimina`,
+    },
+    { status: 403 },
+  )
+}
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
 
 /**
@@ -1436,7 +1472,7 @@ export const planeadorHandlers = [
   // `use-unidad-criterios-query.ts`). Responde con la forma real
   // (`pk_tcriterio_unidad`, `niveles[].indicador`...), no con
   // `CriterioUnidad` tal cual vive en `unidadesTematicasDb`.
-  http.get(UNIDAD_CRITERIO_CREATE_URL, async ({ params }) => {
+  http.get(UNIDAD_CRITERIO_CREATE_URL, async ({ params, request }) => {
     await delay(150)
     const id = Number(params.id)
     const unidad = unidadesTematicasDb.find((row) => row.id === id)
@@ -1455,6 +1491,9 @@ export const planeadorHandlers = [
         indicador: nivel.descripcion,
       })),
       active: true,
+      created_by: criterioAutorDb.get(criterio.id) ?? null,
+      autor: autorCriterioMock(criterio.id),
+      puede_gestionar: puedeGestionarCriterioMock(request, criterio.id),
     }))
     return HttpResponse.json({ rows })
   }),
@@ -1472,7 +1511,7 @@ export const planeadorHandlers = [
       nombre: string
       niveles: NivelDesempenoCriterio[]
     }
-    const created = addCriterioToUnidad(id, body)
+    const created = addCriterioToUnidad(id, body, usuarioCriterioMock(request)?.email)
     if (!created) {
       return HttpResponse.json(
         { status: "error", message: "Unidad temática no encontrada." },
@@ -1480,6 +1519,37 @@ export const planeadorHandlers = [
       )
     }
     return HttpResponse.json({ status: "ok", criterio: created })
+  }),
+
+  // QA 71: editar un criterio de la rúbrica (PATCH parcial real). Solo el
+  // autor (o un directivo): 403/42501 como el backend.
+  http.put(UNIDAD_CRITERIO_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const found = findCriterioUnidad(id)
+    if (!found) return HttpResponse.json({ message: "No se encontró el criterio de rúbrica solicitado" }, { status: 404 })
+    if (!puedeGestionarCriterioMock(request, id)) return rechazoCriterioAjeno(id, found.criterio.nombre)
+    const body = (await request.json()) as { nombre?: string; niveles?: NivelDesempenoCriterio[] }
+    if (body.nombre?.trim()) found.criterio.nombre = body.nombre.trim()
+    body.niveles?.forEach((nivel, index) => {
+      const destino =
+        found.criterio.niveles.find((n) => n.valoracionId != null && n.valoracionId === nivel.valoracionId) ??
+        found.criterio.niveles[index]
+      if (destino && nivel.descripcion?.trim()) destino.descripcion = nivel.descripcion.trim()
+    })
+    return HttpResponse.json({ rows: [{ fn_unidad_criterio_actualizar: id }] })
+  }),
+
+  // QA 71: eliminar (baja lógica real) un criterio de la rúbrica.
+  http.patch(UNIDAD_CRITERIO_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const found = findCriterioUnidad(id)
+    if (!found) return HttpResponse.json({ message: "No se encontró el criterio de rúbrica solicitado" }, { status: 404 })
+    if (!puedeGestionarCriterioMock(request, id)) return rechazoCriterioAjeno(id, found.criterio.nombre)
+    found.unidad.criterios = found.unidad.criterios.filter((c) => c.id !== id)
+    criterioAutorDb.delete(id)
+    return HttpResponse.json({ rows: [{ fn_unidad_criterio_eliminar: id }] })
   }),
 
   // Valoraciones activas de la escala que aplica a la unidad — paso previo
@@ -1865,7 +1935,18 @@ export const planeadorHandlers = [
     if (!unidadesTematicasDb.some((row) => row.id === id)) {
       return HttpResponse.json({ message: "La unidad no existe" }, { status: 404 })
     }
-    return HttpResponse.json({ rows: colegasDeUnidad(id) })
+    if (colegasOverrideE2E(id) === "error") {
+      return HttpResponse.json({ message: "Recurso no encontrado" }, { status: 404 })
+    }
+    return HttpResponse.json({
+      rows: colegasDeUnidad(id).map((c) => ({
+        fk_tfuncionario: c.fk_tfuncionario,
+        nombre: c.nombre,
+        identificacion: c.identificacion ?? null,
+        actividades: c.actividades,
+        criterios: c.criterios,
+      })),
+    })
   }),
 
   // Borrado (soft-delete) de la unidad. `PATCH`, no `DELETE` — el motor real
@@ -1882,13 +1963,17 @@ export const planeadorHandlers = [
       )
     }
 
-    // Regla 27: con colegas usándola no se elimina, se cede (23503 → 409),
-    // mismo texto que `fn_unidad_validar_eliminable`.
+    // Regla 27: con colegas cesionarios (funcionario activo) usándola no se
+    // elimina, se cede (23503 → 409), mismo texto que
+    // `fn_unidad_validar_eliminable`. Los autores sin funcionario activo no
+    // obligan a ceder: sus actividades se desvinculan más abajo.
     const colegas = colegasDeUnidad(id)
-    if (colegas.length > 0) {
+    const cesionarios = colegas.filter((c) => c.fk_tfuncionario != null)
+    const ajenas = new Set(colegas.flatMap((c) => c.actividad_ids ?? []))
+    if (cesionarios.length > 0) {
       return HttpResponse.json(
         {
-          message: `No se puede eliminar la unidad temática "${found.nombre}": otros docentes la están usando (${colegas
+          message: `No se puede eliminar la unidad temática "${found.nombre}": otros docentes la están usando (${cesionarios
             .map((c) => c.nombre)
             .join(", ")}). Cédala a uno de ellos en lugar de eliminarla.`,
         },
@@ -1915,6 +2000,8 @@ export const planeadorHandlers = [
     const body = (await request.json().catch(() => null)) as { ELIMINAR_ACTIVIDADES?: boolean } | null
     if (body?.ELIMINAR_ACTIVIDADES) {
       for (const a of found.actividades) {
+        // Trabajo ajeno: nunca se borra, solo queda sin asignar.
+        if (ajenas.has(a.actividadId)) continue
         if (!motivoNoEditableMock(a.actividadId)) deleteActividadById(a.actividadId)
       }
     }

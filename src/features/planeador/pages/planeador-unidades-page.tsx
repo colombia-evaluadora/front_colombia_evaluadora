@@ -145,7 +145,8 @@ function PlaneadorUnidadesPageContent() {
     })
 
   return (
-    <TableScreen>
+    // Alto completo desde `md`: ver el comentario en `planeador-page.tsx`.
+    <TableScreen className="md:h-[calc(100dvh-4.5rem)] md:min-h-[40rem] md:flex-none">
       <TableScreenHeader>
         <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
 
@@ -196,11 +197,14 @@ function PlaneadorUnidadesPageContent() {
       </TableScreenHeader>
 
       <PendingCreations tipo="unidad" />
-      <TableScreenBody>
+      <TableScreenBody
+        className="md:flex md:min-h-0 md:flex-1 md:flex-col"
+        contentClassName="md:flex md:min-h-0 md:flex-1 md:flex-col"
+      >
           <>
             <PlaneadorLecturaBanner className="mb-4" />
             {/* `minmax(0,1fr)` y no `1fr`: `1fr` no baja del ancho mínimo y una tabla ancha desborda. */}
-            <div className="grid gap-6 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
+            <div className="grid gap-6 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] xl:grid-cols-[minmax(0,210px)_minmax(0,1fr)]">
               {/* Fuera del flujo desde `md`: la altura la fija la columna derecha y el rail scrollea por dentro. */}
               <section aria-label={`Listado de ${tabLabelPlural}`} className="relative min-h-0">
                 <div className="flex flex-col gap-3 md:absolute md:inset-0">
@@ -269,10 +273,10 @@ function PlaneadorUnidadesPageContent() {
                 </div>
               </section>
 
-              {/* Scroll interno: si creciera libre arrastraría el alto de la fila y del rail. */}
+              {/* Scroll interno: la fila mide lo que deja la cadena `flex-1 min-h-0`, no su contenido. */}
               <section
                 aria-label={`Detalle ${deArticuloRotulo(rotuloUnidad)} ${tabLabel}`}
-                className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"
+                className="min-w-0 md:h-full md:min-h-0"
               >
                 {unidadId ? (
                   <PlaneadorSoloLecturaScope activo={unidadAbiertaAjena}>
