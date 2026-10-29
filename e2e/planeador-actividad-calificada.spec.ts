@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test"
 
 // Regla 37 (QA "No debería dejar editarla si ya tiene notas calificadas"):
 // una actividad con resultados se abre en solo lectura con el motivo, sin
-// "Guardar", y en la tabla de su unidad no se le cambia el peso ni se
-// desvincula. Contra el dev server con MSW (`playwright.config.ts`): en el
+// "Guardar", y en la tabla de su unidad no se le cambia el peso; sí se
+// desvincula a mano (sso V492.3), conservando sus notas. Contra el dev server con MSW (`playwright.config.ts`): en el
 // seed, 601 tiene 12 evaluados y está en la unidad 1; 602 no tiene ninguno.
 // El último caso es el del QA: calificar y volver a la edición dentro del
 // staleTime del detalle mostraba el formulario editable.
@@ -73,7 +73,7 @@ test("una actividad sin resultados sigue editable", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Guardar", exact: true })).toBeVisible()
 })
 
-test("en la unidad, el peso, Editar y Desvincular de una actividad calificada quedan bloqueados con el motivo", async ({
+test("en la unidad, el peso y Editar de una actividad calificada quedan bloqueados con el motivo; Desvincular no", async ({
   page,
 }) => {
   await login(page, "/app/planeador/unidades?unidad=1")
@@ -90,10 +90,31 @@ test("en la unidad, el peso, Editar y Desvincular de una actividad calificada qu
     "No puedes editar esta actividad",
   )
   await expect(fila.getByRole("button", { name: MOTIVO }).first()).toHaveAttribute("aria-disabled", "true")
-  await expect(fila.getByRole("button", { name: /^Desvincular .*: No puedes editar/ })).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  )
+  await expect(fila.getByRole("button", { name: /^Desvincular / })).toBeEnabled()
+})
+
+test("una actividad calificada se desvincula a mano de su unidad y conserva sus notas", async ({ page }) => {
+  await login(page, "/app/planeador/unidades?unidad=1")
+  await page.goto("/app/planeador/unidades?unidad=1")
+  await page.getByLabel("Detalle de la unidad temática").getByRole("tab", { name: /Actividad/ }).click({ timeout: 30_000 })
+
+  const fila = page.getByRole("row", { name: /Proyecto final: Diseño de prototipo 1/ })
+  await expect(fila).toBeVisible({ timeout: 60_000 })
+  await fila.getByRole("button", { name: /^Desvincular / }).dispatchEvent("click")
+  const dialogo = page.getByRole("alertdialog")
+  await expect(dialogo).toContainText("Sus resultados registrados se conservan.")
+  if (process.env.E2E_CAPTURAS) await page.screenshot({ path: `${process.env.E2E_CAPTURAS}/05-desvincular-con-notas.png` })
+  await dialogo.getByRole("button", { name: "Sí" }).click()
+  await expect(fila).toHaveCount(0, { timeout: 30_000 })
+
+  const detalle = await page.evaluate(async () => (await fetch("/api/eval-col/planeador/actividades/601")).json())
+  expect(JSON.stringify(detalle)).toContain("Proyecto final: Diseño de prototipo 1")
+  const evaluados = await page.evaluate(async () => {
+    const res = await (await fetch("/api/eval-col/planeador/actividades/601")).json()
+    const fila = Array.isArray(res?.rows) ? res.rows[0] : res
+    return fila?.evaluados ?? fila?.estudiantes_evaluados
+  })
+  expect(evaluados).toBe(12)
 })
 
 test("calificar y volver enseguida a la edición: sale bloqueada aunque el detalle siga en caché", async ({ page }) => {

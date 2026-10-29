@@ -1694,8 +1694,7 @@ export const planeadorHandlers = [
   http.patch(UNIDAD_ACTIVIDAD_UNLINK_URL, async ({ params }) => {
     await delay(200)
     const actividadId = Number(params.actividadId)
-    const bloqueo = rechazoNoEditable(actividadId)
-    if (bloqueo) return bloqueo
+    // Como el real (sso V492.3): desvincular a mano no aplica la Regla 37.
     const ok = unlinkActividadFromUnidad(actividadId)
     if (!ok) {
       return HttpResponse.json(

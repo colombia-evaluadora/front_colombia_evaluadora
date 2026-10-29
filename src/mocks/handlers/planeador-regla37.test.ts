@@ -57,7 +57,6 @@ describe("escrituras de una actividad calificada", () => {
     ["estudiantes", () => put(`${API}/actividades/601/estudiantes`, { FK_TMATRICULAS: [] })],
     ["instrumento", () => put(`${API}/actividades/601/instrumento`, { DEFINICION: "{}" })],
     ["peso en la unidad", () => put(`${API}/unidades/actividades/601/ponderacion`, { PONDERACION: 40 })],
-    ["desvincular de la unidad", () => fetch(`${API}/unidades/actividades/601`, { method: "PATCH" })],
     [
       "evidencia",
       () =>
@@ -90,4 +89,9 @@ describe("escrituras de una actividad calificada", () => {
     const detalle = await (await fetch(`${API}/actividades/602`)).json()
     expect(detalle.rows[0].motivoNoEditable).toBe(MENSAJE_ACTIVIDAD_NO_EDITABLE)
   })
+})
+
+it("desvincular de la unidad a mano sí se permite con resultados (sso V492.3)", async () => {
+  const res = await fetch(`${API}/unidades/actividades/601`, { method: "PATCH" })
+  expect(res.status).toBe(200)
 })

@@ -304,29 +304,9 @@ function BotonDesvincular({
     },
   })
 
-  // Regla 37: con resultados no se desvincula; botón visible con el motivo.
-  if (actividad.motivoNoEditable) {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`${desvincularLabel}: ${actividad.motivoNoEditable}`}
-              aria-disabled="true"
-              className="cursor-not-allowed opacity-50"
-            />
-          }
-        >
-          <LinkBreakIcon />
-        </TooltipTrigger>
-        <TooltipContent>{actividad.motivoNoEditable}</TooltipContent>
-      </Tooltip>
-    )
-  }
-
+  // Desvincular a mano se permite aunque tenga resultados (sso V492.3): las
+  // notas se conservan y la unidad recalcula. Es el paso que pide eliminar
+  // una unidad con actividades calificadas (Reglas 38/39).
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -355,6 +335,7 @@ function BotonDesvincular({
           <AlertDialogDescription>
             &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin {rotuloUnidad.toLowerCase()}{" "}
             (huérfan{genero}). Podés volver a vincularl{genero} más adelante.
+            {actividad.tieneResultados && " Sus resultados registrados se conservan."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
