@@ -9,8 +9,10 @@ import { expect, test, type Page } from "@playwright/test"
 
 const ACTIVIDAD = 602
 const NOMBRE_ACTIVIDAD = "Académico Diseño de prototipo 2"
-const UNIDAD = 1
-const NOMBRE_UNIDAD = "Análisis de un texto argumentativo"
+// La 4 no tiene actividades con notas ni colegas: la 1 tiene actividades
+// calificadas y desde las Reglas 38/39 no se puede eliminar.
+const UNIDAD = 4
+const NOMBRE_UNIDAD = "Clasificación de los seres vivos"
 const CAPTURAS = process.env.E2E_CAPTURAS_DIR
 
 test.describe.configure({ timeout: 240_000 })
@@ -88,7 +90,9 @@ test("borrar una unidad se refleja en el calendario y en el detalle de sus activ
   await panel.getByRole("button", { name: `Eliminar ${NOMBRE_UNIDAD}` }).click({ timeout: 60_000 })
   const confirmar = page.getByRole("alertdialog")
   await capturar(page, "2-confirmar-borrado")
-  await confirmar.getByRole("button", { name: "Si" }).click()
+  // Con la actividad vinculada pregunta qué hacer con ella: solo la unidad,
+  // así la actividad sobrevive desvinculada y se verifica el refresco.
+  await confirmar.getByRole("button", { name: /^Eliminar solo/ }).click({ timeout: 30_000 })
   await expect(confirmar).toHaveCount(0, { timeout: 30_000 })
   await expect(page.getByRole("button", { name: `Ver detalle de ${NOMBRE_UNIDAD}` })).toHaveCount(0, {
     timeout: 30_000,
