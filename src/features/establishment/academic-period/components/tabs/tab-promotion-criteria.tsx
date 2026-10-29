@@ -67,6 +67,7 @@ import {
   type PromotionApprovalValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { toPeriodoLongTextInput } from "@/features/establishment/academic-period/utils/text-input"
+import { PeriodReadOnlyNotice, usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Valores con los que nace el registro único del período (columna
 // "Predeterminado" de la Sección 5.5).
@@ -107,9 +108,12 @@ export interface PromotionCriteriaHandle {
 
 export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromotionCriteriaProps>(
   function TabPromotionCriteria(
-    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, gradeName, readOnly = false, periodTitle },
+    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, gradeName, readOnly: formativoReadOnly = false, periodTitle },
     ref,
   ) {
+    // Formativo (prop) o período Cerrado / "Ver" (Regla 16).
+    const { readOnly: periodReadOnly } = usePeriodReadOnly()
+    const readOnly = formativoReadOnly || periodReadOnly
     const isGradeScope = gradeId != null
     const subjectLabel = useGradeSubjectLabel(gradeId, Boolean(isPreescolar))
     const [resetCount, setResetCount] = useState(0)
@@ -203,11 +207,13 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
             </Button>
           )}
         </div>
-        {readOnly && (
+        {formativoReadOnly ? (
           <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
             <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
             El Referente de este grado es Formativo: el cierre promueve siempre.
           </p>
+        ) : (
+          <PeriodReadOnlyNotice what="los criterios de promoción" />
         )}
         {form}
         <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>

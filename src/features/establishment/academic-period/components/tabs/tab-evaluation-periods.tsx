@@ -21,6 +21,7 @@ import { ExportSelectedEvaluationPeriodsDialog } from "@/features/establishment/
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { WarningIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { PeriodReadOnlyNotice, usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Un año tiene pocos cortes: con este tamaño cabe todo en una página y la suma
 // de pesos sale de las filas cargadas.
@@ -79,9 +80,10 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
   })
   const page = useLocalPagination(data?.rows ?? [])
 
+  const { readOnly } = usePeriodReadOnly()
   const columns = useMemo(
-    () => createEvaluationPeriodColumns({ academicPeriodId }),
-    [academicPeriodId],
+    () => withoutRowActions(createEvaluationPeriodColumns({ academicPeriodId }), readOnly),
+    [academicPeriodId, readOnly],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -112,7 +114,9 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-medium">Períodos de evaluación</h2>
         <div className="flex items-center gap-2">
-        {hasSelection ? (
+        {readOnly ? (
+          <ExportEvaluationPeriodsDialog filters={{}} academicPeriodId={academicPeriodId} />
+        ) : hasSelection ? (
           <>
             <DeleteSelectedEvaluationPeriodsDialog
               selectedIds={selectedIds}
@@ -135,6 +139,9 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
       </div>
 
       <NoticeOutlet className="mb-2" />
+      <div className="mb-2">
+        <PeriodReadOnlyNotice what="los períodos de evaluación" />
+      </div>
 
       <DataTable
         table={table}

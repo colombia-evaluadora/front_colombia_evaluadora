@@ -2,7 +2,18 @@ import { useEffect, useRef, useState } from "react"
 import { toPeriodTitle } from "@/features/establishment/academic-period/utils/period-title"
 import { toJornadaBreaks } from "@/features/establishment/academic-period/utils/recesos"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { CaretDownIcon, CaretRightIcon, FloppyDiskIcon, PrinterIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import {
+  ArrowLeftIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  FloppyDiskIcon,
+  PrinterIcon,
+  SpinnerIcon,
+  XIcon,
+} from "@/components/ui/icons"
+import { PeriodStateAction } from "@/features/establishment/academic-period/components/period-state-action"
+import { PeriodReadOnlyProvider } from "@/features/establishment/academic-period/utils/period-read-only"
+import { formatCalendarRange } from "@/features/establishment/academic-period/utils/academic-calendar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,11 +30,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
-import {
-  TableScreen,
-  TableScreenBody,
-  TableScreenHeader,
-} from "@/components/layout/table-screen"
+import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { paths } from "@/config/paths"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -32,7 +39,10 @@ import { useCreateAcademicPeriod } from "@/features/establishment/academic-perio
 import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
-import { useAcademicPeriodStatusesQuery, useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import {
+  useAcademicPeriodStatusesQuery,
+  useJornadasQuery,
+} from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import {
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
@@ -86,15 +96,20 @@ function toJornada(detail: AcademicPeriodDetail): Jornada {
   }
 }
 
-export function AcademicPeriodConfigPage() {
+export function AcademicPeriodConfigPage({ viewOnly = false }: { viewOnly?: boolean }) {
   return (
     <NoticeProvider>
-      <AcademicPeriodConfigPageContent />
+      <AcademicPeriodConfigPageContent viewOnly={viewOnly} />
     </NoticeProvider>
   )
 }
 
-function AcademicPeriodConfigPageContent() {
+// "Ver" desde la tabla: la misma pantalla en solo lectura.
+export function AcademicPeriodViewPage() {
+  return <AcademicPeriodConfigPage viewOnly />
+}
+
+function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
   const { notify } = useNotify()
   const navigate = useNavigate()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
@@ -167,7 +182,7 @@ function AcademicPeriodConfigPageContent() {
     },
   })
 
-  const detailJornada = (detail ? toJornada(detail) : undefined)
+  const detailJornada = detail ? toJornada(detail) : undefined
 
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
     return <NotFoundPage />
@@ -213,6 +228,9 @@ function AcademicPeriodConfigPageContent() {
     }
   }
   const showTabs = saved || (isEditing && !!detail)
+  // Regla 16: Cerrado (o "Ver") deja el período y todas sus pestañas en solo lectura.
+  const readOnlyReason = viewOnly ? "ver" : detail?.status === "C" ? "cerrado" : null
+  const readOnly = readOnlyReason != null
   const stepIndex = detail ? STATUS_STEP_INDEX[detail.status] : undefined
   const title = detail
     ? toPeriodTitle(detail, jornadas.find((j) => j.id === detail.config.jornadaId)?.name)
@@ -237,6 +255,8 @@ function AcademicPeriodConfigPageContent() {
         onValidChange={setIsFormValid}
         savedToken={savedToken}
         currentPeriodId={numericPeriodId}
+        readOnly={readOnly}
+        lockEndDate={!!detail?.reopenedUntil}
       />
     )
 
@@ -258,11 +278,18 @@ function AcademicPeriodConfigPageContent() {
             <h1 className="font-heading truncate text-2xl font-bold">{title}</h1>
             {detail && (
               <p className="flex flex-wrap items-center gap-2 text-sm">
-                <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[detail.status]} className="border border-current/30">
+                <Badge
+                  {...ACADEMIC_PERIOD_STATUS_BADGE[detail.status]}
+                  className="border border-current/30"
+                >
                   <span aria-hidden className="size-1.5 rounded-full bg-current" />
                   {detail.statusName}
                 </Badge>
-                <span className="text-muted-foreground">El estado cambia solo, con las fechas.</span>
+                <span className="text-muted-foreground">
+                  {detail.reopenedUntil
+                    ? `Reabierto: vuelve a Cerrado el ${formatCalendarRange(detail.reopenedUntil, detail.reopenedUntil)}.`
+                    : "El estado cambia solo, con las fechas."}
+                </span>
               </p>
             )}
           </div>
@@ -277,8 +304,12 @@ function AcademicPeriodConfigPageContent() {
                   <CaretDownIcon data-icon="inline-end" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
-                  <DropdownMenuItem onClick={() => setGenerateKind("planes")}>Planes de estudio</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setGenerateKind("horarios")}>Horarios</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setGenerateKind("planes")}>
+                    Planes de estudio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setGenerateKind("horarios")}>
+                    Horarios
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -289,27 +320,42 @@ function AcademicPeriodConfigPageContent() {
               render={<Link to={paths.app.periodosAcademicos.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="fill"
-              color="primary"
-              onClick={handleHeaderSave}
-              // Al editar, con cambios en el período o en Criterios de evaluación;
-              // al agregar, cuando el formulario está completo.
-              disabled={isSaving || (isEditing ? !isFormDirty && !isCriteriaDirty : !isFormValid)}
-              aria-busy={isSaving}
-            >
-              {isSaving ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              {readOnly ? (
+                <ArrowLeftIcon data-icon="inline-start" />
               ) : (
-                <FloppyDiskIcon data-icon="inline-start" />
+                <XIcon data-icon="inline-start" />
               )}
-              {isSaving ? "Guardando…" : "Guardar"}
+              {readOnly ? "Volver" : "Cancelar"}
             </Button>
+            {detail && academicPeriodId != null && (
+              <PeriodStateAction
+                variant="button"
+                periodId={academicPeriodId}
+                periodTitle={title}
+                status={detail.status}
+                reopenedUntil={detail.reopenedUntil}
+              />
+            )}
+            {!readOnly && (
+              <Button
+                type="button"
+                size="sm"
+                variant="fill"
+                color="primary"
+                onClick={handleHeaderSave}
+                // Al editar, con cambios en el período o en Criterios de evaluación;
+                // al agregar, cuando el formulario está completo.
+                disabled={isSaving || (isEditing ? !isFormDirty && !isCriteriaDirty : !isFormValid)}
+                aria-busy={isSaving}
+              >
+                {isSaving ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <FloppyDiskIcon data-icon="inline-start" />
+                )}
+                {isSaving ? "Guardando…" : "Guardar"}
+              </Button>
+            )}
           </div>
         </div>
         {stepIndex != null && (
@@ -320,13 +366,15 @@ function AcademicPeriodConfigPageContent() {
       </TableScreenHeader>
       <TableScreenBody>
         <NoticeOutlet className="mb-4" />
-        <EvaluationPeriodsSection
-          academicPeriodId={showTabs ? academicPeriodId : undefined}
-          jornada={saved || !detailJornada ? jornada : detailJornada}
-          general={generalBody}
-          criteriaRef={criteriaRef}
-          onCriteriaDirtyChange={setIsCriteriaDirty}
-        />
+        <PeriodReadOnlyProvider reason={readOnlyReason}>
+          <EvaluationPeriodsSection
+            academicPeriodId={showTabs ? academicPeriodId : undefined}
+            jornada={saved || !detailJornada ? jornada : detailJornada}
+            general={generalBody}
+            criteriaRef={criteriaRef}
+            onCriteriaDirtyChange={setIsCriteriaDirty}
+          />
+        </PeriodReadOnlyProvider>
       </TableScreenBody>
       {detail && academicPeriodId != null && generateKind && (
         <GeneratePeriodDialog

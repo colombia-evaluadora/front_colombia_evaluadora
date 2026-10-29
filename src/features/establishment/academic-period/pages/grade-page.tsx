@@ -8,6 +8,8 @@ import { paths } from "@/config/paths"
 
 import { useGradesQuery } from "@/features/establishment/academic-period/api/query/use-grades"
 import { GradeScreen } from "@/features/establishment/academic-period/components/tabs/grade-screen"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { PeriodReadOnlyProvider } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Página del grado (Sección 5.3): agregar (`grados/agregar`) o modificar
 // (`grados/editar/$gradeId`) un grado del período, con Grupos, Plan de
@@ -37,6 +39,11 @@ function GradePageContent() {
     academicPeriodId: Number.isFinite(academicPeriodId) ? academicPeriodId : undefined,
   })
 
+  // Regla 16: con el período Cerrado, el grado se abre en solo lectura.
+  const { data: period } = useAcademicPeriodQuery(
+    Number.isFinite(academicPeriodId) ? academicPeriodId : undefined,
+  )
+
   // "Grados ›" vuelve a la pestaña Grados del período.
   const backToGrades = () =>
     navigate({
@@ -55,28 +62,30 @@ function GradePageContent() {
   }
 
   return (
-    <TableScreen>
-      {numericGradeId != null && isPending ? (
-        <TableScreenBody>
-          <div className="flex justify-center py-10">
-            <Spinner />
-          </div>
-        </TableScreenBody>
-      ) : (
-        <GradeScreen
-          key={numericGradeId ?? "new"}
-          academicPeriodId={academicPeriodId}
-          gradeId={numericGradeId}
-          grades={data?.rows ?? []}
-          onBack={backToGrades}
-          onCreated={(id) =>
-            navigate({
-              to: paths.app.periodosGradoEditar.getHref(academicPeriodId, id),
-              replace: true,
-            })
-          }
-        />
-      )}
-    </TableScreen>
+    <PeriodReadOnlyProvider reason={period?.status === "C" ? "cerrado" : null}>
+      <TableScreen>
+        {numericGradeId != null && isPending ? (
+          <TableScreenBody>
+            <div className="flex justify-center py-10">
+              <Spinner />
+            </div>
+          </TableScreenBody>
+        ) : (
+          <GradeScreen
+            key={numericGradeId ?? "new"}
+            academicPeriodId={academicPeriodId}
+            gradeId={numericGradeId}
+            grades={data?.rows ?? []}
+            onBack={backToGrades}
+            onCreated={(id) =>
+              navigate({
+                to: paths.app.periodosGradoEditar.getHref(academicPeriodId, id),
+                replace: true,
+              })
+            }
+          />
+        )}
+      </TableScreen>
+    </PeriodReadOnlyProvider>
   )
 }

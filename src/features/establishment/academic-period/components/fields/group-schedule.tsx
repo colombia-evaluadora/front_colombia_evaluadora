@@ -24,6 +24,7 @@ import type { AcademicPeriodBreak } from "@/features/establishment/academic-peri
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
 import { getScheduleSlots } from "@/features/establishment/academic-period/utils/recesos"
 import { DAYS } from "@/features/establishment/academic-period/utils/schedule-data"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Lunes a sábado (Regla 71).
 const WEEK = DAYS.filter((d) => d.id !== "dom")
@@ -57,6 +58,7 @@ export function GroupSchedule({
   group: GradeGroup
   schedule: GroupScheduleSource
 }) {
+  const { readOnly } = usePeriodReadOnly()
   const { notify } = useNotify()
   const { data: plan, isPending: planPending } = useStudyPlansQuery({
     filters: {},
@@ -220,6 +222,7 @@ export function GroupSchedule({
                           )}
                         >
                           <ComboboxField
+                            disabled={readOnly}
                             items={{
                               [NONE]: "Sin clase",
                               ...Object.fromEntries(items.map((i) => [String(i.codigo), i.asignatura])),
@@ -263,7 +266,7 @@ export function GroupSchedule({
         </div>
       )}
 
-      {isDirty && (
+      {isDirty && !readOnly && (
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="outline" color="neutral" onClick={() => setDraft(null)}>
             Descartar cambios

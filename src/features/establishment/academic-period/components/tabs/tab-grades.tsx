@@ -17,6 +17,7 @@ import { useGradesQuery } from "@/features/establishment/academic-period/api/que
 import { createGradeColumns } from "@/features/establishment/academic-period/components/table/columns-grades"
 import { paths } from "@/config/paths"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
+import { PeriodReadOnlyNotice, usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabGradesProps {
   // Horario de la jornada del período; el grado lo usa salvo que lo personalice.
@@ -47,6 +48,7 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
     academicPeriodId,
   })
 
+  const { readOnly } = usePeriodReadOnly()
   const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id) })
   const page = useLocalPagination(data?.rows ?? [])
   const { table } = useDataTable({
@@ -63,13 +65,16 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold">Grados</h3>
-        <Button color="primary" size="sm" onClick={() => openGrade(null)}>
-          <PlusIcon data-icon="inline-start" />
-          Agregar grado
-        </Button>
+        {!readOnly && (
+          <Button color="primary" size="sm" onClick={() => openGrade(null)}>
+            <PlusIcon data-icon="inline-start" />
+            Agregar grado
+          </Button>
+        )}
       </div>
 
       <NoticeOutlet />
+      <PeriodReadOnlyNotice what="el grado" />
 
       <DataTable
         table={table}

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { addDays } from "date-fns"
 import { useSelector } from "@tanstack/react-form"
-import { isFieldInvalid, useAppForm } from "@/lib/forms"
+import { isFieldInvalid, useAppForm, FormDisabledProvider } from "@/lib/forms"
 
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
@@ -43,6 +43,10 @@ interface AcademicPeriodFormProps {
   savedToken?: number
   /** Id del periodo en edición; sin él el formulario está creando. */
   currentPeriodId?: number
+  /** Período Cerrado o en "Ver": todo el formulario en solo lectura (Regla 16). */
+  readOnly?: boolean
+  /** Período reabierto: el Fin no se cambia, su estado lo rige "Cerrar de nuevo el". */
+  lockEndDate?: boolean
 }
 
 const EMPTY_VALUES: AcademicPeriodFormInput = {
@@ -73,6 +77,8 @@ export function AcademicPeriodForm({
   onValidChange,
   savedToken = 0,
   currentPeriodId,
+  readOnly = false,
+  lockEndDate = false,
 }: AcademicPeriodFormProps) {
   const initialValues = {
     ...EMPTY_VALUES,
@@ -142,180 +148,202 @@ export function AcademicPeriodForm({
         form.handleSubmit()
       }}
     >
-      <FormSection title="Datos generales">
-        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <form.AppField name="startDate">
-            {(field) => <field.DateField label="Inicio del período académico" required />}
-          </form.AppField>
+      <FormDisabledProvider disabled={readOnly}>
+        <FormSection title="Datos generales">
+          <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+            <form.AppField name="startDate">
+              {(field) => <field.DateField label="Inicio del período académico" required />}
+            </form.AppField>
 
-          <form.Subscribe selector={(state) => state.values.startDate}>
-            {(startDate) => (
-              <form.AppField name="endDate">
-                {(field) => (
-                  <field.DateField
-                    label="Fin del período académico"
-                    required
-                    minDate={startDate ? addDays(parseDateValue(startDate) as Date, 1) : undefined}
-                  />
-                )}
-              </form.AppField>
-            )}
-          </form.Subscribe>
-
-          <form.Subscribe selector={(state) => state.values.endDate}>
-            {(endDate) => (
-              <form.AppField name="enrollmentDeadline">
-                {(field) => (
-                  <field.DateField
-                    label="Fecha límite de matrícula"
-                    required
-                    maxDate={parseDateValue(endDate)}
-                  />
-                )}
-              </form.AppField>
-            )}
-          </form.Subscribe>
-        </div>
-
-        <div className="mt-5 grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_7rem]">
-          <form.Field name="sedeId">
-            {(field) => {
-              const isInvalid = isFieldInvalid(field, submissionAttempts)
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
-                  <ComboboxField
-                    value={field.state.value || ""}
-                    onValueChange={(value) => value && field.handleChange(value)}
-                  >
-                    <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
-                      <ComboboxFieldValue>
-                        {(value) =>
-                          sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"
-                        }
-                      </ComboboxFieldValue>
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {sedes.map((sede) => (
-                          <ComboboxFieldItem
-                            key={sede.pk_sede}
-                            value={String(sede.pk_sede)}
-                            title={sede.nombre}
-                          >
-                            {sede.nombre}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Field name="jornadaId">
-            {(field) => {
-              const isInvalid = isFieldInvalid(field, submissionAttempts)
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
-                  <ComboboxField
-                    value={field.state.value ? String(field.state.value) : ""}
-                    onValueChange={(value) => value && field.handleChange(Number(value))}
-                  >
-                    <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
-                      <ComboboxFieldValue>
-                        {(value) =>
-                          jornadas.find((j) => String(j.id) === value)?.name ?? "Seleccionar"
-                        }
-                      </ComboboxFieldValue>
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {jornadas.map((jornada) => (
-                          <ComboboxFieldItem key={jornada.id} value={String(jornada.id)}>
-                            {jornada.name}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : (
-                    <FieldDescription>Jornadas de la sede elegida.</FieldDescription>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.AppField
-            name="enrollmentModality"
-            listeners={{
-              // Con menos ciclos, el ciclo elegido puede quedar fuera de rango.
-              onChange: ({ value }) => {
-                if (form.state.values.cycle > getModalityCycles(value)) {
-                  form.setFieldValue("cycle", 1)
-                }
-              },
-            }}
-          >
-            {(field) => (
-              <field.SelectField
-                label="Modalidad de matrícula"
-                required
-                options={MODALITY_OPTIONS}
-              />
-            )}
-          </form.AppField>
-
-          <form.Subscribe selector={(state) => state.values.enrollmentModality}>
-            {(modality) => {
-              const cycles = getModalityCycles(modality)
-              const options = Array.from({ length: cycles }, (_, i) => ({
-                value: i + 1,
-                label: String(i + 1),
-              }))
-              return (
-                <form.AppField name="cycle">
+            <form.Subscribe selector={(state) => state.values.startDate}>
+              {(startDate) => (
+                <form.AppField name="endDate">
                   {(field) => (
-                    // Con Anual el ciclo siempre es 1.
-                    <field.SelectField label="Ciclo" required options={options} disabled={cycles === 1} />
+                    <field.DateField
+                      label="Fin del período académico"
+                      required
+                      disabled={lockEndDate}
+                      description={
+                        lockEndDate ? "No se cambia mientras el período está reabierto." : undefined
+                      }
+                      minDate={
+                        startDate ? addDays(parseDateValue(startDate) as Date, 1) : undefined
+                      }
+                    />
                   )}
                 </form.AppField>
-              )
-            }}
-          </form.Subscribe>
-        </div>
-      </FormSection>
+              )}
+            </form.Subscribe>
 
-      <FormSection title="Horario de la jornada">
-        <JornadaScheduleFields form={asScheduleForm(form)} blocksLabel="Número de bloques de la jornada" />
-      </FormSection>
+            <form.Subscribe selector={(state) => state.values.endDate}>
+              {(endDate) => (
+                <form.AppField name="enrollmentDeadline">
+                  {(field) => (
+                    <field.DateField
+                      label="Fecha límite de matrícula"
+                      required
+                      maxDate={parseDateValue(endDate)}
+                    />
+                  )}
+                </form.AppField>
+              )}
+            </form.Subscribe>
+          </div>
 
-      <FormSection title="Reserva de cupos">
-        <form.Field name="reservationEnabled">
-          {(field) => (
-            <div className="flex flex-col gap-2">
-              <label htmlFor={field.name} className="flex w-fit cursor-pointer items-center gap-3">
-                <Switch
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                  className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+          <div className="mt-5 grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_7rem]">
+            <form.Field name="sedeId">
+              {(field) => {
+                const isInvalid = isFieldInvalid(field, submissionAttempts)
+                return (
+                  <Field variant="outlined" data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
+                    <ComboboxField
+                      disabled={readOnly}
+                      value={field.state.value || ""}
+                      onValueChange={(value) => value && field.handleChange(value)}
+                    >
+                      <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                        <ComboboxFieldValue>
+                          {(value) =>
+                            sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"
+                          }
+                        </ComboboxFieldValue>
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
+                          {sedes.map((sede) => (
+                            <ComboboxFieldItem
+                              key={sede.pk_sede}
+                              value={String(sede.pk_sede)}
+                              title={sede.nombre}
+                            >
+                              {sede.nombre}
+                            </ComboboxFieldItem>
+                          ))}
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                )
+              }}
+            </form.Field>
+
+            <form.Field name="jornadaId">
+              {(field) => {
+                const isInvalid = isFieldInvalid(field, submissionAttempts)
+                return (
+                  <Field variant="outlined" data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
+                    <ComboboxField
+                      disabled={readOnly}
+                      value={field.state.value ? String(field.state.value) : ""}
+                      onValueChange={(value) => value && field.handleChange(Number(value))}
+                    >
+                      <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                        <ComboboxFieldValue>
+                          {(value) =>
+                            jornadas.find((j) => String(j.id) === value)?.name ?? "Seleccionar"
+                          }
+                        </ComboboxFieldValue>
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
+                          {jornadas.map((jornada) => (
+                            <ComboboxFieldItem key={jornada.id} value={String(jornada.id)}>
+                              {jornada.name}
+                            </ComboboxFieldItem>
+                          ))}
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : (
+                      <FieldDescription>Jornadas de la sede elegida.</FieldDescription>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+
+            <form.AppField
+              name="enrollmentModality"
+              listeners={{
+                // Con menos ciclos, el ciclo elegido puede quedar fuera de rango.
+                onChange: ({ value }) => {
+                  if (form.state.values.cycle > getModalityCycles(value)) {
+                    form.setFieldValue("cycle", 1)
+                  }
+                },
+              }}
+            >
+              {(field) => (
+                <field.SelectField
+                  label="Modalidad de matrícula"
+                  required
+                  options={MODALITY_OPTIONS}
                 />
-                <span className="text-sm">Habilitar reserva de cupos</span>
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Se puede activar cuando el período tenga al menos un grado con grupos y cupos.
-              </p>
-            </div>
-          )}
-        </form.Field>
-      </FormSection>
+              )}
+            </form.AppField>
+
+            <form.Subscribe selector={(state) => state.values.enrollmentModality}>
+              {(modality) => {
+                const cycles = getModalityCycles(modality)
+                const options = Array.from({ length: cycles }, (_, i) => ({
+                  value: i + 1,
+                  label: String(i + 1),
+                }))
+                return (
+                  <form.AppField name="cycle">
+                    {(field) => (
+                      // Con Anual el ciclo siempre es 1.
+                      <field.SelectField
+                        label="Ciclo"
+                        required
+                        options={options}
+                        disabled={cycles === 1}
+                      />
+                    )}
+                  </form.AppField>
+                )
+              }}
+            </form.Subscribe>
+          </div>
+        </FormSection>
+
+        <FormSection title="Horario de la jornada">
+          <JornadaScheduleFields
+            form={asScheduleForm(form)}
+            blocksLabel="Número de bloques de la jornada"
+          />
+        </FormSection>
+
+        <FormSection title="Reserva de cupos">
+          <form.Field name="reservationEnabled">
+            {(field) => (
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor={field.name}
+                  className="flex w-fit cursor-pointer items-center gap-3"
+                >
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    disabled={readOnly}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
+                    className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+                  />
+                  <span className="text-sm">Habilitar reserva de cupos</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Se puede activar cuando el período tenga al menos un grado con grupos y cupos.
+                </p>
+              </div>
+            )}
+          </form.Field>
+        </FormSection>
+      </FormDisabledProvider>
     </form>
   )
 }

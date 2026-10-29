@@ -1,7 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useSelector } from "@tanstack/react-form"
-import { isFieldInvalid, toFieldErrors, useAppForm } from "@/lib/forms"
+import { FormDisabledProvider, isFieldInvalid, toFieldErrors, useAppForm } from "@/lib/forms"
+import {
+  PeriodReadOnlyNotice,
+  usePeriodReadOnly,
+} from "@/features/establishment/academic-period/utils/period-read-only"
 import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
@@ -87,8 +91,10 @@ export interface EvaluationCriteriaHandle {
 const defaultKey = (list: CriteriaOption[] | undefined, nombre: RegExp) =>
   list?.find((o) => nombre.test(o.label))?.key ?? ""
 
-export const TabEvaluationCriteria = forwardRef<EvaluationCriteriaHandle, TabEvaluationCriteriaProps>(
-  function TabEvaluationCriteria({ academicPeriodId, onDirtyChange }, ref) {
+export const TabEvaluationCriteria = forwardRef<
+  EvaluationCriteriaHandle,
+  TabEvaluationCriteriaProps
+>(function TabEvaluationCriteria({ academicPeriodId, onDirtyChange }, ref) {
   const { data: criteria, isPending: isLoading } = useEvaluationCriteriaQuery(academicPeriodId)
   const { data: options, isPending: isLoadingOptions } = useEvaluationCriteriaOptionsQuery()
   const { data: ratingScalesData, isPending: isLoadingRatingScales } = useRatingScalesQuery({
@@ -136,8 +142,7 @@ export const TabEvaluationCriteria = forwardRef<EvaluationCriteriaHandle, TabEva
       onDirtyChange={onDirtyChange}
     />
   )
-  },
-)
+})
 
 interface EvaluationCriteriaFormProps {
   academicPeriodId?: number
@@ -153,81 +158,81 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
     { academicPeriodId, initialValues, options, ratingScalesCount, scalesByLevel, onDirtyChange },
     ref,
   ) {
-  const { notify: notifyTab } = useNotify()
-  // Mientras guarda el encabezado, los avisos van a la página y no a la pestaña.
-  const headerNotify = useRef<Notifier | null>(null)
-  const notify: Notifier = (message, options) => (headerNotify.current ?? notifyTab)(message, options)
-  const [scaleBlocked, setScaleBlocked] = useState(false)
+    const { notify: notifyTab } = useNotify()
+    // Mientras guarda el encabezado, los avisos van a la página y no a la pestaña.
+    const headerNotify = useRef<Notifier | null>(null)
+    const notify: Notifier = (message, options) =>
+      (headerNotify.current ?? notifyTab)(message, options)
+    const [scaleBlocked, setScaleBlocked] = useState(false)
 
-  const labelOf = (list: CriteriaOption[] | undefined, key: string) =>
-    list?.find((o) => o.key === key)?.label
-  const rangeOf = (gradingFormat: string) =>
-    parseGradingRange(labelOf(options?.gradingFormat, gradingFormat))
-  const isWeighted = (recoveryMode: string) =>
-    labelOf(options?.recoveryMode, recoveryMode)?.toLowerCase().startsWith("ponder") ?? false
+    const labelOf = (list: CriteriaOption[] | undefined, key: string) =>
+      list?.find((o) => o.key === key)?.label
+    const rangeOf = (gradingFormat: string) =>
+      parseGradingRange(labelOf(options?.gradingFormat, gradingFormat))
+    const isWeighted = (recoveryMode: string) =>
+      labelOf(options?.recoveryMode, recoveryMode)?.toLowerCase().startsWith("ponder") ?? false
 
-  const saveCriteria = useUpdateEvaluationCriteria({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+    const saveCriteria = useUpdateEvaluationCriteria({
+      mutationConfig: {
+        onSuccess: (result) => {
+          if (result.status === "error") {
+            notify(result.message, { variant: "error" })
+            return
+          }
+          notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
+          form.reset(form.state.values)
+        },
+        onError: (error) => {
+          notify(getErrorMessage(error), { variant: "error" })
+        },
+      },
+    })
+
+    const form = useAppForm({
+      defaultValues: initialValues,
+      validators: { onSubmit: makeEvaluationCriteriaSchema(rangeOf, isWeighted) },
+      onSubmitInvalid: () => notifyInvalid(),
+      onSubmit: ({ value }) => {
+        if (academicPeriodId == null) {
+          notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
           return
         }
-        notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
-        form.reset(form.state.values)
+        saveCriteria.mutate({ academicPeriodId, values: toRequest(value) })
       },
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
-    },
-  })
+    })
 
-  const form = useAppForm({
-    defaultValues: initialValues,
-    validators: { onSubmit: makeEvaluationCriteriaSchema(rangeOf, isWeighted) },
-    onSubmitInvalid: () => notifyInvalid(),
-    onSubmit: ({ value }) => {
-      if (academicPeriodId == null) {
-        notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
-        return
-      }
-      saveCriteria.mutate({ academicPeriodId, values: toRequest(value) })
-    },
-  })
+    // Dice por qué no se guardó: los mensajes de los campos con error, sin repetir.
+    function notifyInvalid() {
+      const reasons = [
+        ...new Set(
+          Object.values(form.state.fieldMeta)
+            .flatMap((meta) => toFieldErrors(meta?.errors ?? []))
+            .map((e) => e.message)
+            .filter(Boolean),
+        ),
+      ]
+      notify(
+        reasons.length > 0
+          ? `No se guardaron los criterios de evaluación: ${reasons.join(" ")}`
+          : INCOMPLETE_FORM,
+        { variant: "error" },
+      )
+    }
 
-  // Dice por qué no se guardó: los mensajes de los campos con error, sin repetir.
-  function notifyInvalid() {
-    const reasons = [
-      ...new Set(
-        Object.values(form.state.fieldMeta)
-          .flatMap((meta) => toFieldErrors(meta?.errors ?? []))
-          .map((e) => e.message)
-          .filter(Boolean),
-      ),
-    ]
-    notify(
-      reasons.length > 0
-        ? `No se guardaron los criterios de evaluación: ${reasons.join(" ")}`
-        : INCOMPLETE_FORM,
-      { variant: "error" },
-    )
-  }
+    const toRequest = (value: EvaluationCriteriaValues) => ({
+      ...value,
+      recoveryPercentage: isWeighted(value.recoveryMode) ? value.recoveryPercentage : null,
+    })
 
-  const toRequest = (value: EvaluationCriteriaValues) => ({
-    ...value,
-    recoveryPercentage: isWeighted(value.recoveryMode) ? value.recoveryPercentage : null,
-  })
+    const isDirty = useSelector(form.store, (s) => s.isDirty)
+    const { readOnly } = usePeriodReadOnly()
+    useEffect(() => {
+      onDirtyChange?.(isDirty)
+    }, [isDirty, onDirtyChange])
+    // Al desmontar (cambio de periodo) ya no hay nada pendiente.
+    useEffect(() => () => onDirtyChange?.(false), [onDirtyChange])
 
-  const isDirty = useSelector(form.store, (s) => s.isDirty)
-  useEffect(() => {
-    onDirtyChange?.(isDirty)
-  }, [isDirty, onDirtyChange])
-  // Al desmontar (cambio de periodo) ya no hay nada pendiente.
-  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange])
-
-  useImperativeHandle(
-    ref,
-    () => ({
+    useImperativeHandle(ref, () => ({
       save: async (pageNotify) => {
         if (!form.state.isDirty || academicPeriodId == null) return true
         headerNotify.current = pageNotify
@@ -251,264 +256,275 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
       },
       isDirty: () => form.state.isDirty,
       discard: () => form.reset(),
-    }),
-  )
+    }))
 
-  const gradingFormat = useSelector(form.store, (s) => s.values.gradingFormat)
-  const initialGrade = useSelector(form.store, (s) => s.values.initialGrade)
-  const weighted = isWeighted(useSelector(form.store, (s) => s.values.recoveryMode))
-  const range = rangeOf(gradingFormat)
-  // Formato anterior, para llevar las notas al nuevo al cambiarlo.
-  const prevFormat = useRef(gradingFormat)
-  useEffect(() => {
-    prevFormat.current = gradingFormat
-  }, [gradingFormat])
-  // Mismo % en la escala nueva (las notas se guardan en %), con 1 decimal.
-  function convertGrades(nextFormat: string) {
-    const from = rangeOf(prevFormat.current)
-    const to = rangeOf(nextFormat)
-    if (from.max === from.min) return
-    const convert = (n: number) =>
-      Math.round((to.min + ((n - from.min) / (from.max - from.min)) * (to.max - to.min)) * 10) / 10
-    for (const name of ["initialGrade", "maxRecoveryGrade"] as const) {
-      const value = form.getFieldValue(name)
-      if (Number.isFinite(value)) form.setFieldValue(name, convert(value))
+    const gradingFormat = useSelector(form.store, (s) => s.values.gradingFormat)
+    const initialGrade = useSelector(form.store, (s) => s.values.initialGrade)
+    const weighted = isWeighted(useSelector(form.store, (s) => s.values.recoveryMode))
+    const range = rangeOf(gradingFormat)
+    // Formato anterior, para llevar las notas al nuevo al cambiarlo.
+    const prevFormat = useRef(gradingFormat)
+    useEffect(() => {
+      prevFormat.current = gradingFormat
+    }, [gradingFormat])
+    // Mismo % en la escala nueva (las notas se guardan en %), con 1 decimal.
+    function convertGrades(nextFormat: string) {
+      const from = rangeOf(prevFormat.current)
+      const to = rangeOf(nextFormat)
+      if (from.max === from.min) return
+      const convert = (n: number) =>
+        Math.round((to.min + ((n - from.min) / (from.max - from.min)) * (to.max - to.min)) * 10) /
+        10
+      for (const name of ["initialGrade", "maxRecoveryGrade"] as const) {
+        const value = form.getFieldValue(name)
+        if (Number.isFinite(value)) form.setFieldValue(name, convert(value))
+      }
     }
-  }
-  const fmt = (n: number) => gradeFormatter.format(n)
-  const initialText = Number.isFinite(initialGrade) ? fmt(initialGrade) : "la nota inicial"
+    const fmt = (n: number) => gradeFormatter.format(n)
+    const initialText = Number.isFinite(initialGrade) ? fmt(initialGrade) : "la nota inicial"
 
-  // Select de catálogo; función de render (no componente) para no remontar el campo.
-  function catalogSelect(
-    name: Exclude<
-      keyof EvaluationCriteriaValues,
-      "gradingScale" | "initialGrade" | "maxRecoveryGrade" | "recoveryPercentage"
-    >,
-    label: string,
-    items: CriteriaOption[],
-    description?: string,
-    onChange?: (value: string) => void,
-  ) {
+    // Select de catálogo; función de render (no componente) para no remontar el campo.
+    function catalogSelect(
+      name: Exclude<
+        keyof EvaluationCriteriaValues,
+        "gradingScale" | "initialGrade" | "maxRecoveryGrade" | "recoveryPercentage"
+      >,
+      label: string,
+      items: CriteriaOption[],
+      description?: string,
+      onChange?: (value: string) => void,
+    ) {
+      return (
+        <form.AppField
+          name={name}
+          listeners={onChange ? { onChange: ({ value }) => onChange(String(value)) } : undefined}
+        >
+          {(field) => (
+            <field.SelectField
+              label={label}
+              required
+              description={description}
+              options={items.map((o) => ({ value: o.key, label: o.label }))}
+            />
+          )}
+        </form.AppField>
+      )
+    }
+
     return (
-      <form.AppField
-        name={name}
-        listeners={onChange ? { onChange: ({ value }) => onChange(String(value)) } : undefined}
-      >
-        {(field) => (
-          <field.SelectField
-            label={label}
-            required
-            description={description}
-            options={items.map((o) => ({ value: o.key, label: o.label }))}
-          />
-        )}
-      </form.AppField>
-    )
-  }
+      <>
+        <form
+          id={FORM_ID}
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+        >
+          <FormDisabledProvider disabled={readOnly}>
+            <NoticeOutlet />
+            <PeriodReadOnlyNotice what="los criterios de evaluación" />
 
-  return (
-    <>
-      <form
-        id={FORM_ID}
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          form.handleSubmit()
-        }}
-      >
-        <NoticeOutlet />
+            <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+              <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
+              Registro único del período: estos valores rigen todos los cálculos de notas de Gestión
+              Académica y se actualizan con Guardar.
+            </p>
 
-        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
-          <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
-          Registro único del período: estos valores rigen todos los cálculos de notas de Gestión
-          Académica y se actualizan con Guardar.
-        </p>
-
-        <FormSection title="Escala y calificaciones">
-          <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-            <form.Field name="ratingScaleMode">
-              {(field) => (
-                <Field
-                  variant="outlined"
-                  data-invalid={isFieldInvalid(field, form.state.submissionAttempts) || undefined}
-                >
-                  <FieldLabel htmlFor={field.name}>
-                    Escala de valoración<span className="text-red"> *</span>
-                  </FieldLabel>
-                  <ComboboxField
-                    items={Object.fromEntries(
-                      (options?.ratingScaleMode ?? []).map((o) => [o.key, o.label]),
-                    )}
-                    value={field.state.value}
-                    onValueChange={(value) => {
-                      if (!value || value === field.state.value) return
-                      if (ratingScalesCount > 0) {
-                        setScaleBlocked(true)
-                        return
+            <FormSection title="Escala y calificaciones">
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                <form.Field name="ratingScaleMode">
+                  {(field) => (
+                    <Field
+                      variant="outlined"
+                      data-invalid={
+                        isFieldInvalid(field, form.state.submissionAttempts) || undefined
                       }
-                      field.handleChange(value)
-                    }}
-                  >
-                    <ComboboxFieldTrigger id={field.name}>
-                      <ComboboxFieldValue placeholder="Seleccionar" />
-                    </ComboboxFieldTrigger>
-                    <ComboboxFieldContent>
-                      <ComboboxGroup>
-                        {(options?.ratingScaleMode ?? []).map((o) => (
-                          <ComboboxFieldItem key={o.key} value={o.key}>
-                            {o.label}
-                          </ComboboxFieldItem>
-                        ))}
-                      </ComboboxGroup>
-                    </ComboboxFieldContent>
-                  </ComboboxField>
-                  {isFieldInvalid(field, form.state.submissionAttempts) && (
-                    <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                    >
+                      <FieldLabel htmlFor={field.name}>
+                        Escala de valoración<span className="text-red"> *</span>
+                      </FieldLabel>
+                      <ComboboxField
+                        disabled={readOnly}
+                        items={Object.fromEntries(
+                          (options?.ratingScaleMode ?? []).map((o) => [o.key, o.label]),
+                        )}
+                        value={field.state.value}
+                        onValueChange={(value) => {
+                          if (!value || value === field.state.value) return
+                          if (ratingScalesCount > 0) {
+                            setScaleBlocked(true)
+                            return
+                          }
+                          field.handleChange(value)
+                        }}
+                      >
+                        <ComboboxFieldTrigger id={field.name}>
+                          <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
+                        <ComboboxFieldContent>
+                          <ComboboxGroup>
+                            {(options?.ratingScaleMode ?? []).map((o) => (
+                              <ComboboxFieldItem key={o.key} value={o.key}>
+                                {o.label}
+                              </ComboboxFieldItem>
+                            ))}
+                          </ComboboxGroup>
+                        </ComboboxFieldContent>
+                      </ComboboxField>
+                      {isFieldInvalid(field, form.state.submissionAttempts) && (
+                        <FieldError errors={toFieldErrors(field.state.meta.errors)} />
+                      )}
+                    </Field>
                   )}
-                </Field>
-              )}
-            </form.Field>
+                </form.Field>
 
-            {catalogSelect(
-              "gradingFormat",
-              "Formato de calificación",
-              options?.gradingFormat ?? [],
-              undefined,
-              convertGrades,
-            )}
-            {catalogSelect(
-              "studentWithoutGradesPerformance",
-              "Sin calificaciones",
-              options?.studentWithoutGradesPerformance ?? [],
-            )}
+                {catalogSelect(
+                  "gradingFormat",
+                  "Formato de calificación",
+                  options?.gradingFormat ?? [],
+                  undefined,
+                  convertGrades,
+                )}
+                {catalogSelect(
+                  "studentWithoutGradesPerformance",
+                  "Sin calificaciones",
+                  options?.studentWithoutGradesPerformance ?? [],
+                )}
 
-            <form.Field name="initialGrade">
-              {(field) => (
-                <DecimalField
-                  field={field}
-                  label="Nota inicial para las calificaciones"
-                  required
-                  description={`Entre ${fmt(range.min)} y ${fmt(range.max)}.`}
-                />
-              )}
-            </form.Field>
-            <form.Field name="maxRecoveryGrade">
-              {(field) => (
-                <DecimalField
-                  field={field}
-                  label="Nota máxima de recuperación"
-                  required
-                  description={`Entre ${initialText} y ${fmt(range.max)}.`}
-                />
-              )}
-            </form.Field>
-            {catalogSelect("roundingMode", "Regla de redondeo", options?.roundingMode ?? [])}
-          </div>
-        </FormSection>
+                <form.Field name="initialGrade">
+                  {(field) => (
+                    <DecimalField
+                      field={field}
+                      label="Nota inicial para las calificaciones"
+                      required
+                      description={`Entre ${fmt(range.min)} y ${fmt(range.max)}.`}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="maxRecoveryGrade">
+                  {(field) => (
+                    <DecimalField
+                      field={field}
+                      label="Nota máxima de recuperación"
+                      required
+                      description={`Entre ${initialText} y ${fmt(range.max)}.`}
+                    />
+                  )}
+                </form.Field>
+                {catalogSelect("roundingMode", "Regla de redondeo", options?.roundingMode ?? [])}
+              </div>
+            </FormSection>
 
-        <FormSection title="Recuperación">
-          <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-            <form.AppField
-              name="recoveryMode"
-              listeners={{
-                // Con Usar nota de recuperación el % queda vacío (Regla 48).
-                onChange: ({ value }) => {
-                  if (!isWeighted(value)) form.setFieldValue("recoveryPercentage", null)
-                },
-              }}
-            >
-              {(field) => (
-                <field.SelectField
-                  label="Modo de cálculo de recuperación"
-                  required
-                  options={(options?.recoveryMode ?? []).map((o) => ({
-                    value: o.key,
-                    label: o.label,
-                  }))}
-                />
-              )}
-            </form.AppField>
-            <form.Field name="recoveryPercentage">
-              {(field) => (
-                <DecimalField
-                  field={field}
-                  label="% de recuperación"
-                  suffix="%"
-                  nullable
-                  required={weighted}
-                  disabled={!weighted}
-                  description={
-                    weighted ? "Entre 1 y 100." : "Se habilita y es obligatorio con Ponderar."
-                  }
-                />
-              )}
-            </form.Field>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            La nota máxima de recuperación se define en «Escala y calificaciones».
-          </p>
-        </FormSection>
+            <FormSection title="Recuperación">
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <form.AppField
+                  name="recoveryMode"
+                  listeners={{
+                    // Con Usar nota de recuperación el % queda vacío (Regla 48).
+                    onChange: ({ value }) => {
+                      if (!isWeighted(value)) form.setFieldValue("recoveryPercentage", null)
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <field.SelectField
+                      label="Modo de cálculo de recuperación"
+                      required
+                      options={(options?.recoveryMode ?? []).map((o) => ({
+                        value: o.key,
+                        label: o.label,
+                      }))}
+                    />
+                  )}
+                </form.AppField>
+                <form.Field name="recoveryPercentage">
+                  {(field) => (
+                    <DecimalField
+                      field={field}
+                      label="% de recuperación"
+                      suffix="%"
+                      nullable
+                      required={weighted}
+                      disabled={!weighted}
+                      description={
+                        weighted ? "Entre 1 y 100." : "Se habilita y es obligatorio con Ponderar."
+                      }
+                    />
+                  )}
+                </form.Field>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                La nota máxima de recuperación se define en «Escala y calificaciones».
+              </p>
+            </FormSection>
 
-        <FormSection title="Cálculo de notas">
-          <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-            {catalogSelect(
-              "periodCalculationElements",
-              "Elementos para calcular la nota de la asignatura",
-              options?.periodCalculationElements ?? [],
-              "Con los rótulos del Referente curricular.",
-            )}
-            {catalogSelect(
-              "subjectGradeCriteria",
-              "Criterio para calcular la nota de la asignatura",
-              options?.subjectGradeCriteria ?? [],
-            )}
-            {catalogSelect(
-              "areaGradeCriteria",
-              "Criterio para calcular la nota del área",
-              options?.areaGradeCriteria ?? [],
-            )}
-            {catalogSelect(
-              "finalGradeCriteria",
-              "Criterio para calcular la nota final",
-              options?.finalGradeCriteria ?? [],
-            )}
-          </div>
-        </FormSection>
+            <FormSection title="Cálculo de notas">
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                {catalogSelect(
+                  "periodCalculationElements",
+                  "Elementos para calcular la nota de la asignatura",
+                  options?.periodCalculationElements ?? [],
+                  "Con los rótulos del Referente curricular.",
+                )}
+                {catalogSelect(
+                  "subjectGradeCriteria",
+                  "Criterio para calcular la nota de la asignatura",
+                  options?.subjectGradeCriteria ?? [],
+                )}
+                {catalogSelect(
+                  "areaGradeCriteria",
+                  "Criterio para calcular la nota del área",
+                  options?.areaGradeCriteria ?? [],
+                )}
+                {catalogSelect(
+                  "finalGradeCriteria",
+                  "Criterio para calcular la nota final",
+                  options?.finalGradeCriteria ?? [],
+                )}
+              </div>
+            </FormSection>
 
-        <div className="flex justify-end">
-          <form.Subscribe selector={(state) => state.isDirty}>
-            {(isDirty) =>
-              isDirty ? (
-                <Button size="sm" type="submit" color="primary" disabled={saveCriteria.isPending}>
-                  {saveCriteria.isPending ? "Guardando..." : "Guardar"}
-                </Button>
-              ) : null
-            }
-          </form.Subscribe>
-        </div>
-      </form>
+            <div className="flex justify-end">
+              <form.Subscribe selector={(state) => state.isDirty}>
+                {(isDirty) =>
+                  isDirty && !readOnly ? (
+                    <Button
+                      size="sm"
+                      type="submit"
+                      color="primary"
+                      disabled={saveCriteria.isPending}
+                    >
+                      {saveCriteria.isPending ? "Guardando..." : "Guardar"}
+                    </Button>
+                  ) : null
+                }
+              </form.Subscribe>
+            </div>
+          </FormDisabledProvider>
+        </form>
 
-      <AlertDialog open={scaleBlocked} onOpenChange={setScaleBlocked}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>No se puede cambiar la escala de valoración</AlertDialogTitle>
-            <AlertDialogDescription>
-              El período tiene {ratingScalesCount}{" "}
-              {ratingScalesCount === 1 ? "valoración creada" : "valoraciones creadas"} con la
-              configuración actual:{" "}
-              {Array.from(scalesByLevel, ([nivel, n]) => `${nivel} (${n})`).join(", ")}. Elimínelas
-              antes de cambiar la escala.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel color="primary">
-              <CheckIcon data-icon="inline-start" />
-              Entendido
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  )
+        <AlertDialog open={scaleBlocked} onOpenChange={setScaleBlocked}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>No se puede cambiar la escala de valoración</AlertDialogTitle>
+              <AlertDialogDescription>
+                El período tiene {ratingScalesCount}{" "}
+                {ratingScalesCount === 1 ? "valoración creada" : "valoraciones creadas"} con la
+                configuración actual:{" "}
+                {Array.from(scalesByLevel, ([nivel, n]) => `${nivel} (${n})`).join(", ")}.
+                Elimínelas antes de cambiar la escala.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel color="primary">
+                <CheckIcon data-icon="inline-start" />
+                Entendido
+              </AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    )
   },
 )

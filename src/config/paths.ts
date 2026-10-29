@@ -143,6 +143,12 @@ export const paths = {
       getHref: (periodId: number | string) =>
         `/app/establecimiento-educativo/periodos/${periodId}/editar`,
     },
+    // Ver: la misma pantalla en solo lectura (Sección 7.4, acciones por fila).
+    periodosAcademicosVer: {
+      path: "establecimiento-educativo/periodos/$periodId/ver",
+      getHref: (periodId: number | string) =>
+        `/app/establecimiento-educativo/periodos/${periodId}/ver`,
+    },
     // Pantalla del grado (Sección 5.3), fuera de las pestañas del período.
     periodosGradoAgregar: {
       path: "establecimiento-educativo/periodos/$periodId/grados/agregar",

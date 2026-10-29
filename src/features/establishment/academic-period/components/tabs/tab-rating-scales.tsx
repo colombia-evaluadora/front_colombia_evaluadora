@@ -46,6 +46,7 @@ import {
   formatGrade,
   getCoverageIssues,
 } from "@/features/establishment/academic-period/utils/rating-scale-coverage"
+import { PeriodReadOnlyNotice, usePeriodReadOnly, withoutRowActions } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabRatingScalesProps {
   academicPeriodId?: number
@@ -115,7 +116,11 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   }
 
   const colors = getScaleColors(visible)
-  const columns = createRatingScaleColumns({ colors, onEdit: openDialog, onDelete: deleteScale })
+  const { readOnly } = usePeriodReadOnly()
+  const columns = withoutRowActions(
+    createRatingScaleColumns({ colors, onEdit: openDialog, onDelete: deleteScale }),
+    readOnly,
+  )
   const page = useLocalPagination(rows)
   const { table } = useDataTable({
     columns,
@@ -156,13 +161,16 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
             </ComboboxField>
           </Field>
         )}
-        <Button color="primary" size="sm" className="ml-auto" onClick={() => openDialog(null)}>
-          <PlusIcon data-icon="inline-start" />
-          Agregar valoración
-        </Button>
+        {!readOnly && (
+          <Button color="primary" size="sm" className="ml-auto" onClick={() => openDialog(null)}>
+            <PlusIcon data-icon="inline-start" />
+            Agregar valoración
+          </Button>
+        )}
       </div>
 
       <NoticeOutlet />
+      <PeriodReadOnlyNotice what="la escala de valoración" />
 
       <DataTable
         table={table}
