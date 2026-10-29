@@ -186,6 +186,47 @@ const UNIDAD_ENUNCIADO_UNLINK_URL = "/api/eval-col/planeador/unidades/enunciados
  * del detalle). Sin esto el mock no deja ver el bug de invalidación del
  * detalle (seguía mostrando la unidad vieja aunque se refrescara).
  */
+/**
+ * Mock de las validaciones de unidad de `PUT /planeador/actividades/:ID`
+ * (sso V496.4, Regla 36/39) que importan para QA 73. Devuelve la respuesta
+ * de error o `null`:
+ * - unidad inexistente → 404 (P0002);
+ * - la unidad nueva ofrece evidencias y no se marcó ninguna → 400 (22023);
+ * - fechas en un periodo cerrado → 400 (23514). El mock no modela periodos:
+ *   toma como cerrado todo lo anterior a `PERIODO_CERRADO_HASTA`, y solo lo
+ *   mira si las fechas cambian o se asigna/mueve la unidad (así no rompe las
+ *   actividades semilla con fechas viejas).
+ */
+const PERIODO_CERRADO_HASTA = "2021-01-01"
+/** Pk de la evidencia mock de un enunciado de unidad (ver `UNIDAD_REFERENTE_URL`). */
+const evidenciaMockId = (enunciadoId: number) => 900_000 + enunciadoId
+function validarUnidadEnPutActividad(
+  actual: Actividad,
+  body: Partial<Actividad>,
+  fkTunidad: number | undefined,
+  desvincular: boolean | undefined,
+) {
+  const error = (status: number, code: string, message: string) =>
+    HttpResponse.json({ status: "error", code, message }, { status })
+  if (desvincular && fkTunidad != null) {
+    return error(400, "22023", "DESVINCULAR_UNIDAD no se puede combinar con FK_TUNIDAD.")
+  }
+  const mueve = fkTunidad != null && fkTunidad !== actual.unidad.id
+  const fechaInicio = body.fechaInicio ?? actual.fechaInicio
+  const fechaCierre = body.fechaCierre ?? actual.fechaCierre
+  const fechasCambian = fechaInicio !== actual.fechaInicio || fechaCierre !== actual.fechaCierre
+  if ((mueve || fechasCambian) && [fechaInicio, fechaCierre].some((f) => f && f < PERIODO_CERRADO_HASTA)) {
+    return error(400, "23514", "Las fechas de la actividad caen en un periodo cerrado; elige fechas de un periodo abierto.")
+  }
+  if (!mueve) return null
+  const unidad = unidadesTematicasDb.find((u) => u.id === fkTunidad)
+  if (!unidad) return error(404, "P0002", "Unidad temática no encontrada.")
+  if (unidad.enunciadosDba.length > 0 && (body.evidenciasIds ?? []).length === 0) {
+    return error(400, "22023", "Debes marcar al menos una evidencia de la unidad temática para asociarle la actividad.")
+  }
+  return null
+}
+
 function sincronizarUnidadDeActividad(actividadId: number) {
   const actividad = planeadorDb.find((row) => row.id === actividadId)
   if (!actividad) return
@@ -919,9 +960,26 @@ export const planeadorHandlers = [
     }
     const bloqueo = rechazoNoEditable(id)
     if (bloqueo) return bloqueo
-    const { BASE_VERSION, ...body } = (await request.json()) as Actividad & { NOTA_MAXIMA?: number; BASE_VERSION?: number }
+    const { BASE_VERSION, FK_TUNIDAD, DESVINCULAR_UNIDAD, ...body } = (await request.json()) as Actividad & {
+      NOTA_MAXIMA?: number
+      BASE_VERSION?: number
+      FK_TUNIDAD?: number
+      DESVINCULAR_UNIDAD?: boolean
+    }
     const conflicto = conflictoDeVersion("actividad", id, BASE_VERSION, { titulo: planeadorDb[index]!.nombre })
     if (conflicto) return HttpResponse.json(conflicto, { status: 409 })
+    // QA 73: la unidad viaja en este mismo PUT (`FK_TUNIDAD` / `DESVINCULAR_UNIDAD`).
+    // Como `fn_actividad_actualizar` (sso V496), TODO se valida antes de
+    // escribir: si algo falla, la actividad sigue como estaba (misma unidad,
+    // mismas evidencias).
+    const rechazo = validarUnidadEnPutActividad(planeadorDb[index]!, body, FK_TUNIDAD, DESVINCULAR_UNIDAD)
+    if (rechazo) return rechazo
+    if (DESVINCULAR_UNIDAD) {
+      unlinkActividadFromUnidad(id)
+    } else if (FK_TUNIDAD != null && FK_TUNIDAD !== planeadorDb[index]!.unidad.id) {
+      unlinkActividadFromUnidad(id)
+      addActividadToUnidad(FK_TUNIDAD, id, body.ponderacion ?? 0)
+    }
     // Edición inline del "Puntaje" (columna de la tabla de Actividades de
     // una unidad "Suma de puntos", `useUpdatePuntajeActividadUnidad`): esa
     // mutación reusa este mismo PUT con `{NOTA_MAXIMA}` — el mock replica
@@ -929,6 +987,7 @@ export const planeadorHandlers = [
     // (no `planeadorDb`, que es donde cae el resto del body).
     if (body.NOTA_MAXIMA != null) setPuntajeActividadUnidad(id, body.NOTA_MAXIMA)
     planeadorDb[index] = { ...planeadorDb[index], ...body, id }
+    sincronizarUnidadDeActividad(id)
     subirVersion("actividad", id)
     return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
   }),
@@ -1468,6 +1527,9 @@ export const planeadorHandlers = [
             texto: enunciado.text,
             relacionadoConUnidad: true,
             pkTunidadEnunciado: enunciado.id,
+            // Una evidencia (nivel 2) por enunciado para poder marcarla en
+            // el form de la actividad (QA 73); pk derivado y estable.
+            evidencias: [{ pk: evidenciaMockId(enunciado.id), texto: `Evidencia de: ${enunciado.text}` }],
           })),
         },
       ],

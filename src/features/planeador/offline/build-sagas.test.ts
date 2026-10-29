@@ -51,7 +51,7 @@ describe("orden real de la saga (P19)", () => {
     expect(saga.steps.slice(1).every((s) => s.payload.actividadId === saga.tmpId)).toBe(true)
   })
 
-  it("editar: unidad → PUT → materiales → instrumento → estudiantes → adaptaciones, con verificación en el primero", async () => {
+  it("editar: PUT (con la unidad) → materiales → instrumento → estudiantes → adaptaciones, con verificación en el primero", async () => {
     const base = actividad({ unidad: { id: 0, nombre: "" }, matriculasIds: [1], asignarTodoElGrupo: false })
     const values = {
       ...base,
@@ -65,7 +65,6 @@ describe("orden real de la saga (P19)", () => {
     }
     const saga = await buildEditarActividadSaga(values, { actividad: base, unidades: [{ id: 3, metodoCalculo: "Ponderado" }] })
     expect(saga.steps.map((s) => s.kind.split(".").at(-1))).toEqual([
-      "unidad",
       "editar",
       "materiales",
       "instrumento",
@@ -78,14 +77,22 @@ describe("orden real de la saga (P19)", () => {
 })
 
 describe("VERSION del servidor (BE-3B)", () => {
-  it("editar: el check del primer paso usa la versión; el PUT tras vincular la unidad no la lleva", async () => {
+  it("editar asignando unidad (QA 73): UNA sola op, el PUT con la unidad y el check", async () => {
     const base = actividad({ unidad: { id: 0, nombre: "" }, version: 9 })
     const values = { ...base, unidad: { id: 3, nombre: "U" } }
     const saga = await buildEditarActividadSaga(values, { actividad: base, unidades: [{ id: 3, metodoCalculo: "Ponderado" }] })
-    expect(saga.steps[0].kind).toBe("planeador.actividad.unidad")
+    expect(saga.steps[0].kind).toBe("planeador.actividad.editar")
     expect(saga.steps[0].payload.check).toEqual({ baseVersion: 9 })
-    expect(saga.steps[1].kind).toBe("planeador.actividad.editar")
-    expect("check" in saga.steps[1].payload).toBe(false)
+    expect(saga.steps[0].payload.unidadAnteriorId).toBe(0)
+    expect(saga.steps.some((s) => s.kind === "planeador.actividad.unidad")).toBe(false)
+  })
+
+  it("editar quitando la unidad: sin paso de desvincular aparte", async () => {
+    const base = actividad({ unidad: { id: 3, nombre: "U" } })
+    const saga = await buildEditarActividadSaga({ ...base, unidad: { id: 0, nombre: "" } }, { actividad: base, unidades: [] })
+    expect(saga.steps[0].kind).toBe("planeador.actividad.editar")
+    expect(saga.steps.some((s) => s.kind === "planeador.actividad.unidad")).toBe(false)
+    expect(saga.steps[0].payload.unidadAnteriorId).toBe(3)
   })
 
   it("editar sin cambiar la unidad: el PUT es el primer paso y lleva el check", async () => {
