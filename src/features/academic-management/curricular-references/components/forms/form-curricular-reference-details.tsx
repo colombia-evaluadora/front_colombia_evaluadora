@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { CharacterCounter } from "@/components/ui/character-counter"
 import { Switch } from "@/components/ui/switch"
 import {
   ComboboxField,
@@ -27,6 +26,50 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full break-all")
+
+// Conteo dentro del borde del textarea, en una franja propia: el texto que
+// hace scroll no queda debajo del número. El contenedor toma el contorno.
+function CountedTextarea({
+  value,
+  maxLength,
+  className,
+  ...props
+}: React.ComponentProps<typeof Textarea> & { value: string; maxLength: number }) {
+  return (
+    <div className="rounded-md border border-input transition-[color,border-color] hover:border-ring focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 has-[[aria-invalid=true]]:border-red has-[[aria-invalid=true]]:focus-within:ring-red/20">
+      <Textarea
+        value={value}
+        maxLength={maxLength}
+        // Crece con el texto: con 400 caracteres no hace falta scroll.
+        className={cn(className, "field-sizing-content min-h-20 rounded-none border-0 pb-0 hover:border-0 focus-visible:ring-0")}
+        {...props}
+      />
+      <div aria-hidden className="px-3 pb-1.5 text-right text-xs text-muted-foreground tabular-nums">
+        {value.length} / {maxLength}
+      </div>
+    </div>
+  )
+}
+
+// Conteo dentro del input, a la derecha (como `TextField showCounter` de período académico).
+function CountedInput({
+  value,
+  maxLength,
+  className,
+  ...props
+}: React.ComponentProps<typeof Input> & { value: string; maxLength: number }) {
+  return (
+    <div className="relative">
+      <Input value={value} maxLength={maxLength} className={cn("pr-16", className)} {...props} />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground tabular-nums"
+      >
+        {value.length} / {maxLength}
+      </span>
+    </div>
+  )
+}
 
 interface CurricularReferenceDetailsFormProps {
   value: CurricularReferenceDraft
@@ -69,7 +112,7 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["name"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-name">Nombre del referente *</FieldLabel>
-          <Input
+          <CountedInput
             id="curricular-reference-name"
             size="sm"
             maxLength={150}
@@ -78,7 +121,6 @@ export function CurricularReferenceDetailsForm({
             onChange={(event) => onChange({ ...value, name: toReferenteTextInput(event.target.value) })}
             placeholder="Ej. DBA - Primaria"
           />
-          <CharacterCounter value={value.name} max={150} />
           <FieldError>{errors["name"]}</FieldError>
         </Field>
 
@@ -112,8 +154,8 @@ export function CurricularReferenceDetailsForm({
           className="w-full md:col-span-2"
           data-invalid={errors["description"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-description">Descripción / Finalidad *</FieldLabel>
-          <Textarea
+          <FieldLabel htmlFor="curricular-reference-description">Descripción / Finalidad</FieldLabel>
+          <CountedTextarea
             id="curricular-reference-description"
             maxLength={400}
             value={value.description}
@@ -122,7 +164,6 @@ export function CurricularReferenceDetailsForm({
             placeholder="Describe la finalidad o propósito de este referente curricular."
             className={TEXTAREA_OUTLINE_CLASS}
           />
-          <CharacterCounter value={value.description} max={400} />
           <FieldError>{errors["description"]}</FieldError>
         </Field>
       </div>
@@ -216,7 +257,7 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["level1"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-level1">Rótulo de Nivel 1 *</FieldLabel>
-          <Input
+          <CountedInput
             id="curricular-reference-level1"
             size="sm"
             maxLength={50}
@@ -235,7 +276,7 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["level2"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-level2">Rótulo de Nivel 2 *</FieldLabel>
-          <Input
+          <CountedInput
             id="curricular-reference-level2"
             size="sm"
             maxLength={50}
@@ -289,7 +330,7 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["instrument"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-instrument">Rótulo de Secuencia de Actividades *</FieldLabel>
-          <Input
+          <CountedInput
             id="curricular-reference-instrument"
             size="sm"
             maxLength={50}
@@ -308,7 +349,7 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["executionLabel"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de Ejecución *</FieldLabel>
-          <Input
+          <CountedInput
             id="curricular-reference-execution-label"
             size="sm"
             maxLength={50}
@@ -324,7 +365,7 @@ export function CurricularReferenceDetailsForm({
           <FieldLabel htmlFor="curricular-reference-instrument-description">
             Información adicional de la Secuencia de Actividades
           </FieldLabel>
-          <Textarea
+          <CountedTextarea
             id="curricular-reference-instrument-description"
             maxLength={400}
             value={value.instrumentDescription}
@@ -336,7 +377,6 @@ export function CurricularReferenceDetailsForm({
             placeholder="Describe qué incluye la secuencia de actividades y cómo se utiliza..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
-          <CharacterCounter value={value.instrumentDescription} max={400} />
         </Field>
 
         <Field
@@ -345,8 +385,8 @@ export function CurricularReferenceDetailsForm({
           className="w-full md:col-span-2"
           data-invalid={errors["regulation"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-regulation">Normatividad *</FieldLabel>
-          <Textarea
+          <FieldLabel htmlFor="curricular-reference-regulation">Normatividad</FieldLabel>
+          <CountedTextarea
             id="curricular-reference-regulation"
             maxLength={400}
             value={value.regulation}
@@ -355,7 +395,6 @@ export function CurricularReferenceDetailsForm({
             placeholder="Escribe una o varias normas que aplican a este referente curricular..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
-          <CharacterCounter value={value.regulation} max={400} />
           <FieldError>{errors["regulation"]}</FieldError>
         </Field>
 

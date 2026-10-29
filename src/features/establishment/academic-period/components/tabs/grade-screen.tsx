@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 import { useSelector } from "@tanstack/react-form"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { FormDisabledProvider, useAppForm, useFormDisabled } from "@/lib/forms"
+import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 import { cleanErrorMessage, getErrorMessage } from "@/lib/api-client"
 
 import { TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
@@ -146,6 +147,8 @@ export function GradeScreen({
   const form = useAppForm({
     defaultValues,
     validators: { onSubmit: gradeFormSchema },
+    // Sin esto, un error fuera de la vista dejaba Guardar sin respuesta.
+    onSubmitInvalid: () => notify(INCOMPLETE_FORM, { variant: "error" }),
     onSubmit: async ({ value, formApi }) => {
       const payload = {
         nombre: value.nombre,
@@ -275,9 +278,9 @@ export function GradeScreen({
         </div>
       </TableScreenHeader>
 
-      <TableScreenBody className="flex flex-col gap-4">
+      <TableScreenBody contentClassName="flex flex-col gap-4">
         <NoticeOutlet />
-        <PeriodReadOnlyNotice what="el grado" className="mb-4" />
+        <PeriodReadOnlyNotice what="el grado" />
 
         <FormDisabledProvider disabled={readOnly}>
           <form
@@ -422,7 +425,7 @@ export function GradeScreen({
         </FormDisabledProvider>
 
         {isEditing && gradeId != null && (
-          <Tabs defaultValue="grupos" className="mt-2 w-full min-w-0">
+          <Tabs defaultValue="grupos" className="w-full min-w-0">
             <TabsList
               variant="line"
               className="h-11 w-full justify-start gap-4 border-b border-border p-0"

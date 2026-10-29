@@ -85,15 +85,18 @@ const safeText = () =>
   z.string().trim().regex(REFERENTE_TEXT_PATTERN, "No se permiten caracteres especiales.")
 const safeLongText = () =>
   z.string().trim().regex(REFERENTE_LONG_TEXT_PATTERN, "No se permiten caracteres especiales.")
+// Opcional: vacío o con al menos 10 caracteres.
+const optionalLongText = () =>
+  safeLongText()
+    .max(400, "Máximo 400 caracteres.")
+    .refine((value) => value === "" || value.length >= 10, "Mínimo 10 caracteres.")
 
 const curricularReferenceSchema = z.object({
-  name: safeText().min(1, "Ingresa el nombre del referente.").max(150, "Máximo 150 caracteres."),
+  name: safeText().min(1, "Ingresa el nombre del referente.").min(4, "Mínimo 4 caracteres.").max(150, "Máximo 150 caracteres."),
   educationLevels: z
     .array(z.object({ id: z.number() }))
     .min(1, "Selecciona al menos un nivel educativo."),
-  description: safeLongText()
-    .min(1, "Ingresa la descripción o finalidad.")
-    .max(400, "Máximo 400 caracteres."),
+  description: optionalLongText(),
   level1: safeText().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
   level2: safeText().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
@@ -106,8 +109,8 @@ const curricularReferenceSchema = z.object({
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
   instrument: safeText().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
   executionLabel: safeText().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
-  instrumentDescription: safeLongText().max(400, "Máximo 400 caracteres."),
-  regulation: safeLongText().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
+  instrumentDescription: optionalLongText(),
+  regulation: safeLongText().max(400, "Máximo 400 caracteres."),
 }).superRefine((values, ctx) => {
   if (
     esEnfoqueFormativo(values.pedagogicalApproach) &&
