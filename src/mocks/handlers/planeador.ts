@@ -16,6 +16,7 @@ import {
   addUnidad,
   cederUnidadMock,
   colegasDeUnidad,
+  colegasOverrideE2E,
   deleteUnidadById,
   setPuntajeActividadUnidad,
   unidadesTematicasDb,
@@ -1865,7 +1866,18 @@ export const planeadorHandlers = [
     if (!unidadesTematicasDb.some((row) => row.id === id)) {
       return HttpResponse.json({ message: "La unidad no existe" }, { status: 404 })
     }
-    return HttpResponse.json({ rows: colegasDeUnidad(id) })
+    if (colegasOverrideE2E(id) === "error") {
+      return HttpResponse.json({ message: "Recurso no encontrado" }, { status: 404 })
+    }
+    return HttpResponse.json({
+      rows: colegasDeUnidad(id).map((c) => ({
+        fk_tfuncionario: c.fk_tfuncionario,
+        nombre: c.nombre,
+        identificacion: c.identificacion ?? null,
+        actividades: c.actividades,
+        criterios: c.criterios,
+      })),
+    })
   }),
 
   // Borrado (soft-delete) de la unidad. `PATCH`, no `DELETE` — el motor real
@@ -1882,13 +1894,17 @@ export const planeadorHandlers = [
       )
     }
 
-    // Regla 27: con colegas usándola no se elimina, se cede (23503 → 409),
-    // mismo texto que `fn_unidad_validar_eliminable`.
+    // Regla 27: con colegas cesionarios (funcionario activo) usándola no se
+    // elimina, se cede (23503 → 409), mismo texto que
+    // `fn_unidad_validar_eliminable`. Los autores sin funcionario activo no
+    // obligan a ceder: sus actividades se desvinculan más abajo.
     const colegas = colegasDeUnidad(id)
-    if (colegas.length > 0) {
+    const cesionarios = colegas.filter((c) => c.fk_tfuncionario != null)
+    const ajenas = new Set(colegas.flatMap((c) => c.actividad_ids ?? []))
+    if (cesionarios.length > 0) {
       return HttpResponse.json(
         {
-          message: `No se puede eliminar la unidad temática "${found.nombre}": otros docentes la están usando (${colegas
+          message: `No se puede eliminar la unidad temática "${found.nombre}": otros docentes la están usando (${cesionarios
             .map((c) => c.nombre)
             .join(", ")}). Cédala a uno de ellos en lugar de eliminarla.`,
         },
@@ -1915,6 +1931,8 @@ export const planeadorHandlers = [
     const body = (await request.json().catch(() => null)) as { ELIMINAR_ACTIVIDADES?: boolean } | null
     if (body?.ELIMINAR_ACTIVIDADES) {
       for (const a of found.actividades) {
+        // Trabajo ajeno: nunca se borra, solo queda sin asignar.
+        if (ajenas.has(a.actividadId)) continue
         if (!motivoNoEditableMock(a.actividadId)) deleteActividadById(a.actividadId)
       }
     }

@@ -442,18 +442,43 @@ export function updateUnidadInfoGeneral(
  * vinculadas o criterios propios en su rúbrica —, en la forma snake_case de
  * `GET /planeador/unidades/:id/colegas`. Seed para ejercitar los tres casos
  * del paso "ceder": la 1 y la 4 sin colegas (se eliminan), la 2 con uno solo
- * (cesión automática) y la 3 con varios (el dueño elige).
+ * (cesión automática) y la 3 con varios (el dueño elige, con buscador).
+ *
+ * `actividad_ids` es solo del mock: las actividades de ese autor vinculadas a
+ * la unidad, que al eliminarla se desvinculan (nunca se borran) — el backend
+ * real lo sabe por `TACTIVIDAD.CREATED_BY`.
  */
-export const unidadColegasDb: Record<number, UnidadColegaRow[]> = {
-  2: [{ fk_tfuncionario: 7102, nombre: "Ana María Ruiz", actividades: 2, criterios: 0 }],
+export type UnidadColegaMockRow = UnidadColegaRow & { actividad_ids?: number[] }
+
+export const unidadColegasDb: Record<number, UnidadColegaMockRow[]> = {
+  2: [{ fk_tfuncionario: 7102, nombre: "Ana María Ruiz", identificacion: "52123456", actividades: 2, criterios: 0 }],
   3: [
-    { fk_tfuncionario: 7103, nombre: "Beatriz Gómez", actividades: 1, criterios: 2 },
-    { fk_tfuncionario: 7104, nombre: "Carlos Pérez", actividades: 0, criterios: 1 },
-    { fk_tfuncionario: 7105, nombre: "Diana Torres", actividades: 3, criterios: 0 },
+    { fk_tfuncionario: 7103, nombre: "Beatriz Gómez", identificacion: "1020304050", actividades: 1, criterios: 2 },
+    { fk_tfuncionario: 7104, nombre: "Carlos Pérez", identificacion: "79111222", actividades: 0, criterios: 1 },
+    { fk_tfuncionario: 7105, nombre: "Diana Torres", identificacion: "43987654", actividades: 3, criterios: 0 },
   ],
 }
 
-export function colegasDeUnidad(id: number): UnidadColegaRow[] {
+/**
+ * Solo E2E: `localStorage["msw:unidad-colegas:<id>"]` reemplaza los colegas
+ * de esa unidad (JSON de `UnidadColegaMockRow[]`) o, con `"error"`, hace
+ * fallar el endpoint (404, como un eval-col sin el endpoint publicado).
+ * Permite ejercitar "sin cesionario válido" y "error" sin tocar el seed que
+ * usan otros specs. Fuera del navegador (msw/node) no aplica.
+ */
+export function colegasOverrideE2E(id: number): UnidadColegaMockRow[] | "error" | null {
+  try {
+    const raw = globalThis.localStorage?.getItem(`msw:unidad-colegas:${id}`)
+    if (raw == null) return null
+    return raw === "error" ? "error" : (JSON.parse(raw) as UnidadColegaMockRow[])
+  } catch {
+    return null
+  }
+}
+
+export function colegasDeUnidad(id: number): UnidadColegaMockRow[] {
+  const override = colegasOverrideE2E(id)
+  if (Array.isArray(override)) return override
   return unidadColegasDb[id] ?? []
 }
 
