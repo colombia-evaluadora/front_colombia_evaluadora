@@ -10,15 +10,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { CheckIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
+import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useAddCriterioUnidad } from "@/features/planeador/api/mutations/add-criterio-unidad"
 import {
   useUnidadValoracionesQuery,
   type UnidadValoracion,
 } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
+import {
+  CRITERIO_UNIDAD_MAX,
+  validarCriterioUnidad,
+} from "@/features/planeador/lib/criterio-unidad-validaciones"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 type CriterioDraft = Omit<CriterioUnidad, "id">
@@ -41,8 +48,22 @@ function draftVacio(valoraciones: UnidadValoracion[]): CriterioDraft {
 const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
+/** Escala de la unidad sin valoraciones activas: el back rechaza el criterio
+ *  (INVALID_VALUE "La escala de valoración … no tiene niveles activos"), así
+ *  que se anticipa y se explica dónde corregirlo. */
+const SIN_NIVELES_NOTICE: Notice = {
+  id: 0,
+  message:
+    "La escala de valoración que aplica a esta unidad no tiene niveles activos, por eso no se pueden agregar criterios. " +
+    "Configura los niveles de la escala del período en Período académico › Escalas de valoración (o pídeselo al administrador).",
+}
+
 function isDraftCompleto(draft: CriterioDraft): boolean {
-  return draft.nombre.trim().length > 0 && draft.niveles.every((nivel) => nivel.descripcion.trim().length > 0)
+  return (
+    validarCriterioUnidad(draft.nombre) == null &&
+    draft.niveles.length > 0 &&
+    draft.niveles.every((nivel) => nivel.descripcion.trim().length > 0)
+  )
 }
 
 function isDraftVacio(draft: CriterioDraft): boolean {
@@ -77,7 +98,15 @@ interface DialogAgregarCriterioProps {
  * persiste y cierra. "Cancelar" descarta el draft sin guardar nada.
  */
 export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAgregarCriterioProps) {
-  const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidadId)
+  const { data: valoraciones = [], isSuccess: valoracionesCargadas } = useUnidadValoracionesQuery(unidadId)
+  // Escala sin niveles activos: solo se sabe cuando la query respondió OK con
+  // cero filas (mientras carga, o si falló, no se anticipa nada).
+  const sinNiveles = valoracionesCargadas && valoraciones.length === 0
+  // Error del back mientras el modal está abierto. Con el `NoticeProvider` de
+  // la página montado el toast global de axios está suprimido: sin este
+  // banner un rechazo (p. ej. INVALID_VALUE) pasaba en silencio.
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const [nombreTocado, setNombreTocado] = useState(false)
   const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(valoraciones))
   const addCriterio = useAddCriterioUnidad()
   // Sin red no se vinculan criterios (plan offline §7.5).
@@ -108,22 +137,38 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
     onOpenChange(next)
     // Al cerrar (por cualquier vía: Cancelar, X, click afuera) el draft
     // no debe sobrevivir a la próxima apertura.
-    if (!next) setDraft(draftVacio(valoraciones))
+    if (!next) {
+      setDraft(draftVacio(valoraciones))
+      setNotice(null)
+      setNombreTocado(false)
+    }
+  }
+
+  function mostrarError(message: string) {
+    setNotice({ id: Date.now(), message })
   }
 
   function vincular(onDone: () => void) {
+    setNotice(null)
     addCriterio.mutate(
-      { unidadId, criterio: draft },
+      { unidadId, criterio: { ...draft, nombre: draft.nombre.trim() } },
       {
         onSuccess: (data) => {
-          if (data.status === "error") return
+          if (data?.status === "error") {
+            mostrarError(data.message || "No se pudo vincular el criterio.")
+            return
+          }
+          setNombreTocado(false)
           onDone()
         },
+        // El modal no se cierra: el docente conserva lo escrito y ve el motivo.
+        onError: (error) => mostrarError(getErrorMessage(error)),
       },
     )
   }
 
   const completo = isDraftCompleto(draft)
+  const errorNombre = nombreTocado ? validarCriterioUnidad(draft.nombre) : undefined
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -136,15 +181,29 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <Field variant="outlined">
-            <FieldLabel>Criterio *</FieldLabel>
+          {sinNiveles && <NoticeBanner notice={SIN_NIVELES_NOTICE} onClose={() => handleOpenChange(false)} variant="warning" />}
+          <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
+          <Field variant="outlined" data-invalid={Boolean(errorNombre) || undefined}>
+            <FieldLabel htmlFor="agregar-criterio-nombre">Criterio *</FieldLabel>
             <Textarea
+              id="agregar-criterio-nombre"
               className={TEXTAREA_OUTLINED}
               rows={2}
               placeholder="Agregar"
+              maxLength={CRITERIO_UNIDAD_MAX}
+              disabled={sinNiveles}
+              aria-invalid={Boolean(errorNombre) || undefined}
               value={draft.nombre}
-              onChange={(e) => updateDraft({ nombre: e.target.value })}
+              onChange={(e) => {
+                updateDraft({ nombre: e.target.value })
+                setNombreTocado(true)
+              }}
+              onBlur={() => setNombreTocado(true)}
             />
+            <div className="flex items-start gap-2">
+              <FieldError>{errorNombre}</FieldError>
+              <CharacterCounter className="ml-auto shrink-0" value={draft.nombre} max={CRITERIO_UNIDAD_MAX} />
+            </div>
           </Field>
 
           {draft.niveles.map((nivel, index) => (
