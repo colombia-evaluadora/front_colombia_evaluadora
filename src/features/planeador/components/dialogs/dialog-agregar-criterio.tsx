@@ -18,6 +18,9 @@ import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useAddCriterioUnidad } from "@/features/planeador/api/mutations/add-criterio-unidad"
+import { useUpdateCriterioUnidad } from "@/features/planeador/api/mutations/update-criterio-unidad"
+import { useNotify } from "@/components/notice/notice-context"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import {
   useUnidadValoracionesQuery,
   type UnidadValoracion,
@@ -28,7 +31,16 @@ import {
 } from "@/features/planeador/lib/criterio-unidad-validaciones"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
-type CriterioDraft = Omit<CriterioUnidad, "id">
+type CriterioDraft = Omit<CriterioUnidad, "id" | "puedeGestionar" | "autor">
+
+/** Draft de edición: los niveles que el criterio YA tiene (el PUT solo
+ *  reescribe esos textos, por `valoracionId`). */
+function draftDe(criterio: CriterioUnidad): CriterioDraft {
+  return {
+    nombre: criterio.nombre,
+    niveles: criterio.niveles.map((n) => ({ nombre: n.nombre, descripcion: n.descripcion, valoracionId: n.valoracionId })),
+  }
+}
 
 /** Un `NivelDesempenoCriterio` por valoración de la escala, en el mismo
  *  orden — arranca cada uno con `descripcion` vacía para que el docente la
@@ -74,6 +86,9 @@ interface DialogAgregarCriterioProps {
   unidadId: number
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Modo edición (QA 71): el criterio a editar. El caller monta el diálogo
+   *  con `key={criterio.id}` para que el draft arranque de este criterio. */
+  criterio?: CriterioUnidad
 }
 
 /**
@@ -97,7 +112,8 @@ interface DialogAgregarCriterioProps {
  * cargar el siguiente sin tener que reabrirlo; "Vincular y cerrar"
  * persiste y cierra. "Cancelar" descarta el draft sin guardar nada.
  */
-export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAgregarCriterioProps) {
+export function DialogAgregarCriterio({ unidadId, open, onOpenChange, criterio }: DialogAgregarCriterioProps) {
+  const editando = criterio != null
   const { data: valoraciones = [], isSuccess: valoracionesCargadas } = useUnidadValoracionesQuery(unidadId)
   // Escala sin niveles activos: solo se sabe cuando la query respondió OK con
   // cero filas (mientras carga, o si falló, no se anticipa nada).
@@ -107,8 +123,11 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
   // banner un rechazo (p. ej. INVALID_VALUE) pasaba en silencio.
   const [notice, setNotice] = useState<Notice | null>(null)
   const [nombreTocado, setNombreTocado] = useState(false)
-  const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(valoraciones))
+  const [draft, setDraft] = useState<CriterioDraft>(() => (criterio ? draftDe(criterio) : draftVacio(valoraciones)))
   const addCriterio = useAddCriterioUnidad()
+  const updateCriterio = useUpdateCriterioUnidad()
+  const { notify } = useNotify()
+  const pendiente = addCriterio.isPending || updateCriterio.isPending
   // Sin red no se vinculan criterios (plan offline §7.5).
   const soloEnLinea = useOnlineOnly()
 
@@ -118,8 +137,8 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
   // resincroniza con el modal abierto para no pisar lo que el docente ya
   // venga escribiendo si la data async resuelve a mitad de la carga.
   useEffect(() => {
-    if (!open) setDraft(draftVacio(valoraciones))
-  }, [valoraciones, open])
+    if (!open && !editando) setDraft(draftVacio(valoraciones))
+  }, [valoraciones, open, editando])
 
   function updateDraft(patch: Partial<Omit<CriterioDraft, "niveles">>) {
     setDraft((prev) => ({ ...prev, ...patch }))
@@ -138,7 +157,7 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
     // Al cerrar (por cualquier vía: Cancelar, X, click afuera) el draft
     // no debe sobrevivir a la próxima apertura.
     if (!next) {
-      setDraft(draftVacio(valoraciones))
+      setDraft(criterio ? draftDe(criterio) : draftVacio(valoraciones))
       setNotice(null)
       setNombreTocado(false)
     }
@@ -167,6 +186,23 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
     )
   }
 
+  function guardarEdicion() {
+    if (!criterio) return
+    setNotice(null)
+    updateCriterio.mutate(
+      { unidadId, criterioId: criterio.id, criterio: { ...draft, nombre: draft.nombre.trim() } },
+      {
+        onSuccess: () => {
+          notify(SUCCESS_MESSAGES.criterioUnidad.updated)
+          handleOpenChange(false)
+        },
+        // 42501 "solo su autor lo edita o elimina" u otro rechazo: el modal
+        // sigue abierto con lo escrito y el motivo del backend.
+        onError: (error) => mostrarError(getErrorMessage(error)),
+      },
+    )
+  }
+
   const completo = isDraftCompleto(draft)
   const errorNombre = nombreTocado ? validarCriterioUnidad(draft.nombre) : undefined
 
@@ -177,11 +213,11 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
           vía `handleOpenChange`) — dos formas de hacer lo mismo. */}
       <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Agregar criterio</DialogTitle>
+          <DialogTitle>{editando ? "Editar criterio" : "Agregar criterio"}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {sinNiveles && <NoticeBanner notice={SIN_NIVELES_NOTICE} onClose={() => handleOpenChange(false)} variant="warning" />}
+          {sinNiveles && !editando && <NoticeBanner notice={SIN_NIVELES_NOTICE} onClose={() => handleOpenChange(false)} variant="warning" />}
           <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
           <Field variant="outlined" data-invalid={Boolean(errorNombre) || undefined}>
             <FieldLabel htmlFor="agregar-criterio-nombre">Criterio *</FieldLabel>
@@ -191,7 +227,7 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
               rows={2}
               placeholder="Agregar"
               maxLength={CRITERIO_UNIDAD_MAX}
-              disabled={sinNiveles}
+              disabled={sinNiveles && !editando}
               aria-invalid={Boolean(errorNombre) || undefined}
               value={draft.nombre}
               onChange={(e) => {
@@ -226,14 +262,28 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
               recargan visualmente el footer. Aparecen apenas se tipea algo
               en cualquier campo; siguen deshabilitados hasta que todos
               estén completos. */}
-          {!isDraftVacio(draft) && (
+          {editando && (
+            <Button
+              variant="fill"
+              color="primary"
+              size="sm"
+              type="button"
+              disabled={!completo || pendiente || soloEnLinea.disabled}
+              title={soloEnLinea.tooltip ?? undefined}
+              onClick={guardarEdicion}
+            >
+              <CheckIcon data-icon="inline-start" />
+              Guardar
+            </Button>
+          )}
+          {!editando && !isDraftVacio(draft) && (
             <>
               <Button
                 variant="outline"
                 color="primary"
                 size="sm"
                 type="button"
-                disabled={!completo || addCriterio.isPending || soloEnLinea.disabled}
+                disabled={!completo || pendiente || soloEnLinea.disabled}
                 title={soloEnLinea.tooltip ?? undefined}
                 onClick={() => vincular(() => setDraft(draftVacio(valoraciones)))}
               >
@@ -245,7 +295,7 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
                 color="primary"
                 size="sm"
                 type="button"
-                disabled={!completo || addCriterio.isPending || soloEnLinea.disabled}
+                disabled={!completo || pendiente || soloEnLinea.disabled}
                 title={soloEnLinea.tooltip ?? undefined}
                 onClick={() => vincular(() => handleOpenChange(false))}
               >

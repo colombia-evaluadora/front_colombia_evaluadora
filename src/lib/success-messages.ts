@@ -147,6 +147,11 @@ export const SUCCESS_MESSAGES = {
     updated: "Los criterios de evaluación se guardaron correctamente.",
     deleted: "Los criterios de evaluación se eliminaron correctamente.",
   },
+  criterioUnidad: {
+    created: "El criterio se agregó correctamente.",
+    updated: "El criterio se actualizó correctamente.",
+    deleted: "El criterio se eliminó correctamente.",
+  },
   promotionCriteria: {
     created: "Los criterios de promoción se guardaron correctamente.",
     updated: "Los criterios de promoción se guardaron correctamente.",

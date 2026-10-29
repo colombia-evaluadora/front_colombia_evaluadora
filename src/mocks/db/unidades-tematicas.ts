@@ -302,6 +302,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
 export function addCriterioToUnidad(
   unidadId: number,
   criterio: Omit<CriterioUnidad, "id">,
+  autorEmail?: string,
 ): CriterioUnidad | null {
   const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
   if (!unidad) return null
@@ -309,7 +310,24 @@ export function addCriterioToUnidad(
   const id = nextId(unidadesTematicasDb.flatMap((u) => u.criterios.map((c) => c.id)))
   const created: CriterioUnidad = { ...criterio, id }
   unidad.criterios.push(created)
+  if (autorEmail) criterioAutorDb.set(id, autorEmail)
   return created
+}
+
+/**
+ * QA 71: autor de cada criterio (email del usuario mock), el `CREATED_BY`
+ * real. Los criterios del seed no tienen entrada: los creó "otro docente",
+ * así que un docente puro no los gestiona (solo los directivos).
+ */
+export const criterioAutorDb = new Map<number, string>()
+export const AUTOR_CRITERIO_SEED = "Otro docente del colegio"
+
+export function findCriterioUnidad(criterioId: number) {
+  for (const unidad of unidadesTematicasDb) {
+    const criterio = unidad.criterios.find((c) => c.id === criterioId)
+    if (criterio) return { unidad, criterio }
+  }
+  return null
 }
 
 /**

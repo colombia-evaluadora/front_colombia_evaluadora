@@ -57,6 +57,15 @@ export interface CriterioUnidad {
   id: number
   nombre: string
   niveles: NivelDesempenoCriterio[]
+  /** Regla 27 / QA 71: el solicitante puede editarlo y eliminarlo (es su
+   *  autor, o no es docente puro). Lo calcula el backend
+   *  (`puede_gestionar` de `fn_unidad_criterio_listar`) con la misma regla
+   *  que `fn_unidad_assert_criterio_propietario` aplica al PUT/PATCH.
+   *  `undefined` = el backend no lo informa (eval-col sin recrear): se
+   *  ofrecen las acciones y decide el backend. */
+  puedeGestionar?: boolean
+  /** Nombre de quien creó el criterio (para explicar por qué no se edita). */
+  autor?: string | null
 }
 
 /**
