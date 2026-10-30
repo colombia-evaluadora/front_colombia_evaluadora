@@ -37,18 +37,21 @@ export function comoEliminado(m: Mensaje, eliminadoEn: string | null | undefined
 export type EstadoLectura = "ENVIADO" | "ENTREGADO" | "LEIDO"
 
 /**
- * Confirmación de lectura de un mensaje propio: ✓ enviado, ✓✓ leído por todos. `leidoHasta` es el
- * menor marcador de lectura de los miembros (comms-service). Sin otra persona en la conversación
- * no hay a quién confirmar.
+ * Estado de un mensaje propio, como WhatsApp: ✓ gris enviado, ✓✓ gris entregado a todos, ✓✓ azul
+ * leído por todos. `leidoHasta`/`entregadoHasta` son el menor marcador de lectura/entrega de los
+ * miembros (comms-service): en un grupo solo avanza cuando todos lo recibieron o leyeron. Sin otra
+ * persona en la conversación no hay a quién confirmar.
  */
 export function estadoLectura(
   m: Mensaje,
-  c: Pick<Conversacion, "leidoHasta" | "totalMiembros"> | undefined,
+  c: Pick<Conversacion, "leidoHasta" | "entregadoHasta" | "totalMiembros"> | undefined,
 ): EstadoLectura | null {
   if (!m.esPropio || m.sistema || m.eliminado || !c || c.totalMiembros < 2) return null
   // Pidió confirmación de lectura (HU 7): el estado lo calcula comms-service por receptor.
   if (m.confirmacion) return m.confirmacion.estado
-  return c.leidoHasta != null && m.id <= c.leidoHasta ? "LEIDO" : "ENVIADO"
+  if (c.leidoHasta != null && m.id <= c.leidoHasta) return "LEIDO"
+  if (c.entregadoHasta != null && m.id <= c.entregadoHasta) return "ENTREGADO"
+  return "ENVIADO"
 }
 
 /** Marca de edición como prefijo, igual que el diseño: "Editado 7:33 AM". */
