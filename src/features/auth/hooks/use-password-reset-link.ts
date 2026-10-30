@@ -1,3 +1,4 @@
+import type { CaptchaState } from "@/hooks/use-captcha"
 import { useResetTokenStatusQuery } from "@/features/auth/api/query/use-reset-token-status-query"
 import { useCountdown } from "@/features/auth/hooks/use-countdown"
 import { formatTtl } from "@/features/auth/utils/format-duration"
@@ -34,8 +35,11 @@ function formatIssuedAt(issuedAt: number): string {
  * servidor, cuenta regresiva en el cliente y los textos ya formateados. Las
  * pantallas solo eligen qué card mostrar con los booleanos que devuelve.
  */
-export function usePasswordResetLink(token: string | undefined): PasswordResetLink {
-  const { data, isPending, isError } = useResetTokenStatusQuery(token)
+export function usePasswordResetLink(
+  token: string | undefined,
+  captcha: CaptchaState,
+): PasswordResetLink {
+  const { data, isPending, isError } = useResetTokenStatusQuery(token, captcha)
   // La consulta ya terminó (con error) — no tiene sentido seguir mostrando el
   // spinner esperando un estado que no va a llegar.
   const isChecking = !isError && isPending

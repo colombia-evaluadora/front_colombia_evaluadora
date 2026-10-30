@@ -6,6 +6,8 @@ import logo from "@/assets/logo.svg"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { Turnstile } from "@/components/captcha/turnstile"
+import { useCaptcha } from "@/hooks/use-captcha"
 import {
   CheckCircleIcon,
   FileDownloadOutlinedIcon,
@@ -119,6 +121,9 @@ function Detalles({ data }: { data: BoletinVerificacion }) {
 function PdfVigente({ codigo }: { codigo: string }) {
   const [digitos, setDigitos] = useState("")
   const pdf = useBoletinPdf()
+  // Captcha (Turnstile) del PDF: reporting-service lo exige antes de comparar
+  // los dígitos, para frenar el barrido automatizado del segundo factor.
+  const captcha = useCaptcha()
   const [url, setUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -130,8 +135,11 @@ function PdfVigente({ codigo }: { codigo: string }) {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (digitos.length !== 4 || pdf.isPending) return
-    pdf.mutate({ codigo, ultimos4: digitos }, { onSuccess: () => setDigitos("") })
+    if (digitos.length !== 4 || pdf.isPending || !captcha.ready) return
+    pdf.mutate(
+      { codigo, ultimos4: digitos, captchaToken: captcha.consume() },
+      { onSuccess: () => setDigitos("") },
+    )
   }
 
   return (
@@ -164,11 +172,12 @@ function PdfVigente({ codigo }: { codigo: string }) {
               aria-describedby={pdf.isError ? "ultimos4-error" : undefined}
               className="w-28 text-center tracking-[0.4em]"
             />
-            <Button type="submit" disabled={digitos.length !== 4 || pdf.isPending}>
+            <Button type="submit" disabled={digitos.length !== 4 || pdf.isPending || !captcha.ready}>
               {pdf.isPending && <Spinner data-icon="inline-start" />}
               Ver boletín
             </Button>
           </div>
+          <Turnstile {...captcha.widget} action="boletin-pdf" className="items-start" />
           {pdf.isError && (
             <p id="ultimos4-error" role="alert" className="text-sm text-red">
               {pdfErrorMessage(pdf.error)}
