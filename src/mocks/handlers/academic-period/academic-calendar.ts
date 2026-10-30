@@ -10,9 +10,10 @@ import type { CalendarEntryRow } from "@/features/establishment/academic-period/
 import type { CalendarEntry } from "@/features/establishment/academic-period/api/types/academic-calendar"
 import {
   formatCalendarRange,
-  getColombianHolidays,
   getNonWorkingDays,
 } from "@/features/establishment/academic-period/utils/academic-calendar"
+import { fechaFestivo, toIso } from "@/features/administration/festivos/lib/fecha-festivo"
+import { festivosDb } from "@/mocks/db/festivos"
 
 interface CalendarEntryBody {
   FK_PERIODO_ACADEMICO: number
@@ -25,14 +26,24 @@ interface CalendarEntryBody {
 const error = (message: string, status = 400) =>
   HttpResponse.json({ status: "error", message }, { status })
 
-// Festivos del período (ids negativos: no tienen registro propio).
+// Festivos activos del período, como las copias TIPO FESTIVO del back (V337.3).
+// Ids negativos: no son entradas que el establecimiento pueda editar. El mock
+// no congela los períodos comenzados: siempre refleja la lista actual.
 function holidayRows(periodId: number): CalendarEntryRow[] {
   const period = academicPeriodsDb.find((p) => p.id === periodId)
   if (!period) return []
   const years = new Set([Number(period.startDate.slice(0, 4)), Number(period.endDate.slice(0, 4))])
   return [...years]
-    .flatMap(getColombianHolidays)
+    .flatMap((year) =>
+      festivosDb
+        .filter((f) => f.habilitado)
+        .flatMap((f) => {
+          const fecha = fechaFestivo(f, year)
+          return fecha ? [{ date: toIso(fecha), name: f.nombre }] : []
+        }),
+    )
     .filter((h) => h.date >= period.startDate && h.date <= period.endDate)
+    .sort((a, b) => a.date.localeCompare(b.date))
     .map((h, i) => ({
       id: -(i + 1),
       tipo: "FESTIVO",
