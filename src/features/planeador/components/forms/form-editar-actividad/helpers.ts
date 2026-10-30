@@ -20,6 +20,21 @@ export function scrollToFirstInvalidField(formEl: HTMLFormElement) {
   })
 }
 
+/**
+ * El backend rechaza el guardado con "Marque al menos una evidencia de algún enunciado de
+ * <instrumento> … que cubre Actividad …" (`RAISE` de PL/pgSQL) cuando no hay evidencias marcadas.
+ * Los rótulos varían por nivel (Preescolar: propósitos/imprescindibles), por eso se aceptan todos.
+ */
+export function esErrorEvidenciasFaltantes(mensaje: string | null | undefined): boolean {
+  return /marque al menos un[oa]?\b.*(evidencia|enunciado|prop[oó]sito|imprescindible|objetivo)/i.test(mensaje ?? "")
+}
+
+/** "Ir al campo" desde la página (fuera del form): busca el form por id y salta al primer inválido. */
+export function irAlCampoInvalido(formId: string) {
+  const formEl = document.getElementById(formId)
+  if (formEl instanceof HTMLFormElement) scrollToFirstInvalidField(formEl)
+}
+
 /** Id aleatorio para items nuevos; el PK real lo asigna el backend. */
 export function cryptoId(): number {
   return Math.floor(Math.random() * 1_000_000_000)

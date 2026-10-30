@@ -57,12 +57,20 @@ import {
   SeguimientoSection,
 } from "@/features/planeador/components/forms/form-editar-actividad/adaptaciones-section"
 
+/**
+ * Lo que la página devuelve tras guardar para que el form marque errores que solo
+ * detecta el backend (p. ej. ninguna evidencia marcada).
+ */
+export interface ResultadoGuardadoActividad {
+  evidenciasFaltantes?: boolean
+}
+
 interface EditarActividadFormProps {
   actividad: Actividad
   onDirtyChange?: (isDirty: boolean) => void
   formId: string
   /** Submit real. Opcional: sin él el submit no hace nada. */
-  onSubmit?: (values: Actividad) => void
+  onSubmit?: (values: Actividad) => void | Promise<void | ResultadoGuardadoActividad>
   /**
    * `true` en el alta: `actividad.id` es un `draftId()` inexistente en el backend,
    * así que no se piden calificaciones con él.
@@ -121,15 +129,19 @@ export function EditarActividadForm({
   const [draftInicial] = useState(() => consumeActividadFormDraft(draftKey))
 
   const { notify } = useNotify()
+  // Error del backend "Marque al menos una evidencia…": resalta el checklist hasta que se tilde alguna.
+  const [evidenciasFaltantes, setEvidenciasFaltantes] = useState(false)
   const form = useForm({
     defaultValues: actividadOriginal,
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       if (readOnly) return
       if (camposObligatoriosFaltantes(value, camposEfectivosRef.current).length > 0) return
       // El instrumento se guarda en un PUT aparte tras la actividad: se frena acá si
       // está incompleto para no dejar la actividad guardada sin él.
       if (faltantesDelInstrumento(value).length > 0) return
-      return onSubmit?.(value)
+      // Se espera el guardado: el `.then()` del submit lleva la vista al checklist ya resaltado.
+      const resultado = await onSubmit?.(value)
+      if (resultado && resultado.evidenciasFaltantes) setEvidenciasFaltantes(true)
     },
   })
 
@@ -329,7 +341,13 @@ export function EditarActividadForm({
             tab={tab}
           />
         </div>
-        <UnidadSection form={form} unidades={unidades} readOnly={readOnly} />
+        <UnidadSection
+          form={form}
+          unidades={unidades}
+          readOnly={readOnly}
+          evidenciasFaltantes={evidenciasFaltantes}
+          onEvidenciasChange={() => setEvidenciasFaltantes(false)}
+        />
       </Card>
       <Card className="gap-6 p-4">
         <h3 className="text-base font-semibold">Recursos y Materiales</h3>

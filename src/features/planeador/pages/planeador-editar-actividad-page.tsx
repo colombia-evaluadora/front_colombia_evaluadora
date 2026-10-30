@@ -21,7 +21,8 @@ import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-act
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import type { SetEstudiantesResult } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
-import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
+import { EditarActividadForm, type ResultadoGuardadoActividad } from "@/features/planeador/components/forms/form-editar-actividad"
+import { esErrorEvidenciasFaltantes, irAlCampoInvalido } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import {
   ValidacionCoordinadorAprobar,
   ValidacionCoordinadorEstado,
@@ -172,6 +173,18 @@ function EditarActividadPageContent({
     motivoNoEditable(actividad) ??
     (actividad && resultadosSinSincronizar(ops, actividad.id) > 0 ? MENSAJE_RESULTADOS_SIN_SINCRONIZAR : undefined)
 
+  // "Marque al menos una evidencia…" (backend): el form resalta el checklist y el aviso ofrece "Ir al campo".
+  function avisarErrorGuardado(mensaje: string): ResultadoGuardadoActividad | undefined {
+    const evidenciasFaltantes = esErrorEvidenciasFaltantes(mensaje)
+    notify(
+      mensaje,
+      evidenciasFaltantes
+        ? { variant: "error", action: { label: "Ir al campo", onClick: () => irAlCampoInvalido(FORM_ID) } }
+        : { variant: "error" },
+    )
+    return evidenciasFaltantes ? { evidenciasFaltantes } : undefined
+  }
+
   async function handleSubmit(values: Actividad) {
     // Red de seguridad: el form ya está en solo lectura.
     if (bloqueoEdicion) return
@@ -186,9 +199,8 @@ function EditarActividadPageContent({
       })
       run = await runSaga(saga, { continueOnError: false })
     } catch (error) {
-      notify(mensajeErrorSaga(error), { variant: "error" })
       setGuardando(false)
-      return
+      return avisarErrorGuardado(mensajeErrorSaga(error))
     }
     setGuardando(false)
 
@@ -202,13 +214,12 @@ function EditarActividadPageContent({
     const fallido = run.outcomes.find((o) => !o.ok)
     if (fallido) {
       const datosGuardados = run.outcomes.some((o) => o.ok && o.kind === SAGA_KINDS.actividadEditar)
-      notify(
+      const resultado = avisarErrorGuardado(
         datosGuardados
           ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${fallosDeSaga([fallido])[0]}`
           : getErrorMessage(fallido.error),
-        { variant: "error" },
       )
-      return
+      return resultado
     }
 
     const recursosOmitidos = recursosOmitidosDe(run.outcomes)

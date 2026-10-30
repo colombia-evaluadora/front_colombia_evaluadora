@@ -18,7 +18,8 @@ import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useActividadesTabsQuery, type ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
-import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
+import { EditarActividadForm, type ResultadoGuardadoActividad } from "@/features/planeador/components/forms/form-editar-actividad"
+import { esErrorEvidenciasFaltantes, irAlCampoInvalido } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -82,6 +83,18 @@ function PlaneadorCrearActividadPageContent() {
   const [guardando, setGuardando] = useState(false)
   const escritura = useOfflineWritable("Necesitas conexión para crear actividades en este equipo.")
 
+  // "Marque al menos una evidencia…" (backend): el form resalta el checklist y el aviso ofrece "Ir al campo".
+  function avisarErrorGuardado(mensaje: string): ResultadoGuardadoActividad | undefined {
+    const evidenciasFaltantes = esErrorEvidenciasFaltantes(mensaje)
+    notify(
+      mensaje,
+      evidenciasFaltantes
+        ? { variant: "error", action: { label: "Ir al campo", onClick: () => irAlCampoInvalido(FORM_ID) } }
+        : { variant: "error" },
+    )
+    return evidenciasFaltantes ? { evidenciasFaltantes } : undefined
+  }
+
   async function handleSubmit(values: Actividad) {
     if (guardando) return
     setGuardando(true)
@@ -89,9 +102,8 @@ function PlaneadorCrearActividadPageContent() {
     try {
       run = await runSaga(await buildCrearActividadSaga(values), { continueOnError: true })
     } catch (error) {
-      notify(mensajeErrorSaga(error), { variant: "error" })
       setGuardando(false)
-      return
+      return avisarErrorGuardado(mensajeErrorSaga(error))
     }
     setGuardando(false)
 
@@ -103,8 +115,7 @@ function PlaneadorCrearActividadPageContent() {
     const [creada] = run.outcomes
     if (!creada?.ok) {
       // El motivo del backend es accionable (qué instrumento o unidad lo impide).
-      notify(getErrorMessage(creada?.error), { variant: "error" })
-      return
+      return avisarErrorGuardado(getErrorMessage(creada?.error))
     }
     const { id } = creada.result as { id: number }
 
@@ -227,7 +238,7 @@ function CrearActividadForm({
   tab?: ActividadTab
   formId: string
   onDirtyChange: (dirty: boolean) => void
-  onSubmit: (values: Actividad) => void | Promise<void>
+  onSubmit: (values: Actividad) => void | Promise<void | ResultadoGuardadoActividad>
 }) {
   const [actividad] = useState(() => {
     let base = crearActividadVacia()
