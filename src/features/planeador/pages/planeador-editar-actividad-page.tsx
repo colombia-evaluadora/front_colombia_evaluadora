@@ -21,7 +21,12 @@ import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-act
 import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import type { SetEstudiantesResult } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
-import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
+import { EditarActividadForm, type ResultadoGuardadoActividad } from "@/features/planeador/components/forms/form-editar-actividad"
+import {
+  esErrorEvidenciasFaltantes,
+  esErrorInstrumento,
+  irAlCampoInvalido,
+} from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import {
   ValidacionCoordinadorAprobar,
   ValidacionCoordinadorEstado,
@@ -172,6 +177,21 @@ function EditarActividadPageContent({
     motivoNoEditable(actividad) ??
     (actividad && resultadosSinSincronizar(ops, actividad.id) > 0 ? MENSAJE_RESULTADOS_SIN_SINCRONIZAR : undefined)
 
+  // Errores del backend de la sección del instrumento ("Marque al menos una evidencia…", instrumento
+  // rechazado): el form resalta el campo y el aviso ofrece "Ir al campo", como los de validación local.
+  function avisarErrorGuardado(mensaje: string, pasoInstrumento = false): ResultadoGuardadoActividad | undefined {
+    const evidenciasFaltantes = esErrorEvidenciasFaltantes(mensaje)
+    const instrumentoInvalido = !evidenciasFaltantes && esErrorInstrumento(mensaje, pasoInstrumento)
+    const irAlCampo = evidenciasFaltantes || instrumentoInvalido
+    notify(
+      mensaje,
+      irAlCampo
+        ? { variant: "error", action: { label: "Ir al campo", onClick: () => irAlCampoInvalido(FORM_ID) } }
+        : { variant: "error" },
+    )
+    return irAlCampo ? { evidenciasFaltantes, instrumentoInvalido } : undefined
+  }
+
   async function handleSubmit(values: Actividad) {
     // Red de seguridad: el form ya está en solo lectura.
     if (bloqueoEdicion) return
@@ -186,9 +206,8 @@ function EditarActividadPageContent({
       })
       run = await runSaga(saga, { continueOnError: false })
     } catch (error) {
-      notify(mensajeErrorSaga(error), { variant: "error" })
       setGuardando(false)
-      return
+      return avisarErrorGuardado(mensajeErrorSaga(error))
     }
     setGuardando(false)
 
@@ -202,13 +221,13 @@ function EditarActividadPageContent({
     const fallido = run.outcomes.find((o) => !o.ok)
     if (fallido) {
       const datosGuardados = run.outcomes.some((o) => o.ok && o.kind === SAGA_KINDS.actividadEditar)
-      notify(
+      const resultado = avisarErrorGuardado(
         datosGuardados
           ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${fallosDeSaga([fallido])[0]}`
           : getErrorMessage(fallido.error),
-        { variant: "error" },
+        fallido.kind === SAGA_KINDS.actividadInstrumento,
       )
-      return
+      return resultado
     }
 
     const recursosOmitidos = recursosOmitidosDe(run.outcomes)

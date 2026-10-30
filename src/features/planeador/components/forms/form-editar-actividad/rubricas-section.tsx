@@ -273,6 +273,7 @@ function CriterioItem({
           aria-invalid={nombreInvalido}
           disabled={disabled}
         />
+        <CharacterCounter value={criterio.nombre} max={50} />
         {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
       </Field>
 
@@ -315,6 +316,7 @@ function CriterioItem({
               aria-invalid={excelenteDescripcionInvalida}
               disabled={disabled}
             />
+            <CharacterCounter value={criterio.excelente} max={500} />
             {excelenteDescripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
           </Field>
           {/* Vacío no se guarda como `0`. */}
@@ -418,6 +420,7 @@ function CriterioItem({
                 aria-invalid={descripcionInvalida}
                 disabled={disabled}
               />
+              <CharacterCounter value={nivel.descripcion} max={500} />
               {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
             {esEvaluativa && (

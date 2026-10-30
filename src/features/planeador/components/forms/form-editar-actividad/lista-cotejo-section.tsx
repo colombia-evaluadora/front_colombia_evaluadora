@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useSelector } from "@tanstack/react-form"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -247,6 +248,7 @@ function ListaCotejoItemCard({
             aria-invalid={descripcionInvalida}
             disabled={disabled}
           />
+          <CharacterCounter value={item.descripcion} max={500} />
           {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
 

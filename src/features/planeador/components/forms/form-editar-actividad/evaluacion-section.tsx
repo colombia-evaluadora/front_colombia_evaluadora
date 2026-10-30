@@ -33,7 +33,12 @@ export function EvaluacionSection({
   precargar = false,
   tipoEvaluacion,
   disabled,
+  instrumentoErrorServidor = false,
+  onInstrumentoChange,
 }: {
+  /** El backend rechazó el instrumento al guardar: se marca el select hasta que se cambie. */
+  instrumentoErrorServidor?: boolean
+  onInstrumentoChange?: () => void
   form: FormActividad
   unidades: UnidadTematica[]
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
@@ -116,9 +121,10 @@ export function EvaluacionSection({
               // Solo se exige si el backend lo pide (`evaluacion.requerido`), la misma regla de
               // `camposObligatoriosFaltantes`; antes el aviso lo nombraba pero el Select no se marcaba.
               const instrumentoInvalido =
-                Boolean(camposEfectivos?.evaluacion.requerido) &&
-                !field.state.value &&
-                (field.state.meta.isTouched || submissionAttempts > 0)
+                instrumentoErrorServidor ||
+                (Boolean(camposEfectivos?.evaluacion.requerido) &&
+                  !field.state.value &&
+                  (field.state.meta.isTouched || submissionAttempts > 0))
               return (
                 <Field variant="outlined" data-invalid={instrumentoInvalido}>
                   <FieldLabel htmlFor={field.name}>
@@ -126,7 +132,11 @@ export function EvaluacionSection({
                   </FieldLabel>
                   <Select
                     value={field.state.value}
-                    onValueChange={(v) => v && field.handleChange(v)}
+                    onValueChange={(v) => {
+                      if (!v) return
+                      onInstrumentoChange?.()
+                      field.handleChange(v)
+                    }}
                     disabled={disabled}
                   >
                     <SelectTrigger id={field.name} aria-invalid={instrumentoInvalido}>
@@ -144,7 +154,18 @@ export function EvaluacionSection({
                       ))}
                     </SelectContent>
                   </Select>
-                  {instrumentoInvalido && <FieldError errors={[{ message: "Selecciona el instrumento de evaluación." }]} />}
+                  {instrumentoInvalido && (
+                    <FieldError
+                      errors={[
+                        {
+                          message:
+                            instrumentoErrorServidor && field.state.value
+                              ? "Revisa el instrumento de evaluación y su definición."
+                              : "Selecciona el instrumento de evaluación.",
+                        },
+                      ]}
+                    />
+                  )}
                 </Field>
               )
             }}
