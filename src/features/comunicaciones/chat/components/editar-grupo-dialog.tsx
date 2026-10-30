@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import {
   useEditarGrupo,
@@ -102,11 +102,7 @@ function Formulario({
           idPrefijo={`editar-grupo-${c.id}`}
         />
       </div>
-      {editar.error && (
-        <p role="alert" className="text-sm text-red">
-          {getErrorMessage(editar.error)}
-        </p>
-      )}
+      <ErrorNoticeBanner error={editar.error} />
       <DialogFooter>
         <Button type="button" variant="fill" color="neutral" onClick={onClose} disabled={editar.isPending}>
           Cancelar

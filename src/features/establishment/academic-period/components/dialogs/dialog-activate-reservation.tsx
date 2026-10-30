@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
@@ -150,11 +151,7 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
             No
           </AlertDialogCancel>
         </AlertDialogFooter>
-        {isError && (
-          <p className="text-sm text-destructive">
-            {getErrorMessage(error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={isError ? error : null} />
       </AlertDialogContent>
     </AlertDialog>
   )
