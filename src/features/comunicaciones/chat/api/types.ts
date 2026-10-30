@@ -307,6 +307,9 @@ export interface Eleccion {
   gestiona?: boolean
   // "Permitir comentarios" (paso 1): los participantes escriben en el canal de la elección.
   permiteComentarios?: boolean
+  // El usuario está en el censo y puede votar. El creador solo si se eligió a sí mismo como votante
+  // (QA 78). Opcional: el mock no lo manda (equivale a no habilitado para el creador).
+  habilitado?: boolean
 }
 
 export type EstadoBorrador = "BORRADOR" | "PROGRAMADO" | "ENVIADO"
@@ -591,6 +594,8 @@ export interface Votante {
   nombre: string
   documento: string
   numero: number
+  // Es quien consulta: el selector lo marca "(Tú)" (QA 78). Opcional: el mock no lo manda.
+  esYo?: boolean
 }
 
 /**
