@@ -9,11 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
+import { CountedTextarea } from "@/features/academic-management/curricular-references/components/forms/counted-textarea"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
@@ -87,7 +87,8 @@ export function ManageStatementDialog({
   // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
   const soloEnLinea = useOfflineWritable()
 
-  const hasRequiredFields = text.trim().length > 0
+  // Descripción: entre 10 y 500 caracteres (Formulario de Componentes).
+  const hasRequiredFields = text.trim().length >= 10
   const hasChanges = isEditMode
     ? text.trim() !== (statement?.text ?? "") || active !== (statement?.active ?? true)
     : true
@@ -97,7 +98,11 @@ export function ManageStatementDialog({
     event.preventDefault()
 
     if (!text.trim()) {
-      setError(`Escribe el texto del ${levelLabel.toLowerCase()}.`)
+      setError("Escribe la descripción.")
+      return
+    }
+    if (text.trim().length < 10) {
+      setError("Mínimo 10 caracteres.")
       return
     }
 
@@ -134,16 +139,15 @@ export function ManageStatementDialog({
             <FieldLabel htmlFor="statement-text" className="right-2.5 w-auto break-words hyphens-auto" lang="es">
               {levelLabel} *
             </FieldLabel>
-            <Textarea
+            <CountedTextarea
               id="statement-text"
               value={text}
               maxLength={500}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(toReferenteLongTextInput(event.target.value))}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
-              className={cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full min-h-32 break-all")}
+              className={cn(TEXTAREA_OUTLINED, "max-w-full min-h-32 break-all")}
             />
-            <CharacterCounter value={text} max={500} />
             <FieldError>{error}</FieldError>
           </Field>
 

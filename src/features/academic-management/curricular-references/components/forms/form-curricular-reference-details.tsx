@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import {
   ComboboxField,
@@ -13,6 +13,7 @@ import {
 import { useAreasOficialesOpcionesQuery } from "@/features/administration/areas-oficiales/api/query/use-areas-oficiales-opciones-query"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/fields/subjects-multi-select"
+import { CountedTextarea } from "@/features/academic-management/curricular-references/components/forms/counted-textarea"
 import { SubjectLabelSelect } from "@/features/academic-management/curricular-references/components/forms/subject-label-select"
 
 import {
@@ -25,31 +26,7 @@ import {
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "field-sizing-fixed max-w-full break-all")
-
-// Conteo dentro del borde del textarea, en una franja propia: el texto que
-// hace scroll no queda debajo del número. El contenedor toma el contorno.
-function CountedTextarea({
-  value,
-  maxLength,
-  className,
-  ...props
-}: React.ComponentProps<typeof Textarea> & { value: string; maxLength: number }) {
-  return (
-    <div className="rounded-md border border-input transition-[color,border-color] hover:border-ring focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 has-[[aria-invalid=true]]:border-red has-[[aria-invalid=true]]:focus-within:ring-red/20">
-      <Textarea
-        value={value}
-        maxLength={maxLength}
-        // Crece con el texto: con 400 caracteres no hace falta scroll.
-        className={cn(className, "field-sizing-content min-h-20 rounded-none border-0 pb-0 hover:border-0 focus-visible:ring-0")}
-        {...props}
-      />
-      <div aria-hidden className="px-3 pb-1.5 text-right text-xs text-muted-foreground tabular-nums">
-        {value.length} / {maxLength}
-      </div>
-    </div>
-  )
-}
+const TEXTAREA_OUTLINE_CLASS = cn(TEXTAREA_OUTLINED, "max-w-full break-all")
 
 // Conteo dentro del input, a la derecha (como `TextField showCounter` de período académico).
 function CountedInput({
