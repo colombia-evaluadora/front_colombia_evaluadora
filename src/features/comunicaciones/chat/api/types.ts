@@ -21,6 +21,9 @@ export interface Conversacion {
   noLeidos: number
   // Punto verde: el canal tiene una actividad abierta (votación, encuesta…).
   actividadAbierta: boolean
+  // QA 79: estado de la elección, encuesta o evaluación con el reloj del servidor (null en otros
+  // canales). Programada se edita y elimina; en curso, nada; finalizada solo se elimina.
+  actividadEstado?: "PROGRAMADA" | "EN_CURSO" | "FINALIZADA" | null
   esBot: boolean
   totalMiembros: number
   miembrosDestacados: string[]
