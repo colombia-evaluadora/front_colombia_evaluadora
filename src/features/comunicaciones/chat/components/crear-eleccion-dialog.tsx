@@ -63,7 +63,6 @@ const datosSchema = z
     fechaInicio: z.string().nullable(),
     fechaCierre: z.string().nullable(),
     jornadaId: z.number().min(1, required("La jornada", { femenino: true })),
-    verResultadosEnVivo: z.boolean(),
     // "Comentarios" del paso 1 (diseño 3846:71356): los participantes escriben en el canal.
     permiteComentarios: z.boolean(),
   })
@@ -77,7 +76,6 @@ const DATOS_INICIALES: Datos = {
   fechaInicio: null,
   fechaCierre: null,
   jornadaId: 0,
-  verResultadosEnVivo: false,
   permiteComentarios: false,
 }
 
@@ -146,7 +144,6 @@ export function CrearEleccionDialog({
             fechaInicio: isoALocal(editar.fechaInicio),
             fechaCierre: isoALocal(editar.fechaCierre),
             jornadaId: editar.jornadaId,
-            verResultadosEnVivo: editar.verResultadosEnVivo,
             permiteComentarios: !!editar.permiteComentarios,
           }
         : DATOS_INICIALES,
@@ -221,7 +218,6 @@ export function CrearEleccionDialog({
       fechaInicio: aIso(v.fechaInicio),
       fechaCierre: aIso(v.fechaCierre),
       jornadaId: v.jornadaId,
-      verResultadosEnVivo: v.verResultadosEnVivo,
       permiteComentarios: v.permiteComentarios,
       candidatos: candidatos.map(({ clave: _clave, ...c }) => c),
     }
@@ -319,11 +315,11 @@ export function CrearEleccionDialog({
               </datos.AppField>
               <fieldset className="rounded-lg border px-3 pt-1 pb-3">
                 <legend className="px-1 text-sm font-medium">Permitir</legend>
-                {/* En una fila, como en Figma 3846:71356. */}
+                {/*
+                  Sin "Ver resultados en tiempo real" (Figma 3846:71356 lo tenía): los resultados se
+                  conocen solo al cierre, para todos, y comms-service ya no manda conteos antes.
+                */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  <datos.AppField name="verResultadosEnVivo">
-                    {(f) => <f.CheckboxField label="Ver resultados en tiempo real" className="w-auto" />}
-                  </datos.AppField>
                   <datos.AppField name="permiteComentarios">
                     {(f) => <f.CheckboxField label="Comentarios" className="w-auto" />}
                   </datos.AppField>

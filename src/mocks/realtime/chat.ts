@@ -78,6 +78,19 @@ export function mensajeNeutro(m: Mensaje): Mensaje {
     esPropio: false,
     meMenciona: false,
     reacciones: m.reacciones?.map((r) => ({ ...r, mia: false })),
+    votacion: m.votacion && votacionNeutra(m.votacion),
+  }
+}
+
+// Sin resultados en vivo: abierta no viajan conteos ni total; cerrada, el resultado final.
+function votacionNeutra(v: NonNullable<Mensaje["votacion"]>): NonNullable<Mensaje["votacion"]> {
+  const cerrada = new Date(v.cierraEn) <= new Date()
+  return {
+    ...v,
+    miVoto: null,
+    cerrada,
+    opciones: v.opciones.map((o) => ({ ...o, votos: cerrada ? (o.votos ?? 0) : null })),
+    totalVotos: cerrada ? v.opciones.reduce((n, o) => n + (o.votos ?? 0), 0) : null,
   }
 }
 

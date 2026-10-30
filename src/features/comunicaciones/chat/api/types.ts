@@ -273,7 +273,8 @@ export interface Candidato {
   numero: string
   lema: string
   fotoUrl: string | null
-  votos: number
+  // null mientras la elección sigue abierta: nadie (ni quien la creó) ve conteos antes del cierre.
+  votos: number | null
 }
 
 export interface Eleccion {
@@ -284,9 +285,11 @@ export interface Eleccion {
   // Sin fecha de cierre la votación sigue abierta hasta cerrarla a mano.
   fechaCierre: string | null
   jornadaId: number
-  verResultadosEnVivo: boolean
   candidatos: Candidato[]
-  votosEnBlanco: number
+  // null mientras la elección sigue abierta (igual que `Candidato.votos`).
+  votosEnBlanco: number | null
+  // Participación ("ya votaron"): abierta solo le llega a quien gestiona; cerrada, a todos.
+  votaron: number | null
   // El creador la cerró antes de tiempo desde el menú del canal.
   cerradaManualmente: boolean
   // El usuario actual ya votó (el voto es único).
@@ -398,6 +401,7 @@ export interface PreguntaEvaluacion {
   id: number
   tipo: TipoPregunta
   texto: string
+  // null en la vista del estudiante: no se le muestran puntos por pregunta.
   puntos: number
   opciones: OpcionEvaluacion[]
 }
@@ -416,6 +420,7 @@ export interface Evaluacion {
   puntajeTotal: number
   // null = ilimitados.
   intentos: number | null
+  // null en la vista del estudiante: comms-service lo ignora para él (solo ve la nota calificada).
   mostrarResultados: MostrarResultados
   preguntas: PreguntaEvaluacion[]
   creadoPor: string
@@ -425,10 +430,19 @@ export interface Evaluacion {
   gestiona?: boolean
   // Del usuario actual (estudiante): cuántas veces la envió y su última nota.
   intentosUsados: number
-  // null = aún no se puede ver (se publica al cierre) o no ha enviado.
+  // Nota del último intento; null = pendiente de calificación o no ha enviado.
   miNota: number | null
-  // Hay preguntas de redacción que el docente aún no califica.
+  // El último intento aún no está calificado.
   miNotaPendiente: boolean
+  // Del estudiante, por intento: solo la nota calificada (nunca respuestas, correctas ni puntos
+  // por pregunta). Opcional: la vista de gestión no lo usa.
+  misIntentos?: IntentoEvaluacion[]
+}
+
+export interface IntentoEvaluacion {
+  numero: number
+  estado: "PENDIENTE" | "CALIFICADA"
+  nota: number | null
 }
 
 export interface RespuestaEntrega {
@@ -537,7 +551,8 @@ export type TipoVotacionRapida = "SI_NO" | "VERDADERO_FALSO"
 export interface OpcionVotacionRapida {
   id: number
   etiqueta: string
-  votos: number
+  // null mientras la votación sigue abierta: el resultado se conoce al cierre.
+  votos: number | null
 }
 
 export interface VotacionRapida {
@@ -548,6 +563,10 @@ export interface VotacionRapida {
   opciones: OpcionVotacionRapida[]
   // Opción que eligió el usuario actual; null si aún no vota.
   miVoto: number | null
+  // Cerrada por tiempo o a mano ("Cerrar votación"). Opcional: un mensaje viejo en caché no lo trae.
+  cerrada?: boolean
+  // Total de votos: abierta solo le llega a quien la creó; cerrada, a todos.
+  totalVotos?: number | null
 }
 
 // Personas habilitadas para votar en una elección, filtradas por grado o tipo de funcionario.
