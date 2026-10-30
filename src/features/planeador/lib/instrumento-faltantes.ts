@@ -53,6 +53,35 @@ function hayRepetidos<T>(valores: T[]): boolean {
   return new Set(valores).size !== valores.length
 }
 
+/**
+ * Marca inline de las reglas de puntaje "entre niveles" (repetidos / todos en 0):
+ * mismas condiciones que `faltantesRubrica`/`faltantesEscala`, pero por posición
+ * para pintar en rojo el puntaje concreto. Solo aplica con todos los puntajes
+ * cargados (si falta alguno, el error es "obligatorio" y se marca ese).
+ */
+export function conflictosPuntaje(puntajes: (number | undefined)[]): { repetidos: Set<number>; todosCero: boolean } {
+  const repetidos = new Set<number>()
+  if (puntajes.length === 0 || puntajes.some((p) => p == null)) return { repetidos, todosCero: false }
+  puntajes.forEach((p, i) => {
+    if (puntajes.indexOf(p) !== i || puntajes.lastIndexOf(p) !== i) repetidos.add(i)
+  })
+  return { repetidos, todosCero: repetidos.size === 0 && Math.max(...(puntajes as number[])) === 0 }
+}
+
+/** Posiciones de criterios de la escala con nombre repetido (sin distinguir mayúsculas). */
+export function nombresRepetidos(nombres: string[]): Set<number> {
+  const normalizados = nombres.map((n) => n.trim().toLowerCase())
+  const repetidos = new Set<number>()
+  normalizados.forEach((n, i) => {
+    if (n && normalizados.indexOf(n) !== normalizados.lastIndexOf(n)) repetidos.add(i)
+  })
+  return repetidos
+}
+
+/** Mensajes inline del puntaje de un nivel con conflicto entre niveles. */
+export const MENSAJE_PUNTAJE_REPETIDO = "Otro nivel de este criterio ya tiene este puntaje."
+export const MENSAJE_PUNTAJE_TODOS_CERO = "Al menos un nivel debe tener puntaje mayor que 0."
+
 /** Niveles tal como viajan al backend: "Excelente" (si tiene contenido) +
  *  los intermedios — mismo armado que `criterioABody` en
  *  `update-instrumento-actividad.ts`. */

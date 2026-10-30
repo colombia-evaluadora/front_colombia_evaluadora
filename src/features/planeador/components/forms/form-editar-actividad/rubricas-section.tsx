@@ -16,6 +16,11 @@ import type { FormActividad } from "@/features/planeador/components/forms/form-e
 import { cryptoId } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import { ERROR_OBLIGATORIO } from "@/features/planeador/components/forms/form-editar-actividad/hooks"
 import { SoloEdicion } from "@/features/planeador/components/forms/form-editar-actividad/solo-edicion"
+import {
+  MENSAJE_PUNTAJE_REPETIDO,
+  MENSAJE_PUNTAJE_TODOS_CERO,
+  conflictosPuntaje,
+} from "@/features/planeador/lib/instrumento-faltantes"
 
 export function RubricasSection({
   form,
@@ -88,7 +93,8 @@ export function RubricasSection({
               const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
               if (rubrica.criterios.length === 0) {
                 return (
-                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid}>
+                  // `tabIndex=-1`: sin controles adentro, "ir al error" enfoca el propio aviso.
+                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid} tabIndex={-1}>
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : (
@@ -210,6 +216,24 @@ function CriterioItem({
     criterio.niveles.length === 0 &&
     !criterio.excelente.trim() &&
     criterio.excelentePonderacion == null
+  // Reglas entre niveles (puntaje repetido / todos en 0) de `faltantesRubrica`: se pinta el
+  // puntaje concreto para que "ir al error" tenga a dónde llevar. Posición 0 = "Excelente" si existe.
+  const tieneExcelente = criterio.excelente.trim() !== "" || criterio.excelentePonderacion != null
+  const conflictos =
+    esEvaluativa && puntajeObligatorio && submissionAttempts > 0
+      ? conflictosPuntaje([
+          ...(tieneExcelente ? [criterio.excelentePonderacion] : []),
+          ...criterio.niveles.map((n) => n.ponderacion),
+        ])
+      : null
+  const errorConflicto = (posicion: number): string | undefined => {
+    if (!conflictos) return undefined
+    if (conflictos.repetidos.has(posicion)) return MENSAJE_PUNTAJE_REPETIDO
+    if (conflictos.todosCero && posicion === 0) return MENSAJE_PUNTAJE_TODOS_CERO
+    return undefined
+  }
+  const conflictoExcelente = tieneExcelente ? errorConflicto(0) : undefined
+  const offsetNiveles = tieneExcelente ? 1 : 0
 
   return (
     <li className="rounded-md border bg-card p-4">
@@ -238,8 +262,9 @@ function CriterioItem({
       </div>
 
       <Field variant="outlined" className="mt-3" data-invalid={nombreInvalido}>
-        <FieldLabel>Nombre del criterio</FieldLabel>
+        <FieldLabel htmlFor={`${criterio.id}-nombre`}>Nombre del criterio</FieldLabel>
         <Input
+          id={`${criterio.id}-nombre`}
           placeholder="Ej: Expresión oral de ideas y experiencias"
           maxLength={50}
           value={criterio.nombre}
@@ -294,7 +319,7 @@ function CriterioItem({
           </Field>
           {/* Vacío no se guarda como `0`. */}
           {esEvaluativa && (
-            <Field variant="outlined" data-invalid={excelentePonderacionInvalida}>
+            <Field variant="outlined" data-invalid={excelentePonderacionInvalida || Boolean(conflictoExcelente)}>
               <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
                 Puntaje
               </FieldLabel>
@@ -320,10 +345,13 @@ function CriterioItem({
                   onChange({ ...next, ponderacion: maxPonderacionCriterio(next) })
                 }}
                 onBlur={() => setTocoExcelentePonderacion(true)}
-                aria-invalid={excelentePonderacionInvalida}
+                aria-invalid={excelentePonderacionInvalida || Boolean(conflictoExcelente)}
                 disabled={disabled}
               />
               {excelentePonderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+              {!excelentePonderacionInvalida && conflictoExcelente && (
+                <FieldError errors={[{ message: conflictoExcelente }]} />
+              )}
             </Field>
           )}
           {/* Quita el bloque entero (texto y puntaje). */}
@@ -362,6 +390,7 @@ function CriterioItem({
             puntajeObligatorio &&
             (tocadosNivelPonderacion.has(nivel.id) || submissionAttempts > 0) &&
             nivel.ponderacion == null
+          const conflictoNivel = errorConflicto(nIndex + offsetNiveles)
           return (
           <li
             key={nivel.id}
@@ -392,7 +421,7 @@ function CriterioItem({
               {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
             </Field>
             {esEvaluativa && (
-              <Field variant="outlined" data-invalid={ponderacionInvalida}>
+              <Field variant="outlined" data-invalid={ponderacionInvalida || Boolean(conflictoNivel)}>
                 <FieldLabel htmlFor={`${nivel.id}-ponderacion`}>
                   Puntaje
                 </FieldLabel>
@@ -423,10 +452,11 @@ function CriterioItem({
                     })
                   }}
                   onBlur={() => marcarNivelPonderacionTocado(nivel.id)}
-                  aria-invalid={ponderacionInvalida}
+                  aria-invalid={ponderacionInvalida || Boolean(conflictoNivel)}
                   disabled={disabled}
                 />
                 {ponderacionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
+                {!ponderacionInvalida && conflictoNivel && <FieldError errors={[{ message: conflictoNivel }]} />}
               </Field>
             )}
             <SoloEdicion>
