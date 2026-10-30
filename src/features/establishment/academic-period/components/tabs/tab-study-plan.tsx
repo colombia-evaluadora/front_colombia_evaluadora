@@ -5,9 +5,7 @@ import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
-import { PrinterIcon, WarningIcon } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { WarningIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
 import { NoticeOutlet } from "@/components/notice/notice-context"
@@ -18,6 +16,7 @@ import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/acad
 import { getErrorMessage } from "@/lib/api-client"
 import { useGradeSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
+import { PrintReportButton } from "@/features/establishment/academic-period/components/print-report-button"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
 import { formatPeso } from "@/features/establishment/academic-period/components/table/columns-evaluation-periods"
 import {
@@ -97,15 +96,16 @@ export function TabStudyPlan({
           Plan de estudio{gradeName ? ` de ${gradeName}` : ""}
         </h4>
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger render={<span tabIndex={0} />}>
-              <Button size="sm" variant="outline" color="neutral" disabled>
-                <PrinterIcon data-icon="inline-start" />
-                Imprimir plan de estudio
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>El PDF del plan de estudio todavía no está disponible.</TooltipContent>
-          </Tooltip>
+          {academicPeriodId != null && gradeId != null && (
+            <PrintReportButton
+              label="Imprimir plan de estudio"
+              report="periodo-planes-estudio"
+              filters={{ FK_PERIODO: academicPeriodId, FK_GRADOS: [gradeId] }}
+              emptyReason={
+                (data?.rows.length ?? 0) === 0 ? "El grado aún no tiene plan de estudio." : undefined
+              }
+            />
+          )}
           {!readOnly && (
             <CreateStudyPlanDialog
               academicPeriodId={academicPeriodId}

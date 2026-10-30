@@ -12,7 +12,7 @@ import {
   ComboboxFieldValue,
   ComboboxGroup,
 } from "@/components/ui/combobox"
-import { InfoIcon, PrinterIcon, SpinnerIcon, WarningIcon } from "@/components/ui/icons"
+import { InfoIcon, SpinnerIcon, WarningIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ import type { GradeGroup } from "@/features/establishment/academic-period/api/ty
 import type { ScheduleCellCause } from "@/features/establishment/academic-period/api/types/grade-config"
 import { getScheduleSlots } from "@/features/establishment/academic-period/utils/recesos"
 import { DAYS } from "@/features/establishment/academic-period/utils/schedule-data"
+import { PrintReportButton } from "@/features/establishment/academic-period/components/print-report-button"
 import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 // Lunes a sábado (Regla 71).
@@ -59,10 +60,12 @@ const cellKey = (diaId: number, bloque: number) => `${diaId}-${bloque}`
 // una asignatura del plan del grado, sin pasar su intensidad horaria.
 export function GroupSchedule({
   gradeId,
+  academicPeriodId,
   group,
   schedule,
 }: {
   gradeId: number
+  academicPeriodId?: number
   group: GradeGroup
   schedule: GroupScheduleSource
 }) {
@@ -176,15 +179,23 @@ export function GroupSchedule({
             </TooltipContent>
           </Tooltip>
         </h4>
-        <Tooltip>
-          <TooltipTrigger render={<span tabIndex={0} />}>
-            <Button size="sm" variant="outline" color="neutral" disabled>
-              <PrinterIcon data-icon="inline-start" />
-              Imprimir horario
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>El PDF del horario todavía no está disponible.</TooltipContent>
-        </Tooltip>
+        {academicPeriodId != null && (
+          // Imprime lo guardado, no lo que se está editando.
+          <PrintReportButton
+            label="Imprimir horario"
+            report="periodo-horarios"
+            filters={{ FK_PERIODO: academicPeriodId, FK_GRUPOS: [group.id] }}
+            emptyReason={savedEntries.size === 0 ? "El grupo aún no tiene horario guardado." : undefined}
+            confirm={
+              affectedCount > 0
+                ? {
+                    title: "Horario con bloques por corregir",
+                    description: `El horario de ${group.codigo} tiene ${affectedCount} bloques afectados por un cambio. ¿Desea generarlo así?`,
+                  }
+                : undefined
+            }
+          />
+        )}
         {items.length > 0 && (
           <div className="ml-auto flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <span>Bloques usados / intensidad horaria:</span>
