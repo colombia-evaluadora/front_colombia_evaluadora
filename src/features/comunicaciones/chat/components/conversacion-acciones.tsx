@@ -2,6 +2,7 @@ import { EditarActividad } from "@/features/comunicaciones/chat/components/edita
 import { EditarGrupoDialog } from "@/features/comunicaciones/chat/components/editar-grupo-dialog"
 import {
   ETIQUETA_EDITAR,
+  bloqueoActividad,
   esActividadEditable,
   esCategoriaActividad,
   gestionaActividad,
@@ -129,7 +130,10 @@ export function ConversacionAcciones({
   // Elección, encuesta, evaluación o comunicado propios: el lápiz abre "Editar …" con todos sus
   // datos; un grupo, "Editar grupo" (descripción, imagen y quién escribe); un foro solo se renombra.
   const actividadEditable = esActividadEditable(c, perfil)
+  // QA 79: en curso no se edita ni elimina; finalizada no se edita. El back valida igual (409).
+  const bloqueo = bloqueoActividad(c)
   const abrirRenombrar = () => {
+    if (bloqueo.editar) return
     if (actividadEditable) {
       setDialogo("editarActividad")
       return
@@ -150,18 +154,23 @@ export function ConversacionAcciones({
           <button
             type="button"
             aria-label={`Editar ${c.nombre}`}
-            title="Editar"
+            // aria-disabled (no `disabled`) para que el title siga mostrando el motivo al pasar el mouse.
+            aria-disabled={!!bloqueo.editar || undefined}
+            title={bloqueo.editar ?? "Editar"}
             onClick={abrirRenombrar}
-            className={botonFila}
+            className={cn(botonFila, bloqueo.editar && "cursor-not-allowed opacity-40 hover:bg-transparent")}
           >
             <PencilSimpleIcon className="size-4.5" />
           </button>
           <button
             type="button"
             aria-label={`Eliminar ${c.nombre}`}
-            title="Eliminar"
-            onClick={() => setDialogo("eliminar")}
-            className={botonFila}
+            aria-disabled={!!bloqueo.eliminar || undefined}
+            title={bloqueo.eliminar ?? "Eliminar"}
+            onClick={() => {
+              if (!bloqueo.eliminar) setDialogo("eliminar")
+            }}
+            className={cn(botonFila, bloqueo.eliminar && "cursor-not-allowed opacity-40 hover:bg-transparent")}
           >
             <TrashIcon className="size-4.5" />
           </button>
@@ -197,9 +206,17 @@ export function ConversacionAcciones({
             </DropdownMenuItem>
           )}
           {actividadEditable && (
-            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("editarActividad")}>
+            <DropdownMenuItem
+              className={ITEM}
+              disabled={!!bloqueo.editar}
+              title={bloqueo.editar ?? undefined}
+              onClick={() => setDialogo("editarActividad")}
+            >
               <PencilSimpleIcon />
-              {ETIQUETA_EDITAR[c.categoria as keyof typeof ETIQUETA_EDITAR]}
+              <span className="flex flex-col">
+                {ETIQUETA_EDITAR[c.categoria as keyof typeof ETIQUETA_EDITAR]}
+                {bloqueo.editar && <span className="text-xs text-muted-foreground">{bloqueo.editar}</span>}
+              </span>
             </DropdownMenuItem>
           )}
           {/* Solo quien gestiona la elección puede cerrarla, y solo mientras sigue abierta. */}
