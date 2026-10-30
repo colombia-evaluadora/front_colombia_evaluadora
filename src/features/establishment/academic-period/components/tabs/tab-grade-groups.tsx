@@ -98,7 +98,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId, grade }: TabGradeGro
       <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
 
       {scheduleGroup && gradeId != null && (
-        <GroupSchedule key={scheduleGroup.id} gradeId={gradeId} group={scheduleGroup} schedule={schedule} />
+        <GroupSchedule key={scheduleGroup.id} gradeId={gradeId} academicPeriodId={academicPeriodId} group={scheduleGroup} schedule={schedule} />
       )}
     </div>
   )
