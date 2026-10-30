@@ -56,6 +56,10 @@ export default {
     // `redirect: "manual"` para que un 3xx del gateway llegue tal cual al
     // navegador; si el Worker lo siguiera, el cliente nunca vería la redirección
     // ni las cookies que la acompañan.
+    // `new Request(target, request)` copia TODOS los headers del navegador,
+    // incluido `X-Captcha-Token` (Turnstile de login, recuperación/activación
+    // y PDF del boletín, ver `src/lib/captcha.ts`): no filtrar headers acá o
+    // el SSO responde 403 "Debe completar la verificación de seguridad".
     const response = await fetch(new Request(target, request), { redirect: "manual" })
 
     // Se reconstruye para que la respuesta sea mutable río abajo. El body va como

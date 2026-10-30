@@ -262,10 +262,9 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         return
       }
       case "actividad.actualizada": {
-        // Alguien votó, respondió o leyó una actividad (elección, encuesta,
-        // comunicado, evaluación). El evento no trae conteos (la urna es secreta):
-        // se vuelve a pedir el detalle por REST con los permisos de quien mira,
-        // así el creador ve en vivo resultados y "Han visto N".
+        // Alguien respondió o leyó una actividad, o cerró una elección (los votos no
+        // emiten eventos: no hay resultados en vivo). El evento no trae conteos: se
+        // vuelve a pedir el detalle por REST con los permisos de quien mira.
         const id = conversacionId ?? "none"
         for (const k of [chatKeys.eleccion(id), chatKeys.encuesta(id), chatKeys.comunicado(id), chatKeys.evaluacion(id)]) {
           void queryClient.invalidateQueries({ queryKey: k })

@@ -7,7 +7,7 @@ import {
   segundosRestantes,
 } from "@/features/comunicaciones/chat/lib/votacion-rapida"
 
-const v = (votos: [number, number], cierraEn = "2026-01-01T10:05:00Z"): VotacionRapida => ({
+const v = (votos: [number | null, number | null], cierraEn = "2026-01-01T10:05:00Z"): VotacionRapida => ({
   pregunta: "¿Suspender clases mañana?",
   tipo: "SI_NO",
   minutos: 5,
@@ -33,8 +33,12 @@ describe("votación rápida", () => {
 
   it("calcula porcentajes y total", () => {
     const r = resultadosVotacionRapida(v([18, 9]))
-    expect(r.total).toBe(27)
-    expect(r.opciones.map((o) => o.porcentaje)).toEqual([67, 33])
-    expect(resultadosVotacionRapida(v([0, 0])).opciones[0].porcentaje).toBe(0)
+    expect(r?.total).toBe(27)
+    expect(r?.opciones.map((o) => o.porcentaje)).toEqual([67, 33])
+    expect(resultadosVotacionRapida(v([0, 0]))?.opciones[0].porcentaje).toBe(0)
+  })
+
+  it("sin conteos (abierta: el servidor no los manda) no hay resultados", () => {
+    expect(resultadosVotacionRapida(v([null, null]))).toBeNull()
   })
 })

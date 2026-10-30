@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
 import { api, isNotFoundError } from "@/lib/api-client"
+import { captchaHeaders } from "@/lib/captcha"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ForgotPasswordResponse,
@@ -41,11 +42,19 @@ export class EmailNotRegisteredError extends Error {
  * tenga la versión nueva desplegada en todos lados, el bloque del token sobra
  * y se puede borrar entero.
  */
-async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+async function forgotPassword({
+  email,
+  captchaToken,
+}: {
+  email: string
+  /** Token de Turnstile (`useCaptcha().consume()`), un solo uso. */
+  captchaToken: string | null
+}): Promise<ForgotPasswordResponse> {
   let response: ForgotPasswordResponse
   try {
     response = await api.get<ForgotPasswordResponse>("/sso-admin/forgotPassword", {
       params: { email, app: env.NAME },
+      headers: captchaHeaders(captchaToken),
     })
   } catch (error) {
     if (isNotFoundError(error)) throw new EmailNotRegisteredError()
@@ -57,7 +66,9 @@ async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
     // segunda consulta no se puede hacer (red caída, 500, el endpoint todavía
     // no desplegado), se sigue de largo — el correo ya salió, y trabar acá a
     // un usuario legítimo por una comprobación auxiliar sería peor que no
-    // hacerla.
+    // hacerla. Va sin captcha (el token del envío ya se consumió): si el
+    // backend lo exige, el 403 cae en este mismo catch (y `resetTokenStatus`
+    // es un PROBE de `api-client`, no tostea).
     let status: ResetTokenStatusResponse | undefined
     try {
       status = await api.get<ResetTokenStatusResponse>("/sso-admin/resetTokenStatus", {

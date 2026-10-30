@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
-import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
-
-// Mientras la votación está abierta se refresca sola para ver el conteo en vivo.
-const REFRESCO_MS = 10_000
 
 async function fetchEleccion(conversacionId: number) {
   const [row] = await evalCol.getRows<Eleccion>(
@@ -22,7 +18,8 @@ export function useEleccionQuery(conversacionId: number | undefined) {
     // `enabled` garantiza que hay id.
     queryFn: () => fetchEleccion(conversacionId as number),
     enabled: CHAT_FUNCIONES.elecciones && Boolean(conversacionId),
-    refetchInterval: (query) =>
-      query.state.data && estadoEleccion(query.state.data) === "ACTIVA" ? REFRESCO_MS : false,
+    // Sin sondeo: no hay resultados en vivo (el servidor no manda conteos con la elección
+    // abierta). Se vuelve a pedir solo al cerrar: `EleccionEstado` al llegar a cero y el
+    // evento `actividad.actualizada` que emite el cierre (manual o por fecha).
   })
 }

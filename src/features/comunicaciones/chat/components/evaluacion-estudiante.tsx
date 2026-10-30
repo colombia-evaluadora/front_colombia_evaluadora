@@ -116,7 +116,6 @@ function Cuestionario({ evaluacion: e, onEnviada }: { evaluacion: Evaluacion; on
             pregunta={p}
             valor={respuestas[p.id] ?? RESPUESTA_VACIA}
             onCambio={(cambio) => poner(p.id, cambio)}
-            extra={`${p.puntos} ${p.puntos === 1 ? "punto" : "puntos"}`}
           />
         ))}
       </ol>
@@ -177,27 +176,34 @@ function Entregada({
       </span>
       <h3 className="text-2xl font-bold">Enviaste tu evaluación</h3>
 
+      {/*
+        Solo la nota que puso el docente, por intento: nunca respuestas correctas, puntos por
+        pregunta ni qué estuvo bien o mal (comms-service tampoco los manda al estudiante).
+      */}
       {nota != null ? (
         <p className="mt-4">
-          <span className="block text-sm text-muted-foreground">
-            {e.miNotaPendiente ? "Nota parcial" : "Tu nota"}
-          </span>
+          <span className="block text-sm text-muted-foreground">Tu nota</span>
           <span className={cn("text-4xl font-bold tabular-nums", paso ? "text-green" : "text-red")}>
             {nota}
           </span>
           <span className="text-lg text-muted-foreground tabular-nums"> / {e.puntajeTotal}</span>
         </p>
-      ) : null}
+      ) : (
+        <p className="mt-4 text-lg font-semibold text-muted-foreground">Pendiente de calificación</p>
+      )}
 
-      <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-        {nota == null
-          ? "Verás tu nota cuando cierre la evaluación."
-          : e.miNotaPendiente
-            ? "Las preguntas abiertas se suman cuando tu docente las califique."
-            : paso
-              ? "Aprobaste esta evaluación."
-              : "No alcanzaste el puntaje para aprobar."}
-      </p>
+      {(e.misIntentos?.length ?? 0) > 1 && (
+        <ol aria-label="Notas por intento" className="mx-auto mt-4 max-w-xs space-y-1 text-sm">
+          {e.misIntentos?.map((i) => (
+            <li key={i.numero} className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Intento {i.numero}</span>
+              <span className="tabular-nums">
+                {i.nota != null ? `${i.nota} / ${e.puntajeTotal}` : "Pendiente de calificación"}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
 
       {onReintentar && (
         <div className="mt-5 space-y-2">

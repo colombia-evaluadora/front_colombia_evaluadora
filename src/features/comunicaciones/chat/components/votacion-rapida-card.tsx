@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import {
   AlertDialog,
@@ -26,7 +27,11 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Mensaje, VotacionRapida } from "@/features/comunicaciones/chat/api/types"
 import { useEliminarMensaje } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
-import { useVotarRapido } from "@/features/comunicaciones/chat/api/mutations/use-votacion-rapida"
+import {
+  useCerrarVotacionRapida,
+  useVotarRapido,
+} from "@/features/comunicaciones/chat/api/mutations/use-votacion-rapida"
+import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
 import {
   cuentaRegresiva,
@@ -74,9 +79,28 @@ function useSeleccionVotacion(mensajeId: number) {
   return [elegida, elegir] as const
 }
 
+/**
+ * Sin resultados en vivo: votar no emite eventos y el servidor no manda conteos con la votación
+ * abierta. Cuando el reloj local llega al cierre y la tarjeta aún no tiene resultados, se pide
+ * el historial UNA vez por mensaje (no por voto ni por montaje).
+ */
+const resultadosPedidos = new Set<string>()
+
+function usePedirResultados(m: Mensaje, v: VotacionRapida, cerrada: boolean) {
+  const queryClient = useQueryClient()
+  const faltan = cerrada && v.opciones.some((o) => o.votos == null)
+  const clave = `${m.id}:${v.cierraEn}`
+  useEffect(() => {
+    if (!faltan || resultadosPedidos.has(clave)) return
+    resultadosPedidos.add(clave)
+    void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(m.conversacionId) })
+  }, [faltan, clave, m.conversacionId, queryClient])
+}
+
 export function VotacionRapidaCard({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: VotacionRapida }) {
   const restantes = segundosRestantes(v, useAhora(v.cierraEn))
-  const cerrada = restantes === 0
+  const cerrada = restantes === 0 || !!v.cerrada
+  usePedirResultados(m, v, cerrada)
   // El aviso se puede cerrar; vuelve si la votación se edita otra vez (otro cierre).
   const [avisoCerrado, setAvisoCerrado] = useState<string | null>(null)
   const modificada = votacionModificada(m, v, !cerrada) && avisoCerrado !== v.cierraEn
@@ -162,6 +186,13 @@ function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: Votaci
           </label>
         ))}
       </RadioGroup>
+      {/* Participación: solo le llega a quien la creó (sin conteos por opción ni quién va ganando). */}
+      {m.esPropio && v.totalVotos != null && (
+        <p className="text-sm text-muted-foreground">
+          {v.totalVotos === 1 ? "1 persona ha votado" : `${v.totalVotos} personas han votado`}. Los resultados se
+          publican al cerrar.
+        </p>
+      )}
       <p className="text-xs text-muted-foreground">
         {yaVoto
           ? "Tu voto quedó registrado. Verás los resultados cuando se cierre."
@@ -192,7 +223,16 @@ function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: Votaci
 }
 
 function Resultados({ votacion }: { votacion: VotacionRapida }) {
-  const { total, opciones } = resultadosVotacionRapida(votacion)
+  const r = resultadosVotacionRapida(votacion)
+  if (!r) {
+    return (
+      <p role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <LockIcon aria-hidden className="size-4 text-red" />
+        Votación cerrada. Cargando resultados…
+      </p>
+    )
+  }
+  const { total, opciones } = r
   return (
     <div className="space-y-3 text-sm">
       <p className="flex items-center gap-1.5">
@@ -226,10 +266,21 @@ function Resultados({ votacion }: { votacion: VotacionRapida }) {
 function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
   const [editando, setEditando] = useState(false)
   const [borrando, setBorrando] = useState(false)
+  const [cerrando, setCerrando] = useState(false)
   const eliminar = useEliminarMensaje()
+  const cerrar = useCerrarVotacionRapida()
 
   return (
     <>
+      <button
+        type="button"
+        onClick={() => setCerrando(true)}
+        aria-label="Cerrar votación"
+        title="Cerrar votación y publicar el resultado"
+        className="grid size-7 place-items-center rounded text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      >
+        <LockIcon className="size-4.5" />
+      </button>
       <button
         type="button"
         onClick={() => setEditando(true)}
@@ -256,6 +307,34 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
         open={editando}
         onClose={() => setEditando(false)}
       />
+
+      <AlertDialog open={cerrando} onOpenChange={(o) => !o && !cerrar.isPending && setCerrando(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cerrar la votación ahora?</AlertDialogTitle>
+            <AlertDialogDescription>
+              No se recibirán más votos y todos verán el resultado final.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {cerrar.isError && (
+            <p role="alert" className="text-sm text-red">
+              {getErrorMessage(cerrar.error)}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel variant="fill" color="neutral" disabled={cerrar.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cerrar.isPending}
+              aria-busy={cerrar.isPending}
+              onClick={() => cerrar.mutate(m.id, { onSuccess: () => setCerrando(false) })}
+            >
+              Cerrar votación
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={borrando} onOpenChange={(o) => !o && !eliminar.isPending && setBorrando(false)}>
         <AlertDialogContent>
