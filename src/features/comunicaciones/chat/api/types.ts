@@ -36,6 +36,10 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
+  // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
+  // Llega en vivo con `conversacion.entrega`.
+  entregadoHasta?: number | null
   // Grupos: descripción e imagen (`pk_tarchivo`, se ve con token de vista) opcionales.
   descripcion?: string | null
   imagenArchivoId?: number | null
