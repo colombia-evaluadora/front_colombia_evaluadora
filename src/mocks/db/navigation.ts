@@ -117,6 +117,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V337.5: solo el Superadministrador. Código FESTIVOS, derivado del nombre.
+  {
+    id: 48,
+    name: "Festivos",
+    icon: "",
+    path: "/app/administracion/festivos",
+    menuOrder: 8,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
   {
     id: 46,

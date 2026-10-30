@@ -5,6 +5,8 @@ import { useAuth } from "@/features/auth/hooks/use-auth"
 import { topicoUsuario } from "@/lib/auth-mapper"
 import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import { useAjustesChatQuery } from "@/features/comunicaciones/chat/api/query/use-ajustes-chat-query"
+import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
+import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { debeSonar, reproducirSonidoAviso } from "@/features/notificaciones/lib/sonido-aviso"
 
 /**
@@ -63,7 +65,11 @@ export function useNotificacionesTiempoReal() {
       // pone al día igual.
       // Alerta sonora (HU 7): notification-service marca `sonar` (sin Ocupado, sin horario
       // silencioso, con el sonido de la conversación encendido); acá, el apagado global.
-      if (e.event === "notification.created" && debeSonar(e.data, sonidoActivo)) reproducirSonidoAviso()
+      if (e.event === "notification.created") {
+        const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
+        const archivadas = new Set((lista ?? []).filter((c) => c.archivada).map((c) => c.id))
+        if (debeSonar(e.data, sonidoActivo, archivadas)) reproducirSonidoAviso()
+      }
       if (EVENTOS.has(e.event) || e.event === "conversacion.actualizada") refrescar()
     },
     () => refrescar(),

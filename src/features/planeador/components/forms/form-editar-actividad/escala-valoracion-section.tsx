@@ -38,6 +38,12 @@ import { TEXTAREA_OUTLINED } from "@/features/planeador/components/forms/form-ed
 import type { FormActividad } from "@/features/planeador/components/forms/form-editar-actividad/types"
 import { cryptoId } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import { ERROR_OBLIGATORIO } from "@/features/planeador/components/forms/form-editar-actividad/hooks"
+import {
+  MENSAJE_PUNTAJE_REPETIDO,
+  MENSAJE_PUNTAJE_TODOS_CERO,
+  conflictosPuntaje,
+  nombresRepetidos,
+} from "@/features/planeador/lib/instrumento-faltantes"
 import { SoloEdicion } from "@/features/planeador/components/forms/form-editar-actividad/solo-edicion"
 import { SinEscalaAviso } from "@/features/planeador/components/sin-escala-aviso"
 
@@ -327,7 +333,8 @@ export function EscalaValoracionSection({
               )}
 
               {escala.criterios.length === 0 && !sinEscala && (
-                <div data-invalid={sinCriterios}>
+                // `tabIndex=-1`: sin controles adentro, "ir al error" enfoca el propio aviso.
+                <div data-invalid={sinCriterios} tabIndex={-1}>
                   {sinCriterios ? (
                     <FieldError errors={[{ message: "Agrega al menos un criterio." }]} />
                   ) : (
@@ -345,6 +352,7 @@ export function EscalaValoracionSection({
                       tipo={escala.tipo}
                       precarga={precargaActual}
                       intentoGuardar={intentoGuardar}
+                      nombreRepetido={nombresRepetidos(escala.criterios.map((c) => c.nombre)).has(index)}
                       disabled={disabled}
                       onChange={(patch) => updateCriterio(index, patch)}
                       onRemove={() => setCriterios(escala.criterios.filter((_, i) => i !== index))}
@@ -381,6 +389,7 @@ function CriterioEscalaCard({
   tipo,
   precarga,
   intentoGuardar,
+  nombreRepetido,
   disabled,
   onChange,
   onRemove,
@@ -391,11 +400,16 @@ function CriterioEscalaCard({
   precarga: EscalaPrecarga | undefined
   intentoGuardar: boolean
   disabled: boolean
+  /** Otro criterio de la escala ya usa este nombre (regla de `faltantesEscala`). */
+  nombreRepetido: boolean
   onChange: (patch: Partial<EscalaCriterio>) => void
   onRemove: () => void
 }) {
   const idBase = `escala-criterio-${criterio.id}`
-  const nombreInvalido = intentoGuardar && !criterio.nombre.trim()
+  const nombreVacio = intentoGuardar && !criterio.nombre.trim()
+  const nombreInvalido = nombreVacio || (intentoGuardar && nombreRepetido)
+  // Puntajes repetidos / todos en 0 entre los niveles (solo Cualitativa): se marca el puntaje concreto.
+  const conflictos = intentoGuardar && tipo !== "Numérica" ? conflictosPuntaje(criterio.niveles.map((n) => n.ponderacion)) : null
 
   function updateNivel(nIndex: number, patch: Partial<Nivel>) {
     const niveles = criterio.niveles.slice()
@@ -417,7 +431,11 @@ function CriterioEscalaCard({
             aria-invalid={nombreInvalido}
             disabled={disabled}
           />
-          {nombreInvalido && <FieldError errors={ERROR_OBLIGATORIO} />}
+          {nombreInvalido && (
+            <FieldError
+              errors={nombreVacio ? ERROR_OBLIGATORIO : [{ message: "Otro criterio de la escala ya tiene este nombre." }]}
+            />
+          )}
         </Field>
         <SoloEdicion>
           <Button
@@ -448,7 +466,7 @@ function CriterioEscalaCard({
         <div className="flex flex-col gap-3">
           <h4 className="text-sm font-semibold">Escala de Niveles</h4>
           {criterio.niveles.length === 0 && (
-            <div data-invalid={intentoGuardar}>
+            <div data-invalid={intentoGuardar} tabIndex={-1}>
               {intentoGuardar ? (
                 <FieldError errors={[{ message: "Agrega al menos un nivel." }]} />
               ) : (
@@ -459,8 +477,16 @@ function CriterioEscalaCard({
           <ul className="flex flex-col gap-3">
             {criterio.niveles.map((nivel, nIndex) => {
               const descripcionInvalida = intentoGuardar && !nivel.descripcion.trim()
-              const puntajeInvalido =
+              const puntajeAusenteOFuera =
                 intentoGuardar && (nivel.ponderacion == null || nivel.ponderacion < 0 || nivel.ponderacion > 100)
+              const conflictoPuntaje = !conflictos
+                ? undefined
+                : conflictos.repetidos.has(nIndex)
+                  ? MENSAJE_PUNTAJE_REPETIDO
+                  : conflictos.todosCero && nIndex === 0
+                    ? MENSAJE_PUNTAJE_TODOS_CERO
+                    : undefined
+              const puntajeInvalido = puntajeAusenteOFuera || Boolean(conflictoPuntaje)
               return (
                 <li
                   key={nivel.id}
@@ -511,7 +537,9 @@ function CriterioEscalaCard({
                         errors={
                           nivel.ponderacion == null
                             ? ERROR_OBLIGATORIO
-                            : [{ message: "El puntaje debe estar entre 0 y 100." }]
+                            : puntajeAusenteOFuera
+                              ? [{ message: "El puntaje debe estar entre 0 y 100." }]
+                              : [{ message: conflictoPuntaje }]
                         }
                       />
                     )}
@@ -582,8 +610,15 @@ function ValorAsignado({
 }) {
   const minimoAusente = intentoGuardar && criterio.valorMinimo == null
   const maximoAusente = intentoGuardar && criterio.valorMaximo == null
+  // El backend acepta hasta tres cifras enteras (`valorEscalaValido` de instrumento-faltantes).
+  const fueraDeTresCifras = (v: number | undefined) => v != null && !(Number.isFinite(v) && Math.abs(v) < 1000)
+  const minimoLargo = intentoGuardar && fueraDeTresCifras(criterio.valorMinimo)
+  const maximoLargo = intentoGuardar && fueraDeTresCifras(criterio.valorMaximo)
+  const ERROR_TRES_CIFRAS = [{ message: "Debe ser un número de hasta tres cifras." }]
   const rangoInvertido =
     intentoGuardar &&
+    !minimoLargo &&
+    !maximoLargo &&
     criterio.valorMinimo != null &&
     criterio.valorMaximo != null &&
     criterio.valorMinimo >= criterio.valorMaximo
@@ -591,7 +626,7 @@ function ValorAsignado({
     <div className="flex flex-col gap-3">
       <h4 className="text-sm font-semibold">Valor Asignado (Escala)</h4>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field variant="outlined" data-invalid={minimoAusente}>
+        <Field variant="outlined" data-invalid={minimoAusente || minimoLargo}>
           <FieldLabel htmlFor={`${idBase}-minimo`}>Valor mínimo *</FieldLabel>
           <Input
             id={`${idBase}-minimo`}
@@ -599,12 +634,13 @@ function ValorAsignado({
             step="any"
             value={criterio.valorMinimo ?? ""}
             onChange={(e) => onChange({ valorMinimo: numeroDesdeInput(e.target.value) })}
-            aria-invalid={minimoAusente}
+            aria-invalid={minimoAusente || minimoLargo}
             disabled={disabled}
           />
           {minimoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
+          {minimoLargo && <FieldError errors={ERROR_TRES_CIFRAS} />}
         </Field>
-        <Field variant="outlined" data-invalid={maximoAusente || rangoInvertido}>
+        <Field variant="outlined" data-invalid={maximoAusente || maximoLargo || rangoInvertido}>
           <FieldLabel htmlFor={`${idBase}-maximo`}>Valor máximo *</FieldLabel>
           <Input
             id={`${idBase}-maximo`}
@@ -612,10 +648,11 @@ function ValorAsignado({
             step="any"
             value={criterio.valorMaximo ?? ""}
             onChange={(e) => onChange({ valorMaximo: numeroDesdeInput(e.target.value) })}
-            aria-invalid={maximoAusente || rangoInvertido}
+            aria-invalid={maximoAusente || maximoLargo || rangoInvertido}
             disabled={disabled}
           />
           {maximoAusente && <FieldError errors={ERROR_OBLIGATORIO} />}
+          {maximoLargo && <FieldError errors={ERROR_TRES_CIFRAS} />}
           {rangoInvertido && <FieldError errors={[{ message: "Debe ser mayor que el valor mínimo." }]} />}
         </Field>
       </div>

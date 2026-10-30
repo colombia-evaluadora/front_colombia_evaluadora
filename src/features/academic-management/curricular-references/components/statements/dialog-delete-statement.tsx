@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
@@ -25,10 +25,14 @@ import type { CurricularStatement } from "@/features/academic-management/curricu
 interface DeleteStatementDialogProps {
   statement: CurricularStatement
   levelLabel: string
+  /** Rótulo de Nivel 2, para contar las evidencias que se van con él. */
+  childLabel: string
+  /** Texto del botón deshabilitado si ya se usó. */
+  blockedMessage?: string
   onDeleted?: () => void
 }
 
-export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: DeleteStatementDialogProps) {
+export function DeleteStatementDialog({ statement, levelLabel, childLabel, blockedMessage, onDeleted }: DeleteStatementDialogProps) {
   const [open, setOpen] = useState(false)
   // Sin red no se puede eliminar (plan offline §7.5).
   // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
@@ -48,6 +52,27 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
       },
     },
   })
+
+  // Ya usado: no admite borrado físico; se retira inactivándolo (§2.1, Regla 10).
+  if (statement.used && blockedMessage) {
+    return (
+      <Tooltip>
+        <TooltipTrigger render={<span className="inline-flex" onClick={(event) => event.stopPropagation()} />}>
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            disabled
+            aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
+          >
+            <TrashIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-72">{blockedMessage}</TooltipContent>
+      </Tooltip>
+    )
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -75,10 +100,13 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
       </Tooltip>
       <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar {levelLabel.toLowerCase()}</AlertDialogTitle>
           <AlertDialogDescription className="break-words hyphens-auto" lang="es">
-            Se eliminará permanentemente este {levelLabel.toLowerCase()} y sus evidencias asociadas. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente este {levelLabel.toLowerCase()}
+            {statement.evidenceCount
+              ? ` y ${statement.evidenceCount === 1 ? "su" : "sus"} ${statement.evidenceCount} ${childLabel.toLowerCase()}${statement.evidenceCount === 1 ? "" : "s"}`
+              : ""}
+            . Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -91,13 +119,13 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
           <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
             <XIcon data-icon="inline-start" />
-            No
+            Cancelar
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>

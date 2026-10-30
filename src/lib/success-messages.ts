@@ -31,6 +31,14 @@ export const SUCCESS_MESSAGES = {
     deactivated: "La lista se inactivó correctamente.",
   },
   // Textos del requerimiento: guardar (crear o modificar) dice lo mismo.
+  // "Festivo guardado." es el texto del requerimiento (Administración, 6.2).
+  festivo: {
+    created: "Festivo guardado.",
+    updated: "Festivo guardado.",
+    deleted: "Festivo eliminado.",
+    activated: "Festivo activado.",
+    deactivated: "Festivo inactivado.",
+  },
   areaOficial: {
     created: "Área oficial guardada.",
     updated: "Área oficial guardada.",

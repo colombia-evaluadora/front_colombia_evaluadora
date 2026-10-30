@@ -4,53 +4,49 @@ import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
-import { Input } from "@/components/ui/input"
-import { toDigitsOnly } from "@/lib/text-input"
+import { Badge } from "@/components/ui/badge"
 
 import type { ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
 import {
-  EDAD_MAX,
-  EDAD_MIN,
+  CORTES,
+  type Cortes,
+  type CortesGrado,
   type EdadGrado,
 } from "@/features/administration/parametros-edad/api/types"
+import { DialogEdadGrado } from "@/features/administration/parametros-edad/components/dialog-edad-grado"
+import { EscalaSituacion } from "@/features/administration/parametros-edad/components/escala-situacion"
 import {
   ACCIONES_SIZE,
   AccionesFila,
-  ErrorCampo,
-  SelectFila,
   TablaParametros,
   type FilaParametro,
 } from "@/features/administration/parametros-edad/components/tabla-parametros"
 
-/** id de la fila de alta, que aún no tiene grado. */
-const NUEVO = "nuevo"
-
-/** Fila en edición: `grado` null = alta nueva. */
-interface Edicion {
-  grado: string | null
-  nuevoGrado: string
-  edad: string
+/** Diálogo abierto: `fila` null = alta. */
+interface Dialogo {
+  fila: EdadGrado | null
 }
+
+const sinEnvio = (e: React.FormEvent) => e.preventDefault()
 
 export function TablaEdades({
   filas,
   opciones,
+  defecto,
   puedeEditar,
   guardando,
   onGuardar,
-  puedeEliminar,
-  onEliminar,
 }: {
   filas: EdadGrado[]
   opciones: ListaValor[]
+  /** Cortes por defecto: rigen donde el grado no tiene uno propio. */
+  defecto: Cortes
   puedeEditar: boolean
   guardando: boolean
-  onGuardar: (grado: string, edad: number, nuevo: boolean) => Promise<unknown>
-  puedeEliminar: boolean
-  onEliminar: (codigo: string) => Promise<boolean>
+  onGuardar: (grado: string, edad: number, cortes: CortesGrado, nuevo: boolean) => Promise<unknown>
 }) {
-  const [edicion, setEdicion] = useState<Edicion | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // La edición va en un diálogo: son cinco campos y la regla tiene que verse mientras se escribe.
+  const [dialogo, setDialogo] = useState<Dialogo | null>(null)
 
   // Se sigue el orden de la lista GRADO (Prejardín → Undécimo).
   const orden = new Map(opciones.map((o, i) => [String(o.pkListaValor), i]))
@@ -61,58 +57,13 @@ export function TablaEdades({
     (o) => o.habilitado && !filas.some((f) => f.grado === String(o.pkListaValor)),
   )
 
-  function cancelar() {
-    setEdicion(null)
-    setError(null)
-  }
-
-  async function guardar(e: React.FormEvent) {
-    e.preventDefault()
-    if (!edicion) return
-    const grado = edicion.grado ?? edicion.nuevoGrado
-    const edad = Number(edicion.edad)
-    // Sin cambios no se guarda: no hay nada que confirmar.
-    if (filas.some((f) => f.grado === edicion.grado && f.edad === edad)) return cancelar()
-    if (!grado) return setError("Seleccione el grado.")
-    if (edicion.grado == null && filas.some((f) => f.grado === grado)) {
-      return setError("El grado ya tiene una edad recomendada.")
-    }
-    if (!edicion.edad || edad < EDAD_MIN || edad > EDAD_MAX) {
-      return setError(`La edad debe estar entre ${EDAD_MIN} y ${EDAD_MAX} años.`)
-    }
-    try {
-      await onGuardar(grado, edad, edicion.grado == null)
-      cancelar()
-    } catch {
-      // El aviso lo muestra la mutación; la fila sigue abierta para corregir.
-    }
-  }
-
-  const campoEdad = (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-2">
-        <Input
-          inputMode="numeric"
-          autoFocus={edicion?.grado != null}
-          aria-label="Edad recomendada"
-          aria-invalid={Boolean(error)}
-          variant="outlined"
-          size="sm"
-          className="h-8 w-16 text-right tabular-nums"
-          value={edicion?.edad ?? ""}
-          onChange={(e) => setEdicion((p) => p && { ...p, edad: toDigitsOnly(e.target.value, 2) })}
-        />
-        <span className="text-muted-foreground">años</span>
-      </div>
-      <ErrorCampo mensaje={error} />
-    </div>
-  )
-
-  const data: FilaParametro<EdadGrado>[] = [
-    ...(edicion?.grado === null ? [{ id: NUEVO, fila: null }] : []),
-    ...ordenadas.map((f) => ({ id: f.grado, fila: f })),
-  ]
-  const editandoId = edicion ? (edicion.grado ?? NUEVO) : null
+  // Cortes que rigen para el grado: los propios o, si faltan, los por defecto.
+  const vigentes = (f: CortesGrado): Cortes => ({
+    bajaEdadHasta: f.bajaEdadHasta ?? defecto.bajaEdadHasta,
+    preextraedadDesde: f.preextraedadDesde ?? defecto.preextraedadDesde,
+    extraedadDesde: f.extraedadDesde ?? defecto.extraedadDesde,
+  })
+  const tienePropios = (f: CortesGrado) => CORTES.some((c) => f[c.campo] != null)
 
   const columns: ColumnDef<FilaParametro<EdadGrado>>[] = [
     {
@@ -122,16 +73,16 @@ export function TablaEdades({
       enableHiding: false,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
       cell: ({ row }) => {
-        const f = row.original.fila
-        if (f) return f.nombre
+        const f = row.original.fila!
         return (
-          <SelectFila
-            label="Grado"
-            placeholder="Seleccione el grado"
-            opciones={libres.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
-            value={edicion?.nuevoGrado ?? ""}
-            onChange={(v) => setEdicion((p) => p && { ...p, nuevoGrado: v })}
-          />
+          <span className="inline-flex items-center gap-2">
+            {f.nombre}
+            {tienePropios(f) && (
+              <Badge variant="outline" color="warning">
+                Cortes propios
+              </Badge>
+            )}
+          </span>
         )
       },
     },
@@ -143,10 +94,19 @@ export function TablaEdades({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Edad recomendada" className="justify-end" />
       ),
+      cell: ({ row }) => (
+        <span className="block text-right tabular-nums">{row.original.fila!.edad} años</span>
+      ),
+    },
+    {
+      id: "situacion",
+      meta: { label: "Edad cumplida por situación" },
+      enableHiding: false,
+      enableSorting: false,
+      header: () => "Edad cumplida por situación",
       cell: ({ row }) => {
-        const f = row.original.fila
-        if (row.id === editandoId || !f) return campoEdad
-        return <span className="block text-right tabular-nums">{f.edad} años</span>
+        const f = row.original.fila!
+        return <EscalaSituacion cortes={vigentes(f)} edad={f.edad} className="min-w-72" />
       },
     },
     {
@@ -154,26 +114,15 @@ export function TablaEdades({
       size: ACCIONES_SIZE,
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
-        const f = row.original.fila
+        const f = row.original.fila!
         return (
           <AccionesFila
-            editando={row.id === editandoId}
-            puedeEditar={puedeEditar && !edicion}
+            editando={false}
+            puedeEditar={puedeEditar}
             guardando={guardando}
-            etiqueta={f?.nombre ?? "grado"}
-            onModificar={() =>
-              f && setEdicion({ grado: f.grado, nuevoGrado: "", edad: String(f.edad) })
-            }
-            onCancelar={cancelar}
-            eliminar={
-              f
-                ? {
-                    puede: puedeEliminar && !edicion,
-                    descripcion: `Se quitará la edad recomendada de ${f.nombre} y su situación de edad quedará Sin calcular.`,
-                    onConfirm: () => onEliminar(f.grado),
-                  }
-                : undefined
-            }
+            etiqueta={f.nombre}
+            onModificar={() => setDialogo({ fila: f })}
+            onCancelar={() => {}}
           />
         )
       },
@@ -181,17 +130,31 @@ export function TablaEdades({
   ]
 
   return (
-    <TablaParametros
-      titulo="Edad recomendada por grado"
-      agregarLabel="Grado"
-      columns={columns}
-      data={data}
-      editandoId={editandoId}
-      emptyMessage="Aún no hay edades recomendadas. Use + Grado para agregar la primera."
-      puedeAgregar={puedeEditar && libres.length > 0 && !edicion}
-      onAgregar={() => setEdicion({ grado: null, nuevoGrado: "", edad: "" })}
-      onSubmit={guardar}
-      valorOrden={(f, columna) => (columna === "edad" ? f.edad : (orden.get(f.grado) ?? 999))}
-    />
+    <>
+      <TablaParametros
+        titulo="Edad recomendada por grado"
+        agregarLabel="Grado"
+        columns={columns}
+        data={ordenadas.map((f) => ({ id: f.grado, fila: f }))}
+        editandoId={null}
+        emptyMessage="Aún no hay edades recomendadas. Use + Grado para agregar la primera."
+        puedeAgregar={puedeEditar && libres.length > 0}
+        onAgregar={() => setDialogo({ fila: null })}
+        onSubmit={sinEnvio}
+        valorOrden={(f, columna) => (columna === "edad" ? f.edad : (orden.get(f.grado) ?? 999))}
+      />
+      {dialogo && (
+        <DialogEdadGrado
+          key={dialogo.fila?.grado ?? "nuevo"}
+          open
+          fila={dialogo.fila}
+          opciones={libres}
+          defecto={defecto}
+          guardando={guardando}
+          onOpenChange={(abierto) => !abierto && setDialogo(null)}
+          onGuardar={onGuardar}
+        />
+      )}
+    </>
   )
 }

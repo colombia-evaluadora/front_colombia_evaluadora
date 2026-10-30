@@ -6,6 +6,7 @@ import {
   camposObligatoriosFaltantes,
   faltaTipoEvidencia,
   faltanEstudiantes,
+  observacionesCaracteresInvalidos,
 } from "@/features/planeador/lib/campos-obligatorios-faltantes"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 
@@ -141,5 +142,23 @@ describe("avisoCamposObligatorios", () => {
     expect(aviso).toBe(
       "Complete los campos obligatorios: Instrumento personalizado. Instrumento personalizado: Indique el método de valoración del instrumento personalizado.",
     )
+  })
+})
+
+describe("Observaciones del docente (PLAIN_TEXT_PUNCT_PATTERN)", () => {
+  it("con Seguimiento visible marca los caracteres no permitidos y frena el guardado", () => {
+    const values = completa({ adaptaciones: [adaptacion], observaciones: "Revisar <tarea> #2" })
+    expect(observacionesCaracteresInvalidos(values, false)).toEqual(["<", ">", "#"])
+    expect(camposObligatoriosFaltantes(values, contexto)).toContain(
+      "Observaciones del docente (caracteres no permitidos)",
+    )
+  })
+  it("acepta letras con tilde, números y puntuación básica", () => {
+    const values = completa({ adaptaciones: [adaptacion], observaciones: "¿Leyó? ¡Sí! Repasar (pág. 3): ñandú; fin." })
+    expect(observacionesCaracteresInvalidos(values, false)).toEqual([])
+  })
+  it("sin Seguimiento en pantalla (sin adaptaciones o formativa) no se valida", () => {
+    expect(observacionesCaracteresInvalidos(completa({ observaciones: "#" }), false)).toEqual([])
+    expect(observacionesCaracteresInvalidos(completa({ adaptaciones: [adaptacion], observaciones: "#" }), true)).toEqual([])
   })
 })

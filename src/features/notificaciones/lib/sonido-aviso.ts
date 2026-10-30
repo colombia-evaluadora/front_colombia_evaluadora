@@ -14,9 +14,24 @@ let ultimo = 0
 let contexto: AudioContext | null = null
 
 /** El evento `notification.created` pide sonar y el usuario no apagó el sonido. */
-export function debeSonar(evento: unknown, sonidoActivo: boolean): boolean {
+export function debeSonar(
+  evento: unknown,
+  sonidoActivo: boolean,
+  archivadas: ReadonlySet<number> = new Set(),
+): boolean {
   if (!sonidoActivo) return false
-  return typeof evento === "object" && evento !== null && (evento as { sonar?: unknown }).sonar === true
+  if (typeof evento !== "object" || evento === null || (evento as { sonar?: unknown }).sonar !== true) return false
+  // Conversación archivada = sin avisos. comms-service ya no los genera; esto cubre un aviso en
+  // vuelo justo al archivar.
+  const canal = canalDe((evento as { deep_link?: unknown }).deep_link)
+  return canal == null || !archivadas.has(canal)
+}
+
+/** `?canal=` del deep link de un aviso del chat (`/app/comunicaciones/chat?canal=12&mensaje=3`). */
+function canalDe(link: unknown): number | null {
+  if (typeof link !== "string") return null
+  const m = /[?&]canal=(\d+)/.exec(link)
+  return m ? Number(m[1]) : null
 }
 
 /** `true` si se reprodujo (o se intentó); `false` si se omitió por la ventana anti-ráfaga. */

@@ -9,6 +9,7 @@ import { paths } from "@/config/paths"
 import { ArrowLeftIcon, FileTextIcon, InfoIcon, PencilIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -203,19 +204,26 @@ function CurricularReferenceDetailPageContent() {
               ) : null}
 
               {puedeEditar ? (
-              <Button
-                type="button"
-                variant="outline"
-                color="primary"
-                size="icon-sm"
-                aria-label="Editar referente curricular"
-                title={soloEnLinea.tooltip ?? undefined}
-                disabled={soloEnLinea.disabled}
-                className="absolute top-0 right-0"
-                onClick={() => setEditorOpen(true)}
-              >
-                <PencilIcon />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="absolute top-0 right-0 inline-flex" />
+                  }
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="primary"
+                    size="icon-sm"
+                    aria-label="Editar referente curricular"
+                    disabled={soloEnLinea.disabled}
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    <PencilIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{soloEnLinea.tooltip ?? "Editar referente curricular"}</TooltipContent>
+              </Tooltip>
               ) : null}
             </div>
 

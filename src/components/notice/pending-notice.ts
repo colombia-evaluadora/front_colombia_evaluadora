@@ -3,6 +3,16 @@ import type { NoticeVariant } from "@/components/notice/notice-banner"
 export interface NotifyOptions {
   variant?: NoticeVariant
   autoCloseMs?: number
+  /**
+   * Botón dentro del aviso (p. ej. "Ir al campo" tras un guardado inválido).
+   * Pensado para `notify`: con `queueNotice` la acción apuntaría a una pantalla ya desmontada.
+   */
+  action?: NoticeAction
+}
+
+export interface NoticeAction {
+  label: string
+  onClick: () => void
 }
 
 export interface PendingNotice {
