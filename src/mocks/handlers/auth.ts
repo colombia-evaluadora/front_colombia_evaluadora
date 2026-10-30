@@ -14,6 +14,7 @@ import {
   getPasswordResetTokenStatus,
   setUserPassword,
 } from "@/mocks/db/auth"
+import { rejectWithoutCaptcha } from "@/mocks/handlers/_captcha"
 
 // Sin "recordar" el token muere al cerrar la pestaña. Con "recordar" dura
 // 30 días: tiempo suficiente para no obligar a re-loguear seguido y
@@ -60,6 +61,8 @@ function emailFromRefreshCookie(value: string | undefined): string | undefined {
 
 export const authHandlers = [
   http.post("/api/auth/login", async ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     await delay(300)
     const { email, password } = (await request.json()) as {
       email: string
@@ -125,6 +128,8 @@ export const authHandlers = [
   // que abrir — es lo que le permite a /check-email mostrar el vencimiento
   // real y llegar a /restore-password. El front trata el body como opcional.
   http.get("/api/sso-admin/forgotPassword", async ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     await delay(300)
     const email = new URL(request.url).searchParams.get("email") ?? ""
 
@@ -166,6 +171,8 @@ export const authHandlers = [
   // cuántos segundos le quedan al enlace y para distinguir "venció" de
   // "no existe".
   http.get("/api/sso-admin/resetTokenStatus", ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     const token = new URL(request.url).searchParams.get("token") ?? ""
     return HttpResponse.json(getPasswordResetTokenStatus(token))
   }),
@@ -179,6 +186,8 @@ export const authHandlers = [
   }),
 
   http.post("/api/sso-admin/restorePassword", async ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     await delay(300)
     const { token, password } = (await request.json()) as {
       token: string
@@ -207,11 +216,15 @@ export const authHandlers = [
   // sobre el mapa de tokens de activación en vez del de reseteo. Para
   // probar la pantalla en dev, navegar a /activate?token=mock-activation-token.
   http.get("/api/sso-admin/activationTokenStatus", ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     const token = new URL(request.url).searchParams.get("token") ?? ""
     return HttpResponse.json(getActivationTokenStatus(token))
   }),
 
   http.post("/api/sso-admin/activateAccount", async ({ request }) => {
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     await delay(300)
     const { token, password } = (await request.json()) as {
       token: string

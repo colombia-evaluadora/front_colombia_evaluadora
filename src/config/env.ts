@@ -46,6 +46,12 @@ const createEnv = () => {
     // (incremental) al entrar y cada pocas horas. `off` la apaga para todos;
     // cada equipo puede apagarla en "Preparar sin conexión". Default `on`.
     OFFLINE_AUTO_PREPARE: z.enum(["on", "off"]).optional().default("on"),
+    // Site key PÚBLICA del widget Cloudflare Turnstile "ColEva" (cubre
+    // colombiaevaluadora.com/.co y subdominios). Va con default para no tener
+    // que tocar los ENV_FILE: es pública por diseño; el secret vive solo en el
+    // SSO (`TURNSTILE_SECRET_KEY`). Vacía = sin widget ni header (solo para un
+    // backend local con `QUERY_CAPTCHA_ENABLED=false`). Ver `lib/captcha.ts`.
+    TURNSTILE_SITE_KEY: z.string().optional().default("0x4AAAAAACnD09qHH76Gdv1f"),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(
