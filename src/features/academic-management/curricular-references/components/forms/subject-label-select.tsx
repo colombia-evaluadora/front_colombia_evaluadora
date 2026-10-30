@@ -61,6 +61,10 @@ export function SubjectLabelSelect({
   function agregar() {
     const valor = nuevo.trim()
     if (!valor) return
+    if (valor.length < 2) {
+      setError("Mínimo 2 caracteres.")
+      return
+    }
     createOption.mutate(valor)
   }
 

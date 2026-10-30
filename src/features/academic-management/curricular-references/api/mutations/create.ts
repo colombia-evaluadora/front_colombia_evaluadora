@@ -56,6 +56,12 @@ function toRealUpdatePayload(values: CurricularReferenceDraft, previousActive?: 
   }
 }
 
+// El POST real devuelve una fila con el pk creado; el mock, el referente.
+export function createdReferenceId(result: CurricularReferenceMutationResult): number | undefined {
+  const row = (result as { rows?: { pk_referente_curricular_creado?: number }[] }).rows?.[0]
+  return row?.pk_referente_curricular_creado ?? result.curricularReference?.id
+}
+
 export function create(values: CurricularReferenceDraft): Promise<CurricularReferenceMutationResult> {
   const url = apiPath("/academic-management/curricular-references", "/referentes-curriculares")
   return api.post(url, env.ENABLE_API_MOCKING ? values : toRealCreatePayload(values))
