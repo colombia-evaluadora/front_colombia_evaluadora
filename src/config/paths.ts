@@ -130,6 +130,10 @@ export const paths = {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
     },
+    festivos: {
+      path: "administracion/festivos",
+      getHref: () => "/app/administracion/festivos",
+    },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",

@@ -57,6 +57,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
+import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
@@ -186,6 +187,10 @@ const CriteriosPrioridadPage = lazyRouteComponent(
 const ParametrosEdadPage = lazyRouteComponent(
   () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
   "ParametrosEdadPage"
+)
+const FestivosPage = lazyRouteComponent(
+  () => import("@/features/administration/festivos/pages/festivos-page"),
+  "FestivosPage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -710,6 +715,16 @@ export const parametrosEdadRoute = createRoute({
   component: ParametrosEdadPage,
 })
 
+export const festivosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.festivos.path,
+  validateSearch: festivosSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Festivos" }],
+  },
+  component: FestivosPage,
+})
+
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
 // volver al listado.
 const establishmentLayoutRoute = createRoute({
@@ -1187,6 +1202,7 @@ const routeTree = rootRoute.addChildren([
     criteriosPrioridadRoute,
     superadministradoresRoute,
     parametrosEdadRoute,
+    festivosRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
