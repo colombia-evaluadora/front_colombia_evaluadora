@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
@@ -25,9 +25,11 @@ import type { CurricularEvidence } from "@/features/academic-management/curricul
 interface DeleteEvidenceDialogProps {
   evidence: CurricularEvidence
   levelLabel: string
+  /** Texto del botón deshabilitado si ya se usó. */
+  blockedMessage?: string
 }
 
-export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDialogProps) {
+export function DeleteEvidenceDialog({ evidence, levelLabel, blockedMessage }: DeleteEvidenceDialogProps) {
   const [open, setOpen] = useState(false)
   // Sin red no se puede eliminar (plan offline §7.5).
   // Fase 4 offline: las escrituras de enunciados/evidencias se encolan en la outbox.
@@ -46,6 +48,27 @@ export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDia
       },
     },
   })
+
+  // Ya usado: no admite borrado físico; se retira inactivándolo (§2.1, Regla 10).
+  if (evidence.used && blockedMessage) {
+    return (
+      <Tooltip>
+        <TooltipTrigger render={<span className="inline-flex" onClick={(event) => event.stopPropagation()} />}>
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            disabled
+            aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
+          >
+            <TrashIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-72">{blockedMessage}</TooltipContent>
+      </Tooltip>
+    )
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -73,7 +96,7 @@ export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDia
       </Tooltip>
       <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar {levelLabel.toLowerCase()}</AlertDialogTitle>
           <AlertDialogDescription className="break-words hyphens-auto" lang="es">
             Se eliminará permanentemente esta {levelLabel.toLowerCase()}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
@@ -88,13 +111,13 @@ export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDia
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
           <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
             <XIcon data-icon="inline-start" />
-            No
+            Cancelar
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
