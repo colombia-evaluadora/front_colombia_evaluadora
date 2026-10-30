@@ -3,6 +3,7 @@ import type {
   Comunicado,
   Conversacion,
   DestinosComunicado,
+  OpcionDestino,
   Persona,
 } from "@/features/comunicaciones/chat/api/types"
 import { AUDIENCIAS } from "@/features/comunicaciones/chat/api/ui-mappings"
@@ -23,9 +24,24 @@ export interface DestinosLocal {
   personas: Pick<Persona, "id" | "nombre" | "correo">[]
   gruposChat: Pick<Conversacion, "id" | "nombre">[]
   grupal: SeleccionGrupal
+  // Acotan (no suman) la audiencia, los grados, grupos y cargos: "solo la sede Norte, jornada Tarde".
+  filtros?: FiltrosDestino
 }
 
-export const DESTINOS_VACIOS: DestinosLocal = { personas: [], gruposChat: [], grupal: SELECCION_VACIA }
+export interface FiltrosDestino {
+  establecimiento: OpcionDestino | null
+  sede: OpcionDestino | null
+  jornada: OpcionDestino | null
+}
+
+export const FILTROS_VACIOS: FiltrosDestino = { establecimiento: null, sede: null, jornada: null }
+
+export const DESTINOS_VACIOS: DestinosLocal = {
+  personas: [],
+  gruposChat: [],
+  grupal: SELECCION_VACIA,
+  filtros: FILTROS_VACIOS,
+}
 
 export function hayDestinos(d: DestinosLocal): boolean {
   return (
@@ -43,6 +59,11 @@ export function aDestinos(d: DestinosLocal): DestinosComunicado {
     usuarios: d.personas.map((p) => ({ valor: String(p.id), etiqueta: p.nombre })),
     gruposChat: d.gruposChat.map((g) => ({ valor: String(g.id), etiqueta: g.nombre })),
     para: d.grupal.para ?? "ESTUDIANTES",
+    // Solo si se acotó: un comunicado sin filtros queda igual que antes (borradores y ediciones
+    // comparan el JSON de los destinos).
+    ...(d.filtros?.establecimiento ? { establecimiento: d.filtros.establecimiento } : {}),
+    ...(d.filtros?.sede ? { sedes: [d.filtros.sede] } : {}),
+    ...(d.filtros?.jornada ? { jornadas: [d.filtros.jornada] } : {}),
   }
 }
 
@@ -62,6 +83,11 @@ export function deDestinos(d: Partial<DestinosComunicado> | null | undefined): D
       grupos: (d.grupos ?? []).map(opcion),
       roles: (d.roles ?? []).map(opcion),
       para: (d.para ?? "ESTUDIANTES") as ParaSeleccion,
+    },
+    filtros: {
+      establecimiento: d.establecimiento ?? null,
+      sede: d.sedes?.[0] ?? null,
+      jornada: d.jornadas?.[0] ?? null,
     },
   }
 }
@@ -87,6 +113,12 @@ export function resumenDestinatarios(audiencia: Audiencia[], d: DestinosComunica
       partes.push(d.para === "ACUDIENTES" ? "solo acudientes" : "estudiantes y acudientes")
     }
     partes.push(...d.usuarios.map((o) => o.etiqueta), ...d.gruposChat.map((o) => `grupo ${o.etiqueta}`))
+    const ambito = [
+      d.establecimiento && d.establecimiento.etiqueta,
+      ...(d.sedes ?? []).map((o) => `sede ${o.etiqueta}`),
+      ...(d.jornadas ?? []).map((o) => `jornada ${o.etiqueta}`),
+    ].filter(Boolean)
+    if (ambito.length > 0) partes.push(`solo en ${ambito.join(", ")}`)
   }
   return partes.join(", ")
 }
