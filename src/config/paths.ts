@@ -185,6 +185,22 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/sedes",
       },
 
+      campusAdd: {
+          path: "establecimiento-educativo/sedes/agregar",
+          getHref: () => "/app/establecimiento-educativo/sedes/agregar",
+      },
+
+      // `detalle/$id` y `editar/$id`: un param suelto se tragaría `sedes/agregar`.
+      campusDetail: {
+          path: "establecimiento-educativo/sedes/detalle/$campusId",
+          getHref: (campusId: string | number) => `/app/establecimiento-educativo/sedes/detalle/${campusId}`,
+      },
+
+      campusEdit: {
+          path: "establecimiento-educativo/sedes/editar/$campusId",
+          getHref: (campusId: string | number) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
+      },
+
       officials: {
           path: "establecimiento-educativo/funcionarios",
           getHref: () => "/app/establecimiento-educativo/funcionarios",

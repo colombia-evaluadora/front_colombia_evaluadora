@@ -67,6 +67,13 @@ export const SUCCESS_MESSAGES = {
       count === 1
         ? "La sede educativa se eliminó correctamente."
         : `Las ${count} sedes educativas se eliminaron correctamente.`,
+    activated: "La sede educativa se activó correctamente.",
+    deactivated: "La sede educativa se inactivó correctamente.",
+  },
+  campusSpecialty: {
+    created: "La especialidad se agregó al catálogo de la sede.",
+    updated: "La especialidad se actualizó correctamente.",
+    deleted: "La especialidad se eliminó del catálogo de la sede.",
   },
   employee: {
     created: "El funcionario se creó correctamente.",

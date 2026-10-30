@@ -1,5 +1,9 @@
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
+/**
+ * Sede como la usan otros features (permisos de funcionarios, selects):
+ * sale de `fn_sed_listar_todos` (`/establecimientos/sedes/opciones`).
+ */
 export interface Campus {
   id: number
   name: string
@@ -9,56 +13,85 @@ export interface Campus {
   commune: string
   address: string
   phone: string
-  /** `TSEDE.LOCALIDAD`. Opcional: el listado no la trae. */
-  locality?: string
-  /** `TSEDE.GEOREFERENCIACION` ("latitud, longitud"). Opcional: el listado no la trae. */
-  georeference?: string
-  /**
-   * `FK_TESTABLECIMIENTO` de la sede. Opcional porque solo lo trae el
-   * detalle (`fn_sed_buscar_por_pk`), no el listado. Se usa en edición
-   * para filtrar el catálogo de zonas al EE al que pertenece la sede
-   * —ver `dialog-manage.tsx`—: el EE es inmutable, así que el formulario
-   * no lo edita ni lo manda, solo lo lee.
-   */
-  establishmentId?: number
 }
 
-/**
- * Forma del formulario antes del primer guardado: sin `id`, lo asigna el
- * backend al crear (POST /establishments/campuses). Una `Campus` ya cargada
- * (edición) también encaja acá — trae `id` de más, que no molesta.
- *
- * `establishmentId`: `FK_TESTABLECIMIENTO` es obligatorio en el alta real
- * (`fn_sed_crear`) e inmutable después — solo se pide en el formulario de
- * alta, y solo aparece el selector cuando el usuario logueado es super
- * admin (los demás roles solo pueden crear sedes en su propio EE).
- */
-export type CampusDraft = Omit<Campus, "id" | "establishmentId"> & { establishmentId: number | null }
+/** Activo / Inactivo (`TSEDE.ESTADO`, sso V445.1). Inactivar no borra: la sede deja de recibir registros nuevos. */
+export type CampusStatus = "A" | "I"
 
-/**
- * Lo que el detalle de una sede muestra sin dejar editar (V600): el EE y el
- * consecutivo son inmutables, y lo demás se calcula sobre el año lectivo más
- * reciente de la sede (`fn_sed_detalle_calculado_interno`).
- */
-export interface CampusDetailInfo {
+/** Fila del listado (`fn_sed_listar`, sso V448). */
+export interface CampusRow {
+  id: number
+  consecutive: string
+  /** Consecutivo 1: la crea el sistema con el establecimiento y va primero. */
+  isPrincipal: boolean
+  name: string
+  dane: string
+  establishmentId: number
+  establishmentName: string
+  zoneName: string
+  /** Nombres de las jornadas de la sede, separados por coma. */
+  workSchedules: string
+  status: CampusStatus
+}
+
+export interface CampusWorkSchedule {
+  id: number
+  name: string
+}
+
+/** Detalle de una sede (`fn_sed_detalle`): lo editable más lo calculado. */
+export interface CampusDetail {
+  id: number
+  establishmentId: number
   establishmentName: string
   consecutive: string
-  /** Jornadas con periodo académico en la sede; se definen en Periodos académicos. */
-  workSchedules: string[]
+  isPrincipal: boolean
+  name: string
+  dane: string
+  zoneId: number | null
+  zoneName: string
+  /** En la principal, la zona viene del establecimiento si este es de una sola zona. */
+  zoneSynced: boolean
+  neighborhood: string
+  commune: string
+  address: string
+  phone: string
+  workSchedules: CampusWorkSchedule[]
+  status: CampusStatus
   attendsDisability: boolean
-  /** Desplazados, desvinculados de grupos armados o hijos de desmovilizados. */
   attendsConflictVictims: boolean
 }
 
-/** Opción liviana para el selector de establecimiento (super admin). */
+/** Valores del formulario de la sede (crear y editar). */
+export interface CampusFormValues {
+  establishmentId: number | null
+  consecutive: string
+  name: string
+  dane: string
+  zoneId: number | null
+  neighborhood: string
+  commune: string
+  address: string
+  phone: string
+  workScheduleIds: number[]
+}
+
+/** Opción liviana para el selector de establecimiento. */
 export interface EstablishmentOption {
   id: number
   name: string
 }
 
 export interface CampusesQueryFilters {
+  /** Nombre o código DANE antiguo. */
   search?: string
+  /** PK de los establecimientos. */
+  establishments?: number[]
+  /** `VALOR` de la lista ZONA. */
   zones?: string[]
+  /** `VALOR` de la lista JORNADA. */
+  workSchedules?: string[]
+  statuses?: CampusStatus[]
 }
 
 export interface CampusesQueryRequest {
@@ -72,7 +105,36 @@ export interface CampusesQueryRequest {
 }
 
 export interface CampusesQueryResponse {
-  rows: Campus[]
+  rows: CampusRow[]
   pageCount: number
   totalCount: number
+}
+
+/** Especialidad de la lista general (`TESPECIALIDAD`) con su carácter. */
+export interface SpecialtyCatalogItem {
+  id: number
+  name: string
+  characterId: number
+  characterName: string
+  /** "Otra": la única que lleva nombre propio y puede repetirse. */
+  isOther: boolean
+}
+
+/** Ítem del catálogo de especialidades de una sede (`TSEDE_ESPECIALIDAD`). */
+export interface CampusSpecialty {
+  id: number
+  characterId: number
+  characterName: string
+  specialtyId: number
+  specialtyName: string
+  ownName: string | null
+  isOther: boolean
+  status: CampusStatus
+}
+
+export interface CampusSpecialtyValues {
+  characterId: number | null
+  specialtyId: number | null
+  ownName: string
+  status: CampusStatus
 }

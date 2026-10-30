@@ -1,131 +1,122 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Checkbox } from "@/components/ui/checkbox"
-import { PencilIcon } from "@/components/ui/icons"
+import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { toSentenceCase } from "@/lib/utils"
+import { paths } from "@/config/paths"
 
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
-import { DeleteCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-delete"
+import type { CampusRow } from "@/features/establishment/campuses/api/types/campus"
+import { CampusStatusBadge, PrincipalBadge } from "@/features/establishment/campuses/components/campus-badges"
+import { ChangeCampusStatusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-change-status"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-interface CampusColumnsOptions {
-  onEdit: (campusId: number) => void
-}
-
-function ActionsCell({ campus, onEdit }: { campus: Campus; onEdit: (id: number) => void }) {
+function ActionsCell({ campus }: { campus: CampusRow }) {
   const { puedeEditar } = useMenuPermission("SEDES_EDUCATIVAS", { onlineOnlyWrites: true })
 
   return (
     <div className="flex items-center justify-end gap-1">
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              render={<Link to={paths.app.establishments.campusDetail.getHref(campus.id)} />}
+              nativeButton={false}
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label="Ver detalle"
+            />
+          }
+        >
+          <EyeIcon />
+        </TooltipTrigger>
+        <TooltipContent>Ver detalle</TooltipContent>
+      </Tooltip>
       {puedeEditar ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Editar sede"
-                onClick={() => onEdit(campus.id)}
-              />
-            }
-          >
-            <PencilIcon />
-          </TooltipTrigger>
-          <TooltipContent>Editar sede</TooltipContent>
-        </Tooltip>
+        <>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  render={<Link to={paths.app.establishments.campusEdit.getHref(campus.id)} />}
+                  nativeButton={false}
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label="Modificar"
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Modificar</TooltipContent>
+          </Tooltip>
+          <ChangeCampusStatusDialog campus={campus} />
+        </>
       ) : null}
-      <DeleteCampusDialog campus={campus} />
     </div>
   )
 }
 
-export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campus>[] {
-  return [
+/** Columnas del informe de diseño, 3: consecutivo, nombre, DANE antiguo, zona, jornadas y estado. */
+export const columns: ColumnDef<CampusRow>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Seleccionar página"
-        className="translate-y-0.5"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label={`Seleccionar ${row.original.name}`}
-        className="translate-y-0.5"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 32,
+    accessorKey: "consecutive",
+    id: "consecutive",
+    meta: { label: "Consecutivo" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Consecutivo" />,
+    cell: ({ row }) => <span className="tabular-nums">{row.original.consecutive}</span>,
+    size: 120,
   },
   {
     accessorKey: "name",
     id: "name",
     meta: { label: "Nombre de la sede" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nombre de la sede" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre de la sede" />,
     cell: ({ row }) => (
-      <p className="font-bold">{toSentenceCase(row.original.name)}</p>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="truncate" title={row.original.establishmentName}>
+          {row.original.name}
+        </span>
+        {row.original.isPrincipal ? <PrincipalBadge /> : null}
+      </div>
     ),
   },
   {
     accessorKey: "dane",
     id: "dane",
-    meta: { label: "Dane" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Dane" />
-    ),
+    meta: { label: "Código DANE antiguo" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Código DANE" />,
+    cell: ({ row }) => <span className="tabular-nums">{row.original.dane}</span>,
   },
   {
-    accessorKey: "zone",
+    accessorKey: "zoneName",
     id: "zone",
     meta: { label: "Zona" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Zona" />
-    ),
-    cell: ({ row }) => <p>{row.original.zone?.name ?? "—"}</p>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Zona" />,
   },
   {
-    accessorKey: "address",
-    id: "address",
-    meta: { label: "Dirección" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Dirección" />
-    ),
-    cell: ({ row }) => (
-      <div className="max-w-lg truncate">{row.original.address}</div>
-    ),
+    accessorKey: "workSchedules",
+    id: "workSchedules",
+    meta: { label: "Jornadas" },
+    enableSorting: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Jornadas" />,
+    cell: ({ row }) => <div className="max-w-xs truncate">{row.original.workSchedules || "—"}</div>,
   },
   {
-    accessorKey: "phone",
-    id: "phone",
-    meta: { label: "Teléfono" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Teléfono" />
-    ),
+    accessorKey: "status",
+    id: "status",
+    meta: { label: "Estado" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+    cell: ({ row }) => <CampusStatusBadge status={row.original.status} />,
   },
   {
     id: "actions",
-    header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => <ActionsCell campus={row.original} onEdit={onEdit} />,
-    enableSorting: false,
     enableHiding: false,
-    size: 96,
+    enableSorting: false,
+    size: 144,
+    cell: ({ row }) => <ActionsCell campus={row.original} />,
   },
-  ]
-}
+]

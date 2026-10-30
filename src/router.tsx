@@ -148,6 +148,10 @@ const CampusesPage = lazyRouteComponent(
   () => import("@/features/establishment/campuses/pages/campuses-page"),
   "CampusesPage"
 )
+const CampusFormPage = lazyRouteComponent(
+  () => import("@/features/establishment/campuses/pages/campus-form-page"),
+  "CampusFormPage"
+)
 
 const EmployeesPage = lazyRouteComponent(
   () => import("@/features/establishment/employees/pages/employees-page"),
@@ -734,6 +738,29 @@ export const campusesRoute = createRoute({
   component: CampusesPage,
 })
 
+const SEDES_CRUMB = { label: "Sedes educativas", to: paths.app.establishments.campuses.getHref() }
+
+export const campusAddRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusAdd.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Nueva sede" }] },
+  component: CampusFormPage,
+})
+
+export const campusDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusDetail.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Detalle" }] },
+  component: CampusFormPage,
+})
+
+export const campusEditRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusEdit.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Modificar" }] },
+  component: CampusFormPage,
+})
+
 export const employeesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.officials.path,
@@ -1184,6 +1211,9 @@ const routeTree = rootRoute.addChildren([
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,
+      campusAddRoute,
+      campusDetailRoute,
+      campusEditRoute,
       employeesRoute,
       addEstablishmentRoute,
       establishmentDetailRoute,
