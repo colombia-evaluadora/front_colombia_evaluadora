@@ -3,9 +3,9 @@
 import { useState } from "react"
 import type { ColumnDef, SortingState } from "@tanstack/react-table"
 
-import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -24,14 +24,15 @@ export interface FilaParametro<T> {
   fila: T | null
 }
 
-/** Ancho de la columna de acciones: dos botones (Modificar + Eliminar o ✓ + ✕). */
+/** Ancho de la columna de acciones: dos botones (✓ + ✕ al editar). */
 export const ACCIONES_SIZE = 96
 
 const sinCambio = () => {}
 
 /**
- * Marco común de las dos tablas sobre `DataTable`. Son listas cortas (un
- * registro por grado o calendario), así que se muestran completas sin paginar.
+ * Marco común de las tablas sobre `DataTable`. Son listas cortas (un registro
+ * por grado o calendario), así que se muestran completas sin paginar. Sin
+ * `agregarLabel` no hay botón de alta (los cortes por defecto son un solo registro).
  */
 export function TablaParametros<T>({
   titulo,
@@ -46,15 +47,15 @@ export function TablaParametros<T>({
   valorOrden,
 }: {
   titulo: string
-  agregarLabel: string
+  agregarLabel?: string
   columns: ColumnDef<FilaParametro<T>>[]
   /** Filas en el orden de la lista de valores (el de por defecto). */
   data: FilaParametro<T>[]
   /** id de la fila en edición: deja fijos sus botones de guardar y cancelar. */
   editandoId: string | null
   emptyMessage: string
-  puedeAgregar: boolean
-  onAgregar: () => void
+  puedeAgregar?: boolean
+  onAgregar?: () => void
   onSubmit: (e: React.FormEvent) => void
   /** Valor por el que se ordena cada columna ordenable. */
   valorOrden: (fila: T, columna: string) => string | number
@@ -94,16 +95,18 @@ export function TablaParametros<T>({
     <form onSubmit={onSubmit} aria-label={titulo} className="flex min-w-0 flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-base font-semibold">{titulo}</h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!puedeAgregar}
-          onClick={onAgregar}
-        >
-          <ControlPointIcon data-icon="inline-start" />
-          {agregarLabel}
-        </Button>
+        {agregarLabel && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!puedeAgregar}
+            onClick={onAgregar}
+          >
+            <ControlPointIcon data-icon="inline-start" />
+            {agregarLabel}
+          </Button>
+        )}
       </div>
       <DataTable
         table={table}
@@ -117,7 +120,10 @@ export function TablaParametros<T>({
   )
 }
 
-/** Acciones de la fila: Modificar, o Guardar/Cancelar mientras se edita. */
+/**
+ * Acciones de la fila: Modificar, o Guardar/Cancelar mientras se edita. No hay
+ * Eliminar: la vista solo modifica (Administración del Sistema, Sección 6.1).
+ */
 export function AccionesFila({
   editando,
   puedeEditar,
@@ -125,7 +131,6 @@ export function AccionesFila({
   etiqueta,
   onModificar,
   onCancelar,
-  eliminar,
 }: {
   editando: boolean
   puedeEditar: boolean
@@ -133,8 +138,6 @@ export function AccionesFila({
   etiqueta: string
   onModificar: () => void
   onCancelar: () => void
-  /** Solo en filas ya guardadas; sin él no se muestra el botón. */
-  eliminar?: { puede: boolean; descripcion: string; onConfirm: () => Promise<boolean> }
 }) {
   // Keys distintas: si React reusara el botón de Modificar como submit, el mismo
   // clic que abre la edición enviaría el formulario.
@@ -200,15 +203,6 @@ export function AccionesFila({
         </TooltipTrigger>
         <TooltipContent>Modificar</TooltipContent>
       </Tooltip>
-      {eliminar && (
-        <ConfirmRemoveButton
-          key="eliminar"
-          label={`Eliminar ${etiqueta}`}
-          description={eliminar.descripcion}
-          disabled={!eliminar.puede}
-          onConfirm={eliminar.onConfirm}
-        />
-      )}
     </div>
   )
 }
@@ -251,6 +245,44 @@ export function SelectFila({
         ))}
       </SelectContent>
     </Select>
+  )
+}
+
+/** Deja el signo menos inicial y hasta dos dígitos: los cortes son ±años. */
+function toEnteroConSigno(value: string) {
+  const negativo = value.trimStart().startsWith("-") || value.trimStart().startsWith("−")
+  return (negativo ? "-" : "") + value.replace(/\D/g, "").slice(0, 2)
+}
+
+/** Input de un corte en la fila en edición. */
+export function InputCorte({
+  label,
+  value,
+  placeholder,
+  invalido,
+  autoFocus,
+  onChange,
+}: {
+  label: string
+  value: string
+  placeholder?: string
+  invalido: boolean
+  autoFocus?: boolean
+  onChange: (value: string) => void
+}) {
+  return (
+    <Input
+      inputMode="numeric"
+      autoFocus={autoFocus}
+      aria-label={label}
+      aria-invalid={invalido}
+      variant="outlined"
+      size="sm"
+      placeholder={placeholder}
+      className="ml-auto h-8 w-16 text-right tabular-nums"
+      value={value}
+      onChange={(e) => onChange(toEnteroConSigno(e.target.value))}
+    />
   )
 }
 
