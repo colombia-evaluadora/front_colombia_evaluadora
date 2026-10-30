@@ -506,6 +506,11 @@ export interface DestinosComunicado {
   usuarios: OpcionDestino[]
   gruposChat: OpcionDestino[]
   para: "ESTUDIANTES" | "ACUDIENTES" | "AMBOS"
+  // Filtros que acotan (no suman) la audiencia, los grados, grupos y cargos dentro del alcance de
+  // quien publica. Opcionales: los comunicados anteriores no los traen.
+  establecimiento?: OpcionDestino | null
+  sedes?: OpcionDestino[]
+  jornadas?: OpcionDestino[]
 }
 
 export interface AdjuntoComunicado {
@@ -601,6 +606,21 @@ export interface OpcionesSeleccion {
   grados: OpcionSeleccion[]
   grupos: OpcionSeleccion[]
   roles: OpcionSeleccion[]
+}
+
+/**
+ * Selector de destinatarios de un comunicado (comms-service `/comunicaciones/comunicados/destinos/opciones`):
+ * todo dentro del alcance de quien publica (super administrador: cualquier establecimiento; rector: su
+ * establecimiento; coordinador: sus sedes y jornadas; docente: sus grupos) y acotado en cascada por
+ * establecimiento → sede → jornada. `audiencias`: las de rol que puede usar (el docente, solo
+ * estudiantes y acudientes). `todos`: super administrador, que elige el establecimiento.
+ */
+export interface OpcionesComunicado extends OpcionesSeleccion {
+  establecimientos: OpcionSeleccion[]
+  sedes: OpcionSeleccion[]
+  jornadas: OpcionSeleccion[]
+  audiencias: Audiencia[]
+  todos: boolean
 }
 
 /** Vista previa de un alta masiva: quiénes entrarían (sin duplicados ni quien ya está). */
