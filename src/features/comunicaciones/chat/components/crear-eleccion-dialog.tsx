@@ -335,6 +335,7 @@ export function CrearEleccionDialog({
                 seleccion={votantes}
                 onCambio={setVotantes}
                 invalido={votantesIntentado && votantes.size === 0}
+                permitirYo
               />
             </div>
           ) : (
