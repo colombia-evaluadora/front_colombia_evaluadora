@@ -31,7 +31,16 @@ export type EstadoAccionPendiente = "PENDIENTE" | "EJECUTADA" | "FALLIDA" | "DES
 
 /** Acción de UI; el front descarta `op` y formularios desconocidos. */
 export type AccionUi =
-  | { op: "NAVEGAR"; pantalla: string; url: string; params?: Record<string, string> }
+  | {
+      op: "NAVEGAR"
+      pantalla: string
+      /** Ruta concreta (`/app/.../detalle/12`): en una subruta ya trae sus `$params` sustituidos. */
+      url: string
+      /** Search params de la ruta destino. */
+      params?: Record<string, string>
+      /** Código de la subruta del catálogo (`lib/catalogo-rutas.ts`) cuando no es la pantalla del menú. */
+      subruta?: string
+    }
   | { op: "RELLENAR"; formulario: string; valores: Record<string, unknown> }
   | { op: "LIMPIAR_CAMPO"; formulario: string; campo: string }
   | { op: "RESALTAR"; formulario: string; campo: string }
@@ -119,6 +128,8 @@ export interface CampoUi {
   tipo: TipoCampoUi
   obligatorio?: boolean
   valor?: unknown
+  /** Error de validación que la pantalla muestra en el campo. */
+  error?: string
   opciones?: { valor: string; etiqueta: string }[]
 }
 
@@ -136,6 +147,11 @@ export type CodigoFormularioAgente =
   | "funcionario.editar"
   | "planeador.actividad"
   | "planeador.unidad"
+  // Registrados en código en el backend (`FormulariosFront`), sin fila en ai.ui_formulario.
+  | "periodo_academico"
+  | "matricula.estudiante"
+  /** Lectura genérica por DOM de un formulario no registrado: el agente lo lee, no lo rellena. */
+  | "pantalla.lectura"
 
 export interface ContextoUi {
   /** Path de la pantalla, sin query. */
