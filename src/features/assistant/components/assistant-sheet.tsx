@@ -63,6 +63,7 @@ function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) 
           className="flex w-full flex-col gap-0 sm:max-w-md"
           initialFocus={mensajeRef}
           showCloseButton={false}
+          data-asistente-chat=""
         >
           <SheetHeader className="border-b px-4 py-3">
             <div className="flex h-8 items-center gap-2">

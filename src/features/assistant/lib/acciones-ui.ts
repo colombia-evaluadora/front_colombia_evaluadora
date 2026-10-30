@@ -1,4 +1,5 @@
 import type { AccionUi } from "@/features/assistant/api/types"
+import { rutaDelCatalogo } from "@/features/assistant/lib/catalogo-rutas"
 import {
   filtrosRegistrados,
   formularioRegistrado,
@@ -50,6 +51,12 @@ export interface ResultadoAccion {
 
 export interface EntornoAcciones {
   navegar: (url: string, params: Record<string, string>) => void
+  /**
+   * NAVEGAR a una subruta del catálogo (agregar, editar/$id, detalle/$id…):
+   * valida contra el router y los permisos y navega. Devuelve el motivo si no
+   * se pudo, `null` si navegó. Sin esto, una subruta no se aplica.
+   */
+  navegarSubruta?: (accion: { subruta: string; url: string; params?: Record<string, string> }) => string | null
   /** Filtros por URL cuando la pantalla no registró los suyos. */
   aplicarFiltrosUrl: (filtros: Record<string, unknown>) => void
   filtrosDeLaPantalla: string[]
@@ -69,6 +76,11 @@ function aplicarUna(accion: AccionUi, entorno: EntornoAcciones): ResultadoAccion
   switch (accion.op) {
     case "NAVEGAR": {
       if (!esRutaInterna(accion.url)) return { accion, aplicada: false, motivo: "Ruta no permitida." }
+      if (accion.subruta) {
+        if (!entorno.navegarSubruta) return { accion, aplicada: false, motivo: "Ruta no permitida." }
+        const motivo = entorno.navegarSubruta({ subruta: accion.subruta, url: accion.url, params: accion.params })
+        return motivo ? { accion, aplicada: false, motivo } : { accion, aplicada: true }
+      }
       entorno.navegar(accion.url, accion.params ?? {})
       return { accion, aplicada: true }
     }
@@ -110,6 +122,10 @@ function aplicarUna(accion: AccionUi, entorno: EntornoAcciones): ResultadoAccion
 export function describirAccion(accion: AccionUi): string {
   switch (accion.op) {
     case "NAVEGAR":
+      if (accion.subruta) {
+        const destino = rutaDelCatalogo(accion.subruta)?.descripcion
+        if (destino) return `Ir a: ${destino.replace(/\.$/, "")}`
+      }
       return `Ir a ${accion.pantalla.replace(/_/g, " ")}`
     case "RELLENAR":
       return `Rellenar ${Object.keys(accion.valores ?? {}).length} campo(s) del formulario`

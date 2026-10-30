@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useNavigate, useRouterState } from "@tanstack/react-router"
+import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router"
 
 import {
   AgenteError,
@@ -28,6 +28,10 @@ import {
 import { definicionFormularios, filtrosRegistrados } from "@/features/assistant/lib/registro-ui"
 import { construirParametros } from "@/features/assistant/lib/parametros-ui"
 import { recortarContexto } from "@/features/assistant/lib/recortar-contexto"
+import { leerFormularioDom } from "@/features/assistant/lib/lectura-dom"
+import { validarNavegacionSubruta, type RutaRouter } from "@/features/assistant/lib/navegacion-ui"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
+import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
 
 export type EstadoAccionChat = "PENDIENTE" | "CONFIRMANDO" | "CANCELANDO" | "RESUELTA"
 
@@ -123,6 +127,7 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
 export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean } = {}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const router = useRouter()
   const location = useRouterState({ select: (s) => s.location })
 
   const [conversacionId, setConversacionId] = useState<string | null>(leerConversacionGuardada)
@@ -150,7 +155,10 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
   function construirContexto(): ContextoUi {
     // Solo el path: los ids van en `parametros`.
     const ruta = location.pathname.slice(0, MAX_RUTA)
-    const formularios = definicionFormularios()
+    // Sin formularios registrados, se lee lo visible del DOM (solo lectura).
+    const registrados = definicionFormularios()
+    const delDom = registrados.length === 0 ? leerFormularioDom() : null
+    const formularios = delDom ? [delDom] : registrados
     const filtros = filtrosDisponibles(search)
     // URL primero, después los filtros del listado.
     const parametros = construirParametros(search, filtrosRegistrados()?.valores?.())
@@ -185,6 +193,17 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
         const [to, query] = url.split("?")
         const desdeUrl = Object.fromEntries(new URLSearchParams(query ?? ""))
         navigate({ to: to as never, search: { ...desdeUrl, ...params } as never })
+      },
+      navegarSubruta: (accion) => {
+        const resultado = validarNavegacionSubruta(accion, {
+          rutaDelRouter: (patron) =>
+            (router.routesByPath as Record<string, RutaRouter | undefined>)[patron],
+          permisos: queryClient.getQueryData<MenuPermission[]>(navigationKeys.permisosMenu),
+        })
+        if (!resultado.ok) return resultado.motivo
+        const { to, params, search } = resultado.destino
+        navigate({ to: to as never, params: params as never, search: search as never })
+        return null
       },
       aplicarFiltrosUrl: (filtros) =>
         navigate({
