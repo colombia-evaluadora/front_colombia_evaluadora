@@ -29,6 +29,14 @@ export function esErrorEvidenciasFaltantes(mensaje: string | null | undefined): 
   return /marque al menos un[oa]?\b.*(evidencia|enunciado|prop[oó]sito|imprescindible|objetivo)/i.test(mensaje ?? "")
 }
 
+/**
+ * Error del backend atribuible al instrumento de evaluación (falló su paso de la saga o el
+ * mensaje lo nombra): se marca el select del instrumento para que "Ir al campo" lleve ahí.
+ */
+export function esErrorInstrumento(mensaje: string | null | undefined, pasoInstrumento = false): boolean {
+  return pasoInstrumento || /instrumento/i.test(mensaje ?? "")
+}
+
 /** "Ir al campo" desde la página (fuera del form): busca el form por id y salta al primer inválido. */
 export function irAlCampoInvalido(formId: string) {
   const formEl = document.getElementById(formId)

@@ -19,7 +19,11 @@ import { useOfflineWritable } from "@/lib/offline/outbox/hooks"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useActividadesTabsQuery, type ActividadTab } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { EditarActividadForm, type ResultadoGuardadoActividad } from "@/features/planeador/components/forms/form-editar-actividad"
-import { esErrorEvidenciasFaltantes, irAlCampoInvalido } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
+import {
+  esErrorEvidenciasFaltantes,
+  esErrorInstrumento,
+  irAlCampoInvalido,
+} from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -83,16 +87,19 @@ function PlaneadorCrearActividadPageContent() {
   const [guardando, setGuardando] = useState(false)
   const escritura = useOfflineWritable("Necesitas conexión para crear actividades en este equipo.")
 
-  // "Marque al menos una evidencia…" (backend): el form resalta el checklist y el aviso ofrece "Ir al campo".
-  function avisarErrorGuardado(mensaje: string): ResultadoGuardadoActividad | undefined {
+  // Errores del backend de la sección del instrumento ("Marque al menos una evidencia…", instrumento
+  // rechazado): el form resalta el campo y el aviso ofrece "Ir al campo", como los de validación local.
+  function avisarErrorGuardado(mensaje: string, pasoInstrumento = false): ResultadoGuardadoActividad | undefined {
     const evidenciasFaltantes = esErrorEvidenciasFaltantes(mensaje)
+    const instrumentoInvalido = !evidenciasFaltantes && esErrorInstrumento(mensaje, pasoInstrumento)
+    const irAlCampo = evidenciasFaltantes || instrumentoInvalido
     notify(
       mensaje,
-      evidenciasFaltantes
+      irAlCampo
         ? { variant: "error", action: { label: "Ir al campo", onClick: () => irAlCampoInvalido(FORM_ID) } }
         : { variant: "error" },
     )
-    return evidenciasFaltantes ? { evidenciasFaltantes } : undefined
+    return irAlCampo ? { evidenciasFaltantes, instrumentoInvalido } : undefined
   }
 
   async function handleSubmit(values: Actividad) {

@@ -63,6 +63,8 @@ import {
  */
 export interface ResultadoGuardadoActividad {
   evidenciasFaltantes?: boolean
+  /** El backend rechazó el instrumento de evaluación (p. ej. 400/22023 del PUT del instrumento). */
+  instrumentoInvalido?: boolean
 }
 
 interface EditarActividadFormProps {
@@ -131,6 +133,7 @@ export function EditarActividadForm({
   const { notify } = useNotify()
   // Error del backend "Marque al menos una evidencia…": resalta el checklist hasta que se tilde alguna.
   const [evidenciasFaltantes, setEvidenciasFaltantes] = useState(false)
+  const [instrumentoErrorServidor, setInstrumentoErrorServidor] = useState(false)
   const form = useForm({
     defaultValues: actividadOriginal,
     onSubmit: async ({ value }) => {
@@ -142,6 +145,7 @@ export function EditarActividadForm({
       // Se espera el guardado: el `.then()` del submit lleva la vista al checklist ya resaltado.
       const resultado = await onSubmit?.(value)
       if (resultado && resultado.evidenciasFaltantes) setEvidenciasFaltantes(true)
+      if (resultado && resultado.instrumentoInvalido) setInstrumentoErrorServidor(true)
     },
   })
 
@@ -369,6 +373,8 @@ export function EditarActividadForm({
         precargar={precargar}
         tipoEvaluacion={tipoEvaluacion}
         disabled={disabled}
+        instrumentoErrorServidor={instrumentoErrorServidor}
+        onInstrumentoChange={() => setInstrumentoErrorServidor(false)}
       />
       {/* Bloque 5 alternativo: referente formativo (preescolar) sin instrumento ni nota. */}
       {esFormativa && <SeguimientoFormativoSection />}

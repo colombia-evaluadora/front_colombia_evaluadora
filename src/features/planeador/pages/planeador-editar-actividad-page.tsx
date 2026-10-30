@@ -22,7 +22,11 @@ import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import type { SetEstudiantesResult } from "@/features/planeador/api/mutations/set-estudiantes-actividad"
 import { EditarActividadForm, type ResultadoGuardadoActividad } from "@/features/planeador/components/forms/form-editar-actividad"
-import { esErrorEvidenciasFaltantes, irAlCampoInvalido } from "@/features/planeador/components/forms/form-editar-actividad/helpers"
+import {
+  esErrorEvidenciasFaltantes,
+  esErrorInstrumento,
+  irAlCampoInvalido,
+} from "@/features/planeador/components/forms/form-editar-actividad/helpers"
 import {
   ValidacionCoordinadorAprobar,
   ValidacionCoordinadorEstado,
@@ -173,16 +177,19 @@ function EditarActividadPageContent({
     motivoNoEditable(actividad) ??
     (actividad && resultadosSinSincronizar(ops, actividad.id) > 0 ? MENSAJE_RESULTADOS_SIN_SINCRONIZAR : undefined)
 
-  // "Marque al menos una evidencia…" (backend): el form resalta el checklist y el aviso ofrece "Ir al campo".
-  function avisarErrorGuardado(mensaje: string): ResultadoGuardadoActividad | undefined {
+  // Errores del backend de la sección del instrumento ("Marque al menos una evidencia…", instrumento
+  // rechazado): el form resalta el campo y el aviso ofrece "Ir al campo", como los de validación local.
+  function avisarErrorGuardado(mensaje: string, pasoInstrumento = false): ResultadoGuardadoActividad | undefined {
     const evidenciasFaltantes = esErrorEvidenciasFaltantes(mensaje)
+    const instrumentoInvalido = !evidenciasFaltantes && esErrorInstrumento(mensaje, pasoInstrumento)
+    const irAlCampo = evidenciasFaltantes || instrumentoInvalido
     notify(
       mensaje,
-      evidenciasFaltantes
+      irAlCampo
         ? { variant: "error", action: { label: "Ir al campo", onClick: () => irAlCampoInvalido(FORM_ID) } }
         : { variant: "error" },
     )
-    return evidenciasFaltantes ? { evidenciasFaltantes } : undefined
+    return irAlCampo ? { evidenciasFaltantes, instrumentoInvalido } : undefined
   }
 
   async function handleSubmit(values: Actividad) {
@@ -218,6 +225,7 @@ function EditarActividadPageContent({
         datosGuardados
           ? `Se guardaron los datos de la actividad, pero no se pudo guardar ${fallosDeSaga([fallido])[0]}`
           : getErrorMessage(fallido.error),
+        fallido.kind === SAGA_KINDS.actividadInstrumento,
       )
       return resultado
     }
