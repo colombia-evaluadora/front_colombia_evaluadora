@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import {
   TableScreen,
@@ -66,9 +67,7 @@ function ParametrosEdadContent() {
           />
 
           {isError ? (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(error)}
-            </p>
+            <ErrorNoticeBanner error={error} />
           ) : isPending ? (
             <div className="flex flex-col gap-8">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

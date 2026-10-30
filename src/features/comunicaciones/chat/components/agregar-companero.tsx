@@ -1,10 +1,10 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PlusIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getErrorMessage } from "@/lib/api-client"
 import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
@@ -62,11 +62,7 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
             />
           </label>
 
-          {abrir.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(abrir.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={abrir.isError ? abrir.error : null} />
 
           <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
             {personas.isPending ? (

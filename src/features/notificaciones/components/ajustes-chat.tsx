@@ -1,4 +1,5 @@
 import { useId } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -54,7 +55,7 @@ export function AjustesChatSeccion({ disabled }: { disabled?: boolean }) {
       {ajustes.isPending ? (
         <Skeleton className="h-24 w-full" />
       ) : ajustes.isError ? (
-        <p className="text-sm text-red">{getErrorMessage(ajustes.error)}</p>
+        <ErrorNoticeBanner error={ajustes.error} />
       ) : (
         <ul className="divide-y rounded-md border">
           {OPCIONES.map((o) => (
