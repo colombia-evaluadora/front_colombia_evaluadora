@@ -166,9 +166,7 @@ function hastaSilencio(duracion: SilencioDuracion) {
   if (duracion === "NINGUNA") return null
   if (duracion === "SIEMPRE") return "9999-12-31T00:00:00.000Z"
   const d = new Date()
-  if (duracion === "1H") d.setHours(d.getHours() + 1)
-  else if (duracion === "FIN_DIA") d.setHours(24, 0, 0, 0)
-  else if (duracion === "8H") d.setHours(d.getHours() + 8)
+  if (duracion === "8H") d.setHours(d.getHours() + 8)
   else d.setDate(d.getDate() + 7)
   return d.toISOString()
 }

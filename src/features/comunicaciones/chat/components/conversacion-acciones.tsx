@@ -47,7 +47,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
-import { SILENCIOS } from "@/features/comunicaciones/chat/lib/silencios"
+import { SILENCIOS, subtituloSilencio } from "@/features/comunicaciones/chat/lib/silencios"
 import { MEDIOS_ALERTA, alertasDe, describirAlertas } from "@/features/comunicaciones/chat/lib/alertas"
 import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
 import {
@@ -167,6 +167,11 @@ export function ConversacionAcciones({
           </button>
         </>
       )}
+      {/* El overlay de acciones tapa los indicadores de la fila: la campana tachada se repite junto
+          a la flecha para que el silencio siga visible al pasar el mouse (como WhatsApp). */}
+      {variante === "fila" && c.silenciadoHasta && (
+        <BellSlashIcon aria-label="Silenciado" role="img" className="mx-0.5 size-4 shrink-0 opacity-60" />
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -204,12 +209,12 @@ export function ConversacionAcciones({
               Cerrar proceso electoral
             </DropdownMenuItem>
           )}
-          {/* Toggle según el estado real: comms-service solo devuelve `silenciadoHasta` mientras
-              el silencio está vigente. Silenciada: "Activar notificaciones" (DURACION NINGUNA) y
-              "Cambiar silencio" para otra duración. */}
-          {c.silenciadoHasta && (
+          {/* Como WhatsApp: un solo ítem según el estado real (comms-service solo devuelve
+              `silenciadoHasta` mientras el silencio está vigente). Silenciada: "Desactivar silencio"
+              (DURACION NINGUNA) con el fin en relativo; si no, submenú 8 horas / 1 semana / Siempre. */}
+          {c.silenciadoHasta ? (
             <DropdownMenuItem
-              className={ITEM}
+              className={cn(ITEM, "items-start")}
               disabled={!CHAT_FUNCIONES.activarNotificaciones || silenciar.isPending}
               onClick={() =>
                 silenciar.mutate(
@@ -218,15 +223,20 @@ export function ConversacionAcciones({
                 )
               }
             >
-              <BellIcon />
-              <span className="flex-1">Activar notificaciones</span>
+              <BellIcon className="mt-0.5" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span>Desactivar silencio de notificaciones</span>
+                <span className="text-xs font-normal tracking-normal text-muted-foreground normal-case">
+                  {subtituloSilencio(c.silenciadoHasta)}
+                </span>
+              </span>
               {!CHAT_FUNCIONES.activarNotificaciones && <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-muted-foreground normal-case">{PROXIMAMENTE}</span>}
             </DropdownMenuItem>
-          )}
+          ) : (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className={ITEM}>
               <BellSlashIcon />
-              {c.silenciadoHasta ? "Cambiar silencio" : "Silenciar notificaciones"}
+              Silenciar notificaciones
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="min-w-36">
               {SILENCIOS.map((s) => (
@@ -245,6 +255,7 @@ export function ConversacionAcciones({
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+          )}
           {/* Tipo de alerta (HU 7): por qué medios avisa esta conversación. El sonido va con la campana. */}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className={ITEM}>

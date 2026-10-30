@@ -21,7 +21,7 @@ import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutat
 
 /**
  * Panel de configuración de mensajería: lista las conversaciones del chat con su estado de
- * notificaciones y permite silenciarlas (1 hora, fin del día en hora Colombia, hasta reactivar)
+ * notificaciones y permite silenciarlas (8 horas, 1 semana o siempre)
  * o activarlas (`NINGUNA`) sin abrir cada conversación. Usa la misma mutación que el menú de la
  * conversación, así la lista del chat queda sincronizada.
  */
