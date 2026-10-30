@@ -99,12 +99,28 @@ export interface ConversacionEliminada {
  * - `borradores.actualizados` (comms-service envió un mensaje programado o cambió un borrador)
  *   vuelve a pedir Borradores y Enviados.
  */
+/** ¿La vista previa trae un mensaje más reciente que el último del hilo en cache? */
+export function hiloDesactualizado(queryClient: QueryClient, c: Pick<Conversacion, "id" | "ultimoMensaje">) {
+  const enviadoEn = c.ultimoMensaje?.enviadoEn
+  if (!enviadoEn) return false
+  const hilo = queryClient.getQueryData<Mensaje[]>(chatKeys.mensajes(c.id))
+  if (!hilo) return false
+  const ultimo = hilo.at(-1)?.fecha
+  return !ultimo || new Date(enviadoEn).getTime() > new Date(ultimo).getTime()
+}
+
 export function aplicarEventoUsuario(
   queryClient: QueryClient,
   e: Pick<RealtimeEvent, "event" | "data">,
 ): ConversacionEliminada | null {
   if (e.event === "conversacion.actualizada") {
     const c = e.data as Conversacion
+    // El hilo en cache no tiene el último mensaje de la vista previa: llegó por un camino que no
+    // pasó por `canal:<id>` (p. ej. lo envió el asistente de IA en nombre del usuario, o el hilo
+    // no estaba suscrito). Se vuelve a pedir; si el hilo no está montado, solo queda vencido.
+    if (hiloDesactualizado(queryClient, c)) {
+      void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(c.id) })
+    }
     const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
     if (lista && !lista.some((x) => x.id === c.id)) {
       void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
@@ -251,6 +267,16 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         const { conversacionId: id, leidoHasta } = e.data as { conversacionId: number; leidoHasta: number }
         queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
           prev?.map((c) => (c.id === id ? { ...c, leidoHasta: Math.max(c.leidoHasta ?? 0, leidoHasta) } : c)),
+        )
+        return
+      }
+      case "conversacion.entrega": {
+        // Estado como WhatsApp: el mensaje ya llegó a un cliente de todos; ✓✓ gris.
+        const { conversacionId: id, entregadoHasta } = e.data as { conversacionId: number; entregadoHasta: number }
+        queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+          prev?.map((c) =>
+            c.id === id ? { ...c, entregadoHasta: Math.max(c.entregadoHasta ?? 0, entregadoHasta) } : c,
+          ),
         )
         return
       }

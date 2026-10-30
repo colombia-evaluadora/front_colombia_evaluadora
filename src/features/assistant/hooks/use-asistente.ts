@@ -13,6 +13,7 @@ import {
   obtenerConversacion,
 } from "@/features/assistant/api/agente-client"
 import { conversacionesQueryKey } from "@/features/assistant/api/queries"
+import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type {
   ContextoUi,
   ConversacionDetalle,
@@ -136,6 +137,8 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
   const abortRef = useRef<AbortController | null>(null)
   // Tras un 429 no se envía hasta esta hora (ms).
   const esperarHastaRef = useRef(0)
+  // El turno ejecutó una herramienta del chat (p. ej. enviar un mensaje en nombre del usuario).
+  const tocoChatRef = useRef(false)
 
   const cambiarConversacion = (id: string | null) => {
     setConversacionId(id)
@@ -256,6 +259,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
     setEnviando(true)
     setEstado(null)
     setHerramientas([])
+    tocoChatRef.current = false
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -287,6 +291,9 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
       )
       actualizar(idRespuesta, { resultadosUi: aplicarRespuesta(respuesta) })
       queryClient.invalidateQueries({ queryKey: conversacionesQueryKey })
+      // Una escritura directa del asistente en el chat (enviar un mensaje como el usuario) no pasa
+      // por las mutaciones del chat: sin esto el hilo propio no mostraba el mensaje enviado.
+      if (tocoChatRef.current) queryClient.invalidateQueries({ queryKey: chatKeys.all })
     } catch (error) {
       if (controller.signal.aborted) {
         actualizar(idRespuesta, {
@@ -322,6 +329,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
 
   function registrarHerramienta(evento: EventoHerramienta) {
     if (!evento?.id || !evento.etiqueta) return
+    if (/comunicaciones/i.test(evento.herramienta ?? "")) tocoChatRef.current = true
     // El id se repite con herramientas descubiertas a mitad de turno.
     const clave = `${evento.id}|${evento.herramienta}`
     const etiqueta = ETIQUETAS_HERRAMIENTA[evento.herramienta] ?? evento.etiqueta

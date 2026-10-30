@@ -58,6 +58,12 @@ describe("estadoLectura", () => {
     expect(estadoLectura(base({ id: 11 }), conv)).toBe("ENVIADO")
     expect(estadoLectura(base(), { totalMiembros: 2, leidoHasta: null })).toBe("ENVIADO")
   })
+  it("✓✓ gris si llegó a todos sin que todos lo leyeran (como WhatsApp)", () => {
+    const c = { totalMiembros: 3, leidoHasta: 10, entregadoHasta: 12 }
+    expect(estadoLectura(base({ id: 10 }), c)).toBe("LEIDO")
+    expect(estadoLectura(base({ id: 12 }), c)).toBe("ENTREGADO")
+    expect(estadoLectura(base({ id: 13 }), c)).toBe("ENVIADO")
+  })
   it("sin marca en mensajes ajenos, de sistema, borrados o sin nadie más", () => {
     expect(estadoLectura(base({ esPropio: false }), conv)).toBeNull()
     expect(estadoLectura(base({ sistema: true }), conv)).toBeNull()
