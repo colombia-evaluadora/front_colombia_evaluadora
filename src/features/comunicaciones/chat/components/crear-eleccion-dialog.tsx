@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
@@ -31,7 +32,8 @@ import {
   type CandidatoNuevo,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
-import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { isoALocal, validarInicioNoPasado, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { caracteresPermitidos } from "@/features/comunicaciones/chat/lib/texto-actividad"
 import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
 import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
@@ -58,8 +60,8 @@ const aCierre = (dia: string) => `${dia}T23:59`
 
 const datosSchema = z
   .object({
-    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")),
-    descripcion: z.string().max(500, maxLength(500, "La descripción")),
+    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")).superRefine(caracteresPermitidos("El nombre")),
+    descripcion: z.string().max(500, maxLength(500, "La descripción")).superRefine(caracteresPermitidos("La descripción", { puntuacion: true })),
     fechaInicio: z.string().nullable(),
     fechaCierre: z.string().nullable(),
     jornadaId: z.number().min(1, required("La jornada", { femenino: true })),
@@ -148,7 +150,8 @@ export function CrearEleccionDialog({
           }
         : DATOS_INICIALES,
     ),
-    validators: { onSubmit: datosSchema },
+    // QA 77: inicio no en el pasado (al editar, uno que no cambió se acepta).
+    validators: { onSubmit: datosSchema.superRefine((v, ctx) => validarInicioNoPasado(v, ctx, editar ? isoALocal(editar.fechaInicio) : null)) },
     onSubmit: () => setPaso(editar ? 3 : 2),
   })
 
@@ -270,7 +273,7 @@ export function CrearEleccionDialog({
                   <f.TextField
                     label="Nombre"
                     required
-                    maxLength={80}
+                    maxLength={80} showCounter
                     placeholder="Por ejemplo, Elección Personero 2026"
                   />
                 )}
@@ -345,11 +348,7 @@ export function CrearEleccionDialog({
             />
           )}
 
-          {crear.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(crear.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           {/* Sin nada guardado aún no ocupa espacio: el pie queda como en Figma 3846:71356. */}
           {(autoguardado.estado !== "inactivo" || !!autoguardado.borradorId) && (
@@ -444,9 +443,9 @@ export function CrearEleccionDialog({
 }
 
 const candidatoSchema = z.object({
-  nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")),
+  nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")).superRefine(caracteresPermitidos("El nombre")),
   numero: z.string().trim().min(1, required("El número")),
-  lema: z.string().max(80, maxLength(80, "El lema")),
+  lema: z.string().max(80, maxLength(80, "El lema")).superRefine(caracteresPermitidos("El lema", { puntuacion: true })),
 })
 
 let siguienteClave = 1
@@ -506,7 +505,7 @@ function PasoCandidatos({
           />
           <div className="space-y-3">
             <form.AppField name="nombre">
-              {(f) => <f.TextField label="Nombre" maxLength={80} />}
+              {(f) => <f.TextField label="Nombre" maxLength={80} showCounter />}
             </form.AppField>
             <form.AppField
               name="numero"
@@ -520,7 +519,7 @@ function PasoCandidatos({
               {(f) => <f.NumberField label="Número" maxDigits={3} />}
             </form.AppField>
             <form.AppField name="lema">
-              {(f) => <f.TextField label="Lema" maxLength={80} />}
+              {(f) => <f.TextField label="Lema" maxLength={80} showCounter />}
             </form.AppField>
           </div>
         </div>

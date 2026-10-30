@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
@@ -28,7 +29,8 @@ import {
 } from "@/features/comunicaciones/chat/lib/preguntas"
 import { ListaPreguntas } from "@/features/comunicaciones/chat/components/editor-preguntas"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
-import { isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { isoALocal, validarInicioNoPasado, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { caracteresPermitidos } from "@/features/comunicaciones/chat/lib/texto-actividad"
 import { DateRangeField } from "@/features/establishment/academic-period/components/fields/date-range-field"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import {
@@ -40,8 +42,8 @@ import { datosDe, hayContenido, idsDe, preguntasGuardables, revivirPreguntas } f
 
 const datosSchema = z
   .object({
-    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")),
-    descripcion: z.string().max(500, maxLength(500, "La descripción")),
+    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")).superRefine(caracteresPermitidos("El nombre")),
+    descripcion: z.string().max(500, maxLength(500, "La descripción")).superRefine(caracteresPermitidos("La descripción", { puntuacion: true })),
     fechaInicio: z.string().nullable(),
     fechaCierre: z.string().nullable(),
   })
@@ -101,7 +103,8 @@ export function CrearEncuestaDialog({
           }
         : DATOS_INICIALES,
     ),
-    validators: { onSubmit: datosSchema },
+    // QA 77: inicio no en el pasado (al editar, uno que no cambió se acepta).
+    validators: { onSubmit: datosSchema.superRefine((v, ctx) => validarInicioNoPasado(v, ctx, editar ? isoALocal(editar.fechaInicio) : null)) },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "ENCUESTA")])
       setPaso(2)
@@ -211,7 +214,7 @@ export function CrearEncuestaDialog({
                   <f.TextField
                     label="Nombre"
                     required
-                    maxLength={80}
+                    maxLength={80} showCounter
                     placeholder="Por ejemplo, Encuesta Satisfacción"
                   />
                 )}
@@ -292,11 +295,7 @@ export function CrearEncuestaDialog({
             </div>
           )}
 
-          {crear.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(crear.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}

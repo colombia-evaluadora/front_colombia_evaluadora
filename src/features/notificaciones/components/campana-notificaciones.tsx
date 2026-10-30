@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotificacionesTiempoReal } from "@/features/notificaciones/hooks/use-notificaciones-tiempo-real"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
@@ -133,11 +134,7 @@ export function CampanaNotificaciones() {
             Sin conexión: se muestran las notificaciones guardadas.
           </p>
         )}
-        {marcarTodas.isError && (
-          <p role="alert" className="border-b bg-red-22 px-4 py-2 text-xs text-red">
-            {getErrorMessage(marcarTodas.error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={marcarTodas.isError ? marcarTodas.error : null} className="mx-4 my-2" />
 
         {tieneChat && (
           <Tabs value={pestana} onValueChange={(v) => setPestana(v === "mensajes" ? "mensajes" : "notificaciones")}>

@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -46,7 +47,7 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
       {conversaciones.isPending ? (
         <Skeleton className="h-24 w-full" />
       ) : conversaciones.isError ? (
-        <p className="text-sm text-red">{getErrorMessage(conversaciones.error)}</p>
+        <ErrorNoticeBanner error={conversaciones.error} />
       ) : lista.length === 0 ? (
         <p className="text-sm text-muted-foreground">No tienes conversaciones.</p>
       ) : (

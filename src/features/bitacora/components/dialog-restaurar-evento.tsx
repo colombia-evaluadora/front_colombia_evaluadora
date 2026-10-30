@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 
@@ -94,11 +95,7 @@ function Contenido({
         <DialogTitle>Restaurar información</DialogTitle>
       </DialogHeader>
 
-      {restaurar.isError && (
-        <p role="alert" className="rounded-md bg-red-22 px-3 py-2 text-sm text-red">
-          {getErrorMessage(restaurar.error)}
-        </p>
-      )}
+      <ErrorNoticeBanner error={restaurar.isError ? restaurar.error : null} />
 
       <dl className="grid gap-x-4 gap-y-2 rounded-md border border-border px-3 py-2 text-sm sm:grid-cols-[10rem_1fr]">
         <Dato label="Evento">

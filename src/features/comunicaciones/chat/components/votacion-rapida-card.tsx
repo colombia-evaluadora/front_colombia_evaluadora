@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useQueryClient } from "@tanstack/react-query"
 
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/icons"
 import { haceCuanto, votacionModificada } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Mensaje, VotacionRapida } from "@/features/comunicaciones/chat/api/types"
 import { useEliminarMensaje } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
@@ -204,11 +204,7 @@ function Votar({ mensaje: m, votacion: v }: { mensaje: Mensaje; votacion: Votaci
               </>
             )}
       </p>
-      {votar.isError && (
-        <p role="alert" className="text-sm text-red">
-          {getErrorMessage(votar.error)}
-        </p>
-      )}
+      <ErrorNoticeBanner error={votar.isError ? votar.error : null} />
       <Button
         type="button"
         className="w-full"
@@ -316,11 +312,7 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
               No se recibirán más votos y todos verán el resultado final.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {cerrar.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(cerrar.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={cerrar.isError ? cerrar.error : null} />
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={cerrar.isPending}>
               Cancelar
@@ -344,11 +336,7 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
               Se quitará del chat junto con los votos que ya tenga; en su lugar queda el aviso de mensaje eliminado.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {eliminar.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(eliminar.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={eliminar.isError ? eliminar.error : null} />
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
               Cancelar

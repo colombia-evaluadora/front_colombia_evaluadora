@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
@@ -28,7 +29,8 @@ import {
   nuevaPregunta,
   type PreguntaLocal,
 } from "@/features/comunicaciones/chat/lib/preguntas"
-import { diaMinimo, errorCierre, isoALocal, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { diaMinimo, errorCierre, isoALocal, validarInicioNoPasado, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { caracteresPermitidos } from "@/features/comunicaciones/chat/lib/texto-actividad"
 import {
   useAutoguardadoActividad,
   useEliminarBorradorActividad,
@@ -58,8 +60,8 @@ const INTENTOS = [
 
 const datosSchema = z
   .object({
-    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")),
-    descripcion: z.string().max(500, maxLength(500, "La descripción")),
+    nombre: z.string().trim().min(1, required("El nombre")).max(80, maxLength(80, "El nombre")).superRefine(caracteresPermitidos("El nombre")),
+    descripcion: z.string().max(500, maxLength(500, "La descripción")).superRefine(caracteresPermitidos("La descripción", { puntuacion: true })),
     fechaInicio: z.string().nullable(),
     fechaCierre: z.string().nullable(),
     tiempoLimiteMin: z.number().min(0, required("El tiempo límite")),
@@ -132,7 +134,8 @@ export function CrearEvaluacionDialog({
           }
         : DATOS_INICIALES,
     ),
-    validators: { onSubmit: datosSchema },
+    // QA 77: inicio no en el pasado (al editar, uno que no cambió se acepta).
+    validators: { onSubmit: datosSchema.superRefine((v, ctx) => validarInicioNoPasado(v, ctx, editar ? isoALocal(editar.fechaInicio) : null)) },
     onSubmit: () => {
       if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "EVALUACION")])
       setPaso(2)
@@ -267,7 +270,7 @@ export function CrearEvaluacionDialog({
                   <f.TextField
                     label="Nombre"
                     required
-                    maxLength={80}
+                    maxLength={80} showCounter
                     placeholder="Por ejemplo, Examen Matemáticas"
                   />
                 )}
@@ -394,11 +397,7 @@ export function CrearEvaluacionDialog({
             />
           )}
 
-          {crear.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(crear.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}

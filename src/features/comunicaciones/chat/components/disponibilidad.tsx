@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { AvatarBadge } from "@/components/ui/avatar"
@@ -231,11 +232,7 @@ function ConfigurarDisponibilidadDialog({
               Para los demás apareces desconectado. Con Invisible nadie ve tu estado.
             </p>
           </fieldset>
-          {error && (
-            <p role="alert" className="rounded-md bg-red-22 px-3 py-2 text-sm text-red">
-              {error}
-            </p>
-          )}
+          <NoticeBanner notice={error ? { id: 0, message: error } : null} onClose={() => setError(null)} variant="error" />
         </form>
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={actualizar.isPending} onClick={() => onOpenChange(false)}>
