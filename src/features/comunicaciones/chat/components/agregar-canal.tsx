@@ -17,6 +17,7 @@ import { CrearComunicadoDialog } from "@/features/comunicaciones/chat/components
 import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/crear-eleccion-dialog"
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components/crear-evaluacion-dialog"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ITEM =
   "gap-3 border-b py-2.5 text-sm font-normal tracking-normal normal-case last:border-b-0 [&_svg]:size-5!"
@@ -38,6 +39,10 @@ export function AgregarCanal({
 }) {
   const [abierto, setAbierto] = useState<CategoriaCanal | null>(null)
   const cerrar = () => setAbierto(null)
+  // Crear comunicados es un permiso por rol (menú COMUNICADOS, Administración › Roles y menús):
+  // sin él la opción no se ofrece; comms-service igual lo exige (403).
+  const comunicados = useMenuPermission("COMUNICADOS").puedeCrear
+  const tipos = TIPOS_CANAL.filter((t) => t.categoria !== "ANUNCIO" || comunicados)
 
   return (
     <>
@@ -54,7 +59,7 @@ export function AgregarCanal({
             <DropdownMenuLabel className="px-3 pt-2 pb-1.5 text-sm font-semibold tracking-normal text-foreground normal-case">
               Selecciona el tipo de foro:
             </DropdownMenuLabel>
-            {TIPOS_CANAL.map((t) => {
+            {tipos.map((t) => {
               const Icono = ICONO_CATEGORIA[t.categoria]
               const disponible = CATEGORIA_DISPONIBLE[t.categoria]
               return (

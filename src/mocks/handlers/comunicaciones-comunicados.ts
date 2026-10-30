@@ -8,7 +8,15 @@ import type {
   DestinosComunicado,
 } from "@/features/comunicaciones/chat/api/types"
 import { formatoDeArchivo, validarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
-import { conversaciones, personas } from "@/mocks/db/comunicaciones"
+import { conversaciones, personas, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
+import {
+  alcanceComunicadoMock,
+  opcionesComunicadoMock,
+  personaChat,
+  personasAlcanceMock,
+  puedeCrearComunicadosMock,
+} from "@/mocks/db/comunicaciones-seleccion"
+import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { comunicados } from "@/mocks/db/comunicaciones-comunicados"
 import { registrarArchivoMaterial } from "@/mocks/db/planeador"
 
@@ -20,8 +28,9 @@ interface CrearComunicadoBody {
   TITULO?: string
   DESCRIPCION?: string
   AUDIENCIA?: Audiencia[]
-  DESTINOS?: Partial<Record<"GRADOS" | "GRUPOS" | "ROLES" | "USUARIOS" | "GRUPOS_CHAT", OpcionIn[]>> & {
+  DESTINOS?: Partial<Record<"GRADOS" | "GRUPOS" | "ROLES" | "USUARIOS" | "GRUPOS_CHAT" | "SEDES" | "JORNADAS", OpcionIn[]>> & {
     PARA?: DestinosComunicado["para"]
+    ESTABLECIMIENTO?: OpcionIn | null
   }
   PUBLICAR_EN?: string
   CONTENIDO_HTML?: string
@@ -43,6 +52,9 @@ function destinosDe(body: CrearComunicadoBody): DestinosComunicado {
     usuarios: l(d.USUARIOS),
     gruposChat: l(d.GRUPOS_CHAT),
     para: d.PARA === "ACUDIENTES" || d.PARA === "AMBOS" ? d.PARA : "ESTUDIANTES",
+    establecimiento: l(d.ESTABLECIMIENTO ? [d.ESTABLECIMIENTO] : [])[0] ?? null,
+    sedes: l(d.SEDES),
+    jornadas: l(d.JORNADAS),
   }
 }
 
@@ -78,6 +90,35 @@ const recepcionMock = (c: Comunicado) =>
 
 function buscarComunicado(id: string | readonly string[] | undefined) {
   return comunicados.find((x) => x.conversacionId === Number(id))
+}
+
+const SIN_PERMISO = () => HttpResponse.json({ message: "Tu perfil no puede crear comunicados." }, { status: 403 })
+const FUERA = () =>
+  HttpResponse.json(
+    {
+      message:
+        "Hay destinatarios fuera de tu alcance: solo puedes enviar a tu establecimiento y a lo que está por debajo de tu cargo.",
+    },
+    { status: 403 },
+  )
+
+// Persona del chat de cada cuenta del mock (la docente es Darlene, 2).
+const yoDe = (email: string) => (email === "docente@example.com" ? 2 : email === "user@example.com" ? 3 : USUARIO_ACTUAL.id)
+
+/** Grupos, personas o audiencias de funcionarios fuera del alcance de quien publica (403). */
+function fueraDeAlcance(roles: readonly string[], email: string, body: CrearComunicadoBody): boolean {
+  const a = alcanceComunicadoMock(roles)
+  if (a.todos) return false
+  const d = body.DESTINOS ?? {}
+  const grupos = (d.GRUPOS ?? []).map((o) => Number(o.VALOR))
+  const usuarios = (d.USUARIOS ?? []).map((o) => Number(o.VALOR))
+  const permitidas = a.funcionarios.length ? null : ["ESTUDIANTES", "PADRES"]
+  const alcance = personasAlcanceMock(a, yoDe(email))
+  return (
+    grupos.some((g) => !a.grupos.includes(g)) ||
+    usuarios.some((i) => !alcance.includes(i)) ||
+    (!!permitidas && (body.AUDIENCIA ?? []).some((x) => !permitidas.includes(x)))
+  )
 }
 
 const sinComunicado = () => HttpResponse.json({ message: "Esta conversación no tiene un comunicado." }, { status: 404 })
@@ -174,9 +215,39 @@ export const comunicacionesComunicadosHandlers = [
     return HttpResponse.json({ rows: [c] })
   }),
 
+  // Selector de destinatarios: solo lo que está en el alcance de quien publica.
+  http.get(URL("comunicados/destinos/opciones"), async ({ request }) => {
+    await delay(150)
+    const u = usuarioDe(request)
+    if (!u || !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
+    const q = new globalThis.URL(request.url).searchParams
+    const a = alcanceComunicadoMock(u.roles)
+    if (q.get("establecimiento") && !a.todos && q.get("establecimiento") !== "1") return FUERA()
+    return HttpResponse.json({
+      rows: [opcionesComunicadoMock(a, { establecimiento: q.get("establecimiento") ?? undefined, jornada: q.get("jornada") ?? undefined })],
+    })
+  }),
+
+  http.get(URL("comunicados/destinos/personas"), async ({ request }) => {
+    await delay(150)
+    const u = usuarioDe(request)
+    if (!u || !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
+    const q = (new globalThis.URL(request.url).searchParams.get("q") ?? "").toLowerCase()
+    const a = alcanceComunicadoMock(u.roles)
+    const ids = a.todos ? [...personas.map((p) => p.id)] : personasAlcanceMock(a, yoDe(u.email))
+    const filas = ids
+      .map((i) => personaChat(i))
+      .filter((p): p is NonNullable<typeof p> => !!p && (!q || p.nombre.toLowerCase().includes(q)))
+    return HttpResponse.json({ rows: filas })
+  }),
+
   http.post(URL("comunicados"), async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as CrearComunicadoBody
+    // Permiso dinámico (menú COMUNICADOS del rol) y alcance jerárquico, como comms-service.
+    const u = usuarioDe(request)
+    if (u && !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
+    if (u && fueraDeAlcance(u.roles, u.email, body)) return FUERA()
     if (incompleto(body)) return HttpResponse.json(INCOMPLETO, { status: 400 })
     const titulo = (body.TITULO as string).trim()
     if (conversaciones.some((c) => c.nombre.toLowerCase() === titulo.toLowerCase())) {

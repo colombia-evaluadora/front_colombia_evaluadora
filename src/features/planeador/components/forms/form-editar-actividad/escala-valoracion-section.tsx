@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -431,6 +432,7 @@ function CriterioEscalaCard({
             aria-invalid={nombreInvalido}
             disabled={disabled}
           />
+          <CharacterCounter value={criterio.nombre} max={200} />
           {nombreInvalido && (
             <FieldError
               errors={nombreVacio ? ERROR_OBLIGATORIO : [{ message: "Otro criterio de la escala ya tiene este nombre." }]}
@@ -503,6 +505,7 @@ function CriterioEscalaCard({
                       onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                       disabled={disabled}
                     />
+                    <CharacterCounter value={nivel.nombre} max={130} />
                   </Field>
                   <Field variant="outlined" data-invalid={descripcionInvalida}>
                     <FieldLabel htmlFor={`${nivel.id}-descriptor`}>Descriptor *</FieldLabel>
@@ -517,6 +520,7 @@ function CriterioEscalaCard({
                       aria-invalid={descripcionInvalida}
                       disabled={disabled}
                     />
+                    <CharacterCounter value={nivel.descripcion} max={4000} />
                     {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
                   </Field>
                   <Field variant="outlined" data-invalid={puntajeInvalido}>

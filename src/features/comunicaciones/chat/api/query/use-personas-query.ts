@@ -30,16 +30,22 @@ export function normalizarBusqueda(s: string) {
 // Sin texto (o con menos de MIN_CARACTERES) trae la primera página del directorio.
 // `paraGrupo`: el buscador de un grupo. Ofrece también acudientes: comms-service los invita (entran
 // solo si aceptan) y la UI los marca con "Acudiente · por invitación".
-export function usePersonasQuery(enabled = true, texto = "", { paraGrupo = false }: { paraGrupo?: boolean } = {}) {
+// `paraComunicado`: solo las personas del alcance de quien publica (comms-service rechaza el resto).
+export function usePersonasQuery(
+  enabled = true,
+  texto = "",
+  { paraGrupo = false, paraComunicado = false }: { paraGrupo?: boolean; paraComunicado?: boolean } = {},
+) {
   const debounced = useDebounced(texto.trim())
   const q = debounced.length >= MIN_CARACTERES ? debounced : ""
   return useQuery({
-    queryKey: [...chatKeys.personas, q, ...(paraGrupo ? ["grupo"] : [])],
+    queryKey: [...chatKeys.personas, q, ...(paraGrupo ? ["grupo"] : []), ...(paraComunicado ? ["comunicado"] : [])],
     queryFn: async () => {
       const params = new URLSearchParams({ limite: String(LIMITE) })
       if (q) params.set("q", q)
       if (paraGrupo) params.set("paraGrupo", "true")
-      return evalCol.getRows<Persona>(`/comunicaciones/personas?${params}`)
+      const ruta = paraComunicado ? "/comunicaciones/comunicados/destinos/personas" : "/comunicaciones/personas"
+      return evalCol.getRows<Persona>(`${ruta}?${params}`)
     },
     enabled,
     staleTime: 5 * 60_000,

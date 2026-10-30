@@ -1,4 +1,4 @@
-import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
+import type { OpcionesSeleccion, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { useOpcionesSeleccionQuery } from "@/features/comunicaciones/chat/api/query/use-seleccion-grupal-query"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -20,6 +20,7 @@ export function SelectorGrupal({
   leyenda = "O agrega por grado, grupo o rol",
   etiquetaPara = "De los grados y grupos, agregar a",
   ayuda = "Los acudientes reciben una invitación (una sola aunque tengan varios hijos) y entran al grupo solo si la aceptan.",
+  opciones: externas,
 }: {
   enabled: boolean
   value: SeleccionGrupal
@@ -28,8 +29,17 @@ export function SelectorGrupal({
   leyenda?: string
   etiquetaPara?: string
   ayuda?: string | null
+  // Opciones ya acotadas por quien lo usa (el comunicado las pide a su propio endpoint, por alcance);
+  // sin ellas, las del alta masiva de grupos.
+  opciones?: {
+    data: OpcionesSeleccion | undefined
+    isPending: boolean
+    isError: boolean
+    refetch: () => unknown
+  }
 }) {
-  const opciones = useOpcionesSeleccionQuery(enabled)
+  const propias = useOpcionesSeleccionQuery(enabled && !externas)
+  const opciones = externas ?? propias
   const datos = opciones.data
 
   return (

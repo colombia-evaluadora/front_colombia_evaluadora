@@ -8,6 +8,7 @@ import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/c
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 type Dialogo = keyof AccionesAtajo
 
@@ -24,6 +25,8 @@ export function useDialogosAtajos({
   onCreado: (conversacionId: number) => void
 }): { acciones: AccionesAtajo; dialogos: ReactNode } {
   const { puedeGestionar } = useChatAccess()
+  // El comunicado sale del permiso COMUNICADOS del rol (Roles y menús), no del perfil.
+  const creaComunicados = useMenuPermission("COMUNICADOS").puedeCrear
   const [abierto, setAbierto] = useState<Dialogo | null>(null)
   const cerrar = () => setAbierto(null)
   const gestionaCanal = !!c && (c.tipo === "CANAL" || c.tipo === "GRUPO") && (c.esAdmin ?? puedeGestionar)
@@ -32,7 +35,7 @@ export function useDialogosAtajos({
   if (puedeGestionar && CHAT_FUNCIONES.encuestas) acciones.encuesta = () => setAbierto("encuesta")
   if (gestionaCanal && CHAT_FUNCIONES.votacionRapida) acciones.votacion = () => setAbierto("votacion")
   if (puedeGestionar && CHAT_FUNCIONES.elecciones) acciones.eleccion = () => setAbierto("eleccion")
-  if (puedeGestionar && CHAT_FUNCIONES.comunicados) acciones.comunicado = () => setAbierto("comunicado")
+  if (creaComunicados && CHAT_FUNCIONES.comunicados) acciones.comunicado = () => setAbierto("comunicado")
 
   const dialogos = (
     <>
