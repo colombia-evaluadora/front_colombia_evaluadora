@@ -26,7 +26,7 @@ import {
 } from "@/features/comunicaciones/chat/lib/respuestas"
 
 // Vista de quien fue asignado a la encuesta: la responde una vez y luego ve los
-// resultados si son públicos.
+// resultados (en vivo) si son públicos. Sin responder no los ve, ni siquiera al cerrar.
 export function EncuestaParticipante({
   encuesta: e,
   isPending,

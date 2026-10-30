@@ -48,6 +48,15 @@ export function EncuestaResultados({
       </p>
     )
   }
+  // Públicos: el participante los ve (en vivo) solo después de responder; comms-service no le
+  // manda conteos antes. Quien gestiona los ve siempre.
+  if (!(e.gestiona ?? e.esCreador) && !e.yaRespondi) {
+    return (
+      <p className="mb-4 rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+        Los resultados solo los ven quienes respondieron la encuesta.
+      </p>
+    )
+  }
 
   const r = resumenEncuesta(e)
 

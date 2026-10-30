@@ -1,10 +1,16 @@
-import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
+import type { Candidato, Eleccion } from "@/features/comunicaciones/chat/api/types"
+
+// La urna del mock guarda los conteos reales; `vistaEleccion` decide qué sale (como comms-service).
+export type EleccionMock = Omit<Eleccion, "candidatos" | "votosEnBlanco" | "votaron"> & {
+  candidatos: (Omit<Candidato, "votos"> & { votos: number })[]
+  votosEnBlanco: number
+}
 
 // La elección de ejemplo cierra 30 minutos después de cargar la app, para ver
 // la cuenta regresiva y, al llegar a cero, los resultados finales.
 const cierre = new Date(Date.now() + 30 * 60_000).toISOString()
 
-export const elecciones: Eleccion[] = [
+export const elecciones: EleccionMock[] = [
   {
     conversacionId: 5,
     nombre: "Elección Personero 2026",
@@ -12,7 +18,6 @@ export const elecciones: Eleccion[] = [
     fechaInicio: null,
     fechaCierre: cierre,
     jornadaId: 1,
-    verResultadosEnVivo: true,
     candidatos: [
       { id: 1, nombre: "Fernney Antonio Jaramillo Gomez", numero: "41", lema: "Más ideas para crecer", fotoUrl: null, votos: 74 },
       { id: 2, nombre: "Laura Martínez Gómez", numero: "20", lema: "Tu voz impulsa el cambio", fotoUrl: null, votos: 53 },
@@ -29,7 +34,7 @@ export const elecciones: Eleccion[] = [
 ]
 
 // Simula votos nuevos mientras la elección sigue abierta.
-export function simularVotos(e: Eleccion) {
+export function simularVotos(e: EleccionMock) {
   if (e.cerradaManualmente || (e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now())) return
   const emitidos = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
   if (emitidos >= e.totalHabilitados) return
@@ -45,5 +50,25 @@ export const votantes = new Map<number, Set<string>>()
 export const yaVoto = (conversacionId: number, correo: string | undefined) =>
   !!correo && (votantes.get(conversacionId)?.has(correo) ?? false)
 
-export const eleccionCerrada = (e: Eleccion) =>
+export const eleccionCerrada = (e: EleccionMock) =>
   e.cerradaManualmente || (!!e.fechaCierre && Date.parse(e.fechaCierre) <= Date.now())
+
+export const emitidos = (e: EleccionMock) => e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
+
+/**
+ * Lo que devuelve comms-service (`EleccionService#ver`): sin resultados en vivo para nadie.
+ * Abierta, conteos por candidato y voto en blanco en null (ni quien la creó sabe quién va
+ * ganando) y la participación solo para quien gestiona. Cerrada, todo para todos.
+ */
+export function vistaEleccion(e: EleccionMock, { gestiona, yaVoto }: { gestiona: boolean; yaVoto: boolean }): Eleccion {
+  const cerrada = eleccionCerrada(e)
+  return {
+    ...e,
+    esCreador: e.esCreador && gestiona,
+    gestiona,
+    yaVoto,
+    candidatos: e.candidatos.map((c) => ({ ...c, votos: cerrada ? c.votos : null })),
+    votosEnBlanco: cerrada ? e.votosEnBlanco : null,
+    votaron: cerrada || gestiona ? emitidos(e) : null,
+  }
+}

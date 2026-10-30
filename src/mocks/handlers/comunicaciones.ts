@@ -136,8 +136,29 @@ function verEliminados(conversacionId: number, request: Request) {
   return perfilDe(request) === "DIRECTIVO" || !!filtrarGrupos([conv], request)[0]?.esAdmin
 }
 
+/**
+ * Votación rápida como la devuelve comms-service (`ChatRepository#votaciones`): sin resultados
+ * en vivo. Abierta, conteos por opción en null para todos y el total solo para quien la creó;
+ * cerrada (por tiempo o a mano), conteos y total para todos.
+ */
+export function vistaVotacion(m: Mensaje): Mensaje {
+  const v = m.votacion
+  if (!v) return m
+  const cerrada = new Date(v.cierraEn) <= new Date()
+  const total = v.opciones.reduce((n, o) => n + (o.votos ?? 0), 0)
+  return {
+    ...m,
+    votacion: {
+      ...v,
+      cerrada,
+      opciones: v.opciones.map((o) => ({ ...o, votos: cerrada ? (o.votos ?? 0) : null })),
+      totalVotos: cerrada || m.esPropio ? total : null,
+    },
+  }
+}
+
 export function vistaMensaje(m: Mensaje, ver: boolean): Mensaje {
-  if (!m.eliminado || ver) return m
+  if (!m.eliminado || ver) return vistaVotacion(m)
   return { ...m, texto: "", adjunto: null, adjuntos: [], fijado: false, reacciones: [], menciones: [], meMenciona: false, respuestaA: null, votacion: undefined }
 }
 
@@ -284,7 +305,7 @@ export const comunicacionesHandlers = [
     const body = (await request.json()) as { PREGUNTA?: string; TIPO: TipoVotacionRapida; MINUTOS: number }
     const pregunta = body.PREGUNTA?.trim()
     if (!pregunta) return HttpResponse.json({ message: "Escribe la pregunta." }, { status: 400 })
-    return HttpResponse.json({ rows: [nuevaVotacionRapida(conv.id, pregunta, body.TIPO, body.MINUTOS)] })
+    return HttpResponse.json({ rows: [vistaVotacion(nuevaVotacionRapida(conv.id, pregunta, body.TIPO, body.MINUTOS))] })
   }),
 
   http.get(URL("conversaciones/:id/miembros"), async ({ params }) => {
@@ -796,9 +817,27 @@ export const comunicacionesMensajesHandlers = [
     const body = (await request.json()) as { FK_OPCION: number }
     const opcion = v.opciones.find((o) => o.id === body.FK_OPCION)
     if (!opcion) return HttpResponse.json({ message: "Elige una opción." }, { status: 400 })
-    opcion.votos += 1
+    opcion.votos = (opcion.votos ?? 0) + 1
     v.miVoto = opcion.id
-    return HttpResponse.json({ rows: [m] })
+    return HttpResponse.json({ rows: [vistaVotacion(m)] })
+  }),
+
+  // "Cerrar votación": solo quien la creó y mientras siga abierta; publica el resultado.
+  http.post(URL("mensajes/:id/votacion/cerrar"), async ({ params }) => {
+    await delay(150)
+    const m = mensajes.find((x) => x.id === Number(params.id) && !x.eliminado)
+    const v = m?.votacion
+    if (!v) return mensajeNoEncontrado()
+    if (!m.esPropio) {
+      return HttpResponse.json({ message: "Solo quien creó la votación puede cerrarla." }, { status: 403 })
+    }
+    if (new Date(v.cierraEn) <= new Date()) {
+      return HttpResponse.json({ message: "La votación ya se cerró." }, { status: 409 })
+    }
+    v.cierraEn = new Date().toISOString()
+    // Única difusión tras crearla: el resultado final para todo el canal.
+    publicarMensajeActualizado(m)
+    return HttpResponse.json({ rows: [vistaVotacion(m)] })
   }),
 
   http.patch(URL("mensajes/:id/votacion"), async ({ params, request }) => {
@@ -818,7 +857,7 @@ export const comunicacionesMensajesHandlers = [
     m.votacion = nueva.votacion
     m.editado = true
     m.editadoEn = new Date().toISOString()
-    return HttpResponse.json({ rows: [m] })
+    return HttpResponse.json({ rows: [vistaVotacion(m)] })
   }),
 
   http.post(URL("mensajes/:id/reacciones"), async ({ params, request }) => {
