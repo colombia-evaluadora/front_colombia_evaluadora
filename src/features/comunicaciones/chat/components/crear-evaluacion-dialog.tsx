@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
@@ -105,11 +105,16 @@ export function CrearEvaluacionDialog({
 }) {
   const { notify } = useNotify()
   const [paso, setPaso] = useState<1 | 2>(1)
-  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() =>
-    editar && !Array.isArray(borrador?.datos?.preguntas)
-      ? editar.preguntas.map(aPreguntaLocal)
-      : revivirPreguntas(borrador?.datos?.preguntas),
-  )
+  // Paso 1 = datos + preguntas; paso 2 = estudiantes asignados. Arranca con una pregunta para que
+  // el editor no quede vacío (antes se agregaba al pasar al paso de preguntas).
+  const [preguntas, setPreguntas] = useState<PreguntaLocal[]>(() => {
+    const iniciales =
+      editar && !Array.isArray(borrador?.datos?.preguntas)
+        ? editar.preguntas.map(aPreguntaLocal)
+        : revivirPreguntas(borrador?.datos?.preguntas)
+    return iniciales.length > 0 ? iniciales : [nuevaPregunta("MULTIPLE", "EVALUACION")]
+  })
+  const cuerpoRef = useRef<HTMLDivElement>(null)
   const [participantes, setParticipantes] = useState<Set<number>>(() => idsDe(borrador?.datos?.participantes))
   const [tope, setTope] = useState(false)
   const [intentado, setIntentado] = useState(false)
@@ -137,14 +142,39 @@ export function CrearEvaluacionDialog({
     // QA 77: inicio no en el pasado (al editar, uno que no cambió se acepta).
     validators: { onSubmit: datosSchema.superRefine((v, ctx) => validarInicioNoPasado(v, ctx, editar ? isoALocal(editar.fechaInicio) : null)) },
     onSubmit: () => {
-      if (preguntas.length === 0) setPreguntas([nuevaPregunta("MULTIPLE", "EVALUACION")])
+      setIntentado(true)
+      if (preguntasInvalidas()) {
+        irAlPrimerError()
+        return
+      }
+      setIntentado(false)
       setPaso(2)
     },
+    // Se marcan también las preguntas para mostrar todos los errores del paso de una vez.
+    onSubmitInvalid: () => {
+      setIntentado(true)
+      irAlPrimerError()
+    },
   })
+
+  // "Siguiente" lleva al primer error del paso (campo de datos, pregunta o puntos que no cuadran),
+  // después del render que lo pinta.
+  const irAlPrimerError = () =>
+    requestAnimationFrame(() => {
+      const el = cuerpoRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]')
+      if (!el) return
+      el.scrollIntoView({ block: "center", behavior: "smooth" })
+      const foco = el.matches("input, textarea, button, [tabindex]")
+        ? el
+        : el.querySelector<HTMLElement>("input, textarea, button")
+      foco?.focus({ preventScroll: true })
+    })
 
   const total = datos.state.values.puntajeTotal
   const asignados = preguntas.reduce((s, p) => s + (Number(p.puntos) || 0), 0)
   const cuadra = asignados === total
+  const preguntasInvalidas = () =>
+    preguntas.length === 0 || preguntas.some((p) => errorPregunta(p, "EVALUACION")) || !cuadra
 
   // Nunca se deja pasar del puntaje total: el valor de la pregunta editada se recorta a lo que queda.
   const cambiarPreguntas = (fn: (ps: PreguntaLocal[]) => PreguntaLocal[]) => {
@@ -180,7 +210,7 @@ export function CrearEvaluacionDialog({
   const reiniciar = () => {
     autoguardado.reiniciar()
     datos.reset(DATOS_INICIALES)
-    setPreguntas([])
+    setPreguntas([nuevaPregunta("MULTIPLE", "EVALUACION")])
     setParticipantes(new Set())
     setIntentado(false)
     setPaso(1)
@@ -204,7 +234,12 @@ export function CrearEvaluacionDialog({
 
   const crearEvaluacion = async () => {
     setIntentado(true)
-    if (preguntas.some((p) => errorPregunta(p, "EVALUACION")) || !cuadra) return
+    if (preguntasInvalidas()) {
+      // El paso 1 ya lo validó; por si acaso se vuelve a él con los errores marcados.
+      setPaso(1)
+      irAlPrimerError()
+      return
+    }
     if (!editar && participantes.size === 0) return
     const v = datos.state.values
     const cuerpo = {
@@ -250,12 +285,16 @@ export function CrearEvaluacionDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
+        <DialogContent className={cn("flex max-h-[90dvh] flex-col", paso === 1 ? "sm:max-w-3xl" : "sm:max-w-lg")}>
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Evaluación" : "Crear una Evaluación"}</DialogTitle>
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Paso {paso} de 2 · {paso === 1 ? "Datos y preguntas" : "Estudiantes asignados"}
+            </p>
           </DialogHeader>
 
           {paso === 1 ? (
+            <div ref={cuerpoRef} className="-mx-1 min-h-0 flex-1 space-y-6 overflow-y-auto px-1 py-1">
             <form
               id="evaluacion-datos"
               noValidate
@@ -263,7 +302,7 @@ export function CrearEvaluacionDialog({
                 e.preventDefault()
                 void datos.handleSubmit()
               }}
-              className="-mx-1 space-y-4 overflow-y-auto px-1 py-1"
+              className="space-y-4"
             >
               <datos.AppField name="nombre">
                 {(f) => (
@@ -358,7 +397,8 @@ export function CrearEvaluacionDialog({
                 )}
               </datos.Field>
             </form>
-          ) : (
+            {/* Sección dedicada a las preguntas, con todo el ancho del diálogo. */}
+            <section className="flex flex-col border-t pt-4">
             <ListaPreguntas
               modo="EVALUACION"
               preguntas={preguntas}
@@ -384,11 +424,17 @@ export function CrearEvaluacionDialog({
                 </p>
               }
             />
-          )}
-          {paso === 2 && !editar && (
+            </section>
+            </div>
+          ) : editar ? (
+            // Al editar los participantes no cambian; el paso se conserva para mantener el mismo flujo.
+            <p className="rounded-lg bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
+              Los estudiantes asignados no se pueden cambiar al editar una evaluación ya publicada.
+            </p>
+          ) : (
             // Quiénes la presentan: entran al canal y reciben el aviso al abrir. Al editar no cambian.
             <SelectorVotantes
-              titulo="Estudiantes que la presentan"
+              titulo="Estudiantes asignados"
               mensajeInvalido="Selecciona al menos un estudiante."
               accion="para presentarla"
               seleccion={participantes}
@@ -423,7 +469,7 @@ export function CrearEvaluacionDialog({
                   <Button
                     type="button"
                     onClick={() => void crearEvaluacion()}
-                    disabled={preguntas.length === 0 || crear.isPending}
+                    disabled={crear.isPending}
                     aria-busy={crear.isPending}
                   >
                     {editar ? "Guardar" : "Crear"}
