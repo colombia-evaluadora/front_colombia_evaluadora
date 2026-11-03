@@ -1,6 +1,7 @@
 import { authHandlers } from "@/mocks/handlers/auth"
 import { devicesHandlers } from "@/mocks/handlers/devices"
 import { notificacionesHandlers } from "@/mocks/handlers/notificaciones"
+import { comunicacionesEspaciosHandlers } from "@/mocks/handlers/comunicaciones-espacios"
 import { comunicacionesGruposHandlers } from "@/mocks/handlers/comunicaciones-grupos"
 import { healthHandlers } from "@/mocks/handlers/health"
 import { auditsHandlers } from "@/mocks/handlers/audits"
@@ -133,6 +134,7 @@ export const handlers = [
   ...realtimeHandlers,
   ...comunicacionesMensajesHandlers,
   // Antes que el chat general: atiende los grupos y deja caer el resto.
+  ...comunicacionesEspaciosHandlers,
   ...comunicacionesGruposHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,

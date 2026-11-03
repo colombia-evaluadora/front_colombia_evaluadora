@@ -194,7 +194,7 @@ export function ParticipacionItem({
           </Field>
           {dialogo === "silenciar" && (
             <p className="text-sm text-muted-foreground">
-              No podrá escribir ni responder encuestas en este espacio hasta que lo reactive. Puede seguir consultando.
+              No podrá escribir en el chat ni en el foro de este espacio hasta que lo reactive. Puede seguir consultando.
             </p>
           )}
           <DialogFooter>
