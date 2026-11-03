@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
+import { addDays } from "date-fns"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import {
   aDestinos,
   deDestinos,
   DESTINOS_VACIOS,
+  FILTROS_VACIOS,
   hayDestinos,
   resumenDestinatarios,
   type DestinosLocal,
@@ -44,7 +46,11 @@ import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-
 import { datosDe, hayContenido } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 
 
-const datosSchema = z.object({
+// Fecha y hora programada: como máximo 90 días después de hoy (comms-service valida igual).
+const MAX_DIAS_PROGRAMADO = 90
+
+const datosSchema = z
+  .object({
   titulo: z.string().trim().min(1, required("El título")).max(120, maxLength(120, "El título")),
   descripcion: z.string().max(300, maxLength(300, "La descripción")),
   // La audiencia por rol puede ir vacía si hay otros destinatarios (se valida aparte).
@@ -55,7 +61,17 @@ const datosSchema = z.object({
     .refine((v) => !!v, required("La fecha de publicación", { femenino: true })),
   importante: z.boolean(),
   permitirRespuestas: z.boolean(),
+  visibleHasta: z.string().nullable(),
 })
+  .superRefine((v, ctx) => {
+    if (v.visibleHasta && v.publicarEn && v.visibleHasta.slice(0, 10) <= v.publicarEn.slice(0, 10)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["visibleHasta"],
+        message: "Visible hasta debe ser posterior a la fecha de publicación.",
+      })
+    }
+  })
 
 type Datos = z.infer<typeof datosSchema>
 
@@ -83,16 +99,28 @@ export function CrearComunicadoDialog({
     typeof borrador?.datos?.html === "string" ? borrador.datos.html : (editar?.contenidoHtml ?? ""),
   )
   // Personas, grupos del chat y grados/grupos/cargos (además de la audiencia por rol).
-  const [destinos, setDestinos] = useState<DestinosLocal>(() =>
-    borrador?.datos?.destinos
+  const [destinos, setDestinos] = useState<DestinosLocal>(() => {
+    const local = borrador?.datos?.destinos
       ? deDestinos(borrador.datos.destinos as Parameters<typeof deDestinos>[0])
-      : deDestinos(editar?.destinos),
-  )
+      : deDestinos(editar?.destinos)
+    const modalidad = (borrador?.datos?.modalidad as string | null | undefined) ?? editar?.modalidad
+    const ciclo = (borrador?.datos?.ciclo as number | null | undefined) ?? editar?.ciclo
+    return {
+      ...local,
+      filtros: {
+        ...(local.filtros ?? FILTROS_VACIOS),
+        // El selector muestra la etiqueta de las opciones cargadas; aquí solo importa el valor.
+        modalidad: modalidad ? { valor: modalidad, etiqueta: modalidad } : null,
+        ciclo: ciclo != null ? { valor: String(ciclo), etiqueta: String(ciclo) } : null,
+      },
+    }
+  })
   // Archivos nuevos (se suben al guardar) y guardados que se quitan (edición).
   const [archivos, setArchivos] = useState<File[]>([])
   const [quitados, setQuitados] = useState<number[]>([])
   const [intentado, setIntentado] = useState(false)
   const [sinDestinatarios, setSinDestinatarios] = useState(false)
+  const [sinCiclo, setSinCiclo] = useState(false)
   const [descartar, setDescartar] = useState(false)
   const crearNuevo = useCrearComunicado()
   const editarComunicado = useEditarComunicado(editar?.conversacionId ?? 0)
@@ -110,6 +138,7 @@ export function CrearComunicadoDialog({
           publicarEn: isoALocal(editar.publicarEn) as string | null,
           importante: !!editar.importante,
           permitirRespuestas: !!editar.permiteRespuestas,
+          visibleHasta: editar.visibleHasta ?? null,
         })
       : datosDe(borrador?.datos, {
           titulo: "",
@@ -118,11 +147,16 @@ export function CrearComunicadoDialog({
           publicarEn: ahoraLocal() as string | null,
           importante: false,
           permitirRespuestas: false,
+          visibleHasta: null as string | null,
         })) as Datos,
     validators: { onSubmit: datosSchema },
     onSubmit: ({ value }) => {
       if (!publicado && value.audiencia.length === 0 && !hayDestinos(destinos)) {
         setSinDestinatarios(true)
+        return
+      }
+      if (!publicado && destinos.filtros?.modalidad && !destinos.filtros.ciclo) {
+        setSinCiclo(true)
         return
       }
       setPaso(2)
@@ -136,7 +170,13 @@ export function CrearComunicadoDialog({
     tipo: "COMUNICADO",
     habilitado: open,
     titulo: valores.titulo,
-    datos: { ...valores, html, destinos: aDestinos(destinos) },
+    datos: {
+      ...valores,
+      html,
+      destinos: aDestinos(destinos),
+      modalidad: destinos.filtros?.modalidad?.valor ?? null,
+      ciclo: destinos.filtros?.ciclo ? Number(destinos.filtros.ciclo.valor) : null,
+    },
     conContenido: hayContenido(
       valores.titulo,
       valores.descripcion,
@@ -158,6 +198,7 @@ export function CrearComunicadoDialog({
       publicarEn: ahoraLocal(),
       importante: false,
       permitirRespuestas: false,
+      visibleHasta: null,
     })
     setHtml("")
     setDestinos(DESTINOS_VACIOS)
@@ -165,6 +206,7 @@ export function CrearComunicadoDialog({
     setQuitados([])
     setIntentado(false)
     setSinDestinatarios(false)
+    setSinCiclo(false)
     setPaso(1)
     crear.reset()
     onClose()
@@ -203,6 +245,9 @@ export function CrearComunicadoDialog({
       contenidoHtml: htmlSeguro(html),
       importante: v.importante,
       permitirRespuestas: v.permitirRespuestas,
+      visibleHasta: v.visibleHasta,
+      modalidad: destinos.filtros?.modalidad?.valor ?? null,
+      ciclo: destinos.filtros?.ciclo ? Number(destinos.filtros.ciclo.valor) : null,
       archivos,
     }
     if (editar) {
@@ -293,12 +338,18 @@ export function CrearComunicadoDialog({
                       destinos={destinos}
                       onDestinos={(v) => {
                         setSinDestinatarios(false)
+                        setSinCiclo(false)
                         setDestinos(v)
                       }}
                       invalido={sinDestinatarios}
                     />
                   )}
                 </datos.Field>
+              )}
+              {sinCiclo && (
+                <p role="alert" className="text-xs text-red">
+                  Elige el ciclo de la modalidad.
+                </p>
               )}
               <datos.AppField name="publicarEn">
                 {(f) => (
@@ -307,12 +358,23 @@ export function CrearComunicadoDialog({
                     required
                     mode="datetime"
                     minDate={publicado ? undefined : new Date()}
+                    maxDate={publicado ? undefined : addDays(new Date(), MAX_DIAS_PROGRAMADO)}
                     disabled={publicado}
                     description={
                       publicado
                         ? "Ya se publicó: los destinatarios y la fecha no se pueden cambiar."
                         : "Si eliges una fecha futura, el comunicado queda programado."
                     }
+                  />
+                )}
+              </datos.AppField>
+              <datos.AppField name="visibleHasta">
+                {(f) => (
+                  <f.DateField
+                    label="Visible hasta"
+                    mode="date"
+                    nullable
+                    description="Opcional. Al día siguiente pasa a Vencido y sale de la bandeja principal."
                   />
                 )}
               </datos.AppField>

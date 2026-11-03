@@ -554,6 +554,11 @@ function ChatContent() {
               </>
               )}
             </>
+          ) : canal && conversacionesQuery.isSuccess ? (
+            // Enlace (campana) a un comunicado anulado o a una conversación a la que ya no tiene acceso.
+            <div className="grid flex-1 place-items-center p-6 text-center">
+              <p className="max-w-xs text-sm text-muted-foreground">El contenido ya no está disponible.</p>
+            </div>
           ) : (
             <div className="grid flex-1 place-items-center p-6 text-center">
               <div className="max-w-xs space-y-2">

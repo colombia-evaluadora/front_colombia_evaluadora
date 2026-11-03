@@ -8,6 +8,8 @@ export interface FiltrosComunicado {
   establecimiento?: string
   sede?: string
   jornada?: string
+  modalidad?: string
+  ciclo?: string
 }
 
 const VACIAS: OpcionesComunicado = {
@@ -19,6 +21,8 @@ const VACIAS: OpcionesComunicado = {
   roles: [],
   audiencias: [],
   todos: false,
+  modalidades: [],
+  ciclos: [],
 }
 
 /**
@@ -34,6 +38,8 @@ export function useOpcionesComunicadoQuery(enabled: boolean, filtros: FiltrosCom
       if (filtros.establecimiento) params.set("establecimiento", filtros.establecimiento)
       if (filtros.sede) params.set("sede", filtros.sede)
       if (filtros.jornada) params.set("jornada", filtros.jornada)
+      if (filtros.modalidad) params.set("modalidad", filtros.modalidad)
+      if (filtros.ciclo) params.set("ciclo", filtros.ciclo)
       const qs = params.toString()
       const [row] = await evalCol.getRows<OpcionesComunicado>(
         `/comunicaciones/comunicados/destinos/opciones${qs ? `?${qs}` : ""}`,

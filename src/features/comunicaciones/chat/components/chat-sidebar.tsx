@@ -180,10 +180,14 @@ export function ChatSidebar({
     return k ? (presencia[k.usuarioId] ?? k.estado) : undefined
   }
 
+  // Comunicados vencidos, y los anulados o cancelados de quien los publicó: fuera de la bandeja principal.
+  const esAnterior = (c: Conversacion) =>
+    c.comunicadoEstado === "VENCIDO" || c.comunicadoEstado === "ANULADO" || c.comunicadoEstado === "CANCELADO"
+  const anteriores = visibles.filter((c) => esAnterior(c) && !c.archivada)
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
   // En el chat los CANAL se llaman "Foros".
-  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
+  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada && !esAnterior(c))
   const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
@@ -289,6 +293,16 @@ export function ChatSidebar({
                   desarchivar
                 />
               ))}
+            </Seccion>
+          )}
+          {anteriores.length > 0 && (
+            <Seccion
+              titulo="Comunicados anteriores"
+              icono={ArchiveIcon}
+              contador={anteriores.length}
+              inicialAbierta={false}
+            >
+              {anteriores.map(item)}
             </Seccion>
           )}
           <ul className="border-b px-2 pb-2">
