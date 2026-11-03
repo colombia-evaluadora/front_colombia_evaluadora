@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { FilePdfIcon, PrinterIcon, SpinnerIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
@@ -89,7 +89,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
         <PrinterIcon data-icon="inline-start" />
         Imprimir observador
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Imprimir observador</DialogTitle>
           <DialogDescription>Documento para imprimir y firmar a mano por el estudiante y su acudiente.</DialogDescription>
@@ -148,25 +148,23 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
             error={intento && !periodo ? "Elegí el período." : undefined}
             onChange={(p) => setSel({ ...sel, periodo: p })}
           />
-          <div className="flex flex-col gap-2">
-            <FieldLabel>
-              Tipo*
-            </FieldLabel>
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel>Tipo*</FieldLabel>
             <RadioGroup
               value={sel.tipo}
               onValueChange={(tipo) => setSel({ ...sel, tipo: tipo as TipoImpresion })}
-              className="flex flex-row gap-4 pt-1"
+              className="flex h-10 flex-row items-center gap-6"
             >
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                 <RadioGroupItem value="COMPORTAMIENTOS" />
                 Solo comportamientos
               </label>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                 <RadioGroupItem value="COMPLETO" />
                 Completo
               </label>
             </RadioGroup>
-          </div>
+          </Field>
         </div>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 

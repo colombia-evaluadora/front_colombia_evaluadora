@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icons"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -90,6 +90,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
           <Textarea
             id="anular-motivo"
             rows={3}
+            className={TEXTAREA_OUTLINED}
             maxLength={MAX_MOTIVO}
             placeholder="Por qué se anula la anotación"
             value={motivo}

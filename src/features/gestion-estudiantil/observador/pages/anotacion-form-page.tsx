@@ -9,7 +9,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -287,6 +287,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             <Textarea
               id="anotacion-observacion"
               rows={3}
+              className={TEXTAREA_OUTLINED}
               maxLength={OBS_MAX}
               value={v.observacion}
               aria-invalid={Boolean(errores.observacion) || undefined}
@@ -301,6 +302,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
           <div className="flex flex-col gap-3">
             <label className="flex items-center gap-3 text-sm">
               <Switch
+                round
                 checked={v.preocupa}
                 disabled={!permanenciaHabilitada}
                 onCheckedChange={(preocupa) => setV({ ...v, preocupa })}
@@ -311,6 +313,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             </label>
             <label className="flex items-center gap-3 text-sm">
               <Switch
+                round
                 checked={v.mediacion}
                 disabled={!mediacionHabilitada}
                 onCheckedChange={(mediacion) => setV({ ...v, mediacion })}
