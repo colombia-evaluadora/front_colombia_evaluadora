@@ -2,9 +2,11 @@ import { delay, http, HttpResponse } from "msw"
 
 import {
   editarAsistencia,
+  generarAsistenciaPorGrupo,
+  periodosEvaluacionGrupo,
+  justificarAsistencia,
   generarEstudiantesSesion,
   generarResumenHoras,
-  generarSeguimiento,
   generarSesionesMes,
   listarSolicitudes,
   registrarArchivoSubido,
@@ -16,7 +18,6 @@ import { correccionesNotaPendientes, resolverCorreccionesNota } from "@/mocks/db
 
 import type {
   AsistenciaEditarRequest,
-  AsistenciaQueryRequest,
   AsistenciaRegistrarRequest,
   ResumenHoras,
   SesionCalendario,
@@ -56,6 +57,38 @@ export const asistenciaHandlers = [
     return HttpResponse.json(rows)
   }),
 
+  // Días inhábiles del mes (sso V542.1): un festivo el día 6 y una suspensión
+  // el 20; las sesiones del mock no los excluyen.
+  http.get("*/api/eval-col/asistencias/dias-inhabiles", async ({ request }) => {
+    await delay(100)
+    const url = new URL(request.url)
+    const anio = Number(url.searchParams.get("ANIO") ?? new Date().getFullYear())
+    const mes = String(Number(url.searchParams.get("MES") ?? new Date().getMonth() + 1)).padStart(2, "0")
+    return HttpResponse.json([
+      { fecha: `${anio}-${mes}-06`, fk_tperiodo_academico: 1, fk_tlv_jornada: 1, jornada: "Mañana", tipo: "FESTIVO", motivo: "Festivo nacional" },
+      { fecha: `${anio}-${mes}-20`, fk_tperiodo_academico: 1, fk_tlv_jornada: 1, jornada: "Mañana", tipo: "SUSPENSION", motivo: "Jornada pedagógica" },
+    ])
+  }),
+
+  // Antes que cualquier /asistencias/:id.
+  http.get("*/api/eval-col/asistencias/por-grupo/periodos", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: periodosEvaluacionGrupo() })
+  }),
+
+  http.get("*/api/eval-col/asistencias/por-grupo", async ({ request }) => {
+    await delay(300)
+    const url = new URL(request.url)
+    const asignatura = url.searchParams.get("ASIGNATURA")
+    return HttpResponse.json({
+      rows: generarAsistenciaPorGrupo(
+        Number(url.searchParams.get("GRUPO")),
+        Number(url.searchParams.get("PERIODO")),
+        asignatura ? Number(asignatura) : null,
+      ),
+    })
+  }),
+
   http.get("*/api/eval-col/asistencias/resumen-horas", async ({ request }) => {
     await delay(200)
 
@@ -68,30 +101,6 @@ export const asistenciaHandlers = [
     return HttpResponse.json(resumen)
   }),
 
-  http.post("*/api/eval-col/asistencias/query", async ({ request }) => {
-    await delay(250)
-
-    const { FILTERS, SORTING, PAGEINDEX, PAGESIZE } = (await request.json()) as AsistenciaQueryRequest
-
-    const filtrados = generarSeguimiento(FILTERS?.SEDE ?? 0, FILTERS ?? {})
-
-    const sortId = SORTING?.ID
-    const sorted = sortId
-      ? [...filtrados].sort((a, b) => {
-          const av = a[sortId as keyof typeof a]
-          const bv = b[sortId as keyof typeof b]
-          if (av === bv) return 0
-          const cmp = (av ?? "") > (bv ?? "") ? 1 : -1
-          return SORTING.DESC ? -cmp : cmp
-        })
-      : filtrados
-
-    const pageSize = PAGESIZE > 0 ? PAGESIZE : 10
-    const start = PAGEINDEX * pageSize
-    const rows = sorted.slice(start, start + pageSize)
-
-    return HttpResponse.json({ rows })
-  }),
   http.post("*/api/eval-col/asistencias/registrar", async ({ request }) => {
     await delay(300)
 
@@ -129,6 +138,18 @@ export const asistenciaHandlers = [
     const { IDS = [], ...body } = (await request.json()) as AsistenciaEditarRequest & { IDS?: number[] }
     for (const pk of IDS) editarAsistencia(pk, body)
     return HttpResponse.json(IDS.length)
+  }),
+
+  // Antes que el PATCH /:id genérico: MSW usa el primer match.
+  http.patch("*/api/eval-col/asistencias/:id/justificar", async ({ request, params }) => {
+    await delay(200)
+
+    const error = justificarAsistencia(
+      Number(params.id),
+      (await request.json()) as { JUSTIFICACION: string | null; FUENTE: number | null },
+    )
+    if (error) return HttpResponse.json({ status: "error", message: error.message }, { status: error.status })
+    return HttpResponse.json({ rows: [{ fn_asistencia_justificar: Number(params.id) }] })
   }),
 
   // Regla 75: en período no calificable abre la solicitud en vez de editar.
