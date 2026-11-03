@@ -9,7 +9,10 @@ import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
+import { GearIcon } from "@/components/ui/icons"
 import { AgregarCompanero } from "@/features/comunicaciones/chat/components/agregar-companero"
 import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
@@ -115,6 +118,11 @@ export function ChatSidebar({
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
   const { puedeGestionar, reglaDirectoCon } = useChatAccess()
+  // PROVISIONAL: Supervisor de sede = coordinador, Administrador del establecimiento = rector.
+  const roles = useAuth().user?.roles ?? []
+  const esAdministrador = roles.includes("CEVAL-RECTOR")
+  const puedeModerar = esAdministrador || roles.includes("CEVAL-COORDINADOR")
+  const [moderacion, setModeracion] = useState(false)
   const { notify } = useNotify()
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. El texto del buscador vive también en estado local para no perder el cursor.
@@ -203,6 +211,18 @@ export function ChatSidebar({
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
       <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
+        {puedeModerar && (
+          <button
+            type="button"
+            aria-label="Moderación de la mensajería"
+            title="Moderación de la mensajería"
+            onClick={() => setModeracion(true)}
+            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            <GearIcon className="size-5" />
+          </button>
+        )}
+        {moderacion && <ModeracionDialog open onClose={() => setModeracion(false)} esAdministrador={esAdministrador} />}
         <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>

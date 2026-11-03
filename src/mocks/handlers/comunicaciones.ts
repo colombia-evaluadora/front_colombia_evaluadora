@@ -936,6 +936,20 @@ export const comunicacionesMensajesHandlers = [
     return HttpResponse.json({ rows: [m] })
   }),
 
+  // Moderación: el mock solo acepta y lista vacío (el flujo real vive en comms-service).
+  http.post(URL("conversaciones/:id/reportar"), () => HttpResponse.json({ rows: [{ ok: true }] })),
+  http.get(URL("moderacion/reportes"), () => HttpResponse.json({ rows: [] })),
+  http.get(URL("moderacion/suspensiones"), () => HttpResponse.json({ rows: [] })),
+  http.get(URL("moderacion/configuracion"), () =>
+    HttpResponse.json({ rows: [{ horaInicio: null, horaFin: null, incluyeSabado: false }] }),
+  ),
+  http.put(URL("moderacion/configuracion"), async ({ request }) => {
+    const b = (await request.json()) as { HORA_INICIO: string; HORA_FIN: string; INCLUYE_SABADO: string }
+    return HttpResponse.json({
+      rows: [{ horaInicio: b.HORA_INICIO, horaFin: b.HORA_FIN, incluyeSabado: b.INCLUYE_SABADO === "S" }],
+    })
+  }),
+
   // Borrado lógico, como comms-service: el mensaje queda como aviso "Este mensaje fue eliminado".
   http.patch(URL("mensajes/:id/eliminar"), async ({ params, request }) => {
     await delay(150)
