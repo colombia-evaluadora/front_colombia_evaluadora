@@ -55,6 +55,7 @@ import {
   asistenciaSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
+import { convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
@@ -446,6 +447,11 @@ const ESTABLECIMIENTO_CRUMB = {
   label: "Establecimiento educativo",
   to: paths.app.establishments.general.getHref(),
 }
+const GESTION_ESTUDIANTIL_CRUMB = {
+  label: "Gestión Estudiantil",
+  to: paths.app.convivencia.getHref(),
+}
+const CONVIVENCIA_CRUMB = { label: "Convivencia", to: paths.app.convivencia.getHref() }
 const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
@@ -1041,6 +1047,62 @@ export const asistenciaRoute = createRoute({
   component: AsistenciaPage,
 })
 
+const ConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/convivencia-page"),
+  "ConvivenciaPage",
+)
+
+export const convivenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivencia.path,
+  validateSearch: convivenciaSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Convivencia" }] },
+  component: ConvivenciaPage,
+})
+
+const NuevoCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "NuevoCasoPage",
+)
+
+export const convivenciaNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Nuevo caso" }] },
+  component: NuevoCasoPage,
+})
+
+const EditarCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "EditarCasoPage",
+)
+
+// El id viaja por props: la página no importa la ruta (evita el ciclo router ↔ página).
+export const convivenciaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaEditar.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Modificar caso" }] },
+  component: function EditarCasoRoute() {
+    const { casoId } = convivenciaEditarRoute.useParams()
+    return <EditarCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const CasoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const convivenciaCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaCaso.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Detalle del caso" }] },
+  component: function CasoDetalleRoute() {
+    const { casoId } = convivenciaCasoRoute.useParams()
+    return <CasoDetallePage casoId={Number(casoId)} />
+  },
+})
+
 const AsistenciaManualPage = lazyRouteComponent(
   () => import("@/features/academic-management/asistencia/pages/asistencia-manual-page"),
   "AsistenciaManualPage",
@@ -1211,6 +1273,10 @@ const routeTree = rootRoute.addChildren([
     planeadorPlanillaRoute,
     asistenciaRoute,
     asistenciaManualRoute,
+    convivenciaRoute,
+    convivenciaNuevoRoute,
+    convivenciaCasoRoute,
+    convivenciaEditarRoute,
     chatRoute,
     notificacionesRoute,
     pendientesRoute,
