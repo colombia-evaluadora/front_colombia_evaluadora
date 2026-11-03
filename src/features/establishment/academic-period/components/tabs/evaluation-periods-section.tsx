@@ -11,6 +11,7 @@ import { SpinnerIcon } from "@/components/ui/icons"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import type { EvaluationCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
+import type { PlazoAvisoAsistenciaHandle } from "@/features/establishment/academic-period/components/fields/plazo-aviso-asistencia-field"
 import { plegarTexto } from "@/features/assistant/lib/campos-ui"
 import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
@@ -81,6 +82,9 @@ interface EvaluationPeriodsSectionProps {
   /** Criterios de evaluación: el Guardar del encabezado también los guarda. */
   criteriaRef?: RefObject<EvaluationCriteriaHandle | null>
   onCriteriaDirtyChange?: (dirty: boolean) => void
+  /** Plazo del aviso de asistencia (pestaña Calendario): igual que Criterios. */
+  plazoRef?: RefObject<PlazoAvisoAsistenciaHandle | null>
+  onPlazoDirtyChange?: (dirty: boolean) => void
 }
 
 export function EvaluationPeriodsSection({
@@ -89,6 +93,8 @@ export function EvaluationPeriodsSection({
   general,
   criteriaRef,
   onCriteriaDirtyChange,
+  plazoRef,
+  onPlazoDirtyChange,
 }: EvaluationPeriodsSectionProps) {
   const panel = PANEL_BASE
   // Controlada (antes `defaultValue`) para que el asistente pueda abrir una
@@ -101,7 +107,10 @@ export function EvaluationPeriodsSection({
   // Salir de Criterios con cambios sin guardar pide confirmar (descarta al aceptar).
   const [tabPendiente, setTabPendiente] = useState<string | null>(null)
   const cambiarTab = (value: string) => {
-    if (tabActiva === "criterios" && value !== "criterios" && criteriaRef?.current?.isDirty()) {
+    const sucia =
+      (tabActiva === "criterios" && criteriaRef?.current?.isDirty()) ||
+      (tabActiva === "calendario" && plazoRef?.current?.isDirty())
+    if (value !== tabActiva && sucia) {
       setTabPendiente(value)
       return
     }
@@ -144,10 +153,15 @@ export function EvaluationPeriodsSection({
             </Suspense>
           </NoticeProvider>
         </TabsContent>
-        <TabsContent value="calendario" className={panel}>
+        {/* keepMounted: el plazo sin guardar sigue ahí y el Guardar de arriba lo ve. */}
+        <TabsContent value="calendario" className={panel} keepMounted>
           <NoticeProvider>
             <Suspense fallback={<TabFallback />}>
-              <TabAcademicCalendar academicPeriodId={academicPeriodId} />
+              <TabAcademicCalendar
+                academicPeriodId={academicPeriodId}
+                plazoRef={plazoRef}
+                onPlazoDirtyChange={onPlazoDirtyChange}
+              />
             </Suspense>
           </NoticeProvider>
         </TabsContent>
@@ -196,10 +210,11 @@ export function EvaluationPeriodsSection({
         open={tabPendiente != null}
         onOpenChange={(open) => !open && setTabPendiente(null)}
         title="¿Cambiar de pestaña sin guardar?"
-        description="Los cambios de Criterios de evaluación que no guardaste se descartarán."
+        description={`Los cambios de ${tabActiva === "calendario" ? "Calendario académico" : "Criterios de evaluación"} que no guardaste se descartarán.`}
         confirmLabel="Sí, descartar"
         onConfirm={() => {
           criteriaRef?.current?.discard()
+          plazoRef?.current?.discard()
           setTabActiva(tabPendiente ?? tabActiva)
           setTabPendiente(null)
         }}

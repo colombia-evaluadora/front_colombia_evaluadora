@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useState, type Ref } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -21,6 +21,10 @@ import {
 import { useAcademicCalendarQuery } from "@/features/establishment/academic-period/api/query/use-academic-calendar"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { CalendarEntry } from "@/features/establishment/academic-period/api/types/academic-calendar"
+import {
+  PlazoAvisoAsistenciaField,
+  type PlazoAvisoAsistenciaHandle,
+} from "@/features/establishment/academic-period/components/fields/plazo-aviso-asistencia-field"
 import { CalendarEntryDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-calendar-entry"
 import { createAcademicCalendarColumns } from "@/features/establishment/academic-period/components/table/columns-academic-calendar"
 import {
@@ -36,12 +40,19 @@ import { usePeriodReadOnly } from "@/features/establishment/academic-period/util
 
 interface TabAcademicCalendarProps {
   academicPeriodId?: number
+  /** Plazo del aviso: lo guarda el Guardar del encabezado del período. */
+  plazoRef?: Ref<PlazoAvisoAsistenciaHandle>
+  onPlazoDirtyChange?: (dirty: boolean) => void
 }
 
 // Pestaña Calendario académico (Sección 5.8, Regla 109): qué días del período
 // son hábiles. Los festivos llegan solos; el establecimiento registra
 // vacaciones, suspensiones y excepciones.
-export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarProps) {
+export function TabAcademicCalendar({
+  academicPeriodId,
+  plazoRef,
+  onPlazoDirtyChange,
+}: TabAcademicCalendarProps) {
   const { notify } = useNotify()
   const [sorting, setSorting] = useState<SortingState>([])
   const [dialog, setDialog] = useState<{ open: boolean; entry: CalendarEntry | null }>({
@@ -136,6 +147,15 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
       <h3 className="text-lg font-semibold">Calendario académico</h3>
 
       <NoticeOutlet />
+
+      {academicPeriodId != null && (
+        <PlazoAvisoAsistenciaField
+          ref={plazoRef}
+          academicPeriodId={academicPeriodId}
+          readOnly={readOnly}
+          onDirtyChange={onPlazoDirtyChange}
+        />
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <SearchAcademicCalendar
