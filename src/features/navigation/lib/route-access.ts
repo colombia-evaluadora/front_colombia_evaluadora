@@ -39,6 +39,8 @@ export const NAV_PATH_ALIASES: ReadonlyArray<readonly [from: string, to: string]
   ["/app/planeador/unidades", "/app/planeador/actividades"],
   ["/app/planeador/planilla", "/app/planeador/actividades"],
   ["/app/planeador/recursos", "/app/planeador/actividades"],
+  // Espacios académicos cuelgan del único ítem de Comunicaciones (sin menú propio).
+  ["/app/comunicaciones/espacios", "/app/comunicaciones/chat"],
 ]
 
 /** Sin query, hash ni barras finales. */

@@ -276,6 +276,14 @@ export const paths = {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
     },
+    comunicacionesEspacios: {
+      path: "comunicaciones/espacios",
+      getHref: () => "/app/comunicaciones/espacios",
+    },
+    comunicacionesEspacio: {
+      path: "comunicaciones/espacios/detalle/$id",
+      getHref: (id: string) => `/app/comunicaciones/espacios/detalle/${id}`,
+    },
     notificaciones: {
       path: "notificaciones",
       getHref: () => "/app/notificaciones",

@@ -1080,6 +1080,41 @@ export const asistenciaManualRoute = createRoute({
   component: AsistenciaManualPage,
 })
 
+const EspaciosPage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacios-page"),
+  "EspaciosPage",
+)
+
+const EspacioDetallePage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacio-detalle-page"),
+  "EspacioDetallePage",
+)
+
+export const espaciosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacios.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos" },
+    ],
+  },
+  component: EspaciosPage,
+})
+
+export const espacioDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacio.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos", to: paths.app.comunicacionesEspacios.getHref() },
+      { label: "Espacio" },
+    ],
+  },
+  component: EspacioDetallePage,
+})
+
 const ChatPage = lazyRouteComponent(
   () => import("@/features/comunicaciones/chat/pages/chat-page"),
   "ChatPage",
@@ -1233,6 +1268,8 @@ const routeTree = rootRoute.addChildren([
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,
     chatRoute,
+    espaciosRoute,
+    espacioDetalleRoute,
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,

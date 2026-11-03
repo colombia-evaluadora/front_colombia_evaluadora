@@ -1,5 +1,9 @@
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
+import { Link } from "@tanstack/react-router"
+
+import { BookOpenIcon } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -317,6 +321,15 @@ export function ChatSidebar({
             >
               Archivos
             </AccesoVista>
+            <li>
+              <Link
+                to={paths.app.comunicacionesEspacios.getHref()}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              >
+                <BookOpenIcon aria-hidden className="size-5" />
+                Espacios académicos
+              </Link>
+            </li>
           </ul>
 
         {isPending ? (
