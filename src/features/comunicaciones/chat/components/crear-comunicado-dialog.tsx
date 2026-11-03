@@ -45,7 +45,7 @@ import { datosDe, hayContenido } from "@/features/comunicaciones/chat/lib/borrad
 
 
 const datosSchema = z.object({
-  titulo: z.string().trim().min(1, required("El título")).max(120, maxLength(120, "El título")),
+  titulo: z.string().trim().min(1, required("El título")).max(100, maxLength(100, "El título")),
   descripcion: z.string().max(300, maxLength(300, "La descripción")),
   // La audiencia por rol puede ir vacía si hay otros destinatarios (se valida aparte).
   audiencia: z.array(z.string()),
@@ -265,7 +265,7 @@ export function CrearComunicadoDialog({
                   <f.TextField
                     label="Título del comunicado"
                     required
-                    maxLength={120}
+                    maxLength={100}
                     placeholder="Por ejemplo, Suspensión de clases por mantenimiento"
                   />
                 )}
