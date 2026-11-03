@@ -307,11 +307,32 @@ export const CATALOGO_RUTAS: RutaCatalogo[] = [
   },
   // ─── Asistencia ──────────────────────────────────────────────────────────
   {
-    codigo: "asistencia.seguimiento",
+    codigo: "asistencia.por-grupo",
     menu: "ASISTENCIAS",
-    ruta: "/app/asistencia/seguimiento",
-    descripcion: "Seguimiento de asistencia de estudiantes.",
+    ruta: "/app/asistencia",
+    descripcion:
+      "Asistencia de un grupo en un periodo de evaluación, por estudiante y sesión (pestaña Asistencia por grupo).",
     accion: "ver",
+    search: {
+      vista: "grupo (Asistencia por grupo) o calendario",
+      sede: "PK_TSEDE de la sede",
+      grupo: "Id del grupo",
+      asignatura: "Id de la asignatura, o todas",
+      periodo: "Id del periodo de evaluación (por defecto, el que está en curso)",
+    },
+  },
+  {
+    codigo: "asistencia.planilla",
+    menu: "ASISTENCIAS",
+    ruta: "/app/asistencia/manual",
+    descripcion: "Planilla de una sesión: tomar o consultar la asistencia de una clase.",
+    accion: "ver",
+    search: {
+      fecha: "Fecha de la clase (yyyy-MM-dd)",
+      sede: "PK_TSEDE de la sede",
+      grupo: "Id del grupo",
+      asignatura: "Id de la asignatura",
+    },
   },
   // ─── Cobertura: inscritos ────────────────────────────────────────────────
   {
