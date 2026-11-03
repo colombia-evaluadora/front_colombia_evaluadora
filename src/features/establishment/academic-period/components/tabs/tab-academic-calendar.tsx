@@ -23,7 +23,15 @@ import { useAcademicPeriodQuery } from "@/features/establishment/academic-period
 import type { CalendarEntry } from "@/features/establishment/academic-period/api/types/academic-calendar"
 import { CalendarEntryDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-calendar-entry"
 import { createAcademicCalendarColumns } from "@/features/establishment/academic-period/components/table/columns-academic-calendar"
-import { getCalendarSummary } from "@/features/establishment/academic-period/utils/academic-calendar"
+import {
+  filterCalendarEntries,
+  getCalendarSummary,
+} from "@/features/establishment/academic-period/utils/academic-calendar"
+import {
+  EMPTY_CALENDAR_FILTERS,
+  SearchAcademicCalendar,
+  type AcademicCalendarFilters,
+} from "@/features/establishment/academic-period/components/search/search-academic-calendar"
 import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabAcademicCalendarProps {
@@ -41,6 +49,9 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
     entry: null,
   })
   const [markingDate, setMarkingDate] = useState<string | null>(null)
+  // Buscar por Motivo y filtrar por Origen/Tipo: los festivos llegan solos y
+  // pueden tapar lo que registró el establecimiento.
+  const [filters, setFilters] = useState<AcademicCalendarFilters>(EMPTY_CALENDAR_FILTERS)
 
   const { data: period, isPending: periodPending } = useAcademicPeriodQuery(academicPeriodId)
   const {
@@ -97,7 +108,8 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
     onEdit: (entry) => setDialog({ open: true, entry }),
     onDelete: deleteEntry,
   })
-  const page = useLocalPagination(entries)
+  const rows = filterCalendarEntries(entries, filters)
+  const page = useLocalPagination(rows)
   const { table } = useDataTable({
     columns,
     data: page.pageRows,
@@ -121,8 +133,18 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold">Calendario académico</h3>
+      <h3 className="text-lg font-semibold">Calendario académico</h3>
+
+      <NoticeOutlet />
+
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+        <SearchAcademicCalendar
+          filters={filters}
+          onFiltersChange={(next) => {
+            setFilters(next)
+            page.pagination.onPageChange(0)
+          }}
+        />
         {!readOnly && (
           <Button color="primary" size="sm" onClick={() => setDialog({ open: true, entry: null })}>
             <PlusIcon data-icon="inline-start" />
@@ -131,15 +153,18 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
         )}
       </div>
 
-      <NoticeOutlet />
-
-
       <DataTable
         table={table}
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Aún no hay vacaciones, suspensiones ni excepciones. Los festivos se agregan solos."
+        emptyMessage={
+          filters.origin === "FESTIVO" || filters.type === "FESTIVO"
+            ? "Ningún festivo cae en las fechas del período."
+            : filters.origin || filters.type || filters.search
+              ? "Ninguna entrada coincide con la búsqueda o los filtros."
+              : "Aún no hay vacaciones, suspensiones ni excepciones. Los festivos se agregan solos."
+        }
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
 
