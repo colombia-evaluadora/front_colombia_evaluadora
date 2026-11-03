@@ -127,6 +127,7 @@ export function ChatSidebar({
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. El texto del buscador vive también en estado local para no perder el cursor.
   const filtrosUrl = chatRoute.useSearch()
+  const reporteEnlazado = filtrosUrl.moderacion
   const navigate = chatRoute.useNavigate()
   const [texto, setTextoLocal] = useState(filtrosUrl.q ?? "")
   const setTexto = (v: string) => {
@@ -222,7 +223,19 @@ export function ChatSidebar({
             <GearIcon className="size-5" />
           </button>
         )}
-        {moderacion && <ModeracionDialog open onClose={() => setModeracion(false)} esAdministrador={esAdministrador} />}
+        {puedeModerar && (moderacion || reporteEnlazado != null) && (
+          <ModeracionDialog
+            open
+            esAdministrador={esAdministrador}
+            reporteResaltado={reporteEnlazado}
+            onClose={() => {
+              setModeracion(false)
+              if (reporteEnlazado != null) {
+                void navigate({ search: (prev) => ({ ...prev, moderacion: undefined }), replace: true })
+              }
+            }}
+          />
+        )}
         <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>

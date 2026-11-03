@@ -3,7 +3,10 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { WarningIcon } from "@/components/ui/icons"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 import { getErrorMessage } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import {
   useConfiguracionQuery,
   useGuardarConfiguracion,
@@ -86,7 +89,17 @@ type Pestana = "reportes" | "suspensiones" | "configuracion"
  * Opción de la vista de mensajería (Guía M.2.MOD.1). PROVISIONAL: Supervisor de sede = coordinador,
  * Administrador del establecimiento = rector. Suspensiones y configuración, solo el rector.
  */
-export function ModeracionDialog({ open, onClose, esAdministrador }: { open: boolean; onClose: () => void; esAdministrador: boolean }) {
+export function ModeracionDialog({
+  open,
+  onClose,
+  esAdministrador,
+  reporteResaltado,
+}: {
+  open: boolean
+  onClose: () => void
+  esAdministrador: boolean
+  reporteResaltado?: number
+}) {
   const [pestana, setPestana] = useState<Pestana>("reportes")
   const pestanas: [Pestana, string][] = esAdministrador
     ? [["reportes", "Reportes"], ["suspensiones", "Suspensiones"], ["configuracion", "Configuración de la mensajería"]]
@@ -105,7 +118,7 @@ export function ModeracionDialog({ open, onClose, esAdministrador }: { open: boo
           ))}
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
-          {pestana === "reportes" && <Reportes activo={open} esAdministrador={esAdministrador} />}
+          {pestana === "reportes" && <Reportes activo={open} esAdministrador={esAdministrador} resaltado={reporteResaltado} />}
           {pestana === "suspensiones" && <Suspensiones activo={open} />}
           {pestana === "configuracion" && <Configuracion activo={open} />}
         </div>
@@ -116,7 +129,7 @@ export function ModeracionDialog({ open, onClose, esAdministrador }: { open: boo
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
 
-function Reportes({ activo, esAdministrador }: { activo: boolean; esAdministrador: boolean }) {
+function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esAdministrador: boolean; resaltado?: number }) {
   const reportes = useReportesQuery(activo)
   const [elegido, setElegido] = useState<number | null>(null)
   const revisar = useRevisarReporte()
@@ -129,7 +142,11 @@ function Reportes({ activo, esAdministrador }: { activo: boolean; esAdministrado
   return (
     <ul className="space-y-2">
       {reportes.data.map((r) => (
-        <li key={r.id} className="rounded-lg border p-3 text-sm">
+        <li
+          key={r.id}
+          aria-current={resaltado === r.id ? "true" : undefined}
+          className={cn("rounded-lg border p-3 text-sm", resaltado === r.id && "border-primary ring-1 ring-primary")}
+        >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium">{r.conversacion}</span>
             <span className="text-xs text-muted-foreground">
@@ -179,7 +196,28 @@ function Reportes({ activo, esAdministrador }: { activo: boolean; esAdministrado
   )
 }
 
-function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: number; nombre: string }; reporteId: number; onClose: () => void }) {
+/** Botón de la ficha de la persona en el chat; solo el rector lo ve (el servidor también lo exige). */
+export function SuspenderPersona({ persona }: { persona: { id: number; nombre: string } }) {
+  const roles = useAuth().user?.roles ?? []
+  const [abierto, setAbierto] = useState(false)
+  if (!roles.includes("CEVAL-RECTOR")) return null
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Suspender mensajería de ${persona.nombre}`}
+        title="Suspender mensajería"
+        onClick={() => setAbierto(true)}
+        className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-red-22 hover:text-red focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      >
+        <WarningIcon className="size-4" />
+      </button>
+      {abierto && <SuspenderDialog persona={persona} reporteId={null} onClose={() => setAbierto(false)} />}
+    </>
+  )
+}
+
+function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: number; nombre: string }; reporteId: number | null; onClose: () => void }) {
   const [motivo, setMotivo] = useState("")
   const [vence, setVence] = useState("")
   const suspender = useSuspender()
