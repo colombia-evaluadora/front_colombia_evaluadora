@@ -23,7 +23,13 @@ function updateHorario({ gradeId, entries }: UpdateHorarioInput): Promise<number
     // array crudo (no `JSON.stringify`) — verificado contra la respuesta
     // esperada del back: array de objetos `{grupoId, planItemId, diaId,
     // bloque}` tal cual, sin doble encoding.
-    ENTRIES: entries,
+    ENTRIES: entries.map(({ grupoId, planItemId, diaId, bloque, horarioId }) => ({
+      grupoId,
+      planItemId,
+      diaId,
+      bloque,
+      horarioId,
+    })),
   })
 }
 

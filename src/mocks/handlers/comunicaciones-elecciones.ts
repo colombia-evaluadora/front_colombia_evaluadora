@@ -10,7 +10,9 @@ import { FUNCIONARIOS, GRADOS, votantesDe } from "@/mocks/db/comunicaciones-vota
 import {
   eleccionCerrada,
   elecciones,
+  emitidos,
   simularVotos,
+  vistaEleccion,
   votantes,
   yaVoto,
 } from "@/mocks/db/comunicaciones-elecciones"
@@ -29,7 +31,6 @@ interface CrearEleccionBody {
   FECHA_INICIO?: string | null
   FECHA_CIERRE?: string | null
   FK_JORNADA?: number
-  VER_RESULTADOS?: "S" | "N"
   COMENTARIOS?: "S" | "N"
   VOTANTES?: number[]
   CANDIDATOS?: Array<{ NOMBRE: string; NUMERO: string; LEMA: string; FOTO_URL: string | null }>
@@ -73,7 +74,7 @@ export const comunicacionesEleccionesHandlers = [
     if (!eleccionCerrada(e)) {
       return HttpResponse.json({ message: "El informe se genera cuando la votación cierra." }, { status: 409 })
     }
-    const total = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
+    const total = emitidos(e)
     const lineas = [
       "Informe final del proceso electoral",
       e.nombre,
@@ -98,8 +99,7 @@ export const comunicacionesEleccionesHandlers = [
     if (usuarioDe(request)?.roles.includes("CEVAL-ESTUDIANTE")) {
       return HttpResponse.json({ message: "Solo quien creó la elección puede editarla." }, { status: 403 })
     }
-    const votos = e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
-    if (votos > 0) return HttpResponse.json({ message: "La elección ya tiene votos: no se puede editar." }, { status: 409 })
+    if (emitidos(e) > 0) return HttpResponse.json({ message: "La elección ya tiene votos: no se puede editar." }, { status: 409 })
     const body = (await request.json()) as CrearEleccionBody
     const nombre = body.NOMBRE?.trim()
     const candidatos = body.CANDIDATOS ?? []
@@ -113,7 +113,6 @@ export const comunicacionesEleccionesHandlers = [
       fechaInicio: body.FECHA_INICIO ?? null,
       fechaCierre: body.FECHA_CIERRE ?? null,
       jornadaId: body.FK_JORNADA,
-      verResultadosEnVivo: body.VER_RESULTADOS === "S",
       permiteComentarios: body.COMENTARIOS === "S",
       candidatos: candidatos.map((c, i) => ({
         id: i + 1,
@@ -128,7 +127,7 @@ export const comunicacionesEleccionesHandlers = [
     if (conv) conv.nombre = nombre
     // Guardar la edición desde su borrador (?borrador) lo elimina, como comms-service.
     consumirBorradorActividad(request)
-    return HttpResponse.json({ rows: [{ ...e, yaVoto: false }] })
+    return HttpResponse.json({ rows: [vistaEleccion(e, { gestiona: true, yaVoto: false })] })
   }),
 
   // Jornadas de las sedes del establecimiento (comms-service: periodos académicos activos).
@@ -175,8 +174,8 @@ export const comunicacionesEleccionesHandlers = [
     const lista = votantes.get(e.conversacionId) ?? new Set<string>()
     lista.add(correo)
     votantes.set(e.conversacionId, lista)
-    // Quien vota nunca es quien la creó.
-    return HttpResponse.json({ rows: [{ ...e, esCreador: false, yaVoto: true }] })
+    // Quien vota nunca es quien la creó. Sin conteos: la urna sigue cerrada hasta el cierre.
+    return HttpResponse.json({ rows: [vistaEleccion(e, { gestiona: false, yaVoto: true })] })
   }),
 
   http.patch(URL("conversaciones/:id/eleccion/cerrar"), async ({ params }) => {
@@ -206,7 +205,7 @@ export const comunicacionesEleccionesHandlers = [
     const user = usuarioDe(request)
     const esEstudiante = user?.roles.includes("CEVAL-ESTUDIANTE") ?? false
     return HttpResponse.json({
-      rows: [{ ...e, esCreador: e.esCreador && !esEstudiante, yaVoto: yaVoto(e.conversacionId, user?.email) }],
+      rows: [vistaEleccion(e, { gestiona: !esEstudiante, yaVoto: yaVoto(e.conversacionId, user?.email) })],
     })
   }),
 
@@ -250,7 +249,6 @@ export const comunicacionesEleccionesHandlers = [
       fechaInicio: body.FECHA_INICIO ?? null,
       fechaCierre: body.FECHA_CIERRE ?? null,
       jornadaId: body.FK_JORNADA,
-      verResultadosEnVivo: body.VER_RESULTADOS === "S",
       permiteComentarios: body.COMENTARIOS === "S",
       candidatos: candidatos.map((c, i) => ({
         id: i + 1,

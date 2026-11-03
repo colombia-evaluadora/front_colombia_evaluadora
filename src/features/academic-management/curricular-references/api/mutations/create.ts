@@ -23,7 +23,7 @@ function toRealCreatePayload(values: CurricularReferenceDraft) {
     TIPO_EVALUACION: values.evaluationType?.id ?? null,
     NOMBRE_ASIGNATURA: values.subjectLabel?.id ?? null,
     INSTRUMENTO: values.instrument,
-    INSTRUMENTO_INFO: values.instrumentDescription || null,
+    INSTRUMENTO_INFO: values.instrumentDescription,
     ROTULO_EJECUCION: values.executionLabel.trim(),
     NORMATIVIDAD: values.regulation,
     ANIO_DESDE: new Date().getFullYear(),
@@ -45,7 +45,7 @@ function toRealUpdatePayload(values: CurricularReferenceDraft, previousActive?: 
     TIPO_EVALUACION: values.evaluationType?.id ?? null,
     NOMBRE_ASIGNATURA: values.subjectLabel?.id ?? null,
     INSTRUMENTO: values.instrument,
-    INSTRUMENTO_INFO: values.instrumentDescription || null,
+    INSTRUMENTO_INFO: values.instrumentDescription,
     ROTULO_EJECUCION: values.executionLabel.trim(),
     NORMATIVIDAD: values.regulation,
     NIVEL_1_ETIQUETA: values.level1,
@@ -54,6 +54,12 @@ function toRealUpdatePayload(values: CurricularReferenceDraft, previousActive?: 
     AREAS_IDS: values.areas.map((area) => area.id),
     ...(activeChanged ? { ANIO_HASTA: values.active ? null : new Date().getFullYear() } : {}),
   }
+}
+
+// El POST real devuelve una fila con el pk creado; el mock, el referente.
+export function createdReferenceId(result: CurricularReferenceMutationResult): number | undefined {
+  const row = (result as { rows?: { pk_referente_curricular_creado?: number }[] }).rows?.[0]
+  return row?.pk_referente_curricular_creado ?? result.curricularReference?.id
 }
 
 export function create(values: CurricularReferenceDraft): Promise<CurricularReferenceMutationResult> {

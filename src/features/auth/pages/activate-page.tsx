@@ -19,7 +19,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
+import { useCaptcha } from "@/hooks/use-captcha"
 
 import { useActivateAccount } from "@/features/auth/api/mutations/activate-account"
 import { useAccountActivationLink } from "@/features/auth/hooks/use-account-activation-link"
@@ -42,7 +44,13 @@ export function ActivatePage() {
     select: (s) => s.token,
   })
 
-  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } = useAccountActivationLink(token)
+  // Mismo esquema que RestorePasswordPage: el estado del enlace consume el
+  // primer token del widget y el envío del formulario el siguiente.
+  const captcha = useCaptcha()
+  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } = useAccountActivationLink(
+    token,
+    captcha,
+  )
 
   const activateAccountMutation = useActivateAccount({
     mutationConfig: {
@@ -54,8 +62,12 @@ export function ActivatePage() {
   })
 
   function handleSubmit(values: RestorePasswordFormValues) {
-    if (!token) return
-    activateAccountMutation.mutate({ token, password: values.password })
+    if (!token || !captcha.ready) return
+    activateAccountMutation.mutate({
+      token,
+      password: values.password,
+      captchaToken: captcha.consume(),
+    })
   }
 
   return (
@@ -102,8 +114,9 @@ export function ActivatePage() {
           </CardHeader>
         </>
       ) : isChecking ? (
-        <CardContent className="flex justify-center py-10">
+        <CardContent className="flex flex-col items-center gap-4 py-10">
           <Spinner className="size-6" />
+          <Turnstile {...captcha.widget} action="activate" />
         </CardContent>
       ) : (
         <>
@@ -128,6 +141,7 @@ export function ActivatePage() {
 
           <CardContent>
             <RestorePasswordForm id={ACTIVATE_FORM_ID} onSubmit={handleSubmit} />
+            <Turnstile {...captcha.widget} action="activate" className="mt-4" />
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2">
@@ -135,7 +149,7 @@ export function ActivatePage() {
               type="submit"
               color="primary"
               form={ACTIVATE_FORM_ID}
-              disabled={activateAccountMutation.isPending}
+              disabled={activateAccountMutation.isPending || !captcha.ready}
               className="w-full"
             >
               Activar cuenta

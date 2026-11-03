@@ -175,6 +175,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
                 label="Abreviación"
                 required
                 maxLength={10}
+                showCounter
                 placeholder=""
                 transform={(v) => toPeriodoLongTextInput(v).toUpperCase()}
               />

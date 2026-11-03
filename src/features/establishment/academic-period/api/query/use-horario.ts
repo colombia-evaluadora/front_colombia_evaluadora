@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { ScheduleEntry } from "@/features/establishment/academic-period/api/types/grade-config"
+import type {
+  ScheduleCellCause,
+  ScheduleEntry,
+} from "@/features/establishment/academic-period/api/types/grade-config"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { proveedorMeta } from "@/lib/offline/query-meta"
 
@@ -21,21 +24,26 @@ interface HorarioRow {
   dia: string
   dia_name: string
   bloque: number
+  // Regla 74 (fn_horario_celdas_afectadas_interno).
+  afectado?: boolean
+  causa?: ScheduleCellCause | null
 }
 interface HorarioResponse {
   rows: HorarioRow[]
 }
 
-function toScheduleEntry(row: HorarioRow): ScheduleEntry | null {
-  // Sin `plan_item_id` (renglón de plan borrado/fuera del plan actual) no hay
-  // forma de ubicarlo en la grilla (que indexa por asignatura del plan) — se
-  // descarta, igual que si la celda nunca hubiera existido.
-  if (row.plan_item_id == null) return null
+// Regla 74: las celdas afectadas (también las de una asignatura que salió del
+// plan, sin `plan_item_id`) se conservan y se marcan hasta que se corrigen.
+function toScheduleEntry(row: HorarioRow): ScheduleEntry {
   return {
     grupoId: row.grupo_id,
     planItemId: row.plan_item_id,
     diaId: row.dia_id,
     bloque: row.bloque,
+    horarioId: row.id,
+    afectado: Boolean(row.afectado),
+    causa: row.causa ?? null,
+    asignatura: row.asignatura,
   }
 }
 
@@ -53,9 +61,7 @@ export async function fetchHorario(gradeId: number): Promise<ScheduleEntry[]> {
       },
     }
   )
-  return (raw.rows ?? [])
-    .map(toScheduleEntry)
-    .filter((entry): entry is ScheduleEntry => entry != null)
+  return (raw.rows ?? []).map(toScheduleEntry)
 }
 
 export function useHorarioQuery(gradeId?: number) {

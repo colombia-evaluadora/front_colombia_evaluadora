@@ -54,7 +54,7 @@ const DEFAULT_AUTO_CLOSE: Record<NoticeVariant, number> = {
 const FALLBACK: NoticeDispatch = {
   notify: (localMessage, options) => {
     const message = resolveSuccessMessage(localMessage, options?.variant)
-    if (options?.variant === "error") toast.error(message)
+    if (options?.variant === "error") toast.error(message, options.action ? { action: options.action } : undefined)
     else if (options?.variant === "warning") toast.warning(message)
     else toast.success(message)
   },
@@ -96,6 +96,7 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
       message: resolveSuccessMessage(message, variant),
       variant,
       autoCloseMs: options?.autoCloseMs ?? DEFAULT_AUTO_CLOSE[variant],
+      action: options?.action,
     })
   }, [])
 

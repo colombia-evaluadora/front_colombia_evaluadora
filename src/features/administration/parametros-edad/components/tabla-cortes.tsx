@@ -42,16 +42,12 @@ export function TablaCortes({
   puedeEditar,
   guardando,
   onGuardar,
-  puedeEliminar,
-  onEliminar,
 }: {
   filas: CorteCalendario[]
   opciones: ListaValor[]
   puedeEditar: boolean
   guardando: boolean
   onGuardar: (calendario: string, mes: number, dia: number, nuevo: boolean) => Promise<unknown>
-  puedeEliminar: boolean
-  onEliminar: (codigo: string) => Promise<boolean>
 }) {
   const [edicion, setEdicion] = useState<Edicion | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -99,7 +95,8 @@ export function TablaCortes({
 
   const campoFecha = (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
+      {/* Puede partirse en dos líneas si la columna es angosta, en vez de forzar scroll. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Input
           inputMode="numeric"
           autoFocus={edicion?.calendario != null}
@@ -115,7 +112,7 @@ export function TablaCortes({
         <SelectFila
           label="Mes"
           placeholder="Mes"
-          className="w-36"
+          className="w-32"
           opciones={MESES.map((m, i) => ({ value: String(i + 1), label: m }))}
           value={edicion?.mes ?? ""}
           onChange={(v) => setEdicion((p) => p && { ...p, mes: v })}
@@ -199,15 +196,6 @@ export function TablaCortes({
               })
             }
             onCancelar={cancelar}
-            eliminar={
-              f
-                ? {
-                    puede: puedeEliminar && !edicion,
-                    descripcion: `Se quitará la fecha de corte del calendario ${f.nombre} y su situación de edad quedará Sin calcular.`,
-                    onConfirm: () => onEliminar(f.calendario),
-                  }
-                : undefined
-            }
           />
         )
       },

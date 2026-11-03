@@ -14,6 +14,7 @@ import {
 } from "@/lib/api-client"
 import { toAuthUser, toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import { publishRefreshedToken } from "@/lib/auth-refresh-coordination"
+import { captchaHeaders } from "@/lib/captcha"
 import { paths } from "@/config/paths"
 import { env } from "@/config/env"
 import { connectivityStore } from "@/lib/offline/connectivity"
@@ -150,13 +151,21 @@ export type LoginInput = z.infer<typeof loginInputSchema>
  */
 interface LoginInputWithRemember extends LoginInput {
   rememberMe: boolean
+  /** Token de Turnstile (`useCaptcha().consume()`); viaja como header, no en el body. */
+  captchaToken?: string | null
 }
 
-const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthResponse> => {
+const loginWithEmailAndPassword = ({
+  captchaToken,
+  ...data
+}: LoginInputWithRemember): Promise<AuthResponse> => {
   // El flag va como header para que el backend fije el `Max-Age` de la
   // cookie de refresh; sin el header la cookie dura lo que el default.
   return api.post("/auth/login", data, {
-    headers: data.rememberMe ? { "x-remember-me": "true" } : {},
+    headers: {
+      ...(data.rememberMe ? { "x-remember-me": "true" } : {}),
+      ...captchaHeaders(captchaToken),
+    },
   })
 }
 

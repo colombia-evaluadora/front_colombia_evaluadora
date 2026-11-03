@@ -1,10 +1,14 @@
 import { HttpResponse, delay, http } from "msw"
 
+import { rejectWithoutCaptcha } from "@/mocks/handlers/_captcha"
+
 /**
  * Mock de la verificación pública de boletines (QR).
  * Códigos: "VIG..." → VIGENTE, "ACT..." → ACTUALIZADO, "REE..." →
  * REEMPLAZADO, cualquier otro → NO_VALIDO.
  * PDF: `ultimos4 = "1234"` es válido; tras 3 intentos fallidos por código → 429.
+ * El PDF exige `X-Captcha-Token` (403 antes de mirar los dígitos), como
+ * reporting-service; el estado no.
  */
 const estadoPorCodigo = (codigo: string) => {
   const c = codigo.toUpperCase()
@@ -13,6 +17,8 @@ const estadoPorCodigo = (codigo: string) => {
   if (c.startsWith("REE")) return "REEMPLAZADO"
   return "NO_VALIDO"
 }
+
+export const BOLETIN_MOCK_ULTIMOS4 = "1234"
 
 const intentosFallidos = new Map<string, number>()
 
@@ -31,12 +37,14 @@ trailer<</Root 1 0 R>>
 export const verificacionBoletinHandlers = [
   http.post("*/reportes/public/boletin/:codigo/pdf", async ({ params, request }) => {
     await delay(400)
+    const rejected = rejectWithoutCaptcha(request)
+    if (rejected) return rejected
     const codigo = String(params.codigo)
     if (estadoPorCodigo(codigo) === "NO_VALIDO") return new HttpResponse(null, { status: 404 })
     const fallidos = intentosFallidos.get(codigo) ?? 0
     if (fallidos >= 3) return new HttpResponse(null, { status: 429 })
     const body = (await request.json().catch(() => ({}))) as { ultimos4?: string }
-    if (body.ultimos4 !== "1234") {
+    if (body.ultimos4 !== BOLETIN_MOCK_ULTIMOS4) {
       intentosFallidos.set(codigo, fallidos + 1)
       return new HttpResponse(null, { status: 403 })
     }

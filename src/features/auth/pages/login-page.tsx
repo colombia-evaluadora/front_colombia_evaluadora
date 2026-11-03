@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
+import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
+import { useCaptcha } from "@/hooks/use-captcha"
 import { enterOfflineSession, getOfflineContinueInfo, unlockOfflineSession, useLogin } from "@/lib/auth"
 import { toAuthUserFromToken } from "@/lib/auth-mapper"
 import { canUsePersonalDevice, isInstalledPersonalDevice, isPersonalDeviceAllowed } from "@/lib/offline/device-policy"
@@ -37,6 +39,9 @@ export function LoginPage() {
 
   const loginMutation = useLogin()
   const isOffline = useConnectivity().status === "offline"
+  // Captcha solo para el login en línea: el desbloqueo sin conexión se
+  // verifica en el equipo y no llega al backend.
+  const captcha = useCaptcha()
   const [unlockError, setUnlockError] = useState<string | null>(null)
 
   // "Continuar sin conexión como {nombre}": solo con red caída, equipo
@@ -91,12 +96,16 @@ export function LoginPage() {
       unlockOffline.mutate({ email: values.email, password: values.password })
       return
     }
+    if (!captcha.ready) return
+    // Token de un solo uso: se toma ANTES de cualquier await para que dos
+    // envíos seguidos no manden el mismo, y el widget se reinicia ya.
+    const captchaToken = captcha.consume()
     // El modo del equipo se fija ANTES del login: en "compartido" no se
     // persiste nada (y se borra lo que hubiera) desde la primera respuesta.
     // En la app instalada es personal sin depender del piloto (D-12).
     const personal = !sharedDevice && canUsePersonalDevice(values.email)
     await setDeviceMode(personal ? "personal" : "compartido").catch(() => undefined)
-    loginMutation.mutate(values, {
+    loginMutation.mutate({ ...values, captchaToken }, {
       onSuccess: async (data) => {
         const user = toAuthUserFromToken(data.token)
         // Revalidación con el token (correo + roles): fuera del piloto (y
@@ -136,6 +145,7 @@ export function LoginPage() {
 
       <CardContent>
         <LoginForm id={LOGIN_FORM_ID} onSubmit={handleSubmit} />
+        {!isOffline && <Turnstile {...captcha.widget} action="login" className="mt-4" />}
       </CardContent>
 
       <CardFooter className="flex flex-col gap-2">
@@ -154,7 +164,9 @@ export function LoginPage() {
           color="primary"
           form={LOGIN_FORM_ID}
           disabled={
-            loginMutation.isPending || unlockOffline.isPending || (isOffline && !canUnlockWithPassword)
+            loginMutation.isPending ||
+            unlockOffline.isPending ||
+            (isOffline ? !canUnlockWithPassword : !captcha.ready)
           }
           className="w-full"
         >

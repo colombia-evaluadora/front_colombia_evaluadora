@@ -4,7 +4,6 @@ import type { CalendarEntry } from "@/features/establishment/academic-period/api
 import {
   formatCalendarRange,
   getCalendarSummary,
-  getColombianHolidays,
   getNonWorkingDays,
 } from "@/features/establishment/academic-period/utils/academic-calendar"
 
@@ -16,16 +15,6 @@ const entry = (partial: Partial<CalendarEntry>): CalendarEntry => ({
   to: "2027-01-04",
   reason: "Motivo",
   ...partial,
-})
-
-describe("getColombianHolidays", () => {
-  it("corre los festivos Emiliani al lunes y calcula los de Pascua", () => {
-    const holidays = new Map(getColombianHolidays(2027).map((h) => [h.name, h.date]))
-    expect(holidays.get("Día de San José")).toBe("2027-03-22")
-    expect(holidays.get("Jueves Santo")).toBe("2027-03-25")
-    expect(holidays.get("Día de la Raza")).toBe("2027-10-18")
-    expect(holidays.get("Navidad")).toBe("2027-12-25")
-  })
 })
 
 describe("formatCalendarRange", () => {

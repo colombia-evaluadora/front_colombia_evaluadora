@@ -1,4 +1,5 @@
 import { cerrarFrase } from "@/lib/frase"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -22,7 +23,6 @@ import {
   TrophyIcon,
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getErrorMessage } from "@/lib/api-client"
 import type { Candidato, Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { useVotarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
@@ -114,11 +114,7 @@ function TarjetaCandidatos({ eleccion: e }: { eleccion: Eleccion }) {
               Tu voto es único y definitivo: después de confirmarlo no podrás cambiarlo.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {votar.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(votar.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={votar.isError ? votar.error : null} />
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={votar.isPending}>
               Cancelar

@@ -22,13 +22,9 @@ import {
 
 import { useCurricularReferencesFilters } from "@/features/academic-management/curricular-references/hooks/use-filters"
 import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
-import {
-  createColumns,
-  CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS,
-} from "@/features/academic-management/curricular-references/components/table/columns"
+import { createColumns } from "@/features/academic-management/curricular-references/components/table/columns"
 import { SearchCurricularReferences } from "@/features/academic-management/curricular-references/components/search/search-curricular-references"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
-import { ExportCurricularReferencesDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-export"
 import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
 import { useEvaluationTypesQuery, usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/catalogos-lista-valor"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
@@ -81,12 +77,6 @@ export function CurricularReferencesDataTable() {
     columnVisibilityStorageKey: "table-curricular-references-column-visibility",
   })
 
-  // Columnas visibles, en orden, traducidas a claves del reporte: el archivo
-  // sale con lo mismo que el usuario está viendo.
-  const exportColumns = table
-    .getVisibleLeafColumns()
-    .flatMap((column) => CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS[column.id] ?? [])
-
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -99,7 +89,6 @@ export function CurricularReferencesDataTable() {
             activeFilterCount={activeFilterCount}
             educationLevels={educationLevels}
             pedagogicalApproaches={pedagogicalApproaches}
-            evaluationTypes={evaluationTypes}
           />
 
           <TableScreenActions>
@@ -117,7 +106,6 @@ export function CurricularReferencesDataTable() {
               Nuevo referente
             </Button>
             ) : null}
-            <ExportCurricularReferencesDialog filters={queryFilters} sorting={sorting} columns={exportColumns} />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -131,7 +119,11 @@ export function CurricularReferencesDataTable() {
           onRetry={refetch}
           // Inactivo: visible y filtrable, pero atenuado (Regla 5).
           isRowMuted={(row) => !(row.original as CurricularReference).active}
-          emptyMessage="Sin resultados."
+          emptyMessage={
+            activeFilterCount > 0
+              ? "No hay Referentes que coincidan con la búsqueda y los filtros aplicados"
+              : "Aún no hay Referentes curriculares. Use + Nuevo Referente para crear el primero"
+          }
           // Mensaje real del backend para distinguir permisos (403) de red.
           errorMessage={error ? getErrorMessage(error) : undefined}
         />

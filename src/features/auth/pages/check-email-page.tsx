@@ -14,7 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
+import { useCaptcha } from "@/hooks/use-captcha"
 import { cn } from "@/lib/utils"
 
 import { usePasswordResetLink } from "@/features/auth/hooks/use-password-reset-link"
@@ -26,8 +28,11 @@ export function CheckEmailPage() {
     from: "/_auth/check-email",
     select: (s) => s.token,
   })
-  const { isExpired, isInvalid, maskedEmail, remainingLabel, ttlLabel } =
-    usePasswordResetLink(token)
+  // `resetTokenStatus` es público con captcha: el widget solo hace falta
+  // hasta tener el estado del enlace (esta pantalla no envía nada más).
+  const captcha = useCaptcha()
+  const { isChecking, isExpired, isInvalid, maskedEmail, remainingLabel, ttlLabel } =
+    usePasswordResetLink(token, captcha)
 
   const isDead = isExpired || (isInvalid && !!token)
 
@@ -123,6 +128,7 @@ export function CheckEmailPage() {
       )}
 
       <CardFooter className="flex flex-col gap-2">
+        {isChecking && <Turnstile {...captcha.widget} action="check-email" />}
         {isDead && (
           <Button
             render={<Link to={paths.auth.forgotPassword.path} />}

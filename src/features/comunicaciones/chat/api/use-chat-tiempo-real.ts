@@ -99,12 +99,28 @@ export interface ConversacionEliminada {
  * - `borradores.actualizados` (comms-service envió un mensaje programado o cambió un borrador)
  *   vuelve a pedir Borradores y Enviados.
  */
+/** ¿La vista previa trae un mensaje más reciente que el último del hilo en cache? */
+export function hiloDesactualizado(queryClient: QueryClient, c: Pick<Conversacion, "id" | "ultimoMensaje">) {
+  const enviadoEn = c.ultimoMensaje?.enviadoEn
+  if (!enviadoEn) return false
+  const hilo = queryClient.getQueryData<Mensaje[]>(chatKeys.mensajes(c.id))
+  if (!hilo) return false
+  const ultimo = hilo.at(-1)?.fecha
+  return !ultimo || new Date(enviadoEn).getTime() > new Date(ultimo).getTime()
+}
+
 export function aplicarEventoUsuario(
   queryClient: QueryClient,
   e: Pick<RealtimeEvent, "event" | "data">,
 ): ConversacionEliminada | null {
   if (e.event === "conversacion.actualizada") {
     const c = e.data as Conversacion
+    // El hilo en cache no tiene el último mensaje de la vista previa: llegó por un camino que no
+    // pasó por `canal:<id>` (p. ej. lo envió el asistente de IA en nombre del usuario, o el hilo
+    // no estaba suscrito). Se vuelve a pedir; si el hilo no está montado, solo queda vencido.
+    if (hiloDesactualizado(queryClient, c)) {
+      void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(c.id) })
+    }
     const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
     if (lista && !lista.some((x) => x.id === c.id)) {
       void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
@@ -254,6 +270,16 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         )
         return
       }
+      case "conversacion.entrega": {
+        // Estado como WhatsApp: el mensaje ya llegó a un cliente de todos; ✓✓ gris.
+        const { conversacionId: id, entregadoHasta } = e.data as { conversacionId: number; entregadoHasta: number }
+        queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
+          prev?.map((c) =>
+            c.id === id ? { ...c, entregadoHasta: Math.max(c.entregadoHasta ?? 0, entregadoHasta) } : c,
+          ),
+        )
+        return
+      }
       case "mensaje.confirmacion": {
         // Confirmación de lectura (HU 7): un receptor recibió o leyó un mensaje que la pidió. El
         // evento no trae quién; el autor vuelve a pedir el historial (sus checks y "leído por").
@@ -262,10 +288,9 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         return
       }
       case "actividad.actualizada": {
-        // Alguien votó, respondió o leyó una actividad (elección, encuesta,
-        // comunicado, evaluación). El evento no trae conteos (la urna es secreta):
-        // se vuelve a pedir el detalle por REST con los permisos de quien mira,
-        // así el creador ve en vivo resultados y "Han visto N".
+        // Alguien respondió o leyó una actividad, o cerró una elección (los votos no
+        // emiten eventos: no hay resultados en vivo). El evento no trae conteos: se
+        // vuelve a pedir el detalle por REST con los permisos de quien mira.
         const id = conversacionId ?? "none"
         for (const k of [chatKeys.eleccion(id), chatKeys.encuesta(id), chatKeys.comunicado(id), chatKeys.evaluacion(id)]) {
           void queryClient.invalidateQueries({ queryKey: k })

@@ -8,6 +8,7 @@ import type {
 import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
 
 import { findUserByToken } from "@/mocks/db/auth"
+import { puedeCrearComunicadosMock } from "@/mocks/db/comunicaciones-seleccion"
 import { navigationMenu, type MockMenu } from "@/mocks/db/navigation"
 import { rolesDb } from "@/mocks/db/roles"
 
@@ -171,6 +172,21 @@ export const rolesHandlers = [
       puede_eliminar: false,
       puede_ver: true,
     })
+
+    // Submenú oculto COMUNICADOS (SSO V562): crear comunicados es un permiso por rol. Lo traen los
+    // roles que ya publicaban; un test puede dárselo al Docente (`rolesConComunicados`).
+    if (user && puedeCrearComunicadosMock(user.roles)) {
+      permisos.push({
+        pk_tmenu: 9002,
+        codigo: "COMUNICADOS",
+        nombre: "Crear comunicados",
+        path: "/app/comunicaciones/chat",
+        puede_crear: true,
+        puede_editar: true,
+        puede_eliminar: true,
+        puede_ver: true,
+      })
+    }
 
     // El Coordinador recibe el Planeador con todos los permisos, igual que en
     // testv2 (`permisos-menu` le da editar). Aun así lo ve en solo lectura:

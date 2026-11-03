@@ -9,7 +9,7 @@ export interface LevelConflict {
 }
 
 // Texto de fn_refcurr_validar_nivel_unico_activo (el HINT con el pk no llega al front).
-const CONFLICT_PATTERN = /nivel educativo "(.+?)" ya lo gobierna el referente activo "(.+?)"/i
+const CONFLICT_PATTERN = /nivel "(.+?)" ya lo cubre el referente activo "(.+?)"/i
 
 /** Ubica el referente en conflicto por nombre entre los activos. */
 async function findActiveReferenceId(name: string): Promise<number | null> {

@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-form"
 
-import { withForm } from "@/lib/forms"
+import { useFormDisabled, withForm } from "@/lib/forms"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -36,6 +36,7 @@ export const JornadaScheduleFields = withForm({
   defaultValues: SCHEDULE_DEFAULTS,
   props: { blocksLabel: "Número de bloques de la jornada" },
   render: function Render({ form, blocksLabel }) {
+    const disabled = useFormDisabled()
     const schedule = useSelector(form.store, (state) => ({
       start: state.values.scheduleStartTime,
       end: state.values.scheduleEndTime,
@@ -93,6 +94,7 @@ export const JornadaScheduleFields = withForm({
                   size="sm"
                   variant="fill"
                   color="primary"
+                  disabled={disabled}
                   onClick={() =>
                     breaksField.pushValue({ label: "", location: "", durationMinutes: null })
                   }
@@ -159,6 +161,7 @@ export const JornadaScheduleFields = withForm({
                         variant="outline"
                         color="destructive"
                         className="sm:mt-1.5"
+                        disabled={disabled}
                         onClick={() => breaksField.removeValue(index)}
                       >
                         <TrashIcon data-icon="inline-start" />

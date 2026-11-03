@@ -11,6 +11,8 @@ export interface Notice {
    */
   id: number
   message: string
+  /** Botón opcional junto al mensaje (p. ej. "Ir al campo"). */
+  action?: { label: string; onClick: () => void }
 }
 
 export type NoticeVariant = "info" | "success" | "warning" | "error"
@@ -109,6 +111,18 @@ export function NoticeBanner({
     >
       <Icon className={cn("size-5 shrink-0", VARIANT_ICON_CLASSES[variant])} />
       <span className="flex-1">{notice.message}</span>
+      {notice.action && (
+        <button
+          type="button"
+          onClick={notice.action.onClick}
+          className={cn(
+            "shrink-0 rounded-md px-2 py-1 font-semibold underline underline-offset-2 transition-colors hover:bg-current/10",
+            VARIANT_ICON_CLASSES[variant],
+          )}
+        >
+          {notice.action.label}
+        </button>
+      )}
       <button
         type="button"
         aria-label="Cerrar notificación"

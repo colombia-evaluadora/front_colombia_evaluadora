@@ -1,4 +1,13 @@
 import { useState } from "react"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
@@ -59,6 +68,8 @@ export function GeneratePeriodDialog({
   // Lo que el usuario desmarcó; así "por defecto, todos" no depende de cuándo llegan los datos.
   const [unchecked, setUnchecked] = useState<Set<number>>(new Set())
   const [isGenerating, setIsGenerating] = useState(false)
+  // Regla 74: horarios con bloques por corregir piden confirmar antes de generar.
+  const [confirmAffected, setConfirmAffected] = useState(false)
   const [notice, setNotice] = useState<{
     id: number
     message: string
@@ -73,6 +84,10 @@ export function GeneratePeriodDialog({
   const available = items.filter((i) => i.hasContent)
   const missing = items.length - available.length
   const selected = available.filter((i) => !unchecked.has(i.id))
+  const selectedIds = new Set(selected.map((i) => i.id))
+  const affected = isHorarios
+    ? grades.flatMap((g) => g.groups).filter((g) => selectedIds.has(g.id) && g.affectedBlocks > 0)
+    : []
   const allState =
     selected.length === 0 ? false : selected.length === available.length ? true : "mixed"
 
@@ -231,7 +246,7 @@ export function GeneratePeriodDialog({
           <Button
             size="sm"
             color="primary"
-            onClick={generate}
+            onClick={() => (affected.length > 0 ? setConfirmAffected(true) : generate())}
             // Sin nada con contenido marcado, no hay qué generar.
             disabled={isGenerating || selected.length === 0}
             aria-busy={isGenerating}
@@ -245,6 +260,39 @@ export function GeneratePeriodDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <AlertDialog open={confirmAffected} onOpenChange={setConfirmAffected}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <WarningIcon className="size-5 shrink-0 text-orange" aria-hidden />
+              Horario con bloques por corregir
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {affected.length === 1
+                ? `El horario de ${affected[0].codigo} tiene ${affected[0].affectedBlocks} bloques afectados por un cambio. ¿Desea generarlo así?`
+                : `Estos horarios tienen bloques afectados por un cambio: ${affected
+                    .map((g) => `${g.codigo} (${g.affectedBlocks})`)
+                    .join(", ")}. ¿Desea generarlos así?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              color="primary"
+              onClick={() => {
+                setConfirmAffected(false)
+                generate()
+              }}
+            >
+              <PrinterIcon data-icon="inline-start" />
+              Generar
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

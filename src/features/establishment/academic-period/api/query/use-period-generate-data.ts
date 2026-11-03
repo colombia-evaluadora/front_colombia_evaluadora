@@ -19,6 +19,8 @@ export interface GenerateGroup {
   codigo: string
   // Sin horario no entra en el PDF (Sección 5.7, "Sin contenido").
   hasContent: boolean
+  // Regla 74: bloques por corregir; Generar pide confirmar.
+  affectedBlocks: number
 }
 
 export interface GenerateGrade {
@@ -98,11 +100,13 @@ export function usePeriodGenerateData(
         groups: [],
       }
     }
-    const withSchedule = new Set((horarioQueries[i]?.data ?? []).map((e) => e.grupoId))
+    const schedule = horarioQueries[i]?.data ?? []
+    const withSchedule = new Set(schedule.map((e) => e.grupoId))
     const groups = (groupQueries[i]?.data?.rows ?? []).map((g) => ({
       id: g.id,
       codigo: g.codigo,
       hasContent: withSchedule.has(g.id),
+      affectedBlocks: schedule.filter((e) => e.grupoId === g.id && e.afectado).length,
     }))
     return {
       id: grade.id,

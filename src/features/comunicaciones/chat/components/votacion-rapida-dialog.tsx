@@ -1,10 +1,10 @@
 import { z } from "zod"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowRightIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 import type { Mensaje, TipoVotacionRapida } from "@/features/comunicaciones/chat/api/types"
@@ -14,10 +14,13 @@ import {
 } from "@/features/comunicaciones/chat/api/mutations/use-votacion-rapida"
 import { MINUTOS_VOTACION_RAPIDA } from "@/features/comunicaciones/chat/lib/votacion-rapida"
 
+import { caracteresPermitidos } from "@/features/comunicaciones/chat/lib/texto-actividad"
+
 const FORM_ID = "votacion-rapida"
 
 const schema = z.object({
-  pregunta: z.string().trim().min(1, required("La pregunta", { femenino: true })).max(200, maxLength(200, "La pregunta")),
+  pregunta: z.string().trim().min(1, required("La pregunta", { femenino: true })).max(200, maxLength(200, "La pregunta"))
+    .superRefine(caracteresPermitidos("La pregunta", { puntuacion: true })),
   tipo: z.enum(["VERDADERO_FALSO", "SI_NO"]),
   minutos: z.number(),
 })
@@ -88,7 +91,7 @@ export function VotacionRapidaDialog({
           className="space-y-4 rounded-lg border p-3"
         >
           <form.AppField name="pregunta">
-            {(f) => <f.TextField label="Pregunta" placeholder="¿Suspender clases mañana?" maxLength={200} />}
+            {(f) => <f.TextField label="Pregunta" placeholder="¿Suspender clases mañana?" maxLength={200} showCounter />}
           </form.AppField>
 
           <form.Field name="tipo">
@@ -124,11 +127,7 @@ export function VotacionRapidaDialog({
         {editar && (
           <p className="text-xs text-muted-foreground">Al guardar se reinician los votos y el tiempo.</p>
         )}
-        {mutacion.isError && (
-          <p role="alert" className="text-sm text-red">
-            {getErrorMessage(mutacion.error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={mutacion.isError ? mutacion.error : null} />
 
         {/* Los botones aparecen cuando ya hay una pregunta escrita. */}
         <form.Subscribe selector={(st) => st.values.pregunta.trim() !== ""}>

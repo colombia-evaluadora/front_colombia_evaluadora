@@ -136,12 +136,13 @@ export function EspecialidadSelect({
         <span className="flex-1 truncate">{value || "Seleccionar"}</span>
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-1">
+      {/* Mismo ancho que el campo; mínimo para que entren nombre, check y acciones. */}
+      <PopoverContent align="start" className="w-(--anchor-width) min-w-64 p-0">
         <div className="flex flex-col">
           {error && (
-            <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>
+            <p className="border-b border-border px-3 py-2 text-xs wrap-anywhere text-red">{error}</p>
           )}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-x-hidden overflow-y-auto p-1">
             {sortedOptions.map((option) => {
               const isEditing = editingId === option.id
               const isEditable = option.origen === "ENFASIS"
@@ -150,7 +151,7 @@ export function EspecialidadSelect({
                 return (
                   <div
                     key={option.id}
-                    className="flex items-center gap-1 border-b border-border px-2 py-1 last:border-b-0"
+                    className="flex items-center gap-1 rounded-md bg-foreground/5 px-1 py-1"
                   >
                     <Input
                       autoFocus
@@ -209,9 +210,11 @@ export function EspecialidadSelect({
               }
 
               return (
+                // Las acciones se montan sobre el lugar del check: el check queda
+                // siempre al borde derecho.
                 <div
                   key={option.id}
-                  className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
+                  className="group relative flex min-w-0 items-center rounded-md text-sm hover:bg-foreground/10 has-[button:focus-visible]:bg-foreground/10"
                 >
                   <button
                     type="button"
@@ -219,13 +222,25 @@ export function EspecialidadSelect({
                       onChange(option.label)
                       setOpen(false)
                     }}
-                    className="flex flex-1 items-center gap-2 text-left"
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-none",
+                      option.label === value && "font-medium text-primary",
+                    )}
                   >
-                    <span className="flex-1 truncate">{option.label}</span>
-                    {option.label === value && <CheckIcon className="size-4 shrink-0" />}
+                    <span className="min-w-0 flex-1 truncate" title={option.label}>{option.label}</span>
+                    {option.label === value && (
+                      <CheckIcon
+                        className={cn(
+                          "size-4 shrink-0",
+                          isEditable &&
+                            "group-hover:opacity-0 group-has-[button:focus-visible]:opacity-0 [@media(hover:none)]:opacity-0",
+                        )}
+                      />
+                    )}
                   </button>
                   {isEditable && (
-                    <div className="flex items-center gap-0.5">
+                    // Solo al pasar el mouse o con foco; en pantallas táctiles siempre visibles.
+                    <div className="absolute right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-has-[button:focus-visible]:opacity-100 [@media(hover:none)]:opacity-100">
                       <Tooltip>
                         <TooltipTrigger
                           render={
@@ -269,12 +284,14 @@ export function EspecialidadSelect({
               )
             })}
 
-            <div className="px-1 py-1">
-              <InputGroup className="h-11 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+          </div>
+
+          <div className="border-t border-border p-1.5">
+              <InputGroup className="h-8 rounded-md border border-input hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
                 <InputGroupInput
                   value={nuevo}
                   maxLength={130}
-                  onChange={(e) => setNuevo(e.target.value)}
+                  onChange={(e) => setNuevo(toPeriodoTextInput(e.target.value))}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault()
@@ -283,15 +300,22 @@ export function EspecialidadSelect({
                   }}
                   placeholder="Agregar otro"
                   aria-label="Nuevo énfasis"
+                  className="text-sm"
                 />
-                <InputGroupAddon align="inline-end">
+                <InputGroupAddon align="inline-end" className="gap-1.5 pr-0.5">
+                  <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
+                    {nuevo.length} / 130
+                  </span>
                   <Tooltip>
                     <TooltipTrigger
                       render={
                         <Button
                           type="button"
-                          color="primary"
-                          size="icon-sm"
+                          // Discreto hasta que hay texto: deshabilitado no parece un botón activo.
+                          variant={nuevo.trim() ? "fill" : "ghost"}
+                          color={nuevo.trim() ? "primary" : "neutral"}
+                          size="icon-xs"
+                          className="size-6"
                           aria-label="Agregar énfasis"
                           disabled={!nuevo.trim() || createEnfasis.isPending}
                           onClick={agregar}
@@ -308,7 +332,6 @@ export function EspecialidadSelect({
                   </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
-            </div>
           </div>
         </div>
       </PopoverContent>

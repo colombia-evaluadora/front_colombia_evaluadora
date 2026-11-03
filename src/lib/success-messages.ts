@@ -12,6 +12,9 @@ interface EntityMessages {
   /** Aprobar o declinar (p. ej. Coordinador en el Planeador). */
   approved?: string
   declined?: string
+  /** Reabrir y volver a cerrar (período académico, Regla 16). */
+  reopened?: string
+  closed?: string
 }
 
 export const SUCCESS_MESSAGES = {
@@ -28,6 +31,14 @@ export const SUCCESS_MESSAGES = {
     deactivated: "La lista se inactivó correctamente.",
   },
   // Textos del requerimiento: guardar (crear o modificar) dice lo mismo.
+  // "Festivo guardado." es el texto del requerimiento (Administración, 6.2).
+  festivo: {
+    created: "Festivo guardado.",
+    updated: "Festivo guardado.",
+    deleted: "Festivo eliminado.",
+    activated: "Festivo activado.",
+    deactivated: "Festivo inactivado.",
+  },
   areaOficial: {
     created: "Área oficial guardada.",
     updated: "Área oficial guardada.",
@@ -95,6 +106,8 @@ export const SUCCESS_MESSAGES = {
     // Toggle de la reserva de cupos, separado de `updated`.
     activated: "El periodo de reserva de cupos se activó correctamente.",
     deactivated: "El periodo de reserva de cupos se desactivó correctamente.",
+    reopened: "El período académico se reabrió correctamente.",
+    closed: "El período académico se cerró correctamente.",
   },
   evaluationPeriod: {
     created: "El periodo de evaluación se creó correctamente.",

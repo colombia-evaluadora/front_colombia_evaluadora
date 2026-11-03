@@ -44,6 +44,10 @@ const cuerpoComunicado = (v: CrearComunicadoInput) => ({
     USUARIOS: opciones(v.destinos.usuarios),
     GRUPOS_CHAT: opciones(v.destinos.gruposChat),
     PARA: v.destinos.para,
+    // Acotan dentro del alcance de quien publica (comms-service los valida: uno ajeno es 403).
+    ESTABLECIMIENTO: v.destinos.establecimiento ? opciones([v.destinos.establecimiento])[0] : null,
+    SEDES: opciones(v.destinos.sedes ?? []),
+    JORNADAS: opciones(v.destinos.jornadas ?? []),
   },
   PUBLICAR_EN: v.publicarEn,
   CONTENIDO_HTML: v.contenidoHtml,

@@ -105,13 +105,16 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
         <span className="flex-1 truncate">{displayValue || "Seleccionar"}</span>
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-1">
-        {error && <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>}
-        <div className="max-h-64 overflow-y-auto">
+      {/* Mismo ancho que el campo; mínimo para que entren nombre, check y papelera. */}
+      <PopoverContent align="start" className="w-(--anchor-width) min-w-64 p-0">
+        {error && <p className="border-b border-border px-3 py-2 text-xs wrap-anywhere text-red">{error}</p>}
+        <div className="max-h-64 overflow-x-hidden overflow-y-auto p-1">
           {options.map((option) => (
+            // La papelera se monta sobre el lugar del check: el check queda
+            // siempre al borde derecho.
             <div
               key={option.id}
-              className="hover:bg-foreground/10 flex items-center justify-between gap-1 border-b border-border pr-1 text-sm last:border-b-0"
+              className="group relative flex min-w-0 items-center rounded-md text-sm hover:bg-foreground/10 has-[button:focus-visible]:bg-foreground/10"
             >
               <button
                 type="button"
@@ -119,25 +122,29 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
                   onChange({ mode: "existing", id: option.id, nombre: option.label })
                   setOpen(false)
                 }}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded-none px-2 py-1.5 text-left"
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-none",
+                  value.mode === "existing" && value.id === option.id && "font-medium text-primary",
+                )}
               >
-                <span className="flex-1 truncate">{option.label}</span>
+                <span className="min-w-0 flex-1 truncate" title={option.label}>{option.label}</span>
                 {value.mode === "existing" && value.id === option.id && (
-                  <CheckIcon className="size-4 shrink-0" />
+                  <CheckIcon className="size-4 shrink-0 group-hover:opacity-0 group-has-[button:focus-visible]:opacity-0 [@media(hover:none)]:opacity-0" />
                 )}
               </button>
               <ConfirmRemoveButton
                 label={`Eliminar ${option.label}`}
                 description={`Se eliminará permanentemente el área ${option.label}. Esta acción no se puede deshacer.`}
                 size="icon-xs"
-                className="size-5 shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-3"
+                // Solo al pasar el mouse o con foco; en pantallas táctiles siempre visible.
+                className="absolute right-1 size-6 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 [&_svg:not([class*='size-'])]:size-3.5"
                 onConfirm={() => handleDelete(option)}
               />
             </div>
           ))}
         </div>
-        <div className="px-1 py-1">
-          <InputGroup className="h-11 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+        <div className="border-t border-border p-1.5">
+          <InputGroup className="h-8 rounded-md border border-input hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
             <InputGroupInput
               value={draft}
               maxLength={130}
@@ -150,15 +157,22 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
               }}
               placeholder="Agregar nueva área"
               aria-label="Nombre de la nueva área"
+              className="text-sm"
             />
-            <InputGroupAddon align="inline-end">
+            <InputGroupAddon align="inline-end" className="gap-1.5 pr-0.5">
+              <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
+                {draft.length} / 130
+              </span>
               <Tooltip>
                 <TooltipTrigger
                   render={
                     <Button
                       type="button"
-                      color="primary"
-                      size="icon-sm"
+                      // Discreto hasta que hay texto: deshabilitado no parece un botón activo.
+                      variant={draft.trim() ? "fill" : "ghost"}
+                      color={draft.trim() ? "primary" : "neutral"}
+                      size="icon-xs"
+                      className="size-6"
                       aria-label={draftMatch ? `Seleccionar "${draftMatch.label}"` : "Agregar área"}
                       disabled={!draft.trim()}
                       onClick={agregar}

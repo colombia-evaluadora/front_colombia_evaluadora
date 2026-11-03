@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useSelector } from "@tanstack/react-form"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -82,7 +83,8 @@ export function ListaCotejoSection({
               const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
               if (listaCotejo.items.length === 0) {
                 return (
-                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid}>
+                  // `tabIndex=-1`: sin controles adentro, "ir al error" enfoca el propio aviso.
+                  <div className="rounded-md border border-dashed p-3" data-invalid={isInvalid} tabIndex={-1}>
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : (
@@ -109,6 +111,12 @@ export function ListaCotejoSection({
                       puntajeObligatorio={puntajeObligatorio}
                       disabled={disabled}
                       submissionAttempts={submissionAttempts}
+                      totalCero={
+                        index === 0 &&
+                        esEvaluativa &&
+                        submissionAttempts > 0 &&
+                        listaCotejo.items.every((it) => it.ponderacion === 0)
+                      }
                       onChange={(next) => {
                         const current = field.state.value as ListaCotejo
                         const nextItems = current.items.slice()
@@ -170,6 +178,7 @@ function ListaCotejoItemCard({
   puntajeObligatorio,
   disabled,
   submissionAttempts,
+  totalCero = false,
   onChange,
   onRemove,
 }: {
@@ -183,6 +192,8 @@ function ListaCotejoItemCard({
   puntajeObligatorio: boolean
   disabled: boolean
   submissionAttempts: number
+  /** Todos los ítems traen 0: el total posible sería 0 (regla de `faltantesListaCotejo`). Se marca en el primero. */
+  totalCero?: boolean
   onChange: (next: ListaCotejoItem) => void
   onRemove: () => void
 }) {
@@ -194,7 +205,7 @@ function ListaCotejoItemCard({
   const ponderacionAusente = puntajeObligatorio && tocoOIntento && item.ponderacion == null
   const ponderacionFueraDeRango =
     tocoOIntento && item.ponderacion != null && (item.ponderacion < 0 || item.ponderacion > 100)
-  const ponderacionInvalida = ponderacionAusente || ponderacionFueraDeRango
+  const ponderacionInvalida = ponderacionAusente || ponderacionFueraDeRango || totalCero
 
   return (
     <div className="rounded-md border bg-card p-3">
@@ -237,6 +248,7 @@ function ListaCotejoItemCard({
             aria-invalid={descripcionInvalida}
             disabled={disabled}
           />
+          <CharacterCounter value={item.descripcion} max={500} />
           {descripcionInvalida && <FieldError errors={ERROR_OBLIGATORIO} />}
         </Field>
 
@@ -260,7 +272,13 @@ function ListaCotejoItemCard({
             />
             {ponderacionInvalida && (
               <FieldError
-                errors={ponderacionAusente ? ERROR_OBLIGATORIO : [{ message: "El puntaje debe estar entre 0 y 100." }]}
+                errors={
+                  ponderacionAusente
+                    ? ERROR_OBLIGATORIO
+                    : ponderacionFueraDeRango
+                      ? [{ message: "El puntaje debe estar entre 0 y 100." }]
+                      : [{ message: "Todos los ítems tienen puntaje 0: al menos uno debe valer más que 0." }]
+                }
               />
             )}
           </Field>

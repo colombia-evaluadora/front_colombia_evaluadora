@@ -1,3 +1,4 @@
+import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
@@ -122,6 +123,8 @@ function MatriculaEditPageContent() {
   const fieldSettings = useMemo(() => applyGradeFieldRules(configuredFieldSettings, grade), [configuredFieldSettings, grade])
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  // UI asistida: el agente lee y rellena datos del estudiante y acudiente (nunca guarda).
+  useAsistenteMatricula({ values, setValues, matriculaId, invalidFields: missingFields })
   // Valores tal como llegaron: base para detectar cambios de grado, sede, grupo y acudiente.
   const [inicial, setInicial] = useState<CreateMatriculaInput | null>(null)
   const initialGrade = inicial?.academic.grade || null

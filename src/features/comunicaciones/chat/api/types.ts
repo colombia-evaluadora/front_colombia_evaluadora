@@ -9,9 +9,9 @@ export type TipoConversacion = "CANAL" | "DIRECTO" | "GRUPO"
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"
 
-// NINGUNA quita el silencio ("Activar notificaciones"): comms-service deja silenciado_hasta en NULL.
-// 1H y FIN_DIA (medianoche hora Colombia) desde la tarjeta 7; 8H/1S se conservan por compatibilidad.
-export type SilencioDuracion = "1H" | "8H" | "FIN_DIA" | "1S" | "SIEMPRE" | "NINGUNA"
+// NINGUNA quita el silencio ("Desactivar silencio de notificaciones"): silenciado_hasta queda NULL.
+// Opciones como WhatsApp: 8H, 1S (1 semana) y SIEMPRE (9999-12-31). 1H/FIN_DIA ya no existen.
+export type SilencioDuracion = "8H" | "1S" | "SIEMPRE" | "NINGUNA"
 
 export interface Conversacion {
   id: number
@@ -21,6 +21,9 @@ export interface Conversacion {
   noLeidos: number
   // Punto verde: el canal tiene una actividad abierta (votación, encuesta…).
   actividadAbierta: boolean
+  // QA 79: estado de la elección, encuesta o evaluación con el reloj del servidor (null en otros
+  // canales). Programada se edita y elimina; en curso, nada; finalizada solo se elimina.
+  actividadEstado?: "PROGRAMADA" | "EN_CURSO" | "FINALIZADA" | null
   esBot: boolean
   totalMiembros: number
   miembrosDestacados: string[]
@@ -36,6 +39,10 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
+  // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
+  // Llega en vivo con `conversacion.entrega`.
+  entregadoHasta?: number | null
   // Grupos: descripción e imagen (`pk_tarchivo`, se ve con token de vista) opcionales.
   descripcion?: string | null
   imagenArchivoId?: number | null
@@ -273,7 +280,8 @@ export interface Candidato {
   numero: string
   lema: string
   fotoUrl: string | null
-  votos: number
+  // null mientras la elección sigue abierta: nadie (ni quien la creó) ve conteos antes del cierre.
+  votos: number | null
 }
 
 export interface Eleccion {
@@ -284,9 +292,11 @@ export interface Eleccion {
   // Sin fecha de cierre la votación sigue abierta hasta cerrarla a mano.
   fechaCierre: string | null
   jornadaId: number
-  verResultadosEnVivo: boolean
   candidatos: Candidato[]
-  votosEnBlanco: number
+  // null mientras la elección sigue abierta (igual que `Candidato.votos`).
+  votosEnBlanco: number | null
+  // Participación ("ya votaron"): abierta solo le llega a quien gestiona; cerrada, a todos.
+  votaron: number | null
   // El creador la cerró antes de tiempo desde el menú del canal.
   cerradaManualmente: boolean
   // El usuario actual ya votó (el voto es único).
@@ -300,6 +310,9 @@ export interface Eleccion {
   gestiona?: boolean
   // "Permitir comentarios" (paso 1): los participantes escriben en el canal de la elección.
   permiteComentarios?: boolean
+  // El usuario está en el censo y puede votar. El creador solo si se eligió a sí mismo como votante
+  // (QA 78). Opcional: el mock no lo manda (equivale a no habilitado para el creador).
+  habilitado?: boolean
 }
 
 export type EstadoBorrador = "BORRADOR" | "PROGRAMADO" | "ENVIADO"
@@ -398,6 +411,7 @@ export interface PreguntaEvaluacion {
   id: number
   tipo: TipoPregunta
   texto: string
+  // null en la vista del estudiante: no se le muestran puntos por pregunta.
   puntos: number
   opciones: OpcionEvaluacion[]
 }
@@ -416,6 +430,7 @@ export interface Evaluacion {
   puntajeTotal: number
   // null = ilimitados.
   intentos: number | null
+  // null en la vista del estudiante: comms-service lo ignora para él (solo ve la nota calificada).
   mostrarResultados: MostrarResultados
   preguntas: PreguntaEvaluacion[]
   creadoPor: string
@@ -425,10 +440,19 @@ export interface Evaluacion {
   gestiona?: boolean
   // Del usuario actual (estudiante): cuántas veces la envió y su última nota.
   intentosUsados: number
-  // null = aún no se puede ver (se publica al cierre) o no ha enviado.
+  // Nota del último intento; null = pendiente de calificación o no ha enviado.
   miNota: number | null
-  // Hay preguntas de redacción que el docente aún no califica.
+  // El último intento aún no está calificado.
   miNotaPendiente: boolean
+  // Del estudiante, por intento: solo la nota calificada (nunca respuestas, correctas ni puntos
+  // por pregunta). Opcional: la vista de gestión no lo usa.
+  misIntentos?: IntentoEvaluacion[]
+}
+
+export interface IntentoEvaluacion {
+  numero: number
+  estado: "PENDIENTE" | "CALIFICADA"
+  nota: number | null
 }
 
 export interface RespuestaEntrega {
@@ -492,6 +516,11 @@ export interface DestinosComunicado {
   usuarios: OpcionDestino[]
   gruposChat: OpcionDestino[]
   para: "ESTUDIANTES" | "ACUDIENTES" | "AMBOS"
+  // Filtros que acotan (no suman) la audiencia, los grados, grupos y cargos dentro del alcance de
+  // quien publica. Opcionales: los comunicados anteriores no los traen.
+  establecimiento?: OpcionDestino | null
+  sedes?: OpcionDestino[]
+  jornadas?: OpcionDestino[]
 }
 
 export interface AdjuntoComunicado {
@@ -537,7 +566,8 @@ export type TipoVotacionRapida = "SI_NO" | "VERDADERO_FALSO"
 export interface OpcionVotacionRapida {
   id: number
   etiqueta: string
-  votos: number
+  // null mientras la votación sigue abierta: el resultado se conoce al cierre.
+  votos: number | null
 }
 
 export interface VotacionRapida {
@@ -548,6 +578,10 @@ export interface VotacionRapida {
   opciones: OpcionVotacionRapida[]
   // Opción que eligió el usuario actual; null si aún no vota.
   miVoto: number | null
+  // Cerrada por tiempo o a mano ("Cerrar votación"). Opcional: un mensaje viejo en caché no lo trae.
+  cerrada?: boolean
+  // Total de votos: abierta solo le llega a quien la creó; cerrada, a todos.
+  totalVotos?: number | null
 }
 
 // Personas habilitadas para votar en una elección, filtradas por grado o tipo de funcionario.
@@ -563,6 +597,8 @@ export interface Votante {
   nombre: string
   documento: string
   numero: number
+  // Es quien consulta: el selector lo marca "(Tú)" (QA 78). Opcional: el mock no lo manda.
+  esYo?: boolean
 }
 
 /**
@@ -582,6 +618,21 @@ export interface OpcionesSeleccion {
   grados: OpcionSeleccion[]
   grupos: OpcionSeleccion[]
   roles: OpcionSeleccion[]
+}
+
+/**
+ * Selector de destinatarios de un comunicado (comms-service `/comunicaciones/comunicados/destinos/opciones`):
+ * todo dentro del alcance de quien publica (super administrador: cualquier establecimiento; rector: su
+ * establecimiento; coordinador: sus sedes y jornadas; docente: sus grupos) y acotado en cascada por
+ * establecimiento → sede → jornada. `audiencias`: las de rol que puede usar (el docente, solo
+ * estudiantes y acudientes). `todos`: super administrador, que elige el establecimiento.
+ */
+export interface OpcionesComunicado extends OpcionesSeleccion {
+  establecimientos: OpcionSeleccion[]
+  sedes: OpcionSeleccion[]
+  jornadas: OpcionSeleccion[]
+  audiencias: Audiencia[]
+  todos: boolean
 }
 
 /** Vista previa de un alta masiva: quiénes entrarían (sin duplicados ni quien ya está). */

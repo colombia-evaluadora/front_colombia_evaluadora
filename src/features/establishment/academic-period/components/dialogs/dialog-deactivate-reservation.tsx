@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { toRecesosBody } from "@/features/establishment/academic-period/utils/recesos"
 
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
@@ -166,11 +167,7 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
             No
           </AlertDialogCancel>
         </AlertDialogFooter>
-        {isError && (
-          <p className="text-sm text-destructive">
-            {getErrorMessage(error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={isError ? error : null} />
       </AlertDialogContent>
     </AlertDialog>
   )

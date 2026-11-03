@@ -7,7 +7,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { InfoIcon, PlusIcon } from "@/components/ui/icons"
+import { PlusIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { getErrorMessage } from "@/lib/api-client"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -32,6 +32,7 @@ import {
 } from "@/features/establishment/academic-period/components/search/search-academic-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
 import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabAcademicAssignmentsProps {
   academicPeriodId?: number
@@ -80,7 +81,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
   const soloEnLinea = useOnlineOnly()
 
   // Con el período Cerrado, la carga queda de solo lectura.
-  const readOnly = period?.status === "C"
+  const { readOnly } = usePeriodReadOnly()
   const jornadaName = jornadas.find((j) => j.id === period?.config.jornadaId)?.name
   const sedeJornada = [period?.sedeName, jornadaName].filter(Boolean).join(" · ")
   const title = [period?.sedeName, period?.startDate.slice(0, 4), jornadaName]
@@ -197,12 +198,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
       <NoticeOutlet />
 
-      {readOnly && (
-        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
-          <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
-          El período está cerrado: las asignaciones académicas son de solo lectura.
-        </p>
-      )}
 
       <DataTable
         table={table}

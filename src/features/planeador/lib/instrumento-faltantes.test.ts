@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest"
 
 import type { Actividad, Criterio, EscalaCriterio, EscalaValoracion } from "@/features/planeador/api/types/actividad"
 import {
+  conflictosPuntaje,
   faltantesEscala,
   faltantesInstrumento,
   faltantesListaCotejo,
   faltantesRubrica,
+  nombresRepetidos,
 } from "@/features/planeador/lib/instrumento-faltantes"
 
 const conPuntaje = { puntajeObligatorio: true }
@@ -177,5 +179,30 @@ describe("faltantesInstrumento", () => {
     expect(faltantesInstrumento(conMetodo, conPuntaje)).toEqual([
       'En el criterio "Exactitud" falta el valor mínimo o el valor máximo.',
     ])
+  })
+})
+
+describe("conflictosPuntaje (marca inline para ir al error)", () => {
+  it("marca las posiciones con puntaje repetido", () => {
+    const r = conflictosPuntaje([4, 3, 4, 1])
+    expect([...r.repetidos]).toEqual([0, 2])
+    expect(r.todosCero).toBe(false)
+  })
+  it("todos en 0 sin repetidos solo con un nivel", () => {
+    expect(conflictosPuntaje([0]).todosCero).toBe(true)
+  })
+  it("con algún puntaje vacío no marca (el error es 'obligatorio')", () => {
+    const r = conflictosPuntaje([2, undefined, 2])
+    expect(r.repetidos.size).toBe(0)
+    expect(r.todosCero).toBe(false)
+  })
+  it("sin niveles no marca", () => {
+    expect(conflictosPuntaje([]).todosCero).toBe(false)
+  })
+})
+
+describe("nombresRepetidos", () => {
+  it("compara sin mayúsculas ni espacios e ignora vacíos", () => {
+    expect([...nombresRepetidos(["Claridad", " claridad ", "", "", "Orden"])]).toEqual([0, 1])
   })
 })

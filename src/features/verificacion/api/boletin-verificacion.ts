@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { captchaHeaders } from "@/lib/captcha"
 
 /**
  * Verificación pública de boletines (QR impreso en el PDF).
@@ -87,30 +88,61 @@ export function isOfflineVerificationError(error: unknown): boolean {
   return error instanceof TypeError || (typeof navigator !== "undefined" && navigator.onLine === false)
 }
 
-/** Error con el status HTTP para que la UI distinga 403 (no coincide) de 429. */
+/**
+ * Error con el status HTTP para que la UI distinga 403 (no coincide o captcha
+ * rechazado, ver `backendMessage`) de 429.
+ */
 export class BoletinPdfError extends Error {
   status: number
-  constructor(status: number) {
+  backendMessage: string | null
+  constructor(status: number, backendMessage: string | null = null) {
     super(`Error ${status}`)
     this.status = status
+    this.backendMessage = backendMessage
   }
 }
 
 async function fetchBoletinPdf({
   codigo,
   ultimos4,
+  captchaToken,
 }: {
   codigo: string
   ultimos4: string
+  /** Token de Turnstile (`useCaptcha().consume()`): reporting-service lo exige. */
+  captchaToken: string | null
 }): Promise<Blob> {
   const res = await fetch(`${basePath(codigo)}/pdf`, {
     method: "POST",
     credentials: "omit",
-    headers: { "Content-Type": "application/json", Accept: "application/pdf" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/pdf",
+      ...captchaHeaders(captchaToken),
+    },
     body: JSON.stringify({ ultimos4 }),
   })
-  if (!res.ok) throw new BoletinPdfError(res.status)
+  if (!res.ok) throw new BoletinPdfError(res.status, await backendMessage(res))
   return res.blob()
+}
+
+/** `message` del cuerpo de error (Spring), si viene; nunca lanza. */
+async function backendMessage(res: Response): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { message?: unknown }
+    return typeof body?.message === "string" && body.message ? body.message : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * El 403 del PDF puede ser "dígitos que no coinciden" o el captcha rechazado
+ * (`CaptchaVerifier` del SSO). Se distinguen por el mensaje del backend, que
+ * en el caso del captcha siempre habla de la "verificación de seguridad".
+ */
+function isCaptchaMessage(message: string | null): message is string {
+  return !!message && /verificaci[oó]n de seguridad/i.test(message)
 }
 
 /**
@@ -123,6 +155,8 @@ export function useBoletinPdf() {
 
 export function pdfErrorMessage(error: unknown): string {
   const status = error instanceof BoletinPdfError ? error.status : 0
+  const message = error instanceof BoletinPdfError ? error.backendMessage : null
+  if (isCaptchaMessage(message)) return message
   if (status === 403) return "Los dígitos no coinciden."
   if (status === 429) return "Demasiados intentos. Intenta de nuevo en unos minutos."
   return "No se pudo cargar el boletín. Intenta de nuevo."

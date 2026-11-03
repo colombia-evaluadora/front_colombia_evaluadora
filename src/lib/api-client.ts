@@ -342,6 +342,9 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/sso-admin/forgotUsername",
   "/sso-admin/restorePassword",
   "/sso-admin/resetTokenStatus",
+  // Activación de cuenta (también públicos y con captcha, como los de arriba).
+  "/sso-admin/activateAccount",
+  "/sso-admin/activationTokenStatus",
   // Verificación pública de boletines (QR): la página usa fetch directo, pero
   // si algo la llamara por axios no debe llevar Bearer.
   "/reportes/public/",
@@ -395,6 +398,8 @@ const PUBLIC_ENDPOINTS = [
   "/sso-admin/restorePassword",
   "/sso-admin/forgotPassword",
   "/sso-admin/forgotUsername",
+  "/sso-admin/activateAccount",
+  "/sso-admin/activationTokenStatus",
 ]
 
 // Sondas: se llaman para *averiguar* un estado y una respuesta de error es
@@ -421,6 +426,7 @@ const PROBE_ENDPOINTS = [
   // Estado del equipo (revocado / borrado remoto): lo resuelve device-session.
   "/auth/devices/me",
   "/sso-admin/resetTokenStatus",
+  "/sso-admin/activationTokenStatus",
   "/coverage/reservations/catalogs",
   "/eval-col/planeador/actividad/calificaciones",
   // Estado de cuenta de los funcionarios (tabla de funcionarios): si falla,

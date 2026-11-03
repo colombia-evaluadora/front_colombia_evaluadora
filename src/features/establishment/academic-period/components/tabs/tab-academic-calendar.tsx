@@ -7,7 +7,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { InfoIcon, PlusIcon } from "@/components/ui/icons"
+import { PlusIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
@@ -24,6 +24,7 @@ import type { CalendarEntry } from "@/features/establishment/academic-period/api
 import { CalendarEntryDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-calendar-entry"
 import { createAcademicCalendarColumns } from "@/features/establishment/academic-period/components/table/columns-academic-calendar"
 import { getCalendarSummary } from "@/features/establishment/academic-period/utils/academic-calendar"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabAcademicCalendarProps {
   academicPeriodId?: number
@@ -52,8 +53,8 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
   const saveMutation = useSaveCalendarEntry()
   const deleteMutation = useDeleteCalendarEntry()
 
-  // Con el período Cerrado, la pestaña se abre en solo lectura.
-  const readOnly = period?.status === "C"
+  // Con el período Cerrado (o en "Ver"), la pestaña se abre en solo lectura.
+  const { readOnly } = usePeriodReadOnly()
   const workedHolidays = new Set(entries.filter((e) => e.type === "HABIL").map((e) => e.from))
 
   function markWorking(holiday: CalendarEntry) {
@@ -132,12 +133,6 @@ export function TabAcademicCalendar({ academicPeriodId }: TabAcademicCalendarPro
 
       <NoticeOutlet />
 
-      {readOnly && (
-        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
-          <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
-          El período está cerrado: el calendario es de solo lectura.
-        </p>
-      )}
 
       <DataTable
         table={table}

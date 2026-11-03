@@ -45,7 +45,7 @@ function aSchedulesPorGrupo(entries: ScheduleEntry[]): Record<string, Schedule> 
   const byGroup: Record<string, Schedule> = {}
   for (const e of entries) {
     const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
-    if (!dayLocal) continue
+    if (!dayLocal || e.planItemId == null) continue
     const groupKey = String(e.grupoId)
     byGroup[groupKey] ??= {}
     byGroup[groupKey][dayLocal] ??= {}

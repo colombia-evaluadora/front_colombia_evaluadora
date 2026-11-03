@@ -42,6 +42,7 @@ interface AcademicPeriodDetailRow {
   // Agregado en V71 — antes `fn_periodo_detalle` no lo devolvía aunque
   // create/update sí lo guardaban.
   previous_period_id: number | null
+  reopened_until?: string | null
 }
 
 interface AcademicPeriodDetailResponse {
@@ -71,6 +72,7 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
     name: row.name,
     isPrincipal: false,
     reservationEnabled: row.reserva === "S",
+    reopenedUntil: row.reopened_until ? row.reopened_until.slice(0, 10) : null,
     config: {
       academicPeriodId: row.id,
       jornadaId: row.jornada_id,

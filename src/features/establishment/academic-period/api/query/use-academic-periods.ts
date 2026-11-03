@@ -110,6 +110,7 @@ interface AcademicPeriodListRow {
   cycle?: number | null
   previous_period_id: number | null
   previous_period_name: string | null
+  reopened_until?: string | null
   total_count: number
 }
 
@@ -128,6 +129,7 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     sedeId: String(row.sede_id),
     sedeName: row.sede_name,
     jornadaName: row.jornada_name,
+    reopenedUntil: row.reopened_until ? row.reopened_until.slice(0, 10) : null,
     previousPeriodId: row.previous_period_id ?? null,
     previousPeriodName: row.previous_period_name ?? null,
     // En el modelo del front `schoolYearId` es el AÑO (no el PK del año lectivo);

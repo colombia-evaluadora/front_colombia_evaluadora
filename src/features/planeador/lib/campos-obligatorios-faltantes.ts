@@ -2,6 +2,28 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { ROTULO_ACTIVIDAD_FALLBACK, rotuloEnMinuscula } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"
 import { recuperacionFaltantes } from "@/features/planeador/lib/recuperacion-faltantes"
+import { plainTextInvalidChars } from "@/lib/text-input"
+
+/**
+ * Tope de "Observaciones del docente" (Seguimiento). La columna es
+ * `TACTIVIDAD.OBSERVACIONES_DOCENTE VARCHAR(4000)` y el backend no valida el
+ * largo (`fn_actividad_crear/actualizar`); el form ya acotaba a 500 y se mantiene.
+ */
+export const OBSERVACIONES_DOCENTE_MAX = 500
+
+/** Seguimiento en pantalla: no Formativo y con al menos una adaptación. */
+function seguimientoVisible(values: Actividad, esFormativa: boolean): boolean {
+  return !esFormativa && (values.adaptaciones ?? []).length > 0
+}
+
+/**
+ * Caracteres fuera de `PLAIN_TEXT_PUNCT_PATTERN` en "Observaciones del docente"
+ * (texto libre del docente junto a "¿Genera evidencias?"). Oculto no se valida.
+ */
+export function observacionesCaracteresInvalidos(values: Actividad, esFormativa: boolean): string[] {
+  if (!seguimientoVisible(values, esFormativa)) return []
+  return plainTextInvalidChars(values.observaciones ?? "", { puntuacion: true })
+}
 
 /**
  * Campos obligatorios del form de actividad: los comparten el aviso y la marca
@@ -40,8 +62,7 @@ export function faltanEstudiantes(values: Actividad, grupoTieneEstudiantes: bool
  * solo cuenta con Seguimiento en pantalla (no Formativo y con adaptaciones).
  */
 export function faltaTipoEvidencia(values: Actividad, esFormativa: boolean): boolean {
-  const seguimientoVisible = !esFormativa && (values.adaptaciones ?? []).length > 0
-  return seguimientoVisible && values.generaEvidencias && !values.tipoEvidencia
+  return seguimientoVisible(values, esFormativa) && values.generaEvidencias && !values.tipoEvidencia
 }
 
 /** Campos vacíos con su nombre en pantalla, en el orden del form. */
@@ -82,6 +103,9 @@ export function camposObligatoriosFaltantes(
     }
   })
   if (faltaTipoEvidencia(values, esFormativa)) faltantes.push("Tipo de evidencia")
+  if (observacionesCaracteresInvalidos(values, esFormativa).length > 0) {
+    faltantes.push("Observaciones del docente (caracteres no permitidos)")
+  }
   return faltantes
 }
 

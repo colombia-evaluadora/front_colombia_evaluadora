@@ -38,13 +38,12 @@ export function LevelConflictDialog({
     <AlertDialog open={conflict != null} onOpenChange={(next) => !next && !isPending && onCancel()}>
       <AlertDialogContent className="data-[size=default]:sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Nivel educativo en conflicto</AlertDialogTitle>
+          <AlertDialogTitle>No se puede activar el Referente</AlertDialogTitle>
           <AlertDialogDescription render={<div />} className="flex flex-col gap-3 text-left">
             <p>
-              El nivel educativo <span className="font-bold text-foreground">{conflict?.levelName}</span> ya lo
-              gobierna el referente activo{" "}
-              <span className="font-bold text-foreground">{conflict?.referenceName}</span>. Solo puede haber un
-              referente activo por nivel.
+              No se puede guardar el Referente como Activo porque el nivel{" "}
+              <span className="font-bold text-foreground">{conflict?.levelName}</span> ya lo cubre el Referente
+              activo <span className="font-bold text-foreground">{conflict?.referenceName}</span>.
             </p>
             <p>
               {onSaveInactive

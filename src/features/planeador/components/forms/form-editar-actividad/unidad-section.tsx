@@ -180,10 +180,16 @@ export function UnidadSection({
   form,
   unidades,
   readOnly = false,
+  evidenciasFaltantes = false,
+  onEvidenciasChange,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   readOnly?: boolean
+  /** El backend rechazó el guardado por no haber evidencias marcadas: resalta el checklist. */
+  evidenciasFaltantes?: boolean
+  /** Se llama al tildar/destildar: quita el resaltado de `evidenciasFaltantes`. */
+  onEvidenciasChange?: () => void
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
@@ -199,8 +205,10 @@ export function UnidadSection({
                     unidadId={seleccionada.id}
                     nombreFallback={seleccionada.nombre}
                     seleccionadas={evidenciasField.state.value}
+                    evidenciasInvalidas={evidenciasFaltantes && evidenciasField.state.value.length === 0}
                     onToggle={(evidenciaId) => {
                       if (readOnly) return
+                      onEvidenciasChange?.()
                       const actual = evidenciasField.state.value
                       evidenciasField.handleChange(
                         actual.includes(evidenciaId)
@@ -239,8 +247,10 @@ function UnidadFichaYEvidencias({
   criteriosSeleccionados,
   onToggleCriterio,
   disabled = false,
+  evidenciasInvalidas = false,
 }: {
   disabled?: boolean
+  evidenciasInvalidas?: boolean
   unidadId: number
   nombreFallback: string
   seleccionadas: number[]
@@ -275,6 +285,7 @@ function UnidadFichaYEvidencias({
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabled={disabled}
+          invalid={evidenciasInvalidas}
         />
       )}
       {criterios.length > 0 && (

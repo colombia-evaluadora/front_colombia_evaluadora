@@ -24,7 +24,6 @@ interface SearchCurricularReferencesProps {
   activeFilterCount: number
   educationLevels: CatalogItem[]
   pedagogicalApproaches: CatalogItem[]
-  evaluationTypes: CatalogItem[]
 }
 
 function toOptions(items: CatalogItem[]) {
@@ -38,19 +37,16 @@ export function SearchCurricularReferences({
   activeFilterCount,
   educationLevels,
   pedagogicalApproaches,
-  evaluationTypes,
 }: SearchCurricularReferencesProps) {
   const [open, setOpen] = useState(false)
   const [draftEducationLevel, setDraftEducationLevel] = useState(filters.educationLevels[0] ?? "")
   const [draftPedagogicalApproach, setDraftPedagogicalApproach] = useState(
     filters.pedagogicalApproaches[0] ?? "",
   )
-  const [draftEvaluationType, setDraftEvaluationType] = useState(filters.evaluationTypes[0] ?? "")
   const [draftActive, setDraftActive] = useState(filters.active)
 
   const educationLevelOptions = toOptions(educationLevels)
   const pedagogicalApproachOptions = toOptions(pedagogicalApproaches)
-  const evaluationTypeOptions = toOptions(evaluationTypes)
 
   const syntax: QuerySyntax<CurricularReferenceFiltersFormInput> = {
       empty: { search: "", educationLevels: [], pedagogicalApproaches: [], evaluationTypes: [], active: "" },
@@ -58,7 +54,6 @@ export function SearchCurricularReferences({
       terms: [
         optionsTerm("nivel", "educationLevels", educationLevelOptions),
         optionsTerm("enfoque", "pedagogicalApproaches", pedagogicalApproachOptions),
-        optionsTerm("evaluacion", "evaluationTypes", evaluationTypeOptions),
       ],
     }
 
@@ -70,9 +65,8 @@ export function SearchCurricularReferences({
     if (!open) return
     setDraftEducationLevel(filters.educationLevels[0] ?? "")
     setDraftPedagogicalApproach(filters.pedagogicalApproaches[0] ?? "")
-    setDraftEvaluationType(filters.evaluationTypes[0] ?? "")
     setDraftActive(filters.active)
-  }, [open, filters.educationLevels, filters.pedagogicalApproaches, filters.evaluationTypes, filters.active])
+  }, [open, filters.educationLevels, filters.pedagogicalApproaches, filters.active])
 
   function handleApplyAdvanced() {
     applyFilters({
@@ -80,7 +74,8 @@ export function SearchCurricularReferences({
       search: freeText,
       educationLevels: draftEducationLevel ? [draftEducationLevel] : [],
       pedagogicalApproaches: draftPedagogicalApproach ? [draftPedagogicalApproach] : [],
-      evaluationTypes: draftEvaluationType ? [draftEvaluationType] : [],
+      // Sin filtro por tipo de evaluación en esta vista.
+      evaluationTypes: [],
       active: draftActive,
     })
     setOpen(false)
@@ -94,7 +89,6 @@ export function SearchCurricularReferences({
 
   const educationLevelItems = [{ value: "", label: "Todos" }, ...educationLevelOptions]
   const pedagogicalApproachItems = [{ value: "", label: "Todos" }, ...pedagogicalApproachOptions]
-  const evaluationTypeItems = [{ value: "", label: "Todos" }, ...evaluationTypeOptions]
   const activeItems = [
     { value: "", label: "Todos" },
     { value: "true", label: "Activo" },
@@ -105,7 +99,7 @@ export function SearchCurricularReferences({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        placeholder="Buscar por"
+        placeholder="Buscar por nombre"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}
@@ -138,27 +132,7 @@ export function SearchCurricularReferences({
           </Field>
 
           <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="curricular-reference-evaluation-type">Tipo de evaluación</FieldLabel>
-            <ComboboxField
-              items={Object.fromEntries(evaluationTypeItems.map((item) => [item.value, item.label]))}
-              value={draftEvaluationType}
-              onValueChange={(value) => setDraftEvaluationType(value ?? "")}
-            >
-              <ComboboxFieldTrigger id="curricular-reference-evaluation-type" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {evaluationTypeItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="curricular-reference-pedagogical-approach">Enfoque pedagógico</FieldLabel>
+            <FieldLabel htmlFor="curricular-reference-pedagogical-approach">Enfoque</FieldLabel>
             <ComboboxField
               items={Object.fromEntries(pedagogicalApproachItems.map((item) => [item.value, item.label]))}
               value={draftPedagogicalApproach}

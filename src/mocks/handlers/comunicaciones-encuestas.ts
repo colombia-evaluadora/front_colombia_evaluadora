@@ -15,12 +15,25 @@ import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { notificarActividad, notificarResultados } from "@/mocks/db/comunicaciones-notificaciones-puente"
 
 // En la demo la crea el administrador; el resto son las personas asignadas que la responden.
+// Como comms-service (`EncuestaService#ver`): quien gestiona ve los resultados siempre; el
+// participante, solo con resultados PUBLICOS y después de responder (sin conteos si no).
 function vistaDe(e: Encuesta, request: Request): Encuesta {
   const user = usuarioDe(request)
+  const esCreador = e.esCreador && user?.role === "ADMIN"
+  const yaRespondi = !!user && (respondieron.get(e.conversacionId)?.has(user.email) ?? false)
+  const conResultados = esCreador || (e.resultados === "PUBLICOS" && yaRespondi)
   return {
     ...e,
-    esCreador: e.esCreador && user?.role === "ADMIN",
-    yaRespondi: !!user && (respondieron.get(e.conversacionId)?.has(user.email) ?? false),
+    esCreador,
+    yaRespondi,
+    preguntas: conResultados
+      ? e.preguntas
+      : e.preguntas.map((p) => ({
+          ...p,
+          totalRespuestas: 0,
+          respuestas: [],
+          opciones: p.opciones.map((o) => ({ ...o, votos: 0 })),
+        })),
   }
 }
 

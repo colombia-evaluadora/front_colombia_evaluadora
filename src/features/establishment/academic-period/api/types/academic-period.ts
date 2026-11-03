@@ -12,6 +12,8 @@ export interface AcademicPeriod {
   sedeId: string
   sedeName: string
   jornadaName?: string
+  /** Regla 16: fecha "Cerrar de nuevo el" de un período reabierto; null si no lo está. */
+  reopenedUntil?: string | null
   previousPeriodId: number | null
   previousPeriodName?: string | null
   schoolYearId: number

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useNavigate, useRouterState } from "@tanstack/react-router"
+import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router"
 
 import {
   AgenteError,
@@ -13,6 +13,7 @@ import {
   obtenerConversacion,
 } from "@/features/assistant/api/agente-client"
 import { conversacionesQueryKey } from "@/features/assistant/api/queries"
+import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type {
   ContextoUi,
   ConversacionDetalle,
@@ -28,6 +29,10 @@ import {
 import { definicionFormularios, filtrosRegistrados } from "@/features/assistant/lib/registro-ui"
 import { construirParametros } from "@/features/assistant/lib/parametros-ui"
 import { recortarContexto } from "@/features/assistant/lib/recortar-contexto"
+import { leerFormularioDom } from "@/features/assistant/lib/lectura-dom"
+import { validarNavegacionSubruta, type RutaRouter } from "@/features/assistant/lib/navegacion-ui"
+import { navigationKeys } from "@/features/navigation/api/query-keys"
+import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
 
 export type EstadoAccionChat = "PENDIENTE" | "CONFIRMANDO" | "CANCELANDO" | "RESUELTA"
 
@@ -123,6 +128,7 @@ export function aMensajesChat(detalle: ConversacionDetalle): MensajeChat[] {
 export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean } = {}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const router = useRouter()
   const location = useRouterState({ select: (s) => s.location })
 
   const [conversacionId, setConversacionId] = useState<string | null>(leerConversacionGuardada)
@@ -136,6 +142,8 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
   const abortRef = useRef<AbortController | null>(null)
   // Tras un 429 no se envía hasta esta hora (ms).
   const esperarHastaRef = useRef(0)
+  // El turno ejecutó una herramienta del chat (p. ej. enviar un mensaje en nombre del usuario).
+  const tocoChatRef = useRef(false)
 
   const cambiarConversacion = (id: string | null) => {
     setConversacionId(id)
@@ -150,7 +158,10 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
   function construirContexto(): ContextoUi {
     // Solo el path: los ids van en `parametros`.
     const ruta = location.pathname.slice(0, MAX_RUTA)
-    const formularios = definicionFormularios()
+    // Sin formularios registrados, se lee lo visible del DOM (solo lectura).
+    const registrados = definicionFormularios()
+    const delDom = registrados.length === 0 ? leerFormularioDom() : null
+    const formularios = delDom ? [delDom] : registrados
     const filtros = filtrosDisponibles(search)
     // URL primero, después los filtros del listado.
     const parametros = construirParametros(search, filtrosRegistrados()?.valores?.())
@@ -185,6 +196,17 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
         const [to, query] = url.split("?")
         const desdeUrl = Object.fromEntries(new URLSearchParams(query ?? ""))
         navigate({ to: to as never, search: { ...desdeUrl, ...params } as never })
+      },
+      navegarSubruta: (accion) => {
+        const resultado = validarNavegacionSubruta(accion, {
+          rutaDelRouter: (patron) =>
+            (router.routesByPath as Record<string, RutaRouter | undefined>)[patron],
+          permisos: queryClient.getQueryData<MenuPermission[]>(navigationKeys.permisosMenu),
+        })
+        if (!resultado.ok) return resultado.motivo
+        const { to, params, search } = resultado.destino
+        navigate({ to: to as never, params: params as never, search: search as never })
+        return null
       },
       aplicarFiltrosUrl: (filtros) =>
         navigate({
@@ -256,6 +278,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
     setEnviando(true)
     setEstado(null)
     setHerramientas([])
+    tocoChatRef.current = false
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -287,6 +310,9 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
       )
       actualizar(idRespuesta, { resultadosUi: aplicarRespuesta(respuesta) })
       queryClient.invalidateQueries({ queryKey: conversacionesQueryKey })
+      // Una escritura directa del asistente en el chat (enviar un mensaje como el usuario) no pasa
+      // por las mutaciones del chat: sin esto el hilo propio no mostraba el mensaje enviado.
+      if (tocoChatRef.current) queryClient.invalidateQueries({ queryKey: chatKeys.all })
     } catch (error) {
       if (controller.signal.aborted) {
         actualizar(idRespuesta, {
@@ -322,6 +348,7 @@ export function useAsistente({ puedeAccionar = true }: { puedeAccionar?: boolean
 
   function registrarHerramienta(evento: EventoHerramienta) {
     if (!evento?.id || !evento.etiqueta) return
+    if (/comunicaciones/i.test(evento.herramienta ?? "")) tocoChatRef.current = true
     // El id se repite con herramientas descubiertas a mitad de turno.
     const clave = `${evento.id}|${evento.herramienta}`
     const etiqueta = ETIQUETAS_HERRAMIENTA[evento.herramienta] ?? evento.etiqueta

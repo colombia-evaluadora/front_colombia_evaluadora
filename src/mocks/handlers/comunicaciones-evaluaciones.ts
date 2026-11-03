@@ -14,18 +14,32 @@ import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { esAutomatica, notaEntrega } from "@/features/comunicaciones/chat/lib/evaluacion"
 
-// Lo que ve el estudiante: sin las respuestas correctas y con su propio avance.
-function vistaEstudiante(e: Evaluacion, nombre: string): Evaluacion {
+// Lo que ve el estudiante (como comms-service `EvaluacionService#ver`): sin correctas ni puntos
+// por pregunta ni modo de resultados; de cada intento, solo la nota una vez calificado.
+export function vistaEstudiante(e: Evaluacion, nombre: string): Evaluacion {
   const mias = (entregas.get(e.conversacionId) ?? []).filter((x) => x.estudiante === nombre)
-  const ultima = mias.at(-1)
-  const visible = e.mostrarResultados === "INMEDIATO" || estadoEleccion(e) === "FINALIZADA"
+  const misIntentos = mias.map((x, i) => {
+    const calificada = x.estado !== "PENDIENTE"
+    return {
+      numero: i + 1,
+      estado: calificada ? ("CALIFICADA" as const) : ("PENDIENTE" as const),
+      nota: calificada ? notaEntrega(e, x) : null,
+    }
+  })
+  const ultimo = misIntentos.at(-1)
   return {
     ...e,
     esCreador: false,
-    preguntas: e.preguntas.map((p) => ({ ...p, opciones: p.opciones.map((o) => ({ ...o, correcta: false })) })),
+    mostrarResultados: null as unknown as MostrarResultados,
+    preguntas: e.preguntas.map((p) => ({
+      ...p,
+      puntos: null as unknown as number,
+      opciones: p.opciones.map((o) => ({ ...o, correcta: false })),
+    })),
     intentosUsados: mias.length,
-    miNota: ultima && visible ? notaEntrega(e, ultima) : null,
-    miNotaPendiente: ultima?.estado === "PENDIENTE",
+    miNota: ultimo?.nota ?? null,
+    miNotaPendiente: !!ultimo && ultimo.nota == null,
+    misIntentos,
   }
 }
 

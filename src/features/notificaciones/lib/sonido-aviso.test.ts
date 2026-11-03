@@ -13,6 +13,13 @@ describe("sonido de avisos", () => {
     expect(debeSonar(null, true)).toBe(false)
   })
 
+  it("no suena para una conversación archivada", () => {
+    const archivadas = new Set([12])
+    expect(debeSonar({ sonar: true, deep_link: "/app/comunicaciones/chat?canal=12&mensaje=3" }, true, archivadas)).toBe(false)
+    expect(debeSonar({ sonar: true, deep_link: "/app/comunicaciones/chat?canal=7&mensaje=3" }, true, archivadas)).toBe(true)
+    expect(debeSonar({ sonar: true, deep_link: "/app/planeador" }, true, archivadas)).toBe(true)
+  })
+
   it("no repite el sonido en una ráfaga", () => {
     expect(reproducirSonidoAviso(10_000)).toBe(true)
     expect(reproducirSonidoAviso(10_500)).toBe(false)

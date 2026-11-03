@@ -1,3 +1,4 @@
+import type { CaptchaState } from "@/hooks/use-captcha"
 import { useActivationTokenStatusQuery } from "@/features/auth/api/query/use-activation-token-status-query"
 import { useCountdown } from "@/features/auth/hooks/use-countdown"
 import { formatTtl } from "@/features/auth/utils/format-duration"
@@ -25,8 +26,11 @@ export interface AccountActivationLink {
  * `/resetTokenStatus`. La pantalla de "Activa tu cuenta" solo elige qué
  * card mostrar con los booleanos que devuelve.
  */
-export function useAccountActivationLink(token: string | undefined): AccountActivationLink {
-  const { data, isPending, isError } = useActivationTokenStatusQuery(token)
+export function useAccountActivationLink(
+  token: string | undefined,
+  captcha: CaptchaState,
+): AccountActivationLink {
+  const { data, isPending, isError } = useActivationTokenStatusQuery(token, captcha)
   const isChecking = !isError && isPending
 
   const countdown = useCountdown(data?.status === "valid" ? data.expiresIn : undefined)

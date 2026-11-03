@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +13,6 @@ import { HashIcon } from "@/components/ui/icons"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
@@ -206,11 +206,7 @@ export function CrearChatDialog({
           </div>
         )}
 
-        {error && (
-          <p role="alert" className="text-sm text-red">
-            {getErrorMessage(error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={error} />
 
         <DialogFooter>
           {paso === 1 ? (

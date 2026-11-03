@@ -18,6 +18,7 @@ const MENU = {
   criteriosPrioridad: "/app/administracion/criterios-prioridad",
   superadministradores: "/app/administracion/superadministradores",
   parametrosEdad: "/app/administracion/parametros-edad",
+  festivos: "/app/administracion/festivos",
   establecimiento: "/app/establecimiento-educativo/general",
   sedes: "/app/establecimiento-educativo/sedes",
   funcionarios: "/app/establecimiento-educativo/funcionarios",
@@ -70,6 +71,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/criterios-prioridad": MENU.criteriosPrioridad,
   "/app/administracion/superadministradores": MENU.superadministradores,
   "/app/administracion/parametros-edad": MENU.parametrosEdad,
+  "/app/administracion/festivos": MENU.festivos,
   "/app/registro-de-actividad/bitacora": MENU.registroActividad,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
@@ -84,6 +86,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/establecimiento-educativo/periodos": MENU.periodos,
   "/app/establecimiento-educativo/periodos/agregar": MENU.periodos,
   "/app/establecimiento-educativo/periodos/$periodId/editar": MENU.periodos,
+  "/app/establecimiento-educativo/periodos/$periodId/ver": MENU.periodos,
   "/app/establecimiento-educativo/periodos/$periodId/grados/agregar": MENU.periodos,
   "/app/establecimiento-educativo/periodos/$periodId/grados/editar/$gradeId": MENU.periodos,
 

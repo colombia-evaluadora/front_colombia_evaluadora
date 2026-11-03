@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
@@ -28,7 +29,6 @@ import {
   type TableSort,
 } from "@/components/table-sort-header"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 import { toDigitsOnly } from "@/lib/text-input"
 import { cn } from "@/lib/utils"
 import type {
@@ -265,11 +265,7 @@ function CalificarDialog({
             </li>
           ))}
         </ol>
-        {calificar.isError && (
-          <p role="alert" className="text-sm text-red">
-            {getErrorMessage(calificar.error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={calificar.isError ? calificar.error : null} />
         <DialogFooter className="items-center">
           {faltan && (
             <p className="mr-auto text-xs text-muted-foreground">

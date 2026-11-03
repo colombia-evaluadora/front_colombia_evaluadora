@@ -258,6 +258,7 @@ export function QuickCreateSubjectDialog({
                 label="Abreviación"
                 required
                 maxLength={10}
+                showCounter
                 placeholder=""
                 transform={(v) => toPeriodoLongTextInput(v).toUpperCase()}
               />

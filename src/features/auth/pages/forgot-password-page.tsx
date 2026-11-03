@@ -17,7 +17,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
+import { useCaptcha } from "@/hooks/use-captcha"
 
 import {
   EmailNotRegisteredError,
@@ -31,6 +33,7 @@ const FORGOT_PASSWORD_FORM_ID = "forgot-password-form"
 export function ForgotPasswordPage() {
   const navigate = useNavigate()
   const forgotPasswordMutation = useForgotPassword()
+  const captcha = useCaptcha()
   const emailNotRegistered = forgotPasswordMutation.error instanceof EmailNotRegisteredError
 
   function handleSubmit(values: ForgotPasswordFormValues) {
@@ -40,7 +43,10 @@ export function ForgotPasswordPage() {
     // que el backend emite para no delatar correos, y esa pantalla —al
     // consultarlo y recibir `invalid`— terminaba diciendo que el enlace había
     // expirado. Era mentira: nunca hubo enlace, ni correo.
-    forgotPasswordMutation.mutate(values.email, {
+    if (!captcha.ready) return
+    // El token es de un solo uso: `consume()` reinicia el widget en el mismo
+    // paso, así un reintento tras un error ya espera a uno nuevo.
+    forgotPasswordMutation.mutate({ email: values.email, captchaToken: captcha.consume() }, {
       onSuccess: (data) =>
         navigate({
           to: paths.auth.checkEmail.path,
@@ -74,6 +80,7 @@ export function ForgotPasswordPage() {
           </Alert>
         )}
         <ForgotPasswordForm id={FORGOT_PASSWORD_FORM_ID} onSubmit={handleSubmit} />
+        <Turnstile {...captcha.widget} action="forgot-password" />
       </CardContent>
 
       <CardFooter className="flex flex-col gap-2">
@@ -81,7 +88,7 @@ export function ForgotPasswordPage() {
           type="submit"
           color="primary"
           form={FORGOT_PASSWORD_FORM_ID}
-          disabled={forgotPasswordMutation.isPending}
+          disabled={forgotPasswordMutation.isPending || !captcha.ready}
           className="w-full"
         >
           Enviar instrucciones

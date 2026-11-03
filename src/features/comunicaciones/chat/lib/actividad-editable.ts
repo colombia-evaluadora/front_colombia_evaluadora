@@ -27,3 +27,25 @@ export const esActividadEditable = (
   c: Pick<Conversacion, "categoria" | "esCreador" | "esAdmin">,
   perfil: PerfilChat,
 ) => esCategoriaActividad(c.categoria) && gestionaActividad(c, perfil)
+
+export const MENSAJE_EN_CURSO = "No se puede editar ni eliminar mientras está en curso."
+export const MENSAJE_FINALIZADA = "No se puede editar porque ya finalizó: sus resultados quedan fijos."
+
+const CON_VENTANA: readonly string[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
+
+/**
+ * QA 79: una elección, encuesta o evaluación solo se edita mientras está programada (aún no
+ * inicia). En curso no se edita ni se elimina; finalizada no se edita (los resultados quedan fijos)
+ * pero sí se elimina. comms-service manda `actividadEstado` calculado con el reloj del servidor y
+ * valida lo mismo al editar/eliminar (409); si no llega (back anterior), se infiere "en curso" del
+ * punto verde `actividadAbierta`. Devuelve el motivo del bloqueo (tooltip) o null si se permite.
+ */
+export function bloqueoActividad(
+  c: Pick<Conversacion, "categoria" | "actividadAbierta" | "actividadEstado">,
+): { editar: string | null; eliminar: string | null } {
+  if (!CON_VENTANA.includes(c.categoria)) return { editar: null, eliminar: null }
+  const estado = c.actividadEstado ?? (c.actividadAbierta ? "EN_CURSO" : null)
+  if (estado === "EN_CURSO") return { editar: MENSAJE_EN_CURSO, eliminar: MENSAJE_EN_CURSO }
+  if (estado === "FINALIZADA") return { editar: MENSAJE_FINALIZADA, eliminar: null }
+  return { editar: null, eliminar: null }
+}

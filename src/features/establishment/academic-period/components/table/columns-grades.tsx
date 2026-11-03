@@ -4,7 +4,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
-import { PencilIcon } from "@/components/ui/icons"
+import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
@@ -12,6 +12,8 @@ import { DeleteGradeDialog } from "@/features/establishment/academic-period/comp
 
 interface GradeColumnsOptions {
   onOpen: (grade: Grade) => void
+  // Período Cerrado o "Ver": el grado se abre para consultar, sin eliminar.
+  readOnly?: boolean
 }
 
 const centered = (value: number | undefined) => (
@@ -20,7 +22,7 @@ const centered = (value: number | undefined) => (
 
 // Listado de grados (Sección 5.3): Grupos y Cupo total los calcula el sistema
 // con los grupos del grado.
-export function createGradeColumns({ onOpen }: GradeColumnsOptions): ColumnDef<Grade>[] {
+export function createGradeColumns({ onOpen, readOnly = false }: GradeColumnsOptions): ColumnDef<Grade>[] {
   return [
     {
       id: "teachingLevelName",
@@ -88,12 +90,14 @@ export function createGradeColumns({ onOpen }: GradeColumnsOptions): ColumnDef<G
                 />
               }
             >
-              <span className="sr-only">Modificar {row.original.nombre}</span>
-              <PencilIcon />
+              <span className="sr-only">
+                {readOnly ? "Ver" : "Modificar"} {row.original.nombre}
+              </span>
+              {readOnly ? <EyeIcon /> : <PencilIcon />}
             </TooltipTrigger>
-            <TooltipContent>Modificar</TooltipContent>
+            <TooltipContent>{readOnly ? "Ver" : "Modificar"}</TooltipContent>
           </Tooltip>
-          <DeleteGradeDialog grade={row.original} />
+          {!readOnly && <DeleteGradeDialog grade={row.original} />}
         </div>
       ),
       enableSorting: false,

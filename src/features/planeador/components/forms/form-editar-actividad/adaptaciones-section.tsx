@@ -35,7 +35,11 @@ import {
 } from "@/components/ui/icons"
 import type { Adaptacion, AdaptacionArchivo } from "@/features/planeador/api/types/actividad"
 import type { MatriculaGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { faltaTipoEvidencia } from "@/features/planeador/lib/campos-obligatorios-faltantes"
+import {
+  OBSERVACIONES_DOCENTE_MAX,
+  faltaTipoEvidencia,
+  observacionesCaracteresInvalidos,
+} from "@/features/planeador/lib/campos-obligatorios-faltantes"
 import {
   TEXTAREA_OUTLINED,
   ADAPTACION_TIPO_LABELS,
@@ -677,6 +681,10 @@ export function SeguimientoSection({ form, disabled }: { form: FormActividad; di
     form,
     useSelector(form.store, (state) => faltaTipoEvidencia(state.values, false)),
   )
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const observacionesInvalidas = useSelector(form.store, (state) =>
+    observacionesCaracteresInvalidos(state.values, false).join(""),
+  )
   return (
     <form.Subscribe selector={(state) => state.values.adaptaciones.length > 0}>
       {(hasAdaptaciones) =>
@@ -737,17 +745,33 @@ export function SeguimientoSection({ form, disabled }: { form: FormActividad; di
 
       <form.Field name="observaciones">
         {(field) => (
-          <Field variant="outlined">
+          <Field
+            variant="outlined"
+            data-invalid={Boolean(observacionesInvalidas) && (field.state.meta.isTouched || submissionAttempts > 0)}
+          >
             <FieldLabel htmlFor={field.name}>Observaciones del docente</FieldLabel>
             <Textarea className={TEXTAREA_OUTLINED}
               id={field.name}
               rows={4}
               placeholder="Ej: Reforzar con ejemplos del contexto local, revisar individualmente la participación de los estudiantes con bajo rendimiento…"
-              maxLength={500}
+              maxLength={OBSERVACIONES_DOCENTE_MAX}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+              aria-invalid={Boolean(observacionesInvalidas) && (field.state.meta.isTouched || submissionAttempts > 0)}
               disabled={disabled}
             />
+            {/* Misma regla de caracteres que los textos de la unidad (PLAIN_TEXT_PUNCT_PATTERN). */}
+            {observacionesInvalidas && (field.state.meta.isTouched || submissionAttempts > 0) && (
+              <FieldError
+                errors={[
+                  {
+                    message: `Solo se admiten letras, números, espacios, guiones, apóstrofos y . , : ; ¿ ? ¡ ! ( ). Quita: ${[...observacionesInvalidas].map((c) => (c.trim() ? `"${c}"` : "salto o tabulación")).join(" ")}`,
+                  },
+                ]}
+              />
+            )}
+            <CharacterCounter value={field.state.value ?? ""} max={OBSERVACIONES_DOCENTE_MAX} />
           </Field>
         )}
       </form.Field>

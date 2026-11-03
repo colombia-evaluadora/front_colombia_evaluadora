@@ -39,6 +39,16 @@ export function useEditarVotacionRapida() {
   })
 }
 
+// "Cerrar votación": quien la creó la cierra antes de tiempo y se publica el resultado.
+export function useCerrarVotacionRapida() {
+  const guardar = useGuardarEnCache()
+  return useMutation({
+    mutationFn: (mensajeId: number) =>
+      evalCol.postRow<Mensaje>(`/comunicaciones/mensajes/${mensajeId}/votacion/cerrar`, {}),
+    onSuccess: guardar,
+  })
+}
+
 export function useVotarRapido() {
   const guardar = useGuardarEnCache()
   return useMutation({

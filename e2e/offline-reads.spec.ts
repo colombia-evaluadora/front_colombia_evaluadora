@@ -231,7 +231,7 @@ test("vista solo en línea sin red: empty state 'Esta sección necesita conexió
   // Vite compila en frío las vistas del admin: esperar a que la tabla cargue
   // (y el persister escriba) antes de cortar la API.
   await page.goto("/app/gestion-academica/referentes-curriculares")
-  await expect(page.getByRole("columnheader", { name: /Nombre del referente/i })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole("columnheader", { name: /^Nombre/i })).toBeVisible({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
   await setApiFault(page, "network")
   await page.reload()

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
@@ -105,6 +106,15 @@ export function TabStatements({ reference }: TabStatementsProps) {
     ...Object.fromEntries(reference.areas.map((area) => [area.id, toSentenceCase(area.name)])),
   }
   const gradeLabels = Object.fromEntries(grades.map((grade) => [grade.id, toSentenceCase(grade.name)]))
+  // "[Grado] · [Área]" del estado vacío; sin grados o sin áreas se omite esa parte.
+  const emptyContext = [gradeId != null ? gradeLabels[gradeId] : null, areaId != null ? (areaLabels as Record<number, string>)[areaId] : null]
+    .filter(Boolean)
+    .join(" · ")
+  // Textos de §2.1 para el botón Eliminar deshabilitado de un componente ya usado.
+  const sequenceLabel = toSentenceCase(reference.instrument || "Secuencias de actividades")
+  const executionLabel = toSentenceCase(reference.executionLabel || "Actividad")
+  const statementBlockedMessage = `No se puede eliminar: el ${level1Label.toLowerCase()} ya se usó en ${sequenceLabel.toLowerCase()}. Puede inactivarlo.`
+  const evidenceBlockedMessage = `No se puede eliminar: la ${level2Label.toLowerCase()} ya se usó en ${executionLabel.toLowerCase()}. Puede inactivarla.`
 
   // El nuevo Nivel 1 toma Grado y Área de los filtros: ambos deben tener valor real.
   const hasAreaForCreate = hasReferenceAreas ? areaId != null && !onlyUnassigned : true
@@ -250,7 +260,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
                 ? "Selecciona un grado."
                 : areaId === undefined
                   ? "Selecciona un área."
-                  : `Sin ${level1Label.toLowerCase()}s.`}
+                  : `Aún no hay ${level1Label.toLowerCase()}${emptyContext ? ` para ${emptyContext}` : ""}. Use + Agregar ${level1Label.toLowerCase()} para crear el primero.`}
             </p>
           ) : (
             filteredStatements.map((statement) => {
@@ -277,26 +287,34 @@ export function TabStatements({ reference }: TabStatementsProps) {
                       )}
                     >
                       {puedeEditar ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          color="neutral"
-                          size="icon-sm"
-                          aria-label={`Editar ${level1Label.toLowerCase()}`}
-                          disabled={soloEnLinea.disabled}
-                          title={soloEnLinea.tooltip ?? undefined}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setStatementDialog({ open: true, statement })
-                          }}
-                        >
-                          <PencilIcon />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="inline-flex" />}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              color="neutral"
+                              size="icon-sm"
+                              aria-label={`Editar ${level1Label.toLowerCase()}`}
+                              disabled={soloEnLinea.disabled}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setStatementDialog({ open: true, statement })
+                              }}
+                            >
+                              <PencilIcon />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {soloEnLinea.tooltip ?? `Editar ${level1Label.toLowerCase()}`}
+                          </TooltipContent>
+                        </Tooltip>
                       ) : null}
                       {puedeEliminar ? (
                         <DeleteStatementDialog
                           statement={statement}
                           levelLabel={level1Label}
+                          childLabel={level2Label}
+                          blockedMessage={statementBlockedMessage}
                           onDeleted={() => setSelectedStatementId(null)}
                         />
                       ) : null}
@@ -409,7 +427,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
             {selectedStatementId == null ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground break-words">
-                  Selecciona un {level1Label.toLowerCase()} para ver sus {level2Label.toLowerCase()}s.
+                  Elija un {level1Label.toLowerCase()} para ver sus {level2Label.toLowerCase()}s.
                 </TableCell>
               </TableRow>
             ) : isEvidencesPending ? (
@@ -421,7 +439,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
             ) : sortedEvidences.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground break-words">
-                  Sin {level2Label.toLowerCase()}s.
+                  Este {level1Label.toLowerCase()} aún no tiene {level2Label.toLowerCase()}s. Use + Agregar{" "}
+                  {level2Label.toLowerCase()} para crear el primero.
                 </TableCell>
               </TableRow>
             ) : (
@@ -443,21 +462,31 @@ export function TabStatements({ reference }: TabStatementsProps) {
                   <TableCell>
                     <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 has-[[aria-expanded=true]]:opacity-100">
                       {puedeEditar ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          color="neutral"
-                          size="icon-sm"
-                          aria-label={`Editar ${level2Label.toLowerCase()}`}
-                          disabled={soloEnLinea.disabled}
-                          title={soloEnLinea.tooltip ?? undefined}
-                          onClick={() => setEvidenceDialog({ open: true, evidence })}
-                        >
-                          <PencilIcon />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="inline-flex" />}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              color="neutral"
+                              size="icon-sm"
+                              aria-label={`Editar ${level2Label.toLowerCase()}`}
+                              disabled={soloEnLinea.disabled}
+                              onClick={() => setEvidenceDialog({ open: true, evidence })}
+                            >
+                              <PencilIcon />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {soloEnLinea.tooltip ?? `Editar ${level2Label.toLowerCase()}`}
+                          </TooltipContent>
+                        </Tooltip>
                       ) : null}
                       {puedeEliminar ? (
-                        <DeleteEvidenceDialog evidence={evidence} levelLabel={level2Label} />
+                        <DeleteEvidenceDialog
+                          evidence={evidence}
+                          levelLabel={level2Label}
+                          blockedMessage={evidenceBlockedMessage}
+                        />
                       ) : null}
                     </div>
                   </TableCell>

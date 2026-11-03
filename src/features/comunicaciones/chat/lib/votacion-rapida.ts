@@ -19,13 +19,17 @@ export function cuentaRegresiva(segundos: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
 }
 
+// El servidor no manda conteos mientras la votación sigue abierta (sin resultados en vivo):
+// null = todavía no hay resultados (abierta, o cerró en el reloj local y falta pedirlos).
 export function resultadosVotacionRapida(v: VotacionRapida) {
-  const total = v.opciones.reduce((n, o) => n + o.votos, 0)
+  if (v.opciones.some((o) => o.votos == null)) return null
+  const total = v.opciones.reduce((n, o) => n + (o.votos ?? 0), 0)
   return {
     total,
     opciones: v.opciones.map((o) => ({
       ...o,
-      porcentaje: total ? Math.round((o.votos / total) * 100) : 0,
+      votos: o.votos ?? 0,
+      porcentaje: total ? Math.round(((o.votos ?? 0) / total) * 100) : 0,
     })),
   }
 }

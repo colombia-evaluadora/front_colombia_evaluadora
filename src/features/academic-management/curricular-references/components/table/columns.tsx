@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { EyeIcon, PencilIcon } from "@/components/ui/icons"
+import { FileTextIcon, PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTruncated } from "@/hooks/use-truncated"
@@ -20,30 +20,10 @@ import {
   formatLastModifiedDate,
   toSentenceCase,
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
-import { DeleteCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-delete"
 import { ToggleStatusButton } from "@/features/academic-management/curricular-references/components/table/toggle-status-button"
 
 interface CurricularReferenceColumnsOptions {
   onEdit: (curricularReference: CurricularReference) => void
-}
-
-/**
- * Id de columna de la tabla → claves del reporte `referentes-curriculares`
- * (whitelist `reporting.reports.referentes-curriculares.columns` del
- * reporting-service). Una columna de la tabla puede imprimirse en varias del
- * archivo: la celda apila título + descripción, o estado + vigencia, y en un
- * PDF/Excel cada dato va en su propia columna. Lo que no esté acá (acciones)
- * no se exporta.
- */
-export const CURRICULAR_REFERENCES_EXPORT_COLUMN_KEYS: Partial<Record<string, string[]>> = {
-  name: ["nombre", "descripcion"],
-  educationLevel: ["niveles_educativos"],
-  instrument: ["instrumento", "instrumento_info_adicional"],
-  pedagogicalApproach: ["enfoque_pedagogico"],
-  evaluationType: ["tipo_evaluacion"],
-  gradosVinculados: ["grados_vinculados_texto"],
-  active: ["estado_label", "vigencia"],
-  lastModifiedAt: ["modificado_en", "modificado_por"],
 }
 
 const MAX_LINES_CLASS = "line-clamp-5"
@@ -57,33 +37,10 @@ function ActionsCell({
 }) {
   const label = curricularReference.name || "referente"
   const soloEnLinea = useOnlineOnly()
-  const { puedeEditar, puedeEliminar } = useMenuPermission("REFERENTES_CURRICULARES")
+  const { puedeEditar } = useMenuPermission("REFERENTES_CURRICULARES")
 
   return (
     <div className="flex items-center justify-end gap-1">
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Ver ${label}`}
-              render={
-                <Link
-                  to={paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(curricularReference.id)}
-                  search={(prev) => prev}
-                />
-              }
-              nativeButton={false}
-            />
-          }
-        >
-          <EyeIcon />
-        </TooltipTrigger>
-        <TooltipContent>{`Ver ${label}`}</TooltipContent>
-      </Tooltip>
       {puedeEditar ? (
       <Tooltip>
         <TooltipTrigger
@@ -104,10 +61,38 @@ function ActionsCell({
         <TooltipContent>{soloEnLinea.tooltip ?? `Editar ${label}`}</TooltipContent>
       </Tooltip>
       ) : null}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`Gestionar contenido de ${label}`}
+              render={
+                <Link
+                  to={paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(curricularReference.id)}
+                  search={(prev) => prev}
+                />
+              }
+              nativeButton={false}
+            />
+          }
+        >
+          <FileTextIcon />
+        </TooltipTrigger>
+        <TooltipContent>Gestionar contenido</TooltipContent>
+      </Tooltip>
       {puedeEditar ? <ToggleStatusButton curricularReference={curricularReference} /> : null}
-      {puedeEliminar ? <DeleteCurricularReferenceDialog curricularReference={curricularReference} /> : null}
     </div>
   )
+}
+
+// Cantidad de grados del Gestor de Contenido; sin grados aplica a todos.
+function gradosVinculadosLabel(count: number) {
+  if (count === 0) return "Todos"
+  return `${count} ${count === 1 ? "grado" : "grados"}`
 }
 
 function TitleWithDescriptionCell({ title, description }: { title: string; description: string }) {
@@ -183,8 +168,8 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
     {
       accessorKey: "name",
       id: "name",
-      meta: { label: "Nombre del referente" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre del referente" />,
+      meta: { label: "Nombre" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
       cell: ({ row }) => (
         <TitleWithDescriptionCell title={row.original.name} description={row.original.description} />
       ),
@@ -202,22 +187,10 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       ),
     },
     {
-      accessorKey: "instrument",
-      id: "instrument",
-      meta: { label: "Rótulo de secuencia de actividades" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Rótulo de secuencia de actividades" />,
-      cell: ({ row }) => (
-        <TitleWithDescriptionCell
-          title={toSentenceCase(row.original.instrument)}
-          description={row.original.instrumentDescription}
-        />
-      ),
-    },
-    {
       accessorKey: "pedagogicalApproach",
       id: "pedagogicalApproach",
-      meta: { label: "Enfoque pedagógico" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Enfoque pedagógico" />,
+      meta: { label: "Enfoque" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Enfoque" />,
       cell: ({ row }) => (
         <WrappedTextCell
           text={row.original.pedagogicalApproach ? toSentenceCase(row.original.pedagogicalApproach.name) : "—"}
@@ -240,11 +213,7 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       header: ({ column }) => <DataTableColumnHeader column={column} title="Grados vinculados" />,
       cell: ({ row }) => (
         <WrappedTextCell
-          text={
-            row.original.gradosVinculados.length > 0
-              ? row.original.gradosVinculados.map((grado) => toSentenceCase(grado.name)).join(", ")
-              : "Todos"
-          }
+          text={gradosVinculadosLabel(row.original.gradosVinculados.length)}
         />
       ),
     },
@@ -270,8 +239,8 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       cell: ({ row }) => <ActionsCell curricularReference={row.original} onEdit={onEdit} />,
       enableSorting: false,
       enableHiding: false,
-      // Cuatro botones: ver, editar, activar/inactivar y eliminar.
-      size: 156,
+      // Tres botones: editar, gestionar contenido y activar/inactivar (no se eliminan).
+      size: 120,
     },
   ]
 }

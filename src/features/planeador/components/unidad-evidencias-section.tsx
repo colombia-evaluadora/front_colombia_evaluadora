@@ -157,6 +157,10 @@ interface EnunciadosEvidenciasChecklistProps {
    *  detalle, guardado inmediato) — le muestra un spinner en vez del
    *  checkbox mientras la mutación está en vuelo. */
   pendingId?: number | null
+  /** Marca la sección en rojo (form de actividad: el backend rechazó el guardado
+   *  porque no hay ninguna evidencia marcada). `scrollToFirstInvalidField` la
+   *  encuentra por `data-invalid` y enfoca el primer checkbox. */
+  invalid?: boolean
   className?: string
 }
 
@@ -186,6 +190,7 @@ export function EnunciadosEvidenciasChecklist({
   disabledIds = [],
   disabled: disabledTodo = false,
   pendingId = null,
+  invalid = false,
   className,
 }: EnunciadosEvidenciasChecklistProps) {
   // "Propósitos e imprescindibles del…" en Preescolar, "Enunciados y
@@ -207,8 +212,11 @@ export function EnunciadosEvidenciasChecklist({
   }
 
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
-      <h4 className="text-sm font-semibold">{titulo}</h4>
+    <div
+      data-invalid={invalid || undefined}
+      className={cn("flex flex-col gap-4", invalid && "border-red-stroke bg-red-22 rounded-md border p-3", className)}
+    >
+      <h4 className={cn("text-sm font-semibold", invalid && "text-red")}>{titulo}</h4>
 
       {/* `auto-fill` + `minmax(...,1fr)` en vez de un `grid-cols-N` fijo: con
           un solo propósito, esa columna ocupaba 1/4 del ancho y el resto
@@ -235,6 +243,7 @@ export function EnunciadosEvidenciasChecklist({
                         disabled={disabled}
                         onCheckedChange={() => onToggle(evidencia.id)}
                         aria-label={evidencia.text}
+                        aria-invalid={invalid || undefined}
                       />
                     )}
                     <span className="text-sm">{evidencia.text}</span>
@@ -245,6 +254,12 @@ export function EnunciadosEvidenciasChecklist({
           </div>
         ))}
       </div>
+
+      {invalid && (
+        <p role="alert" className="text-red text-sm">
+          Marque al menos una opción de esta lista ({pluralizar(nivel2Etiqueta)}) para guardar la actividad.
+        </p>
+      )}
 
       <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
         <InfoIcon className="mt-0.5 size-4 shrink-0" />

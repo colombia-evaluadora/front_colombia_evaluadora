@@ -4,7 +4,9 @@ import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import {
   cuentaRegresiva,
   estadoEleccion,
+  hayResultados,
   resultados,
+  totalVotos,
 } from "@/features/comunicaciones/chat/lib/eleccion"
 
 const base: Eleccion = {
@@ -14,12 +16,12 @@ const base: Eleccion = {
   fechaInicio: null,
   fechaCierre: null,
   jornadaId: 1,
-  verResultadosEnVivo: true,
   candidatos: [
     { id: 1, nombre: "A", numero: "1", lema: "", fotoUrl: null, votos: 10 },
     { id: 2, nombre: "B", numero: "2", lema: "", fotoUrl: null, votos: 30 },
   ],
   votosEnBlanco: 10,
+  votaron: 50,
   cerradaManualmente: false,
   yaVoto: false,
   totalHabilitados: 60,
@@ -59,6 +61,17 @@ describe("resultados", () => {
     expect(abiertas.map((f) => f.porcentaje)).toEqual([60, 20, 20])
     expect(abiertas.some((f) => f.ganador)).toBe(false)
     expect(resultados(base, true)[0].ganador).toBe(true)
+  })
+
+  it("abierta llega sin conteos: no hay resultados que mostrar", () => {
+    const abierta: Eleccion = {
+      ...base,
+      candidatos: base.candidatos.map((c) => ({ ...c, votos: null })),
+      votosEnBlanco: null,
+    }
+    expect(hayResultados(abierta)).toBe(false)
+    expect(totalVotos(abierta)).toBe(0)
+    expect(hayResultados(base)).toBe(true)
   })
 
   it("no declara ganador si hay empate", () => {

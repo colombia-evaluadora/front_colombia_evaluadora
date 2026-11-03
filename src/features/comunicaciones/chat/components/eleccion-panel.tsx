@@ -24,7 +24,7 @@ import {
   estadoEleccion,
   porcentaje,
   resultados,
-  totalVotos,
+  hayResultados,
   type EstadoEleccion,
   type FilaResultado,
 } from "@/features/comunicaciones/chat/lib/eleccion"
@@ -124,9 +124,11 @@ export function EleccionResultados({
 
   const estado = estadoEleccion(e, ahora)
   const finalizada = estado === "FINALIZADA"
-  const votaron = totalVotos(e)
-  const pendientes = Math.max(0, e.totalHabilitados - votaron)
-  const visibles = finalizada || e.verResultadosEnVivo
+  // Participación: abierta solo le llega a quien gestiona (null para los demás).
+  const votaron = e.votaron
+  const pendientes = votaron == null ? null : Math.max(0, e.totalHabilitados - votaron)
+  // Sin resultados en vivo: conteos solo con la elección cerrada (el servidor no los manda antes).
+  const visibles = finalizada && hayResultados(e)
   const segundos = Math.max(0, Math.round((ahora - actualizadoEn) / 1000))
   const indice = new Map(e.candidatos.map((c, i) => [c.id, i]))
 
@@ -141,7 +143,7 @@ export function EleccionResultados({
         </h3>
       )}
       {/* Figma 3837:43815 (sin votos) no lo muestra; 4168:67108 y 4195:69012 sí. */}
-      {(votaron > 0 || finalizada) && (
+      {finalizada && (
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <ArrowCounterClockwiseIcon aria-hidden className="size-3.5" />
@@ -154,9 +156,13 @@ export function EleccionResultados({
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium">Participación:</dt>
           <dd className="text-muted-foreground">
-            Total habilitados: {e.totalHabilitados} | Ya votaron: {votaron} (
-            {porcentaje(votaron, e.totalHabilitados)}%) | Pendientes: {pendientes} (
-            {porcentaje(pendientes, e.totalHabilitados)}%)
+            Total habilitados: {e.totalHabilitados}
+            {votaron != null && pendientes != null && (
+              <>
+                {" "}| Ya votaron: {votaron} ({porcentaje(votaron, e.totalHabilitados)}%) | Pendientes: {pendientes} (
+                {porcentaje(pendientes, e.totalHabilitados)}%)
+              </>
+            )}
           </dd>
         </div>
         {/* Solo quien gestiona recibe cuántos abrieron el canal; a los demás les llega 0. */}
@@ -188,7 +194,9 @@ export function EleccionResultados({
         </ol>
       ) : (
         <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-          Los resultados se publican cuando cierre la votación.
+          {finalizada
+            ? "Votación cerrada. Cargando resultados…"
+            : "Los resultados se publican cuando cierre la votación. Nadie ve quién va ganando mientras tanto."}
         </p>
       )}
       {e.cerradaManualmente && (

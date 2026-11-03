@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button"
 import { CheckIcon, KeyIcon, PaperPlaneTiltIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
+import { Turnstile } from "@/components/captcha/turnstile"
+import { useCaptcha, type CaptchaState } from "@/hooks/use-captcha"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useResendActivation } from "@/features/establishment/employees/api/mutations/use-resend-activation"
@@ -36,6 +38,12 @@ interface ConfirmEmailActionProps {
   onConfirm: () => void
   open: boolean
   onOpenChange: (open: boolean) => void
+  /**
+   * Captcha (Turnstile) de la acción, si el endpoint lo exige: "restablecer
+   * contraseña" reusa el `forgotPassword` público, que para Colombia
+   * Evaluadora pide `X-Captcha-Token` aunque lo dispare un administrador.
+   */
+  captcha?: CaptchaState
 }
 
 /**
@@ -54,6 +62,7 @@ function ConfirmEmailAction({
   onConfirm,
   open,
   onOpenChange,
+  captcha,
 }: ConfirmEmailActionProps) {
   const disabled = Boolean(disabledReason)
 
@@ -91,10 +100,11 @@ function ConfirmEmailAction({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {captcha && <Turnstile {...captcha.widget} action="forgot-password" />}
         <AlertDialogFooter>
           <AlertDialogAction
             color="primary"
-            disabled={isPending}
+            disabled={isPending || (captcha ? !captcha.ready : false)}
             aria-busy={isPending}
             onClick={onConfirm}
           >
@@ -137,10 +147,11 @@ export function SendPasswordResetDialog({ employee }: { employee: EmployeeListIt
   const { notify } = useNotify()
   const info = useEmployeeAccount(employee.id)
   const { email } = info
+  const captcha = useCaptcha()
 
   const mutation = useSendPasswordReset({
     mutationConfig: {
-      onSuccess: (_data, correo) => {
+      onSuccess: (_data, { email: correo }) => {
         setOpen(false)
         notify(`Se envió el correo para restablecer la contraseña a ${correo}.`)
       },
@@ -165,10 +176,11 @@ export function SendPasswordResetDialog({ employee }: { employee: EmployeeListIt
       }
       isPending={mutation.isPending}
       onConfirm={() => {
-        if (email) mutation.mutate(email)
+        if (email && captcha.ready) mutation.mutate({ email, captchaToken: captcha.consume() })
       }}
       open={open}
       onOpenChange={setOpen}
+      captcha={captcha}
     />
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import { z } from "zod"
+import { useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { CheckIcon, XIcon } from "@/components/ui/icons"
@@ -15,6 +16,8 @@ import {
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { CurricularReferenceDetailsForm } from "@/features/academic-management/curricular-references/components/forms/form-curricular-reference-details"
+import { paths } from "@/config/paths"
+import { createdReferenceId } from "@/features/academic-management/curricular-references/api/mutations/create"
 import { useCreate } from "@/features/academic-management/curricular-references/api/mutations/use-create"
 import { useUpdate } from "@/features/academic-management/curricular-references/api/mutations/use-update"
 import { useCurricularReferenceQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference"
@@ -85,17 +88,20 @@ const safeText = () =>
   z.string().trim().regex(REFERENTE_TEXT_PATTERN, "No se permiten caracteres especiales.")
 const safeLongText = () =>
   z.string().trim().regex(REFERENTE_LONG_TEXT_PATTERN, "No se permiten caracteres especiales.")
+// Opcional: vacío o con al menos 10 caracteres.
+const optionalLongText = () =>
+  safeLongText()
+    .max(400, "Máximo 400 caracteres.")
+    .refine((value) => value === "" || value.length >= 10, "Mínimo 10 caracteres.")
 
 const curricularReferenceSchema = z.object({
-  name: safeText().min(1, "Ingresa el nombre del referente.").max(150, "Máximo 150 caracteres."),
+  name: safeText().min(1, "Ingresa el nombre del referente.").min(4, "Mínimo 4 caracteres.").max(150, "Máximo 150 caracteres."),
   educationLevels: z
     .array(z.object({ id: z.number() }))
     .min(1, "Selecciona al menos un nivel educativo."),
-  description: safeLongText()
-    .min(1, "Ingresa la descripción o finalidad.")
-    .max(400, "Máximo 400 caracteres."),
-  level1: safeText().min(1, "Ingresa el rótulo de nivel 1.").max(50, "Máximo 50 caracteres."),
-  level2: safeText().min(1, "Ingresa el rótulo de nivel 2.").max(50, "Máximo 50 caracteres."),
+  description: optionalLongText(),
+  level1: safeText().min(1, "Ingresa el rótulo de nivel 1.").min(2, "Mínimo 2 caracteres.").max(50, "Máximo 50 caracteres."),
+  level2: safeText().min(1, "Ingresa el rótulo de nivel 2.").min(2, "Mínimo 2 caracteres.").max(50, "Máximo 50 caracteres."),
   pedagogicalApproach: z
     .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
@@ -104,10 +110,13 @@ const curricularReferenceSchema = z.object({
     .object({ id: z.number().nullish(), code: z.string().nullish(), name: z.string().nullish() })
     .nullish()
     .refine((item) => item?.id != null, { message: "Selecciona el tipo de evaluación." }),
-  instrument: safeText().min(1, "Ingresa el rótulo de secuencia de actividades.").max(50, "Máximo 50 caracteres."),
-  executionLabel: safeText().min(1, "Ingresa el rótulo de ejecución.").max(50, "Máximo 50 caracteres."),
-  instrumentDescription: safeLongText().max(400, "Máximo 400 caracteres."),
-  regulation: safeLongText().min(1, "Ingresa la normatividad.").max(400, "Máximo 400 caracteres."),
+  instrument: safeText().min(1, "Ingresa el rótulo de secuencia de actividades.").min(2, "Mínimo 2 caracteres.").max(50, "Máximo 50 caracteres."),
+  executionLabel: safeText().min(1, "Ingresa el rótulo de ejecución.").min(2, "Mínimo 2 caracteres.").max(50, "Máximo 50 caracteres."),
+  instrumentDescription: optionalLongText(),
+  // Opcional: vacío o con al menos 3 caracteres.
+  regulation: safeLongText()
+    .max(400, "Máximo 400 caracteres.")
+    .refine((value) => value === "" || value.length >= 3, "Mínimo 3 caracteres."),
 }).superRefine((values, ctx) => {
   if (
     esEnfoqueFormativo(values.pedagogicalApproach) &&
@@ -142,6 +151,7 @@ export function ManageCurricularReferenceDialog({
   evaluationTypes,
 }: ManageCurricularReferenceDialogProps) {
   const { notify } = useNotify()
+  const navigate = useNavigate()
   const isEditMode = curricularReferenceId != null
 
   const { data: curricularReference, isPending: isDetailPending } = useCurricularReferenceQuery(
@@ -264,6 +274,7 @@ export function ManageCurricularReferenceDialog({
   }
 
   async function save(values: CurricularReferenceDraft) {
+    let createdId: number | undefined
     try {
       const result =
         isEditMode && curricularReference
@@ -278,6 +289,7 @@ export function ManageCurricularReferenceDialog({
         await handleSaveError(result.message ?? "", values)
         return
       }
+      if (!isEditMode) createdId = createdReferenceId(result)
     } catch (error) {
       // Se cierra el modal de impacto para que se vea el error del backend.
       await handleSaveError(getErrorMessage(error), values)
@@ -286,12 +298,12 @@ export function ManageCurricularReferenceDialog({
 
     setImpactAlerts([])
     setLevelConflict(null)
-    notify(
-      isEditMode
-        ? "El referente curricular se actualizó correctamente."
-        : "El referente curricular se creó correctamente.",
-    )
+    notify("Referente guardado.")
     onOpenChange(false)
+    // Un referente nuevo sigue en su Gestor de Contenido.
+    if (createdId != null) {
+      void navigate({ to: paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(createdId) })
+    }
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {

@@ -17,6 +17,7 @@ interface EvidenceRow {
   texto: string
   estado: "A" | "I"
   active: boolean
+  usado: boolean
 }
 
 function toEvidence(row: EvidenceRow, statementId: number): CurricularEvidence {
@@ -25,6 +26,7 @@ function toEvidence(row: EvidenceRow, statementId: number): CurricularEvidence {
     statementId,
     text: row.texto,
     active: row.estado === "A",
+    used: row.usado === true,
   }
 }
 

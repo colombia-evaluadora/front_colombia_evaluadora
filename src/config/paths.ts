@@ -130,6 +130,10 @@ export const paths = {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
     },
+    festivos: {
+      path: "administracion/festivos",
+      getHref: () => "/app/administracion/festivos",
+    },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",
@@ -142,6 +146,12 @@ export const paths = {
       path: "establecimiento-educativo/periodos/$periodId/editar",
       getHref: (periodId: number | string) =>
         `/app/establecimiento-educativo/periodos/${periodId}/editar`,
+    },
+    // Ver: la misma pantalla en solo lectura (Sección 7.4, acciones por fila).
+    periodosAcademicosVer: {
+      path: "establecimiento-educativo/periodos/$periodId/ver",
+      getHref: (periodId: number | string) =>
+        `/app/establecimiento-educativo/periodos/${periodId}/ver`,
     },
     // Pantalla del grado (Sección 5.3), fuera de las pestañas del período.
     periodosGradoAgregar: {

@@ -19,7 +19,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
+import { useCaptcha } from "@/hooks/use-captcha"
 
 import { useRestorePassword } from "@/features/auth/api/mutations/restore-password"
 import { usePasswordResetLink } from "@/features/auth/hooks/use-password-reset-link"
@@ -37,7 +39,13 @@ export function RestorePasswordPage() {
 
   // El estado del enlace se resuelve antes de mostrar el formulario, para no
   // hacer escribir una contraseña que el submit va a rechazar igual.
-  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } = usePasswordResetLink(token)
+  // Un solo widget para la pantalla: la consulta del estado consume el primer
+  // token y el envío del formulario el siguiente (cada uno reinicia el widget).
+  const captcha = useCaptcha()
+  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } = usePasswordResetLink(
+    token,
+    captcha,
+  )
 
   const restorePasswordMutation = useRestorePassword({
     mutationConfig: {
@@ -49,8 +57,12 @@ export function RestorePasswordPage() {
   })
 
   function handleSubmit(values: RestorePasswordFormValues) {
-    if (!token) return
-    restorePasswordMutation.mutate({ token, password: values.password })
+    if (!token || !captcha.ready) return
+    restorePasswordMutation.mutate({
+      token,
+      password: values.password,
+      captchaToken: captcha.consume(),
+    })
   }
 
   return (
@@ -116,8 +128,9 @@ export function RestorePasswordPage() {
           </CardFooter>
         </>
       ) : isChecking ? (
-        <CardContent className="flex justify-center py-10">
+        <CardContent className="flex flex-col items-center gap-4 py-10">
           <Spinner className="size-6" />
+          <Turnstile {...captcha.widget} action="restore-password" />
         </CardContent>
       ) : (
         <>
@@ -148,6 +161,7 @@ export function RestorePasswordPage() {
 
           <CardContent>
             <RestorePasswordForm id={RESTORE_PASSWORD_FORM_ID} onSubmit={handleSubmit} />
+            <Turnstile {...captcha.widget} action="restore-password" className="mt-4" />
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2">
@@ -155,7 +169,7 @@ export function RestorePasswordPage() {
               type="submit"
               color="primary"
               form={RESTORE_PASSWORD_FORM_ID}
-              disabled={restorePasswordMutation.isPending}
+              disabled={restorePasswordMutation.isPending || !captcha.ready}
               className="w-full"
             >
               Actualizar contraseña

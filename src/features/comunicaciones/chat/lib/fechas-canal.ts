@@ -38,6 +38,26 @@ export function validarRangoFechas(v: Rango, ctx: z.RefinementCtx) {
   if (error) ctx.addIssue({ code: "custom", path: ["fechaCierre"], message: error })
 }
 
+/**
+ * QA 77: el inicio no puede quedar en el pasado. Los selectores por día
+ * guardan `T00:00`, así que hoy vale completo; con hora (evaluación) se compara
+ * contra el minuto actual. Al editar, un inicio que no cambió se acepta aunque
+ * ya haya pasado (la actividad pudo haber abierto): `inicioOriginal`.
+ */
+export function validarInicioNoPasado(
+  v: Pick<Rango, "fechaInicio">,
+  ctx: z.RefinementCtx,
+  inicioOriginal?: string | null,
+) {
+  const inicio = v.fechaInicio
+  if (!inicio || inicio === inicioOriginal) return
+  const ahora = ahoraLocal()
+  const pasado = inicio.slice(0, 10) < ahora.slice(0, 10) || (inicio.slice(11) !== "00:00" && inicio < ahora)
+  if (pasado) {
+    ctx.addIssue({ code: "custom", path: ["fechaInicio"], message: "La fecha de inicio no puede estar en el pasado." })
+  }
+}
+
 /** ISO del servidor → `yyyy-MM-dd'T'HH:mm` local de los campos de fecha (al editar una actividad). */
 export function isoALocal(iso: string | null | undefined): string | null {
   if (!iso) return null

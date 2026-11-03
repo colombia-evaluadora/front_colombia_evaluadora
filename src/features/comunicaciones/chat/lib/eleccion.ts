@@ -26,8 +26,13 @@ export function porcentaje(parte: number, total: number) {
   return total > 0 ? Math.round((parte / total) * 100) : 0
 }
 
+// Hay conteos solo con la elección cerrada (el servidor los manda en null mientras está abierta).
+export function hayResultados(e: Eleccion) {
+  return e.votosEnBlanco != null && e.candidatos.every((c) => c.votos != null)
+}
+
 export function totalVotos(e: Eleccion) {
-  return e.candidatos.reduce((s, c) => s + c.votos, 0) + e.votosEnBlanco
+  return e.candidatos.reduce((s, c) => s + (c.votos ?? 0), 0) + (e.votosEnBlanco ?? 0)
 }
 
 export interface FilaResultado {
@@ -42,18 +47,19 @@ export interface FilaResultado {
 // Hay ganador solo con la votación cerrada y sin empate en el primer lugar.
 export function resultados(e: Eleccion, finalizada: boolean): FilaResultado[] {
   const total = totalVotos(e)
-  const orden = [...e.candidatos].sort((a, b) => b.votos - a.votos)
-  const empate = orden.length > 1 && orden[0].votos === orden[1].votos
+  const votos = (c: Candidato) => c.votos ?? 0
+  const orden = [...e.candidatos].sort((a, b) => votos(b) - votos(a))
+  const empate = orden.length > 1 && votos(orden[0]) === votos(orden[1])
   const filas: FilaResultado[] = orden.map((c, i) => ({
     candidato: c,
-    votos: c.votos,
-    porcentaje: porcentaje(c.votos, total),
-    ganador: finalizada && i === 0 && !empate && c.votos > 0,
+    votos: votos(c),
+    porcentaje: porcentaje(votos(c), total),
+    ganador: finalizada && i === 0 && !empate && votos(c) > 0,
   }))
   filas.push({
     candidato: null,
-    votos: e.votosEnBlanco,
-    porcentaje: porcentaje(e.votosEnBlanco, total),
+    votos: e.votosEnBlanco ?? 0,
+    porcentaje: porcentaje(e.votosEnBlanco ?? 0, total),
     ganador: false,
   })
   return filas

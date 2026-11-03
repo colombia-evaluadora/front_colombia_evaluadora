@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import {
   AlertDialog,
@@ -22,7 +23,6 @@ import { EtiquetaInvitacion } from "@/features/comunicaciones/chat/components/cr
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { resumenModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Conversacion, Miembro, Persona } from "@/features/comunicaciones/chat/api/types"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
@@ -242,11 +242,7 @@ export function MiembrosDialog({
 
         {puedeAgregar && esGrupo && <SelectorGrupal enabled={open} value={grupal} onChange={setGrupal} />}
 
-        {error && (
-          <p role="alert" className="text-sm text-red">
-            {getErrorMessage(error)}
-          </p>
-        )}
+        <ErrorNoticeBanner error={error} />
 
         <Field variant="outlined">
           <FieldLabel htmlFor="filtro-miembros">Buscar en {c.tipo === "GRUPO" ? "el grupo" : "el foro"}</FieldLabel>

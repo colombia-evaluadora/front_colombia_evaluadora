@@ -20,6 +20,7 @@ interface StatementRow {
   fk_referente_curricular_area: number | null
   fk_tlv_grado: number | null
   total_evidencias: number
+  usado: boolean
 }
 
 function toStatement(row: StatementRow, curricularReferenceId: number): CurricularStatement {
@@ -30,6 +31,8 @@ function toStatement(row: StatementRow, curricularReferenceId: number): Curricul
     gradeId: row.fk_tlv_grado ?? null,
     text: row.texto,
     active: row.estado === "A",
+    evidenceCount: Number(row.total_evidencias ?? 0),
+    used: row.usado === true,
   }
 }
 

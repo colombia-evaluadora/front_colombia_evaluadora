@@ -17,6 +17,7 @@ import { useGradesQuery } from "@/features/establishment/academic-period/api/que
 import { createGradeColumns } from "@/features/establishment/academic-period/components/table/columns-grades"
 import { paths } from "@/config/paths"
 import type { Jornada } from "@/features/establishment/academic-period/utils/schedule-data"
+import { usePeriodReadOnly } from "@/features/establishment/academic-period/utils/period-read-only"
 
 interface TabGradesProps {
   // Horario de la jornada del período; el grado lo usa salvo que lo personalice.
@@ -28,6 +29,7 @@ interface TabGradesProps {
 // página del grado (`periodos/$periodId/grados/...`).
 export function TabGrades({ academicPeriodId }: TabGradesProps) {
   const navigate = useNavigate()
+  const { readOnly, reason } = usePeriodReadOnly()
   const openGrade = (gradeId: number | null) => {
     if (academicPeriodId == null) return
     navigate({
@@ -35,6 +37,8 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
         gradeId == null
           ? paths.app.periodosGradoAgregar.getHref(academicPeriodId)
           : paths.app.periodosGradoEditar.getHref(academicPeriodId, gradeId),
+      // Desde "Ver", el grado también se abre en solo lectura.
+      search: reason === "ver" ? { ver: 1 } : {},
     })
   }
   const [sorting, setSorting] = useState<SortingState>([])
@@ -47,7 +51,7 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
     academicPeriodId,
   })
 
-  const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id) })
+  const columns = createGradeColumns({ onOpen: (grade) => openGrade(grade.id), readOnly })
   const page = useLocalPagination(data?.rows ?? [])
   const { table } = useDataTable({
     columns,
@@ -63,10 +67,12 @@ export function TabGrades({ academicPeriodId }: TabGradesProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-lg font-semibold">Grados</h3>
-        <Button color="primary" size="sm" onClick={() => openGrade(null)}>
-          <PlusIcon data-icon="inline-start" />
-          Agregar grado
-        </Button>
+        {!readOnly && (
+          <Button color="primary" size="sm" onClick={() => openGrade(null)}>
+            <PlusIcon data-icon="inline-start" />
+            Agregar grado
+          </Button>
+        )}
       </div>
 
       <NoticeOutlet />

@@ -4,8 +4,8 @@ export interface CalendarEntryRecord extends Omit<CalendarEntryRow, "origen"> {
   periodId: number
 }
 
-// Entradas registradas por el establecimiento; los festivos los calcula el
-// handler con `getColombianHolidays`, como la lista de Administración.
+// Entradas registradas por el establecimiento; los festivos los arma el
+// handler desde `festivosDb` (la lista de Administración › Festivos).
 export const academicCalendarDb: CalendarEntryRecord[] = [
   {
     id: 1,

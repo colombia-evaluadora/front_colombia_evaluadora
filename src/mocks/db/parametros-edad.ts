@@ -1,4 +1,5 @@
 import type { ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
+import type { Cortes, CortesGrado } from "@/features/administration/parametros-edad/api/types"
 
 // Réplica en memoria de V308–V313: valores de las listas GRADOS y CALENDARIO
 // (con pk propios del mock) y los parámetros guardados por pk de la lista.
@@ -41,8 +42,16 @@ export const calendariosDb: ListaValor[] = [
   valor(2101, "CALENDARIO", "B", 2),
 ]
 
-/** pk del grado → edad recomendada. Prejardín 3 años … Undécimo 16. */
-export const edadesDb = new Map<number, number>(gradosDb.map((g, i) => [g.pkListaValor, i + 3]))
+/** pk del grado → edad recomendada y cortes propios (null = rige el por defecto). Prejardín 3 años … Undécimo 16. */
+export const edadesDb = new Map<number, { edad: number } & CortesGrado>(
+  gradosDb.map((g, i) => [
+    g.pkListaValor,
+    { edad: i + 3, bajaEdadHasta: null, preextraedadDesde: null, extraedadDesde: null },
+  ]),
+)
+
+/** Registro único de cortes por defecto, con los valores que siembra V308. */
+export const cortesDefectoDb: Cortes = { bajaEdadHasta: -2, preextraedadDesde: 1, extraedadDesde: 2 }
 
 /** pk del calendario → fecha de corte. */
 export const cortesDb = new Map<number, { mes: number; dia: number }>([
