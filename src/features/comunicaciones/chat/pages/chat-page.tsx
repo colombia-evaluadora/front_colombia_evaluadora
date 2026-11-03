@@ -23,6 +23,7 @@ import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-side
 import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-header"
 import { ChatMessages } from "@/features/comunicaciones/chat/components/chat-messages"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
+import { segundosDePausa } from "@/features/comunicaciones/chat/lib/limites-mensaje"
 import {
   CanalBienvenida,
   EleccionEstado,
@@ -545,7 +546,8 @@ function ChatContent() {
                       }
                     })
                     .catch((error) => {
-                    onError(error)
+                    // El 429 lo avisa el compositor, junto a Enviar en pausa.
+                    if (segundosDePausa(error) == null) onError(error)
                     throw error
                   })
                 }
