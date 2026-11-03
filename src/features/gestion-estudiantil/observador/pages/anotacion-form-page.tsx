@@ -9,6 +9,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
@@ -198,11 +199,10 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
           )}
 
           <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.estudiantes) || undefined}>
-            <FieldLabel htmlFor="anotacion-estudiantes">
-              Estudiantes*
-            </FieldLabel>
+            <FieldLabel htmlFor="anotacion-estudiantes">{editar ? "Estudiante" : "Estudiantes*"}</FieldLabel>
             {editar ? (
-              <p className="text-sm font-medium">{v.estudiantes[0]?.nombre}</p>
+              // La anotación es de un estudiante: no se cambia al modificar.
+              <Input id="anotacion-estudiantes" value={v.estudiantes[0]?.nombre ?? ""} readOnly disabled />
             ) : (
               <SelectorChips
                 items={roster.data ?? []}
@@ -258,7 +258,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
               onChange={(c) => setV({ ...v, codigo: c, mediacion: false })}
             />
             {codigo && (
-              <div className="flex items-center gap-3 pt-7 text-sm">
+              <div className="mt-2 flex h-10 items-center gap-3 text-sm">
                 <span className="flex items-center gap-1.5">
                   Tipo:
                   <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
