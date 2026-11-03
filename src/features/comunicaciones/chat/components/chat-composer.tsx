@@ -73,7 +73,7 @@ import {
 } from "@/features/comunicaciones/chat/lib/menciones"
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
-const MAX_CARACTERES = 4000
+const MAX_CARACTERES = 5000
 
 // Items del menú en oración (el base los pone en mayúsculas).
 const ITEM_MENU = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
