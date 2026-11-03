@@ -57,7 +57,9 @@ export function SelectorVotantes({
   const opciones = useOpcionesVotantesQuery(true)
   const votantes = useVotantesQuery(filtro?.grupo, filtro?.valor)
   const lista = votantes.data ?? []
-  const elegibles = permitirYo ? lista : lista.filter((v) => !v.esYo)
+  // "Seleccionar todos" nunca incluye a quien crea, aunque pueda elegirse (permitirYo): participar
+  // es una decisión suya, fila por fila (QA 78). Tampoco lo desmarca si ya se había elegido.
+  const elegibles = lista.filter((v) => !v.esYo)
   const marcados = lista.filter((v) => seleccion.has(v.id)).length
   const todos = elegibles.length > 0 && elegibles.every((v) => seleccion.has(v.id))
 
