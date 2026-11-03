@@ -35,11 +35,20 @@ export interface UpdateCampusInput {
   values: CampusFormValues
   /** En la principal, nombre, DANE, domicilio y consecutivo vienen del establecimiento: no se mandan. */
   isPrincipal: boolean
+  /**
+   * Mover a otro establecimiento (Regla 75, solo Superadministrador): el mismo
+   * PATCH lleva el destino y el SSO lo aplica en la misma transacción.
+   */
+  moveTo?: number | null
 }
 
-export async function updateCampus({ campusId, values, isPrincipal }: UpdateCampusInput): Promise<number> {
+export async function updateCampus({ campusId, values, isPrincipal, moveTo }: UpdateCampusInput): Promise<number> {
   const body = toBody(values)
-  const payload = isPrincipal ? { zone: body.zone, workSchedules: body.workSchedules } : body
+  const payload = isPrincipal
+    ? { zone: body.zone, workSchedules: body.workSchedules }
+    : moveTo != null
+      ? { ...body, establishmentId: moveTo }
+      : body
   const row = await evalCol.patchRow<{ pk_sede_actualizada: number }>(`/establecimientos/sedes/${campusId}`, payload)
   return Number(row.pk_sede_actualizada)
 }

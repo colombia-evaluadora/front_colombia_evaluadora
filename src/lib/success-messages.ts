@@ -217,6 +217,16 @@ export function employeeInvitationNotice(result: {
 
 // Guardar un Superadministrador: el texto del requerimiento ("Superadministrador
 // creado. Se envió el enlace a [correo].") y sus variantes sin enlace o con falla.
+/** Mover una sede a otro establecimiento (Regla 75). */
+export function campusMovedMessage(campus: string, establishment: string): string {
+  return `La sede ${campus} se movió a ${establishment}.`
+}
+
+/** Convertir una sede en establecimiento: texto del informe de diseño (3.1, Regla 92). */
+export function campusConvertedMessage(campus: string, establishment: string): string {
+  return `Sede convertida en establecimiento. ${campus} es ahora la sede principal de ${establishment}.`
+}
+
 export function superadministradorSaveNotice(
   result: {
     enlaceEnviadoA: string | null

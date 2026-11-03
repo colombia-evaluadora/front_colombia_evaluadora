@@ -19,7 +19,10 @@ import {
   ComboboxGroup,
 } from "@/components/ui/combobox"
 
-import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import {
+  sedesParaRegistroNuevo,
+  useSedeOptionsQuery,
+} from "@/features/establishment/academic-period/api/query/use-sede-options"
 import {
   useAcademicPeriodStatusesQuery,
   useJornadasQuery,
@@ -79,8 +82,8 @@ export function AcademicPeriodForm({
     ...defaultValues,
   } satisfies AcademicPeriodFormInput
 
-  const { data: sedes = [] } = useSedeOptionsQuery()
-  const { data: jornadas = [] } = useJornadasQuery()
+  const { data: todasLasSedes = [] } = useSedeOptionsQuery()
+  const { data: todasLasJornadas = [] } = useJornadasQuery()
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const isCreating = currentPeriodId == null
 
@@ -94,6 +97,20 @@ export function AcademicPeriodForm({
       onSubmit(academicPeriodFormSchema.parse(value))
     },
   })
+
+  // Regla 100: solo sedes Activas (la guardada se conserva al editar). Regla 84: solo
+  // las jornadas de la sede elegida (y la guardada, aunque la sede ya no la ofrezca).
+  const sedeId = useSelector(form.store, (state) => state.values.sedeId)
+  const sedes = sedesParaRegistroNuevo(todasLasSedes, initialValues.sedeId)
+  const jornadasDeLaSede = (id: string | number | null | undefined) =>
+    todasLasSedes.find((s) => String(s.pk_sede) === String(id))?.jornadas?.map((j) => j.id) ?? null
+  const jornadasSede = jornadasDeLaSede(sedeId)
+  const jornadas = todasLasJornadas.filter(
+    (j) =>
+      jornadasSede == null ||
+      jornadasSede.includes(j.id) ||
+      (String(sedeId) === String(initialValues.sedeId) && j.id === initialValues.jornadaId),
+  )
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
@@ -186,7 +203,16 @@ export function AcademicPeriodForm({
                   <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
                   <ComboboxField
                     value={field.state.value || ""}
-                    onValueChange={(value) => value && field.handleChange(value)}
+                    onValueChange={(value) => {
+                      if (!value) return
+                      field.handleChange(value)
+                      // Una jornada que la sede nueva no ofrece se cambia: por su única jornada o por ninguna.
+                      const ofrecidas = jornadasDeLaSede(value)
+                      const actual = form.getFieldValue("jornadaId")
+                      if (ofrecidas && !ofrecidas.includes(actual)) {
+                        form.setFieldValue("jornadaId", ofrecidas.length === 1 ? ofrecidas[0] : 0)
+                      }
+                    }}
                   >
                     <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
                       <ComboboxFieldValue>

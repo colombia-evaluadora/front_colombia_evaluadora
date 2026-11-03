@@ -8,14 +8,15 @@ import {
   SPECIALTY_CATALOG,
   takeNextSpecialtyItemId,
 } from "@/mocks/db/campus-details"
-import { establishmentsRowsDb } from "@/mocks/db/establishments"
+import { establishmentsRowsDb, upsertEstablishmentDetails } from "@/mocks/db/establishments"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import { ZONES } from "@/mocks/db/catalogs/establishment"
 
 import type { Campus, CampusStatus } from "@/features/establishment/campuses/api/types/campus"
 import type { RealCampusRow } from "@/features/establishment/campuses/api/query/use-campuses"
 import type { RealCampusDetailRow } from "@/features/establishment/campuses/api/query/use-campus"
-import type { SedesOptionsResponse } from "@/features/establishment/academic-period/api/types/sede-option"
+import type { SedeOption, SedesOptionsResponse } from "@/features/establishment/academic-period/api/types/sede-option"
+import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 /**
  * Sedes con las rutas y formas del SSO real (`/eval-col/establecimientos/sedes/*`,
@@ -79,6 +80,34 @@ function sortValue(row: RealCampusRow, id: string) {
   return row.establecimiento_nombre + String(row.consecutivo).padStart(2, "0")
 }
 
+/** Fila de `fn_sed_listar_todos` (opciones de sedes): con estado y jornadas (sso V52). */
+export function toSedeOptionRow(campus: Campus): SedeOption {
+  const detail = campusDetailsDb.get(campus.id)
+  return {
+    pk_sede: campus.id,
+    codigo: campus.dane,
+    nombre: campus.name,
+    fk_tlv_zona: campus.zone?.id ?? 0,
+    zona_nombre: campus.zone?.name ?? "",
+    barrio: campus.neighborhood,
+    comuna: campus.commune,
+    direccion: campus.address,
+    telefono: campus.phone,
+    fk_establecimiento: detail?.establishmentId ?? 0,
+    estado: detail?.status ?? "A",
+    jornadas: jornadasDb
+      .filter((j) => detail?.workScheduleIds.includes(j.id))
+      .map((j) => ({ id: j.id, nombre: j.name, valor: j.name })),
+  }
+}
+
+/** En el mock, la sede 4 (anexa) tiene procesos en curso: se advierten al moverla o convertirla. */
+function processesOf(campusId: number) {
+  return campusId === 4
+    ? { inscripciones: 12, reservas: 0, periodos_abiertos: 1, periodos_inscripciones: 0 }
+    : { inscripciones: 0, reservas: 0, periodos_abiertos: 0, periodos_inscripciones: 0 }
+}
+
 const asList = (value: unknown) => (Array.isArray(value) ? value.map(String) : [])
 
 function nextConsecutive(establishmentId: number): number | null {
@@ -135,25 +164,24 @@ function applyBody(campus: Campus, body: CampusBody): Campus {
 export const campusHandlers = [
   http.get("*/api/establishments/campuses/options", async () => {
     await delay(150)
-    return HttpResponse.json({ rows: campusesDb })
+    // Las opciones llevan estado y jornadas (permisos de funcionarios: Reglas 84 y 100).
+    return HttpResponse.json({
+      rows: campusesDb.map((campus) => {
+        const option = toSedeOptionRow(campus)
+        return {
+          ...campus,
+          status: option.estado,
+          workSchedules: (option.jornadas ?? []).map((j) => ({ id: j.id, name: j.nombre })),
+        }
+      }),
+    })
   }),
 
   // DTO real (`fn_sed_listar_todos`) para `useSedeOptionsQuery`; sin él el mock pierde sedes.
   http.get("*/api/eval-col/establecimientos/sedes/opciones", async () => {
     await delay(150)
     return HttpResponse.json<SedesOptionsResponse>({
-      rows: campusesDb.map((campus) => ({
-        pk_sede: campus.id,
-        codigo: campus.dane,
-        nombre: campus.name,
-        fk_tlv_zona: campus.zone?.id ?? 0,
-        zona_nombre: campus.zone?.name ?? "",
-        barrio: campus.neighborhood,
-        comuna: campus.commune,
-        direccion: campus.address,
-        telefono: campus.phone,
-        fk_establecimiento: campusDetailsDb.get(campus.id)?.establishmentId ?? 0,
-      })),
+      rows: campusesDb.map(toSedeOptionRow),
     })
   }),
 
@@ -290,6 +318,49 @@ export const campusHandlers = [
     return HttpResponse.json({ rows: [{ pk_sede: campus.id }] })
   }),
 
+  http.get("*/api/eval-col/establecimientos/sedes/:id/procesos-en-curso", async ({ params }) => {
+    await delay(150)
+    return HttpResponse.json({ rows: [processesOf(Number(params.id))] })
+  }),
+
+  // Convertir una sede anexa en establecimiento (Regla 92): pasa a ser su principal.
+  http.post("*/api/eval-col/establecimientos/sedes/:id/convertir", async ({ params, request }) => {
+    await delay(400)
+    const campus = campusesDb.find((c) => c.id === Number(params.id))
+    const detail = campus ? campusDetailsDb.get(campus.id) : undefined
+    if (!campus || !detail) return HttpResponse.json({ message: "No se encontró la sede solicitada" }, { status: 404 })
+    if (detail.consecutive === "1") return badRequest("La sede principal (consecutivo 1) no se puede convertir en establecimiento.")
+    const body = (await request.json()) as {
+      basicInfo: { name: string; dane: string; nit: string; ownershipType: number; serviceModality: number }
+      address: { zone: number | null; district: string | null; commune: string | null; address: string | null }
+      contact: { phone: string | null }
+      principal: number | null
+    }
+    if (!body.principal) return badRequest("El rector del establecimiento es obligatorio.")
+    if (establishmentsRowsDb.some((e) => e.nit === body.basicInfo.nit)) {
+      return conflict("Ya existe un establecimiento con ese NIT.")
+    }
+    const zone = ZONES.find((z) => z.id === body.address.zone) ?? null
+    const { details } = upsertEstablishmentDetails({
+      basicInfo: {
+        name: body.basicInfo.name,
+        dane: body.basicInfo.dane,
+        nit: body.basicInfo.nit,
+        ownershipType: { id: body.basicInfo.ownershipType, code: "", name: "" },
+        serviceModality: { id: body.basicInfo.serviceModality, code: "", name: "" },
+      },
+      address: { municipality: null, zone, district: null, commune: null, locality: null, address: body.address.address ?? "" },
+      contact: { email: "", website: "", phone: body.contact.phone ?? "" },
+      additionalInfo: {} as EstablishmentDetails["additionalInfo"],
+      principal: null,
+      secretary: null,
+    })
+    upsertCampusDetails({ ...campus, name: body.basicInfo.name, dane: body.basicInfo.dane })
+    detail.establishmentId = details.id as number
+    detail.consecutive = "1"
+    return HttpResponse.json({ rows: [{ pk_establecimiento_creado: details.id }] })
+  }),
+
   http.get("*/api/eval-col/establecimientos/sedes/:id", async ({ params }) => {
     await delay(150)
     const campus = campusesDb.find((c) => c.id === Number(params.id))
@@ -323,11 +394,19 @@ export const campusHandlers = [
     const detail = campus ? campusDetailsDb.get(campus.id) : undefined
     if (!campus || !detail) return HttpResponse.json({ message: "No se encontró la sede solicitada" }, { status: 404 })
     const body = (await request.json()) as CampusBody
-    const error = validateBody(body, detail.establishmentId, campus.id)
+    // Otro establecimiento en el cuerpo = mover la sede (Regla 75): se valida contra el destino.
+    const moveTo = body.establishmentId != null && body.establishmentId !== detail.establishmentId ? body.establishmentId : null
+    const principal = detail.consecutive === "1"
+    if (moveTo != null && principal) return badRequest("La sede principal (consecutivo 1) no se puede mover a otro establecimiento.")
+    const error = validateBody(
+      moveTo != null ? { ...body, consecutive: body.consecutive ?? detail.consecutive } : body,
+      moveTo ?? detail.establishmentId,
+      campus.id,
+    )
     if (error) return error.startsWith("Seleccione") ? badRequest(error) : conflict(error)
     // La principal no cambia lo que viene del establecimiento (Regla 85).
-    const principal = detail.consecutive === "1"
     upsertCampusDetails(principal ? applyBody(campus, { zone: body.zone }) : applyBody(campus, body))
+    if (moveTo != null) detail.establishmentId = moveTo
     if (!principal && body.consecutive) detail.consecutive = String(Number(body.consecutive))
     if (body.workSchedules) detail.workScheduleIds = body.workSchedules
     return HttpResponse.json({ rows: [{ pk_sede_actualizada: campus.id }] })
@@ -343,7 +422,7 @@ export const campusHandlers = [
     const id = Number(params.id)
     const rows = campusesDb
       .filter((c) => campusDetailsDb.get(c.id)?.establishmentId === id)
-      .map((c) => ({ pk_sede: c.id, nombre: c.name }))
+      .map((c) => ({ pk_sede: c.id, nombre: c.name, consecutivo: campusDetailsDb.get(c.id)?.consecutive ?? "" }))
     return HttpResponse.json({ rows })
   }),
 ]

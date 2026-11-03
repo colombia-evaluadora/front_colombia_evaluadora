@@ -3,16 +3,26 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 
-/** Fila de `fn_sed_por_establecimiento`: solo se usan id y nombre. */
+/** Fila de `fn_sed_por_establecimiento`: solo se usan id, nombre y consecutivo. */
 interface RealEstablishmentCampusRow {
   pk_sede: number
   nombre: string
+  consecutivo: string | null
 }
 
-/** Sedes del establecimiento (`GET /establecimientos/:ID/sedes`): para advertir un nombre repetido. */
-export async function fetchEstablishmentCampuses(establishmentId: number): Promise<{ id: number; name: string }[]> {
+export interface EstablishmentCampus {
+  id: number
+  name: string
+  consecutive: string
+}
+
+/**
+ * Sedes del establecimiento (`GET /establecimientos/:ID/sedes`): para advertir un
+ * nombre repetido y, al mover una sede, para no repetir un consecutivo del destino.
+ */
+export async function fetchEstablishmentCampuses(establishmentId: number): Promise<EstablishmentCampus[]> {
   const rows = await evalCol.getRows<RealEstablishmentCampusRow>(`/establecimientos/${establishmentId}/sedes`)
-  return rows.map((row) => ({ id: row.pk_sede, name: row.nombre }))
+  return rows.map((row) => ({ id: row.pk_sede, name: row.nombre, consecutive: String(row.consecutivo ?? "").trim() }))
 }
 
 export function useEstablishmentCampusesQuery(establishmentId: number | null) {

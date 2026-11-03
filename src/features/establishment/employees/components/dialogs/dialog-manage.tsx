@@ -33,10 +33,6 @@ import {
 } from "@/features/establishment/employees/api/mutations/use-reactivar-por-cambio-de-correo"
 import { registerFuncionario } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
-import {
-  useSedeJornadasActivasQuery,
-  useSedeTienePeriodosQuery,
-} from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useEmployeeQuery } from "@/features/establishment/employees/api/query/use-employee"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
@@ -257,29 +253,22 @@ function ManageEmployeeDialogContent({
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()
-  const { data: campuses = [] } = useCampusesOptionsQuery()
+  const { data: campuses = [], isPending: isLoadingSedeJornadas } = useCampusesOptionsQuery()
   // El director de grupo se asigna desde el grupo; el back lo rechaza aquí.
   const roleItems = toSelectOptions(roles.filter((role) => role.code !== DIRECTOR_GRUPO_ROLE_CODE))
-  const campusItems = toSelectOptions(campuses)
-  const {
-    data: sedeJornadas = [],
-    isPending: isLoadingSedeJornadas,
-  } = useSedeJornadasActivasQuery(permissionDraft.campusId)
-  const { data: sedeTienePeriodos } = useSedeTienePeriodosQuery(permissionDraft.campusId)
-  const workSchedules: CatalogItem[] = sedeJornadas.map((j) => ({
-    id: j.id,
-    code: String(j.id),
-    name: j.nombre,
-  }))
+  // Una sede Inactiva no recibe permisos nuevos (Regla 100); los que ya tiene se siguen viendo.
+  const campusItems = toSelectOptions(campuses.filter((campus) => campus.status !== "I"))
+  // Las jornadas del permiso son las que ofrece la sede (Regla 84): asignar un rol
+  // no depende de que la sede ya tenga períodos académicos.
+  const workSchedules: CatalogItem[] = (
+    campuses.find((campus) => campus.id === permissionDraft.campusId)?.workSchedules ?? []
+  ).map((j) => ({ id: j.id, code: String(j.id), name: j.name }))
   const workScheduleItems = toSelectOptions(workSchedules)
   const workScheduleEmptyMessage =
     permissionDraft.campusId == null
       ? "Elige primero la sede educativa."
-      : sedeTienePeriodos === false
-        ? "Esta sede todavía no tiene ningún periodo académico creado. Crea uno primero."
-        : "Esta sede no tiene un periodo académico activo con jornada configurada."
-  const workScheduleEmptyShortMessage =
-    sedeTienePeriodos === false ? "Sin periodos académicos" : "Sin jornada activa"
+      : "Esta sede no tiene jornadas. Agrégalas en Sedes educativas."
+  const workScheduleEmptyShortMessage = "Sin jornadas"
 
   // Revalida en cada cambio tras un intento de guardar fallido, para que el
   // borde rojo desaparezca apenas el campo queda completo.

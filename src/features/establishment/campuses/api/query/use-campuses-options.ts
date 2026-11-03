@@ -25,6 +25,8 @@ interface RealCampusOptionRow {
   direccion: string
   telefono: string
   fk_establecimiento: number
+  estado: "A" | "I"
+  jornadas: { id: number; nombre: string; valor: string }[] | null
 }
 
 function toCampus(row: RealCampusOptionRow): Campus {
@@ -39,6 +41,8 @@ function toCampus(row: RealCampusOptionRow): Campus {
     commune: row.comuna,
     address: row.direccion,
     phone: row.telefono,
+    status: row.estado,
+    workSchedules: (row.jornadas ?? []).map((j) => ({ id: Number(j.id), name: j.nombre })),
   }
 }
 

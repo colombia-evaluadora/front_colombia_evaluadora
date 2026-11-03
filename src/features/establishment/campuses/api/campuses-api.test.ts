@@ -147,3 +147,75 @@ describe("catálogo de especialidades de la sede", () => {
     expect((await fetchCampusSpecialties(campusId)).some((i) => i.id === libre.id)).toBe(false)
   })
 })
+
+const { fetchEstablishmentCampuses } = await import("@/features/establishment/campuses/api/query/use-establishment-campuses")
+const { fetchCampusProcesses, describeCampusProcesses } = await import(
+  "@/features/establishment/campuses/api/query/use-campus-processes"
+)
+const { convertCampus } = await import("@/features/establishment/campuses/api/mutations/convert-campus")
+const { fetchSedeOptions, sedesParaRegistroNuevo } = await import(
+  "@/features/establishment/academic-period/api/query/use-sede-options"
+)
+
+describe("opciones de sedes para registros nuevos", () => {
+  it("traen estado y jornadas; los registros nuevos solo ofrecen las activas (y la ya elegida)", async () => {
+    const sedes = await fetchSedeOptions()
+    expect(sedes.every((s) => (s.estado === "A" || s.estado === "I") && (s.jornadas?.length ?? 0) > 0)).toBe(true)
+    const inactiva = sedes.find((s) => s.estado === "I")!
+    expect(sedesParaRegistroNuevo(sedes).some((s) => s.pk_sede === inactiva.pk_sede)).toBe(false)
+    expect(sedesParaRegistroNuevo(sedes, String(inactiva.pk_sede)).some((s) => s.pk_sede === inactiva.pk_sede)).toBe(true)
+  })
+})
+
+describe("cambiar establecimiento", () => {
+  it("describe los procesos en curso como en el informe", async () => {
+    expect(describeCampusProcesses(await fetchCampusProcesses(4))).toBe("12 inscripciones y 1 período académico abierto")
+    expect(describeCampusProcesses(await fetchCampusProcesses(3))).toBeNull()
+  })
+
+  it("mueve una anexa a otro establecimiento sin repetir su consecutivo", async () => {
+    const { rows } = await lista()
+    const anexa = rows.find((r) => !r.isPrincipal && r.status === "A")!
+    const destino = rows.find((r) => r.establishmentId !== anexa.establishmentId)!.establishmentId
+    const detalle = await fetchCampus(anexa.id)
+    const valores = {
+      establishmentId: destino,
+      consecutive: "1",
+      name: detalle.name,
+      dane: detalle.dane,
+      zoneId: detalle.zoneId,
+      neighborhood: detalle.neighborhood,
+      commune: detalle.commune,
+      address: detalle.address,
+      phone: detalle.phone,
+      workScheduleIds: detalle.workSchedules.map((j) => j.id),
+    }
+    // El 1 es de la principal del destino.
+    const error = await updateCampus({ campusId: anexa.id, values: valores, isPrincipal: false, moveTo: destino }).catch((e) => e)
+    expect(status(error)).toBe(409)
+
+    const libre = String(await fetchNextConsecutive(destino))
+    await updateCampus({ campusId: anexa.id, values: { ...valores, consecutive: libre }, isPrincipal: false, moveTo: destino })
+    const sedesDestino = await fetchEstablishmentCampuses(destino)
+    expect(sedesDestino.find((s) => s.id === anexa.id)?.consecutive).toBe(libre)
+  })
+
+  it("convierte una anexa en establecimiento: queda como su principal", async () => {
+    const { rows } = await lista()
+    const anexa = rows.find((r) => !r.isPrincipal)!
+    const valores = {
+      basicInfo: { name: "IE Nueva", dane: "168001000999", nit: "900765432-6", ownershipType: { id: 1, code: "", name: "" }, serviceModality: { id: 2, code: "", name: "" } },
+      address: { municipality: null, zone: null, district: null, commune: null, locality: null, address: "" },
+      contact: { email: "", website: "", phone: "" },
+      additionalInfo: { calendar: { id: 3, code: "", name: "A" } } as never,
+      principal: { id: 10 } as never,
+      secretary: null,
+    }
+    const id = await convertCampus({ campusId: anexa.id, values: valores })
+    const sedes = await fetchEstablishmentCampuses(id)
+    expect(sedes).toEqual([expect.objectContaining({ id: anexa.id, consecutive: "1" })])
+    // Sin rector no se convierte.
+    const error = await convertCampus({ campusId: rows.find((r) => !r.isPrincipal && r.id !== anexa.id)!.id, values: { ...valores, principal: null } }).catch((e) => e)
+    expect(status(error)).toBe(400)
+  })
+})

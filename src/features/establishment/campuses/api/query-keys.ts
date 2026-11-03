@@ -7,6 +7,8 @@ export const campusKeys = {
   detalle,
   /** Catálogo de especialidades de la sede: cuelga del detalle. */
   especialidades: (id: number | null | undefined) => [...detalle(id), "especialidades"] as const,
+  /** Inscripciones, reservas y periodos en curso: se advierten antes de moverla o convertirla. */
+  procesos: (id: number | null | undefined) => [...detalle(id), "procesos-en-curso"] as const,
   options: () => [...all, "options"] as const,
   /** Sedes de un establecimiento (para advertir un nombre repetido). */
   porEstablecimiento: (establishmentId: number | null | undefined) =>

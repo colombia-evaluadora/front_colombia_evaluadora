@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useStore } from "@tanstack/react-form"
 import { Link, useMatch, useNavigate, useParams } from "@tanstack/react-router"
@@ -15,20 +15,42 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { ArrowRightIcon, FloppyDiskIcon, PencilIcon, SpinnerIcon, WarningIcon, XIcon, ArrowLeftIcon } from "@/components/ui/icons"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  ArrowRightIcon,
+  ArrowsLeftRightIcon,
+  BankIcon,
+  FloppyDiskIcon,
+  PencilIcon,
+  SpinnerIcon,
+  WarningIcon,
+  XIcon,
+  ArrowLeftIcon,
+} from "@/components/ui/icons"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
+import { useUser } from "@/lib/auth"
 import { FormDisabledProvider, useAppForm } from "@/lib/forms"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { SUCCESS_MESSAGES, campusMovedMessage } from "@/lib/success-messages"
 import { campusDetailRoute } from "@/router"
 
 import { buildCampusFormSchema, hasRepeatedName } from "@/features/establishment/campuses/api/schema"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-campus"
 import {
+  describeCampusProcesses,
+  useCampusProcessesQuery,
+} from "@/features/establishment/campuses/api/query/use-campus-processes"
+import {
   fetchEstablishmentCampuses,
+  useEstablishmentCampusesQuery,
   useNextConsecutiveQuery,
 } from "@/features/establishment/campuses/api/query/use-establishment-campuses"
 import { useZonasSedeQuery } from "@/features/establishment/campuses/api/query/use-zonas-sede"
@@ -43,6 +65,7 @@ import {
 } from "@/features/establishment/campuses/components/campus-read-only"
 import { WorkSchedulesField, ZoneRadioField } from "@/features/establishment/campuses/components/fields/campus-fields"
 import { CampusSpecialtiesSection } from "@/features/establishment/campuses/components/specialties/campus-specialties-section"
+import { ConvertCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-convert-campus"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { toDireccionInput, toTextoInput } from "@/features/establishment/shared/text-field-rules"
@@ -75,6 +98,62 @@ function toFormValues(campus: CampusDetail | null): CampusFormValues {
 
 const siNo = (value: boolean) => (value ? "Sí" : "No")
 
+/**
+ * Advertencia de Mover (Regla 75), con lo que la sede tiene en curso: se pide al
+ * abrirla para que la cuenta esté al día.
+ */
+function MoveCampusConfirm({
+  campus,
+  establishment,
+  open,
+  onCancel,
+  onConfirm,
+}: {
+  campus: CampusDetail
+  establishment: string
+  open: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const { data: processes, isPending } = useCampusProcessesQuery(campus.id, open)
+  const inCourse = describeCampusProcesses(processes)
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-start gap-2">
+            <WarningIcon className="mt-0.5 size-6 shrink-0 text-orange" aria-hidden />
+            Mover «{campus.name}» a {establishment}
+          </AlertDialogTitle>
+          <AlertDialogDescription render={<div />} className="flex flex-col gap-3">
+            {inCourse ? (
+              <p>
+                La sede tiene procesos en curso: {inCourse}. Al moverla, los funcionarios actuales ya no podrán hacerles
+                seguimiento.
+              </p>
+            ) : null}
+            <p>
+              Sus períodos académicos, grados, asignaciones y especialidades se moverán con ella, y el Rector y la
+              Secretaria de {establishment} recibirán sus roles en la sede.
+            </p>
+            <p>{inCourse ? "Confirme con el establecimiento antes de continuar. ¿Desea continuar?" : "¿Desea continuar?"}</p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction color="primary" disabled={isPending} onClick={onConfirm}>
+            <ArrowRightIcon data-icon="inline-start" />
+            Continuar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null }) {
   const { notify } = useNotify()
   const navigate = useNavigate()
@@ -85,9 +164,19 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
   const listHref = paths.app.establishments.campuses.getHref()
 
   const [repeatedName, setRepeatedName] = useState<{ values: CampusFormValues; establishment: string } | null>(null)
+  // Cambiar establecimiento (Reglas 75 y 92): solo el Superadministrador y solo en una sede anexa.
+  const { data: user } = useUser()
+  const canTransfer = mode === "edit" && campus != null && !principal && user?.isSuperAdmin === true
+  const [moving, setMoving] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const [moveConfirm, setMoveConfirm] = useState<CampusFormValues | null>(null)
 
-  const { data: establishments = [] } = useEstablishmentsOptionsQuery(mode === "create")
+  const { data: establishments = [] } = useEstablishmentsOptionsQuery(mode === "create" || canTransfer)
   const { data: workSchedules = [] } = useQuery(selectCategoryQueryOptions("JORNADA"))
+  const establishmentName = (id: number | null) =>
+    establishments.find((e) => e.id === id)?.name ?? (id === campus?.establishmentId ? campus.establishmentName : "")
+  const isMove = (values: CampusFormValues) =>
+    moving && campus != null && values.establishmentId != null && values.establishmentId !== campus.establishmentId
 
   const createMutation = useCreate({
     mutationConfig: {
@@ -101,8 +190,12 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
   })
   const updateMutation = useUpdate({
     mutationConfig: {
-      onSuccess: () => {
-        notify(SUCCESS_MESSAGES.campus.updated)
+      onSuccess: (_id, { values, moveTo }) => {
+        notify(
+          moveTo != null
+            ? campusMovedMessage(values.name.trim() || (campus?.name ?? ""), establishmentName(moveTo))
+            : SUCCESS_MESSAGES.campus.updated,
+        )
         navigate({ to: listHref })
       },
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
@@ -112,7 +205,19 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
 
   function save(values: CampusFormValues) {
     if (mode === "create") createMutation.mutate(values)
-    else if (campus) updateMutation.mutate({ campusId: campus.id, values, isPrincipal: principal })
+    else if (campus)
+      updateMutation.mutate({
+        campusId: campus.id,
+        values,
+        isPrincipal: principal,
+        moveTo: isMove(values) ? values.establishmentId : null,
+      })
+  }
+
+  /** Tras el nombre repetido: mover se confirma aparte, con lo que la sede tiene en curso. */
+  function proceed(values: CampusFormValues) {
+    if (isMove(values)) setMoveConfirm(values)
+    else save(values)
   }
 
   const form = useAppForm({
@@ -120,7 +225,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
     // Al editar, lo que no cambió no se revalida: las sedes viejas conservan sus datos.
     validators: { onSubmit: buildCampusFormSchema({ principal, original: campus ? toFormValues(campus) : undefined }) },
     onSubmit: async ({ value }) => {
-      // Un nombre repetido en el establecimiento se advierte antes de guardar (Regla 52).
+      // Un nombre repetido en el establecimiento (o en el de destino, al mover) se advierte antes de guardar (Regla 52).
       if (!principal && value.establishmentId != null) {
         const sedes = await queryClient
           .fetchQuery({
@@ -129,19 +234,59 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
           })
           .catch(() => [])
         if (hasRepeatedName(value.name, sedes, campus?.id ?? null)) {
-          const establishment =
-            campus?.establishmentName ?? establishments.find((e) => e.id === value.establishmentId)?.name ?? ""
-          setRepeatedName({ values: value, establishment })
+          setRepeatedName({ values: value, establishment: establishmentName(value.establishmentId) })
           return
         }
       }
-      save(value)
+      proceed(value)
     },
   })
 
   const establishmentId = useStore(form.store, (s) => s.values.establishmentId)
   const { data: zones = [] } = useZonasSedeQuery(establishmentId)
   const { data: nextConsecutive } = useNextConsecutiveQuery(mode === "create" ? establishmentId : null)
+
+  // Al mover, la sede llega como anexa: su consecutivo no puede repetir uno del destino.
+  const moveTarget = moving && campus != null && establishmentId !== campus.establishmentId ? establishmentId : null
+  const { data: targetCampuses } = useEstablishmentCampusesQuery(moveTarget)
+  const { data: targetNextConsecutive } = useNextConsecutiveQuery(moveTarget)
+  const takenInTarget = new Set((targetCampuses ?? []).map((c) => Number(c.consecutive)).filter((n) => n > 0))
+  const originalTaken = campus != null && moveTarget != null && takenInTarget.has(Number(campus.consecutive))
+  const suggestedFor = useRef<number | null>(null)
+  useEffect(() => {
+    if (moveTarget == null || targetCampuses == null || targetNextConsecutive == null) return
+    if (suggestedFor.current === moveTarget) return
+    suggestedFor.current = moveTarget
+    // Si el suyo ya existe en el destino, se propone el siguiente libre (se puede cambiar).
+    const actual = Number(form.getFieldValue("consecutive"))
+    if (targetCampuses.some((c) => Number(c.consecutive) === actual)) {
+      form.setFieldValue("consecutive", String(targetNextConsecutive))
+    }
+  }, [moveTarget, targetCampuses, targetNextConsecutive, form])
+
+  // La zona del destino puede no admitir la de la sede: se vuelve a elegir.
+  useEffect(() => {
+    if (!moving || zones.length === 0) return
+    const zoneId = form.getFieldValue("zoneId")
+    if (zoneId != null && !zones.some((z) => z.id === zoneId)) form.setFieldValue("zoneId", null)
+  }, [moving, zones, form])
+
+  function stopMoving() {
+    setMoving(false)
+    suggestedFor.current = null
+    if (campus) {
+      form.setFieldValue("establishmentId", campus.establishmentId)
+      form.setFieldValue("consecutive", campus.consecutive)
+      form.setFieldValue("zoneId", campus.zoneId)
+    }
+  }
+
+  function validateConsecutiveInTarget({ value }: { value: string }) {
+    if (moveTarget == null || !value.trim()) return undefined
+    return takenInTarget.has(Number(value))
+      ? `El consecutivo ${Number(value)} ya existe en el establecimiento. Elija otro.`
+      : undefined
+  }
 
   // Con un solo establecimiento posible, ya viene elegido.
   useEffect(() => {
@@ -259,11 +404,57 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                             )}
                           </form.AppField>
                         </div>
+                      ) : moving ? (
+                        <div className="md:col-span-9">
+                          <form.AppField name="establishmentId">
+                            {(f) => (
+                              <f.SelectField
+                                label="Establecimiento"
+                                required
+                                options={establishments.map((e) => ({ value: e.id, label: e.name }))}
+                                emptyValue={null}
+                                description="Mover a otro establecimiento: la sede llega como anexa."
+                              />
+                            )}
+                          </form.AppField>
+                        </div>
                       ) : (
                         <div className="md:col-span-9">
                           <ReadOnlyValue id="campus-establishment" label="Establecimiento" value={campus?.establishmentName ?? ""} locked required />
                         </div>
                       )}
+
+                      {canTransfer ? (
+                        <div className="flex items-start md:col-span-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button type="button" variant="outline" color="neutral" className="h-10 w-full md:w-auto" />
+                              }
+                            >
+                              <ArrowsLeftRightIcon data-icon="inline-start" />
+                              Cambiar establecimiento
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-auto min-w-60">
+                              {moving ? (
+                                <DropdownMenuItem className="normal-case tracking-normal" onClick={stopMoving}>
+                                  <XIcon />
+                                  Dejar en {campus?.establishmentName}
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem className="normal-case tracking-normal" onClick={() => setMoving(true)}>
+                                  <ArrowsLeftRightIcon />
+                                  Mover a otro establecimiento
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem className="normal-case tracking-normal" onClick={() => setConverting(true)}>
+                                <BankIcon />
+                                Convertir en establecimiento
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      ) : null}
 
                       <FormDisabledProvider disabled={sinEstablecimiento}>
                         {principal ? (
@@ -272,7 +463,10 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                           </div>
                         ) : (
                           <div className="md:col-span-3">
-                            <form.AppField name="consecutive">
+                            <form.AppField
+                              name="consecutive"
+                              validators={{ onChange: validateConsecutiveInTarget, onSubmit: validateConsecutiveInTarget }}
+                            >
                               {(f) => (
                                 <f.NumberField
                                   label="Consecutivo de la sede"
@@ -281,7 +475,9 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                                   description={
                                     mode === "create" && nextConsecutive != null
                                       ? `Siguiente disponible: ${nextConsecutive}.`
-                                      : undefined
+                                      : originalTaken && campus
+                                        ? `El ${Number(campus.consecutive)} ya existe en ${establishmentName(moveTarget)}.`
+                                        : undefined
                                   }
                                 />
                               )}
@@ -437,7 +633,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
             <AlertDialogAction
               color="primary"
               onClick={() => {
-                if (repeatedName) save(repeatedName.values)
+                if (repeatedName) proceed(repeatedName.values)
                 setRepeatedName(null)
               }}
             >
@@ -447,6 +643,31 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {campus ? (
+        <MoveCampusConfirm
+          campus={campus}
+          establishment={moveConfirm ? establishmentName(moveConfirm.establishmentId) : ""}
+          open={moveConfirm != null}
+          onCancel={() => setMoveConfirm(null)}
+          onConfirm={() => {
+            if (moveConfirm) save(moveConfirm)
+            setMoveConfirm(null)
+          }}
+        />
+      ) : null}
+
+      {canTransfer && campus ? (
+        <ConvertCampusDialog
+          campus={campus}
+          open={converting}
+          onOpenChange={setConverting}
+          onConverted={() => {
+            setConverting(false)
+            navigate({ to: listHref })
+          }}
+        />
+      ) : null}
     </TableScreen>
   )
 }

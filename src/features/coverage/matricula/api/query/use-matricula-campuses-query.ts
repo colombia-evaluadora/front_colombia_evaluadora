@@ -31,6 +31,7 @@ export async function fetchMatriculaCampuses(): Promise<MatriculaCampusCatalog> 
         nombre: sede.nombre,
         label: colegio ? `${sede.nombre} · ${colegio}` : sede.nombre,
         establecimientoId: sede.fk_establecimiento,
+        activa: sede.estado !== "I",
       }
     }),
   }

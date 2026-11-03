@@ -13,6 +13,10 @@ export interface Campus {
   commune: string
   address: string
   phone: string
+  /** Solo en las opciones (`fn_sed_listar_todos`): una sede Inactiva no recibe registros nuevos (Regla 100). */
+  status?: CampusStatus
+  /** Solo en las opciones: las jornadas que ofrece la sede (Regla 84). */
+  workSchedules?: CampusWorkSchedule[]
 }
 
 /** Activo / Inactivo (`TSEDE.ESTADO`, sso V445.1). Inactivar no borra: la sede deja de recibir registros nuevos. */
