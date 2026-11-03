@@ -39,8 +39,8 @@ export function SelectorVotantes({
   // "para votar" en elecciones; "para responder" o "para presentarla" en encuestas y evaluaciones.
   accion = "para votar",
   // QA 78: quien crea puede elegirse a sí mismo (opcional, nunca automático) y participa como
-  // cualquiera. Solo elecciones: encuestas y evaluaciones aún no guardan si el creador participa,
-  // así que ahí su fila sale deshabilitada en lugar de descartarse en silencio al guardar.
+  // cualquiera. Elecciones y encuestas. En evaluaciones no: quien crea tiene las respuestas correctas
+  // y es quien califica, así que su fila sale deshabilitada.
   permitirYo = false,
 }: {
   seleccion: Set<number>
