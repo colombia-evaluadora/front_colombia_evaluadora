@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
+import { fetchArchivoViewUrl } from "@/lib/files"
 import { DialogoEleccion, DialogoProceso, DialogoTexto } from "@/features/comunicaciones/procesos/components/dialogos"
 import { paths } from "@/config/paths"
 import { procesoDetalleRoute } from "@/router"
@@ -239,7 +240,13 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
         <DialogHeader><DialogTitle>Revisar: {p.nombre}</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="whitespace-pre-wrap text-sm">{p.propuesta}</p>
-        {p.documentos.length > 0 && <ul className="list-disc pl-5 text-sm">{p.documentos.map((d) => <li key={d.id}>{d.nombre} ({d.tipo === "AUTORIZACION" ? "autorización" : "soporte"}, reservado)</li>)}</ul>}
+        {p.documentos.length > 0 && <ul className="list-disc pl-5 text-sm">{p.documentos.map((d) => (
+          <li key={d.id}>
+            {d.nombre} ({d.tipo === "AUTORIZACION" ? "autorización" : "soporte"}, reservado)
+            {/* Token de vista corto; file-service solo lo da al candidato y al revisor (ReglaDocumentoProceso). */}
+            <Button size="sm" variant="link" onClick={() => fetchArchivoViewUrl(d.archivo).then((t) => window.open(t.url, "_blank", "noopener")).catch((x) => setError(getErrorMessage(x)))}>Abrir</Button>
+          </li>
+        ))}</ul>}
         {e.requisitos.map((r) => (
           <Field key={r}>
             <FieldLabel>{r}</FieldLabel>
