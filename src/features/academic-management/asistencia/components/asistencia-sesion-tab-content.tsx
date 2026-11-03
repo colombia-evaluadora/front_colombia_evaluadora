@@ -2,13 +2,20 @@
 
 import { useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
+import { createPortal } from "react-dom"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
 import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
 import { isOutboxEnabled, OutboxRejectedError, QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
-import { CheckCircleFillIcon, CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  CheckCircleFillIcon,
+  CheckIcon,
+  FloppyDiskIcon,
+  InfoIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -20,8 +27,13 @@ import {
   invalidarAsistencia,
   registrarAsistencia,
 } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
-import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { buildColumnsAsistenciaManual } from "@/features/academic-management/asistencia/components/table/columns-asistencia-manual"
+import {
+  DialogSolicitarAprobacion,
+  type SolicitudAprobacion,
+} from "@/features/academic-management/asistencia/components/dialogs/dialog-solicitar-aprobacion"
+import { DialogJustificarAusencia } from "@/features/academic-management/asistencia/components/dialogs/dialog-justificar-ausencia"
+import { useAsistenciaAccess } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import type {
   AsistenciaRegistroManual,
   RosterEstudiante,
@@ -31,29 +43,48 @@ import {
   ASISTIO,
   cambiaRegistro,
   conCambioPendiente,
-  formatEncabezadoSesion,
   LLEGO_TARDE,
   nombreSesion,
   registroAutoritativo,
   registrosPorBloque,
-  TIPOS_ALTA_NUEVA,
   tipoBase,
   type SesionControl,
   type SesionTab,
 } from "@/features/academic-management/asistencia/utils/asistencia-manual"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
+const NOMBRE_TIPO: Partial<Record<TipoAsistencia, string>> = {
+  1: "Asistió",
+  2: "No asistió",
+  3: "No asistió",
+  5: "Llegó tarde",
+  6: "Llegó tarde",
+}
+
+const fechaCorta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`
+
 export function AsistenciaSesionTabContent({
   sesion,
   fecha,
   controlRef,
+  soloLectura = false,
+  accionesSlot = null,
 }: {
   sesion: SesionTab
   fecha: string
   controlRef: React.RefObject<SesionControl | null>
+  /** Regla 76: quien no dicta la clase la consulta sin Guardar, sin Todos asistieron ni excusas. */
+  soloLectura?: boolean
+  /** Encabezado de la página: ahí van Cancelar y Guardar. */
+  accionesSlot?: HTMLElement | null
 }) {
   const { notify } = useNotify()
-  const { puedeEditar } = useMenuPermission("ASISTENCIAS")
+  const { puedeEditar: puedeEditarMenu } = useMenuPermission("ASISTENCIAS")
+  const puedeEditar = puedeEditarMenu && !soloLectura
+  // Regla 109: en solo lectura lo único que queda es justificar sin archivo, sin cambiar la asistencia.
+  const { isDirectorGrupo } = useAsistenciaAccess()
+  const puedeJustificar = soloLectura || puedeEditar || isDirectorGrupo
+  const [justificando, setJustificando] = React.useState<RosterEstudiante | null>(null)
   const {
     porBloque: rosterOficial,
     isPending,
@@ -72,11 +103,14 @@ export function AsistenciaSesionTabContent({
     sesion.bloques,
   )
   const rosterPorBloque = React.useMemo(
-    () => new Map([...rosterOficial].map(([bloque, rows]) => [bloque, rows.map(conCambioPendiente)])),
+    () =>
+      new Map([...rosterOficial].map(([bloque, rows]) => [bloque, rows.map(conCambioPendiente)])),
     [rosterOficial],
   )
   // `periodo_calificable` y la solicitud en el padrón todavía no los manda el backend.
-  const periodoCerrado = [...rosterOficial.values()].some((rows) => rows.some((r) => r.periodo_calificable === false))
+  const periodoCerrado = [...rosterOficial.values()].some((rows) =>
+    rows.some((r) => r.periodo_calificable === false),
+  )
   // Lo que el PATCH devolvió pendiente en esta sesión: hoy es la única señal para el badge.
   const [pendientesLocales, setPendientesLocales] = React.useState<Set<number>>(new Set())
   // String estable para no rearmar las columnas en cada render.
@@ -100,18 +134,15 @@ export function AsistenciaSesionTabContent({
   // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
   const outboxOps = useOutboxOps()
   const pksSesion = new Set(
-    [...rosterOficial.values()].flatMap((rows) => rows.map((r) => r.pk_tasistencia).filter((pk) => pk != null)),
+    [...rosterOficial.values()].flatMap((rows) =>
+      rows.map((r) => r.pk_tasistencia).filter((pk) => pk != null),
+    ),
   )
   const pendienteSesion = pendingStatusOf(
     outboxOps,
     (k) =>
       (k.startsWith(`asistencia:sesion:${sesion.fkGrupo}:`) && k.includes(`:${fecha}:`)) ||
       (k.startsWith("asistencia:registro:") && pksSesion.has(Number(k.split(":")[2]))),
-  )
-  const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
-  const tipoOptions = React.useMemo(
-    () => tipoOptionsCompleto.filter((opt) => TIPOS_ALTA_NUEVA.includes(opt.value)),
-    [tipoOptionsCompleto],
   )
 
   // El padrón es igual en todo bloque; el estado guardado sí varía y se reemplaza por fila.
@@ -170,14 +201,19 @@ export function AsistenciaSesionTabContent({
     setBloqueTarde(inicialBloqueTarde)
     precargado.current = true
   }, [isPending, autoritativos, firmaServidor, sinEdicionesLocales])
+  // Con excusa o justificación no se pide el bloque de llegada (Sección 7).
+  function tieneExcusa(row: RosterEstudiante): boolean {
+    const fk = row.fk_tmatricula
+    if (soporte[fk]) return true
+    if (soporteEliminado[fk]) return Boolean(row.justificacion)
+    return Boolean(row.soporte_nombre || row.justificacion)
+  }
+
   const columns = React.useMemo(
     () =>
       buildColumnsAsistenciaManual({
-        fechaLabel: formatEncabezadoSesion(fecha, sesion.horaInicio, sesion.horaFin),
-        tipoOptions,
         seleccion,
-        onChange: (fkMatricula, tipo) =>
-          setSeleccion((prev) => ({ ...prev, [fkMatricula]: tipo })),
+        onChange: (fkMatricula, tipo) => setSeleccion((prev) => ({ ...prev, [fkMatricula]: tipo })),
         soporte,
         onSoporteChange: (fkMatricula, archivo) => {
           setSoporte((prev) => {
@@ -208,18 +244,21 @@ export function AsistenciaSesionTabContent({
         bloqueTarde,
         onBloqueTardeChange: (fkMatricula, bloque) =>
           setBloqueTarde((prev) => ({ ...prev, [fkMatricula]: bloque })),
+        tieneExcusa,
         conPendiente,
         soloLectura: !puedeEditar,
+        puedeJustificar,
+        onJustificar: setJustificando,
       }),
     [
       puedeEditar,
+      puedeJustificar,
       conPendiente,
       fecha,
       sesion.horaInicio,
       sesion.horaFin,
       sesion.bloques,
       sesion.horasPorBloque,
-      tipoOptions,
       seleccion,
       soporte,
       soporteEliminado,
@@ -257,20 +296,32 @@ export function AsistenciaSesionTabContent({
   const seleccionLista = React.useMemo(() => {
     const listos = Object.entries(seleccion).filter(([fkMatriculaStr, tipo]) => {
       if (tipo !== LLEGO_TARDE || sesion.bloques.length <= 1) return true
-      return bloqueTarde[Number(fkMatriculaStr)] != null
+      const row = roster_.find((x) => x.fk_tmatricula === Number(fkMatriculaStr))
+      return bloqueTarde[Number(fkMatriculaStr)] != null || (row != null && tieneExcusa(row))
     })
     return Object.fromEntries(listos) as Record<number, TipoAsistencia>
-  }, [seleccion, bloqueTarde, sesion.bloques.length])
-  const pendientesPorBloqueTarde = Object.keys(seleccion).length - Object.keys(seleccionLista).length
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccion, bloqueTarde, sesion.bloques.length, roster_, soporte, soporteEliminado])
+  const pendientesPorBloqueTarde =
+    Object.keys(seleccion).length - Object.keys(seleccionLista).length
 
   const hayAlgoQueGuardar =
     Object.entries(seleccionLista).some(([fk, tipo]) => tipo !== baseline.current[Number(fk)]) ||
     // Cambiar solo el bloque de llegada también cuenta.
-    Object.keys(seleccionLista).some((fk) => bloqueTarde[Number(fk)] !== bloqueTardeBaseline.current[Number(fk)]) ||
+    Object.keys(seleccionLista).some(
+      (fk) => bloqueTarde[Number(fk)] !== bloqueTardeBaseline.current[Number(fk)],
+    ) ||
     Object.keys(soporte).some((fk) => Number(fk) in seleccionLista) ||
     Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista)
   const mostrarGuardar = hayAlgoQueGuardar
 
+  // Cancelar: vuelve a lo guardado sin tocar el servidor.
+  function descartarCambios() {
+    setSeleccion(baseline.current)
+    setBloqueTarde(bloqueTardeBaseline.current)
+    setSoporte({})
+    setSoporteEliminado({})
+  }
 
   // Solo completa a quien no tiene marca: no pisa lo que el docente ya tomó.
   function handleMarcarTodoAsistio() {
@@ -282,11 +333,14 @@ export function AsistenciaSesionTabContent({
   }
 
   const [guardando, setGuardando] = React.useState(false)
+  const [solicitud, setSolicitud] = React.useState<SolicitudAprobacion | null>(null)
 
-  async function guardar(avisarSiNada: boolean): Promise<boolean> {
+  async function guardar(avisarSiNada: boolean, motivo?: string): Promise<boolean> {
     if (!hayAlgoQueGuardar) {
       if (avisarSiNada) {
-        notify("Marca la asistencia de al menos un estudiante antes de guardar.", { variant: "error" })
+        notify("Marca la asistencia de al menos un estudiante antes de guardar.", {
+          variant: "error",
+        })
       }
       return !avisarSiNada
     }
@@ -306,27 +360,59 @@ export function AsistenciaSesionTabContent({
       tipoBase(registro.tipoAsistencia) === baseline.current[registro.fkMatricula] &&
       !(registro.fkArchivo instanceof File)
     const nuevos = new Map<number | null, AsistenciaRegistroManual[]>()
-    const correcciones: { fkMatricula: number; pk: number; registro: AsistenciaRegistroManual }[] = []
+    const correcciones: { fkMatricula: number; pk: number; registro: AsistenciaRegistroManual }[] =
+      []
     for (const [bloque, registros] of porBloque) {
       for (const registro of registros) {
-        const actual = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === registro.fkMatricula)
+        const actual = rosterPorBloque
+          .get(bloque)
+          ?.find((r) => r.fk_tmatricula === registro.fkMatricula)
         if (actual?.pk_tasistencia == null) {
           // Una captura tardía que ya espera aprobación no se reenvía igual.
-          const yaPendiente = actual?.pk_tsolicitud_aprobacion != null && !cambiaRegistro(registro, actual, false)
-          if (!yaPendiente && !yaPropuesto(registro)) nuevos.set(bloque, [...(nuevos.get(bloque) ?? []), registro])
+          const yaPendiente =
+            actual?.pk_tsolicitud_aprobacion != null && !cambiaRegistro(registro, actual, false)
+          if (!yaPendiente && !yaPropuesto(registro))
+            nuevos.set(bloque, [...(nuevos.get(bloque) ?? []), registro])
         } else if (
           cambiaRegistro(registro, actual, soporteEliminado[registro.fkMatricula] ?? false) &&
           !yaPropuesto(registro)
         ) {
-          correcciones.push({ fkMatricula: registro.fkMatricula, pk: actual.pk_tasistencia, registro })
+          correcciones.push({
+            fkMatricula: registro.fkMatricula,
+            pk: actual.pk_tasistencia,
+            registro,
+          })
         }
       }
+    }
+    // Regla 77: con el período No calificable se pide el motivo antes de enviar a aprobación.
+    if (periodoCerrado && motivo === undefined && (nuevos.size > 0 || correcciones.length > 0)) {
+      setGuardando(false)
+      setSolicitud(
+        correcciones.length > 0
+          ? {
+              tipo: "correccion",
+              fecha: fechaCorta(fecha),
+              cambios: correcciones.map(({ fkMatricula, registro }) => ({
+                estudiante: roster_.find((r) => r.fk_tmatricula === fkMatricula)?.estudiante ?? "",
+                antes: NOMBRE_TIPO[baseline.current[fkMatricula]] ?? "Sin marca",
+                despues: NOMBRE_TIPO[tipoBase(registro.tipoAsistencia)] ?? "",
+              })),
+            }
+          : {
+              tipo: "pendiente",
+              fecha: fechaCorta(fecha),
+              sesion: `${sesion.grado}${sesion.grupo} · ${nombreSesion(sesion)}`,
+            },
+      )
+      return false
     }
     const encolados: number[] = []
     // CAS por estudiante (BE-5), solo con la outbox habilitada.
     const conVersiones = isOutboxEnabled()
     const versionDePk = (pk: number) =>
-      [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ?? null
+      [...rosterPorBloque.values()].flat().find((x) => x.pk_tasistencia === pk)?.version_registro ??
+      null
     try {
       // allSettled: lo que sí se guardó se consolida aunque falle otra llamada.
       const [altas, solicitudes] = await Promise.all([
@@ -337,13 +423,14 @@ export function AsistenciaSesionTabContent({
               GRUPO: sesion.fkGrupo,
               FECHA: fecha,
               REGISTROS: registros,
+              ...(motivo && { MOTIVO: motivo }),
               ...(conVersiones && {
                 versiones: Object.fromEntries(
                   registros.map((r) => [
                     r.fkMatricula,
                     // "NONE" = el docente vio la sesión sin registro de este estudiante.
-                    rosterPorBloque.get(bloque)?.find((x) => x.fk_tmatricula === r.fkMatricula)?.version_registro ??
-                      "NONE",
+                    rosterPorBloque.get(bloque)?.find((x) => x.fk_tmatricula === r.fkMatricula)
+                      ?.version_registro ?? "NONE",
                   ]),
                 ),
               }),
@@ -364,6 +451,7 @@ export function AsistenciaSesionTabContent({
                 TIPO_ASISTENCIA: registro.tipoAsistencia,
                 ...(registro.fkArchivo instanceof File && { SOPORTE_ARCHIVO: registro.fkArchivo }),
                 ...(soporteEliminado[fkMatricula] && { LIMPIAR_ARCHIVO: true }),
+                ...(motivo && { MOTIVO: motivo }),
               },
             })
             if (queued) encolados.push(fkMatricula)
@@ -388,14 +476,19 @@ export function AsistenciaSesionTabContent({
       })
       const quedaronPendientes = [
         ...altas.flatMap((r) => (r.status === "fulfilled" ? r.value : [])),
-        ...solicitudes.flatMap((r) => (r.status === "fulfilled" && r.value !== null ? [r.value] : [])),
+        ...solicitudes.flatMap((r) =>
+          r.status === "fulfilled" && r.value !== null ? [r.value] : [],
+        ),
       ]
       if (encolados.length > 0) notify(QUEUED_MESSAGE, { variant: "info" })
       if (quedaronPendientes.length > 0) {
         setPendientesLocales((prev) => new Set([...prev, ...quedaronPendientes]))
-        notify("El período ya no es calificable: los cambios quedaron pendientes de aprobación del coordinador.", {
-          variant: "info",
-        })
+        notify(
+          "El período ya no es calificable: los cambios quedaron pendientes de aprobación del coordinador.",
+          {
+            variant: "info",
+          },
+        )
       }
       const guardados = Object.fromEntries(
         Object.entries(seleccionGuardada).filter(([fk]) => !fallidos.has(Number(fk))),
@@ -421,9 +514,14 @@ export function AsistenciaSesionTabContent({
       return true
     } catch (error) {
       // Sin espacio o fuera de la ventana de 14 días: el mensaje es del encolado.
-      notify(error instanceof OutboxRejectedError ? error.message : "Ocurrió un error al guardar la asistencia.", {
-        variant: "error",
-      })
+      notify(
+        error instanceof OutboxRejectedError
+          ? error.message
+          : "Ocurrió un error al guardar la asistencia.",
+        {
+          variant: "error",
+        },
+      )
       return false
     } finally {
       // Una sola recarga por guardado, no una por bloque o corrección.
@@ -448,7 +546,10 @@ export function AsistenciaSesionTabContent({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-semibold">{sesion.grado}{sesion.grupo}</span>
+          <span className="font-semibold">
+            {sesion.grado}
+            {sesion.grupo}
+          </span>
           <span className="rounded-sm bg-muted px-1 text-[10px] font-semibold text-muted-foreground">
             {sesion.jornada}
           </span>
@@ -456,26 +557,32 @@ export function AsistenciaSesionTabContent({
           <span className="font-medium">{nombreSesion(sesion)}</span>
           <PendingStatusBadge status={pendienteSesion} />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          color="primary"
-          size="sm"
-          disabled={roster_.length === 0 || !puedeEditar || soloEnLinea.disabled}
-          title={soloEnLinea.tooltip ?? undefined}
-          onClick={handleMarcarTodoAsistio}
-        >
-          <CheckCircleFillIcon data-icon="inline-start" />
-          Marcar todo como Asistió
-        </Button>
+        {!soloLectura && (
+          <Button
+            type="button"
+            variant="outline"
+            color="primary"
+            size="sm"
+            disabled={roster_.length === 0 || !puedeEditar || soloEnLinea.disabled}
+            title={soloEnLinea.tooltip ?? undefined}
+            onClick={handleMarcarTodoAsistio}
+          >
+            <CheckCircleFillIcon data-icon="inline-start" />
+            Todos asistieron
+          </Button>
+        )}
       </div>
 
-      {periodoCerrado && (
-        <div role="status" className="flex items-start gap-2 rounded-md border border-orange-stroke bg-orange-22 px-4 py-3 text-sm">
+      {periodoCerrado && !soloLectura && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-orange-stroke bg-orange-22 px-4 py-3 text-sm"
+        >
           <InfoIcon className="mt-0.5 size-4 shrink-0 text-orange" />
           <p className="text-muted-foreground">
-            <span className="font-semibold text-foreground">El período ya no es calificable.</span> Lo que
-            registres o corrijas queda pendiente hasta que el coordinador académico lo apruebe.
+            <span className="font-semibold text-foreground">El período ya no es calificable.</span>{" "}
+            Lo que registres o corrijas queda pendiente hasta que el coordinador académico lo
+            apruebe.
           </p>
         </div>
       )}
@@ -487,7 +594,7 @@ export function AsistenciaSesionTabContent({
         onRetry={refetch}
         emptyMessage="Este grupo no tiene estudiantes."
         errorMessage={error ? getErrorMessage(error) : undefined}
-        cellClassName="py-1"
+        cellClassName="py-2"
       />
 
       {roster_.length > 0 && (
@@ -528,24 +635,66 @@ export function AsistenciaSesionTabContent({
             </span>
           )}
         </div>
-        {mostrarGuardar && puedeEditar && (
-          <Button
-            type="button"
-            color="primary"
-            size="sm"
-            disabled={guardando || soloEnLinea.disabled}
-            title={soloEnLinea.tooltip ?? undefined}
-            aria-busy={guardando}
-            onClick={handleGuardar}
-          >
-            {guardando ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
-            )}
-            Guardar
-          </Button>
+        <DialogSolicitarAprobacion
+          solicitud={solicitud}
+          enviando={guardando}
+          onCancelar={() => setSolicitud(null)}
+          onEnviar={async (m) => {
+            if (await guardar(true, m)) setSolicitud(null)
+          }}
+        />
+        {justificando && (
+          <DialogJustificarAusencia
+            open
+            onOpenChange={(open) => !open && setJustificando(null)}
+            estudiante={justificando.estudiante}
+            pks={[...rosterPorBloque.values()]
+              .flat()
+              .filter(
+                (x) =>
+                  x.fk_tmatricula === justificando.fk_tmatricula &&
+                  x.pk_tasistencia != null &&
+                  (x.tipo_asistencia_valor === 2 || x.tipo_asistencia_valor === 5),
+              )
+              .map((x) => x.pk_tasistencia!)}
+            justificacion={justificando.justificacion ?? null}
+            fuente={justificando.fk_tlv_fuente_justificacion ?? null}
+            onJustificada={(mensaje) => notify(mensaje, { variant: "success" })}
+          />
         )}
+        {puedeEditar &&
+          accionesSlot &&
+          createPortal(
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                color="neutral"
+                size="sm"
+                disabled={guardando || !mostrarGuardar}
+                onClick={descartarCambios}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                color="primary"
+                size="sm"
+                disabled={guardando || !mostrarGuardar || soloEnLinea.disabled}
+                title={soloEnLinea.tooltip ?? undefined}
+                aria-busy={guardando}
+                onClick={handleGuardar}
+              >
+                {guardando ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <FloppyDiskIcon data-icon="inline-start" />
+                )}
+                Guardar
+              </Button>
+            </>,
+            accionesSlot,
+          )}
       </div>
     </div>
   )

@@ -1,22 +1,57 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { EyeIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
+import { Button } from "@/components/ui/button"
+import { FileUploadOutlinedIcon, InfoIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { formatHoraRango } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { RosterEstudiante, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
-import type { TipoAsistenciaOption } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 
-function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: File | null; fkSoporteArchivo: number | null }) {
-  const { data: url, isPending } = useArchivoViewUrl(archivoLocal ? null : fkSoporteArchivo)
-  const puedeVer = Boolean(archivoLocal) || Boolean(url)
+const ASISTIO: TipoAsistencia = 1
+const NO_ASISTIO: TipoAsistencia = 2
+const LLEGO_TARDE: TipoAsistencia = 5
 
-  function handleVer() {
+/** Los valores de _Estado de asistencia_ como botones de opción (Sección 7). */
+const ESTADOS: { tipo: TipoAsistencia; label: string }[] = [
+  { tipo: ASISTIO, label: "Asistió" },
+  { tipo: NO_ASISTIO, label: "No asistió" },
+  { tipo: LLEGO_TARDE, label: "Llegó tarde" },
+]
+
+function ConAyuda({ titulo, ayuda, className }: { titulo: string; ayuda: string; className?: string }) {
+  return (
+    <span className={cn("flex items-center gap-1", className)}>
+      {titulo}
+      <Tooltip>
+        <TooltipTrigger
+          render={<button type="button" aria-label={`Ayuda: ${titulo}`} className="text-muted-foreground" />}
+        >
+          <InfoIcon className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64 normal-case tracking-normal">{ayuda}</TooltipContent>
+      </Tooltip>
+    </span>
+  )
+}
+
+/** Nombre del archivo como enlace: abre el local recién elegido o el ya guardado. */
+function EnlaceSoporte({
+  archivoLocal,
+  fkSoporteArchivo,
+  nombre,
+}: {
+  archivoLocal: File | null
+  fkSoporteArchivo: number | null
+  nombre: string
+}) {
+  const { data: url } = useArchivoViewUrl(archivoLocal ? null : fkSoporteArchivo)
+
+  function abrir() {
     if (archivoLocal) {
       const objectUrl = URL.createObjectURL(archivoLocal)
       window.open(objectUrl, "_blank", "noopener,noreferrer")
@@ -30,22 +65,17 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
   return (
     <button
       type="button"
-      aria-label="Ver justificación"
-      disabled={!puedeVer || isPending}
-      className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-      onClick={handleVer}
+      disabled={!archivoLocal && !url}
+      onClick={abrir}
+      className="flex min-w-0 items-center gap-1.5 text-sm text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
     >
-      <EyeIcon className="size-3.5 shrink-0" />
+      <PaperclipIcon className="size-4 shrink-0" />
+      <span className="max-w-40 truncate">{nombre}</span>
     </button>
   )
 }
 
-const NO_ASISTIO: TipoAsistencia = 2
-const LLEGO_TARDE: TipoAsistencia = 5
-
 interface BuildColumnsParams {
-  fechaLabel: string
-  tipoOptions: TipoAsistenciaOption[]
   seleccion: Record<number, TipoAsistencia>
   onChange: (fkMatricula: number, tipo: TipoAsistencia) => void
   soporte: Record<number, File>
@@ -57,15 +87,20 @@ interface BuildColumnsParams {
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   bloqueTarde: Record<number, number>
   onBloqueTardeChange: (fkMatricula: number, bloque: number) => void
+  /** Con excusa o justificación no se pide el bloque de llegada. */
+  tieneExcusa: (row: RosterEstudiante) => boolean
   /** Regla 75: matrículas con un cambio esperando aprobación. */
   conPendiente: Set<number>
   /** Sin Guardar en ASISTENCIAS: se ve, no se cambia. */
   soloLectura: boolean
+  /** Regla 109: docente de la clase o Responsable de grupo (aunque sea solo lectura). */
+  puedeJustificar: boolean
+  onJustificar: (row: RosterEstudiante) => void
 }
 
+/** Planilla de la sesión (Sección 7): una fila por estudiante, el estado como
+ *  botones de opción, el bloque de llegada y la excusa. */
 export function buildColumnsAsistenciaManual({
-  fechaLabel,
-  tipoOptions,
   seleccion,
   onChange,
   soporte,
@@ -76,8 +111,11 @@ export function buildColumnsAsistenciaManual({
   horasPorBloque,
   bloqueTarde,
   onBloqueTardeChange,
+  tieneExcusa,
   conPendiente,
   soloLectura,
+  puedeJustificar,
+  onJustificar,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
   const bloqueItems = Object.fromEntries(
     bloques.map((b) => {
@@ -86,131 +124,191 @@ export function buildColumnsAsistenciaManual({
       return [b.toString(), rango ? `Bloque ${b + 1} (${rango})` : `Bloque ${b + 1}`]
     }),
   )
-  const tipoItems = Object.fromEntries(tipoOptions.map((opt) => [opt.value.toString(), opt.label]))
 
   return [
     {
       id: "nombre",
-      accessorKey: "nombre",
-      meta: { label: "Nombres" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
+      accessorKey: "estudiante",
+      meta: { label: "Estudiante" },
+      header: "Estudiante",
+      enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
         <span className="flex items-center gap-2">
-          <span className="font-medium uppercase">{row.original.estudiante}</span>
+          <span className="font-semibold">{row.original.estudiante}</span>
           {conPendiente.has(row.original.fk_tmatricula) && (
-            <Badge variant="soft" color="orange">
+            <Badge variant="soft" color="warning">
               Pendiente de aprobación
             </Badge>
           )}
         </span>
       ),
     },
-    {
-      id: "tipoAsistencia",
-      meta: { label: fechaLabel },
-      header: ({ column }) => <DataTableColumnHeader column={column} title={fechaLabel} />,
+    ...ESTADOS.map<ColumnDef<RosterEstudiante>>(({ tipo, label }) => ({
+      id: `estado-${tipo}`,
+      meta: { label },
+      header: () => <span className="block text-center">{label}</span>,
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fk_tmatricula
-        const value = seleccion[fkMatricula]
-        const mostrarBloque = value === LLEGO_TARDE && bloques.length > 1
+        const fk = row.original.fk_tmatricula
         return (
-          <div className="flex flex-col gap-1">
-            <Select
-              items={tipoItems}
-              value={value?.toString() ?? ""}
+          <span className="flex justify-center">
+            <input
+              type="radio"
+              name={`asistencia-${fk}`}
+              aria-label={`${label}: ${row.original.estudiante}`}
+              checked={seleccion[fk] === tipo}
               disabled={soloLectura}
-              onValueChange={(next) => onChange(fkMatricula, Number(next) as TipoAsistencia)}
-            >
-              <SelectTrigger variant="outlined" size="sm" className="h-8 w-64">
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-              <SelectContent>
-                {tipoOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value.toString()}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {mostrarBloque && (
-              <Select
-                items={bloqueItems}
-                value={bloqueTarde[fkMatricula]?.toString() ?? ""}
-                disabled={soloLectura}
-                onValueChange={(next) => onBloqueTardeChange(fkMatricula, Number(next))}
-              >
-                <SelectTrigger variant="outlined" size="sm" className="h-8 w-64">
-                  <SelectValue placeholder="Seleccionar bloque" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bloques.map((b) => (
-                    <SelectItem key={b} value={b.toString()}>
-                      {bloqueItems[b.toString()]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+              onChange={() => onChange(fk, tipo)}
+              className="size-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
+            />
+          </span>
+        )
+      },
+    })),
+    {
+      id: "bloqueLlegada",
+      meta: { label: "Bloque de llegada" },
+      header: () => (
+        <ConAyuda
+          titulo="Bloque de llegada"
+          ayuda="Con Llegó tarde y sin excusa ni justificación, elija el bloque en que llegó. Es opcional."
+          // Ancho del selector reservado: no corre las columnas cuando aparece.
+          className="min-w-40"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }) => {
+        const fk = row.original.fk_tmatricula
+        if (seleccion[fk] !== LLEGO_TARDE || bloques.length <= 1 || tieneExcusa(row.original)) {
+          return <span className="text-muted-foreground">—</span>
+        }
+        return (
+          <Select
+            items={bloqueItems}
+            value={bloqueTarde[fk]?.toString() ?? ""}
+            disabled={soloLectura}
+            onValueChange={(next) => onBloqueTardeChange(fk, Number(next))}
+          >
+            <SelectTrigger variant="outlined" size="sm" className="h-8 w-40" aria-label="Bloque de llegada">
+              <SelectValue placeholder="Seleccione" />
+            </SelectTrigger>
+            <SelectContent>
+              {bloques.map((b) => (
+                <SelectItem key={b} value={b.toString()}>
+                  {bloqueItems[b.toString()]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )
       },
     },
     {
-      id: "soporte",
-      meta: { label: "Justificación" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Justificación" />,
+      id: "excusa",
+      meta: { label: "Excusa" },
+      header: () => (
+        <ConAyuda
+          titulo="Excusa"
+          ayuda="Con No asistió o Llegó tarde, adjunte el soporte o justifique sin archivo con una explicación breve y su fuente. Las dos cuentan como Justificada."
+          // Cabe "Adjuntar" + "Justificar sin archivo": la tabla no cambia de ancho al pedir excusa.
+          className="min-w-72"
+        />
+      ),
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fk_tmatricula
-        const tipo = seleccion[fkMatricula]
-        if (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE) return null
+        const r = row.original
+        const fk = r.fk_tmatricula
+        const tipo = seleccion[fk]
+        if (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE) return <span className="text-muted-foreground">—</span>
 
-        const eliminado = soporteEliminado[fkMatricula] ?? false
-        const archivo = soporte[fkMatricula] ?? null
-        const nombreExistente = archivo || eliminado ? null : row.original.soporte_nombre
-        const fkSoporteExistente = archivo || eliminado ? null : row.original.fk_soporte_archivo
-        const hayArchivo = Boolean(archivo || nombreExistente)
-        return (
-          <div className="flex items-center gap-1">
-            <FileUpload
-              value={archivo ? [archivo] : []}
-              onValueChange={(files) => onSoporteChange(fkMatricula, files[0] ?? null)}
-              accept=".pdf,.jpg,.jpeg,.png"
-              maxSize={10 * 1024 * 1024}
-              className="w-fit"
-              disabled={soloLectura}
-            >
-              <FileUploadTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex items-center gap-1.5 text-sm hover:underline",
-                      hayArchivo ? "text-foreground" : "text-muted-foreground",
-                    )}
-                  />
-                }
-              >
-                <PaperclipIcon className="size-4 shrink-0" />
-                <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin justificación"}</span>
-              </FileUploadTrigger>
-            </FileUpload>
-            {hayArchivo && <VerSoporteButton archivoLocal={archivo} fkSoporteArchivo={fkSoporteExistente} />}
-            {hayArchivo && !soloLectura && (
+        const eliminado = soporteEliminado[fk] ?? false
+        const archivo = soporte[fk] ?? null
+        const nombreExistente = archivo || eliminado ? null : r.soporte_nombre
+        if (archivo || nombreExistente) {
+          return (
+            <span className="flex items-center gap-2">
+              <EnlaceSoporte
+                archivoLocal={archivo}
+                fkSoporteArchivo={archivo || eliminado ? null : r.fk_soporte_archivo}
+                nombre={archivo?.name ?? nombreExistente ?? ""}
+              />
+              {!soloLectura && (
+                <button
+                  type="button"
+                  aria-label="Quitar excusa"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => onSoporteEliminar(fk)}
+                >
+                  <XIcon className="size-4" />
+                </button>
+              )}
+            </span>
+          )
+        }
+
+        if (r.justificacion) {
+          return (
+            <span className="flex items-center gap-2">
+              <Badge variant="soft" color="success">
+                Justificada
+              </Badge>
               <button
                 type="button"
-                aria-label="Quitar justificación"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => onSoporteEliminar(fkMatricula)}
+                disabled={!puedeJustificar}
+                onClick={() => onJustificar(r)}
+                className="text-sm hover:underline disabled:no-underline"
               >
-                <XIcon className="size-3.5 shrink-0" />
+                {r.fuente_justificacion ?? "Sin archivo"}
               </button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={<button type="button" aria-label="Ver justificación" className="text-muted-foreground" />}
+                >
+                  <InfoIcon className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">{r.justificacion}</TooltipContent>
+              </Tooltip>
+            </span>
+          )
+        }
+
+        // Sin archivo solo se justifica lo ya guardado como No asistió / Llegó tarde.
+        const guardado = r.tipo_asistencia_valor
+        const justificable = r.pk_tasistencia != null && (guardado === NO_ASISTIO || guardado === LLEGO_TARDE)
+        return (
+          <span className="flex items-center gap-3">
+            {!soloLectura && (
+              <FileUpload
+                value={[]}
+                onValueChange={(files) => onSoporteChange(fk, files[0] ?? null)}
+                accept=".pdf,.jpg,.jpeg,.png"
+                maxSize={10 * 1024 * 1024}
+                className="w-fit"
+              >
+                <FileUploadTrigger render={<Button type="button" variant="outline" color="neutral" size="xs" />}>
+                  <FileUploadOutlinedIcon data-icon="inline-start" />
+                  Adjuntar
+                </FileUploadTrigger>
+              </FileUpload>
             )}
-          </div>
+            {puedeJustificar &&
+              (justificable ? (
+                <button type="button" onClick={() => onJustificar(r)} className="text-sm text-primary hover:underline">
+                  Justificar sin archivo
+                </button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger render={<span className="cursor-help text-sm text-muted-foreground" />}>
+                    Justificar sin archivo
+                  </TooltipTrigger>
+                  <TooltipContent>Guarde la sesión para justificar sin archivo.</TooltipContent>
+                </Tooltip>
+              ))}
+          </span>
         )
       },
     },
