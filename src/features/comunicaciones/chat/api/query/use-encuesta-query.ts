@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
-import type { Encuesta } from "@/features/comunicaciones/chat/api/types"
+import type { Encuesta, RespuestaIndividual } from "@/features/comunicaciones/chat/api/types"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 
@@ -23,5 +23,15 @@ export function useEncuestaQuery(conversacionId: number | undefined) {
     enabled: CHAT_FUNCIONES.encuestas && Boolean(conversacionId),
     refetchInterval: (query) =>
       query.state.data && estadoEleccion(query.state.data) === "ACTIVA" ? REFRESCO_MS : false,
+  })
+}
+
+// Solo quien gestiona una encuesta ACADEMICA (comms-service responde 403/404 si no).
+export function useRespuestasIndividualesQuery(conversacionId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: [...chatKeys.encuesta(conversacionId), "individuales"],
+    queryFn: () =>
+      evalCol.getRows<RespuestaIndividual>(`/comunicaciones/conversaciones/${conversacionId}/encuesta/respuestas-individuales`),
+    enabled,
   })
 }

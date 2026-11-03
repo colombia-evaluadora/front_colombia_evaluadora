@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { Encuesta, PreguntaEncuesta } from "@/features/comunicaciones/chat/api/types"
 import { estadoEleccion, porcentaje } from "@/features/comunicaciones/chat/lib/eleccion"
 import { resumenEncuesta } from "@/features/comunicaciones/chat/lib/encuesta"
+import { EncuestaAcademicaGestion } from "@/features/comunicaciones/chat/components/encuesta-academica-gestion"
 
 const COLORES = ["bg-blue", "bg-orange", "bg-green", "bg-purple", "bg-red", "bg-yellow"]
 
@@ -48,6 +49,18 @@ export function EncuestaResultados({
       </p>
     )
   }
+  const gestiona = e.gestiona ?? e.esCreador
+  // Solo al cierre: antes, el participante no ve conteos aunque haya respondido.
+  if (e.resultados === "AL_CIERRE" && !gestiona) {
+    if (estadoEleccion(e) !== "FINALIZADA") {
+      return (
+        <p className="mb-4 rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+          El resumen de esta encuesta se muestra cuando cierre.
+        </p>
+      )
+    }
+    return <ResumenResultados encuesta={e} />
+  }
   // Públicos: el participante los ve (en vivo) solo después de responder; comms-service no le
   // manda conteos antes. Quien gestiona los ve siempre.
   if (!(e.gestiona ?? e.esCreador) && !e.yaRespondi) {
@@ -58,6 +71,15 @@ export function EncuestaResultados({
     )
   }
 
+  return (
+    <>
+      {e.modalidad === "ACADEMICA" && gestiona && <EncuestaAcademicaGestion encuesta={e} />}
+      <ResumenResultados encuesta={e} />
+    </>
+  )
+}
+
+function ResumenResultados({ encuesta: e }: { encuesta: Encuesta }) {
   const r = resumenEncuesta(e)
 
   return (
