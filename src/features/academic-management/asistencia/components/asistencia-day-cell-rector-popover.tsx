@@ -262,15 +262,14 @@ export function AsistenciaGrupoDrillDown({
             return (
               <li key={item.id}>
                 <Link
-                  to={paths.app.asistenciaSeguimiento.getHref()}
+                  to={paths.app.asistenciaManual.getHref()}
+                  // Regla 76: quien no dicta la clase abre la misma planilla, en solo lectura.
                   search={{
                     sede: seguimientoSede,
                     fecha: item.fecha,
-                    jornada: item.jornada,
-                    grado: item.grado,
                     grupo: item.fkGrupo,
-                    // Formativa: fk_asignatura es la dueña de la actividad y no filtra sus registros.
-                    asignatura: item.esFormativa ? undefined : item.fkAsignatura,
+                    asignatura: item.fkAsignatura,
+                    desde: "calendario",
                   }}
                   className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
                 >

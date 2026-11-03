@@ -102,7 +102,6 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/planeador/recursos/vista-previa": MENU.planeador,
 
   "/app/asistencia": MENU.asistencia,
-  "/app/asistencia/seguimiento": MENU.asistencia,
   "/app/asistencia/manual": MENU.asistencia,
 
   "/app/comunicaciones/chat": MENU.chat,
