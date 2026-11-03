@@ -247,6 +247,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             </Field>
             <ComboOpciones
               id="anotacion-codigo"
+              size="default"
               label="Código"
               required
               todos={false}
@@ -258,7 +259,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
               onChange={(c) => setV({ ...v, codigo: c, mediacion: false })}
             />
             {codigo && (
-              <div className="mt-2 flex h-10 items-center gap-3 text-sm">
+              <div className="mt-2 flex h-11 items-center gap-3 text-sm">
                 <span className="flex items-center gap-1.5">
                   Tipo:
                   <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
