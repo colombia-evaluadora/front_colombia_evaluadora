@@ -83,6 +83,12 @@ function valorMaximoCriterio(criterio: EscalaCriterio): number | undefined {
   return puntajes.length > 0 ? Math.max(...puntajes) : undefined
 }
 
+/** Puntaje de un nivel: recorta a 0-100 al escribir, igual que los niveles de la rúbrica. */
+function puntajeDesdeInput(raw: string): number | undefined {
+  const valor = numeroDesdeInput(raw)
+  return valor == null ? undefined : Math.min(100, Math.max(0, valor))
+}
+
 function numeroDesdeInput(raw: string): number | undefined {
   return raw === "" ? undefined : Number(raw)
 }
@@ -532,7 +538,7 @@ function CriterioEscalaCard({
                       max={100}
                       step="any"
                       value={nivel.ponderacion ?? ""}
-                      onChange={(e) => updateNivel(nIndex, { ponderacion: numeroDesdeInput(e.target.value) })}
+                      onChange={(e) => updateNivel(nIndex, { ponderacion: puntajeDesdeInput(e.target.value) })}
                       aria-invalid={puntajeInvalido}
                       disabled={disabled}
                     />
