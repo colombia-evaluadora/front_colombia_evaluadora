@@ -3,6 +3,7 @@ import { establishmentsRowsDb } from "@/mocks/db/establishments"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 
 import type { CampusStatus } from "@/features/establishment/campuses/api/types/campus"
+import type { InfluenceArea } from "@/features/establishment/campuses/lib/geo"
 
 /**
  * Lo que el listado y el detalle de sedes necesitan además del `Campus` de
@@ -15,6 +16,9 @@ export interface CampusMockDetail {
   consecutive: string
   status: CampusStatus
   workScheduleIds: number[]
+  /** "latitud,longitud" o null (pendiente). */
+  location: string | null
+  influenceArea: InfluenceArea | null
 }
 
 export interface CampusSpecialtyMock {
@@ -51,6 +55,15 @@ export const campusDetailsDb = new Map<number, CampusMockDetail>()
       consecutive: String(consecutive),
       status: index === campusesDb.length - 1 ? "I" : "A",
       workScheduleIds: jornadasDb.slice(0, 1 + (index % jornadasDb.length)).map((j) => j.id),
+      // Las principales nacen sin ubicación (Regla 85); las anexas, cerca de Valledupar, y la primera con área.
+      location: consecutive === 1 ? null : `${(10.46 + index * 0.004).toFixed(6)},${(-73.25 - index * 0.003).toFixed(6)}`,
+      influenceArea:
+        consecutive === 2 && index === 3
+          ? {
+              type: "Polygon",
+              coordinates: [[[-73.262, 10.469], [-73.254, 10.469], [-73.254, 10.477], [-73.262, 10.477], [-73.262, 10.469]]],
+            }
+          : null,
     })
   })
 }

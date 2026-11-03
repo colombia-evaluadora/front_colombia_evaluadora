@@ -4,7 +4,11 @@ import { useStore } from "@tanstack/react-form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { WarningIcon } from "@/components/ui/icons"
 import { isFieldInvalid, toFieldErrors, useFieldContext, useFormDisabled } from "@/lib/forms"
+
+import { CampusAreaMap, CampusLocationMap } from "@/features/establishment/campuses/components/map/campus-maps"
+import { formatLocation, parseLocation, type InfluenceArea } from "@/features/establishment/campuses/lib/geo"
 
 /** Estado del campo actual, como los campos registrados de `@/lib/forms`. */
 function useCampusField<TValue>(disabledProp?: boolean) {
@@ -61,6 +65,77 @@ export function ZoneRadioField({
         ))}
       </RadioGroup>
       {invalid ? <FieldError errors={errors} /> : description ? <FieldDescription>{description}</FieldDescription> : null}
+    </Field>
+  )
+}
+
+/**
+ * Ubicación de la sede (Regla 89): el punto del mapa, que se ubica con la
+ * dirección o se marca a mano. Sin punto se ve el aviso de ubicación pendiente
+ * (Regla 85), que no bloquea nada.
+ */
+export function LocationField({
+  label,
+  required = false,
+  onLocate,
+  locating,
+  recenterVersion,
+  message,
+}: {
+  label: string
+  required?: boolean
+  onLocate?: () => void
+  locating?: boolean
+  recenterVersion?: number
+  /** Resultado de "Ubicar con la dirección" (qué tan cerca quedó, o que no se encontró). */
+  message?: string | null
+}) {
+  const { field, value, invalid, errors, disabled } = useCampusField<string>()
+  const location = parseLocation(value)
+  return (
+    <Field orientation="vertical" data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+      <FieldLabel className="normal-case tracking-normal">
+        {label}
+        {required ? "*" : ""}
+      </FieldLabel>
+      <CampusLocationMap
+        value={location}
+        onChange={(next) => {
+          field.handleChange(formatLocation(next))
+          field.handleBlur()
+        }}
+        onLocate={onLocate}
+        locating={locating}
+        disabled={disabled}
+        recenterVersion={recenterVersion}
+      />
+      {!location && !invalid ? (
+        <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-xs">
+          <WarningIcon aria-hidden className="mt-px size-4 shrink-0 text-yellow" />
+          Ubicación pendiente. Geolocalice la sede desde su dirección o márquela en el mapa.
+        </p>
+      ) : null}
+      {invalid ? <FieldError errors={errors} /> : message ? <FieldDescription>{message}</FieldDescription> : null}
+    </Field>
+  )
+}
+
+/** Área de influencia (Regla 89): polígono opcional, sin cruces. */
+export function InfluenceAreaField({ label, location }: { label: string; location: string }) {
+  const { field, value, invalid, errors, disabled } = useCampusField<InfluenceArea | null>()
+  return (
+    <Field orientation="vertical" data-invalid={invalid || undefined} data-disabled={disabled || undefined}>
+      <FieldLabel className="normal-case tracking-normal">{label}</FieldLabel>
+      <CampusAreaMap
+        value={value ?? null}
+        onChange={(next) => {
+          field.handleChange(next)
+          field.handleBlur()
+        }}
+        location={parseLocation(location)}
+        disabled={disabled}
+      />
+      {invalid ? <FieldError errors={errors} /> : null}
     </Field>
   )
 }

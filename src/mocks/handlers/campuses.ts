@@ -13,6 +13,8 @@ import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import { ZONES } from "@/mocks/db/catalogs/establishment"
 
 import type { Campus, CampusStatus } from "@/features/establishment/campuses/api/types/campus"
+import type { InfluenceArea } from "@/features/establishment/campuses/lib/geo"
+import { env } from "@/config/env"
 import type { RealCampusRow } from "@/features/establishment/campuses/api/query/use-campuses"
 import type { RealCampusDetailRow } from "@/features/establishment/campuses/api/query/use-campus"
 import type { SedeOption, SedesOptionsResponse } from "@/features/establishment/academic-period/api/types/sede-option"
@@ -66,6 +68,8 @@ function toDetailRow(campus: Campus): RealCampusDetailRow {
     jornadas: jornadasDb
       .filter((j) => detail.workScheduleIds.includes(j.id))
       .map((j) => ({ id: j.id, nombre: j.name, valor: j.name })),
+    georeferenciacion: detail.location,
+    area_influencia: detail.influenceArea,
     atiende_discapacidad: campus.id % 2 === 0,
     atiende_victimas_conflicto: campus.id % 3 === 0,
   }
@@ -129,6 +133,9 @@ interface CampusBody {
   phone?: string
   workSchedules?: number[]
   establishmentId?: number
+  georeference?: string | null
+  /** GeoJSON como texto; "null" quita el área. */
+  influenceArea?: string
 }
 
 // Las validaciones que el usuario puede disparar desde el formulario, con los textos del SSO.
@@ -162,6 +169,15 @@ function applyBody(campus: Campus, body: CampusBody): Campus {
 }
 
 export const campusHandlers = [
+  // Geocodificador (Nominatim): con mocks no se sale a internet. Una dirección con
+  // "sin mapa" no se encuentra; el resto cae cerca de Valledupar.
+  http.get(env.GEOCODER_URL, async ({ request }) => {
+    await delay(400)
+    const q = new URL(request.url).searchParams.get("q") ?? ""
+    if (/sin mapa/i.test(q)) return HttpResponse.json([])
+    return HttpResponse.json([{ lat: "10.473600", lon: "-73.253900", display_name: q }])
+  }),
+
   http.get("*/api/establishments/campuses/options", async () => {
     await delay(150)
     // Las opciones llevan estado y jornadas (permisos de funcionarios: Reglas 84 y 100).
@@ -371,6 +387,9 @@ export const campusHandlers = [
     await delay(300)
     const body = (await request.json()) as CampusBody
     const establishmentId = Number(body.establishmentId)
+    if (!body.georeference) {
+      return badRequest("La ubicación de la sede es obligatoria: ubíquela con la dirección o márquela en el mapa.")
+    }
     const error = validateBody(body, establishmentId, null)
     if (error) return error.startsWith("Seleccione") ? badRequest(error) : conflict(error)
     const id = takeNextCampusId()
@@ -384,6 +403,8 @@ export const campusHandlers = [
       consecutive: String(Number(body.consecutive) || nextConsecutive(establishmentId) || 2),
       status: "A",
       workScheduleIds: body.workSchedules ?? [],
+      location: body.georeference ?? null,
+      influenceArea: body.influenceArea ? (JSON.parse(body.influenceArea) as InfluenceArea | null) : null,
     })
     return HttpResponse.json({ rows: [{ pk_sede_creada: id }] })
   }),
@@ -409,6 +430,8 @@ export const campusHandlers = [
     if (moveTo != null) detail.establishmentId = moveTo
     if (!principal && body.consecutive) detail.consecutive = String(Number(body.consecutive))
     if (body.workSchedules) detail.workScheduleIds = body.workSchedules
+    if (body.georeference) detail.location = body.georeference
+    if (body.influenceArea !== undefined) detail.influenceArea = JSON.parse(body.influenceArea) as InfluenceArea | null
     return HttpResponse.json({ rows: [{ pk_sede_actualizada: campus.id }] })
   }),
 

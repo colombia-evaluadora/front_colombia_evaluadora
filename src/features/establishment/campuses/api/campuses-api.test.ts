@@ -4,7 +4,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 
 // El front de sedes tiene un solo camino (rutas reales); el mock las imita.
 vi.mock("@/config/env", () => ({
-  env: { API_URL: "http://localhost/api", ENABLE_API_MOCKING: false, APP_URL: "http://localhost", NAME: "TEST" },
+  env: {
+    API_URL: "http://localhost/api",
+    ENABLE_API_MOCKING: false,
+    APP_URL: "http://localhost",
+    NAME: "TEST",
+    GEOCODER_URL: "https://nominatim.openstreetmap.org/search",
+  },
 }))
 // El interceptor de axios lee `window.location`; en node no existe.
 vi.stubGlobal("window", { location: { pathname: "/app", href: "/app" } })
@@ -23,6 +29,9 @@ const { fetchCampusSpecialties, fetchSpecialtyCatalog } = await import(
 const { saveCampusSpecialty, deleteCampusSpecialty } = await import(
   "@/features/establishment/campuses/api/mutations/specialties"
 )
+
+const { toInfluenceArea } = await import("@/features/establishment/campuses/lib/geo")
+const { geocodeCampusAddress } = await import("@/features/establishment/campuses/api/query/geocode")
 
 api.defaults.baseURL = "http://localhost/api"
 const server = setupServer(...campusHandlers)
@@ -71,6 +80,8 @@ describe("crear y editar", () => {
       address: "",
       phone: "",
       workScheduleIds: [1, 2],
+      location: "10.470000,-73.250000",
+      influenceArea: null,
     })
     const detalle = await fetchCampus(id)
     expect(detalle.consecutive).toBe(String(consecutivo))
@@ -78,12 +89,32 @@ describe("crear y editar", () => {
     expect(detalle.workSchedules.map((j) => j.id)).toEqual([1, 2])
 
     await expect(
-      createCampus({ ...{ establishmentId: ee, name: "Otra", dane: "999000000002", zoneId: 11 }, consecutive: String(consecutivo), neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1] }),
+      createCampus({ ...{ establishmentId: ee, name: "Otra", dane: "999000000002", zoneId: 11 }, consecutive: String(consecutivo), neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1], location: "10.47,-73.25", influenceArea: null }),
     ).rejects.toSatisfy((error) => status(error) === 409)
   })
 
-  it("en la principal solo manda zona y jornadas", async () => {
+  it("una anexa nueva sin ubicación no se crea (Regla 89)", async () => {
+    const { rows } = await lista()
+    const error = await createCampus({
+      establishmentId: rows[0].establishmentId,
+      consecutive: "",
+      name: "Sin ubicación",
+      dane: "999000000009",
+      zoneId: 11,
+      neighborhood: "",
+      commune: "",
+      address: "",
+      phone: "",
+      workScheduleIds: [1],
+      location: "",
+      influenceArea: null,
+    }).catch((e) => e)
+    expect(status(error)).toBe(400)
+  })
+
+  it("en la principal solo manda zona, jornadas, ubicación y el área si cambió", async () => {
     let body: Record<string, unknown> | null = null
+    const area = toInfluenceArea([[10.47, -73.26], [10.47, -73.25], [10.48, -73.25]])
     server.use(
       http.patch("*/api/eval-col/establecimientos/sedes/:id", async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
@@ -93,9 +124,26 @@ describe("crear y editar", () => {
     await updateCampus({
       campusId: 1,
       isPrincipal: true,
-      values: { establishmentId: 1, consecutive: "1", name: "X", dane: "1", zoneId: 11, neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1] },
+      values: { establishmentId: 1, consecutive: "1", name: "X", dane: "1", zoneId: 11, neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1], location: "10.5,-73.2", influenceArea: area },
+      originalInfluenceArea: null,
     })
-    expect(body).toEqual({ zone: 11, workSchedules: [1] })
+    expect(body).toEqual({ zone: 11, workSchedules: [1], georeference: "10.5,-73.2", influenceArea: JSON.stringify(area) })
+
+    // Sin cambios en el área no viaja; quitarla manda "null".
+    await updateCampus({
+      campusId: 1,
+      isPrincipal: true,
+      values: { establishmentId: 1, consecutive: "1", name: "X", dane: "1", zoneId: 11, neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1], location: "", influenceArea: area },
+      originalInfluenceArea: area,
+    })
+    expect(body).toEqual({ zone: 11, workSchedules: [1], georeference: null })
+    await updateCampus({
+      campusId: 1,
+      isPrincipal: true,
+      values: { establishmentId: 1, consecutive: "1", name: "X", dane: "1", zoneId: 11, neighborhood: "", commune: "", address: "", phone: "", workScheduleIds: [1], location: "", influenceArea: null },
+      originalInfluenceArea: area,
+    })
+    expect(body).toEqual({ zone: 11, workSchedules: [1], georeference: null, influenceArea: "null" })
   })
 })
 
@@ -189,6 +237,8 @@ describe("cambiar establecimiento", () => {
       address: detalle.address,
       phone: detalle.phone,
       workScheduleIds: detalle.workSchedules.map((j) => j.id),
+      location: detalle.location,
+      influenceArea: detalle.influenceArea,
     }
     // El 1 es de la principal del destino.
     const error = await updateCampus({ campusId: anexa.id, values: valores, isPrincipal: false, moveTo: destino }).catch((e) => e)
@@ -217,5 +267,26 @@ describe("cambiar establecimiento", () => {
     // Sin rector no se convierte.
     const error = await convertCampus({ campusId: rows.find((r) => !r.isPrincipal && r.id !== anexa.id)!.id, values: { ...valores, principal: null } }).catch((e) => e)
     expect(status(error)).toBe(400)
+  })
+})
+
+describe("ubicación y área de influencia", () => {
+  it("el detalle trae la ubicación (pendiente en la principal) y el área", async () => {
+    const { rows } = await lista()
+    const principal = await fetchCampus(rows.find((r) => r.isPrincipal)!.id)
+    expect(principal.location).toBe("")
+    const conArea = await fetchCampus(4)
+    expect(conArea.location).toMatch(/^10\.\d+,-73\.\d+$/)
+    expect(conArea.influenceArea?.type).toBe("Polygon")
+  })
+
+  it("ubica con la dirección y, si no la encuentra, con el barrio", async () => {
+    vi.stubGlobal("sessionStorage", undefined)
+    const exacta = await geocodeCampusAddress({ address: "Calle 10 # 4-20", neighborhood: "Centro", municipality: "Valledupar" })
+    expect(exacta).toEqual({ location: [10.4736, -73.2539], precision: "address" })
+    const barrio = await geocodeCampusAddress({ address: "Calle sin mapa 1", neighborhood: "Novalito", municipality: "Valledupar" })
+    expect(barrio?.precision).toBe("neighborhood")
+    const nada = await geocodeCampusAddress({ address: "Calle sin mapa 2", neighborhood: "", municipality: "" })
+    expect(nada).toBeNull()
   })
 })

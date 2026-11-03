@@ -1,3 +1,4 @@
+import type { InfluenceArea } from "@/features/establishment/campuses/lib/geo"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 /**
@@ -64,6 +65,10 @@ export interface CampusDetail {
   status: CampusStatus
   attendsDisability: boolean
   attendsConflictVictims: boolean
+  /** "latitud,longitud"; vacío mientras la ubicación esté pendiente (la principal nace así, Regla 85). */
+  location: string
+  /** Polígono GeoJSON, o `null` si no se dibujó (Regla 89). */
+  influenceArea: InfluenceArea | null
 }
 
 /** Valores del formulario de la sede (crear y editar). */
@@ -78,6 +83,9 @@ export interface CampusFormValues {
   address: string
   phone: string
   workScheduleIds: number[]
+  /** "latitud,longitud" o vacío. */
+  location: string
+  influenceArea: InfluenceArea | null
 }
 
 /** Opción liviana para el selector de establecimiento. */

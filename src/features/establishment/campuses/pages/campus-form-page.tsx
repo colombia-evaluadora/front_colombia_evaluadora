@@ -59,11 +59,19 @@ import { useUpdate } from "@/features/establishment/campuses/api/mutations/use-u
 import type { CampusDetail, CampusFormValues } from "@/features/establishment/campuses/api/types/campus"
 import { CampusStatusBadge, PrincipalBadge } from "@/features/establishment/campuses/components/campus-badges"
 import {
-  MapPlaceholder,
   ReadOnlyValue,
   SyncedWithEstablishment,
 } from "@/features/establishment/campuses/components/campus-read-only"
-import { WorkSchedulesField, ZoneRadioField } from "@/features/establishment/campuses/components/fields/campus-fields"
+import {
+  InfluenceAreaField,
+  LocationField,
+  WorkSchedulesField,
+  ZoneRadioField,
+} from "@/features/establishment/campuses/components/fields/campus-fields"
+import { geocodeCampusAddress } from "@/features/establishment/campuses/api/query/geocode"
+import { formatLocation } from "@/features/establishment/campuses/lib/geo"
+import { fetchEstablishment } from "@/features/establishment/institution/api/query/use-establishment"
+import { establishmentKeys } from "@/features/establishment/institution/api/query-keys"
 import { CampusSpecialtiesSection } from "@/features/establishment/campuses/components/specialties/campus-specialties-section"
 import { ConvertCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-convert-campus"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
@@ -93,6 +101,8 @@ function toFormValues(campus: CampusDetail | null): CampusFormValues {
     address: campus?.address ?? "",
     phone: campus?.phone ?? "",
     workScheduleIds: campus?.workSchedules.map((j) => j.id) ?? [],
+    location: campus?.location ?? "",
+    influenceArea: campus?.influenceArea ?? null,
   }
 }
 
@@ -211,6 +221,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
         values,
         isPrincipal: principal,
         moveTo: isMove(values) ? values.establishmentId : null,
+        originalInfluenceArea: campus.influenceArea,
       })
   }
 
@@ -223,7 +234,13 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
   const form = useAppForm({
     defaultValues: toFormValues(campus),
     // Al editar, lo que no cambió no se revalida: las sedes viejas conservan sus datos.
-    validators: { onSubmit: buildCampusFormSchema({ principal, original: campus ? toFormValues(campus) : undefined }) },
+    validators: {
+      onSubmit: buildCampusFormSchema({
+        principal,
+        original: campus ? toFormValues(campus) : undefined,
+        requireLocation: mode === "create",
+      }),
+    },
     onSubmit: async ({ value }) => {
       // Un nombre repetido en el establecimiento (o en el de destino, al mover) se advierte antes de guardar (Regla 52).
       if (!principal && value.establishmentId != null) {
@@ -301,6 +318,60 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
     if (form.getFieldMeta("consecutive")?.isDirty) return
     form.setFieldValue("consecutive", String(nextConsecutive), { dontUpdateMeta: true })
   }, [mode, nextConsecutive, form])
+
+  // Ubicar con la dirección (Regla 89): dirección y barrio de la sede (en la principal, los del EE,
+  // que son los mismos) más el municipio del establecimiento, que la sede no guarda.
+  const [locating, setLocating] = useState(false)
+  const [locateMessage, setLocateMessage] = useState<string | null>(null)
+  const [recenterVersion, setRecenterVersion] = useState(0)
+  const location = useStore(form.store, (s) => s.values.location)
+
+  async function locateWithAddress() {
+    const values = form.state.values
+    const address = principal ? (campus?.address ?? "") : values.address
+    const neighborhood = principal ? (campus?.neighborhood ?? "") : values.neighborhood
+    if (!address.trim() && !neighborhood.trim()) {
+      setLocateMessage("Escriba la dirección de la sede, o marque el punto directamente en el mapa.")
+      return
+    }
+    setLocating(true)
+    setLocateMessage(null)
+    try {
+      const establishment =
+        values.establishmentId != null
+          ? await queryClient
+              .fetchQuery({
+                queryKey: establishmentKeys.detalle(values.establishmentId),
+                queryFn: () => fetchEstablishment(values.establishmentId as number),
+              })
+              .catch(() => null)
+          : null
+      const municipality = establishment?.establishment.address.municipality
+      const result = await geocodeCampusAddress({
+        address,
+        neighborhood,
+        municipality: municipality?.name,
+        department: municipality?.department.name,
+      })
+      if (!result) {
+        setLocateMessage("No se encontró la dirección en el mapa. Marque el punto directamente en el mapa.")
+        return
+      }
+      form.setFieldValue("location", formatLocation(result.location))
+      setRecenterVersion((v) => v + 1)
+      setLocateMessage(
+        result.precision === "address"
+          ? "Ubicada con la dirección. Si no es exacta, arrastre el punto."
+          : result.precision === "neighborhood"
+            ? "No se encontró la dirección exacta: el punto quedó en el barrio. Arrástrelo hasta la sede."
+            : "No se encontró la dirección: el punto quedó en el municipio. Arrástrelo hasta la sede.",
+      )
+    } catch (error) {
+      setLocateMessage(error instanceof Error ? error.message : "No fue posible consultar el mapa.")
+    } finally {
+      setLocating(false)
+    }
+  }
 
   const zoneOptions = zones.map((z) => ({ id: z.id, name: z.name }))
   const scheduleOptions = workSchedules.map((j) => ({ id: j.pk_lista_valor, name: j.nombre }))
@@ -560,6 +631,25 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                           </>
                         )}
 
+                        {/* Ubicación y área (Regla 89): se editan como en cualquier sede, también en la principal. */}
+                        <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:col-span-12 md:grid-cols-2">
+                          <form.AppField name="location">
+                            {() => (
+                              <LocationField
+                                label="Ubicación de la sede"
+                                required={mode === "create"}
+                                onLocate={readOnly ? undefined : locateWithAddress}
+                                locating={locating}
+                                recenterVersion={recenterVersion}
+                                message={locateMessage}
+                              />
+                            )}
+                          </form.AppField>
+                          <form.AppField name="influenceArea">
+                            {() => <InfluenceAreaField label="Área de influencia" location={location} />}
+                          </form.AppField>
+                        </div>
+
                         <div className="md:col-span-12">
                           <form.AppField name="workScheduleIds">
                             {() => <WorkSchedulesField label="Jornadas" options={scheduleOptions} />}
@@ -585,12 +675,6 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                           </>
                         ) : null}
 
-                        <div className="md:col-span-6">
-                          <MapPlaceholder title="Ubicación de la sede" required kind="point" />
-                        </div>
-                        <div className="md:col-span-6">
-                          <MapPlaceholder title="Área de influencia" kind="area" />
-                        </div>
                       </FormDisabledProvider>
                     </div>
                   </FormDisabledProvider>

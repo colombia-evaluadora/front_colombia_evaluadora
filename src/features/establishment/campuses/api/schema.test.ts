@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildCampusFormSchema, campusSpecialtySchema, hasRepeatedName } from "@/features/establishment/campuses/api/schema"
+import { toInfluenceArea } from "@/features/establishment/campuses/lib/geo"
 
 const valid = {
   establishmentId: 1,
@@ -13,6 +14,8 @@ const valid = {
   address: "Calle 5 # 2-10",
   phone: "6076457788",
   workScheduleIds: [1],
+  location: "10.470000,-73.250000",
+  influenceArea: null,
 }
 
 const messages = (result: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) =>
@@ -58,6 +61,20 @@ describe("buildCampusFormSchema", () => {
     const edicion = buildCampusFormSchema({ principal: false, original })
     expect(edicion.safeParse(original).success).toBe(true)
     expect(messages(edicion.safeParse({ ...original, dane: "30000005" })).dane).toMatch(/12 dígitos/)
+  })
+
+  it("la ubicación se exige al crear una anexa; al editar no (queda pendiente)", () => {
+    const crear = buildCampusFormSchema({ principal: false, requireLocation: true })
+    expect(messages(crear.safeParse({ ...valid, location: "" })).location).toMatch(/ubicación de la sede es obligatoria/)
+    expect(crear.safeParse(valid).success).toBe(true)
+    expect(anexa.safeParse({ ...valid, location: "" }).success).toBe(true)
+  })
+
+  it("el área de influencia no se cruza consigo misma", () => {
+    const corbatin = toInfluenceArea([[10.47, -73.26], [10.48, -73.25], [10.47, -73.25], [10.48, -73.26]])
+    expect(messages(anexa.safeParse({ ...valid, influenceArea: corbatin })).influenceArea).toMatch(/cruzarse/)
+    const cuadrado = toInfluenceArea([[10.47, -73.26], [10.47, -73.25], [10.48, -73.25], [10.48, -73.26]])
+    expect(anexa.safeParse({ ...valid, influenceArea: cuadrado }).success).toBe(true)
   })
 
   it("en la principal no valida lo que viene del establecimiento", () => {

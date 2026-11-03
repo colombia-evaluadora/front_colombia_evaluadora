@@ -5,6 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { CampusDetail, CampusStatus } from "@/features/establishment/campuses/api/types/campus"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
+import { parseLocation, readInfluenceArea } from "@/features/establishment/campuses/lib/geo"
 
 /** Fila de `fn_sed_detalle` (sso V448): la sede y lo calculado. */
 export interface RealCampusDetailRow {
@@ -26,6 +27,8 @@ export interface RealCampusDetailRow {
   atiende_victimas_conflicto: boolean | null
   estado: CampusStatus | null
   es_principal: boolean | null
+  georeferenciacion: string | null
+  area_influencia: unknown
 }
 
 export function toCampusDetail(row: RealCampusDetailRow): CampusDetail {
@@ -48,6 +51,9 @@ export function toCampusDetail(row: RealCampusDetailRow): CampusDetail {
     status: row.estado === "I" ? "I" : "A",
     attendsDisability: row.atiende_discapacidad === true,
     attendsConflictVictims: row.atiende_victimas_conflicto === true,
+    // Un dato viejo que no se puede leer ("-") cuenta como ubicación pendiente.
+    location: parseLocation(row.georeferenciacion) ? (row.georeferenciacion ?? "").trim() : "",
+    influenceArea: readInfluenceArea(row.area_influencia),
   }
 }
 

@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { ArrowCounterClockwiseIcon, LockIcon, MapPinIcon, PencilIcon, TrashIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, LockIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 /** Dato que no se edita en este formulario (establecimiento, consecutivo de la principal, calculados). */
@@ -63,45 +62,5 @@ export function SyncedWithEstablishment({ pairs }: { pairs: [string, string][] }
         ))}
       </dl>
     </section>
-  )
-}
-
-/**
- * Recuadro del mapa (Regla 89) mientras se define el proveedor: deja el lugar
- * del diseño con sus botones, deshabilitados, y explica por qué.
- */
-export function MapPlaceholder({ title, required = false, kind }: { title: string; required?: boolean; kind: "point" | "area" }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium">
-        {title}
-        {required && "*"}
-      </p>
-      <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-4 text-center text-sm text-muted-foreground">
-        <span className="flex items-center gap-2">
-          <MapPinIcon aria-hidden className="size-4 shrink-0" />
-          El mapa estará disponible cuando se defina el proveedor de mapas.
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {kind === "point" ? (
-          <Button type="button" variant="outline" color="neutral" size="sm" disabled>
-            <MapPinIcon data-icon="inline-start" />
-            Ubicar con la dirección
-          </Button>
-        ) : (
-          <>
-            <Button type="button" variant="outline" color="neutral" size="sm" disabled>
-              <PencilIcon data-icon="inline-start" />
-              Dibujar
-            </Button>
-            <Button type="button" variant="outline" color="neutral" size="sm" disabled>
-              <TrashIcon data-icon="inline-start" />
-              Borrar
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
   )
 }

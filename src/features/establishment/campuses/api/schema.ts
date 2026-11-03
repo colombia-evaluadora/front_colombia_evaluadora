@@ -7,6 +7,11 @@ import {
   validarLugar,
   validarNombreEstablecimiento,
 } from "@/features/establishment/shared/text-field-rules"
+import {
+  parseLocation,
+  validateInfluenceArea,
+  type InfluenceArea,
+} from "@/features/establishment/campuses/lib/geo"
 
 export const campusFiltersFormSchema = z.object({
   search: z.string(),
@@ -81,9 +86,16 @@ function siCambia(schema: z.ZodType<string>, original: string | undefined) {
 export function buildCampusFormSchema({
   principal,
   original,
+  requireLocation = false,
 }: {
   principal: boolean
   original?: Partial<Record<TextoSede, string>>
+  /**
+   * La ubicación es obligatoria (Regla 89) y se exige al crear una anexa. Al
+   * editar no: una sede vieja sin ubicación se sigue guardando, con el aviso de
+   * ubicación pendiente, como la principal (Regla 85).
+   */
+  requireLocation?: boolean
 }) {
   const texto = (key: TextoSede, schema: z.ZodType<string>) => (principal ? z.string() : siCambia(schema, original?.[key]))
   return z.object({
@@ -129,6 +141,13 @@ export function buildCampusFormSchema({
       z.string().refine((v) => !v.trim() || TELEFONO.test(v.trim()), { message: MENSAJES.telefono }),
     ),
     workScheduleIds: z.array(z.number()).min(1, "Seleccione al menos una jornada."),
+    location: z.string().refine((v) => !requireLocation || parseLocation(v) != null, {
+      message: "La ubicación de la sede es obligatoria: ubíquela con la dirección o márquela en el mapa.",
+    }),
+    influenceArea: z.custom<InfluenceArea | null>().superRefine((area, ctx) => {
+      const message = validateInfluenceArea(area ?? null)
+      if (message) ctx.addIssue({ code: "custom", message })
+    }),
   })
 }
 
