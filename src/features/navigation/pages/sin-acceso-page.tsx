@@ -39,11 +39,11 @@ export function SinAccesoPage() {
     <section className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-10 text-center text-card-foreground">
       <LockIcon aria-hidden className="size-10 text-muted-foreground" />
       <h1 className="font-heading text-2xl font-semibold">
-        {sinMenu ? "No tiene permisos" : "No tienes acceso a este módulo"}
+        {sinMenu ? "No tienes permisos" : "No tienes acceso a este módulo"}
       </h1>
       <p className="max-w-md text-muted-foreground">
         {sinMenu
-          ? "Tu usuario no tiene módulos habilitados. Contacta al administrador para que te asigne una sede."
+          ? "Tu usuario no tiene módulos habilitados. Si crees que es un error, contacta al administrador."
           : "Tu rol no tiene permiso para ver esta sección. Si crees que es un error, contacta al administrador."}
       </p>
       {showStaleMenuHint && (
