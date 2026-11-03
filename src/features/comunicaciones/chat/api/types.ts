@@ -9,9 +9,9 @@ export type TipoConversacion = "CANAL" | "DIRECTO" | "GRUPO"
 // Qué representa el canal; cambia el ícono de la lista.
 export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "ANUNCIO"
 
-// NINGUNA quita el silencio ("Activar notificaciones"): comms-service deja silenciado_hasta en NULL.
-// 1H y FIN_DIA (medianoche hora Colombia) desde la tarjeta 7; 8H/1S se conservan por compatibilidad.
-export type SilencioDuracion = "1H" | "8H" | "FIN_DIA" | "1S" | "SIEMPRE" | "NINGUNA"
+// NINGUNA quita el silencio ("Desactivar silencio de notificaciones"): silenciado_hasta queda NULL.
+// Opciones como WhatsApp: 8H, 1S (1 semana) y SIEMPRE (9999-12-31). 1H/FIN_DIA ya no existen.
+export type SilencioDuracion = "8H" | "1S" | "SIEMPRE" | "NINGUNA"
 
 export interface Conversacion {
   id: number
@@ -21,6 +21,9 @@ export interface Conversacion {
   noLeidos: number
   // Punto verde: el canal tiene una actividad abierta (votación, encuesta…).
   actividadAbierta: boolean
+  // QA 79: estado de la elección, encuesta o evaluación con el reloj del servidor (null en otros
+  // canales). Programada se edita y elimina; en curso, nada; finalizada solo se elimina.
+  actividadEstado?: "PROGRAMADA" | "EN_CURSO" | "FINALIZADA" | null
   esBot: boolean
   totalMiembros: number
   miembrosDestacados: string[]
@@ -36,6 +39,10 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
+  // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
+  // Llega en vivo con `conversacion.entrega`.
+  entregadoHasta?: number | null
   // Grupos: descripción e imagen (`pk_tarchivo`, se ve con token de vista) opcionales.
   descripcion?: string | null
   imagenArchivoId?: number | null
@@ -303,6 +310,9 @@ export interface Eleccion {
   gestiona?: boolean
   // "Permitir comentarios" (paso 1): los participantes escriben en el canal de la elección.
   permiteComentarios?: boolean
+  // El usuario está en el censo y puede votar. El creador solo si se eligió a sí mismo como votante
+  // (QA 78). Opcional: el mock no lo manda (equivale a no habilitado para el creador).
+  habilitado?: boolean
 }
 
 export type EstadoBorrador = "BORRADOR" | "PROGRAMADO" | "ENVIADO"
@@ -587,6 +597,8 @@ export interface Votante {
   nombre: string
   documento: string
   numero: number
+  // Es quien consulta: el selector lo marca "(Tú)" (QA 78). Opcional: el mock no lo manda.
+  esYo?: boolean
 }
 
 /**

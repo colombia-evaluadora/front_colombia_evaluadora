@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -9,7 +10,6 @@ import {
   usePushSuscripcionesQuery,
 } from "@/features/notificaciones/push/api/use-push-subscriptions"
 import { getCurrentSubscription } from "@/features/notificaciones/push/lib/push-client"
-import { getErrorMessage } from "@/lib/api-client"
 
 function formatFecha(value: string | null) {
   if (!value) return "—"
@@ -73,11 +73,7 @@ export function PushDevicesList() {
           )
         })}
       </ul>
-      {remove.isError && (
-        <p role="alert" className="text-sm text-red">
-          {getErrorMessage(remove.error)}
-        </p>
-      )}
+      <ErrorNoticeBanner error={remove.isError ? remove.error : null} />
     </div>
   )
 }

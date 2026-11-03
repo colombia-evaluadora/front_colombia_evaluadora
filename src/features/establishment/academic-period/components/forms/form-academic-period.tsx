@@ -33,6 +33,8 @@ import {
   type AcademicPeriodFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { parseDateValue } from "@/lib/date-value"
+import { aNumero, resolverOpcion } from "@/features/assistant/lib/campos-ui"
+import { useFormularioTanstackAsistente } from "@/features/assistant/lib/formulario-tanstack"
 
 interface AcademicPeriodFormProps {
   id: string
@@ -99,6 +101,65 @@ export function AcademicPeriodForm({
     onSubmit: ({ value }) => {
       onSubmit(academicPeriodFormSchema.parse(value))
     },
+  })
+
+  // UI asistida: el agente lee y rellena estos campos (nunca guarda). Estado
+  // y periodo anterior quedan fuera: los calcula el sistema.
+  useFormularioTanstackAsistente(form, {
+    codigo: "periodo_academico",
+    entidad: currentPeriodId,
+    bloqueado: readOnly ? "El período está en solo lectura (cerrado o abierto en Ver)." : null,
+    campos: [
+      { nombre: "startDate", etiqueta: "Inicio del período académico", tipo: "date", obligatorio: true },
+      {
+        nombre: "endDate",
+        etiqueta: "Fin del período académico",
+        tipo: "date",
+        obligatorio: true,
+        soloLectura: lockEndDate,
+      },
+      { nombre: "enrollmentDeadline", etiqueta: "Fecha límite de matrícula", tipo: "date", obligatorio: true },
+      {
+        nombre: "sedeId",
+        etiqueta: "Sede",
+        tipo: "select",
+        obligatorio: true,
+        opciones: sedes.map((s) => ({ valor: String(s.pk_sede), etiqueta: s.nombre })),
+      },
+      {
+        nombre: "jornadaId",
+        etiqueta: "Jornada",
+        tipo: "select",
+        obligatorio: true,
+        opciones: jornadas.map((j) => ({ valor: String(j.id), etiqueta: j.name })),
+        aAgente: (v) => (v ? String(v) : ""),
+        aModelo: (v) => {
+          const id = resolverOpcion(
+            jornadas.map((j) => ({ valor: String(j.id), etiqueta: j.name })),
+            v,
+          )
+          return id ? Number(id) : undefined
+        },
+      },
+      {
+        nombre: "enrollmentModality",
+        etiqueta: "Modalidad de matrícula",
+        tipo: "select",
+        obligatorio: true,
+        opciones: MODALITY_OPTIONS.map((m) => ({ valor: m.value, etiqueta: m.label })),
+      },
+      {
+        nombre: "cycle",
+        etiqueta: "Ciclo (1 si la modalidad es anual)",
+        tipo: "number",
+        obligatorio: true,
+        aModelo: (v) => {
+          const n = aNumero(v)
+          return n != null && Number.isInteger(n) && n >= 1 ? n : undefined
+        },
+      },
+      { nombre: "reservationEnabled", etiqueta: "Habilitar reserva de cupos", tipo: "checkbox" },
+    ],
   })
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)

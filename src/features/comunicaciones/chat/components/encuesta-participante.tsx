@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import {
   AlertDialog,
@@ -13,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { CheckIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getErrorMessage } from "@/lib/api-client"
 import type { Encuesta } from "@/features/comunicaciones/chat/api/types"
 import { useResponderEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
@@ -122,11 +122,7 @@ function Formulario({ encuesta: e }: { encuesta: Encuesta }) {
               La encuesta se responde una sola vez.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {responder.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(responder.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={responder.isError ? responder.error : null} />
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={responder.isPending}>
               Seguir respondiendo

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
 import {
   AlertDialog,
@@ -13,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { CheckIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import type { Evaluacion } from "@/features/comunicaciones/chat/api/types"
 import {
@@ -138,11 +138,7 @@ function Cuestionario({ evaluacion: e, onEnviada }: { evaluacion: Evaluacion; on
               Después de enviarlas no podrás cambiarlas.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {enviar.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(enviar.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={enviar.isError ? enviar.error : null} />
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={enviar.isPending}>
               Seguir respondiendo

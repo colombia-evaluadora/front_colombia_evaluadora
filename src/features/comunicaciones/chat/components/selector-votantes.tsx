@@ -38,6 +38,10 @@ export function SelectorVotantes({
   mensajeInvalido = "Selecciona al menos una persona habilitada para votar.",
   // "para votar" en elecciones; "para responder" o "para presentarla" en encuestas y evaluaciones.
   accion = "para votar",
+  // QA 78: quien crea puede elegirse a sí mismo (opcional, nunca automático) y participa como
+  // cualquiera. Solo elecciones: encuestas y evaluaciones aún no guardan si el creador participa,
+  // así que ahí su fila sale deshabilitada en lugar de descartarse en silencio al guardar.
+  permitirYo = false,
 }: {
   seleccion: Set<number>
   onCambio: (s: Set<number>) => void
@@ -45,6 +49,7 @@ export function SelectorVotantes({
   titulo?: string
   mensajeInvalido?: string
   accion?: string
+  permitirYo?: boolean
 }) {
   const [filtro, setFiltro] = useState<Filtro | null>(null)
   const [abierto, setAbierto] = useState(false)
@@ -52,8 +57,9 @@ export function SelectorVotantes({
   const opciones = useOpcionesVotantesQuery(true)
   const votantes = useVotantesQuery(filtro?.grupo, filtro?.valor)
   const lista = votantes.data ?? []
+  const elegibles = permitirYo ? lista : lista.filter((v) => !v.esYo)
   const marcados = lista.filter((v) => seleccion.has(v.id)).length
-  const todos = lista.length > 0 && marcados === lista.length
+  const todos = elegibles.length > 0 && elegibles.every((v) => seleccion.has(v.id))
 
   // Grupo de origen de cada persona elegida: arma el resumen "Para quién".
   const [grupoDe, setGrupoDe] = useState<Map<number, string>>(() => new Map())
@@ -198,7 +204,7 @@ export function SelectorVotantes({
                 <Checkbox
                   checked={todos}
                   indeterminate={marcados > 0 && !todos}
-                  onCheckedChange={(v) => cambiar(lista.map((x) => x.id), v === true)}
+                  onCheckedChange={(v) => cambiar(elegibles.map((x) => x.id), v === true)}
                 />
                 Seleccionar todos
               </label>
@@ -216,20 +222,30 @@ export function SelectorVotantes({
             <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
               {lista.map((v) => {
                 const marcado = seleccion.has(v.id)
+                const bloqueado = !!v.esYo && !permitirYo
                 return (
                   <li key={v.id}>
                     <label
                       className={cn(
-                        "flex cursor-pointer items-center gap-3 px-3 py-2.5",
-                        marcado ? "bg-primary/10" : "hover:bg-muted/40",
+                        "flex items-center gap-3 px-3 py-2.5",
+                        bloqueado ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+                        marcado ? "bg-primary/10" : !bloqueado && "hover:bg-muted/40",
                       )}
                     >
-                      <Checkbox checked={marcado} onCheckedChange={(c) => cambiar([v.id], c === true)} />
+                      <Checkbox
+                        checked={marcado}
+                        disabled={bloqueado}
+                        onCheckedChange={(c) => cambiar([v.id], c === true)}
+                      />
                       <span className="min-w-0 flex-1 leading-tight">
-                        <span className="block truncate">{v.nombre}</span>
+                        <span className="block truncate">
+                          {v.nombre}
+                          {v.esYo && <span className="text-muted-foreground"> (Tú)</span>}
+                        </span>
                         {/* Solo nombre y rol (QA 57): sin documento. */}
                         <span className="block truncate text-xs text-muted-foreground">
                           {filtro.grupo === "GRADO" ? "Estudiante" : filtro.valor}
+                          {bloqueado && " · Quien la crea no participa"}
                         </span>
                       </span>
                       {filtro.grupo === "GRADO" && (

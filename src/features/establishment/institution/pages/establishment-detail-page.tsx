@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { PencilIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
-import { getErrorMessage } from "@/lib/api-client"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { CATALOGS } from "@/lib/catalogs"
 import { establishmentDetailRoute } from "@/router"
 
@@ -104,9 +104,7 @@ export function EstablishmentDetailPage() {
         {isPending ? (
           <Skeleton className="h-96" />
         ) : isError || !establishment ? (
-          <p className="text-sm text-red">
-            {getErrorMessage(error) || "No se pudo cargar el establecimiento."}
-          </p>
+          <ErrorNoticeBanner error={error ?? true} fallback="No se pudo cargar el establecimiento." />
         ) : (
           <Accordion
             multiple

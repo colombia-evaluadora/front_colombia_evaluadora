@@ -134,7 +134,12 @@ function ChatContent() {
   const { esEstudiante, puedeMencionarMasivo, perfil } = useChatAccess()
   // El estudiante vota mientras la elección sigue abierta; al cerrar ve los resultados.
   // Vota quien no la creó (estudiante o funcionario habilitado); el servidor valida el censo.
-  const votaEstudiante = !!eleccion && !eleccion.esCreador && estadoEleccion(eleccion) !== "FINALIZADA"
+  // QA 78: el creador que se eligió como votante también vota; ya votado, vuelve a su vista de
+  // gestión (participación, sin conteos hasta el cierre, igual que todos).
+  const votaEstudiante =
+    !!eleccion &&
+    (!eleccion.esCreador || (!!eleccion.habilitado && !eleccion.yaVoto)) &&
+    estadoEleccion(eleccion) !== "FINALIZADA"
   const esEncuesta = activa?.categoria === "ENCUESTA"
   const encuestaQuery = useEncuestaQuery(esEncuesta ? activa.id : undefined)
   const encuesta = encuestaQuery.data

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useStore } from "@tanstack/react-form"
 import { z } from "zod"
 
@@ -354,11 +355,7 @@ export function CrearComunicadoDialog({
             </div>
           )}
 
-          {crear.isError && (
-            <p role="alert" className="text-sm text-red">
-              {getErrorMessage(crear.error)}
-            </p>
-          )}
+          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}

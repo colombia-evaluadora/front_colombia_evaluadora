@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
@@ -113,12 +114,10 @@ function MisDispositivosContent() {
       {devices.isPending ? (
         <p className="text-sm text-muted-foreground">Cargando equipos…</p>
       ) : devices.isError ? (
-        <p role="alert" className="rounded-md bg-red-22 px-3 py-2 text-sm text-red">
-          {getErrorMessage(devices.error)}{" "}
-          <button type="button" className="underline" onClick={() => void devices.refetch()}>
-            Reintentar
-          </button>
-        </p>
+        <ErrorNoticeBanner
+          error={devices.error}
+          action={{ label: "Reintentar", onClick: () => void devices.refetch() }}
+        />
       ) : (
         <DeviceList
           devices={devices.data ?? []}
@@ -181,9 +180,7 @@ function AdminDevicesSection({ onRevoke }: { onRevoke: (device: Device) => void 
         (devices.isPending ? (
           <p className="text-sm text-muted-foreground">Buscando…</p>
         ) : devices.isError ? (
-          <p role="alert" className="rounded-md bg-red-22 px-3 py-2 text-sm text-red">
-            {getErrorMessage(devices.error)}
-          </p>
+          <ErrorNoticeBanner error={devices.error} />
         ) : (
           <DeviceList
             devices={devices.data ?? []}

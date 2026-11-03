@@ -1,3 +1,4 @@
+import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
@@ -136,6 +137,8 @@ function AddMatriculaPageContent() {
   const [files, setFiles] = useState<MatriculaSupportFiles>(createEmptySupportFiles)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  // UI asistida: el agente lee y rellena datos del estudiante y acudiente (nunca guarda).
+  useAsistenteMatricula({ values, setValues, invalidFields: missingFields })
 
   const [pendingHomologation, setPendingHomologation] = useState<{
     matricula: Matricula
