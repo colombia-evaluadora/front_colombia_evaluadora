@@ -9,7 +9,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { DotsThreeVerticalIcon, EyeIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import {
+  BrainIcon,
+  DotsThreeVerticalIcon,
+  EyeIcon,
+  GavelIcon,
+  PencilIcon,
+  PersonIcon,
+  ProhibitIcon,
+} from "@/components/ui/icons"
+
+const ACCIONES_PROXIMAS = [
+  { label: "Reportar salud mental", Icono: BrainIcon },
+  { label: "Remitir a orientación", Icono: PersonIcon },
+  { label: "Abrir proceso disciplinario", Icono: GavelIcon },
+]
 
 import { colorDeTipo, formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
@@ -131,24 +145,27 @@ export function buildColumnsAnotaciones({
             >
               <DotsThreeVerticalIcon />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-72 *:whitespace-nowrap">
               <DropdownMenuItem onClick={() => onVer(a)}>
                 <EyeIcon />
                 Ver detalle
               </DropdownMenuItem>
-              {/* Modifica solo quien la registró (el backend lo vuelve a validar). */}
-              {puedeEditar && vigente && a.es_propia && (
-                <DropdownMenuItem onClick={() => onModificar(a)}>
-                  <PencilIcon />
-                  Modificar
+              {/* Las acciones se ven siempre; se deshabilitan si no aplican. Modifica solo quien la registró. */}
+              <DropdownMenuItem disabled={!(puedeEditar && vigente && a.es_propia)} onClick={() => onModificar(a)}>
+                <PencilIcon />
+                Modificar
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!(puedeAnular && vigente)} onClick={() => onAnular(a)}>
+                <ProhibitIcon />
+                Anular
+              </DropdownMenuItem>
+              {/* Secciones 9.6, 5.2 y convivencia: aún sin backend. */}
+              {ACCIONES_PROXIMAS.map(({ label, Icono }) => (
+                <DropdownMenuItem key={label} disabled>
+                  <Icono />
+                  {label}
                 </DropdownMenuItem>
-              )}
-              {puedeAnular && vigente && (
-                <DropdownMenuItem variant="destructive" onClick={() => onAnular(a)}>
-                  <ProhibitIcon />
-                  Anular
-                </DropdownMenuItem>
-              )}
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         )
