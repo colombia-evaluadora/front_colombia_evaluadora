@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
+import { invalidateEnfasisRelated } from "@/features/establishment/academic-period/api/mutations/invalidate"
 import type { CampusSpecialtyValues } from "@/features/establishment/campuses/api/types/campus"
 
 // Body de las escrituras del catálogo (sso V449): el nombre propio solo con "Otra".
@@ -51,6 +52,8 @@ export function useSaveCampusSpecialty({
     ...rest,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: campusKeys.especialidades(args[1].campusId) })
+      // Los selectores de asignaturas y matrícula salen de este catálogo (Regla 86).
+      invalidateEnfasisRelated(queryClient)
       onSuccess?.(...args)
     },
   })
@@ -66,6 +69,8 @@ export function useDeleteCampusSpecialty({
     ...rest,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: campusKeys.especialidades(args[1].campusId) })
+      // Los selectores de asignaturas y matrícula salen de este catálogo (Regla 86).
+      invalidateEnfasisRelated(queryClient)
       onSuccess?.(...args)
     },
   })

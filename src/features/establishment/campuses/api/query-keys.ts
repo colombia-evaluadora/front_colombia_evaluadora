@@ -10,6 +10,8 @@ export const campusKeys = {
   /** Inscripciones, reservas y periodos en curso: se advierten antes de moverla o convertirla. */
   procesos: (id: number | null | undefined) => [...detalle(id), "procesos-en-curso"] as const,
   options: () => [...all, "options"] as const,
+  /** EE donde el usuario puede crear sedes (selector de Nueva sede). */
+  establecimientosDisponibles: () => [...all, "establecimientos-disponibles"] as const,
   /** Sedes de un establecimiento (para advertir un nombre repetido). */
   porEstablecimiento: (establishmentId: number | null | undefined) =>
     [...all, "por-establecimiento", establishmentId] as const,

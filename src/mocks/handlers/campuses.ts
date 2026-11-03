@@ -178,6 +178,12 @@ export const campusHandlers = [
     return HttpResponse.json([{ lat: "10.473600", lon: "-73.253900", display_name: q }])
   }),
 
+  // Antes de `/sedes/:id`: MSW usa la primera ruta que coincide. En el mock se puede crear en todos.
+  http.get("*/api/eval-col/establecimientos/sedes/establecimientos-disponibles", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: establishmentsRowsDb.map((e) => ({ id: e.id, name: e.name })) })
+  }),
+
   http.get("*/api/establishments/campuses/options", async () => {
     await delay(150)
     // Las opciones llevan estado y jornadas (permisos de funcionarios: Reglas 84 y 100).

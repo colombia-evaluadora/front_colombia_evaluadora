@@ -76,6 +76,7 @@ import { CampusSpecialtiesSection } from "@/features/establishment/campuses/comp
 import { ConvertCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-convert-campus"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { useEstablishmentsForCampusQuery } from "@/features/establishment/campuses/api/query/use-establishments-for-campus"
 import { toDireccionInput, toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import { toTelefonoInput } from "@/features/establishment/shared/person-field-rules"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -181,7 +182,11 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
   const [converting, setConverting] = useState(false)
   const [moveConfirm, setMoveConfirm] = useState<CampusFormValues | null>(null)
 
-  const { data: establishments = [] } = useEstablishmentsOptionsQuery(mode === "create" || canTransfer)
+  // Nueva sede: solo los EE donde puede crear sedes (el mismo permiso del alta). Mover (solo
+  // Superadministrador) elige entre todos los que ve.
+  const { data: creatable = [] } = useEstablishmentsForCampusQuery(mode === "create")
+  const { data: visible = [] } = useEstablishmentsOptionsQuery(canTransfer)
+  const establishments = mode === "create" ? creatable : visible
   const { data: workSchedules = [] } = useQuery(selectCategoryQueryOptions("JORNADA"))
   const establishmentName = (id: number | null) =>
     establishments.find((e) => e.id === id)?.name ?? (id === campus?.establishmentId ? campus.establishmentName : "")
