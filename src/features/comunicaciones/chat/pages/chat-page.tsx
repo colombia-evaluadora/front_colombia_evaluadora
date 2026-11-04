@@ -437,7 +437,13 @@ function ChatContent() {
                       {encuesta && !encuesta.esCreador ? (
                         <EncuestaParticipante encuesta={encuesta} isPending={encuestaQuery.isPending} />
                       ) : (
-                        <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                        <>
+                          {/* QA 78: si se eligió como participante responde aquí, sin perder los resultados en vivo. */}
+                          {encuesta?.habilitado && !encuesta.yaRespondi && estadoEleccion(encuesta) === "ACTIVA" && (
+                            <EncuestaParticipante encuesta={encuesta} isPending={false} />
+                          )}
+                          <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                        </>
                       )}
                     </>
                   ) : (

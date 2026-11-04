@@ -385,6 +385,8 @@ export interface Encuesta {
   gestiona?: boolean
   // El usuario actual ya la respondió (se responde una sola vez).
   yaRespondi: boolean
+  // Puede responder: el creador solo si se eligió como participante (QA 78). Opcional: el mock no lo manda.
+  habilitado?: boolean
 }
 
 // Persona del colegio que se puede añadir a un canal.

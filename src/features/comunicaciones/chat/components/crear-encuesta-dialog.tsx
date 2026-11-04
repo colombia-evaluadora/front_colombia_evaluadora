@@ -290,6 +290,7 @@ export function CrearEncuestaDialog({
                 seleccion={participantes}
                 onCambio={setParticipantes}
                 invalido={intentado && participantes.size === 0}
+                permitirYo
               />
               )}
             </div>
