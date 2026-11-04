@@ -18,6 +18,7 @@ const FONT_AWESOME_ALIASES: Record<string, string> = {
   print: "FileTextIcon",
   desktop: "ChalkboardTeacherIcon",
   comments: "ChatCircleTextIcon",
+  "vote-yea": "BallotIcon",
   "chart-pie": "ChartBarIcon",
   "chart-line": "ChartLineUpIcon",
   "chart-bar": "ChartBarIcon",
@@ -30,6 +31,7 @@ const FONT_AWESOME_ALIASES: Record<string, string> = {
   "window-restore": "ColumnsIcon",
   history: "ClockCountdownIcon",
   database: "TreeIcon",
+  "user-graduate": "GraduationCapIcon",
 }
 
 /**

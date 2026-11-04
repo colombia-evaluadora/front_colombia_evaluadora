@@ -13,6 +13,19 @@ export interface SedeOption {
   direccion: string
   telefono: string
   fk_establecimiento: number
+  /**
+   * A / I (`TSEDE.ESTADO`, sso V445.1). Una sede Inactiva no recibe registros
+   * nuevos (Regla 100). Opcional: las opciones del Planeador no lo traen.
+   */
+  estado?: "A" | "I"
+  /** Jornadas que ofrece la sede (`TSEDE_JORNADA`, Regla 84). Opcional, como `estado`. */
+  jornadas?: SedeOptionJornada[]
+}
+
+export interface SedeOptionJornada {
+  id: number
+  nombre: string
+  valor: string
 }
 
 export interface SedesOptionsResponse {

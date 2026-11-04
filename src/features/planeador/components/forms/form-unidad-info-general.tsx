@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"

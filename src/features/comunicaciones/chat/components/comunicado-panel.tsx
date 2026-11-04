@@ -2,7 +2,11 @@ import { useState } from "react"
 import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   ChatCircleTextIcon,
@@ -12,11 +16,35 @@ import {
   WarningCircleIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import type { Comunicado } from "@/features/comunicaciones/chat/api/types"
+import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
+import {
+  useAnularComunicado,
+  useCancelarComunicado,
+} from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { useRecepcionComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-recepcion-comunicado-query"
 import { AdjuntosComunicadoLista } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
+
+const ESTADOS: Record<
+  EstadoComunicado,
+  { etiqueta: string; color: "info" | "success" | "neutral" | "destructive" }
+> = {
+  PROGRAMADO: { etiqueta: "Programado", color: "info" },
+  PUBLICADO: { etiqueta: "Publicado", color: "success" },
+  VENCIDO: { etiqueta: "Vencido", color: "neutral" },
+  CANCELADO: { etiqueta: "Cancelado", color: "neutral" },
+  ANULADO: { etiqueta: "Anulado", color: "destructive" },
+}
+
+export function EstadoComunicadoBadge({ estado }: { estado: EstadoComunicado }) {
+  const { etiqueta, color } = ESTADOS[estado]
+  return (
+    <Badge variant="soft" color={color}>
+      {etiqueta}
+    </Badge>
+  )
+}
 
 // Un canal de comunicado sin respuestas no tiene conversación: solo muestra el comunicado.
 export function ComunicadoPanel({
@@ -70,6 +98,8 @@ export function ComunicadoPanel({
 /** Tarjeta "Comunicado oficial" (diseño 3883:57269); sola o encabezando la conversación de respuestas. */
 export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }) {
   const [verRecepcion, setVerRecepcion] = useState(false)
+  const [dialogo, setDialogo] = useState<"anular" | "cancelar" | null>(null)
+  const gestiona = c.gestiona ?? c.esCreador
   const programado = new Date(c.publicarEn) > new Date()
   const dirigidoA = resumenDestinatarios(c.audiencia, c.destinos)
 
@@ -86,12 +116,25 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
           <MegaphoneIcon aria-hidden className="size-5 text-muted-foreground" />
           Comunicado oficial
         </p>
-        {c.importante && (
-          <Badge variant="soft" color="destructive">
-            <WarningCircleIcon data-icon="inline-start" aria-hidden />
-            Importante
-          </Badge>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {c.importante && (
+            <Badge variant="soft" color="destructive">
+              <WarningCircleIcon data-icon="inline-start" aria-hidden />
+              Importante
+            </Badge>
+          )}
+          {c.estado && <EstadoComunicadoBadge estado={c.estado} />}
+          {gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO") && (
+            <Button size="sm" variant="outline" color="destructive" onClick={() => setDialogo("anular")}>
+              Anular
+            </Button>
+          )}
+          {gestiona && c.estado === "PROGRAMADO" && (
+            <Button size="sm" variant="outline" color="destructive" onClick={() => setDialogo("cancelar")}>
+              Cancelar
+            </Button>
+          )}
+        </div>
       </div>
       {programado && (
         <p className="mb-3 flex w-fit items-center gap-1.5 rounded-full bg-orange-22 px-3 py-1 text-xs text-orange">
@@ -114,6 +157,18 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
               <time dateTime={c.publicarEn}>{format(new Date(c.publicarEn), "dd/MM/yyyy - hh:mm a")}</time>
             </dd>
           </div>
+          {c.visibleHasta && (
+            <div>
+              <dt className="inline">Visible hasta: </dt>
+              <dd className="inline">{format(new Date(`${c.visibleHasta}T00:00:00`), "dd/MM/yyyy")}</dd>
+            </div>
+          )}
+          {c.motivoAnulacion && (
+            <div>
+              <dt className="inline">Motivo de la anulación: </dt>
+              <dd className="inline">{c.motivoAnulacion}</dd>
+            </div>
+          )}
           {dirigidoA && (
             <div>
               <dt className="inline">Dirigido a: </dt>
@@ -161,10 +216,127 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
         )}
       </footer>
 
+      {dialogo === "anular" && <AnularDialog comunicado={c} onClose={() => setDialogo(null)} />}
+      {dialogo === "cancelar" && <CancelarDialog comunicado={c} onClose={() => setDialogo(null)} />}
       {verRecepcion && (
         <RecepcionDialog conversacionId={c.conversacionId} onClose={() => setVerRecepcion(false)} />
       )}
     </article>
+  )
+}
+
+const MAX_MOTIVO = 500
+
+/** Anular (M.1.ANU.1): motivo obligatorio; sale de las bandejas y se conserva para auditoría. */
+function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+  const { notify } = useNotify()
+  const anular = useAnularComunicado(c.conversacionId)
+  const [motivo, setMotivo] = useState("")
+  const [intentado, setIntentado] = useState(false)
+  const vacio = motivo.trim() === ""
+  const cerrar = () => {
+    if (!anular.isPending) onClose()
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && cerrar()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Anular comunicado</DialogTitle>
+        </DialogHeader>
+        <ErrorNoticeBanner error={anular.isError ? anular.error : null} />
+        <p className="text-sm text-muted-foreground">
+          Se anulará {c.titulo}. Dejará de mostrarse a los destinatarios y no se puede revertir; los correos ya
+          enviados no se retiran.
+        </p>
+        <div className="space-y-1.5">
+          <label htmlFor="motivo-anulacion" className="text-sm font-medium">
+            Motivo<span className="text-red"> *</span>
+          </label>
+          <Textarea
+            id="motivo-anulacion"
+            value={motivo}
+            maxLength={MAX_MOTIVO}
+            aria-invalid={intentado && vacio}
+            onChange={(e) => setMotivo(e.target.value)}
+          />
+          {intentado && vacio && (
+            <p role="alert" className="text-xs text-red">
+              Escribe el motivo de la anulación.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
+            Volver
+          </Button>
+          <Button
+            type="button"
+            color="destructive"
+            disabled={anular.isPending}
+            aria-busy={anular.isPending}
+            onClick={() => {
+              setIntentado(true)
+              if (vacio) return
+              anular.mutate(motivo.trim(), {
+                onSuccess: () => {
+                  notify(`Se anuló el comunicado ${c.titulo}.`)
+                  onClose()
+                },
+              })
+            }}
+          >
+            Anular comunicado
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Cancelar un programado (M.1.ANU.2): sin motivo, solo Volver y Cancelar comunicado. */
+function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+  const { notify } = useNotify()
+  const cancelar = useCancelarComunicado(c.conversacionId)
+  const cerrar = () => {
+    if (!cancelar.isPending) onClose()
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && cerrar()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cancelar comunicado programado</DialogTitle>
+        </DialogHeader>
+        <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
+        <p className="text-sm text-muted-foreground">
+          Se cancelará {c.titulo}, programado para el{" "}
+          {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' hh:mm a")}. Pasará a Cancelado (estado final) y no se
+          publicará.
+        </p>
+        <DialogFooter>
+          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
+            Volver
+          </Button>
+          <Button
+            type="button"
+            color="destructive"
+            disabled={cancelar.isPending}
+            aria-busy={cancelar.isPending}
+            onClick={() =>
+              cancelar.mutate(undefined, {
+                onSuccess: () => {
+                  notify(`Se canceló el comunicado ${c.titulo}.`)
+                  onClose()
+                },
+              })
+            }
+          >
+            Cancelar comunicado
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

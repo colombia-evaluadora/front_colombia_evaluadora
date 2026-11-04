@@ -134,6 +134,7 @@ export function CrearChatDialog({
             {paso === 1 ? (esGrupo ? "Crear un grupo" : "Crear un foro") : `Añadir personas a ${limpio}`}
           </DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={error} />
 
         {paso === 1 ? (
           <form
@@ -206,7 +207,6 @@ export function CrearChatDialog({
           </div>
         )}
 
-        <ErrorNoticeBanner error={error} />
 
         <DialogFooter>
           {paso === 1 ? (

@@ -36,6 +36,7 @@ import {
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/features/auth/hooks/use-auth"
+import { SuspenderPersona } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { puedeAgregarParticipantes, puedeNombrarAdministradores } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -165,6 +166,7 @@ export function MiembrosDialog({
             {puedeAgregar ? `Añadir personas a ${c.nombre}` : `Participantes de ${c.nombre}`}
           </DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={error} />
 
         {esGrupo && (c.imagenArchivoId != null || c.descripcion || resumenModo(c)) && (
           <section aria-label="Información del grupo" className="flex items-start gap-3 rounded-lg bg-muted/40 p-3">
@@ -242,7 +244,6 @@ export function MiembrosDialog({
 
         {puedeAgregar && esGrupo && <SelectorGrupal enabled={open} value={grupal} onChange={setGrupal} />}
 
-        <ErrorNoticeBanner error={error} />
 
         <Field variant="outlined">
           <FieldLabel htmlFor="filtro-miembros">Buscar en {c.tipo === "GRUPO" ? "el grupo" : "el foro"}</FieldLabel>
@@ -548,6 +549,7 @@ function FilaMiembro({
       </button>
       </>
       )}
+      <SuspenderPersona persona={{ id: m.id, nombre: m.nombre }} />
     </li>
   )
 }

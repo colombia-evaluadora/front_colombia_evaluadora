@@ -37,6 +37,7 @@ import {
   useAutoguardadoActividad,
   useEliminarBorradorActividad,
 } from "@/features/comunicaciones/chat/api/mutations/use-borrador-actividad"
+import { CrearEncuestaAcademicaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-academica-dialog"
 import { BarraBorrador } from "@/features/comunicaciones/chat/components/estado-autoguardado"
 import { datosDe, hayContenido, idsDe, preguntasGuardables, revivirPreguntas } from "@/features/comunicaciones/chat/lib/borrador-actividad"
 
@@ -55,7 +56,42 @@ const DATOS_INICIALES: Datos = { nombre: "", descripcion: "", fechaInicio: null,
 
 const aIso = (v: string | null) => (v ? new Date(v).toISOString() : null)
 
-export function CrearEncuestaDialog({
+type PropsDialogo = Parameters<typeof EncuestaInstitucionalDialog>[0]
+
+// Punto de entrada único. Editar o retomar un borrador abre la modalidad que ya tiene; una encuesta
+// nueva pregunta primero cuál. La modalidad no cambia después de publicarla.
+export function CrearEncuestaDialog(props: PropsDialogo) {
+  const [elegida, setElegida] = useState<"INSTITUCIONAL" | "ACADEMICA" | null>(null)
+  const existente = props.editar?.modalidad ?? (props.borrador?.datos?.modalidad === "ACADEMICA" ? "ACADEMICA" : null)
+  const modalidad = existente ?? (props.editar || props.borrador ? "INSTITUCIONAL" : elegida)
+  const onClose = () => {
+    setElegida(null)
+    props.onClose()
+  }
+  if (modalidad === "ACADEMICA") return <CrearEncuestaAcademicaDialog {...props} onClose={onClose} />
+  if (modalidad === "INSTITUCIONAL") return <EncuestaInstitucionalDialog {...props} onClose={onClose} />
+  return (
+    <Dialog open={props.open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>¿Qué tipo de encuesta quieres crear?</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <button type="button" onClick={() => setElegida("INSTITUCIONAL")} className="rounded-lg border p-3 text-left hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+            <span className="block font-medium">Institucional</span>
+            <span className="text-sm text-muted-foreground">Varias preguntas. Anónima y de una sola respuesta.</span>
+          </button>
+          <button type="button" onClick={() => setElegida("ACADEMICA")} className="rounded-lg border p-3 text-left hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+            <span className="block font-medium">De una pregunta</span>
+            <span className="text-sm text-muted-foreground">De 2 a 10 opciones. No es anónima y se puede cambiar la respuesta hasta el cierre.</span>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EncuestaInstitucionalDialog({
   open,
   onClose,
   onCreada,
@@ -198,6 +234,10 @@ export function CrearEncuestaDialog({
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
 
           {paso === 1 ? (
             <form
@@ -290,12 +330,12 @@ export function CrearEncuestaDialog({
                 seleccion={participantes}
                 onCambio={setParticipantes}
                 invalido={intentado && participantes.size === 0}
+                permitirYo
               />
               )}
             </div>
           )}
 
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}

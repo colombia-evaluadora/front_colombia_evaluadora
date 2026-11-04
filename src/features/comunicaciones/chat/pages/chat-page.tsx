@@ -23,6 +23,7 @@ import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-side
 import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-header"
 import { ChatMessages } from "@/features/comunicaciones/chat/components/chat-messages"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
+import { segundosDePausa } from "@/features/comunicaciones/chat/lib/limites-mensaje"
 import {
   CanalBienvenida,
   EleccionEstado,
@@ -437,7 +438,13 @@ function ChatContent() {
                       {encuesta && !encuesta.esCreador ? (
                         <EncuestaParticipante encuesta={encuesta} isPending={encuestaQuery.isPending} />
                       ) : (
-                        <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                        <>
+                          {/* QA 78: si se eligió como participante responde aquí, sin perder los resultados en vivo. */}
+                          {encuesta?.habilitado && !encuesta.yaRespondi && estadoEleccion(encuesta) === "ACTIVA" && (
+                            <EncuestaParticipante encuesta={encuesta} isPending={false} />
+                          )}
+                          <EncuestaResultados encuesta={encuesta} isPending={encuestaQuery.isPending} />
+                        </>
                       )}
                     </>
                   ) : (
@@ -545,7 +552,8 @@ function ChatContent() {
                       }
                     })
                     .catch((error) => {
-                    onError(error)
+                    // El 429 lo avisa el compositor, junto a Enviar en pausa.
+                    if (segundosDePausa(error) == null) onError(error)
                     throw error
                   })
                 }
@@ -554,6 +562,11 @@ function ChatContent() {
               </>
               )}
             </>
+          ) : canal && conversacionesQuery.isSuccess ? (
+            // Enlace (campana) a un comunicado anulado o a una conversación a la que ya no tiene acceso.
+            <div className="grid flex-1 place-items-center p-6 text-center">
+              <p className="max-w-xs text-sm text-muted-foreground">El contenido ya no está disponible.</p>
+            </div>
           ) : (
             <div className="grid flex-1 place-items-center p-6 text-center">
               <div className="max-w-xs space-y-2">

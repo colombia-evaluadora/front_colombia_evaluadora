@@ -90,6 +90,7 @@ function Formulario({
         <DialogTitle>Editar grupo</DialogTitle>
         <DialogDescription>Los cambios los verán todos los miembros.</DialogDescription>
       </DialogHeader>
+      <ErrorNoticeBanner error={editar.error} />
       <div className="max-h-[60dvh] space-y-4 overflow-y-auto pr-1">
         <label className="block space-y-1.5 text-sm">
           <span className="font-medium">Nombre del grupo</span>
@@ -102,7 +103,6 @@ function Formulario({
           idPrefijo={`editar-grupo-${c.id}`}
         />
       </div>
-      <ErrorNoticeBanner error={editar.error} />
       <DialogFooter>
         <Button type="button" variant="fill" color="neutral" onClick={onClose} disabled={editar.isPending}>
           Cancelar

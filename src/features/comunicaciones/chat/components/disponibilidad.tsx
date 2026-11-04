@@ -190,6 +190,7 @@ function ConfigurarDisponibilidadDialog({
             Elige quién ve tu estado en el chat y qué responder cuando estás ausente.
           </DialogDescription>
         </DialogHeader>
+        <NoticeBanner notice={error ? { id: 0, message: error } : null} onClose={() => setError(null)} variant="error" />
         <form
           id="configurar-disponibilidad"
           noValidate
@@ -232,7 +233,6 @@ function ConfigurarDisponibilidadDialog({
               Para los demás apareces desconectado. Con Invisible nadie ve tu estado.
             </p>
           </fieldset>
-          <NoticeBanner notice={error ? { id: 0, message: error } : null} onClose={() => setError(null)} variant="error" />
         </form>
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={actualizar.isPending} onClick={() => onOpenChange(false)}>

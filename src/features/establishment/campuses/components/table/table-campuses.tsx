@@ -1,12 +1,15 @@
 "use no memo"
 
-import { useMemo, type ReactNode } from "react"
+import type { ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
+import { toSearchOptions } from "@/lib/catalog-options"
+import { CATALOGS } from "@/lib/catalogs"
 import {
   TableScreen,
   TableScreenActions,
@@ -18,40 +21,31 @@ import {
 
 import { useCampusesFilters } from "@/features/establishment/campuses/hooks/use-filters"
 import { useCampusesQuery } from "@/features/establishment/campuses/api/query/use-campuses"
-import {
-  useBulkDelete,
-  summarizeCampusBulkDelete,
-} from "@/features/establishment/campuses/api/mutations/use-bulk-delete"
-import { createColumns } from "@/features/establishment/campuses/components/table/columns-campuses"
+import { columns } from "@/features/establishment/campuses/components/table/columns-campuses"
+import { ExportCampusesDialog } from "@/features/establishment/campuses/components/dialogs/dialog-export"
+import { SearchCampuses } from "@/features/establishment/campuses/components/search/search-campuses"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
-import { CATALOGS } from "@/lib/catalogs"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { DialogBulkDelete } from "@/features/establishment/employees/components/dialogs/dialog-bulk-delete"
-import { ClearSelectionDialog } from "@/features/establishment/employees/components/dialogs/dialog-clear-selection"
-import { ExportCampusesDialog } from "@/features/establishment/campuses/components/dialogs/dialog-export"
-import { ExportSelectedCampusesDialog } from "@/features/establishment/campuses/components/dialogs/dialog-export-selected"
-import { SearchCampuses } from "@/features/establishment/campuses/components/search/search-campuses"
-import { useNotify } from "@/components/notice/notice-context"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
+
+/** `VALOR` de "Urbana y Rural": describe al establecimiento, nunca a una sede (Regla 21). */
+const ZONA_MIXTA = "3"
 
 interface CampusesDataTableProps {
-  onEditCampus: (campusId: number) => void
   title: ReactNode
   // Acción principal, en la barra de herramientas.
   action?: ReactNode
 }
 
-export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataTableProps) {
-  const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("SEDES_EDUCATIVAS", { onlineOnlyWrites: true })
+export function CampusesDataTable({ title, action }: CampusesDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
-  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
-    useCampusesFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } = useCampusesFilters()
 
+  const { data: establishments = [] } = useEstablishmentsOptionsQuery()
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
+  const { data: workSchedules = [] } = useQuery(selectCategoryQueryOptions("JORNADA"))
 
   const { data, isPending, isError, error, refetch } = useCampusesQuery({
     filters: queryFilters,
@@ -60,9 +54,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     pageSize,
   })
 
-  const columns = useMemo(() => createColumns({ onEdit: onEditCampus }), [onEditCampus])
-
-  const { table, selectedIds, selectedRows: selectedItems, hasSelection, resetSelection } = useDataTable({
+  const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -77,37 +69,6 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     columnVisibilityStorageKey: "table-campuses-column-visibility",
   })
 
-  const namesById = useMemo(
-    () => new Map(selectedItems.map((row) => [String(row.id), row.name])),
-    [selectedItems],
-  )
-
-  const bulkDelete = useBulkDelete({
-    mutationConfig: {
-      onSuccess: (result) => {
-        const summary = summarizeCampusBulkDelete(result)
-        if (summary.failed.length === 0) {
-          notify(SUCCESS_MESSAGES.campus.deletedMany(summary.succeededCount))
-          resetSelection()
-          return
-        }
-        const failedNames = summary.failed
-          .map(({ id, reason }) => `${namesById.get(id) ?? id} (${reason})`)
-          .join(", ")
-        notify(
-          summary.succeededCount > 0
-            ? `Se eliminaron ${summary.succeededCount} sede(s). No se pudo con: ${failedNames}.`
-            : `No se pudo eliminar: ${failedNames}.`,
-          { variant: "error" },
-        )
-        resetSelection()
-      },
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
-    },
-  })
-
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -118,39 +79,14 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
             activeFilterCount={activeFilterCount}
-            zones={zones}
+            establishments={establishments.map((item) => ({ value: String(item.id), label: item.name }))}
+            zones={toSearchOptions(zones.filter((zone) => zone.code !== ZONA_MIXTA))}
+            workSchedules={workSchedules.map((row) => ({ value: row.valor, label: row.nombre }))}
           />
 
           <TableScreenActions>
+            <ExportCampusesDialog filters={queryFilters} />
             {action}
-            {hasSelection ? (
-              <>
-                <ClearSelectionDialog resetSelection={resetSelection} />
-                {puedeEliminar ? (
-                  <DialogBulkDelete<Campus, number>
-                    items={selectedItems}
-                    getItemId={(item) => item.id}
-                    getItemLabel={(item) => item.name}
-                    title="Eliminar"
-                    buildDescription={(count, sample) => {
-                      const list = sample.join(", ")
-                      const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                      return `Se eliminarán las sedes educativas ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
-                    }}
-                    onConfirm={async (ids) => {
-                      await bulkDelete.mutateAsync(ids)
-                    }}
-                    triggerLabel={`Eliminar (${selectedIds.length})`}
-                  />
-                ) : null}
-                <ExportSelectedCampusesDialog
-                  selectedIds={selectedItems.map((item) => item.id)}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <ExportCampusesDialog filters={queryFilters} />
-            )}
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -161,7 +97,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
           isPending={isPending}
           isError={isError}
           onRetry={refetch}
-          emptyMessage="Sin resultados."
+          emptyMessage="No hay sedes que coincidan con la búsqueda y los filtros aplicados."
           errorMessage={error ? getErrorMessage(error) : undefined}
         />
 

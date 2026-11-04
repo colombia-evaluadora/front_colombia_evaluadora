@@ -1,6 +1,7 @@
 import { authHandlers } from "@/mocks/handlers/auth"
 import { devicesHandlers } from "@/mocks/handlers/devices"
 import { notificacionesHandlers } from "@/mocks/handlers/notificaciones"
+import { comunicacionesEspaciosHandlers } from "@/mocks/handlers/comunicaciones-espacios"
 import { comunicacionesGruposHandlers } from "@/mocks/handlers/comunicaciones-grupos"
 import { healthHandlers } from "@/mocks/handlers/health"
 import { auditsHandlers } from "@/mocks/handlers/audits"
@@ -58,6 +59,8 @@ import {
   comunicacionesMensajesHandlers,
 } from "@/mocks/handlers/comunicaciones"
 import { comunicacionesEleccionesHandlers } from "@/mocks/handlers/comunicaciones-elecciones"
+import { comunicacionesProcesosHandlers } from "@/mocks/handlers/comunicaciones-procesos"
+import { comunicacionesModeracionHandlers } from "@/mocks/handlers/comunicaciones-moderacion"
 import { comunicacionesFiltrosHandlers } from "@/mocks/handlers/comunicaciones-filtros"
 import { comunicacionesEncuestasHandlers } from "@/mocks/handlers/comunicaciones-encuestas"
 import { comunicacionesEvaluacionesHandlers } from "@/mocks/handlers/comunicaciones-evaluaciones"
@@ -125,7 +128,9 @@ export const handlers = [
   ...informesHandlers,
   ...comunicacionesArchivosHandlers,
   ...comunicacionesFiltrosHandlers,
+  ...comunicacionesModeracionHandlers,
   ...comunicacionesEleccionesHandlers,
+  ...comunicacionesProcesosHandlers,
   ...comunicacionesEncuestasHandlers,
   ...comunicacionesEvaluacionesHandlers,
   ...comunicacionesComunicadosHandlers,
@@ -135,6 +140,7 @@ export const handlers = [
   ...realtimeHandlers,
   ...comunicacionesMensajesHandlers,
   // Antes que el chat general: atiende los grupos y deja caer el resto.
+  ...comunicacionesEspaciosHandlers,
   ...comunicacionesGruposHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,

@@ -10,7 +10,11 @@ import { cn } from "@/lib/utils"
 
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { formatHoraRango } from "@/features/academic-management/asistencia/api/ui-mappings"
-import type { RosterEstudiante, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type {
+  JustificacionLocal,
+  RosterEstudiante,
+  TipoAsistencia,
+} from "@/features/academic-management/asistencia/api/types/asistencia"
 
 const ASISTIO: TipoAsistencia = 1
 const NO_ASISTIO: TipoAsistencia = 2
@@ -96,6 +100,8 @@ interface BuildColumnsParams {
   /** Regla 109: docente de la clase o Responsable de grupo (aunque sea solo lectura). */
   puedeJustificar: boolean
   onJustificar: (row: RosterEstudiante) => void
+  /** Justificación hecha en pantalla antes de guardar (manda sobre la guardada). */
+  justificacionLocal: Record<number, JustificacionLocal>
 }
 
 /** Planilla de la sesión (Sección 7): una fila por estudiante, el estado como
@@ -116,6 +122,7 @@ export function buildColumnsAsistenciaManual({
   soloLectura,
   puedeJustificar,
   onJustificar,
+  justificacionLocal,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
   const bloqueItems = Object.fromEntries(
     bloques.map((b) => {
@@ -250,7 +257,9 @@ export function buildColumnsAsistenciaManual({
           )
         }
 
-        if (r.justificacion) {
+        const local = justificacionLocal[fk]
+        const texto = local ? local.justificacion : r.justificacion
+        if (texto) {
           return (
             <span className="flex items-center gap-2">
               <Badge variant="soft" color="success">
@@ -262,7 +271,7 @@ export function buildColumnsAsistenciaManual({
                 onClick={() => onJustificar(r)}
                 className="text-sm hover:underline disabled:no-underline"
               >
-                {r.fuente_justificacion ?? "Sin archivo"}
+                {(local ? local.fuenteNombre : r.fuente_justificacion) ?? "Sin archivo"}
               </button>
               <Tooltip>
                 <TooltipTrigger
@@ -270,15 +279,12 @@ export function buildColumnsAsistenciaManual({
                 >
                   <InfoIcon className="size-4" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-64">{r.justificacion}</TooltipContent>
+                <TooltipContent className="max-w-64">{texto}</TooltipContent>
               </Tooltip>
             </span>
           )
         }
 
-        // Sin archivo solo se justifica lo ya guardado como No asistió / Llegó tarde.
-        const guardado = r.tipo_asistencia_valor
-        const justificable = r.pk_tasistencia != null && (guardado === NO_ASISTIO || guardado === LLEGO_TARDE)
         return (
           <span className="flex items-center gap-3">
             {!soloLectura && (
@@ -295,19 +301,12 @@ export function buildColumnsAsistenciaManual({
                 </FileUploadTrigger>
               </FileUpload>
             )}
-            {puedeJustificar &&
-              (justificable ? (
-                <button type="button" onClick={() => onJustificar(r)} className="text-sm text-primary hover:underline">
-                  Justificar sin archivo
-                </button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger render={<span className="cursor-help text-sm text-muted-foreground" />}>
-                    Justificar sin archivo
-                  </TooltipTrigger>
-                  <TooltipContent>Guarde la sesión para justificar sin archivo.</TooltipContent>
-                </Tooltip>
-              ))}
+            {/* Antes de guardar también: la justificación viaja con el registro. */}
+            {puedeJustificar && (
+              <button type="button" onClick={() => onJustificar(r)} className="text-sm text-primary hover:underline">
+                Justificar sin archivo
+              </button>
+            )}
           </span>
         )
       },

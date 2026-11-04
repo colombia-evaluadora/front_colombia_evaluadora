@@ -12,6 +12,7 @@ import { maxLength, minLength, required } from "@/lib/forms/messages"
 
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useAsistenciaJustificarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-justificar-mutation"
+import type { JustificacionLocal } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 const FORM_ID = "form-justificar-ausencia"
 
@@ -33,6 +34,8 @@ interface DialogJustificarAusenciaProps {
   justificacion: string | null
   fuente: number | null
   onJustificada: (mensaje: string) => void
+  /** Sin registro guardado: no llama al servidor, la justificación viaja al guardar la sesión. */
+  onLocal?: (valor: JustificacionLocal) => void
 }
 
 /**
@@ -48,6 +51,7 @@ export function DialogJustificarAusencia({
   justificacion,
   fuente,
   onJustificada,
+  onLocal,
 }: DialogJustificarAusenciaProps) {
   const { data: fuentes = [] } = useQuery({
     ...selectCategoryQueryOptions("FUENTE_JUSTIFICACION"),
@@ -62,6 +66,15 @@ export function DialogJustificarAusencia({
     defaultValues: { justificacion: justificacion ?? "", fuente: fuente ?? 0 },
     validators: { onSubmit: schema },
     onSubmit: async ({ value }) => {
+      if (onLocal) {
+        onLocal({
+          justificacion: value.justificacion.trim(),
+          fuente: value.fuente,
+          fuenteNombre: opciones.find((o) => o.value === value.fuente)?.label ?? null,
+        })
+        onOpenChange(false)
+        return
+      }
       try {
         await justificar.mutateAsync({ pks, justificacion: value.justificacion.trim(), fuente: value.fuente })
         onJustificada("Se registró la justificación.")
@@ -74,6 +87,11 @@ export function DialogJustificarAusencia({
   })
 
   const quitar = async () => {
+    if (onLocal) {
+      onLocal({ justificacion: null, fuente: null, fuenteNombre: null })
+      onOpenChange(false)
+      return
+    }
     try {
       await justificar.mutateAsync({ pks, justificacion: null, fuente: null })
       onJustificada("Se quitó la justificación.")

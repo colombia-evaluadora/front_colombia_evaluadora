@@ -148,6 +148,7 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <ErrorNoticeBanner error={isError ? error : null} />
         <AlertDialogFooter>
           <AlertDialogAction
             color="primary"
@@ -167,7 +168,6 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
             No
           </AlertDialogCancel>
         </AlertDialogFooter>
-        <ErrorNoticeBanner error={isError ? error : null} />
       </AlertDialogContent>
     </AlertDialog>
   )

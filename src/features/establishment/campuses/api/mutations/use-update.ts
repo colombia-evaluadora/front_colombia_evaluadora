@@ -4,30 +4,21 @@ import { invalidateCampuses } from "@/features/establishment/campuses/api/mutati
 import type { MutationConfig } from "@/lib/react-query"
 
 import { updateCampus } from "@/features/establishment/campuses/api/mutations/create"
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
-
-interface UpdateCampusInput {
-  campusId: number
-  values: Campus
-}
-
-function updateCampusMutation({ campusId, values }: UpdateCampusInput) {
-  return updateCampus(campusId, values)
-}
 
 interface UseUpdateOptions {
-  mutationConfig?: MutationConfig<typeof updateCampusMutation>
+  mutationConfig?: MutationConfig<typeof updateCampus>
 }
 
 export function useUpdate({ mutationConfig }: UseUpdateOptions = {}) {
   const queryClient = useQueryClient()
+  const { onSuccess, ...rest } = mutationConfig ?? {}
 
   return useMutation({
-    mutationFn: updateCampusMutation,
-    ...mutationConfig,
+    mutationFn: updateCampus,
+    ...rest,
     onSuccess: (...args) => {
       invalidateCampuses(queryClient)
-      mutationConfig?.onSuccess?.(...args)
+      onSuccess?.(...args)
     },
   })
 }

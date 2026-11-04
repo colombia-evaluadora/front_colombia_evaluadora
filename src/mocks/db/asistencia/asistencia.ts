@@ -1058,7 +1058,8 @@ export function generarAsistenciaPorGrupo(grupo: number, periodo: number, asigna
           fk_tasignatura: a.fk_asignatura,
           asignatura: a.asignatura,
           fecha,
-          bloque: 1,
+          // Como el back: una fila por día, los bloques ya juntos.
+          bloque: null,
           sesion_registrada: registrada,
           fk_tmatricula: e.fk_tmatricula,
           estudiante: e.nombre,
