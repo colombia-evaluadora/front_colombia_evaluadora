@@ -1,5 +1,7 @@
 import { useState } from "react"
 
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CheckCircleIcon, ProhibitIcon } from "@/components/ui/icons"
 import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -47,6 +49,26 @@ export function DialogCerrarCaso({ caso, onClose }: Props) {
     },
   })
   const error = s.intento ? errorLargo(s.texto, 10, 2000, "El resumen") : undefined
+
+  // G.2.CAS.PRT.2: la Regla 12 no se corrige en este modal; se informa el motivo y nada más.
+  const bloqueo = s.notice && String(s.notice.message).startsWith("No se puede cerrar") ? String(s.notice.message) : null
+  if (caso && bloqueo) {
+    return (
+      <Dialog open onOpenChange={(open) => !open && s.cerrar()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>No se puede cerrar el caso {caso.numero}</DialogTitle>
+            <DialogDescription>{bloqueo}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button size="sm" type="button" onClick={s.cerrar}>
+              Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
     <DialogCasoShell
