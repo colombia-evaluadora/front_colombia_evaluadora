@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SuspenderPersona } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 
 import { Avatar, AvatarFallback, AvatarGroup } from "@/components/ui/avatar"
 import { PuntoDisponibilidad } from "@/features/comunicaciones/chat/components/disponibilidad"
@@ -160,6 +161,7 @@ function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) 
         </h2>
         {subtitulo && <p className="truncate text-sm text-muted-foreground">{subtitulo}</p>}
       </div>
+      {!c.esBot && otro && <SuspenderPersona persona={{ id: otro.id, nombre: otro.nombre }} />}
     </div>
   )
 }
