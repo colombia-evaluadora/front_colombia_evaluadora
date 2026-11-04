@@ -22,6 +22,7 @@ import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-a
 import { criteriosPrioridadHandlers } from "@/mocks/handlers/criterios-prioridad"
 import { superadministradoresHandlers } from "@/mocks/handlers/superadministradores"
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
+import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
@@ -93,6 +94,7 @@ export const handlers = [
   ...criteriosPrioridadHandlers,
   ...superadministradoresHandlers,
   ...parametrosEdadHandlers,
+  ...listasValorHandlers,
   ...festivosHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,

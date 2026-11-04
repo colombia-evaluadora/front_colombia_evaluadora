@@ -128,6 +128,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V101: solo el Superadministrador. Código LISTAS_VALOR (mapeado en roles.ts).
+  {
+    id: 49,
+    name: "Lista de Valores",
+    icon: "",
+    path: "/app/administracion/listas-valor",
+    menuOrder: 9,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
   {
     id: 46,
