@@ -1,0 +1,132 @@
+import { useState } from "react"
+
+import type { Notice } from "@/components/notice/notice-banner"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
+
+import { useRegistrarAccion as useRegistrarAccionMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
+import { useCasoQuery, usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
+import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
+import {
+  afectadosDe,
+  ahora,
+  codigosSiuceBody,
+  erroresAccion,
+  type CodigoSiuce,
+  type ErroresAccion,
+} from "@/features/gestion-estudiantil/convivencia/utils/registrar-accion"
+
+/** Estado, campos condicionales por código de la acción, validación y envío de Registrar acción (3.2). */
+export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void) {
+  const { notify } = useNotify()
+  const acciones = useCatalogo("ACCION_PROTOCOLO_CONVIVENCIA")
+  const roles = useCatalogo("ROL_SITUACION")
+  const detalle = useCasoQuery(caso?.id)
+  const pasos = usePasosCasoQuery(caso?.id)
+
+  const [accion, setAccion] = useState("")
+  const [fechaHora, setFechaHora] = useState(ahora)
+  const [descripcion, setDescripcion] = useState("")
+  const [entidad, setEntidad] = useState("")
+  const [noAplica, setNoAplica] = useState(false)
+  const [resultado, setResultado] = useState("")
+  const [codigos, setCodigos] = useState<CodigoSiuce[]>([])
+  const [soportes, setSoportes] = useState<File[]>([])
+  const [intento, setIntento] = useState(false)
+  const [notice, setNotice] = useState<Notice | null>(null)
+
+  const codigo = codigoDe(acciones, accion)
+  const conEntidad = codigo != null && (COD.conEntidad as readonly string[]).includes(codigo)
+  const esSeguimiento = codigo === COD.seguimiento
+  const esSiuce = codigo === COD.reporteSiuce
+  const condicional = pasos.data?.some((p) => p.accion === codigo && p.condicional) ?? false
+
+  const d = detalle.data
+  const afectados = afectadosDe(d, roles)
+
+  function cerrar() {
+    setAccion("")
+    setFechaHora(ahora())
+    setDescripcion("")
+    setEntidad("")
+    setNoAplica(false)
+    setResultado("")
+    setCodigos([])
+    setSoportes([])
+    setIntento(false)
+    setNotice(null)
+    onClose()
+  }
+
+  const mut = useRegistrarAccionMutation({
+    mutationConfig: {
+      onSuccess: () => {
+        notify("Acción registrada.", { variant: "success" })
+        cerrar()
+      },
+      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+    },
+  })
+
+  const errores = erroresAccion(
+    { accion, fechaHora, descripcion, entidad, resultado, codigos },
+    { conEntidad, esSeguimiento, esSiuce },
+  )
+  const ver: Partial<ErroresAccion> = intento ? errores : {}
+
+  function registrar() {
+    setIntento(true)
+    if (!caso || Object.values(errores).some(Boolean)) return
+    mut.mutate({
+      casoId: caso.id,
+      FK_TLV_ACCION: Number(accion),
+      FECHA: fechaHora.fecha,
+      HORA: fechaHora.hora,
+      DESCRIPCION: descripcion.trim(),
+      FK_TLV_ENTIDAD: conEntidad && entidad ? Number(entidad) : null,
+      NO_APLICA: condicional && noAplica,
+      FK_TLV_RESULTADO: esSeguimiento ? Number(resultado) : null,
+      FK_ARCHIVOS: null,
+      CODIGOS_SIUCE: esSiuce ? codigosSiuceBody(codigos) : null,
+      soportes,
+    })
+  }
+
+  return {
+    acciones,
+    accion,
+    elegirAccion: (a: string) => {
+      setAccion(a)
+      setNoAplica(false)
+    },
+    fechaHora,
+    setFechaHora,
+    descripcion,
+    setDescripcion,
+    entidad,
+    setEntidad,
+    noAplica,
+    setNoAplica,
+    resultado,
+    setResultado,
+    codigos,
+    setCodigos,
+    soportes,
+    setSoportes,
+    conEntidad,
+    esSeguimiento,
+    esSiuce,
+    condicional,
+    afectados,
+    /** Sin fecha de los hechos no se puede contrastar la acción con la ocurrencia. */
+    fechaHechosDesconocida: Boolean(d && !d.fecha_hechos_conocida),
+    ver,
+    notice,
+    cerrarNotice: () => setNotice(null),
+    pending: mut.isPending,
+    cerrar,
+    registrar,
+  }
+}

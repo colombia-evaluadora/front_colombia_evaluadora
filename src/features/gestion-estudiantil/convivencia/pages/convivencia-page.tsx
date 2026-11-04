@@ -1,12 +1,11 @@
 "use no memo"
 
-import { useEffect, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { FileDownloadOutlinedIcon, PlusIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, ControlPointIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   TableScreen,
@@ -22,17 +21,11 @@ import { getErrorMessage } from "@/lib/api-client"
 import { paths } from "@/config/paths"
 
 import { toConvivenciaFilters, useCasosQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
-import { useOpcionesConvivencia, type Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import {
-  FILTROS_VACIOS,
-  resumenDeFila,
-  SIN_GESTOR,
-  type ConvivenciaFiltros,
-} from "@/features/gestion-estudiantil/convivencia/api/types"
+import { resumenDeFila } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { buildColumnsCasos } from "@/features/gestion-estudiantil/convivencia/components/table/columns-casos"
 import { SearchCasos } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
+import { useCasosFiltros, useGestoresDelListado } from "@/features/gestion-estudiantil/convivencia/hooks/use-casos-filtros"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/use-dialogos-caso"
 
 function ConvivenciaContent() {
@@ -41,32 +34,15 @@ function ConvivenciaContent() {
   const access = useConvivenciaAccess()
   const { abrir, dialogos } = useDialogosCaso()
 
-  const [search, setSearch] = useState("")
-  const [filtros, setFiltros] = useState<ConvivenciaFiltros>(FILTROS_VACIOS)
-  const [borrador, setBorrador] = useState<ConvivenciaFiltros>(FILTROS_VACIOS)
-
-  const opciones = useOpcionesConvivencia(borrador.sede, "")
-  const tipos = useCatalogo("TIPO_SITUACION")
-  const estados = useCatalogo("ESTADO_CASO_CONVIVENCIA")
+  const f = useCasosFiltros(goToPage)
 
   const { data, isPending, isError, error, refetch } = useCasosQuery({
-    filters: toConvivenciaFilters(search, filtros),
+    filters: toConvivenciaFilters(f.search, f.filtros),
     pageIndex,
     pageSize,
   })
   const rows = data?.rows ?? []
-
-  // Gestores: los que van apareciendo en el listado; no hay un catálogo propio (§ 5b).
-  const [gestores, setGestores] = useState<Opcion[]>([])
-  useEffect(() => {
-    const nuevas = data?.rows ?? []
-    if (!nuevas.length) return
-    setGestores((prev) => {
-      const m = new Map(prev.map((o) => [o.value, o.label]))
-      for (const r of nuevas) if (r.fk_tfuncionario_gestor && r.gestor_nombre) m.set(String(r.fk_tfuncionario_gestor), r.gestor_nombre)
-      return [...m].map(([value, label]) => ({ value, label }))
-    })
-  }, [data])
+  const gestores = useGestoresDelListado(data?.rows)
 
   const columns = buildColumnsCasos({
     access,
@@ -91,8 +67,6 @@ function ConvivenciaContent() {
     columnVisibilityStorageKey: "convivencia-column-visibility",
   })
 
-  const hayFiltros = Boolean(search) || Object.values(filtros).some(Boolean)
-
   return (
     <>
       <TableScreenHeader>
@@ -106,7 +80,7 @@ function ConvivenciaContent() {
               </Button>
               {access.puedeCrear && (
                 <Button size="sm" render={<Link to={paths.app.convivenciaNuevo.getHref()} />} nativeButton={false}>
-                  <PlusIcon data-icon="inline-start" />
+                  <ControlPointIcon data-icon="inline-start" />
                   Nuevo caso
                 </Button>
               )}
@@ -131,31 +105,13 @@ function ConvivenciaContent() {
         </Tabs>
         <TableScreenToolbar>
           <SearchCasos
-            search={search}
-            onSearchChange={(v) => {
-              setSearch(v)
-              goToPage(0)
-            }}
-            filters={filtros}
-            applyFilters={(next) => {
-              setFiltros(next)
-              setBorrador(next)
-              goToPage(0)
-            }}
-            onClearAll={() => {
-              setSearch("")
-              setFiltros(FILTROS_VACIOS)
-              setBorrador(FILTROS_VACIOS)
-              goToPage(0)
-            }}
-            onDraftChange={setBorrador}
-            opciones={{
-              sedes: opciones.sedeOpciones,
-              jornadas: opciones.jornadaOpciones,
-              tipos,
-              estados,
-              gestores: [{ value: SIN_GESTOR, label: "Sin gestor" }, ...gestores],
-            }}
+            search={f.search}
+            onSearchChange={f.onSearchChange}
+            filters={f.filtros}
+            applyFilters={f.applyFilters}
+            onClearAll={f.onClearAll}
+            onDraftChange={f.onDraftChange}
+            opciones={{ ...f.opciones, gestores }}
           />
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -168,7 +124,7 @@ function ConvivenciaContent() {
           onRetry={refetch}
           isRowMuted={(row) => row.original.estado_codigo === "ANULADO"}
           growColumnId="manifestacion"
-          emptyMessage={hayFiltros ? "No hay casos para los filtros aplicados." : "Aún no hay casos de convivencia."}
+          emptyMessage={f.hayFiltros ? "No hay casos para los filtros aplicados." : "Aún no hay casos de convivencia."}
           errorMessage={error ? getErrorMessage(error) : undefined}
         />
         <Pagination

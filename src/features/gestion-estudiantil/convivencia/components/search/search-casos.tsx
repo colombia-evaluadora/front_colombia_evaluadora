@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react"
-
 import { Checkbox } from "@/components/ui/checkbox"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
-import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
-import { useQuerySearch } from "@/components/search/use-query-search"
 
-import { FILTROS_VACIOS, type ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
+import type { ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { useSearchCasos } from "@/features/gestion-estudiantil/convivencia/hooks/use-search-casos"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 
 export interface OpcionesFiltros {
@@ -17,7 +14,7 @@ export interface OpcionesFiltros {
   gestores: Opcion[]
 }
 
-interface SearchCasosProps {
+export interface SearchCasosProps {
   search: string
   onSearchChange: (value: string) => void
   filters: ConvivenciaFiltros
@@ -28,77 +25,22 @@ interface SearchCasosProps {
   opciones: OpcionesFiltros
 }
 
-type QueryFilters = ConvivenciaFiltros & { search: string }
-
-const SIUCE_OPCIONES: Opcion[] = [{ value: "si", label: "Sí" }]
-
 /** Buscador del listado de casos (G.2.CAS.LIS.2): texto libre y el panel de filtros. */
-export function SearchCasos({
-  search,
-  onSearchChange,
-  filters,
-  applyFilters,
-  onClearAll,
-  onDraftChange,
-  opciones,
-}: SearchCasosProps) {
-  const [open, setOpen] = useState(false)
-  const [draft, setDraftState] = useState(filters)
-
-  function setDraft(next: ConvivenciaFiltros) {
-    setDraftState(next)
-    onDraftChange(next)
-  }
-
-  useEffect(() => {
-    if (open) {
-      setDraftState(filters)
-      onDraftChange(filters)
-    }
-    // Al abrir, el borrador arranca de lo aplicado.
-  }, [open, filters, onDraftChange])
-
-  const badgeCount = Object.values(filters).filter(Boolean).length
-  const activeFilterCount = badgeCount + (search ? 1 : 0)
-
-  function handleApply() {
-    applyFilters(draft)
-    setOpen(false)
-  }
-
-  function handleClearFilters() {
-    setDraft(FILTROS_VACIOS)
-    applyFilters(FILTROS_VACIOS)
-  }
-
-  function handleClearAll() {
-    onClearAll()
-    setDraft(FILTROS_VACIOS)
-    setOpen(false)
-  }
-
-  const syntax: QuerySyntax<QueryFilters> = {
-    empty: { ...FILTROS_VACIOS, search: "" },
-    freeText: { key: "texto", field: "search" },
-    terms: [
-      optionTerm("sede", "sede", opciones.sedes),
-      optionTerm("jornada", "jornada", opciones.jornadas),
-      optionTerm("tipo", "tipo", opciones.tipos),
-      optionTerm("estado", "estado", opciones.estados),
-      optionTerm("gestor", "gestor", opciones.gestores),
-      optionTerm("siuce", "pendienteSiuce", SIUCE_OPCIONES),
-    ],
-  }
-
-  const { search: queryText, setSearch: setQueryText } = useQuerySearch({
-    syntax,
-    filters: { ...filters, search },
-    applyFilters: (next) => {
-      const { search: nextSearch, ...nextFilters } = next
-      onSearchChange(nextSearch)
-      applyFilters(nextFilters)
-    },
-  })
+export function SearchCasos(props: SearchCasosProps) {
+  const {
+    open,
+    setOpen,
+    draft,
+    setDraft,
+    queryText,
+    setQueryText,
+    badgeCount,
+    activeFilterCount,
+    handleApply,
+    handleClearFilters,
+    handleClearAll,
+  } = useSearchCasos(props)
+  const { opciones } = props
 
   const sinSede = !draft.sede
 
