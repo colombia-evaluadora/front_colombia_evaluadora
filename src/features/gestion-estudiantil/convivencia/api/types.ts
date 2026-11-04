@@ -21,6 +21,10 @@ export interface CasoRow {
   pasos_pendientes: number | null
   ultimo_seguimiento: string | null
   afectados_pendientes_siuce: number | null
+  /** Hay un compromiso de seguimiento del Comité con la fecha vencida. */
+  seguimiento_vencido: boolean | null
+  /** Regla 1: FALSE si solo reportó un Tipo II/III. */
+  acceso_completo: boolean
   confidencial: boolean
   es_propio: boolean
   total_count?: number
@@ -74,7 +78,28 @@ export interface CasoAccion {
   fk_tlv_resultado: number | null
   resultado_nombre: string | null
   soportes: { fk_archivo: number; vinculado: boolean }[]
-  codigos_siuce: { fk_matricula: number | null; fk_funcionario: number | null; codigo: string }[]
+  codigos_siuce: { fk_matricula: number | null; fk_funcionario: number | null; codigo: string; afectado_nombre?: string | null }[]
+}
+
+/** Sesión del Comité que trató el caso (`sesiones_comite` del detalle). */
+export interface SesionComiteDelCaso {
+  fk_sesion: number
+  numero: number | string
+  fecha: string
+  decision: string
+  con_quorum: boolean
+  responsable_seguimiento: string | null
+  fecha_seguimiento: string | null
+}
+
+/** Afectado del caso con su código SIUCE (`afectados_siuce` del detalle). */
+export interface AfectadoSiuce {
+  fk_matricula: number | null
+  fk_funcionario: number | null
+  nombre: string
+  grado_grupo: string | null
+  codigo: string | null
+  fecha_reporte: string | null
 }
 
 /**
@@ -117,6 +142,9 @@ export interface CasoDetalle {
   otros_involucrados?: CasoInvolucrado[] | null
   acciones?: CasoAccion[] | null
   ultimo_seguimiento?: string | null
+  seguimiento_vencido?: boolean | null
+  sesiones_comite?: SesionComiteDelCaso[] | null
+  afectados_siuce?: AfectadoSiuce[] | null
   cierre?: { resumen: string; cerrado_en: string; cerrado_por: string | null } | null
   anulacion?: { anulado_en: string; motivo: string; anulado_por: string | null } | null
 }
@@ -275,3 +303,5 @@ export interface FuncionarioInvolucrable {
   cargo_codigo: string | null
   cargo_nombre: string | null
 }
+
+export type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"

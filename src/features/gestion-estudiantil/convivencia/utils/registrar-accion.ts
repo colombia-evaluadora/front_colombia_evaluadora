@@ -1,8 +1,5 @@
 import { formatDateValue } from "@/lib/date-value"
 
-import { codigoDe, type OpcionCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 
 export interface CodigoSiuce {
@@ -19,18 +16,6 @@ export interface FechaHora {
 export const ahora = (): FechaHora => {
   const d = new Date()
   return { fecha: formatDateValue(d), hora: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` }
-}
-
-/** Afectados del caso: estudiantes y funcionarios del establecimiento con rol Afectado. */
-export function afectadosDe(d: CasoDetalle | undefined, roles: OpcionCatalogo[]) {
-  return [
-    ...(d?.estudiantes ?? [])
-      .filter((e) => codigoDe(roles, e.fk_tlv_rol) === COD.afectado)
-      .map((e) => ({ value: `m:${e.fk_matricula}`, label: e.nombre })),
-    ...(d?.otros_involucrados ?? [])
-      .filter((i) => i.fk_funcionario && codigoDe(roles, i.fk_tlv_rol) === COD.afectado)
-      .map((i) => ({ value: `f:${i.fk_funcionario}`, label: `${i.nombre ?? ""} (${i.tipo_nombre ?? "funcionario"})` })),
-  ]
 }
 
 export interface ValoresAccion {

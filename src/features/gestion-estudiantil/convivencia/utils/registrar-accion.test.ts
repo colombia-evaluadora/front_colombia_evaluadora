@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import {
-  afectadosDe,
   codigosSiuceBody,
   erroresAccion,
   type ValoresAccion,
@@ -58,29 +56,5 @@ describe("codigosSiuceBody", () => {
       { fk_matricula: 7, fk_funcionario: null, codigo: "X1" },
       { fk_matricula: null, fk_funcionario: 3, codigo: "Y" },
     ])
-  })
-})
-
-describe("afectadosDe", () => {
-  it("solo estudiantes y funcionarios con rol Afectado", () => {
-    const roles = [
-      { value: "1", label: "Afectado", codigo: "AFECTADO" },
-      { value: "2", label: "Testigo", codigo: "TESTIGO" },
-    ]
-    const d = {
-      estudiantes: [
-        { fk_matricula: 7, nombre: "Ana", fk_tlv_rol: 1 },
-        { fk_matricula: 8, nombre: "Luis", fk_tlv_rol: 2 },
-      ],
-      otros_involucrados: [
-        { fk_funcionario: 3, nombre: "Eva", tipo_nombre: "Docente", fk_tlv_rol: 1 },
-        { fk_funcionario: null, nombre: "Externo", tipo_nombre: "Otro", fk_tlv_rol: 1 },
-      ],
-    } as unknown as CasoDetalle
-    expect(afectadosDe(d, roles)).toEqual([
-      { value: "m:7", label: "Ana" },
-      { value: "f:3", label: "Eva (Docente)" },
-    ])
-    expect(afectadosDe(undefined, roles)).toEqual([])
   })
 })

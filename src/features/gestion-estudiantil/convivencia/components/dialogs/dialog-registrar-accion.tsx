@@ -125,7 +125,17 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
           error={ver.descripcion}
         />
 
-        {f.esSiuce && <CampoCodigosSiuce codigos={f.codigos} onChange={f.setCodigos} afectados={f.afectados} error={ver.codigos} />}
+        {f.esSiuce && (
+          <CampoCodigosSiuce
+            codigos={f.codigos}
+            onChange={f.setCodigos}
+            afectados={f.afectados}
+            afectadosCaso={f.afectadosCaso}
+            reportados={f.reportados}
+            todosReportados={f.todosReportados}
+            error={ver.codigos}
+          />
+        )}
 
         <SoportesUpload label="Soportes de la acción" archivos={f.soportes} onChange={f.setSoportes} max={5} />
       </div>

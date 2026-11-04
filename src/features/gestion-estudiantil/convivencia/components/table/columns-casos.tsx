@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { COLOR_ESTADO, esFinal, fechaHechosTexto, formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/types"
+import { SIN_ACCESO } from "@/features/gestion-estudiantil/convivencia/utils/access"
 import { MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
-
-const SIN_ACCESO: ConvivenciaAccess = { puedeCrear: false, puedeGestionar: false, puedeSupervisar: false }
 
 interface ColumnasOpciones {
   access: ConvivenciaAccess
@@ -92,11 +91,17 @@ export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): Colum
       enableSorting: false,
       meta: { label: "Estado" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-      // "Vencido" depende del seguimiento que fija el Comité (3.3); el listado aún no lo trae.
       cell: ({ row }) => (
-        <Badge variant="soft" color={COLOR_ESTADO[row.original.estado_codigo] ?? "muted"}>
-          {row.original.estado_nombre}
-        </Badge>
+        <span className="flex flex-col items-start gap-1">
+          <Badge variant="soft" color={COLOR_ESTADO[row.original.estado_codigo] ?? "muted"}>
+            {row.original.estado_nombre}
+          </Badge>
+          {row.original.seguimiento_vencido && (
+            <Badge variant="soft" color="destructive">
+              Vencido
+            </Badge>
+          )}
+        </span>
       ),
     },
     {
@@ -125,7 +130,7 @@ export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): Colum
             sinGestor: !row.original.fk_tfuncionario_gestor,
           }}
           // Caso Tipo II/III visto por quien solo lo reportó (Regla 1): solo Ver detalle; el backend negaría el resto.
-          access={row.original.confidencial ? SIN_ACCESO : access}
+          access={row.original.confidencial && !row.original.acceso_completo ? SIN_ACCESO : access}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),
