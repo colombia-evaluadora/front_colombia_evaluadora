@@ -1,15 +1,11 @@
+import type { ReactNode } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { CheckCircleIcon, DotsThreeVerticalIcon, PencilIcon, ProhibitIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, PencilIcon, ProhibitIcon, TrashIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
@@ -20,6 +16,19 @@ interface Opciones {
   onModificar: (c: CodigoRow) => void
   onCambiarEstado: (c: CodigoRow) => void
   onEliminar: (c: CodigoRow) => void
+}
+
+function Accion({ etiqueta, disabled, onClick, children }: { etiqueta: string; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={etiqueta} disabled={disabled} onClick={onClick} />}
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{etiqueta}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 /** Listado de 2.1: Código · Descripción · Tipo · Tipo de situación · Estado. */
@@ -80,29 +89,32 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      // Tres botones al pasar el cursor, como en Referentes: modificar, activar/inactivar y eliminar.
+      size: 120,
       cell: ({ row }) => {
         const c = row.original
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" aria-label={`Acciones del código ${c.codigo}`} />}>
-              <DotsThreeVerticalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem disabled={!puedeEditar} onClick={() => onModificar(c)}>
+          <div className="flex items-center justify-end gap-1">
+            {puedeEditar && (
+              <Accion etiqueta={`Modificar ${c.codigo}`} onClick={() => onModificar(c)}>
                 <PencilIcon />
-                Modificar
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!puedeEditar} onClick={() => onCambiarEstado(c)}>
+              </Accion>
+            )}
+            {puedeEditar && (
+              <Accion etiqueta={`${c.habilitado ? "Inactivar" : "Activar"} ${c.codigo}`} onClick={() => onCambiarEstado(c)}>
                 {c.habilitado ? <ProhibitIcon /> : <CheckCircleIcon />}
-                {c.habilitado ? "Inactivar" : "Activar"}
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!puedeEliminar || c.en_uso} onClick={() => onEliminar(c)}>
+              </Accion>
+            )}
+            {puedeEliminar && (
+              <Accion
+                etiqueta={c.en_uso ? `${c.codigo} ya se usó en anotaciones: puede inactivarlo` : `Eliminar ${c.codigo}`}
+                disabled={c.en_uso}
+                onClick={() => onEliminar(c)}
+              >
                 <TrashIcon />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </Accion>
+            )}
+          </div>
         )
       },
     },
