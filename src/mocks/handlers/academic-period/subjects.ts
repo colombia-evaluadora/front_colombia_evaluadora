@@ -7,7 +7,7 @@ import {
 } from "../../db/academic-period/subjects"
 import { areasDb } from "../../db/academic-period/areas"
 import { studyPlansDb } from "../../db/academic-period/study-plans"
-import { especialidadesDb, nextEnfasisId } from "../../db/academic-period/especialidades"
+import { campusSpecialtiesDb, SPECIALTY_CATALOG } from "../../db/campus-details"
 
 // Estructura JSONB confirmada de `fn_subject_guardar_bulk` — camelCase,
 // `asignaturaGeneral` va como id, pero `especialidad` va como NOMBRE (texto),
@@ -24,19 +24,15 @@ interface AsignaturaBulkItem {
   ordenReportes: number
 }
 
-// Resuelve `especialidad` (nombre) a un id de `especialidadesDb`: si ya
-// existe una fila con ese nombre (especialidad fija o énfasis previo), la
-// reusa; si no, crea un énfasis nuevo. El mock no necesita modelar el
-// mecanismo real completo (espejo ligado a la especialidad vía
-// FK_TESPECIALIDAD, ver V76) — solo que quede registrado que el
-// establecimiento "tiene" ese énfasis.
+// La especialidad (por nombre) es un ítem del catálogo de la sede (Regla 86), como
+// `fn_enfasis_de_nombre_interno`. El mock no distingue la sede: busca en todos.
+function enfasisLabel(item: (typeof campusSpecialtiesDb)[number]): string {
+  return item.ownName ?? SPECIALTY_CATALOG.find((c) => c.id === item.specialtyId)?.nombre ?? ""
+}
+
 function resolveEnfasisId(nombre: string | null): number | null {
   if (!nombre) return null
-  const existing = especialidadesDb.find((e) => e.nombre === nombre)
-  if (existing) return existing.id
-  const id = nextEnfasisId()
-  especialidadesDb.push({ id, nombre, codigo: nombre.slice(0, 3).toUpperCase(), origen: "ENFASIS" })
-  return id
+  return campusSpecialtiesDb.find((item) => enfasisLabel(item).toLowerCase() === nombre.toLowerCase())?.id ?? null
 }
 
 function toRawRow(row: SubjectRecord) {
@@ -125,7 +121,7 @@ export const subjectsHandlers = [
       area_nombre: areasDb.find((a) => a.id === s.areaId)?.nombreInterno ?? "",
       color: s.color,
       orden_reportes: s.ordenReportes,
-      enfasis_nombre: especialidadesDb.find((e) => e.id === s.enfasisId)?.nombre ?? null,
+      enfasis_nombre: ((item) => (item ? enfasisLabel(item) : null))(campusSpecialtiesDb.find((e) => e.id === s.enfasisId)),
       asignatura_general_id: s.asignaturaGeneralId,
       total_count: scoped.length,
     }))

@@ -62,9 +62,11 @@ interface UserFormProps {
     onMatched?: (found: Partial<Person> | null) => void
     /**
      * `two-columns`: foto a la izquierda y los campos de a dos (formulario del
-     * establecimiento). Por defecto, la grilla de tres del modal de funcionarios.
+     * establecimiento). `essentials`: solo los obligatorios, de a tres y sin foto
+     * (convertir una sede en establecimiento). Por defecto, la grilla de tres del
+     * modal de funcionarios.
      */
-    layout?: "default" | "two-columns"
+    layout?: "default" | "two-columns" | "essentials"
     /** Título del bloque; por defecto el nombre del rol (`role`). */
     title?: string
 }
@@ -335,7 +337,7 @@ export function UserDetailsForm({
     )
 
     const emailField = (
-        <Field orientation="vertical" variant="outlined" className={twoColumns ? "w-full" : "w-full md:col-span-2"} data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
+        <Field orientation="vertical" variant="outlined" className={twoColumns || layout === "essentials" ? "w-full" : "w-full md:col-span-2"} data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
             <FieldLabel htmlFor="user-email">Correo electrónico{required ? "*" : ""}</FieldLabel>
             <Input
                 id="user-email"
@@ -460,6 +462,28 @@ export function UserDetailsForm({
             }
         />
     )
+
+    if (layout === "essentials") {
+        return (
+            <div className="grid grid-cols-1 gap-2">
+                <NoticeBanner
+                    notice={accountNotice}
+                    onClose={() => setAccountNotice(null)}
+                    variant="success"
+                    autoCloseMs={7000}
+                />
+                {roleName ? <h3 className="text-sm font-medium">{roleName}</h3> : null}
+                <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
+                    {documentTypeField}
+                    {identificationField}
+                    {firstNameField}
+                    {lastNameField}
+                    {genderField}
+                    {emailField}
+                </div>
+            </div>
+        )
+    }
 
     if (twoColumns) {
         return (

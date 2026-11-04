@@ -482,7 +482,8 @@ function AddMatriculaPageContent() {
           <MatriculaFormBody
             values={values}
             onChange={setValues}
-            catalogs={catalogs}
+            // Una matrícula nueva solo va a sedes Activas (Regla 100).
+            catalogs={catalogs && { ...catalogs, sedes: catalogs.sedes.filter((sede) => sede.activa) }}
             departments={departments}
             invalidFields={missingFields}
             showStatus={false}

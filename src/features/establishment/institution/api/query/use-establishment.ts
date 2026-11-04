@@ -138,7 +138,7 @@ async function fetchLinkedFuncionario(pk: number | null): Promise<Employee | nul
   return result.employee
 }
 
-async function fetchEstablishment(id: number): Promise<EstablishmentQueryResult> {
+export async function fetchEstablishment(id: number): Promise<EstablishmentQueryResult> {
   if (env.ENABLE_API_MOCKING) {
     const result: EstablishmentQueryResult = await api.get(
       apiPath(`/establishments/${id}`, `/establecimientos/${id}`),

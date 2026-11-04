@@ -21,6 +21,19 @@ export async function fetchSedeOptions(): Promise<SedeOption[]> {
   return raw.rows ?? []
 }
 
+/**
+ * Sedes que admiten registros nuevos (Regla 100): las Activas, más la ya
+ * elegida (`actual`) aunque se haya inactivado, para que un registro guardado
+ * siga mostrando su sede al editarlo. Los filtros y las vistas de consulta usan
+ * la lista completa: la información de una sede inactiva sigue visible.
+ */
+export function sedesParaRegistroNuevo<T extends { pk_sede: number; estado?: string }>(
+  sedes: T[],
+  actual?: number | string | null,
+): T[] {
+  return sedes.filter((sede) => sede.estado !== "I" || (actual != null && String(sede.pk_sede) === String(actual)))
+}
+
 export function useSedeOptionsQuery() {
   return useQuery({
     meta: proveedorMeta(),

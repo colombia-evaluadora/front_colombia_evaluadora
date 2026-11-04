@@ -7,7 +7,7 @@ export interface FuncionarioRecord {
 // Catálogo mínimo de funcionarios (`fn_funcionario_sede_listar`) — separado
 // del módulo Employees (ids UUID, sin FK_TFUNCIONARIO real): esto simula la
 // tabla TFUNCIONARIO con ids numéricos, que es lo que usa el combobox de
-// director de grupo. El mock ignora la sede (igual que `especialidades.ts`
+// director de grupo. El mock ignora la sede (igual que el selector de especialidades
 // ignora el periodo) y devuelve el mismo catálogo para cualquier sede de
 // prueba.
 export const funcionariosDb: FuncionarioRecord[] = [

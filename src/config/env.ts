@@ -52,6 +52,19 @@ const createEnv = () => {
     // SSO (`TURNSTILE_SECRET_KEY`). Vacía = sin widget ni header (solo para un
     // backend local con `QUERY_CAPTCHA_ENABLED=false`). Ver `lib/captcha.ts`.
     TURNSTILE_SITE_KEY: z.string().optional().default("0x4AAAAAACnD09qHH76Gdv1f"),
+    // Mapa de sedes (Regla 89): mosaicos y geocodificador de OpenStreetMap. Los
+    // servidores públicos de OSM no tienen garantía de servicio y piden uso
+    // liviano: si se quedan cortos, se cambian por un proveedor con estas
+    // claves, sin tocar código. El crédito de los datos es obligatorio.
+    MAP_TILES_URL: z.string().optional().default("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    MAP_TILES_ATTRIBUTION: z
+      .string()
+      .optional()
+      .default('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+    // Búsqueda de una dirección (API de Nominatim: `?q=&format=jsonv2`). Solo se
+    // llama al pulsar "Ubicar con la dirección": la política de uso pública
+    // permite 1 petición por segundo y prohíbe autocompletar.
+    GEOCODER_URL: z.string().optional().default("https://nominatim.openstreetmap.org/search"),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(
