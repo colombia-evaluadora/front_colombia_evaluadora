@@ -1,7 +1,6 @@
 import { useState } from "react"
 
-import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { useEstudiantesGrupoQuery, useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
 import type { EstudianteFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 
 interface Opciones {
@@ -10,7 +9,7 @@ interface Opciones {
   onOpenChange: (open: boolean) => void
 }
 
-/** Cascada Sede → Jornada → Grado/Grupo → Estudiante (padrón /planeador/estudiantes) del diálogo «Agregar estudiante». */
+/** Cascada Sede → Jornada → Grado/Grupo → Estudiante (endpoint propio) del diálogo «Agregar estudiante». */
 export function useAgregarEstudiante({ yaAgregados, onAgregar, onOpenChange }: Opciones) {
   const [sede, setSede] = useState("")
   const [jornada, setJornada] = useState("")
@@ -18,17 +17,17 @@ export function useAgregarEstudiante({ yaAgregados, onAgregar, onOpenChange }: O
   const [estudiante, setEstudiante] = useState("")
   const [repetido, setRepetido] = useState(false)
   const opciones = useOpcionesConvivencia(sede, jornada)
-  const roster = useActividadMatriculasGrupoQuery(grupo ? Number(grupo) : undefined)
+  const roster = useEstudiantesGrupoQuery(grupo)
   const grupoLabel = opciones.grupoOpciones.find((g) => g.value === grupo)?.label ?? ""
 
   function agregar() {
-    const m = roster.data?.find((r) => String(r.id) === estudiante)
+    const m = roster.data?.find((r) => String(r.fk_matricula) === estudiante)
     if (!m) return
-    if (yaAgregados.includes(m.id)) {
+    if (yaAgregados.includes(m.fk_matricula)) {
       setRepetido(true)
       return
     }
-    onAgregar({ fk_matricula: m.id, nombre: m.nombre, grado: grupoLabel, rol: "" })
+    onAgregar({ fk_matricula: m.fk_matricula, nombre: m.nombre, grado: grupoLabel, rol: "" })
     setEstudiante("")
     setRepetido(false)
     onOpenChange(false)
@@ -42,7 +41,7 @@ export function useAgregarEstudiante({ yaAgregados, onAgregar, onOpenChange }: O
     repetido,
     opciones,
     cargandoRoster: roster.isFetching,
-    estudianteOpciones: (roster.data ?? []).map((m) => ({ value: String(m.id), label: m.nombre })),
+    estudianteOpciones: (roster.data ?? []).map((m) => ({ value: String(m.fk_matricula), label: m.nombre })),
     elegirSede: (s: string) => {
       setSede(s)
       setJornada("")
