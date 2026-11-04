@@ -257,6 +257,10 @@ export function CrearEleccionDialog({
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
 
           {paso === 1 ? (
             <form
@@ -348,8 +352,6 @@ export function CrearEleccionDialog({
               faltanCandidatos={faltanCandidatos}
             />
           )}
-
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           {/* Sin nada guardado aún no ocupa espacio: el pie queda como en Figma 3846:71356. */}
           {(autoguardado.estado !== "inactivo" || !!autoguardado.borradorId) && (

@@ -292,6 +292,10 @@ export function CrearEvaluacionDialog({
               Paso {paso} de 2 · {paso === 1 ? "Datos y preguntas" : "Estudiantes asignados"}
             </p>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
 
           {paso === 1 ? (
             <div ref={cuerpoRef} className="-mx-1 min-h-0 flex-1 space-y-6 overflow-y-auto px-1 py-1">
@@ -443,7 +447,6 @@ export function CrearEvaluacionDialog({
             />
           )}
 
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}

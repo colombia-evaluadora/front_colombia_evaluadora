@@ -153,6 +153,10 @@ export function CrearEncuestaAcademicaDialog({
           <DialogHeader>
             <DialogTitle>{editar ? "Editar encuesta" : "Nueva encuesta"}</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
           <form
             id="encuesta-academica"
             noValidate
@@ -249,7 +253,6 @@ export function CrearEncuestaAcademicaDialog({
             <p className="text-xs text-muted-foreground">{AVISO_NO_ANONIMA} No genera calificación.</p>
           </form>
 
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
           <BarraBorrador
             estado={autoguardado.estado}
             hayBorrador={!!autoguardado.borradorId}

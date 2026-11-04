@@ -294,6 +294,10 @@ export function CrearComunicadoDialog({
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
 
           {paso === 1 ? (
             <form
@@ -417,7 +421,6 @@ export function CrearComunicadoDialog({
             </div>
           )}
 
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}
