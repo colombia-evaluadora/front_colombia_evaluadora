@@ -8,6 +8,7 @@ import {
 } from "@/mocks/db/academic-period/rating-scales"
 import { ratingScaleTypesDb } from "@/mocks/db/academic-period/rating-scale-types"
 import { ratingSymbolsDb } from "@/mocks/db/academic-period/rating-symbols"
+import { iconosDb } from "@/mocks/db/listas-valor"
 import type { ExportFormat, ExportResult } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -26,6 +27,7 @@ function tipoLabel(tipoId: number | null): { valor: string; nombre: string } {
 
 function iconoValor(iconoId: number | null, iconoCategoria: RatingScaleRow["iconoCategoria"]): string {
   if (iconoId == null || iconoCategoria == null) return ""
+  if (iconoCategoria === "ICONOGRAFIA") return iconosDb.find((i) => i.pkIcono === iconoId)?.valor ?? ""
   const categoria = iconoCategoria === "GRAFICA_CARITA" ? "carita" : "valoracion"
   const list = ratingSymbolsDb.filter((s) => s.categoria === categoria)
   return list[iconoId - 1]?.valor ?? ""
@@ -40,6 +42,7 @@ function toRawRow(row: RatingScaleRow) {
     tipo: tipo.valor,
     tipo_name: tipo.nombre,
     iconografia: iconoValor(row.iconoId, row.iconoCategoria),
+    color: row.color ?? null,
     teaching_level_id: row.teachingLevelId,
     nota_minima: row.notaMinima,
     nota_maxima: row.notaMaxima,
@@ -53,6 +56,7 @@ interface ScaleWriteItem {
   tipoId: number | null
   iconoId: number | null
   iconoCategoria: RatingScaleRow["iconoCategoria"]
+  color?: string | null
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
@@ -152,6 +156,7 @@ export const ratingScalesHandlers = [
           tipoId: scale.tipoId,
           iconoId: scale.iconoId,
           iconoCategoria: scale.iconoCategoria,
+          color: scale.color ?? null,
           teachingLevelId: levelId,
           notaMinima: scale.notaMinima,
           notaMaxima: scale.notaMaxima,

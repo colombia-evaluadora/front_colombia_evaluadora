@@ -11,6 +11,7 @@ import { EVALUATION_CRITERIA_CATALOGS } from "../../db/academic-period/evaluatio
 import { GRADES } from "../../db/reservations"
 import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
+import { iconosDb } from "@/mocks/db/listas-valor"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -49,6 +50,17 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: option.key,
       accion: null,
     })),
+  // Iconografía (Administración): la misma del mock de Lista de Valores, solo los activos y en su orden.
+  ICONOGRAFIA: () =>
+    iconosDb
+      .filter((icono) => icono.active && icono.habilitado)
+      .sort((a, b) => a.orden - b.orden)
+      .map((icono) => ({
+        pk_lista_valor: icono.pkIcono,
+        nombre: icono.nombre,
+        valor: icono.valor,
+        accion: null,
+      })),
   GRAFICA_CARITA: () =>
     ratingSymbolsDb
       .filter((symbol) => symbol.categoria === "carita")

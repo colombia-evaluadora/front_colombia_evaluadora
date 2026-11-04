@@ -4,7 +4,7 @@ import { findCatalogId } from "@/features/establishment/academic-period/api/quer
 export interface RatingScaleRefs {
   tipoId: number | null
   iconoId: number | null
-  iconoCategoria: "GRAFICA_CARITA" | "GRAFICA_SIMBOLO" | null
+  iconoCategoria: "ICONOGRAFIA" | "GRAFICA_CARITA" | "GRAFICA_SIMBOLO" | null
 }
 
 // `fn_escala_guardar_bulk` pide `tipoId` e `iconoId`+`iconoCategoria` (PK de
@@ -19,18 +19,23 @@ export interface RatingScaleRefs {
 export async function resolveRatingScaleRefs(
   scales: { tipo: string; iconografia: string }[]
 ): Promise<RatingScaleRefs[]> {
-  const [tipos, caritas, simbolos] = await Promise.all([
+  // GRAFICA_* ya no se ofrecen, pero una valoración vieja que se reedita conserva su ícono.
+  const [tipos, iconos, caritas, simbolos] = await Promise.all([
     fetchSelectCategory("TIPO_VALORACION"),
+    fetchSelectCategory("ICONOGRAFIA"),
     fetchSelectCategory("GRAFICA_CARITA"),
     fetchSelectCategory("GRAFICA_SIMBOLO"),
   ])
   return scales.map((scale) => {
+    const iconoId = findCatalogId(iconos, scale.iconografia, { match: "valor" })
     const caritaId = findCatalogId(caritas, scale.iconografia, { match: "valor" })
     const simboloId = findCatalogId(simbolos, scale.iconografia, { match: "valor" })
     return {
       tipoId: findCatalogId(tipos, scale.tipo, { match: "valorOrNombre" }) ?? null,
-      iconoId: caritaId ?? simboloId ?? null,
-      iconoCategoria: caritaId != null
+      iconoId: iconoId ?? caritaId ?? simboloId ?? null,
+      iconoCategoria: iconoId != null
+        ? "ICONOGRAFIA"
+        : caritaId != null
         ? "GRAFICA_CARITA"
         : simboloId != null
           ? "GRAFICA_SIMBOLO"

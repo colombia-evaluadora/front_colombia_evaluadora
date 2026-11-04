@@ -12,8 +12,13 @@ import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
+  TableScreenTabs,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
+import { Button } from "@/components/ui/button"
+import { PlusIcon } from "@/components/ui/icons"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { IconografiaPanel } from "@/features/administration/listas-valor/components/iconografia-panel"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
@@ -86,6 +91,14 @@ function ListasValorPageContent() {
   const search = listasValorRoute.useSearch()
   const navigate = listasValorRoute.useNavigate()
   const busquedaValor = search.q ?? ""
+  const pestana = search.pestana ?? "listas"
+  const [nuevoIcono, setNuevoIcono] = useState(false)
+
+  function cambiarPestana(next: string) {
+    navigate({
+      search: (prev) => ({ ...prev, pestana: next === "iconografia" ? "iconografia" : undefined }),
+    })
+  }
   const paginacion = useTablePagination()
 
   const {
@@ -281,13 +294,42 @@ function ListasValorPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Listas de valor</TableScreenTitle>
+        <TableScreenTitle
+          action={
+            pestana === "iconografia" &&
+            permisos.puedeCrear && (
+              <Button size="sm" color="primary" onClick={() => setNuevoIcono(true)}>
+                <PlusIcon data-icon="inline-start" />
+                Nuevo ícono
+              </Button>
+            )
+          }
+        >
+          Lista de Valores
+        </TableScreenTitle>
       </TableScreenHeader>
+      <TableScreenTabs className="bg-card">
+        <Tabs value={pestana} onValueChange={(v) => cambiarPestana(String(v))}>
+          <TabsList variant="line">
+            <TabsTrigger value="listas">Listas</TabsTrigger>
+            <TabsTrigger value="iconografia">Iconografía</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </TableScreenTabs>
 
-      {/* El cuerpo estira su contenido hasta el borde inferior: así la línea del
-          índice llega al final y no queda un hueco debajo. */}
-      {/* Sin padding vertical en el cuerpo: lo pone cada columna, así la línea del índice
-          toca el encabezado y el borde inferior. */}
+      {pestana === "iconografia" ? (
+        <TableScreenBody>
+          <NoticeOutlet className="mt-4" />
+          <IconografiaPanel
+            puedeEditar={permisos.puedeEditar}
+            puedeEliminar={permisos.puedeEliminar}
+            nuevoAbierto={nuevoIcono}
+            onNuevoChange={setNuevoIcono}
+          />
+        </TableScreenBody>
+      ) : (
+      // Cuerpo sin padding vertical y estirado hasta el borde: la línea del índice
+      // toca el encabezado y el borde inferior.
       <TableScreenBody className="flex flex-col py-0 *:flex *:flex-1 *:flex-col">
         {/* Sin barra de herramientas, los avisos van al inicio del cuerpo. */}
         <NoticeOutlet className="mt-4" />
@@ -544,6 +586,7 @@ function ListasValorPageContent() {
           </div>
         )}
       </TableScreenBody>
+      )}
     </TableScreen>
   )
 }

@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils"
 
 interface EstadoFieldProps {
   id: string
-  /** "valor" o "lista": cambia el texto, no el comportamiento. */
-  de: "valor" | "lista"
+  /** Cambia el texto, no el comportamiento. */
+  de: "valor" | "lista" | "icono"
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
@@ -26,16 +26,17 @@ export function EstadoField({
   bloqueo,
   className,
 }: EstadoFieldProps) {
-  const titulo =
-    de === "valor"
-      ? checked
-        ? "Valor activo"
-        : "Valor inactivo"
-      : checked
-        ? "Lista activa"
-        : "Lista inactiva"
+  const titulo = {
+    valor: checked ? "Valor activo" : "Valor inactivo",
+    lista: checked ? "Lista activa" : "Lista inactiva",
+    icono: checked ? "Ícono activo" : "Ícono inactivo",
+  }[de]
   const explicacion =
-    de === "valor"
+    de === "icono"
+      ? checked
+        ? "Se ofrece al elegir el ícono de una valoración. Si lo inactivas, deja de ofrecerse, pero las valoraciones que ya lo usan lo conservan."
+        : "No se ofrece al elegir el ícono de una valoración. Las valoraciones que ya lo usan lo conservan."
+      : de === "valor"
       ? checked
         ? "Aparece como opción en los formularios. Si lo inactivas, deja de aparecer, pero los registros que ya lo tienen lo conservan."
         : "No aparece como opción en los formularios. Los registros que ya lo tienen lo conservan."
