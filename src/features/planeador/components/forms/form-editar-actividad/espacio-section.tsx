@@ -18,7 +18,9 @@ import type { ConfiguracionEspacio, HerramientaEspacio } from "@/features/comuni
 
 const HERRAMIENTAS: { valor: HerramientaEspacio; label: string }[] = [
   { valor: "CHAT", label: "Chat" },
+  { valor: "FORO", label: "Foro" },
   { valor: "ENCUESTAS", label: "Encuestas" },
+  { valor: "EQUIPOS", label: "Equipos" },
 ]
 const OPCIONES = { SIN: "Sin espacio", INTERNO: "Espacio interno" }
 

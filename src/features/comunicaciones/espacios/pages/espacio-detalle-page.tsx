@@ -10,6 +10,9 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useSilenciar } from "@/features/comunicaciones/espacios/api/mutations/use-acciones-espacio"
 import { useEspacioQuery } from "@/features/comunicaciones/espacios/api/query/use-espacios-query"
 import type { EspacioDetalle, HerramientaEspacio } from "@/features/comunicaciones/espacios/api/types"
+import { BuscarEspacio } from "@/features/comunicaciones/espacios/components/buscar-espacio"
+import { EquiposEspacio } from "@/features/comunicaciones/espacios/components/equipos-espacio"
+import { ForoEspacio } from "@/features/comunicaciones/espacios/components/foro-espacio"
 import { ChatEspacio } from "@/features/comunicaciones/espacios/components/chat-espacio"
 import { MaterialesEspacio } from "@/features/comunicaciones/espacios/components/materiales-espacio"
 import { BadgeEstadoEspacio, fechaDia } from "@/features/comunicaciones/espacios/components/ui-espacio"
@@ -18,9 +21,11 @@ const route = getRouteApi("/app/comunicaciones/espacios/detalle/$id")
 
 const ETIQUETA: Partial<Record<HerramientaEspacio, string>> = {
   CHAT: "Chat",
+  FORO: "Foro",
   ENCUESTAS: "Encuestas",
+  EQUIPOS: "Equipos",
 }
-const ORDEN: HerramientaEspacio[] = ["CHAT", "ENCUESTAS"]
+const ORDEN: HerramientaEspacio[] = ["CHAT", "FORO", "ENCUESTAS", "EQUIPOS"]
 
 /** Tira de silenciados sobre el contenido (M.3.MOD.3): reactivar solo el docente. */
 function TiraSilenciados({ detalle }: { detalle: EspacioDetalle }) {
@@ -98,6 +103,7 @@ function Contenido({ id }: { id: number }) {
       </header>
       <NoticeOutlet />
       <TiraSilenciados detalle={detalle} />
+      <BuscarEspacio espacioId={id} />
       <Tabs defaultValue={visibles[0] ?? "MATERIALES"}>
         <TabsList>
           {visibles.map((h) => (
@@ -110,6 +116,16 @@ function Contenido({ id }: { id: number }) {
         {visibles.includes("CHAT") && (
           <TabsContent value="CHAT" className="pt-3">
             <ChatEspacio detalle={detalle} puedeEscribir={detalle.puedeEscribir && herramientas.includes("CHAT")} />
+          </TabsContent>
+        )}
+        {visibles.includes("FORO") && (
+          <TabsContent value="FORO" className="pt-3">
+            <ForoEspacio detalle={detalle} puedeEscribir={detalle.puedeEscribir && herramientas.includes("FORO")} />
+          </TabsContent>
+        )}
+        {visibles.includes("EQUIPOS") && (
+          <TabsContent value="EQUIPOS" className="pt-3">
+            <EquiposEspacio detalle={detalle} />
           </TabsContent>
         )}
         {visibles.includes("ENCUESTAS") && (
