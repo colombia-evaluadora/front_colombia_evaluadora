@@ -1,5 +1,5 @@
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ import { decodificarMenciones, mencionadosEn } from "@/features/comunicaciones/c
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { adjuntosVigentes } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { restanteRetiro } from "@/features/comunicaciones/chat/lib/limites-mensaje"
 
 /**
  * Barra flotante de acciones de un mensaje: con mouse sale al pasar por encima (`hover:` de
@@ -50,6 +51,14 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
   // Solo se piden al abrir la edición (para el autocompletado de menciones).
   const miembros = useMiembrosQuery(editando ? m.conversacionId : undefined)
   const { puedeMencionarMasivo } = useChatAccess()
+  // Pasados los 15 minutos desaparece "Retirar para todos". Es solo reflejo: valida el servidor.
+  const [retirable, setRetirable] = useState(() => restanteRetiro(m.fecha, Date.now()) > 0)
+  useEffect(() => {
+    const resta = restanteRetiro(m.fecha, Date.now())
+    if (resta <= 0) return
+    const t = setTimeout(() => setRetirable(false), resta)
+    return () => clearTimeout(t)
+  }, [m.fecha])
 
   return (
     <>
@@ -72,9 +81,11 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
         >
           {m.fijado ? <PushPinFillIcon className="size-4.5" /> : <PushPinIcon className="size-4.5" />}
         </Accion>
-        <Accion etiqueta="Eliminar mensaje" onClick={() => setEliminando(true)}>
-          <TrashIcon className="size-4.5" />
-        </Accion>
+        {retirable && (
+          <Accion etiqueta="Retirar para todos" onClick={() => setEliminando(true)}>
+            <TrashIcon className="size-4.5" />
+          </Accion>
+        )}
       </div>
 
       <Dialog open={editando} onOpenChange={(open) => !editar.isPending && setEditando(open)}>
@@ -121,22 +132,18 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
       <AlertDialog open={eliminando} onOpenChange={(o) => !o && !eliminar.isPending && setEliminando(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Deseas eliminar este mensaje?</AlertDialogTitle>
+            <AlertDialogTitle>Retirar para todos</AlertDialogTitle>
             <AlertDialogDescription>
-              El mensaje dejará de ser visible para los participantes
-              {adjuntosVigentes(m).length > 1
-                ? ", junto con sus archivos adjuntos"
-                : adjuntosVigentes(m).length === 1
-                  ? ", junto con el archivo adjunto"
-                  : ""}
-              , pero el
-              coordinador podrá consultarlo por control y trazabilidad.
+              El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá Mensaje
+              retirado por el remitente. Solo puede retirarlo durante los primeros 15 minutos desde su envío.
+              No deshace lecturas, capturas, archivos descargados ni correos ya entregados. El coordinador
+              miembro de la conversación podrá consultarlo por control y trazabilidad.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {/* Sí / No como en el diseño (4491:66303). */}
+          {/* Textos de M.2.RET.1; la última frase conserva lo que hace hoy `puedeVerEliminados`. */}
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
-              No
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={eliminar.isPending}
@@ -144,14 +151,14 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
               onClick={() =>
                 eliminar.mutate(m.id, {
                   onSuccess: () => {
-                    notify("Mensaje eliminado.")
+                    notify("Mensaje retirado.")
                     setEliminando(false)
                   },
                   onError,
                 })
               }
             >
-              Sí
+              Retirar para todos
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
