@@ -22,8 +22,9 @@ export function ResumenCaso({ caso }: { caso: CasoResumen }) {
   return (
     <span className="flex flex-wrap items-center gap-2">
       <span>Caso {caso.numero} ·</span>
+      {/* En <span>: Badge pasa a minúsculas un texto suelto y «Tipo II» quedaría «Tipo ii». */}
       <Badge variant="soft" color="info">
-        {caso.tipo_nombre}
+        <span>{caso.tipo_nombre}</span>
       </Badge>
       <Badge variant="soft" color={COLOR_ESTADO[caso.estado_codigo] ?? "muted"}>
         {caso.estado_nombre}

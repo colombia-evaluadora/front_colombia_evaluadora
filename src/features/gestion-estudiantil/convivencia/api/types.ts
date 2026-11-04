@@ -29,6 +29,16 @@ export interface CasoRow {
 export type TipoSituacionCodigo = "TIPO_I" | "TIPO_II" | "TIPO_III"
 export type EstadoCasoCodigo = "REPORTADO" | "EN_ATENCION" | "REMITIDO" | "EN_SEGUIMIENTO" | "CERRADO" | "ANULADO"
 
+export interface AnotacionOrigen {
+  id: number
+  fecha: string
+  codigo: string
+  descripcion: string
+  fk_matricula: number
+  estudiante: string | null
+  anulada: boolean
+}
+
 export interface CasoEstudiante {
   id: number
   fk_matricula: number
@@ -99,7 +109,10 @@ export interface CasoDetalle {
   reporta_nombre?: string | null
   fk_funcionario_gestor?: number | null
   gestor_nombre?: string | null
-  anotaciones_origen?: number[]
+  anotaciones_origen?: AnotacionOrigen[]
+  /** Plan de acompañamiento o Caso de reintegración (Regla 24); sin backend propio todavía. */
+  registro_vinculado_tipo?: string | null
+  registro_vinculado_id?: number | null
   estudiantes?: CasoEstudiante[]
   otros_involucrados?: CasoInvolucrado[] | null
   acciones?: CasoAccion[] | null

@@ -68,6 +68,7 @@ function DatosCompletos({ caso }: { caso: CasoDetalle }) {
   const agresiones = useCatalogo("TIPO_AGRESION")
   const eventos = useCatalogo("EVENTO_GENERADOR")
   const entidades = useCatalogo("ENTIDAD_CONCERNIDA_CONVIVENCIA")
+  const resultados = useCatalogo("RESULTADO_SEGUIMIENTO")
   const pasos = usePasosCasoQuery(caso.id)
   const { fecha, hora } = fechaHechosTexto(caso)
   const siNo = (b: boolean | null | undefined) => (b == null ? "" : b ? "Sí" : "No")
@@ -94,9 +95,36 @@ function DatosCompletos({ caso }: { caso: CasoDetalle }) {
               </Badge>
             )}
           </Dato>
-          <Dato label="Último seguimiento">{caso.ultimo_seguimiento}</Dato>
-          <Dato label="Anotaciones de origen">{caso.anotaciones_origen?.length ? `${caso.anotaciones_origen.length}` : ""}</Dato>
+          {/* El backend da el código (SUPERADA, PERSISTE…): se muestra su nombre del catálogo. */}
+          <Dato label="Último seguimiento">
+            {resultados.find((r) => r.codigo === caso.ultimo_seguimiento)?.label ?? caso.ultimo_seguimiento}
+          </Dato>
+          <Dato label="Registro vinculado">
+            {caso.registro_vinculado_tipo ? `${caso.registro_vinculado_tipo} #${caso.registro_vinculado_id ?? ""}` : ""}
+          </Dato>
         </dl>
+        <Dato label="Anotaciones de origen">
+          {caso.anotaciones_origen?.length ? (
+            <ul className="flex flex-col gap-1">
+              {caso.anotaciones_origen.map((a) => (
+                <li key={a.id} className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground">{formatFecha(a.fecha)}</span>
+                  <span>
+                    <span className="font-semibold">{a.codigo}</span> · {a.descripcion}
+                  </span>
+                  <span className="text-muted-foreground">— {a.estudiante}</span>
+                  {a.anulada && (
+                    <Badge variant="soft" color="muted">
+                      Anulada
+                    </Badge>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            ""
+          )}
+        </Dato>
         <Dato label="Descripción de los hechos">
           <span className="whitespace-pre-wrap">{caso.descripcion}</span>
         </Dato>
@@ -257,8 +285,9 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
         >
           <span className="flex flex-wrap items-center gap-2">
             Caso {caso.numero}
+            {/* En <span>: Badge pasa a minúsculas un texto suelto y «Tipo II» quedaría «Tipo ii». */}
             <Badge variant="soft" color="info">
-              {caso.tipo_nombre}
+              <span>{caso.tipo_nombre}</span>
             </Badge>
             <Badge variant="soft" color={COLOR_ESTADO[caso.estado_codigo] ?? "muted"}>
               {caso.estado_nombre}
