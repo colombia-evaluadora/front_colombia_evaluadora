@@ -1225,6 +1225,35 @@ export const chatRoute = createRoute({
   component: ChatPage,
 })
 
+const ProcesosPage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/procesos-page"), "ProcesosPage")
+
+export const procesosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesProcesos.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Procesos de postulación y elección", to: paths.app.comunicacionesProcesos.getHref() },
+    ],
+  },
+  component: ProcesosPage,
+})
+
+const ProcesoDetallePage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/proceso-detalle-page"), "ProcesoDetallePage")
+
+export const procesoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesProcesoDetalle.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Procesos de postulación y elección", to: paths.app.comunicacionesProcesos.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: ProcesoDetallePage,
+})
+
 const PendientesPage = lazyRouteComponent(() => import("@/features/offline/pages/pendientes-page"), "PendientesPage")
 
 // Cambios guardados sin conexión (Fase 2 offline). Fuera del menú del backend:
@@ -1366,6 +1395,8 @@ const routeTree = rootRoute.addChildren([
     convivenciaCasoRoute,
     convivenciaEditarRoute,
     chatRoute,
+    procesosRoute,
+    procesoDetalleRoute,
     espaciosRoute,
     espacioDetalleRoute,
     notificacionesRoute,

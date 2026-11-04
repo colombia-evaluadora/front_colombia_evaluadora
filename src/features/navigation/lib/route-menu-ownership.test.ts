@@ -30,6 +30,7 @@ const MENU = {
   convivencia: "/app/gestion-estudiantil/convivencia",
   observador: "/app/gestion-estudiantil/observador",
   chat: "/app/comunicaciones/chat",
+  procesos: "/app/comunicaciones/procesos",
 } as const
 
 const ALL_MENU_URLS = Object.values(MENU)
@@ -115,6 +116,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/gestion-estudiantil/observador/editar/$anotacionId": MENU.observador,
 
   "/app/comunicaciones/chat": MENU.chat,
+  "/app/comunicaciones/procesos": MENU.procesos,
+  "/app/comunicaciones/procesos/detalle/$id": MENU.procesos,
   "/app/comunicaciones/espacios": MENU.chat,
   "/app/comunicaciones/espacios/detalle/$id": MENU.chat,
 }

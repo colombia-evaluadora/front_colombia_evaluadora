@@ -300,6 +300,14 @@ export const paths = {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
     },
+    comunicacionesProcesos: {
+      path: "comunicaciones/procesos",
+      getHref: () => "/app/comunicaciones/procesos",
+    },
+    comunicacionesProcesoDetalle: {
+      path: "comunicaciones/procesos/detalle/$id",
+      getHref: (id: number | string) => `/app/comunicaciones/procesos/detalle/${id}`,
+    },
     comunicacionesEspacios: {
       path: "comunicaciones/espacios",
       getHref: () => "/app/comunicaciones/espacios",
