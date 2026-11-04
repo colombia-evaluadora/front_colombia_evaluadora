@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import type { InstrumentoPermitidoCampos, InstrumentoPersonalizado } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import {
