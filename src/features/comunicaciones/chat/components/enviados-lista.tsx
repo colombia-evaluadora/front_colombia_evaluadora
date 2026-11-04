@@ -8,6 +8,7 @@ import { fechaCorta } from "@/features/comunicaciones/chat/lib/chat-format"
 import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { UserIcon } from "@/components/ui/icons"
+import { EstadoComunicadoBadge } from "@/features/comunicaciones/chat/components/comunicado-panel"
 
 const FILTROS: Array<{ tipo: TipoEnviado | undefined; etiqueta: string }> = [
   { tipo: undefined, etiqueta: "Todos" },
@@ -99,6 +100,7 @@ export function EnviadosLista({ onAbrir }: { onAbrir: (e: Enviado) => void }) {
                   <span className="shrink-0 self-start text-right text-xs text-muted-foreground">
                     <time dateTime={e.fecha}>{fechaCorta(e.fecha)}</time>
                     <span className="block font-medium text-green">{ETIQUETA[e.tipo]}</span>
+                    {e.estado && <EstadoComunicadoBadge estado={e.estado} />}
                   </span>
                 </button>
               </li>

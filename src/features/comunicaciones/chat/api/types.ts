@@ -13,6 +13,9 @@ export type CategoriaCanal = "GENERAL" | "VOTACION" | "ENCUESTA" | "EXAMEN" | "A
 // Opciones como WhatsApp: 8H, 1S (1 semana) y SIEMPRE (9999-12-31). 1H/FIN_DIA ya no existen.
 export type SilencioDuracion = "8H" | "1S" | "SIEMPRE" | "NINGUNA"
 
+// Programado → Publicado → Vencido; Anulado desde Publicado o Vencido; Cancelado desde Programado.
+export type EstadoComunicado = "PROGRAMADO" | "PUBLICADO" | "VENCIDO" | "ANULADO" | "CANCELADO"
+
 export interface Conversacion {
   id: number
   nombre: string
@@ -24,6 +27,8 @@ export interface Conversacion {
   // QA 79: estado de la elección, encuesta o evaluación con el reloj del servidor (null en otros
   // canales). Programada se edita y elimina; en curso, nada; finalizada solo se elimina.
   actividadEstado?: "PROGRAMADA" | "EN_CURSO" | "FINALIZADA" | null
+  // Solo en comunicados: estado calculado con el reloj del servidor (null en otros canales).
+  comunicadoEstado?: EstadoComunicado | null
   esBot: boolean
   totalMiembros: number
   miembrosDestacados: string[]
@@ -504,6 +509,14 @@ export interface Comunicado {
   adjuntos?: AdjuntoComunicado[]
   // Mensaje de apertura fijado (no se repite en la conversación de respuestas).
   mensajeId?: number | null
+  // Opcionales: el backend anterior y el mock inicial no los mandan.
+  estado?: EstadoComunicado
+  // yyyy-MM-dd; al día siguiente pasa a Vencido.
+  visibleHasta?: string | null
+  // Solo para quien lo gestiona.
+  motivoAnulacion?: string | null
+  modalidad?: string | null
+  ciclo?: number | null
 }
 
 export interface OpcionDestino {
@@ -523,6 +536,7 @@ export interface DestinosComunicado {
   establecimiento?: OpcionDestino | null
   sedes?: OpcionDestino[]
   jornadas?: OpcionDestino[]
+  poblacion?: "MATRICULADOS" | "ASPIRANTES"
 }
 
 export interface AdjuntoComunicado {
@@ -635,6 +649,9 @@ export interface OpcionesComunicado extends OpcionesSeleccion {
   jornadas: OpcionSeleccion[]
   audiencias: Audiencia[]
   todos: boolean
+  // De los períodos Abiertos del ámbito; los ciclos, solo con una modalidad elegida.
+  modalidades: OpcionSeleccion[]
+  ciclos: OpcionSeleccion[]
 }
 
 /** Vista previa de un alta masiva: quiénes entrarían (sin duplicados ni quien ya está). */
@@ -658,6 +675,8 @@ export interface Enviado {
   mensajeId: number | null
   texto: string
   fecha: string
+  // Solo en comunicados.
+  estado?: EstadoComunicado | null
 }
 
 // Confirmación de lectura de un mensaje propio (HU 7): ENVIADO (nadie lo recibió), ENTREGADO

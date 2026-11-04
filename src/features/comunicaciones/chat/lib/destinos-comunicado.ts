@@ -32,9 +32,18 @@ export interface FiltrosDestino {
   establecimiento: OpcionDestino | null
   sede: OpcionDestino | null
   jornada: OpcionDestino | null
+  // Viajan aparte de los destinos (columnas de tcomunicado): los carga quien arma el comunicado.
+  modalidad?: OpcionDestino | null
+  ciclo?: OpcionDestino | null
 }
 
-export const FILTROS_VACIOS: FiltrosDestino = { establecimiento: null, sede: null, jornada: null }
+export const FILTROS_VACIOS: FiltrosDestino = {
+  establecimiento: null,
+  sede: null,
+  jornada: null,
+  modalidad: null,
+  ciclo: null,
+}
 
 export const DESTINOS_VACIOS: DestinosLocal = {
   personas: [],
@@ -125,5 +134,10 @@ export function resumenDestinatarios(audiencia: Audiencia[], d: DestinosComunica
 
 /** El comunicado admite respuestas y ya se publicó: se muestra con la conversación debajo. */
 export function comunicadoConRespuestas(c: Comunicado | null | undefined): boolean {
-  return !!c?.permiteRespuestas && new Date(c.publicarEn) <= new Date()
+  return (
+    !!c?.permiteRespuestas &&
+    new Date(c.publicarEn) <= new Date() &&
+    c.estado !== "ANULADO" &&
+    c.estado !== "CANCELADO"
+  )
 }

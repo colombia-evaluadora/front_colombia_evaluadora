@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { CaretDownIcon } from "@/components/ui/icons"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import type { Audiencia, Conversacion, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
@@ -54,6 +55,8 @@ export function DestinatariosComunicado({
     establecimiento: filtros.establecimiento?.valor,
     sede: filtros.sede?.valor,
     jornada: filtros.jornada?.valor,
+    modalidad: filtros.modalidad?.valor,
+    ciclo: filtros.ciclo?.valor,
   })
   const datos = opciones.data
   const personas = usePersonasQuery(enabled && abierto, consulta, { paraComunicado: true })
@@ -106,7 +109,7 @@ export function DestinatariosComunicado({
               opciones={datos.establecimientos}
               valor={filtros.establecimiento?.valor}
               todos={datos.todos ? "Elige un establecimiento" : "Todos mis establecimientos"}
-              onChange={(o) => cambiarFiltros({ establecimiento: o, sede: null, jornada: null })}
+              onChange={(o) => cambiarFiltros({ ...FILTROS_VACIOS, establecimiento: o })}
             />
           )}
           <Filtro
@@ -114,14 +117,46 @@ export function DestinatariosComunicado({
             opciones={datos?.sedes ?? []}
             valor={filtros.sede?.valor}
             todos="Todas las sedes"
-            onChange={(o) => cambiarFiltros({ ...filtros, sede: o, jornada: null })}
+            onChange={(o) => cambiarFiltros({ ...filtros, sede: o, jornada: null, modalidad: null, ciclo: null })}
           />
           <Filtro
             etiqueta="Jornada"
             opciones={datos?.jornadas ?? []}
             valor={filtros.jornada?.valor}
             todos="Todas las jornadas"
-            onChange={(o) => cambiarFiltros({ ...filtros, jornada: o })}
+            onChange={(o) => cambiarFiltros({ ...filtros, jornada: o, modalidad: null, ciclo: null })}
+          />
+        </div>
+        <RadioGroup
+          value="MATRICULADOS"
+          aria-label="Población académica"
+          className="flex flex-wrap gap-x-6 gap-y-2 py-1 text-sm"
+        >
+          <span className="w-full font-medium">Población académica</span>
+          <label className="flex items-center gap-2">
+            <RadioGroupItem value="MATRICULADOS" />
+            Matriculados
+          </label>
+          {/* Inscripciones y reservas aún no tienen backend: se ve, pero no se puede elegir. */}
+          <label className="flex items-center gap-2 text-muted-foreground">
+            <RadioGroupItem value="ASPIRANTES" disabled />
+            Aspirantes (próximamente)
+          </label>
+        </RadioGroup>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Filtro
+            etiqueta="Modalidad"
+            opciones={datos?.modalidades ?? []}
+            valor={filtros.modalidad?.valor}
+            todos="Todas las modalidades"
+            onChange={(o) => cambiarFiltros({ ...filtros, modalidad: o, ciclo: null })}
+          />
+          <Filtro
+            etiqueta="Ciclo"
+            opciones={datos?.ciclos ?? []}
+            valor={filtros.ciclo?.valor}
+            todos={filtros.modalidad ? "Elige un ciclo" : "Elige primero la modalidad"}
+            onChange={(o) => cambiarFiltros({ ...filtros, ciclo: o })}
           />
         </div>
         <p className="text-xs text-muted-foreground">

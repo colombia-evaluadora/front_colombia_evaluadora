@@ -22,6 +22,11 @@ export interface CrearComunicadoInput {
   contenidoHtml: string
   importante: boolean
   permitirRespuestas: boolean
+  // yyyy-MM-dd o null: sin vencimiento.
+  visibleHasta: string | null
+  // Modalidad y ciclo van juntos: acotan los grados y grupos al período.
+  modalidad: string | null
+  ciclo: number | null
   // Archivos nuevos a subir (los ya guardados no se reenvían).
   archivos: File[]
   // Al editar: adjuntos guardados que se quitan.
@@ -48,11 +53,15 @@ const cuerpoComunicado = (v: CrearComunicadoInput) => ({
     ESTABLECIMIENTO: v.destinos.establecimiento ? opciones([v.destinos.establecimiento])[0] : null,
     SEDES: opciones(v.destinos.sedes ?? []),
     JORNADAS: opciones(v.destinos.jornadas ?? []),
+    POBLACION: v.destinos.poblacion ?? "MATRICULADOS",
   },
   PUBLICAR_EN: v.publicarEn,
   CONTENIDO_HTML: v.contenidoHtml,
   IMPORTANTE: v.importante ? "S" : "N",
   PERMITIR_RESPUESTAS: v.permitirRespuestas ? "S" : "N",
+  VISIBLE_HASTA: v.visibleHasta,
+  MODALIDAD: v.modalidad,
+  CICLO: v.ciclo,
 })
 
 const base = (conversacionId: number) => `/comunicaciones/conversaciones/${conversacionId}/comunicado`
@@ -135,6 +144,34 @@ export function useEditarComunicado(conversacionId: number) {
       ])
     },
   })
+}
+
+function useCambiarEstadoComunicado<V>(conversacionId: number, accion: (v: V) => Promise<Comunicado>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: accion,
+    onSuccess: (dato) => {
+      queryClient.setQueryData(chatKeys.comunicado(conversacionId), dato)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: chatKeys.enviadosTodos }),
+      ])
+    },
+  })
+}
+
+/** Publicado o Vencido → Anulado, con motivo obligatorio. */
+export function useAnularComunicado(conversacionId: number) {
+  return useCambiarEstadoComunicado(conversacionId, (motivo: string) =>
+    evalCol.patchRow<Comunicado>(`${base(conversacionId)}/anular`, { MOTIVO: motivo }),
+  )
+}
+
+/** Programado → Cancelado (sin motivo: aún no se ha publicado). */
+export function useCancelarComunicado(conversacionId: number) {
+  return useCambiarEstadoComunicado(conversacionId, (_: void) =>
+    evalCol.patchRow<Comunicado>(`${base(conversacionId)}/cancelar`, {}),
+  )
 }
 
 /** "N archivos no se pudieron adjuntar: a.pdf (motivo)". */
