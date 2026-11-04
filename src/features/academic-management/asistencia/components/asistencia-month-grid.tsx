@@ -15,7 +15,7 @@ import {
   TIPO_DIA_INHABIL_LABEL,
   type DiaInhabil,
 } from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, formatHora, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover, AsistenciaGrupoDrillDown } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
@@ -291,8 +291,8 @@ function hrefPlanilla(item: AsistenciaDayEntry, sede: number) {
 
 function horaCorta(iso: string | null): string | null {
   if (!iso) return null
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? null : `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`
+  // Del string, sin Date: el huso del navegador corría la hora (08:00 → 3:00).
+  return formatHora(iso)
 }
 
 /** Una fila de "elija la clase": hora · Grado/Grupo · [Área], estado y flecha. */
