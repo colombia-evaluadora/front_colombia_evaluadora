@@ -166,6 +166,7 @@ export function MiembrosDialog({
             {puedeAgregar ? `Añadir personas a ${c.nombre}` : `Participantes de ${c.nombre}`}
           </DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={error} />
 
         {esGrupo && (c.imagenArchivoId != null || c.descripcion || resumenModo(c)) && (
           <section aria-label="Información del grupo" className="flex items-start gap-3 rounded-lg bg-muted/40 p-3">
@@ -243,7 +244,6 @@ export function MiembrosDialog({
 
         {puedeAgregar && esGrupo && <SelectorGrupal enabled={open} value={grupal} onChange={setGrupal} />}
 
-        <ErrorNoticeBanner error={error} />
 
         <Field variant="outlined">
           <FieldLabel htmlFor="filtro-miembros">Buscar en {c.tipo === "GRUPO" ? "el grupo" : "el foro"}</FieldLabel>

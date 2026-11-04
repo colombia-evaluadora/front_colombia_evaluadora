@@ -234,6 +234,10 @@ function EncuestaInstitucionalDialog({
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner
+            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            fallback="No se pudo guardar el borrador."
+          />
 
           {paso === 1 ? (
             <form
@@ -332,7 +336,6 @@ function EncuestaInstitucionalDialog({
             </div>
           )}
 
-          <ErrorNoticeBanner error={crear.isError ? crear.error : null} />
 
           <BarraBorrador
             estado={autoguardado.estado}
