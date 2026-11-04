@@ -264,10 +264,6 @@ export const paths = {
       path: "asistencia",
       getHref: () => "/app/asistencia",
     },
-    asistenciaSeguimiento: {
-      path: "asistencia/seguimiento",
-      getHref: () => "/app/asistencia/seguimiento",
-    },
     asistenciaManual: {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",

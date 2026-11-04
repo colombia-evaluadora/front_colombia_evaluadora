@@ -53,7 +53,6 @@ import {
 import {
   asistenciaManualSearchSchema,
   asistenciaSearchSchema,
-  asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
@@ -1047,25 +1046,6 @@ export const asistenciaRoute = createRoute({
   component: AsistenciaPage,
 })
 
-const SeguimientoPage = lazyRouteComponent(
-  () => import("@/features/academic-management/asistencia/pages/seguimiento-page"),
-  "SeguimientoPage",
-)
-
-export const asistenciaSeguimientoRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.asistenciaSeguimiento.path,
-  validateSearch: asistenciaSeguimientoSearchSchema,
-  staticData: {
-    breadcrumb: [
-      GESTION_ACADEMICA_CRUMB,
-      { label: "Asistencia", to: paths.app.asistencia.getHref() },
-      { label: "Seguimiento" },
-    ],
-  },
-  component: SeguimientoPage,
-})
-
 const ObservadorPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
   "ObservadorPage",
@@ -1284,7 +1264,6 @@ const routeTree = rootRoute.addChildren([
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,
     asistenciaRoute,
-    asistenciaSeguimientoRoute,
     observadorRoute,
     observadorNuevaRoute,
     observadorEditarRoute,

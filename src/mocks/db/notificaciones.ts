@@ -114,7 +114,7 @@ const TIPOS: TipoFixture[] = [
     email: true,
     titulo: () => "Nueva solicitud de corrección de asistencia",
     cuerpo: () => `Grupo ${faker.number.int({ min: 1, max: 11 })}-${faker.helpers.arrayElement(["A", "B"])}`,
-    deepLink: () => "/app/asistencia/seguimiento",
+    deepLink: () => "/app/asistencia",
   },
   {
     tipo: "INFORMES_BOLETIN",
