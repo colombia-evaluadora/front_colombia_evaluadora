@@ -39,6 +39,11 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
             <Badge variant="soft" color={COLOR_ESTADO[caso.estado_codigo] ?? "muted"}>
               {caso.estado_nombre}
             </Badge>
+            {caso.seguimiento_vencido && (
+              <Badge variant="soft" color="destructive">
+                Vencido
+              </Badge>
+            )}
           </span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
