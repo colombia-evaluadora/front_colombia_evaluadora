@@ -2,6 +2,7 @@ import { z } from "zod"
 
 /** Search params de la pantalla: lista elegida, búsqueda de valores y paginación. */
 export const listasValorSearchSchema = z.object({
+  pestana: z.enum(["listas", "iconografia"]).optional().catch(undefined),
   lista: z.string().optional().catch(undefined),
   q: z.string().optional().catch(undefined),
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
