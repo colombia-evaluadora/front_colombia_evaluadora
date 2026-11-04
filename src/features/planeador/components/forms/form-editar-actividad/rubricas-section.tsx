@@ -6,7 +6,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PlusCircleIcon, TrashIcon } from "@/components/ui/icons"
 import type { Criterio } from "@/features/planeador/api/types/actividad"
@@ -299,8 +299,8 @@ function CriterioItem({
           className={cn(
             "mt-4 grid items-start gap-3",
             esEvaluativa
-              ? "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_9rem_auto]"
-              : "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]",
+              ? "sm:grid-cols-[10rem_minmax(0,1fr)_9rem_auto]"
+              : "sm:grid-cols-[10rem_minmax(0,1fr)_auto]",
           )}
         >
           <p className="pt-2 text-sm font-semibold">Excelente</p>
@@ -399,11 +399,11 @@ function CriterioItem({
             className={cn(
               "grid items-start gap-3",
               esEvaluativa
-                ? "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_9rem_auto]"
-                : "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]",
+                ? "sm:grid-cols-[10rem_minmax(0,1fr)_9rem_auto]"
+                : "sm:grid-cols-[10rem_minmax(0,1fr)_auto]",
             )}
           >
-            <p className="pt-2 text-sm font-semibold">{nivel.nombre}</p>
+            <p className="line-clamp-3 pt-2 text-sm font-semibold wrap-anywhere" title={nivel.nombre}>{nivel.nombre}</p>
             <Field data-invalid={descripcionInvalida}>
               <Textarea
                 className={TEXTAREA_OUTLINED}

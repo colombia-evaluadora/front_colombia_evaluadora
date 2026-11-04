@@ -28,7 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   BrushIcon,
@@ -331,7 +332,7 @@ export function ObservacionEstudianteSheet({
                 maxLength={MAX_CARACTERES}
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder="Escribe la observación de este estudiante para esta actividad…"
-                className={cn("min-h-40 resize-y", TEXTAREA_OUTLINED)}
+                className={cn("min-h-40 max-h-96 resize-y", TEXTAREA_OUTLINED)}
               />
               <span className="self-end text-xs text-muted-foreground">
                 {texto.length}/{MAX_CARACTERES}

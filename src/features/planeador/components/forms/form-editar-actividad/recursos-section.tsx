@@ -8,7 +8,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CheckCircleFillIcon,

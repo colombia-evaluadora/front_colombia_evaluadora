@@ -6,7 +6,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
 import { esEstudianteDeLaActividad } from "@/features/planeador/lib/adaptacion-estudiantes"

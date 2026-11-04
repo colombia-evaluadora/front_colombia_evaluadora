@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/features/planeador/components/forms/textarea-planeador"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { CheckIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
