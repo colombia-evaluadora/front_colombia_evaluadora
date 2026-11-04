@@ -71,7 +71,7 @@ export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, trigge
           <ArrowsDownUpIcon />
           Cambiar tipo
         </DropdownMenuItem>
-        <DropdownMenuItem disabled={!(abierto && access.puedeGestionar)} onClick={() => onAccion("cerrar")}>
+        <DropdownMenuItem disabled={!(abierto && access.puedeSupervisar)} onClick={() => onAccion("cerrar")}>
           <CheckCircleIcon />
           Cerrar
         </DropdownMenuItem>
