@@ -11,11 +11,12 @@ import type {
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 const CATEGORY_LABELS: Record<RatingSymbolCategory, string> = {
+  iconografia: "Iconografía",
   carita: "Símbolo calificación por carita",
   valoracion: "Símbolo calificación por valoración",
 }
 
-const CATEGORY_ORDER: RatingSymbolCategory[] = ["carita", "valoracion"]
+const CATEGORY_ORDER: RatingSymbolCategory[] = ["iconografia", "carita", "valoracion"]
 
 function isImageValue(value: string): boolean {
   return (
@@ -40,10 +41,13 @@ function resolveSymbolImageSrc(value: string): string {
 export function RatingSymbolView({
   value,
   label,
+  color,
   className,
 }: {
   value: string
   label?: string
+  /** HEX de la valoración: un SVG se pinta de ese color; un PNG conserva el suyo. */
+  color?: string | null
   className?: string
 }) {
   const [failed, setFailed] = useState(false)
@@ -66,6 +70,19 @@ export function RatingSymbolView({
         >
           ✕
         </span>
+      )
+    }
+
+    // SVG con color: el archivo hace de máscara sobre el color de la valoración.
+    if (color && /\.svg$/i.test(value)) {
+      const mascara = `url("${resolveSymbolImageSrc(value)}?mimeType=image/svg%2Bxml") center / contain no-repeat`
+      return (
+        <span
+          role="img"
+          aria-label={label}
+          className={cn("inline-block size-6", className)}
+          style={{ backgroundColor: color, mask: mascara, WebkitMask: mascara }}
+        />
       )
     }
 
@@ -94,6 +111,7 @@ export function RatingSymbolSelect({
   value,
   onChange,
   invalid,
+  color,
   placeholder = "Seleccionar",
 }: {
   id?: string
@@ -101,6 +119,8 @@ export function RatingSymbolSelect({
   value: string
   onChange: (value: string) => void
   invalid?: boolean
+  /** Color elegido para la valoración: los SVG se previsualizan con él. */
+  color?: string | null
   placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -126,7 +146,7 @@ export function RatingSymbolSelect({
       >
         <span className="flex flex-1 items-center gap-2">
           {selected ? (
-            <RatingSymbolView value={selected.valor} label={selected.label} className="text-lg" />
+            <RatingSymbolView value={selected.valor} label={selected.label} color={color} className="text-lg" />
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -136,6 +156,7 @@ export function RatingSymbolSelect({
       <PopoverContent align="start" className="w-auto min-w-72">
         <RatingSymbolPicker
           symbols={symbols}
+          color={color}
           value={value}
           onChange={(valor) => {
             onChange(valor)
@@ -151,6 +172,7 @@ export function RatingSymbolSelect({
 // (escala emocional, color) así que cada fila natural del grid coincide con
 // un color; las letras son una sola fila.
 const CATEGORY_GRID_COLS: Record<RatingSymbolCategory, string> = {
+  iconografia: "grid-cols-7",
   carita: "grid-cols-8",
   valoracion: "grid-cols-7",
 }
@@ -159,11 +181,13 @@ export function RatingSymbolPicker({
   symbols,
   value,
   onChange,
+  color,
   className,
 }: {
   symbols: RatingSymbol[]
   value: string
   onChange: (value: string) => void
+  color?: string | null
   className?: string
 }) {
   return (
@@ -197,7 +221,7 @@ export function RatingSymbolPicker({
                         : "border-input hover:bg-foreground/10",
                     )}
                   >
-                    <RatingSymbolView value={symbol.valor} label={symbol.label} />
+                    <RatingSymbolView value={symbol.valor} label={symbol.label} color={color} />
                   </button>
                 )
               })}

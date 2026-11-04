@@ -11,7 +11,7 @@ export function SeccionProtocolo({ caso }: { caso: CasoDetalle }) {
       titulo="Protocolo"
       contentClassName="flex flex-col gap-6 px-4 py-4"
     >
-      <SeccionPasos casoId={caso.id} />
+      <SeccionPasos caso={caso} />
       <SeccionHistorial caso={caso} />
     </SeccionPlegable>
   )

@@ -1,17 +1,14 @@
 "use no memo"
 
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
-import { FileDownloadOutlinedIcon, ControlPointIcon } from "@/components/ui/icons"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
-  TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -21,14 +18,26 @@ import { getErrorMessage } from "@/lib/api-client"
 import { paths } from "@/config/paths"
 
 import { toConvivenciaFilters, useCasosQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
+import { usePeriodosComiteQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { resumenDeFila } from "@/features/gestion-estudiantil/convivencia/api/types"
+import {
+  CabeceraConvivencia,
+  type PestanaConvivencia,
+} from "@/features/gestion-estudiantil/convivencia/components/cabecera-convivencia"
+import { TabComite } from "@/features/gestion-estudiantil/convivencia/components/comite/tab-comite"
+import { DialogExportarSiuce } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-exportar-siuce"
 import { buildColumnsCasos } from "@/features/gestion-estudiantil/convivencia/components/table/columns-casos"
 import { SearchCasos } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
 import { useCasosFiltros, useGestoresDelListado } from "@/features/gestion-estudiantil/convivencia/hooks/use-casos-filtros"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/use-dialogos-caso"
+import { periodoPorDefecto } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
-function ConvivenciaContent() {
+interface PestanaProps {
+  cabecera: (periodoComite?: number) => React.ReactNode
+}
+
+function PestanaCasos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useConvivenciaAccess()
@@ -70,39 +79,7 @@ function ConvivenciaContent() {
   return (
     <>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <div className="flex flex-wrap items-center gap-2">
-              {/* 3.4: el reporte de apoyo para el SIUCE aún no tiene backend. */}
-              <Button size="sm" variant="outline" color="neutral" disabled>
-                <FileDownloadOutlinedIcon data-icon="inline-start" />
-                Exportar para el SIUCE
-              </Button>
-              {access.puedeCrear && (
-                <Button size="sm" render={<Link to={paths.app.convivenciaNuevo.getHref()} />} nativeButton={false}>
-                  <ControlPointIcon data-icon="inline-start" />
-                  Nuevo caso
-                </Button>
-              )}
-            </div>
-          }
-        >
-          Convivencia
-        </TableScreenTitle>
-        <Tabs value="casos" className="px-(--screen-spacing)">
-          <TabsList variant="line" className="w-full justify-start border-b border-border">
-            <TabsTrigger value="casos" className="flex-none px-3">
-              Casos
-            </TabsTrigger>
-            {/* Secciones 3.3 y 3.5: sin backend todavía. */}
-            <TabsTrigger value="comite" className="flex-none px-3" disabled>
-              Comité
-            </TabsTrigger>
-            <TabsTrigger value="procesos" className="flex-none px-3" disabled>
-              Procesos disciplinarios
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {cabecera()}
         <TableScreenToolbar>
           <SearchCasos
             search={f.search}
@@ -145,7 +122,59 @@ function ConvivenciaContent() {
   )
 }
 
-/** Convivencia (Gestión Estudiantil 3.1): listado de casos del alcance del usuario. */
+function PestanaComite({ cabecera, periodo, onPeriodoChange }: PestanaProps & { periodo?: number; onPeriodoChange: (p: number) => void }) {
+  const periodos = usePeriodosComiteQuery()
+  // Los botones del encabezado apuntan al período que se está viendo (el elegido o el abierto).
+  const lista = periodos.data ?? []
+  const actual = lista.find((p) => p.fk_periodo === periodo) ?? periodoPorDefecto(lista)
+  return (
+    <>
+      <TableScreenHeader>{cabecera(actual?.fk_periodo)}</TableScreenHeader>
+      <TableScreenBody>
+        <div className="px-(--screen-spacing) pt-4">
+          <TabComite periodo={periodo} onPeriodoChange={onPeriodoChange} />
+        </div>
+      </TableScreenBody>
+    </>
+  )
+}
+
+type Navegar = (opts: { to: string; search: Record<string, unknown>; replace?: boolean }) => void
+
+function ConvivenciaContent() {
+  const access = useConvivenciaAccess()
+  const search = useSearch({ strict: false }) as { tab?: PestanaConvivencia; periodo?: number }
+  const navigate = useNavigate() as unknown as Navegar
+  const [exportarAbierto, setExportarAbierto] = useState(false)
+
+  // Sin permiso para ver el Comité, la pestaña queda deshabilitada y se vuelve a Casos.
+  const pestana: PestanaConvivencia = search.tab === "comite" && access.puedeVerComite ? "comite" : "casos"
+  const irA = (tab: PestanaConvivencia, periodo?: number) =>
+    navigate({ to: paths.app.convivencia.getHref(), search: { tab, ...(periodo != null && { periodo }) } })
+
+  const cabecera = (periodoComite?: number) => (
+    <CabeceraConvivencia
+      pestana={pestana}
+      onPestana={(p) => irA(p, p === "comite" ? search.periodo : undefined)}
+      access={access}
+      periodo={periodoComite}
+      onExportarSiuce={() => setExportarAbierto(true)}
+    />
+  )
+
+  return (
+    <>
+      {pestana === "comite" ? (
+        <PestanaComite cabecera={cabecera} periodo={search.periodo} onPeriodoChange={(p) => irA("comite", p)} />
+      ) : (
+        <PestanaCasos cabecera={cabecera} />
+      )}
+      {access.puedeExportarSiuce && <DialogExportarSiuce open={exportarAbierto} onOpenChange={setExportarAbierto} />}
+    </>
+  )
+}
+
+/** Convivencia (Gestión Estudiantil 3.1 y 3.3): casos del alcance del usuario y Comité de Convivencia. */
 export function ConvivenciaPage() {
   return (
     <NoticeProvider>

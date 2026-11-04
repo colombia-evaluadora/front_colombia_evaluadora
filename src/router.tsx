@@ -55,7 +55,8 @@ import {
   asistenciaSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
-import { convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
+import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
+import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
@@ -1131,6 +1132,76 @@ export const convivenciaCasoRoute = createRoute({
   },
 })
 
+const CatalogoAnotacionesPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
+  "CatalogoAnotacionesPage",
+)
+
+export const catalogoAnotacionesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.catalogoAnotaciones.path,
+  validateSearch: catalogoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Catálogo de anotaciones" }] },
+  component: CatalogoAnotacionesPage,
+})
+
+const ComiteIntegrantesPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/comite-integrantes-page"),
+  "ComiteIntegrantesPage",
+)
+
+export const convivenciaComiteIntegrantesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaComiteIntegrantes.path,
+  validateSearch: comitePeriodoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Integrantes" }] },
+  component: function ComiteIntegrantesRoute() {
+    const { periodo } = convivenciaComiteIntegrantesRoute.useSearch()
+    return <ComiteIntegrantesPage periodo={periodo} />
+  },
+})
+
+const SesionFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/sesion-form-page"),
+  "SesionFormPage",
+)
+
+export const convivenciaSesionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaSesionNueva.path,
+  validateSearch: comitePeriodoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Nueva sesión" }] },
+  component: function SesionNuevaRoute() {
+    const { periodo } = convivenciaSesionNuevaRoute.useSearch()
+    return <SesionFormPage periodo={periodo} />
+  },
+})
+
+const SesionDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/sesion-detalle-page"),
+  "SesionDetallePage",
+)
+
+export const convivenciaSesionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaSesion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Sesión del Comité" }] },
+  component: function SesionRoute() {
+    const { sesionId } = convivenciaSesionRoute.useParams()
+    return <SesionDetallePage sesionId={Number(sesionId)} />
+  },
+})
+
+export const convivenciaSesionEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaSesionEditar.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Modificar sesión" }] },
+  component: function SesionEditarRoute() {
+    const { sesionId } = convivenciaSesionEditarRoute.useParams()
+    return <SesionFormPage sesionId={Number(sesionId)} />
+  },
+})
+
 const ObservadorPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
   "ObservadorPage",
@@ -1416,6 +1487,7 @@ const routeTree = rootRoute.addChildren([
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,
     asistenciaRoute,
+    catalogoAnotacionesRoute,
     observadorRoute,
     observadorNuevaRoute,
     observadorEditarRoute,
@@ -1424,6 +1496,10 @@ const routeTree = rootRoute.addChildren([
     convivenciaNuevoRoute,
     convivenciaCasoRoute,
     convivenciaEditarRoute,
+    convivenciaComiteIntegrantesRoute,
+    convivenciaSesionNuevaRoute,
+    convivenciaSesionRoute,
+    convivenciaSesionEditarRoute,
     chatRoute,
     procesosRoute,
     procesoDetalleRoute,

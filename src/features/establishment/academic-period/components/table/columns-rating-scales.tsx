@@ -114,7 +114,12 @@ export function createRatingScaleColumns({
       meta: { label: "Ícono" },
       header: () => <span>Ícono</span>,
       cell: ({ row }) => (
-        <RatingSymbolView value={row.original.iconografia} label={row.original.nombre} className="text-xl" />
+        <RatingSymbolView
+          value={row.original.iconografia}
+          label={row.original.nombre}
+          color={row.original.color}
+          className="text-xl"
+        />
       ),
       enableSorting: false,
     },

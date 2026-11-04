@@ -10,7 +10,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,7 @@ import { useGuardedDialog } from "@/features/establishment/academic-period/hooks
 import { DecimalField } from "@/features/establishment/academic-period/components/fields/decimal-field"
 import { RatingSymbolSelect } from "@/features/establishment/academic-period/components/fields/rating-symbol"
 import type { GradingRange } from "@/features/establishment/academic-period/utils/grading-range"
+import { ColorPickerPopover } from "@/features/establishment/academic-period/components/fields/color-picker"
 import { formatGrade } from "@/features/establishment/academic-period/utils/rating-scale-coverage"
 import {
   findDuplicateRatingScale,
@@ -53,6 +54,8 @@ interface RatingScaleFormValues {
   nombre: string
   abreviacion: string
   iconografia: string
+  /** HEX con que se pinta el ícono SVG; "" = el color propio del archivo. */
+  color: string
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
@@ -83,6 +86,7 @@ function makeSchema(range: GradingRange, singleScale: boolean) {
         .min(1, required("La abreviación", { femenino: true }))
         .max(10, maxLength(10, "La abreviación")),
       iconografia: z.string().min(1, required("La iconografía", { femenino: true })),
+      color: z.union([z.literal(""), z.string().regex(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/, "El color debe ser un HEX válido, p. ej. #FFAA00.")]),
       notaMinima: nota("La Nota mínima"),
       notaMaxima: nota("La Nota máxima"),
       notaEquivalente: nota("La Nota equivalente"),
@@ -153,6 +157,7 @@ export function RatingScaleDialog({
         nombre: scale.nombre,
         abreviacion: scale.abreviacion,
         iconografia: scale.iconografia,
+        color: scale.color ?? "",
         notaMinima: scale.notaMinima,
         notaMaxima: scale.notaMaxima,
         notaEquivalente: scale.notaEquivalente,
@@ -164,6 +169,7 @@ export function RatingScaleDialog({
         nombre: "",
         abreviacion: "",
         iconografia: "",
+        color: "",
         notaMinima: range.min,
         notaMaxima: range.max,
         notaEquivalente: range.min,
@@ -230,6 +236,7 @@ export function RatingScaleDialog({
         abreviacion: draft.abreviacion,
         tipo: draft.tipo,
         iconografia: draft.iconografia,
+        color: draft.color || null,
         notaMinima: draft.notaMinima,
         notaMaxima: draft.notaMaxima,
         notaEquivalente: draft.notaEquivalente,
@@ -340,15 +347,35 @@ export function RatingScaleDialog({
                       Iconografía<span className="text-red"> *</span>
                     </FieldLabel>
                     <FieldVariantContext.Provider value="outlined">
+                      <form.Subscribe selector={(state) => state.values.color}>
+                        {(color) => (
                       <RatingSymbolSelect
                         id="rating-scale-icon"
                         symbols={symbols}
+                        color={color || null}
                         value={field.state.value}
                         onChange={(valor) => field.handleChange(valor)}
                         invalid={invalid}
                         placeholder="Seleccione..."
                       />
+                        )}
+                      </form.Subscribe>
                     </FieldVariantContext.Provider>
+                    {invalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
+                  </Field>
+                )
+              }}
+            </form.Field>
+            <form.Field name="color">
+              {(field) => {
+                const invalid = form.state.submissionAttempts > 0 && !field.state.meta.isValid
+                return (
+                  <Field variant="outlined" data-invalid={invalid || undefined}>
+                    <FieldLabel>Color</FieldLabel>
+                    <ColorPickerPopover value={field.state.value} onChange={(c) => field.handleChange(c)} />
+                    <FieldDescription>
+                      Pinta el ícono si es SVG; un PNG conserva sus colores.
+                    </FieldDescription>
                     {invalid && <FieldError errors={toFieldErrors(field.state.meta.errors)} />}
                   </Field>
                 )
