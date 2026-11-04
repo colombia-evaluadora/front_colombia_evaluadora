@@ -307,16 +307,16 @@ function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
   const original = m.texto.trim() !== "" || adjuntos.length > 0
   return (
     <div className={cn("w-fit max-w-[85%] md:max-w-[70%]", m.esPropio && "ml-auto")}>
-      <article className="rounded-xl bg-orange-22 px-4 py-3 text-sm" aria-label="Mensaje eliminado">
+      <article className="rounded-xl bg-orange-22 px-4 py-3 text-sm" aria-label="Mensaje retirado">
         <header className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
           {!m.esPropio && <span className="font-medium text-foreground">{m.autor.nombre}</span>}
           <span>
-            Eliminado <time dateTime={m.eliminadoEn ?? m.fecha}>{horaMensaje(m.eliminadoEn ?? m.fecha)}</time>
+            Retirado <time dateTime={m.eliminadoEn ?? m.fecha}>{horaMensaje(m.eliminadoEn ?? m.fecha)}</time>
           </span>
         </header>
         <p className="flex items-center gap-1.5 italic">
           <TrashIcon aria-hidden className="size-4 shrink-0 text-orange" />
-          Este mensaje fue eliminado.
+          Mensaje retirado por el remitente.
         </p>
         {original && (
           <p className="flex items-center gap-1.5 italic">

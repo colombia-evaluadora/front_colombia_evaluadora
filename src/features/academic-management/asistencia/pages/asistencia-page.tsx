@@ -1,27 +1,22 @@
-import { useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
-import { QUEUED_MESSAGE } from "@/lib/offline/outbox/engine"
-import { Link, useNavigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
-import { ClipboardCheckIcon } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { getErrorMessage } from "@/lib/api-client"
+import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { CaretDownIcon, FileDownloadOutlinedIcon, PrinterIcon } from "@/components/ui/icons"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
 import { useAsistenciaAccess } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
+import { useAsistenciaDiasInhabilesQuery, type DiaInhabil } from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
-import {
-  invalidarAsistencia,
-  registrarAsistencia,
-} from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { AsistenciaCambiosPendientesBanner } from "@/features/academic-management/asistencia/components/asistencia-cambios-pendientes-banner"
+import { DialogRegistrarSesion } from "@/features/academic-management/asistencia/components/dialogs/dialog-registrar-sesion"
 import { AsistenciaSedeSelector } from "@/features/academic-management/asistencia/components/asistencia-sede-selector"
 import { AsistenciaMonthDayPicker } from "@/features/academic-management/asistencia/components/asistencia-month-day-picker"
 import { AsistenciaSummaryCards } from "@/features/academic-management/asistencia/components/asistencia-summary-cards"
@@ -29,11 +24,18 @@ import { AsistenciaHoursCards } from "@/features/academic-management/asistencia/
 import { AsistenciaRegistroMensualCard } from "@/features/academic-management/asistencia/components/asistencia-registro-mensual-card"
 import {
   AsistenciaMonthGrid,
-  nombreSesion,
   type AsistenciaDayEntry,
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
 import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
+import {
+  AsistenciaPorGrupoTab,
+  exportarCsv,
+  ImpresionPorGrupo,
+  type FiltrosPorGrupo,
+  type ReportePorGrupo,
+} from "@/features/academic-management/asistencia/components/asistencia-por-grupo-tab"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { DatosDelBadge } from "@/components/offline/datos-del-badge"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { fechaResumen, toIsoDate } from "@/features/academic-management/asistencia/lib/fechas"
@@ -56,18 +58,27 @@ export function AsistenciaPage() {
 }
 
 function AsistenciaPageContent() {
-  const { notify } = useNotify()
-  const { isDocente, puedeAprobar } = useAsistenciaAccess()
+  const { isDocente, isDirectorGrupo, puedeAprobar } = useAsistenciaAccess()
   const { data: sedes } = useSedesOpcionesQuery()
-  const navigate = useNavigate()
+  const navigate = asistenciaRoute.useNavigate()
   const search = asistenciaRoute.useSearch()
   const [sedeId, setSedeIdState] = React.useState<number | null>(search.sede ?? null)
   const [selectedDay, setSelectedDayState] = React.useState(() => fromIsoDate(search.fecha))
+  const vista = search.vista ?? "calendario"
+  const [reporte, setReporte] = React.useState<ReportePorGrupo | null>(null)
+  const { data: establecimientos } = useEstablishmentsOptionsQuery(vista === "grupo")
+
+  function setVista(next: "calendario" | "grupo") {
+    navigate({ search: (prev) => ({ ...prev, vista: next }), replace: true })
+  }
+
+  function setFiltrosGrupo(next: FiltrosPorGrupo) {
+    navigate({ search: (prev) => ({ ...prev, ...next }), replace: true })
+  }
 
   function setSelectedDay(next: Date) {
     setSelectedDayState(next)
     navigate({
-      to: asistenciaRoute.id,
       search: (prev) => ({ ...prev, fecha: toIsoDate(next) }),
       replace: true,
     })
@@ -76,7 +87,6 @@ function AsistenciaPageContent() {
   function setSedeId(next: number) {
     setSedeIdState(next)
     navigate({
-      to: asistenciaRoute.id,
       search: (prev) => ({ ...prev, sede: next }),
       replace: true,
     })
@@ -127,6 +137,19 @@ function AsistenciaPageContent() {
     return clavesPropias?.has(clave) ?? false
   }
 
+  const { data: diasInhabiles } = useAsistenciaDiasInhabilesQuery(
+    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes },
+    sedeId != null,
+  )
+  const inhabiles = (() => {
+    const map = new Map<number, DiaInhabil[]>()
+    for (const d of diasInhabiles ?? []) {
+      const day = Number(d.fecha.split("-")[2])
+      map.set(day, [...(map.get(day) ?? []), d])
+    }
+    return map
+  })()
+
   const events = (() => {
     const map = new Map<number, AsistenciaDayEntry[]>()
     const porDia = new Map<number, SesionCalendario[]>()
@@ -174,99 +197,97 @@ function AsistenciaPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   })()
 
-  const queryClient = useQueryClient()
-  const [markingEntryId, setMarkingEntryId] = React.useState<string | null>(null)
-  const [markedEntryIds, setMarkedEntryIds] = React.useState<Set<string>>(new Set())
-
-  async function handleMarkAllPresent(entry: AsistenciaDayEntry) {
-    if (!entry.puedeEditar) return
-    setMarkingEntryId(entry.id)
-    try {
-      // Una clase de varios bloques continuos es UNA sola sesión en la
-      // grilla, pero cada bloque es su propia fila de TASISTENCIA -- marcar
-      // solo `entry.bloque` (el primero) dejaba el resto sin registrar.
-      const solicitudes = await Promise.all(
-        entry.bloques.map((bloque) =>
-          registrarAsistencia({
-            GRUPO: entry.fkGrupo,
-            FECHA: entry.fecha,
-            MARCAR_TODOS: 1,
-            ...(entry.esFormativa
-              ? { ACTIVIDAD: entry.fkActividad ?? undefined }
-              : { ASIGNATURA: entry.fkAsignatura, BLOQUE: bloque }),
-          }),
-        ),
-      )
-      const sesionLabel = `${entry.grupo} · ${nombreSesion(entry)}`
-      if (solicitudes.some((s) => s.queued)) {
-        // P17: no se pinta a nadie; se resuelve con el estado del servidor al sincronizar.
-        notify(
-          `${QUEUED_MESSAGE} Se marcará Asistió a quienes no tengan registro en ${sesionLabel} cuando se sincronice.`,
-          { variant: "info" },
-        )
-        setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
-        return
-      }
-      // En período cerrado no se escribe nada (afectados 0): todo queda como solicitud.
-      const escribioDirecto = solicitudes.some((s) => s.afectados > 0)
-      if (escribioDirecto && !solicitudes.some((s) => s.pendientes.length > 0)) {
-        notify(`Estudiantes sin asistencia de ${sesionLabel} marcados como Asistió.`)
-      } else {
-        notify(
-          `El período ya no es calificable: los estudiantes sin asistencia de ${sesionLabel} quedaron como Asistió, pendientes de aprobación del coordinador.`,
-          { variant: "info" },
-        )
-      }
-      setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
-    } catch (error) {
-      notify(getErrorMessage(error), { variant: "error" })
-    } finally {
-      invalidarAsistencia(queryClient)
-      setMarkingEntryId(null)
-    }
-  }
-
   return (
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
           action={
             <div className="flex flex-wrap items-center gap-2">
-              <PrepareOfflineButton />
-              <AsistenciaSedeSelector sedeId={sedeId} onChange={setSedeId} />
+              {vista === "calendario" && <PrepareOfflineButton />}
+              <AsistenciaSedeSelector
+                sedeId={sedeId}
+                onChange={(next) => {
+                  setSedeId(next)
+                  setFiltrosGrupo({ grupo: undefined, asignatura: undefined, periodo: undefined })
+                }}
+              />
+              {vista === "grupo" && (
+                <>
+                  <Button variant="outline" color="neutral" disabled={!reporte} onClick={() => window.print()}>
+                    <PrinterIcon data-icon="inline-start" />
+                    Imprimir
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={<Button variant="outline" color="neutral" disabled={!reporte} />}
+                    >
+                      <FileDownloadOutlinedIcon data-icon="inline-start" />
+                      Exportar
+                      <CaretDownIcon data-icon="inline-end" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => reporte && exportarCsv(reporte)}>Excel (CSV)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => window.print()}>PDF (guardar desde Imprimir)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+              {isDocente && sedeId != null && (
+                <DialogRegistrarSesion
+                  sede={sedeId}
+                  grupoInicial={vista === "grupo" ? search.grupo : undefined}
+                  asignaturaInicial={
+                    vista === "grupo" && typeof search.asignatura === "number" ? search.asignatura : undefined
+                  }
+                />
+              )}
             </div>
           }
         >
-          Asistencia
+          <span className="flex items-center gap-2">
+            Asistencias
+            {!isDocente && (
+              <Badge variant="soft" color="neutral">
+                Solo lectura
+              </Badge>
+            )}
+          </span>
         </TableScreenTitle>
         <DatosDelBadge updatedAt={sesionesUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody>
+        <Tabs value={vista} onValueChange={(v) => setVista(v as "calendario" | "grupo")}>
+          <TabsList variant="line" className="mb-4 w-full justify-start border-b border-border">
+            <TabsTrigger value="calendario" className="flex-none px-3">
+              Calendario
+            </TabsTrigger>
+            <TabsTrigger value="grupo" className="flex-none px-3">
+              Asistencia por grupo
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="grupo">
+            <AsistenciaPorGrupoTab
+              sede={sedeId}
+              filtros={{ grupo: search.grupo, asignatura: search.asignatura, periodo: search.periodo }}
+              onFiltros={setFiltrosGrupo}
+              soloLasQueDicta={isDocente && !isDirectorGrupo}
+              puedeAbrirPlanilla={isDocente}
+              onReporte={setReporte}
+            />
+            {reporte && (
+              <ImpresionPorGrupo
+                reporte={reporte}
+                institucion={
+                  establecimientos?.find((e) => e.id === sedes?.find((s) => s.pk_sede === sedeId)?.fk_establecimiento)?.name ?? ""
+                }
+                sede={sedes?.find((s) => s.pk_sede === sedeId)?.nombre ?? ""}
+              />
+            )}
+          </TabsContent>
+          <TabsContent value="calendario">
         <div className="mb-4 flex items-center justify-between gap-4">
           <AsistenciaMonthDayPicker selected={selectedDay} onSelect={setSelectedDay} />
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label="Ir a Seguimiento"
-                  render={
-                    <Link
-                      to={paths.app.asistenciaSeguimiento.getHref()}
-                      search={{ sede: sedeId ?? undefined }}
-                    />
-                  }
-                  nativeButton={false}
-                />
-              }
-            >
-              <ClipboardCheckIcon />
-            </TooltipTrigger>
-            <TooltipContent>Ir a Seguimiento</TooltipContent>
-          </Tooltip>
         </div>
 
         {puedeAprobar && <AsistenciaCambiosPendientesBanner />}
@@ -286,13 +307,13 @@ function AsistenciaPageContent() {
           <AsistenciaMonthGrid
             month={new Date(selectedDay.getFullYear(), selectedDay.getMonth(), 1)}
             events={events}
-            onMarkAllPresent={handleMarkAllPresent}
-            markingEntryId={markingEntryId}
-            markedEntryIds={markedEntryIds}
+            inhabiles={inhabiles}
             manualSede={sedeId ?? 0}
             restrictedView={!isDocente}
           />
         </div>
+          </TabsContent>
+        </Tabs>
       </TableScreenBody>
     </TableScreen>
   )

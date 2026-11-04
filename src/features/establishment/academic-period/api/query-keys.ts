@@ -93,6 +93,8 @@ export const academicPeriodKeys = {
   academicCalendar: {
     all: academicCalendarAll,
     byPeriod: (academicPeriodId: number) => [...academicCalendarAll, academicPeriodId] as const,
+    plazoAviso: (academicPeriodId: number) =>
+      [...academicCalendarAll, academicPeriodId, "plazo-aviso-asistencia"] as const,
   },
   horario: {
     all: horarioAll,

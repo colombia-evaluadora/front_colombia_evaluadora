@@ -51,15 +51,19 @@ describe("agregarAdjuntos", () => {
   it("corta en el máximo de archivos por mensaje", () => {
     const muchos = Array.from({ length: MAX_ADJUNTOS + 2 }, (_, i) => archivo(`f${i}.pdf`))
     const { archivos, error } = agregarAdjuntos([], muchos)
-    expect(archivos).toHaveLength(MAX_ADJUNTOS)
-    expect(error).toMatch(/hasta 10 archivos/)
+    expect(archivos).toHaveLength(3)
+    expect(error).toMatch(/hasta 3 archivos/)
   })
 
-  it("no deja pasar del peso total del mensaje", () => {
+  it("admite 3 archivos de 10 MB y rechaza uno mayor, sin tocar el tope de comunicados", () => {
     const mb = 1024 * 1024
-    const { archivos, error } = agregarAdjuntos([], [archivo("a.pdf", 15 * mb), archivo("b.pdf", 15 * mb), archivo("c.pdf", 5 * mb)])
-    expect(archivos.map((a) => a.name)).toEqual(["a.pdf", "c.pdf"])
-    expect(error).toMatch(/25 MB/)
+    const justos = agregarAdjuntos([], [archivo("a.pdf", 10 * mb), archivo("b.pdf", 10 * mb), archivo("c.pdf", 10 * mb)])
+    expect(justos.archivos).toHaveLength(3)
+    expect(justos.error).toBeNull()
+    const grande = agregarAdjuntos([], [archivo("a.pdf", 10 * mb + 1)])
+    expect(grande.archivos).toHaveLength(0)
+    expect(grande.error).toMatch(/10 MB/)
+    expect(validarAdjunto(archivo("a.pdf", 15 * mb))).toBeNull()
   })
 })
 

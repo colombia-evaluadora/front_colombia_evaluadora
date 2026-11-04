@@ -74,7 +74,7 @@ registerOutboxHandler<EditarPayload>({
   describe: (p) => ({
     titulo: "Corrección de asistencia",
     detalle: `Registro ${p.pk}${p.body.TIPO_ASISTENCIA ? ` → tipo ${p.body.TIPO_ASISTENCIA}` : ""}`,
-    ruta: "/app/asistencia/seguimiento",
+    ruta: "/app/asistencia",
   }),
 })
 

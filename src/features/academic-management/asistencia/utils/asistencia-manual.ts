@@ -1,5 +1,6 @@
 import type {
   AsistenciaRegistroManual,
+  JustificacionLocal,
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -76,7 +77,14 @@ export function registrosPorBloque(
   soporte: Record<number, File>,
   soporteEliminado: Record<number, boolean>,
   rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+  justificaciones: Record<number, JustificacionLocal> = {},
 ): Map<number | null, AsistenciaRegistroManual[]> {
+  // La justificación va en cada bloque No asistió / Llegó tarde: la corrida se justifica entera.
+  const conJustificacion = (fkMatricula: number, tipo: TipoAsistencia) => {
+    const j = justificaciones[fkMatricula]
+    if (!j || (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE)) return {}
+    return { justificacion: j.justificacion, fkFuenteJustificacion: j.fuente }
+  }
   const porBloque = new Map<number | null, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
   const bloquesNumericos = bloques.filter((b): b is number => b !== null)
 
@@ -90,20 +98,23 @@ export function registrosPorBloque(
           bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
         // El soporte va solo en el bloque "Llegó tarde", no en los que genera la cascada.
         const archivo =
-          tipoBloque === LLEGO_TARDE
+          tipoBloque === LLEGO_TARDE && !justificaciones[fkMatricula]?.justificacion
             ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
             : undefined
         porBloque.get(bloque)!.push({
           fkMatricula,
           tipoAsistencia: tipoBloque,
           ...(archivo !== undefined && { fkArchivo: archivo }),
+          ...conJustificacion(fkMatricula, tipoBloque),
         })
       }
       continue
     }
 
     // Un soporte que quedó de una selección anterior no se re-envía si `tipo` pasó a Asistió.
-    const admiteSoporte = tipo === NO_ASISTIO || tipo === LLEGO_TARDE
+    // Con justificación sin archivo no viaja soporte: son excluyentes (Sección 7).
+    const admiteSoporte =
+      (tipo === NO_ASISTIO || tipo === LLEGO_TARDE) && !justificaciones[fkMatricula]?.justificacion
     for (const bloque of bloques) {
       const archivo = admiteSoporte
         ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
@@ -112,6 +123,7 @@ export function registrosPorBloque(
         fkMatricula,
         tipoAsistencia: tipo,
         ...(archivo !== undefined && { fkArchivo: archivo }),
+        ...conJustificacion(fkMatricula, tipo),
       })
     }
   }
@@ -144,7 +156,12 @@ export function conCambioPendiente(row: RosterEstudiante): RosterEstudiante {
 export function cambiaRegistro(registro: AsistenciaRegistroManual, actual: RosterEstudiante, quitaSoporte: boolean): boolean {
   // 3/6 históricos equivalen a 2/5: la excusa es el archivo.
   const tipoActual = actual.tipo_asistencia_valor == null ? null : tipoBase(actual.tipo_asistencia_valor)
-  return tipoBase(registro.tipoAsistencia) !== tipoActual || registro.fkArchivo instanceof File || quitaSoporte
+  return (
+    tipoBase(registro.tipoAsistencia) !== tipoActual ||
+    registro.fkArchivo instanceof File ||
+    quitaSoporte ||
+    registro.justificacion !== undefined
+  )
 }
 /** Lo que la página necesita de una pestaña para preguntar antes de cambiar de sesión. */
 export interface SesionControl {
