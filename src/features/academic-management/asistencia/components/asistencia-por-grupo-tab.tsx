@@ -503,10 +503,7 @@ function MatrizSesiones({
   totales: typeof TOTALES
   planilla: { sede: number; grupo: number; periodo?: number } | null
 }) {
-  // Varios bloques el mismo día se distinguen con el número del bloque.
-  const porDia = new Map<string, number>()
-  for (const s of sesiones) porDia.set(s.fecha, (porDia.get(s.fecha) ?? 0) + 1)
-
+  // Una columna por día: el back ya junta los bloques (la cascada de Llegó tarde es un Retraso).
   return (
     <Table className="min-w-max border-separate border-spacing-0" containerClassName="max-h-[60vh] overflow-y-auto">
       <TableHeader>
@@ -518,9 +515,6 @@ function MatrizSesiones({
             const etiqueta = (
               <span className="font-medium text-primary tabular-nums">
                 {fechaCorta(s.fecha)}
-                {(porDia.get(s.fecha) ?? 0) > 1 && s.bloque != null && (
-                  <span className="ml-0.5 text-xs text-muted-foreground">b{s.bloque}</span>
-                )}
               </span>
             )
             return (
