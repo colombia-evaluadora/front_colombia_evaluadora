@@ -42,6 +42,8 @@ export type ReportKey =
   | "bitacora"
   | "observador"
   | "observador-anotaciones"
+  | "convivencia-acta-comite"
+  | "convivencia-siuce"
 
 interface ReportInput {
   format: ExportFormat
