@@ -303,7 +303,7 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex max-w-5xl flex-col gap-6 pb-6">
+        <div className="flex flex-col gap-6 pb-6">
           {caso.anulacion && (
             <Alert variant="warning">
               <InfoIcon aria-hidden="true" />

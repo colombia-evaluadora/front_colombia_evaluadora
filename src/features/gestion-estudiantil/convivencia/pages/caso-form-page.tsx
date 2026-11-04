@@ -313,7 +313,7 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex max-w-5xl flex-col gap-5 pb-6">
+        <div className="flex flex-col gap-5 pb-6">
           <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
             <ComboOpciones
               id="caso-tipo"
