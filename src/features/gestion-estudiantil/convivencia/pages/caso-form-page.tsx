@@ -72,6 +72,7 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
             errorEstudiantes={errores.estudiantes}
             errorInvolucrados={errores.involucrados}
             mostrarErrores={form.intento}
+            casoId={caso?.id}
           />
 
           {grave && !editar && (

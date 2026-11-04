@@ -8,6 +8,10 @@ import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { erroresInvolucrado, esTipoFuncionario } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import {
+  useFuncionarioInvolucrado,
+  type ContextoFuncionarios,
+} from "@/features/gestion-estudiantil/convivencia/hooks/use-funcionario-involucrado"
 
 interface Props {
   fila: InvolucradoFila
@@ -16,24 +20,26 @@ interface Props {
   roles: OpcionCatalogo[]
   tipos: OpcionCatalogo[]
   tiposDoc: OpcionCatalogo[]
+  contexto: ContextoFuncionarios
   onChange: (patch: Partial<InvolucradoFila>) => void
   onQuitar: () => void
 }
 
 /** Una fila de «Otros involucrados»: tipo, funcionario o nombre y documento, y rol. */
-export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tipos, tiposDoc, onChange, onQuitar }: Props) {
+export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tipos, tiposDoc, contexto, onChange, onQuitar }: Props) {
   const tipoCodigo = codigoDe(tipos, v.tipo)
   const err = mostrarErrores ? erroresInvolucrado(v, tipoCodigo, codigoDe(roles, v.rol), todas) : undefined
   // Afectado solo para funcionarios del establecimiento (3.1); a los demás tipos no se les ofrece.
   const esFuncionario = esTipoFuncionario(tipoCodigo)
   const rolesFila = esFuncionario ? roles : roles.filter((r) => r.codigo !== COD.afectado)
   const soloLectura = v.id != null
+  const funcionario = useFuncionarioInvolucrado({ fila: v, todas, contexto, activo: esFuncionario, onChange })
   return (
     <div className="flex items-start gap-2 rounded-lg border border-border p-3">
       <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-3 sm:grid-cols-5">
         {esFuncionario && (
           // 3.1: el funcionario se elige de los registrados en el establecimiento y de su ficha salen
-          // nombre y documento. Aún no hay un endpoint de funcionarios con el alcance de Convivencia.
+          // nombre y documento (solo lectura).
           <ComboOpciones
             id={`inv-funcionario-${v.key}`}
             label="Funcionario"
@@ -41,12 +47,13 @@ export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tip
             size="default"
             todos={false}
             className="gap-2 sm:col-span-5"
-            disabled={soloLectura}
-            placeholder="No hay funcionarios para elegir"
+            disabled={soloLectura || funcionario.deshabilitado}
+            placeholder={funcionario.placeholder}
             value={v.fk_funcionario != null ? String(v.fk_funcionario) : ""}
-            options={v.fk_funcionario != null ? [{ value: String(v.fk_funcionario), label: v.nombre }] : []}
+            options={funcionario.opciones}
             error={err?.funcionario}
-            onChange={(f) => onChange({ fk_funcionario: f ? Number(f) : null })}
+            onInputChange={funcionario.buscar}
+            onChange={funcionario.elegir}
           />
         )}
         <ComboOpciones
@@ -59,7 +66,15 @@ export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tip
           value={v.tipo}
           options={tipos}
           error={err?.tipo}
-          onChange={(tipo) => onChange({ tipo, rol: "", fk_funcionario: null })}
+          onChange={(tipo) =>
+            onChange({
+              tipo,
+              rol: "",
+              fk_funcionario: null,
+              // Lo que vino de la ficha del funcionario anterior no es de la persona nueva.
+              ...(v.fk_funcionario != null && { nombre: "", tipoDoc: "", numDoc: "" }),
+            })
+          }
         />
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(err?.nombre) || undefined}>
           <FieldLabel htmlFor={`inv-nombre-${v.key}`}>Nombre*</FieldLabel>

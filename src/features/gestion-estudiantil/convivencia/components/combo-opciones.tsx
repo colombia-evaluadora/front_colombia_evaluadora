@@ -27,6 +27,8 @@ interface ComboOpcionesProps {
   /** Etiqueta en línea a la izquierda del control (filas compactas), en vez de flotante encima. */
   inline?: boolean
   className?: string
+  /** Lo tecleado en el buscador, para combos que consultan al servidor. */
+  onInputChange?: (texto: string) => void
 }
 
 /** Combobox con búsqueda sobre una lista de opciones; el mismo de los filtros de Seguimiento. */
@@ -44,6 +46,7 @@ export function ComboOpciones({
   size = "sm",
   inline,
   className,
+  onInputChange,
 }: ComboOpcionesProps) {
   const items = todos ? [{ value: "", label: todos }, ...options] : options
   return (
@@ -61,6 +64,7 @@ export function ComboOpciones({
         items={Object.fromEntries(items.map((i) => [i.value, i.label]))}
         value={value}
         onValueChange={(v) => onChange(v ?? "")}
+        onInputValueChange={onInputChange ? (texto) => onInputChange(texto) : undefined}
       >
         <ComboboxFieldTrigger id={id} size={size} className="w-full" aria-invalid={Boolean(error) || undefined}>
           <ComboboxFieldValue placeholder={placeholder ?? (todos || "Seleccione")} />

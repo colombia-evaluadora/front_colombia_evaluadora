@@ -20,6 +20,8 @@ interface ConstructoresProps {
   errorEstudiantes?: string
   errorInvolucrados?: string
   mostrarErrores: boolean
+  /** Caso que se modifica; ausente en el alta. Acota el combo de funcionarios. */
+  casoId?: number
 }
 
 /** «Estudiantes involucrados (N)» y «Otros involucrados (N)» en un mismo recuadro (G.2.CAS.NUE.1). */
@@ -31,11 +33,13 @@ export function ConstructoresInvolucrados({
   errorEstudiantes,
   errorInvolucrados,
   mostrarErrores,
+  casoId,
 }: ConstructoresProps) {
   const roles = useCatalogo("ROL_SITUACION")
   const tipos = useCatalogo("TIPO_INVOLUCRADO")
   const tiposDoc = useCatalogo("TIPO_DOCUMENTO")
   const [agregando, setAgregando] = useState(false)
+  const contexto = { casoId: casoId ?? null, matricula: casoId == null ? (estudiantes[0]?.fk_matricula ?? null) : null }
   const setInv = (i: number, patch: Partial<InvolucradoFila>) =>
     onInvolucrados(involucrados.map((x, j) => (j === i ? { ...x, ...patch } : x)))
 
@@ -93,6 +97,7 @@ export function ConstructoresInvolucrados({
                 roles={roles}
                 tipos={tipos}
                 tiposDoc={tiposDoc}
+                contexto={contexto}
                 onChange={(patch) => setInv(i, patch)}
                 onQuitar={() => onInvolucrados(involucrados.filter((_, j) => j !== i))}
               />

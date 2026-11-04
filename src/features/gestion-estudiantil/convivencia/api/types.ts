@@ -262,3 +262,16 @@ export const resumenDeDetalle = (d: CasoDetalle): CasoResumen => ({
   fk_gestor: d.fk_funcionario_gestor ?? null,
   gestor_nombre: d.gestor_nombre ?? null,
 })
+
+/** Fila de `GET /convivencia/funcionarios`: funcionario elegible como otro involucrado (V267). */
+export interface FuncionarioInvolucrable {
+  fk_tfuncionario: number
+  nombre: string
+  fk_tlv_tipo_documento: number | null
+  tipo_documento_codigo: string | null
+  tipo_documento_nombre: string | null
+  numero_documento: string | null
+  fk_tlv_cargo: number | null
+  cargo_codigo: string | null
+  cargo_nombre: string | null
+}
