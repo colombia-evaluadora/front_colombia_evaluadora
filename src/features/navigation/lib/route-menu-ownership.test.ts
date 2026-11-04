@@ -115,6 +115,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/gestion-estudiantil/observador/editar/$anotacionId": MENU.observador,
 
   "/app/comunicaciones/chat": MENU.chat,
+  "/app/comunicaciones/espacios": MENU.chat,
+  "/app/comunicaciones/espacios/detalle/$id": MENU.chat,
 }
 
 interface RouteLike {
