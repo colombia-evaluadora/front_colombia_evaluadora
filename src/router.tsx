@@ -55,6 +55,7 @@ import {
   asistenciaSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
+import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
 import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
@@ -1131,6 +1132,19 @@ export const convivenciaCasoRoute = createRoute({
   },
 })
 
+const CatalogoAnotacionesPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
+  "CatalogoAnotacionesPage",
+)
+
+export const catalogoAnotacionesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.catalogoAnotaciones.path,
+  validateSearch: catalogoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Catálogo de anotaciones" }] },
+  component: CatalogoAnotacionesPage,
+})
+
 const ComiteIntegrantesPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/convivencia/pages/comite-integrantes-page"),
   "ComiteIntegrantesPage",
@@ -1473,6 +1487,7 @@ const routeTree = rootRoute.addChildren([
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,
     asistenciaRoute,
+    catalogoAnotacionesRoute,
     observadorRoute,
     observadorNuevaRoute,
     observadorEditarRoute,

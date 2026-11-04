@@ -300,6 +300,10 @@ export const paths = {
       path: "gestion-estudiantil/convivencia/caso/$casoId/editar",
       getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}/editar`,
     },
+    catalogoAnotaciones: {
+      path: "gestion-estudiantil/catalogo-anotaciones",
+      getHref: () => "/app/gestion-estudiantil/catalogo-anotaciones",
+    },
     convivenciaComiteIntegrantes: {
       path: "gestion-estudiantil/convivencia/comite/integrantes",
       getHref: () => "/app/gestion-estudiantil/convivencia/comite/integrantes",
