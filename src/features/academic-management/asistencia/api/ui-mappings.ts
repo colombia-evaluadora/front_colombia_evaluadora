@@ -1,10 +1,9 @@
 import type { ComponentType } from "react"
 
-import { CheckCircleFillIcon, CircleDashedIcon, XCircleIcon } from "@/components/ui/icons"
+import { CheckCircleFillIcon, CircleDashedIcon, ClockCountdownIcon, XCircleIcon } from "@/components/ui/icons"
 
 import type {
   EstadoSesion,
-  SeguimientoFiltersValues,
   SesionCalendario,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -25,7 +24,7 @@ export function hoyDateOnly(): string {
 
 /** Una sesión de un día que todavía no llega — no tiene sentido tomarle
  *  asistencia todavía (no hubo clase). Mismo criterio semántico que
- *  `EstadoSesion.PENDIENTE` ("Fechas futuras"), pero por comparación directa
+ *  `EstadoSesion.SIN_ESTADO` (clase futura), pero por comparación directa
  *  de fecha en vez de depender de que el backend ya haya resuelto el estado
  *  — sirve también para un acceso directo por URL sin pasar por el calendario. */
 export function esFechaFutura(fecha: string): boolean {
@@ -34,31 +33,35 @@ export function esFechaFutura(fecha: string): boolean {
 
 export const ESTADO_SESION_ICON: Record<EstadoSesion, ComponentType<{ className?: string }>> = {
   REGISTRADA: CheckCircleFillIcon,
-  RETRASADA: XCircleIcon,
-  PENDIENTE: CircleDashedIcon,
+  PENDIENTE: ClockCountdownIcon,
+  VENCIDA: XCircleIcon,
+  SIN_ESTADO: CircleDashedIcon,
 }
 
 export const ESTADO_SESION_COLOR: Record<EstadoSesion, string> = {
   REGISTRADA: "text-green",
-  RETRASADA: "text-red",
-  PENDIENTE: "text-blue",
+  PENDIENTE: "text-yellow",
+  VENCIDA: "text-red",
+  SIN_ESTADO: "text-muted-foreground",
 }
 
 export const ESTADO_SESION_LABELS: Record<EstadoSesion, { title: string; description: string }> = {
-  REGISTRADA: { title: "Asistencia registrada", description: "Registro completo" },
-  RETRASADA: { title: "Por registrar", description: "Fecha vencida sin registro" },
-  PENDIENTE: { title: "Pendiente", description: "Fechas futuras" },
+  REGISTRADA: { title: "Registrada", description: "Registro completo" },
+  PENDIENTE: { title: "Pendiente", description: "Clase dictada sin registrar" },
+  VENCIDA: { title: "Pendiente fuera de plazo", description: "Pasó el plazo del aviso" },
+  SIN_ESTADO: { title: "Sin estado", description: "Clase futura" },
 }
 
-// RETRASADA gana sobre PENDIENTE, que gana sobre REGISTRADA -- el resumen de
+// VENCIDA gana sobre PENDIENTE, y ambas sobre SIN_ESTADO y REGISTRADA -- el resumen de
 // un conjunto de sesiones (un grado, un grupo, un día) tiene que avisar
 // primero lo que falta, no lo que ya quedó en orden. Usado por la celda del
 // calendario en modo Rector y por su popover de drill-down (grados → grupos
 // → asignaturas).
 const PRIORIDAD_ESTADO: Record<EstadoSesion, number> = {
-  RETRASADA: 0,
+  VENCIDA: 0,
   PENDIENTE: 1,
-  REGISTRADA: 2,
+  SIN_ESTADO: 2,
+  REGISTRADA: 3,
 }
 
 export function peorEstado(estados: EstadoSesion[]): EstadoSesion {
@@ -355,19 +358,6 @@ export function catalogosDeSesiones(sesiones: SesionCalendario[]): {
   }
 }
 
-/** Nombre a mostrar de una fila de Seguimiento -- actividad si es formativa, asignatura si no (mismo criterio que `nombreSesion` del calendario). */
-export function nombreMateriaSeguimiento(
-  row: Pick<SeguimientoRowLike, "es_formativa" | "actividad" | "asignatura">,
-): string {
-  return row.es_formativa ? (row.actividad ?? "Actividad") : row.asignatura
-}
-
-interface SeguimientoRowLike {
-  es_formativa: boolean
-  actividad: string | null
-  asignatura: string
-}
-
 /** Grados de `jornada` (vacío = todas) -- código + nombre, distintos y ordenados por nombre. */
 export function gradosDeJornada(catalog: GrupoCatalogEntry[], jornada: string): CodigoNombreOption[] {
   const porCodigo = new Map<string, string>()
@@ -395,12 +385,3 @@ export function gruposDeGradoJornada(catalog: GrupoCatalogEntry[], jornada: stri
   return catalog.filter((g) => (!jornada || g.jornada === jornada) && (!grado || g.grado === grado))
 }
 
-export const EMPTY_SEGUIMIENTO_FILTERS: SeguimientoFiltersValues = {
-  fechaDesde: "",
-  fechaHasta: "",
-  jornada: "",
-  grado: "",
-  grupo: "",
-  asignatura: "",
-  tipoAsistencia: "",
-}

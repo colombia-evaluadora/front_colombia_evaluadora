@@ -111,7 +111,27 @@ function validate(body: CalendarEntryBody, exceptId?: number) {
   return null
 }
 
+// Plazo del aviso de asistencia por período (Regla 109.3; en el back,
+// TPERIODO_ACADEMICO.PLAZO_AVISO_ASISTENCIA, 0 a 30 y 2 por defecto).
+const plazoAvisoDb = new Map<number, number>()
+
 export const academicCalendarHandlers = [
+  http.get("/api/eval-col/calendario/:periodId/plazo-aviso-asistencia", async ({ params }) => {
+    await delay(150)
+    const plazo = plazoAvisoDb.get(Number(params.periodId)) ?? 2
+    // `unwrapRow` es no-op con mocks: la fila va plana.
+    return HttpResponse.json({ plazo_aviso_asistencia: plazo })
+  }),
+
+  http.patch("/api/eval-col/calendario/:periodId/plazo-aviso-asistencia", async ({ params, request }) => {
+    await delay(200)
+    const { PLAZO } = (await request.json()) as { PLAZO: number }
+    if (!Number.isInteger(PLAZO) || PLAZO < 0 || PLAZO > 30)
+      return error("El plazo debe ser un número de días entre 0 y 30.")
+    plazoAvisoDb.set(Number(params.periodId), PLAZO)
+    return HttpResponse.json({ rows: [{ plazo_aviso_asistencia: PLAZO }] })
+  }),
+
   http.get("/api/eval-col/calendario/:periodId", async ({ params }) => {
     await delay(200)
     return HttpResponse.json({ rows: calendarRows(Number(params.periodId)) })

@@ -4,13 +4,19 @@ import { api } from "@/lib/api-client"
 
 import type {
   AsistenciaCalendarioParams,
+  EstadoClaseBackend,
   SesionCalendario,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
 
 interface RawSesionCalendario
-  extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "grado" | "grado_nombre" | "jornada" | "jornada_nombre"> {
+  extends Omit<
+    SesionCalendario,
+    "fk_grupo" | "fk_asignatura" | "grado" | "grado_nombre" | "jornada" | "jornada_nombre" | "estado_sesion"
+  > {
+  estado_sesion: EstadoClaseBackend
+  vencida?: boolean
   fk_grupo?: number
   fk_tgrupo?: number
   fk_asignatura?: number
@@ -25,6 +31,7 @@ function normalizarSesion(raw: RawSesionCalendario): SesionCalendario {
   return {
     ...raw,
     fecha: raw.fecha.slice(0, 10),
+    estado_sesion: raw.estado_sesion === "PENDIENTE" && raw.vencida ? "VENCIDA" : raw.estado_sesion,
     fk_grupo: raw.fk_grupo ?? raw.fk_tgrupo ?? 0,
     fk_asignatura: raw.fk_asignatura ?? raw.fk_tasignatura ?? 0,
     grado: raw.grado_valor ?? raw.grado ?? "",

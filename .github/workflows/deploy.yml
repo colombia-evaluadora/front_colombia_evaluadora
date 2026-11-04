@@ -127,6 +127,10 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$ENV_FILE" > .env
+          # Captcha solo en produccion: site key vacia = sin widget ni header (lib/captcha.ts).
+          if [ "${{ inputs.environment }}" != "production" ]; then
+            echo "VITE_APP_TURNSTILE_SITE_KEY=" >> .env
+          fi
           # Solo los NOMBRES de clave al log. Sirve para diagnosticar un
           # deploy con el .env incompleto sin volcar los valores.
           echo "Claves presentes en .env:"

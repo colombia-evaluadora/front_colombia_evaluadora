@@ -54,6 +54,7 @@ import type { AcademicPeriodDetail } from "@/features/establishment/academic-per
 import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
 import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/tabs/evaluation-periods-section"
 import type { EvaluationCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
+import type { PlazoAvisoAsistenciaHandle } from "@/features/establishment/academic-period/components/fields/plazo-aviso-asistencia-field"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
@@ -138,6 +139,10 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
   const criteriaRef = useRef<EvaluationCriteriaHandle>(null)
   const [isCriteriaDirty, setIsCriteriaDirty] = useState(false)
   const [isSavingCriteria, setIsSavingCriteria] = useState(false)
+  // Plazo del aviso de asistencia (pestaña Calendario): mismo trato.
+  const plazoRef = useRef<PlazoAvisoAsistenciaHandle>(null)
+  const [isPlazoDirty, setIsPlazoDirty] = useState(false)
+  const [isSavingPlazo, setIsSavingPlazo] = useState(false)
   // "Generar › Planes de estudio / Horarios" (Sección 5.7).
   const [generateKind, setGenerateKind] = useState<GenerateKind | null>(null)
 
@@ -212,7 +217,7 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
     }
   }
 
-  const isSaving = createPeriod.isPending || updatePeriod.isPending || isSavingCriteria
+  const isSaving = createPeriod.isPending || updatePeriod.isPending || isSavingCriteria || isSavingPlazo
 
   // Envía el formulario del período solo si cambió (al agregar siempre) y, si
   // hay cambios en Criterios de evaluación, los guarda también.
@@ -227,6 +232,14 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
         await criteriaRef.current.save(notify)
       } finally {
         setIsSavingCriteria(false)
+      }
+    }
+    if (isPlazoDirty && plazoRef.current) {
+      setIsSavingPlazo(true)
+      try {
+        await plazoRef.current.save(notify)
+      } finally {
+        setIsSavingPlazo(false)
       }
     }
   }
@@ -348,7 +361,7 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
                 onClick={handleHeaderSave}
                 // Al editar, con cambios en el período o en Criterios de evaluación;
                 // al agregar, cuando el formulario está completo.
-                disabled={isSaving || (isEditing ? !isFormDirty && !isCriteriaDirty : !isFormValid)}
+                disabled={isSaving || (isEditing ? !isFormDirty && !isCriteriaDirty && !isPlazoDirty : !isFormValid)}
                 aria-busy={isSaving}
               >
                 {isSaving ? (
@@ -377,6 +390,8 @@ function AcademicPeriodConfigPageContent({ viewOnly }: { viewOnly: boolean }) {
             general={generalBody}
             criteriaRef={criteriaRef}
             onCriteriaDirtyChange={setIsCriteriaDirty}
+            plazoRef={plazoRef}
+            onPlazoDirtyChange={setIsPlazoDirty}
           />
         </PeriodReadOnlyProvider>
       </TableScreenBody>
