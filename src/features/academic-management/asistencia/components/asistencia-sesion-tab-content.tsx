@@ -36,6 +36,7 @@ import { DialogJustificarAusencia } from "@/features/academic-management/asisten
 import { useAsistenciaAccess } from "@/features/academic-management/asistencia/hooks/use-es-docente"
 import type {
   AsistenciaRegistroManual,
+  JustificacionLocal,
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -129,6 +130,8 @@ export function AsistenciaSesionTabContent({
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
   const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
+  // Regla 109: justificación sin archivo hecha antes de guardar; viaja con el registro.
+  const [justificacionLocal, setJustificacionLocal] = React.useState<Record<number, JustificacionLocal>>({})
   // Registrar/corregir se encola sin red solo en el piloto.
   const soloEnLinea = useOfflineWritable()
   // Estado en la outbox de esta sesión (registrar por bloque) y de sus correcciones (por pk).
@@ -171,6 +174,7 @@ export function AsistenciaSesionTabContent({
   const sinEdicionesLocales =
     Object.keys(soporte).length === 0 &&
     Object.keys(soporteEliminado).length === 0 &&
+    Object.keys(justificacionLocal).length === 0 &&
     Object.keys(seleccion).length === Object.keys(baseline.current).length &&
     Object.entries(seleccion).every(([fk, tipo]) => baseline.current[Number(fk)] === tipo) &&
     Object.entries(bloqueTarde).every(([fk, b]) => bloqueTardeBaseline.current[Number(fk)] === b)
@@ -205,6 +209,7 @@ export function AsistenciaSesionTabContent({
   function tieneExcusa(row: RosterEstudiante): boolean {
     const fk = row.fk_tmatricula
     if (soporte[fk]) return true
+    if (justificacionLocal[fk]) return Boolean(justificacionLocal[fk].justificacion)
     if (soporteEliminado[fk]) return Boolean(row.justificacion)
     return Boolean(row.soporte_nombre || row.justificacion)
   }
@@ -229,6 +234,12 @@ export function AsistenciaSesionTabContent({
               const { [fkMatricula]: _omitido, ...resto } = prev
               return resto
             })
+            // Soporte y justificación sin archivo son excluyentes: el archivo la reemplaza.
+            setJustificacionLocal((prev) => {
+              if (!prev[fkMatricula]) return prev
+              const { [fkMatricula]: _omitido, ...resto } = prev
+              return resto
+            })
           }
         },
         soporteEliminado,
@@ -249,8 +260,10 @@ export function AsistenciaSesionTabContent({
         soloLectura: !puedeEditar,
         puedeJustificar,
         onJustificar: setJustificando,
+        justificacionLocal,
       }),
     [
+      justificacionLocal,
       puedeEditar,
       puedeJustificar,
       conPendiente,
@@ -301,7 +314,7 @@ export function AsistenciaSesionTabContent({
     })
     return Object.fromEntries(listos) as Record<number, TipoAsistencia>
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seleccion, bloqueTarde, sesion.bloques.length, roster_, soporte, soporteEliminado])
+  }, [seleccion, bloqueTarde, sesion.bloques.length, roster_, soporte, soporteEliminado, justificacionLocal])
   const pendientesPorBloqueTarde =
     Object.keys(seleccion).length - Object.keys(seleccionLista).length
 
@@ -312,7 +325,8 @@ export function AsistenciaSesionTabContent({
       (fk) => bloqueTarde[Number(fk)] !== bloqueTardeBaseline.current[Number(fk)],
     ) ||
     Object.keys(soporte).some((fk) => Number(fk) in seleccionLista) ||
-    Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista)
+    Object.keys(soporteEliminado).some((fk) => Number(fk) in seleccionLista) ||
+    Object.keys(justificacionLocal).some((fk) => Number(fk) in seleccionLista)
   const mostrarGuardar = hayAlgoQueGuardar
 
   // Cancelar: vuelve a lo guardado sin tocar el servidor.
@@ -321,6 +335,7 @@ export function AsistenciaSesionTabContent({
     setBloqueTarde(bloqueTardeBaseline.current)
     setSoporte({})
     setSoporteEliminado({})
+    setJustificacionLocal({})
   }
 
   // Solo completa a quien no tiene marca: no pisa lo que el docente ya tomó.
@@ -351,6 +366,7 @@ export function AsistenciaSesionTabContent({
       soporte,
       soporteEliminado,
       rosterPorBloque,
+      justificacionLocal,
     )
     const seleccionGuardada = seleccionLista
     setGuardando(true)
@@ -367,7 +383,8 @@ export function AsistenciaSesionTabContent({
         const actual = rosterPorBloque
           .get(bloque)
           ?.find((r) => r.fk_tmatricula === registro.fkMatricula)
-        if (actual?.pk_tasistencia == null) {
+        // Con justificación va por registrar: el PATCH de corrección no la lleva y el upsert sí.
+        if (actual?.pk_tasistencia == null || registro.justificacion !== undefined) {
           // Una captura tardía que ya espera aprobación no se reenvía igual.
           const yaPendiente =
             actual?.pk_tsolicitud_aprobacion != null && !cambiaRegistro(registro, actual, false)
@@ -510,6 +527,11 @@ export function AsistenciaSesionTabContent({
         for (const fk of Object.keys(guardados)) delete next[Number(fk)]
         return next
       })
+      setJustificacionLocal((prev) => {
+        const next = { ...prev }
+        for (const fk of Object.keys(guardados)) delete next[Number(fk)]
+        return next
+      })
       if (fallidos.size > 0) throw errorFallo
       return true
     } catch (error) {
@@ -643,25 +665,53 @@ export function AsistenciaSesionTabContent({
             if (await guardar(true, m)) setSolicitud(null)
           }}
         />
-        {justificando && (
-          <DialogJustificarAusencia
-            open
-            onOpenChange={(open) => !open && setJustificando(null)}
-            estudiante={justificando.estudiante}
-            pks={[...rosterPorBloque.values()]
+        {justificando &&
+          (() => {
+            const fk = justificando.fk_tmatricula
+            const pks = [...rosterPorBloque.values()]
               .flat()
               .filter(
                 (x) =>
-                  x.fk_tmatricula === justificando.fk_tmatricula &&
+                  x.fk_tmatricula === fk &&
                   x.pk_tasistencia != null &&
                   (x.tipo_asistencia_valor === 2 || x.tipo_asistencia_valor === 5),
               )
-              .map((x) => x.pk_tasistencia!)}
-            justificacion={justificando.justificacion ?? null}
-            fuente={justificando.fk_tlv_fuente_justificacion ?? null}
-            onJustificada={(mensaje) => notify(mensaje, { variant: "success" })}
-          />
-        )}
+              .map((x) => x.pk_tasistencia!)
+            // Sin registro guardado, o con el estado cambiado en pantalla, se justifica
+            // aquí y viaja al guardar la sesión (también dentro de la solicitud de aprobación).
+            // Con el soporte guardado quitado en pantalla también: el back no justifica sobre un soporte.
+            const local =
+              pks.length === 0 || seleccion[fk] !== baseline.current[fk] || Boolean(soporteEliminado[fk])
+            const enPantalla = justificacionLocal[fk]
+            return (
+              <DialogJustificarAusencia
+                open
+                onOpenChange={(open) => !open && setJustificando(null)}
+                estudiante={justificando.estudiante}
+                pks={pks}
+                justificacion={enPantalla ? enPantalla.justificacion : (justificando.justificacion ?? null)}
+                fuente={enPantalla ? enPantalla.fuente : (justificando.fk_tlv_fuente_justificacion ?? null)}
+                onJustificada={(mensaje) => notify(mensaje, { variant: "success" })}
+                onLocal={
+                  local
+                    ? (valor) => {
+                        setJustificacionLocal((prev) => ({ ...prev, [fk]: valor }))
+                        // Justificar reemplaza el soporte: el elegido se descarta y el guardado se quita.
+                        if (valor.justificacion) {
+                          setSoporte((prev) => {
+                            const { [fk]: _omitido, ...resto } = prev
+                            return resto
+                          })
+                          if (justificando.soporte_nombre) {
+                            setSoporteEliminado((prev) => ({ ...prev, [fk]: true }))
+                          }
+                        }
+                      }
+                    : undefined
+                }
+              />
+            )
+          })()}
         {puedeEditar &&
           accionesSlot &&
           createPortal(

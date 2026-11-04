@@ -19,6 +19,8 @@ export interface MatriculaSedeOption {
   /** El nombre, más el colegio si el usuario tiene sedes en varios. */
   label: string
   establecimientoId: number
+  /** Una sede Inactiva no recibe matrículas nuevas (Regla 100); sus matrículas siguen visibles. */
+  activa: boolean
 }
 
 export interface MatriculaDependentCatalogsRequest {

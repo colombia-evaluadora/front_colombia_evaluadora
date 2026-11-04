@@ -195,6 +195,22 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/sedes",
       },
 
+      campusAdd: {
+          path: "establecimiento-educativo/sedes/agregar",
+          getHref: () => "/app/establecimiento-educativo/sedes/agregar",
+      },
+
+      // `detalle/$id` y `editar/$id`: un param suelto se tragaría `sedes/agregar`.
+      campusDetail: {
+          path: "establecimiento-educativo/sedes/detalle/$campusId",
+          getHref: (campusId: string | number) => `/app/establecimiento-educativo/sedes/detalle/${campusId}`,
+      },
+
+      campusEdit: {
+          path: "establecimiento-educativo/sedes/editar/$campusId",
+          getHref: (campusId: string | number) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
+      },
+
       officials: {
           path: "establecimiento-educativo/funcionarios",
           getHref: () => "/app/establecimiento-educativo/funcionarios",
@@ -268,6 +284,22 @@ export const paths = {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",
     },
+    convivencia: {
+      path: "gestion-estudiantil/convivencia",
+      getHref: () => "/app/gestion-estudiantil/convivencia",
+    },
+    convivenciaNuevo: {
+      path: "gestion-estudiantil/convivencia/nuevo",
+      getHref: () => "/app/gestion-estudiantil/convivencia/nuevo",
+    },
+    convivenciaCaso: {
+      path: "gestion-estudiantil/convivencia/caso/$casoId",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}`,
+    },
+    convivenciaEditar: {
+      path: "gestion-estudiantil/convivencia/caso/$casoId/editar",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}/editar`,
+    },
     observador: {
       path: "gestion-estudiantil/observador",
       getHref: () => "/app/gestion-estudiantil/observador",
@@ -283,6 +315,22 @@ export const paths = {
     comunicacionesChat: {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
+    },
+    comunicacionesProcesos: {
+      path: "comunicaciones/procesos",
+      getHref: () => "/app/comunicaciones/procesos",
+    },
+    comunicacionesProcesoDetalle: {
+      path: "comunicaciones/procesos/detalle/$id",
+      getHref: (id: number | string) => `/app/comunicaciones/procesos/detalle/${id}`,
+    },
+    comunicacionesEspacios: {
+      path: "comunicaciones/espacios",
+      getHref: () => "/app/comunicaciones/espacios",
+    },
+    comunicacionesEspacio: {
+      path: "comunicaciones/espacios/detalle/$id",
+      getHref: (id: string) => `/app/comunicaciones/espacios/detalle/${id}`,
     },
     notificaciones: {
       path: "notificaciones",

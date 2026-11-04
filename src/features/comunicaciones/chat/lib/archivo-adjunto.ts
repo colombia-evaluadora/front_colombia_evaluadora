@@ -71,18 +71,13 @@ const MIME_COMPRIMIDOS = new Set([
   "",
 ])
 
+/** Tope por archivo de un comunicado: sus límites son propios (Comunicaciones §3.1), no los del mensaje. */
 export const MAX_ADJUNTO_MB = 20
-const MAX_ADJUNTO_BYTES = MAX_ADJUNTO_MB * 1024 * 1024
+/** Tope por archivo de un mensaje (§4.6; comms-service `AdjuntosChat.MAX_BYTES_MENSAJE`). */
+export const MAX_ADJUNTO_MENSAJE_MB = 10
 
-/** Tope de archivos por mensaje (comms-service `AdjuntosChat.MAX_POR_MENSAJE`, V560). */
-export const MAX_ADJUNTOS = 10
-/**
- * Peso total por mensaje: todos los archivos viajan en un solo multipart y file-service
- * rechaza el pedido que pasa de `FILES_MAX_REQUEST_SIZE` (30 MB, contando el texto y los
- * separadores del multipart). Se deja margen para no recibir ese error genérico.
- */
-export const MAX_TOTAL_MB = 25
-const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024
+/** Tope de archivos por mensaje (§4.6; comms-service `AdjuntosChat.MAX_POR_MENSAJE`). */
+export const MAX_ADJUNTOS = 3
 
 export const ACEPTA_DOCUMENTOS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
 export const ACEPTA_MULTIMEDIA = ".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mov,.weba,.ogg,.oga,.opus,.m4a,.mp3,.wav"
@@ -116,7 +111,10 @@ export function formatoDeArchivo(archivo: { name: string; type: string }): Forma
 }
 
 /** Mensaje de error si el archivo no se puede adjuntar; `null` si sirve. */
-export function validarAdjunto(archivo: { name: string; size: number; type?: string }): string | null {
+export function validarAdjunto(
+  archivo: { name: string; size: number; type?: string },
+  maxMb = MAX_ADJUNTO_MB,
+): string | null {
   const ext = extension(archivo.name)
   if (!EXTENSIONES[ext]) {
     return "Ese tipo de archivo no se puede adjuntar. Usa PDF, Word, Excel, PowerPoint, texto, imagen, video, audio, ZIP o RAR."
@@ -124,14 +122,14 @@ export function validarAdjunto(archivo: { name: string; size: number; type?: str
   if (COMPRIMIDOS.has(ext) && !MIME_COMPRIMIDOS.has((archivo.type ?? "").toLowerCase())) {
     return "El archivo no parece un ZIP o RAR válido."
   }
-  if (archivo.size > MAX_ADJUNTO_BYTES) return `El archivo supera el máximo de ${MAX_ADJUNTO_MB} MB.`
+  if (archivo.size > maxMb * 1024 * 1024) return `El archivo supera el máximo de ${maxMb} MB.`
   return null
 }
 
 /**
  * Suma `nuevos` a los archivos ya elegidos para un mensaje: descarta los que no se pueden
- * adjuntar y los repetidos (mismo nombre y peso), y corta en el tope de cantidad y de peso
- * total. `error` explica el primer descarte (null si entraron todos).
+ * adjuntar y los repetidos (mismo nombre y peso), y corta en el tope de cantidad.
+ * `error` explica el primer descarte (null si entraron todos).
  */
 export function agregarAdjuntos<T extends { name: string; size: number; type?: string }>(
   actuales: readonly T[],
@@ -139,9 +137,8 @@ export function agregarAdjuntos<T extends { name: string; size: number; type?: s
 ): { archivos: T[]; error: string | null } {
   const archivos = [...actuales]
   let error: string | null = null
-  let total = archivos.reduce((s, a) => s + a.size, 0)
   for (const archivo of nuevos) {
-    const invalido = validarAdjunto(archivo)
+    const invalido = validarAdjunto(archivo, MAX_ADJUNTO_MENSAJE_MB)
     if (invalido) {
       error ??= `${archivo.name}: ${invalido}`
       continue
@@ -151,12 +148,7 @@ export function agregarAdjuntos<T extends { name: string; size: number; type?: s
       error ??= `Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos por mensaje.`
       break
     }
-    if (total + archivo.size > MAX_TOTAL_BYTES) {
-      error ??= `Los archivos de un mensaje no pueden sumar más de ${MAX_TOTAL_MB} MB.`
-      continue
-    }
     archivos.push(archivo)
-    total += archivo.size
   }
   return { archivos, error }
 }

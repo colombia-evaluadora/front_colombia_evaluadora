@@ -19,6 +19,8 @@ import { useResponderEncuesta } from "@/features/comunicaciones/chat/api/mutatio
 import { estadoEleccion } from "@/features/comunicaciones/chat/lib/eleccion"
 import { ResponderPregunta } from "@/features/comunicaciones/chat/components/responder-pregunta"
 import { EncuestaResultados } from "@/features/comunicaciones/chat/components/encuesta-panel"
+import { FormularioAcademico } from "@/features/comunicaciones/chat/components/encuesta-academica-participante"
+import { academicaAbierta } from "@/features/comunicaciones/chat/lib/encuesta-academica"
 import {
   RESPUESTA_VACIA,
   estaRespondida,
@@ -45,11 +47,20 @@ export function EncuestaParticipante({
       </p>
     )
   }
+  // La del manual sigue editable después de responder; el resumen depende de su configuración.
+  if (academicaAbierta(e)) {
+    return (
+      <>
+        <FormularioAcademico key={(e.miRespuesta ?? []).join()} encuesta={e} />
+        {e.yaRespondi && <EncuestaResultados encuesta={e} isPending={false} />}
+      </>
+    )
+  }
   if (!e.yaRespondi && estado === "ACTIVA") return <Formulario encuesta={e} />
 
   return (
     <>
-      {e.yaRespondi && (
+      {e.yaRespondi && e.modalidad !== "ACADEMICA" && (
         <section className="mb-4 rounded-xl border bg-card px-6 py-6 text-center">
           <span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-green text-white">
             <CheckIcon aria-hidden className="size-6" />

@@ -55,6 +55,7 @@ import {
   asistenciaSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
+import { convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
@@ -152,6 +153,10 @@ const EstablishmentsPage = lazyRouteComponent(
 const CampusesPage = lazyRouteComponent(
   () => import("@/features/establishment/campuses/pages/campuses-page"),
   "CampusesPage"
+)
+const CampusFormPage = lazyRouteComponent(
+  () => import("@/features/establishment/campuses/pages/campus-form-page"),
+  "CampusFormPage"
 )
 
 const EmployeesPage = lazyRouteComponent(
@@ -447,6 +452,7 @@ const ESTABLECIMIENTO_CRUMB = {
   label: "Establecimiento educativo",
   to: paths.app.establishments.general.getHref(),
 }
+const CONVIVENCIA_CRUMB = { label: "Convivencia", to: paths.app.convivencia.getHref() }
 const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
@@ -757,6 +763,29 @@ export const campusesRoute = createRoute({
   component: CampusesPage,
 })
 
+const SEDES_CRUMB = { label: "Sedes educativas", to: paths.app.establishments.campuses.getHref() }
+
+export const campusAddRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusAdd.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Nueva sede" }] },
+  component: CampusFormPage,
+})
+
+export const campusDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusDetail.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Detalle" }] },
+  component: CampusFormPage,
+})
+
+export const campusEditRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.campusEdit.path,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, SEDES_CRUMB, { label: "Modificar" }] },
+  component: CampusFormPage,
+})
+
 export const employeesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.officials.path,
@@ -1046,6 +1075,62 @@ export const asistenciaRoute = createRoute({
   component: AsistenciaPage,
 })
 
+const ConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/convivencia-page"),
+  "ConvivenciaPage",
+)
+
+export const convivenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivencia.path,
+  validateSearch: convivenciaSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Convivencia" }] },
+  component: ConvivenciaPage,
+})
+
+const NuevoCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "NuevoCasoPage",
+)
+
+export const convivenciaNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Nuevo caso" }] },
+  component: NuevoCasoPage,
+})
+
+const EditarCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "EditarCasoPage",
+)
+
+// El id viaja por props: la página no importa la ruta (evita el ciclo router ↔ página).
+export const convivenciaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaEditar.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Modificar caso" }] },
+  component: function EditarCasoRoute() {
+    const { casoId } = convivenciaEditarRoute.useParams()
+    return <EditarCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const CasoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const convivenciaCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaCaso.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Detalle del caso" }] },
+  component: function CasoDetalleRoute() {
+    const { casoId } = convivenciaCasoRoute.useParams()
+    return <CasoDetallePage casoId={Number(casoId)} />
+  },
+})
+
 const ObservadorPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
   "ObservadorPage",
@@ -1114,6 +1199,41 @@ export const asistenciaManualRoute = createRoute({
   component: AsistenciaManualPage,
 })
 
+const EspaciosPage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacios-page"),
+  "EspaciosPage",
+)
+
+const EspacioDetallePage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacio-detalle-page"),
+  "EspacioDetallePage",
+)
+
+export const espaciosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacios.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos" },
+    ],
+  },
+  component: EspaciosPage,
+})
+
+export const espacioDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacio.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos", to: paths.app.comunicacionesEspacios.getHref() },
+      { label: "Espacio" },
+    ],
+  },
+  component: EspacioDetallePage,
+})
+
 const ChatPage = lazyRouteComponent(
   () => import("@/features/comunicaciones/chat/pages/chat-page"),
   "ChatPage",
@@ -1130,6 +1250,35 @@ export const chatRoute = createRoute({
     ],
   },
   component: ChatPage,
+})
+
+const ProcesosPage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/procesos-page"), "ProcesosPage")
+
+export const procesosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesProcesos.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Procesos de postulación y elección", to: paths.app.comunicacionesProcesos.getHref() },
+    ],
+  },
+  component: ProcesosPage,
+})
+
+const ProcesoDetallePage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/proceso-detalle-page"), "ProcesoDetallePage")
+
+export const procesoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesProcesoDetalle.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Procesos de postulación y elección", to: paths.app.comunicacionesProcesos.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: ProcesoDetallePage,
 })
 
 const PendientesPage = lazyRouteComponent(() => import("@/features/offline/pages/pendientes-page"), "PendientesPage")
@@ -1250,6 +1399,9 @@ const routeTree = rootRoute.addChildren([
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,
+      campusAddRoute,
+      campusDetailRoute,
+      campusEditRoute,
       employeesRoute,
       addEstablishmentRoute,
       establishmentDetailRoute,
@@ -1268,7 +1420,15 @@ const routeTree = rootRoute.addChildren([
     observadorNuevaRoute,
     observadorEditarRoute,
     asistenciaManualRoute,
+    convivenciaRoute,
+    convivenciaNuevoRoute,
+    convivenciaCasoRoute,
+    convivenciaEditarRoute,
     chatRoute,
+    procesosRoute,
+    procesoDetalleRoute,
+    espaciosRoute,
+    espacioDetalleRoute,
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,

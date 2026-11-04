@@ -41,8 +41,11 @@ const CON_VENTANA: readonly string[] = ["VOTACION", "ENCUESTA", "EXAMEN"]
  * punto verde `actividadAbierta`. Devuelve el motivo del bloqueo (tooltip) o null si se permite.
  */
 export function bloqueoActividad(
-  c: Pick<Conversacion, "categoria" | "actividadAbierta" | "actividadEstado">,
+  c: Pick<Conversacion, "categoria" | "actividadAbierta" | "actividadEstado" | "comunicadoEstado">,
 ): { editar: string | null; eliminar: string | null } {
+  if (c.comunicadoEstado === "ANULADO" || c.comunicadoEstado === "CANCELADO") {
+    return { editar: "No se puede editar porque fue anulado o cancelado.", eliminar: null }
+  }
   if (!CON_VENTANA.includes(c.categoria)) return { editar: null, eliminar: null }
   const estado = c.actividadEstado ?? (c.actividadAbierta ? "EN_CURSO" : null)
   if (estado === "EN_CURSO") return { editar: MENSAJE_EN_CURSO, eliminar: MENSAJE_EN_CURSO }

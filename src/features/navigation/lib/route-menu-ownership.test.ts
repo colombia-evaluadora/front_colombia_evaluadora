@@ -27,8 +27,10 @@ const MENU = {
   informes: "/app/gestion-academica/informes",
   referentes: "/app/gestion-academica/referentes-curriculares",
   asistencia: "/app/asistencia",
+  convivencia: "/app/gestion-estudiantil/convivencia",
   observador: "/app/gestion-estudiantil/observador",
   chat: "/app/comunicaciones/chat",
+  procesos: "/app/comunicaciones/procesos",
 } as const
 
 const ALL_MENU_URLS = Object.values(MENU)
@@ -80,6 +82,9 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/establecimiento-educativo/detalle/$establishmentId": MENU.establecimiento,
   "/app/establecimiento-educativo/editar/$establishmentId": MENU.establecimiento,
   "/app/establecimiento-educativo/sedes": MENU.sedes,
+  "/app/establecimiento-educativo/sedes/agregar": MENU.sedes,
+  "/app/establecimiento-educativo/sedes/detalle/$campusId": MENU.sedes,
+  "/app/establecimiento-educativo/sedes/editar/$campusId": MENU.sedes,
   "/app/establecimiento-educativo/funcionarios": MENU.funcionarios,
   "/app/establecimiento-educativo/periodos": MENU.periodos,
   "/app/establecimiento-educativo/periodos/agregar": MENU.periodos,
@@ -105,11 +110,19 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/asistencia": MENU.asistencia,
   "/app/asistencia/manual": MENU.asistencia,
 
+  "/app/gestion-estudiantil/convivencia": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/nuevo": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/caso/$casoId": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/caso/$casoId/editar": MENU.convivencia,
   "/app/gestion-estudiantil/observador": MENU.observador,
   "/app/gestion-estudiantil/observador/nueva": MENU.observador,
   "/app/gestion-estudiantil/observador/editar/$anotacionId": MENU.observador,
 
   "/app/comunicaciones/chat": MENU.chat,
+  "/app/comunicaciones/procesos": MENU.procesos,
+  "/app/comunicaciones/procesos/detalle/$id": MENU.procesos,
+  "/app/comunicaciones/espacios": MENU.chat,
+  "/app/comunicaciones/espacios/detalle/$id": MENU.chat,
 }
 
 interface RouteLike {

@@ -1,66 +1,78 @@
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
-import { apiPath } from "@/lib/api-routes"
+import { evalCol } from "@/lib/eval-col-client"
 
-import type { Campus, CampusDraft } from "@/features/establishment/campuses/api/types/campus"
+import type { CampusFormValues } from "@/features/establishment/campuses/api/types/campus"
+import { sameInfluenceArea, type InfluenceArea } from "@/features/establishment/campuses/lib/geo"
 
-export interface CreateResult {
-  status: "ok" | "error"
-  message: string
-  campus: Campus
+/**
+ * Body de `POST` / `PATCH /establecimientos/sedes` (sso V449). El validador de
+ * placeholders rechaza cualquier hoja no declarada, así que se arma a mano:
+ * `zone` va como id y `comune` conserva el typo del backend.
+ */
+function toBody(values: CampusFormValues) {
+  return {
+    name: values.name.trim(),
+    dane: values.dane.trim(),
+    zone: values.zoneId,
+    consecutive: values.consecutive.trim(),
+    neighborhood: values.neighborhood.trim(),
+    comune: values.commune.trim(),
+    address: values.address.trim(),
+    phone: values.phone.trim(),
+    workSchedules: values.workScheduleIds,
+    // "latitud,longitud"; vacía no cambia la guardada (es obligatoria).
+    georeference: values.location.trim() || null,
+  }
 }
 
 /**
- * El validador de placeholders de la plataforma recorre TODO el JSON del
- * body y exige que cada leaf tenga un tipo declarado en la query — no basta
- * con declarar `BODY.ZONE.ID`: si el objeto que se manda también trae
- * `.code`/`.name` (como `Campus["zone"]`, un `CatalogItem` completo), esos
- * dos leaves quedan sin declarar y la petición se rechaza entera (aunque
- * `.id` sí esté declarado). Por eso acá NO se manda el objeto completo:
- * `zone` sale aplanado a su `id` (`BODY.ZONE` a secas, ya no
- * `BODY.ZONE.ID` — la query se actualizó para matchear, ver id_query 89/90).
- *
- * Además:
- * - `commune` → `comune` (typo del backend, confirmado contra la query).
- * - `establishmentId` solo tiene sentido en el alta (`fn_sed_crear` lo
- *   necesita); en la actualización ni siquiera está declarado en la query
- *   (`FK_TESTABLECIMIENTO` es inmutable), así que si viaja igual el
- *   validador también lo rechaza — se saca explícitamente en `update`.
- * - `id` tampoco se manda en la actualización: el PK ya va en la URL
- *   (`PARAM.ID`), la query no tiene un `BODY.ID` declarado.
+ * El área viaja como texto GeoJSON (`BODY.INFLUENCEAREA` es JSONB, como los
+ * campos JSONB del planeador). `"null"` la quita; sin la clave, no cambia.
  */
-function toRealCreatePayload(values: CampusDraft) {
-  const { commune, zone, ...rest } = values
-  return { ...rest, comune: commune, zone: zone?.id ?? null }
+function influenceAreaBody(area: InfluenceArea | null, original: InfluenceArea | null | undefined) {
+  if (original !== undefined && sameInfluenceArea(area, original)) return {}
+  if (!area) return original ? { influenceArea: "null" } : {}
+  return { influenceArea: JSON.stringify(area) }
 }
 
-function toRealUpdatePayload(values: Campus) {
-  const { commune, zone, id: _id, ...rest } = values as Campus & { establishmentId?: number | null }
-  const { establishmentId: _establishmentId, ...withoutEstablishment } = rest
-  return { ...withoutEstablishment, comune: commune, zone: zone?.id ?? null }
+/** Crea una sede anexa: el establecimiento solo viaja en el alta (después solo lo cambia Mover). */
+export async function createCampus(values: CampusFormValues): Promise<number> {
+  const row = await evalCol.postRow<{ pk_sede_creada: number }>("/establecimientos/sedes", {
+    ...toBody(values),
+    ...influenceAreaBody(values.influenceArea, null),
+    establishmentId: values.establishmentId,
+  })
+  return Number(row.pk_sede_creada)
 }
 
-// El cliente no manda `id`: lo asigna el backend al crear.
-export function create(values: CampusDraft): Promise<CreateResult> {
-  return api.post(
-    apiPath("/establishments/campuses", "/establecimientos/sedes"),
-    env.ENABLE_API_MOCKING ? values : toRealCreatePayload(values),
-  )
+export interface UpdateCampusInput {
+  campusId: number
+  values: CampusFormValues
+  /** En la principal, nombre, DANE, domicilio y consecutivo vienen del establecimiento: no se mandan. */
+  isPrincipal: boolean
+  /**
+   * Mover a otro establecimiento (Regla 75, solo Superadministrador): el mismo
+   * PATCH lleva el destino y el SSO lo aplica en la misma transacción.
+   */
+  moveTo?: number | null
+  /** El área guardada: solo se manda si cambió. */
+  originalInfluenceArea?: InfluenceArea | null
 }
 
-/**
- * PATCH, no PUT: el SSO real registra la actualización como
- * `PATCH /establecimientos/sedes/:ID` (`fn_sed_actualizar`). El PUT en ese
- * mismo path es la baja lógica (`fn_sed_soft_delete`), ver `delete.ts`.
- */
-export function updateCampus(
-  campusId: number,
-  values: Campus
-): Promise<CreateResult> {
-  const url = apiPath(
-    `/establishments/campuses/${campusId}`,
-    `/establecimientos/sedes/${campusId}`,
-  )
-  const payload = env.ENABLE_API_MOCKING ? values : toRealUpdatePayload(values)
-  return env.ENABLE_API_MOCKING ? api.put(url, payload) : api.patch(url, payload)
+export async function updateCampus({
+  campusId,
+  values,
+  isPrincipal,
+  moveTo,
+  originalInfluenceArea,
+}: UpdateCampusInput): Promise<number> {
+  const body = toBody(values)
+  const area = influenceAreaBody(values.influenceArea, originalInfluenceArea)
+  // Ubicación y área se editan como en cualquier sede, también en la principal (Regla 85).
+  const payload = isPrincipal
+    ? { zone: body.zone, workSchedules: body.workSchedules, georeference: body.georeference, ...area }
+    : moveTo != null
+      ? { ...body, ...area, establishmentId: moveTo }
+      : { ...body, ...area }
+  const row = await evalCol.patchRow<{ pk_sede_actualizada: number }>(`/establecimientos/sedes/${campusId}`, payload)
+  return Number(row.pk_sede_actualizada)
 }

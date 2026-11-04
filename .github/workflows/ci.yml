@@ -10,10 +10,10 @@
 #                      │            └── tag v* → release.yml → production
 #                      └── deploy-test.yml → Worker de test
 #
-# Los tres checks son los que hay que marcar como "required" si algún día se
+# Los checks son los que hay que marcar como "required" si algún día se
 # activa branch protection sobre `dev`/`test`/`main`:
 #
-#   typecheck · lint · build
+#   lint · test · build  (build ya corre tsc -b: no hace falta un job typecheck)
 #
 # (`format` queda fuera a propósito — ver el bloque comentado más abajo.)
 #
@@ -54,28 +54,6 @@ jobs:
   # además levanta Vite/rolldown (~40 s extra). Separarlos da una señal más
   # rápida y un check con nombre propio — un error de tipos no debería
   # reportarse como "build roto".
-  typecheck:
-    name: typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          # Fijada a la misma versión que usa la máquina de desarrollo
-          # (mise: pnpm 11.25.0). El repo no declara `packageManager` en
-          # package.json; si algún día lo hace, borrar esta línea y dejar
-          # que la action lo lea de ahí.
-          version: 11.25.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm exec tsc -b --noEmit
-
-  # ───────── Lint ─────────
   lint:
     name: lint
     runs-on: ubuntu-latest

@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
+import { useConfiguracionEspacioQuery } from "@/features/comunicaciones/espacios/api/query/use-espacios-query"
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { CalificacionesAprobacionView } from "@/features/planeador/components/calificaciones-aprobacion-view"
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
@@ -59,6 +60,8 @@ export function ActividadDetallePanel({
   // la edición no conoce `?docente=` y a un Super Admin le abriría el form editable.
   const bloqueoEdicion = motivoNoEditable(actividad)
   const editable = puedeEditar && !bloqueoEdicion
+  // Solo si la actividad tiene espacio y el visor tiene acceso; si no, el backend responde "sin espacio".
+  const { data: configEspacio } = useConfiguracionEspacioQuery(actividadId)
   const accionEditar = editable ? "Editar" : puedeEditar || (puedeVer && !viendoOtroDocente) ? "Ver" : null
   const tooltipEditar = bloqueoEdicion && puedeEditar
     ? bloqueoEdicion
@@ -101,6 +104,17 @@ export function ActividadDetallePanel({
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
+          {configEspacio?.espacioId && (
+            <Button
+              variant="outline"
+              color="neutral"
+              size="sm"
+              nativeButton={false}
+              render={<Link to={paths.app.comunicacionesEspacio.getHref(String(configEspacio.espacioId))} />}
+            >
+              Abrir espacio
+            </Button>
+          )}
           {/* Label con el nombre para distinguir la actividad; mientras carga queda "Editar". */}
           {accionEditar && (
             <Tooltip>

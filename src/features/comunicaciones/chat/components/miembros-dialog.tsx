@@ -36,6 +36,7 @@ import {
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/features/auth/hooks/use-auth"
+import { SuspenderPersona } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { puedeAgregarParticipantes, puedeNombrarAdministradores } from "@/features/comunicaciones/chat/lib/politica-chat"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -548,6 +549,7 @@ function FilaMiembro({
       </button>
       </>
       )}
+      <SuspenderPersona persona={{ id: m.id, nombre: m.nombre }} />
     </li>
   )
 }

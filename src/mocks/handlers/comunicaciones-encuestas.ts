@@ -21,11 +21,14 @@ function vistaDe(e: Encuesta, request: Request): Encuesta {
   const user = usuarioDe(request)
   const esCreador = e.esCreador && user?.role === "ADMIN"
   const yaRespondi = !!user && (respondieron.get(e.conversacionId)?.has(user.email) ?? false)
-  const conResultados = esCreador || (e.resultados === "PUBLICOS" && yaRespondi)
+  const conResultados =
+    esCreador || (e.resultados === "PUBLICOS" && yaRespondi) || (e.resultados === "AL_CIERRE" && estadoEleccion(e) === "FINALIZADA")
   return {
     ...e,
     esCreador,
     yaRespondi,
+    modalidad: e.modalidad ?? "INSTITUCIONAL",
+    miRespuesta: (user && votosAcademicos.get(e.conversacionId)?.get(user.email)) || [],
     preguntas: conResultados
       ? e.preguntas
       : e.preguntas.map((p) => ({
@@ -37,6 +40,9 @@ function vistaDe(e: Encuesta, request: Request): Encuesta {
   }
 }
 
+// Modalidad ACADEMICA: respuesta vigente de cada persona, por encuesta y correo.
+const votosAcademicos = new Map<number, Map<string, number[]>>()
+
 const URL = (path: string) => `/api/eval-col/comunicaciones/${path}`
 
 interface CrearEncuestaBody {
@@ -46,12 +52,35 @@ interface CrearEncuestaBody {
   FECHA_CIERRE?: string | null
   RESULTADOS?: VisibilidadResultados
   PARTICIPANTES?: number[]
+  MODALIDAD?: "INSTITUCIONAL" | "ACADEMICA"
   PREGUNTAS?: Array<{ ORDEN: number; TIPO: TipoPregunta; TEXTO: string; OPCIONES: string[] }>
 }
 
 let siguienteId = 100
 
 export const comunicacionesEncuestasHandlers = [
+  http.patch(URL("conversaciones/:id/encuesta/cerrar"), async ({ params, request }) => {
+    await delay(200)
+    const e = encuestas.find((x) => x.conversacionId === Number(params.id))
+    if (!e) return HttpResponse.json({ message: "Esta conversación no tiene una encuesta." }, { status: 404 })
+    if (e.modalidad !== "ACADEMICA") return HttpResponse.json({ message: "Esta encuesta no se puede cerrar antes de su fecha." }, { status: 400 })
+    e.fechaCierre = new Date().toISOString()
+    return HttpResponse.json({ rows: [vistaDe(e, request)] })
+  }),
+
+  http.get(URL("conversaciones/:id/encuesta/respuestas-individuales"), async ({ params }) => {
+    await delay(200)
+    const e = encuestas.find((x) => x.conversacionId === Number(params.id))
+    if (e?.modalidad !== "ACADEMICA") return HttpResponse.json({ message: "Esta encuesta es anónima." }, { status: 404 })
+    const opciones = e.preguntas[0]?.opciones ?? []
+    const rows = [...(votosAcademicos.get(e.conversacionId) ?? [])].map(([correo, ids], i) => ({
+      usuarioId: i + 1,
+      nombre: correo,
+      opciones: opciones.filter((o) => ids.includes(o.id)).map((o) => o.texto),
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
   // "Editar Encuesta": como comms-service, solo mientras nadie la haya respondido.
   http.patch(URL("conversaciones/:id/encuesta"), async ({ params, request }) => {
     await delay(250)
@@ -104,6 +133,18 @@ export const comunicacionesEncuestasHandlers = [
     if (!e || !user) return HttpResponse.json({ message: "Esta conversación no tiene una encuesta." }, { status: 404 })
     if (estadoEleccion(e) !== "ACTIVA") {
       return HttpResponse.json({ message: "La encuesta no está abierta." }, { status: 409 })
+    }
+    if (e.modalidad === "ACADEMICA") {
+      const { RESPUESTAS } = (await request.json()) as { RESPUESTAS: Array<{ FK_PREGUNTA: number; OPCIONES: number[] }> }
+      const votos = votosAcademicos.get(e.conversacionId) ?? new Map<string, number[]>()
+      votos.set(user.email, RESPUESTAS[0]?.OPCIONES ?? [])
+      votosAcademicos.set(e.conversacionId, votos)
+      const p = e.preguntas[0]
+      for (const o of p.opciones) o.votos = [...votos.values()].filter((ids) => ids.includes(o.id)).length
+      p.totalRespuestas = votos.size
+      e.participantes = votos.size
+      respondieron.set(e.conversacionId, new Set(votos.keys()))
+      return HttpResponse.json({ rows: [vistaDe(e, request)] })
     }
     const lista = respondieron.get(e.conversacionId) ?? new Set<string>()
     if (lista.has(user.email)) return HttpResponse.json({ message: "Ya respondiste esta encuesta." }, { status: 409 })
@@ -158,6 +199,7 @@ export const comunicacionesEncuestasHandlers = [
     notificarActividad(canal.id, "CHAT_ENCUESTA", `Encuesta abierta: ${nombre}`, "Abre la encuesta y respóndela.")
     encuestas.push({
       conversacionId: canal.id,
+      modalidad: body.MODALIDAD ?? "INSTITUCIONAL",
       nombre,
       descripcion: body.DESCRIPCION ?? "",
       fechaInicio: body.FECHA_INICIO ?? null,
