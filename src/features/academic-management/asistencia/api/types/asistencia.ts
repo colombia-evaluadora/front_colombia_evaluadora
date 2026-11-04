@@ -70,6 +70,16 @@ export interface AsistenciaRegistroManual {
   tipoAsistencia: TipoAsistencia
   observacion?: string
   fkArchivo?: number | File
+  /** Regla 109: justificación sin archivo que viaja con el registro; `null` la quita. */
+  justificacion?: string | null
+  fkFuenteJustificacion?: number | null
+}
+
+/** Justificación sin archivo hecha en la planilla antes de guardar. */
+export interface JustificacionLocal {
+  justificacion: string | null
+  fuente: number | null
+  fuenteNombre: string | null
 }
 
 /** Padrón de una sesión: `ASIGNATURA` (+ `BLOQUE` opcional) para un grupo normal, o `ACTIVIDAD` para uno formativo -- nunca ambos. */

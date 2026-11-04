@@ -1,5 +1,6 @@
 import type {
   AsistenciaRegistroManual,
+  JustificacionLocal,
   RosterEstudiante,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -76,7 +77,14 @@ export function registrosPorBloque(
   soporte: Record<number, File>,
   soporteEliminado: Record<number, boolean>,
   rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+  justificaciones: Record<number, JustificacionLocal> = {},
 ): Map<number | null, AsistenciaRegistroManual[]> {
+  // La justificación va en cada bloque No asistió / Llegó tarde: la corrida se justifica entera.
+  const conJustificacion = (fkMatricula: number, tipo: TipoAsistencia) => {
+    const j = justificaciones[fkMatricula]
+    if (!j || (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE)) return {}
+    return { justificacion: j.justificacion, fkFuenteJustificacion: j.fuente }
+  }
   const porBloque = new Map<number | null, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
   const bloquesNumericos = bloques.filter((b): b is number => b !== null)
 
@@ -97,6 +105,7 @@ export function registrosPorBloque(
           fkMatricula,
           tipoAsistencia: tipoBloque,
           ...(archivo !== undefined && { fkArchivo: archivo }),
+          ...conJustificacion(fkMatricula, tipoBloque),
         })
       }
       continue
@@ -112,6 +121,7 @@ export function registrosPorBloque(
         fkMatricula,
         tipoAsistencia: tipo,
         ...(archivo !== undefined && { fkArchivo: archivo }),
+        ...conJustificacion(fkMatricula, tipo),
       })
     }
   }
@@ -144,7 +154,12 @@ export function conCambioPendiente(row: RosterEstudiante): RosterEstudiante {
 export function cambiaRegistro(registro: AsistenciaRegistroManual, actual: RosterEstudiante, quitaSoporte: boolean): boolean {
   // 3/6 históricos equivalen a 2/5: la excusa es el archivo.
   const tipoActual = actual.tipo_asistencia_valor == null ? null : tipoBase(actual.tipo_asistencia_valor)
-  return tipoBase(registro.tipoAsistencia) !== tipoActual || registro.fkArchivo instanceof File || quitaSoporte
+  return (
+    tipoBase(registro.tipoAsistencia) !== tipoActual ||
+    registro.fkArchivo instanceof File ||
+    quitaSoporte ||
+    registro.justificacion !== undefined
+  )
 }
 /** Lo que la página necesita de una pestaña para preguntar antes de cambiar de sesión. */
 export interface SesionControl {
