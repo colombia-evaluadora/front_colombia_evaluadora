@@ -250,20 +250,21 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
         />
 
         {esSiuce && (
-          <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(ver.codigos) || undefined}>
+          <Field orientation="vertical" className="gap-3" data-invalid={Boolean(ver.codigos) || undefined}>
             <FieldLabel>Códigos del reporte en el SIUCE*</FieldLabel>
             {codigos.map((c, i) => (
-              <div key={i} className="flex items-end gap-2 *:first:flex-1">
+              <div key={i} className="flex items-start gap-2">
                 <ComboOpciones
                   id={`accion-afectado-${i}`}
                   label="Afectado"
+                  className="min-w-0 flex-1 gap-2"
                   size="default"
                   todos={false}
                   value={c.afectado}
                   options={afectados}
                   onChange={(afectado) => setCodigos(codigos.map((x, j) => (j === i ? { ...x, afectado } : x)))}
                 />
-                <Field orientation="vertical" variant="outlined" className="gap-2">
+                <Field orientation="vertical" variant="outlined" className="w-48 flex-none gap-2">
                   <FieldLabel htmlFor={`accion-codigo-${i}`}>Código</FieldLabel>
                   <Input
                     id={`accion-codigo-${i}`}
@@ -277,7 +278,7 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
-                  className="mb-2.5"
+                  className="mt-4.5"
                   aria-label="Quitar código"
                   onClick={() => setCodigos(codigos.filter((_, j) => j !== i))}
                 >

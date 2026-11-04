@@ -4,9 +4,11 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 
 import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
-import { COLOR_ESTADO, fechaHechosTexto, formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { COLOR_ESTADO, esFinal, fechaHechosTexto, formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
+
+const SIN_ACCESO: ConvivenciaAccess = { puedeCrear: false, puedeGestionar: false, puedeSupervisar: false }
 
 interface ColumnasOpciones {
   access: ConvivenciaAccess
@@ -104,7 +106,8 @@ export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): Colum
       meta: { label: "Pasos pendientes" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Pasos pendientes" />,
       cell: ({ row }) => {
-        const n = row.original.pasos_pendientes ?? 0
+        // Un caso Cerrado o Anulado ya no tiene pasos por hacer, aunque le falten.
+        const n = esFinal(row.original.estado_codigo) ? 0 : (row.original.pasos_pendientes ?? 0)
         return n > 0 ? `${n} ${n === 1 ? "pendiente" : "pendientes"}` : "—"
       },
     },
@@ -121,7 +124,8 @@ export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): Colum
             estado_codigo: row.original.estado_codigo,
             sinGestor: !row.original.fk_tfuncionario_gestor,
           }}
-          access={access}
+          // Caso Tipo II/III visto por quien solo lo reportó (Regla 1): solo Ver detalle; el backend negaría el resto.
+          access={row.original.confidencial ? SIN_ACCESO : access}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),
