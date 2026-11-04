@@ -10,19 +10,23 @@ import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivenci
 import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 import {
-  afectadosDe,
   ahora,
   codigosSiuceBody,
   erroresAccion,
   type CodigoSiuce,
   type ErroresAccion,
 } from "@/features/gestion-estudiantil/convivencia/utils/registrar-accion"
+import {
+  afectadosReportados,
+  afectadosSinCodigo,
+  claveAfectado,
+  todosQuedanReportados,
+} from "@/features/gestion-estudiantil/convivencia/utils/siuce"
 
 /** Estado, campos condicionales por código de la acción, validación y envío de Registrar acción (3.2). */
 export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void) {
   const { notify } = useNotify()
   const acciones = useCatalogo("ACCION_PROTOCOLO_CONVIVENCIA")
-  const roles = useCatalogo("ROL_SITUACION")
   const detalle = useCasoQuery(caso?.id)
   const pasos = usePasosCasoQuery(caso?.id)
 
@@ -44,7 +48,13 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
   const condicional = pasos.data?.some((p) => p.accion === codigo && p.condicional) ?? false
 
   const d = detalle.data
-  const afectados = afectadosDe(d, roles)
+  // Solo se ofrecen los afectados sin código: un afectado ya reportado no se vuelve a reportar.
+  const afectados = afectadosSinCodigo(d?.afectados_siuce).map((a) => ({ value: claveAfectado(a), label: a.nombre }))
+  const reportados = afectadosReportados(d?.afectados_siuce)
+  const todosReportados = todosQuedanReportados(
+    d?.afectados_siuce,
+    codigos.map((c) => c.afectado),
+  )
 
   function cerrar() {
     setAccion("")
@@ -120,6 +130,10 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
     esSiuce,
     condicional,
     afectados,
+    /** Afectados del caso (todos), para el encabezado «Afectados: …». */
+    afectadosCaso: d?.afectados_siuce ?? [],
+    reportados,
+    todosReportados,
     /** Sin fecha de los hechos no se puede contrastar la acción con la ocurrencia. */
     fechaHechosDesconocida: Boolean(d && !d.fecha_hechos_conocida),
     ver,
