@@ -41,9 +41,9 @@ const ACTIVIDADES = [
 const HORAS_BLOQUE = 1.5
 
 function estadoDeSesion(fecha: Date, hoy: Date): EstadoSesion {
-  if (fecha > hoy) return "PENDIENTE"
+  if (fecha > hoy) return "SIN_ESTADO"
   const day = fecha.getDate()
-  return day % 6 === 0 ? "RETRASADA" : "REGISTRADA"
+  return day % 6 === 0 ? "VENCIDA" : "REGISTRADA"
 }
 
 function claveSesion(fkGrupo: number, fkAsignatura: number, fecha: string, bloque: number): string {
@@ -205,8 +205,8 @@ export function generarResumenHoras(sedeId: number, fecha: Date, mias = false): 
     horas_anio: Math.round(horasAnio * 10) / 10,
     horas_efectivas_mes: Math.round(horasEfectivasMes * 10) / 10,
     registradas_mes: sesionesMes.filter((s) => s.estado_sesion === "REGISTRADA").length,
-    retrasadas_mes: sesionesMes.filter((s) => s.estado_sesion === "RETRASADA").length,
-    pendientes_mes: sesionesMes.filter((s) => s.estado_sesion === "PENDIENTE").length,
+    pendientes_mes: sesionesMes.filter((s) => s.estado_sesion === "PENDIENTE" || s.estado_sesion === "VENCIDA").length,
+    vencidas_mes: sesionesMes.filter((s) => s.estado_sesion === "VENCIDA").length,
   }
 }
 
@@ -512,6 +512,17 @@ export function generarSeguimiento(
   const asistieron = distintos((r) => r.tipo_asistencia_valor === 1)
   const ausentes = distintos((r) => r.tipo_asistencia_valor === 2 || r.tipo_asistencia_valor === 3)
   const tarde = distintos((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6)
+  // Por SESIÓN (corrida), como V438: con un estudiante buscado son sus totales del rango.
+  const tipos = (...t: TipoAsistencia[]) => agrupadas.filter((r) => t.includes(r.tipo_asistencia_valor)).length
+  const conJustificacion = (r: AsistenciaQueryRow) =>
+    r.tiene_soporte || r.pks.some((pk) => justificacionesSeguimiento.has(pk))
+  const fallas = tipos(2, 3)
+  const justificadas = agrupadas.filter(
+    (r) => [3, 6].includes(r.tipo_asistencia_valor) || ([2, 5].includes(r.tipo_asistencia_valor) && conJustificacion(r)),
+  ).length
+  const retrasos = tipos(5, 6)
+  const porcentajeAsistencia =
+    agrupadas.length === 0 ? null : Math.round((1000 * tipos(1, 5, 6)) / agrupadas.length) / 10
 
   return agrupadas.map((r) => ({
     ...r,
@@ -520,6 +531,10 @@ export function generarSeguimiento(
     ausentes,
     tarde,
     total_count: agrupadas.length,
+    fallas,
+    justificadas,
+    retrasos,
+    porcentaje_asistencia: porcentajeAsistencia,
     cambio_pendiente: r.pks.some((pk) => solicitudPorAsistencia.has(pk)),
   }))
 }
@@ -549,6 +564,8 @@ interface RegistroManual {
   observacion: string | null
   fk_soporte_archivo: number | null
   soporte_nombre: string | null
+  justificacion?: string | null
+  fk_tlv_fuente_justificacion?: number | null
   /** Para que el PATCH arme la solicitud con grupo, materia y fecha. */
   contexto: {
     fkMatricula: number
@@ -585,6 +602,41 @@ function claveRegistroManual(fkMatricula: number, fkGrupo: number, fkAsignatura:
   return `${fkMatricula}-${fkGrupo}-${fkAsignatura}-${fecha}-${bloque}`
 }
 
+const FUENTES_JUSTIFICACION: Record<number, string> = {
+  1: "Llamada del acudiente",
+  2: "Mensaje del acudiente",
+  3: "Aviso del establecimiento",
+  4: "Otra",
+}
+
+// Justificaciones sin archivo de las filas de Seguimiento (no viven en registrosManuales).
+const justificacionesSeguimiento = new Set<number>()
+
+/** PATCH /asistencias/:ID/justificar (sso V542.6): solo No asistió (2) o Llegó tarde (5); no cambia el tipo. */
+export function justificarAsistencia(
+  pk: number,
+  body: { JUSTIFICACION: string | null; FUENTE: number | null },
+): { status: number; message: string } | null {
+  const texto = body.JUSTIFICACION?.trim() || null
+  if (texto != null && (texto.length < 5 || texto.length > 200)) {
+    return { status: 400, message: "La justificación debe tener entre 5 y 200 caracteres." }
+  }
+  if (texto != null && body.FUENTE == null) return { status: 400, message: "La fuente de la justificación es obligatoria." }
+  for (const registro of registrosManuales.values()) {
+    if (registro.pk_tasistencia !== pk) continue
+    if (texto != null && registro.tipo_asistencia_valor !== 2 && registro.tipo_asistencia_valor !== 5) {
+      return { status: 400, message: "Solo se justifica un No asistió o un Llegó tarde." }
+    }
+    registro.justificacion = texto
+    registro.fk_tlv_fuente_justificacion = texto == null ? null : body.FUENTE
+    return null
+  }
+  if (!filasSeguimiento.has(pk)) return { status: 404, message: "El registro de asistencia no existe o no está activo." }
+  if (texto == null) justificacionesSeguimiento.delete(pk)
+  else justificacionesSeguimiento.add(pk)
+  return null
+}
+
 export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesParams): RosterEstudiante[] {
   // El mock no distingue asignatura de actividad como identidades separadas
   // -- alcanza con una clave numérica estable por sesión (BLOQUE default 1
@@ -611,6 +663,9 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
       observacion: registro?.observacion ?? null,
       fk_soporte_archivo: registro?.fk_soporte_archivo ?? null,
       soporte_nombre: registro?.soporte_nombre ?? null,
+      justificacion: registro?.justificacion ?? null,
+      fk_tlv_fuente_justificacion: registro?.fk_tlv_fuente_justificacion ?? null,
+      fuente_justificacion: FUENTES_JUSTIFICACION[registro?.fk_tlv_fuente_justificacion ?? 0] ?? null,
       hora_inicio: null,
       hora_fin: null,
       fk_tperiodo_evaluacion: 1,
@@ -945,3 +1000,77 @@ function sembrarSolicitudesDemo(): void {
 }
 
 sembrarSolicitudesDemo()
+
+// ── Asistencia por grupo (GET /asistencias/por-grupo, sso V542.11) ──────────
+
+/** Cuatro períodos de diez semanas desde el primer lunes de febrero. */
+export function periodosEvaluacionGrupo(hoy = new Date()) {
+  const inicio = new Date(hoy.getFullYear(), 1, 1)
+  inicio.setDate(inicio.getDate() + ((8 - inicio.getDay()) % 7))
+  return [1, 2, 3, 4]
+    .map((n) => {
+      const desde = new Date(inicio)
+      desde.setDate(desde.getDate() + (n - 1) * 70)
+      const hasta = new Date(desde)
+      hasta.setDate(hasta.getDate() + 67)
+      return {
+        pk_tperiodo_evaluacion: n,
+        nombre: `Período ${n}`,
+        fecha_inicio: toIso(desde),
+        fecha_fin: toIso(hasta),
+        en_curso: hoy >= desde && hoy <= hasta,
+      }
+    })
+    .filter((p) => p.fecha_inicio <= toIso(hoy))
+}
+
+function toIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+/** Una fila por (sesión, estudiante), como el back: cada asignatura tiene sus
+ *  días fijos y una de cada siete sesiones queda sin registrar. */
+export function generarAsistenciaPorGrupo(grupo: number, periodo: number, asignatura: number | null) {
+  const p = periodosEvaluacionGrupo().find((x) => x.pk_tperiodo_evaluacion === periodo)
+  if (!p) return []
+  const hoy = toIso(new Date())
+  const fin = p.fecha_fin < hoy ? p.fecha_fin : hoy
+  const estudiantes = Array.from({ length: 30 }, (_, i) => ({
+    ...ESTUDIANTES[(i + grupo) % ESTUDIANTES.length],
+    fk_tmatricula: grupo * 1000 + i,
+    documento: String(Number(ESTUDIANTES[(i + grupo) % ESTUDIANTES.length].documento) + i),
+  }))
+  // Días de la semana (1 lunes) de cada asignatura.
+  const dias: Record<number, number[]> = { 1: [1, 3], 2: [2, 4], 3: [5] }
+  const filas: Record<string, unknown>[] = []
+  let n = 0
+  for (let d = new Date(`${p.fecha_inicio}T00:00:00`); toIso(d) <= fin; d.setDate(d.getDate() + 1)) {
+    for (const a of ASIGNATURAS) {
+      if (asignatura != null && a.fk_asignatura !== asignatura) continue
+      if (!dias[a.fk_asignatura].includes(d.getDay())) continue
+      n += 1
+      const registrada = n % 7 !== 0
+      const fecha = toIso(d)
+      estudiantes.forEach((e, i) => {
+        const k = (i * 7 + n * 3 + grupo) % 23
+        const tipo = !registrada ? null : k === 0 || k === 11 ? 2 : k === 5 ? 5 : 1
+        filas.push({
+          fk_tasignatura: a.fk_asignatura,
+          asignatura: a.asignatura,
+          fecha,
+          // Como el back: una fila por día, los bloques ya juntos.
+          bloque: null,
+          sesion_registrada: registrada,
+          fk_tmatricula: e.fk_tmatricula,
+          estudiante: e.nombre,
+          documento: e.documento,
+          tipo_valor: tipo,
+          justificada: tipo === 2 && k === 11,
+          // El último entró tarde al grupo: el primer mes no estaba.
+          en_grupo: !(i === 29 && fecha < toIso(new Date(new Date(`${p.fecha_inicio}T00:00:00`).getTime() + 28 * 864e5))),
+        })
+      })
+    }
+  }
+  return filas
+}

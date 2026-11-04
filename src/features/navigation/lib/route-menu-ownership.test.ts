@@ -27,6 +27,8 @@ const MENU = {
   informes: "/app/gestion-academica/informes",
   referentes: "/app/gestion-academica/referentes-curriculares",
   asistencia: "/app/asistencia",
+  convivencia: "/app/gestion-estudiantil/convivencia",
+  observador: "/app/gestion-estudiantil/observador",
   chat: "/app/comunicaciones/chat",
   procesos: "/app/comunicaciones/procesos",
 } as const
@@ -103,12 +105,21 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/planeador/recursos/vista-previa": MENU.planeador,
 
   "/app/asistencia": MENU.asistencia,
-  "/app/asistencia/seguimiento": MENU.asistencia,
   "/app/asistencia/manual": MENU.asistencia,
+
+  "/app/gestion-estudiantil/convivencia": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/nuevo": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/caso/$casoId": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/caso/$casoId/editar": MENU.convivencia,
+  "/app/gestion-estudiantil/observador": MENU.observador,
+  "/app/gestion-estudiantil/observador/nueva": MENU.observador,
+  "/app/gestion-estudiantil/observador/editar/$anotacionId": MENU.observador,
 
   "/app/comunicaciones/chat": MENU.chat,
   "/app/comunicaciones/procesos": MENU.procesos,
   "/app/comunicaciones/procesos/detalle/$id": MENU.procesos,
+  "/app/comunicaciones/espacios": MENU.chat,
+  "/app/comunicaciones/espacios/detalle/$id": MENU.chat,
 }
 
 interface RouteLike {

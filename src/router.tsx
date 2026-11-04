@@ -53,9 +53,10 @@ import {
 import {
   asistenciaManualSearchSchema,
   asistenciaSearchSchema,
-  asistenciaSeguimientoSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
+import { convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
+import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
@@ -447,9 +448,14 @@ const ESTABLECIMIENTO_CRUMB = {
   label: "Establecimiento educativo",
   to: paths.app.establishments.general.getHref(),
 }
+const CONVIVENCIA_CRUMB = { label: "Convivencia", to: paths.app.convivencia.getHref() }
 const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
+}
+const GESTION_ESTUDIANTIL_CRUMB = {
+  label: "Gestión Estudiantil",
+  to: paths.app.observador.getHref(),
 }
 const GESTION_ACADEMICA_CRUMB = {
   label: "Gestión académica",
@@ -1042,23 +1048,109 @@ export const asistenciaRoute = createRoute({
   component: AsistenciaPage,
 })
 
-const SeguimientoPage = lazyRouteComponent(
-  () => import("@/features/academic-management/asistencia/pages/seguimiento-page"),
-  "SeguimientoPage",
+const ConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/convivencia-page"),
+  "ConvivenciaPage",
 )
 
-export const asistenciaSeguimientoRoute = createRoute({
+export const convivenciaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.asistenciaSeguimiento.path,
-  validateSearch: asistenciaSeguimientoSearchSchema,
+  path: paths.app.convivencia.path,
+  validateSearch: convivenciaSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Convivencia" }] },
+  component: ConvivenciaPage,
+})
+
+const NuevoCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "NuevoCasoPage",
+)
+
+export const convivenciaNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Nuevo caso" }] },
+  component: NuevoCasoPage,
+})
+
+const EditarCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-form-page"),
+  "EditarCasoPage",
+)
+
+// El id viaja por props: la página no importa la ruta (evita el ciclo router ↔ página).
+export const convivenciaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaEditar.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Modificar caso" }] },
+  component: function EditarCasoRoute() {
+    const { casoId } = convivenciaEditarRoute.useParams()
+    return <EditarCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const CasoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const convivenciaCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaCaso.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Detalle del caso" }] },
+  component: function CasoDetalleRoute() {
+    const { casoId } = convivenciaCasoRoute.useParams()
+    return <CasoDetallePage casoId={Number(casoId)} />
+  },
+})
+
+const ObservadorPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
+  "ObservadorPage",
+)
+
+export const observadorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observador.path,
+  validateSearch: observadorSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Observador" }] },
+  component: ObservadorPage,
+})
+
+const NuevaAnotacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/anotacion-form-page"),
+  "NuevaAnotacionPage",
+)
+
+export const observadorNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observadorNueva.path,
   staticData: {
     breadcrumb: [
-      GESTION_ACADEMICA_CRUMB,
-      { label: "Asistencia", to: paths.app.asistencia.getHref() },
-      { label: "Seguimiento" },
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Observador", to: paths.app.observador.getHref() },
+      { label: "Nueva anotación" },
     ],
   },
-  component: SeguimientoPage,
+  component: NuevaAnotacionPage,
+})
+
+const EditarAnotacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/anotacion-form-page"),
+  "EditarAnotacionPage",
+)
+
+export const observadorEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observadorEditar.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Observador", to: paths.app.observador.getHref() },
+      { label: "Modificar anotación" },
+    ],
+  },
+  component: EditarAnotacionPage,
 })
 
 const AsistenciaManualPage = lazyRouteComponent(
@@ -1078,6 +1170,41 @@ export const asistenciaManualRoute = createRoute({
     ],
   },
   component: AsistenciaManualPage,
+})
+
+const EspaciosPage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacios-page"),
+  "EspaciosPage",
+)
+
+const EspacioDetallePage = lazyRouteComponent(
+  () => import("@/features/comunicaciones/espacios/pages/espacio-detalle-page"),
+  "EspacioDetallePage",
+)
+
+export const espaciosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacios.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos" },
+    ],
+  },
+  component: EspaciosPage,
+})
+
+export const espacioDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesEspacio.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Espacios académicos", to: paths.app.comunicacionesEspacios.getHref() },
+      { label: "Espacio" },
+    ],
+  },
+  component: EspacioDetallePage,
 })
 
 const ChatPage = lazyRouteComponent(
@@ -1259,11 +1386,19 @@ const routeTree = rootRoute.addChildren([
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,
     asistenciaRoute,
-    asistenciaSeguimientoRoute,
+    observadorRoute,
+    observadorNuevaRoute,
+    observadorEditarRoute,
     asistenciaManualRoute,
+    convivenciaRoute,
+    convivenciaNuevoRoute,
+    convivenciaCasoRoute,
+    convivenciaEditarRoute,
     chatRoute,
     procesosRoute,
     procesoDetalleRoute,
+    espaciosRoute,
+    espacioDetalleRoute,
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,

@@ -49,6 +49,7 @@ import {
   MaterialesSection,
   RecursosSection,
 } from "@/features/planeador/components/forms/form-editar-actividad/recursos-section"
+import { EspacioSection } from "@/features/planeador/components/forms/form-editar-actividad/espacio-section"
 import { ProgramacionSection } from "@/features/planeador/components/forms/form-editar-actividad/programacion-section"
 import { EvaluacionSection } from "@/features/planeador/components/forms/form-editar-actividad/evaluacion-section"
 import { SeguimientoFormativoSection } from "@/features/planeador/components/forms/form-editar-actividad/seguimiento-formativo-section"
@@ -364,6 +365,7 @@ export function EditarActividadForm({
         />
       </Card>
       <ProgramacionSection form={form} disabled={disabled} />
+      <EspacioSection actividadId={esNueva ? null : actividad.id} />
       <EvaluacionSection
         form={form}
         unidades={unidades}

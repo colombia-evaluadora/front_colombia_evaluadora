@@ -6,6 +6,7 @@ import type {
   Comunicado,
   Conversacion,
   DestinosComunicado,
+  EstadoComunicado,
 } from "@/features/comunicaciones/chat/api/types"
 import { formatoDeArchivo, validarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { conversaciones, personas, USUARIO_ACTUAL } from "@/mocks/db/comunicaciones"
@@ -36,9 +37,13 @@ interface CrearComunicadoBody {
   CONTENIDO_HTML?: string
   IMPORTANTE?: "S" | "N"
   PERMITIR_RESPUESTAS?: "S" | "N"
+  VISIBLE_HASTA?: string | null
+  MODALIDAD?: string | null
+  CICLO?: number | null
 }
 
-const MAX_ADJUNTOS = 10
+const MAX_ADJUNTOS = 5
+const MAX_BYTES_ADJUNTO = 10 * 1024 * 1024
 
 // Igual que comms-service: guarda la selección con su etiqueta para "Dirigido a".
 function destinosDe(body: CrearComunicadoBody): DestinosComunicado {
@@ -121,6 +126,16 @@ function fueraDeAlcance(roles: readonly string[], email: string, body: CrearComu
   )
 }
 
+// Igual que fn_comunicado_estado: lo final se guarda; lo demás sale de las fechas.
+function estadoDe(c: Comunicado): EstadoComunicado {
+  if (c.estado === "ANULADO" || c.estado === "CANCELADO") return c.estado
+  if (new Date(c.publicarEn) > new Date()) return "PROGRAMADO"
+  const hoy = new Date().toISOString().slice(0, 10)
+  return c.visibleHasta && c.visibleHasta < hoy ? "VENCIDO" : "PUBLICADO"
+}
+
+const conEstado = (c: Comunicado): Comunicado => ({ ...c, estado: estadoDe(c) })
+
 const sinComunicado = () => HttpResponse.json({ message: "Esta conversación no tiene un comunicado." }, { status: 404 })
 
 export const comunicacionesComunicadosHandlers = [
@@ -129,6 +144,12 @@ export const comunicacionesComunicadosHandlers = [
     await delay(250)
     const c = buscarComunicado(params.id)
     if (!c) return sinComunicado()
+    if (["ANULADO", "CANCELADO"].includes(estadoDe(c))) {
+      return HttpResponse.json(
+        { message: "El comunicado ya no se puede modificar porque fue anulado o cancelado." },
+        { status: 409 },
+      )
+    }
     const body = (await request.json()) as CrearComunicadoBody
     if (incompleto(body)) return HttpResponse.json(INCOMPLETO, { status: 400 })
     const destinos = destinosDe(body)
@@ -156,11 +177,44 @@ export const comunicacionesComunicadosHandlers = [
       contenidoHtml: body.CONTENIDO_HTML,
       importante: body.IMPORTANTE === "S",
       permiteRespuestas: body.PERMITIR_RESPUESTAS === "S",
+      visibleHasta: body.VISIBLE_HASTA ?? null,
+      modalidad: body.MODALIDAD ?? null,
+      ciclo: body.CICLO ?? null,
     })
     const conv = conversaciones.find((x) => x.id === c.conversacionId)
-    if (conv) Object.assign(conv, { nombre: titulo, importante: c.importante })
+    if (conv) Object.assign(conv, { nombre: titulo, importante: c.importante, comunicadoEstado: estadoDe(c) })
     // Guardar la edición desde su borrador (?borrador) lo elimina, como comms-service.
     consumirBorradorActividad(request)
+    return HttpResponse.json({ rows: [conEstado(c)] })
+  }),
+
+  http.patch(URL("conversaciones/:id/comunicado/anular"), async ({ params, request }) => {
+    await delay(200)
+    const c = buscarComunicado(params.id)
+    if (!c) return sinComunicado()
+    const { MOTIVO } = (await request.json()) as { MOTIVO?: string }
+    if (!MOTIVO?.trim()) {
+      return HttpResponse.json({ message: "Escribe el motivo de la anulación (máximo 500 caracteres)." }, { status: 400 })
+    }
+    if (!["PUBLICADO", "VENCIDO"].includes(estadoDe(c))) {
+      return HttpResponse.json({ message: "Solo se puede anular un comunicado publicado o vencido." }, { status: 409 })
+    }
+    Object.assign(c, { estado: "ANULADO", motivoAnulacion: MOTIVO.trim(), adjuntos: [] })
+    const conv = conversaciones.find((x) => x.id === c.conversacionId)
+    if (conv) conv.comunicadoEstado = "ANULADO"
+    return HttpResponse.json({ rows: [c] })
+  }),
+
+  http.patch(URL("conversaciones/:id/comunicado/cancelar"), async ({ params }) => {
+    await delay(200)
+    const c = buscarComunicado(params.id)
+    if (!c) return sinComunicado()
+    if (estadoDe(c) !== "PROGRAMADO") {
+      return HttpResponse.json({ message: "Solo se puede cancelar un comunicado programado." }, { status: 409 })
+    }
+    c.estado = "CANCELADO"
+    const conv = conversaciones.find((x) => x.id === c.conversacionId)
+    if (conv) conv.comunicadoEstado = "CANCELADO"
     return HttpResponse.json({ rows: [c] })
   }),
 
@@ -178,7 +232,7 @@ export const comunicacionesComunicadosHandlers = [
     await delay(200)
     const c = buscarComunicado(params.id)
     if (!c) return sinComunicado()
-    return HttpResponse.json({ rows: [c] })
+    return HttpResponse.json({ rows: [conEstado(c)] })
   }),
 
   // Adjunto: el front lo manda como multipart por file-service (campo ADJUNTO). El binario queda
@@ -191,6 +245,9 @@ export const comunicacionesComunicadosHandlers = [
     if (!(archivo instanceof File)) return HttpResponse.json({ message: "Falta el archivo adjunto." }, { status: 400 })
     const error = validarAdjunto(archivo)
     if (error) return HttpResponse.json({ message: error }, { status: 400 })
+    if (archivo.size > MAX_BYTES_ADJUNTO) {
+      return HttpResponse.json({ message: "El archivo supera el máximo de 10 MB." }, { status: 400 })
+    }
     c.adjuntos = c.adjuntos ?? []
     if (c.adjuntos.length >= MAX_ADJUNTOS) {
       return HttpResponse.json({ message: `Un comunicado admite hasta ${MAX_ADJUNTOS} archivos.` }, { status: 400 })
@@ -224,7 +281,13 @@ export const comunicacionesComunicadosHandlers = [
     const a = alcanceComunicadoMock(u.roles)
     if (q.get("establecimiento") && !a.todos && q.get("establecimiento") !== "1") return FUERA()
     return HttpResponse.json({
-      rows: [opcionesComunicadoMock(a, { establecimiento: q.get("establecimiento") ?? undefined, jornada: q.get("jornada") ?? undefined })],
+      rows: [
+        {
+          ...opcionesComunicadoMock(a, { establecimiento: q.get("establecimiento") ?? undefined, jornada: q.get("jornada") ?? undefined }),
+          modalidades: [{ valor: "ANUAL", etiqueta: "Anual", total: 0 }],
+          ciclos: q.get("modalidad") ? [{ valor: "1", etiqueta: "1", total: 0 }] : [],
+        },
+      ],
     })
   }),
 
@@ -288,7 +351,11 @@ export const comunicacionesComunicadosHandlers = [
       permiteRespuestas: body.PERMITIR_RESPUESTAS === "S",
       adjuntos: [],
       mensajeId: null,
+      visibleHasta: body.VISIBLE_HASTA ?? null,
+      modalidad: body.MODALIDAD ?? null,
+      ciclo: body.CICLO ?? null,
     })
+    canal.comunicadoEstado = new Date(body.PUBLICAR_EN as string) > new Date() ? "PROGRAMADO" : "PUBLICADO"
     return HttpResponse.json({ rows: [canal] })
   }),
 ]

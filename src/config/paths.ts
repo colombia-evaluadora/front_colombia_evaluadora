@@ -264,13 +264,37 @@ export const paths = {
       path: "asistencia",
       getHref: () => "/app/asistencia",
     },
-    asistenciaSeguimiento: {
-      path: "asistencia/seguimiento",
-      getHref: () => "/app/asistencia/seguimiento",
-    },
     asistenciaManual: {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",
+    },
+    convivencia: {
+      path: "gestion-estudiantil/convivencia",
+      getHref: () => "/app/gestion-estudiantil/convivencia",
+    },
+    convivenciaNuevo: {
+      path: "gestion-estudiantil/convivencia/nuevo",
+      getHref: () => "/app/gestion-estudiantil/convivencia/nuevo",
+    },
+    convivenciaCaso: {
+      path: "gestion-estudiantil/convivencia/caso/$casoId",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}`,
+    },
+    convivenciaEditar: {
+      path: "gestion-estudiantil/convivencia/caso/$casoId/editar",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}/editar`,
+    },
+    observador: {
+      path: "gestion-estudiantil/observador",
+      getHref: () => "/app/gestion-estudiantil/observador",
+    },
+    observadorNueva: {
+      path: "gestion-estudiantil/observador/nueva",
+      getHref: () => "/app/gestion-estudiantil/observador/nueva",
+    },
+    observadorEditar: {
+      path: "gestion-estudiantil/observador/editar/$anotacionId",
+      getHref: (anotacionId: number | string) => `/app/gestion-estudiantil/observador/editar/${anotacionId}`,
     },
     comunicacionesChat: {
       path: "comunicaciones/chat",
@@ -283,6 +307,14 @@ export const paths = {
     comunicacionesProcesoDetalle: {
       path: "comunicaciones/procesos/detalle/$id",
       getHref: (id: number | string) => `/app/comunicaciones/procesos/detalle/${id}`,
+    },
+    comunicacionesEspacios: {
+      path: "comunicaciones/espacios",
+      getHref: () => "/app/comunicaciones/espacios",
+    },
+    comunicacionesEspacio: {
+      path: "comunicaciones/espacios/detalle/$id",
+      getHref: (id: string) => `/app/comunicaciones/espacios/detalle/${id}`,
     },
     notificaciones: {
       path: "notificaciones",

@@ -35,6 +35,7 @@ import { MAX_NOTA_SEGUNDOS, duracionLegible } from "@/features/comunicaciones/ch
 import { ReproductorLocal } from "@/features/comunicaciones/chat/components/reproductor-audio"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
+import { AVISO_ENVIOS_REPETIDOS, segundosDePausa } from "@/features/comunicaciones/chat/lib/limites-mensaje"
 import { ProgramarMensajeDialog } from "@/features/comunicaciones/chat/components/programar-mensaje-dialog"
 import {
   consultaAtajo,
@@ -73,7 +74,7 @@ import {
 } from "@/features/comunicaciones/chat/lib/menciones"
 import type { PerfilChat } from "@/features/comunicaciones/chat/lib/politica-chat"
 
-const MAX_CARACTERES = 4000
+const MAX_CARACTERES = 5000
 
 // Items del menú en oración (el base los pone en mayúsculas).
 const ITEM_MENU = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
@@ -173,7 +174,11 @@ export function ChatComposer({
   const areaRef = useRef<HTMLTextAreaElement>(null)
   // Aa abre/cierra la barra de formato (antes salía sola con el foco y Aa no hacía nada visible).
   const [formatoAbierto, setFormatoAbierto] = useState(false)
-  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando && !grabando
+  // Envíos repetidos (429): Enviar queda en pausa lo que diga el servidor; lo escrito no se toca.
+  const [enPausa, setEnPausa] = useState(false)
+  const pausaRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(pausaRef.current), [])
+  const listo = (texto.trim().length > 0 || hayArchivos) && !enviando && !grabando && !enPausa
   // `conTexto`: el atajo "/programar" con el compositor vacío pide el texto en el diálogo.
   const [programar, setProgramar] = useState<{ guardando: boolean; error: string | null; conTexto?: boolean } | null>(
     null,
@@ -296,8 +301,14 @@ export function ChatComposer({
       setErrorArchivo(null)
       setElegidos([])
       setConsulta(null)
-    } catch {
-      // El error lo muestra la página; se conserva el texto para reintentar.
+    } catch (error) {
+      // El error lo muestra la página; se conserva el texto para reintentar. El 429 se avisa aquí.
+      const segundos = segundosDePausa(error)
+      if (segundos != null) {
+        setEnPausa(true)
+        clearTimeout(pausaRef.current)
+        pausaRef.current = setTimeout(() => setEnPausa(false), segundos * 1000)
+      }
     } finally {
       areaRef.current?.focus()
     }
@@ -487,6 +498,11 @@ export function ChatComposer({
               <StopIcon className="size-5" />
             </button>
           </div>
+        )}
+        {enPausa && (
+          <p role="alert" className="mx-3 mt-2 text-xs text-red">
+            {AVISO_ENVIOS_REPETIDOS}
+          </p>
         )}
         {errorArchivo && (
           <p role="alert" className="mx-3 mt-2 text-xs text-red">

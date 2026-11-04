@@ -15,9 +15,9 @@ export const CHAT_FUNCIONES = {
   encuestas: true,
   elecciones: true,
   evaluaciones: true,
-  // Card de diseño (Prioridad 1 del chat): menciones y reacciones fuera de la UI. Los
-  // endpoints de comms-service quedan dormidos (no se borran tablas): volver a `true` las trae.
-  menciones: false,
+  // Menciones activas (D2, provisional): comms-service las soporta (`Menciones`, tmensaje_mencion).
+  menciones: true,
+  // Card de diseño (Prioridad 1 del chat): reacciones fuera de la UI; el endpoint queda dormido.
   reacciones: false,
   // "Activar notificaciones" de una conversación silenciada: `PATCH /conversaciones/{id}/silenciar`
   // con DURACION NINGUNA (comms-service, SSO#798).

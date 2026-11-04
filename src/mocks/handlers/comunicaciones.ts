@@ -181,6 +181,8 @@ interface CuerpoMensaje {
   SOLICITA_CONFIRMACION_LECTURA?: "S" | "N"
 }
 
+const enviosPorUsuario = new Map<string, number[]>()
+
 function enviarMensajeMock(
   id: string | readonly string[] | undefined,
   body: CuerpoMensaje,
@@ -194,6 +196,19 @@ function enviarMensajeMock(
   const repetido = body.CLIENT_MESSAGE_ID ? enviadosPorCliente.get(body.CLIENT_MESSAGE_ID) : undefined
   const previo = repetido != null ? mensajes.find((x) => x.id === repetido) : undefined
   if (previo) return HttpResponse.json({ rows: [previo] })
+  // Envíos repetidos (LimiteEnvios de comms-service): más de 10 en un minuto.
+  const ahora = Date.now()
+  const claveEnvios = JSON.stringify(usuarioDe(request) ?? null)
+  const enviosRecientes = (enviosPorUsuario.get(claveEnvios) ?? []).filter((t) => ahora - t < 60_000)
+  enviosPorUsuario.set(claveEnvios, enviosRecientes)
+  if (enviosRecientes.length >= 10) {
+    const resta = Math.max(1, Math.ceil((enviosRecientes[0] + 60_000 - ahora) / 1000))
+    return HttpResponse.json(
+      { message: "Envió muchos mensajes seguidos. Espere un momento para enviar otro." },
+      { status: 429, headers: { "Retry-After": String(resta) } },
+    )
+  }
+  enviosRecientes.push(ahora)
   const texto = body.TEXTO?.trim() ?? ""
   if (!texto && !adjunto) {
     return HttpResponse.json({ message: "Escribe un mensaje o adjunta un archivo." }, { status: 400 })
@@ -943,6 +958,12 @@ export const comunicacionesMensajesHandlers = [
     if (!m) return mensajeNoEncontrado()
     if (!m.esPropio) {
       return HttpResponse.json({ message: "Solo puedes eliminar tus mensajes." }, { status: 403 })
+    }
+    if (Date.now() - Date.parse(m.fecha) >= 15 * 60 * 1000) {
+      return HttpResponse.json(
+        { message: "Solo puedes retirar un mensaje durante los primeros 15 minutos desde su envio." },
+        { status: 409 },
+      )
     }
     m.eliminado = true
     m.eliminadoEn = new Date().toISOString()

@@ -31,6 +31,7 @@ const FONT_AWESOME_ALIASES: Record<string, string> = {
   "window-restore": "ColumnsIcon",
   history: "ClockCountdownIcon",
   database: "TreeIcon",
+  "user-graduate": "GraduationCapIcon",
 }
 
 /**

@@ -4,15 +4,18 @@ import { DayPicker, getDefaultClassNames, type DayProps, type Locale } from "rea
 import { es } from "date-fns/locale"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { pendingStatusOf, useOfflineWritable, useOutboxOps } from "@/lib/offline/outbox/hooks"
+import { pendingStatusOf, useOutboxOps } from "@/lib/offline/outbox/hooks"
 import { PendingStatusBadge } from "@/features/offline/components/pending-badge"
-import { CheckCircleFillIcon, ClipboardTextIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CaretRightIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import {
+  TIPO_DIA_INHABIL_LABEL,
+  type DiaInhabil,
+} from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover, AsistenciaGrupoDrillDown } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
@@ -46,10 +49,9 @@ export function nombreSesion(entry: Pick<AsistenciaDayEntry, "esFormativa" | "ac
 interface AsistenciaMonthGridProps {
   month: Date
   events: Map<number, AsistenciaDayEntry[]>
+  /** Días inhábiles del mes por día (Regla 108): sin clases, con su motivo. */
+  inhabiles: Map<number, DiaInhabil[]>
   locale?: Locale
-  onMarkAllPresent: (entry: AsistenciaDayEntry) => void
-  markingEntryId: string | null
-  markedEntryIds: Set<string>
   manualSede: number
   restrictedView: boolean
 }
@@ -61,10 +63,8 @@ const MESES = Array.from({ length: 12 }, (_, i) =>
 export function AsistenciaMonthGrid({
   month,
   events,
+  inhabiles,
   locale = es,
-  onMarkAllPresent,
-  markingEntryId,
-  markedEntryIds,
   manualSede,
   restrictedView,
 }: AsistenciaMonthGridProps) {
@@ -73,7 +73,7 @@ export function AsistenciaMonthGrid({
 
   return (
     <MonthGridContext.Provider
-      value={{ events, onMarkAllPresent, markingEntryId, markedEntryIds, manualSede, restrictedView }}
+      value={{ events, inhabiles, manualSede, restrictedView }}
     >
       <div
         data-slot="asistencia-month-grid"
@@ -126,18 +126,21 @@ export function AsistenciaMonthGrid({
 const MonthGridContext = React.createContext<Omit<AsistenciaMonthGridProps, "month" | "locale"> | null>(null)
 
 function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
-  const { events, onMarkAllPresent, markingEntryId, markedEntryIds, manualSede, restrictedView } =
+  const { events, inhabiles, manualSede, restrictedView } =
     React.useContext(MonthGridContext)!
     const date = day.date
     const isOutside = Boolean(modifiers.outside)
     const isToday = Boolean(modifiers.today) && !isOutside
     const items = isOutside ? [] : (events.get(date.getDate()) ?? [])
+    const inhabilesDia = isOutside ? [] : (inhabiles.get(date.getDate()) ?? [])
+    const motivoInhabil = textoInhabil(inhabilesDia)
     return (
       <td
         {...tdProps}
         className={cn(
           "max-w-(--asistencia-cell-max-width) min-w-0 flex-1 overflow-hidden border-r border-b border-muted-22 p-0 align-top last:border-r-0",
           isOutside && "bg-muted/20",
+          motivoInhabil && "bg-muted/40",
           className,
         )}
       >
@@ -157,6 +160,15 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
               >
                 {date.getDate()}
               </span>
+              {motivoInhabil && (
+                <span
+                  className="truncate text-xs text-muted-foreground"
+                  title={motivoInhabil}
+                  aria-label={`Día inhábil: ${motivoInhabil}`}
+                >
+                  {motivoInhabil}
+                </span>
+              )}
               {items.length > 0 && (
                 <ul className="flex min-h-0 min-w-0 flex-1 flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {restrictedView
@@ -222,9 +234,6 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
           return (
             <DayCellPopover
               items={items}
-              onMarkAllPresent={onMarkAllPresent}
-              markingEntryId={markingEntryId}
-              markedEntryIds={markedEntryIds}
               manualSede={manualSede}
             >
               {cellBody}
@@ -255,115 +264,114 @@ function gradosDelDia(
     .sort((a, b) => a.grado.localeCompare(b.grado) || a.jornada.localeCompare(b.jornada))
 }
 
-interface ItemAsistenciaDiaProps {
-  item: AsistenciaDayEntry
-  onMarkAllPresent: (entry: AsistenciaDayEntry) => void
-  markingEntryId: string | null
-  marcado: boolean
+function formatFechaTitulo(fecha: string): string {
+  const [anio, mes, dia] = fecha.split("-").map(Number)
+  const texto = new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+  return texto.charAt(0).toUpperCase() + texto.slice(1).replace(",", "")
 }
 
-function ItemAsistenciaDia({ item, onMarkAllPresent, markingEntryId, marcado }: ItemAsistenciaDiaProps) {
-  const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
-  const puedeMarcar = item.puedeEditar && !esFechaFutura(item.fecha)
-  // "Marcar todos" se encola sin red (P17: sin optimista por estudiante).
-  const soloEnLinea = useOfflineWritable()
+/** Planilla de una clase propia: `Volver` regresa al Calendario. */
+function hrefPlanilla(item: AsistenciaDayEntry, sede: number) {
+  return {
+    to: paths.app.asistenciaManual.getHref(),
+    search: {
+      fecha: item.fecha,
+      sede,
+      grupo: item.fkGrupo,
+      asignatura: item.fkAsignatura,
+      desde: "calendario" as const,
+    },
+  }
+}
+
+function horaCorta(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+
+/** Una fila de "elija la clase": hora · Grado/Grupo · [Área], estado y flecha. */
+function ClaseDelDia({ item, sede }: { item: AsistenciaDayEntry; sede: number }) {
+  const { to, search } = hrefPlanilla(item, sede)
   // Punto "Pendiente" del día: cualquier op de la sesión (grupo + fecha) en cola.
   const ops = useOutboxOps()
   const prefijo = `asistencia:sesion:${item.fkGrupo}:`
   const pendiente = pendingStatusOf(ops, (k) => k.startsWith(prefijo) && k.includes(`:${item.fecha}:`))
-
+  const hora = horaCorta(item.horaInicio)
+  const EstadoIcon = ESTADO_SESION_ICON[item.estado]
+  // Misma fila compacta que las clases del grupo: estado, hora, grupo, jornada y [Área].
   return (
-    <li className="flex flex-col gap-1">
-      {pendiente && (
-        <span className="flex items-center gap-1 text-xs">
-          <PendingStatusBadge status={pendiente} />
+    <li>
+      <Link
+        to={to}
+        search={search}
+        title={ESTADO_SESION_LABELS[item.estado].title}
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
+        {hora && <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{hora}</span>}
+        <span className="shrink-0 font-medium">
+          {formatGrado(item.grado)}
+          {item.grupo}
         </span>
-      )}
-      <span className="text-xs font-semibold text-muted-foreground">
-        {item.grado}{item.grupo} ({item.jornada})
-      </span>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-        <span className="text-sm font-medium">{nombreSesion(item)}</span>
-        {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
-      </div>
-      {puedeMarcar ? (
-        <button
-          type="button"
-          disabled={markingEntryId !== null || soloEnLinea.disabled}
-          title={soloEnLinea.tooltip ?? undefined}
-          onClick={() => onMarkAllPresent(item)}
-          className={cn(
-            "flex items-center gap-2 text-xs disabled:pointer-events-none disabled:opacity-50",
-            marcado ? "text-green" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {markingEntryId === item.id ? (
-            <SpinnerIcon className="size-3.5 animate-spin" />
-          ) : marcado ? (
-            <CheckCircleFillIcon className="size-3.5 shrink-0" aria-hidden="true" />
-          ) : (
-            <span className="size-3.5 shrink-0 rounded-full border border-border" aria-hidden="true" />
-          )}
-          Marcar todo como Asistió
-        </button>
-      ) : (
-        // No dicta esta asignatura (o la fecha ya no admite marcar): solo consulta.
-        <span className="flex items-center gap-2 text-xs text-muted-foreground">
-          {(() => {
-            const EstadoIcon = ESTADO_SESION_ICON[item.estado]
-            return <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
-          })()}
-          {ESTADO_SESION_LABELS[item.estado].title}
+        <span className="shrink-0 rounded-sm bg-muted px-1 text-[10px] font-semibold text-muted-foreground">
+          {item.jornada}
         </span>
-      )}
+        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{nombreSesion(item)}</span>
+        {pendiente && <PendingStatusBadge status={pendiente} />}
+        <CaretRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
+      </Link>
     </li>
   )
 }
 
-function formatFechaLarga(fecha: string): string {
-  const [anio, mes, dia] = fecha.split("-").map(Number)
-  return new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", {
-    day: "numeric",
-    month: "long",
-  })
-}
-
 interface DayCellPopoverProps {
   items: AsistenciaDayEntry[]
-  onMarkAllPresent: (entry: AsistenciaDayEntry) => void
-  markingEntryId: string | null
-  markedEntryIds: Set<string>
   manualSede: number
   children: React.ReactNode
 }
 
-
-function DayCellPopover({
-  items,
-  onMarkAllPresent,
-  markingEntryId,
-  markedEntryIds,
-  manualSede,
-  children,
-}: DayCellPopoverProps) {
+/** Sección 7: al elegir un día, si tiene una sola clase se abre su planilla;
+ *  si tiene varias, se elige la clase. */
+function DayCellPopover({ items, manualSede, children }: DayCellPopoverProps) {
   const [open, setOpen] = React.useState(false)
   const fecha = items[0]?.fecha
   const futura = Boolean(fecha) && esFechaFutura(fecha)
   const misClases = items.filter((item) => item.puedeEditar)
   const clasesDelGrupo = items.filter((item) => !item.puedeEditar)
-  // Solo separa en grupos si el docente además es director de grupo.
-  const hayMezcla = misClases.length > 0 && clasesDelGrupo.length > 0
+
+  if (!futura && misClases.length === 1 && clasesDelGrupo.length === 0) {
+    const { to, search } = hrefPlanilla(misClases[0], manualSede)
+    return (
+      <Link
+        to={to}
+        search={search}
+        className="block h-full w-full min-w-0 text-left"
+        aria-label="Abrir la planilla de esta clase"
+      >
+        {children}
+      </Link>
+    )
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={<button type="button" className="h-full w-full min-w-0 text-left" />}
-      >
+      <PopoverTrigger render={<button type="button" className="h-full w-full min-w-0 text-left" />}>
         {children}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 gap-3 p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold capitalize">{fecha ? formatFechaLarga(fecha) : ""}</span>
+      <PopoverContent align="start" className="w-80 gap-2 p-2">
+        <div className="flex items-center justify-between px-2 pt-1">
+          <span className="text-sm font-semibold">
+            {fecha ? formatFechaTitulo(fecha) : ""}
+            {!futura && misClases.length > 0 && (
+              <span className="font-normal text-muted-foreground"> · elija la clase</span>
+            )}
+          </span>
           <button
             type="button"
             aria-label="Cerrar"
@@ -375,60 +383,43 @@ function DayCellPopover({
         </div>
 
         {futura ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="px-2 pb-1 text-xs text-muted-foreground">
             Todavía no se puede tomar asistencia: es una fecha futura.
           </p>
         ) : (
-          <>
-          {/* Solo la lista hace scroll; "Asistencia manual" queda siempre visible. */}
-          <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {hayMezcla && (
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                  Clases del grupo (Director)
+          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {misClases.length > 0 && (
+              <ul className="flex flex-col">
+                {misClases.map((item) => (
+                  <ClaseDelDia key={item.id} item={item} sede={manualSede} />
+                ))}
+              </ul>
+            )}
+            {clasesDelGrupo.length > 0 && (
+              <div className="flex flex-col gap-2 border-t border-border px-2 pt-2">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Clases de su grupo (solo lectura)
                 </span>
-                {/* Clases ajenas (solo lectura): cada materia lleva a Seguimiento filtrado. */}
+                {/* Clases ajenas: cada materia abre su planilla en solo lectura. */}
                 <AsistenciaGrupoDrillDown items={clasesDelGrupo} omitirGrados seguimientoSede={manualSede} />
               </div>
             )}
-
-            {hayMezcla && (
-              <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                Mis clases
-              </span>
-            )}
-            <ul className="flex flex-col gap-3">
-              {(hayMezcla ? misClases : items).map((item) => (
-                <ItemAsistenciaDia
-                  key={item.id}
-                  item={item}
-                  onMarkAllPresent={onMarkAllPresent}
-                  markingEntryId={markingEntryId}
-                  marcado={item.estado === "REGISTRADA" || markedEntryIds.has(item.id)}
-                />
-              ))}
-            </ul>
           </div>
-
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="xs"
-              className="justify-start gap-2 px-0"
-              render={
-                <Link
-                  to={paths.app.asistenciaManual.getHref()}
-                  search={{ fecha, sede: manualSede }}
-                />
-              }
-              nativeButton={false}
-            >
-              <ClipboardTextIcon className="size-4" />
-              Asistencia manual
-            </Button>
-          </>
         )}
       </PopoverContent>
     </Popover>
   )
+}
+
+/** "Festivo · Día de la Raza" por cada motivo distinto del día; con varias
+ *  jornadas en la sede y motivos distintos, antepone la jornada. */
+function textoInhabil(dias: DiaInhabil[]): string | null {
+  if (dias.length === 0) return null
+  const textos = new Set(
+    dias.map((d) => [TIPO_DIA_INHABIL_LABEL[d.tipo], d.motivo].filter(Boolean).join(" · ")),
+  )
+  if (textos.size === 1) return [...textos][0]
+  return dias
+    .map((d) => `${d.jornada ?? ""}: ${[TIPO_DIA_INHABIL_LABEL[d.tipo], d.motivo].filter(Boolean).join(" · ")}`)
+    .join(" / ")
 }
