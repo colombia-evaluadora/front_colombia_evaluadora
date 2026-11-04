@@ -23,7 +23,12 @@ import type { CasoDatosInput, CasoDetalle } from "@/features/gestion-estudiantil
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { ConstructoresInvolucrados } from "@/features/gestion-estudiantil/convivencia/components/constructores-involucrados"
 import type { EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import { erroresInvolucrado } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import {
+  campoDeMensaje,
+  enfocarPrimerError,
+  erroresInvolucrado,
+  type CampoCaso,
+} from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { DatosSiuceFields } from "@/features/gestion-estudiantil/convivencia/components/datos-siuce-fields"
 import type { DatosSiuce } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { siuceBody, SIUCE_VACIO, useSecuelasHabilitadas, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
@@ -107,7 +112,14 @@ const fechasDe = (v: Valores) =>
 type Errores = Partial<Record<keyof Valores | keyof DatosSiuce, string>>
 
 /** Validaciones de cliente de 3.1; las que dependen de la base (alcance, matrícula Cursando) las da el backend. */
-function validar(v: Valores, grave: boolean, tipoI: boolean, secuelas: boolean, fechasCambiaron: boolean): Errores {
+function validar(
+  v: Valores,
+  grave: boolean,
+  tipoI: boolean,
+  secuelas: boolean,
+  fechasCambiaron: boolean,
+  involucradoConError: (i: InvolucradoFila) => boolean,
+): Errores {
   const e: Errores = {}
   if (!v.tipo) e.tipo = "El tipo de situación es obligatorio."
   if (!v.manifestacion) e.manifestacion = "La manifestación es obligatoria."
@@ -133,7 +145,7 @@ function validar(v: Valores, grave: boolean, tipoI: boolean, secuelas: boolean, 
   else if (v.estudiantes.some((x) => !x.rol)) e.estudiantes = "Elija el rol de cada estudiante."
   else if (tipoI && v.estudiantes.length + v.involucrados.length < 2)
     e.estudiantes = "Un caso Tipo I requiere al menos dos personas involucradas para la mediación."
-  if (v.involucrados.some((i) => erroresInvolucrado(i))) e.involucrados = "Complete los otros involucrados."
+  if (v.involucrados.some(involucradoConError)) e.involucrados = "Revise los otros involucrados marcados."
   if (fechasCambiaron) {
     const m = errorLargo(v.motivo, 10, 1000, "El motivo de la corrección")
     if (m) e.motivo = m
@@ -145,7 +157,13 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
   const editar = caso != null
   const navigate = useNavigate()
   const { notify } = useNotify()
-  const [v, setV] = useState<Valores>(() => desdeCaso(caso))
+  const [v, setValores] = useState<Valores>(() => desdeCaso(caso))
+  // Error del backend que nombra un campo (22023 de V209): se marca en él además del banner, hasta el siguiente cambio.
+  const [errorServidor, setErrorServidor] = useState<{ campo: CampoCaso; mensaje: string } | null>(null)
+  const setV = (next: Valores) => {
+    setValores(next)
+    setErrorServidor(null)
+  }
   const [inicial] = useState(() => fechasDe(desdeCaso(caso)))
   const [intento, setIntento] = useState(false)
   // Plegado al abrir (G.2.CAS.NUE.3); se abre solo en Tipo II/III, donde sus campos son obligatorios.
@@ -162,11 +180,26 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
   const matriculas = v.estudiantes.map((e) => e.fk_matricula)
   const previsto = useGestorPrevistoQuery(!editar && v.tipo ? Number(v.tipo) : null, editar ? [] : matriculas)
 
-  const errores = intento ? validar(v, grave, tipoCodigo === "TIPO_I", secuelas, fechasCambiaron) : {}
+  const tiposInv = useCatalogo("TIPO_INVOLUCRADO")
+  const rolesSit = useCatalogo("ROL_SITUACION")
+  const involucradoConError = (i: InvolucradoFila) =>
+    erroresInvolucrado(i, codigoDe(tiposInv, i.tipo), codigoDe(rolesSit, i.rol), v.involucrados) != null
+  const validarTodo = () => validar(v, grave, tipoCodigo === "TIPO_I", secuelas, fechasCambiaron, involucradoConError)
+  const errores: Errores = intento ? validarTodo() : {}
+  if (errorServidor && !errores[errorServidor.campo]) errores[errorServidor.campo] = errorServidor.mensaje
 
   const volver = () =>
     navigate({ to: editar ? paths.app.convivenciaCaso.getHref(caso.id) : paths.app.convivencia.getHref() })
-  const onError = (error: Error) => notify(getErrorMessage(error), { variant: "error" })
+  const onError = (error: Error) => {
+    const mensaje = getErrorMessage(error)
+    notify(mensaje, { variant: "error" })
+    const campo = campoDeMensaje(mensaje)
+    if (campo) {
+      setErrorServidor({ campo, mensaje })
+      if (["tiposDano", "agresion", "repetitiva", "secuelas"].includes(campo)) setSiuceAbierto(true)
+      enfocarPrimerError()
+    }
+  }
 
   const crear = useCrearCaso({
     mutationConfig: {
@@ -196,10 +229,12 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
 
   function guardar() {
     setIntento(true)
-    const e = validar(v, grave, tipoCodigo === "TIPO_I", secuelas, fechasCambiaron)
+    setErrorServidor(null)
+    const e = validarTodo()
     if (Object.keys(e).length) {
       if (e.tiposDano || e.agresion || e.repetitiva || e.secuelas) setSiuceAbierto(true)
       notify("Revise los campos marcados.", { variant: "error" })
+      enfocarPrimerError()
       return
     }
     const datos: CasoDatosInput = {
@@ -455,7 +490,8 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
             onEstudiantes={(estudiantes) => setV({ ...v, estudiantes })}
             involucrados={v.involucrados}
             onInvolucrados={(involucrados) => setV({ ...v, involucrados })}
-            errorEstudiantes={errores.estudiantes ?? errores.involucrados}
+            errorEstudiantes={errores.estudiantes}
+            errorInvolucrados={errores.involucrados}
             mostrarErrores={intento}
           />
 

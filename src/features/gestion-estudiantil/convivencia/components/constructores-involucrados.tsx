@@ -19,13 +19,25 @@ import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivenci
 import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
 import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import { erroresInvolucrado, involucradoVacio } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { erroresInvolucrado, esTipoFuncionario, involucradoVacio } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 
 /** Sección plegable con cabecera muted: caret y título a la izquierda, acción a la derecha. */
-function SeccionPlegable({ titulo, accion, children }: { titulo: string; accion: ReactNode; children: ReactNode }) {
+function SeccionPlegable({
+  titulo,
+  accion,
+  children,
+  forzarAbierta,
+}: {
+  titulo: string
+  accion: ReactNode
+  children: ReactNode
+  /** Con un error dentro, la sección se abre para que se vea el campo marcado. */
+  forzarAbierta?: boolean
+}) {
+  const [abierta, setAbierta] = useState(true)
   return (
-    <Collapsible defaultOpen className="group/section">
+    <Collapsible open={abierta || forzarAbierta} onOpenChange={setAbierta} className="group/section">
       <div className="flex items-center gap-2 bg-muted/60 px-4 py-2">
         <CollapsibleTrigger className="flex flex-1 items-center gap-2 py-1 text-left text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
           <CaretDownIcon className="size-5 shrink-0 -rotate-90 text-muted-foreground transition-transform group-data-[open]/section:rotate-0 motion-reduce:transition-none" />
@@ -159,6 +171,7 @@ interface ConstructoresProps {
   involucrados: InvolucradoFila[]
   onInvolucrados: (v: InvolucradoFila[]) => void
   errorEstudiantes?: string
+  errorInvolucrados?: string
   mostrarErrores: boolean
 }
 
@@ -169,6 +182,7 @@ export function ConstructoresInvolucrados({
   involucrados,
   onInvolucrados,
   errorEstudiantes,
+  errorInvolucrados,
   mostrarErrores,
 }: ConstructoresProps) {
   const roles = useCatalogo("ROL_SITUACION")
@@ -183,6 +197,7 @@ export function ConstructoresInvolucrados({
       <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-background">
         <SeccionPlegable
           titulo={`Estudiantes involucrados (${estudiantes.length})*`}
+          forzarAbierta={mostrarErrores && (Boolean(errorEstudiantes) || estudiantes.some((e) => !e.rol))}
           accion={
             <Button type="button" size="sm" variant="outline" onClick={() => setAgregando(true)}>
               <PlusIcon data-icon="inline-start" />
@@ -231,6 +246,7 @@ export function ConstructoresInvolucrados({
 
         <SeccionPlegable
           titulo={`Otros involucrados (${involucrados.length})`}
+          forzarAbierta={mostrarErrores && Boolean(errorInvolucrados)}
           accion={
             <Button type="button" size="sm" variant="outline" onClick={() => onInvolucrados([...involucrados, involucradoVacio()])}>
               <PlusIcon data-icon="inline-start" />
@@ -243,14 +259,35 @@ export function ConstructoresInvolucrados({
               Adultos o personas externas que participaron en la situación. Información sensible.
             </p>
             {involucrados.map((v, i) => {
-              const err = mostrarErrores ? erroresInvolucrado(v) : undefined
+              const tipoCodigo = codigoDe(tipos, v.tipo)
+              const err = mostrarErrores
+                ? erroresInvolucrado(v, tipoCodigo, codigoDe(roles, v.rol), involucrados)
+                : undefined
               // Afectado solo para funcionarios del establecimiento (3.1); a los demás tipos no se les ofrece.
-              const esFuncionario = (COD.funcionarioEE as readonly string[]).includes(codigoDe(tipos, v.tipo) ?? "")
+              const esFuncionario = esTipoFuncionario(tipoCodigo)
               const rolesFila = esFuncionario ? roles : roles.filter((r) => r.codigo !== COD.afectado)
               const soloLectura = v.id != null
               return (
                 <div key={v.key} className="flex items-start gap-2 rounded-lg border border-border p-3">
                   <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-3 sm:grid-cols-5">
+                    {esFuncionario && (
+                      // 3.1: el funcionario se elige de los registrados en el establecimiento y de su ficha salen
+                      // nombre y documento. Aún no hay un endpoint de funcionarios con el alcance de Convivencia.
+                      <ComboOpciones
+                        id={`inv-funcionario-${v.key}`}
+                        label="Funcionario"
+                        required
+                        size="default"
+                        todos={false}
+                        className="gap-2 sm:col-span-5"
+                        disabled={soloLectura}
+                        placeholder="No hay funcionarios para elegir"
+                        value={v.fk_funcionario != null ? String(v.fk_funcionario) : ""}
+                        options={v.fk_funcionario != null ? [{ value: String(v.fk_funcionario), label: v.nombre }] : []}
+                        error={err?.funcionario}
+                        onChange={(f) => setInv(i, { fk_funcionario: f ? Number(f) : null })}
+                      />
+                    )}
                     <ComboOpciones
                       id={`inv-tipo-${v.key}`}
                       label="Tipo de involucrado"
@@ -261,7 +298,7 @@ export function ConstructoresInvolucrados({
                       value={v.tipo}
                       options={tipos}
                       error={err?.tipo}
-                      onChange={(tipo) => setInv(i, { tipo, rol: "" })}
+                      onChange={(tipo) => setInv(i, { tipo, rol: "", fk_funcionario: null })}
                     />
                     <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(err?.nombre) || undefined}>
                       <FieldLabel htmlFor={`inv-nombre-${v.key}`}>Nombre*</FieldLabel>
@@ -269,6 +306,7 @@ export function ConstructoresInvolucrados({
                         id={`inv-nombre-${v.key}`}
                         maxLength={150}
                         disabled={soloLectura}
+                        readOnly={esFuncionario}
                         value={v.nombre}
                         aria-invalid={Boolean(err?.nombre) || undefined}
                         onChange={(e) => setInv(i, { nombre: e.target.value })}
@@ -280,7 +318,7 @@ export function ConstructoresInvolucrados({
                       label="Tipo de documento"
                       size="default"
                       todos="Ninguno"
-                      disabled={soloLectura}
+                      disabled={soloLectura || esFuncionario}
                       value={v.tipoDoc}
                       options={tiposDoc}
                       onChange={(tipoDoc) => setInv(i, { tipoDoc })}
@@ -291,6 +329,7 @@ export function ConstructoresInvolucrados({
                         id={`inv-ndoc-${v.key}`}
                         maxLength={20}
                         disabled={soloLectura || !v.tipoDoc}
+                        readOnly={esFuncionario}
                         value={v.numDoc}
                         aria-invalid={Boolean(err?.numDoc) || undefined}
                         onChange={(e) => setInv(i, { numDoc: e.target.value })}
@@ -328,6 +367,7 @@ export function ConstructoresInvolucrados({
         </SeccionPlegable>
       </div>
       {errorEstudiantes && <FieldError>{errorEstudiantes}</FieldError>}
+      {errorInvolucrados && <FieldError>{errorInvolucrados}</FieldError>}
       <DialogAgregarEstudiante
         open={agregando}
         onOpenChange={setAgregando}
