@@ -40,6 +40,8 @@ export type ReportKey =
   | "auditoria-tabla-operaciones"
   | "auditoria-sesion-operaciones"
   | "bitacora"
+  | "observador"
+  | "observador-anotaciones"
 
 interface ReportInput {
   format: ExportFormat

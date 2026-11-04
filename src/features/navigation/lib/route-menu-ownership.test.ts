@@ -27,6 +27,7 @@ const MENU = {
   informes: "/app/gestion-academica/informes",
   referentes: "/app/gestion-academica/referentes-curriculares",
   asistencia: "/app/asistencia",
+  observador: "/app/gestion-estudiantil/observador",
   chat: "/app/comunicaciones/chat",
 } as const
 
@@ -103,6 +104,10 @@ const ROUTE_OWNERS: Record<string, Owner> = {
 
   "/app/asistencia": MENU.asistencia,
   "/app/asistencia/manual": MENU.asistencia,
+
+  "/app/gestion-estudiantil/observador": MENU.observador,
+  "/app/gestion-estudiantil/observador/nueva": MENU.observador,
+  "/app/gestion-estudiantil/observador/editar/$anotacionId": MENU.observador,
 
   "/app/comunicaciones/chat": MENU.chat,
 }
