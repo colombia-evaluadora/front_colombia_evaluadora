@@ -370,11 +370,27 @@ export interface PreguntaEncuesta {
   respuestas: string[]
 }
 
-// PUBLICOS: los participantes ven los resultados; ADMIN: solo quien la creó.
-export type VisibilidadResultados = "PUBLICOS" | "ADMIN"
+// PUBLICOS: los participantes ven los resultados; ADMIN: solo quien la creó; AL_CIERRE (solo
+// modalidad ACADEMICA): los participantes, cuando cierra.
+export type VisibilidadResultados = "PUBLICOS" | "ADMIN" | "AL_CIERRE"
+
+// INSTITUCIONAL: varias preguntas, anónima, una respuesta. ACADEMICA: la del manual de espacios
+// académicos (una pregunta, no anónima, respuesta modificable).
+export type ModalidadEncuesta = "INSTITUCIONAL" | "ACADEMICA"
+
+// Respuesta vigente de una persona; solo la consulta quien gestiona una encuesta ACADEMICA.
+export interface RespuestaIndividual {
+  usuarioId: number
+  nombre: string
+  opciones: string[]
+}
 
 export interface Encuesta {
   conversacionId: number
+  // Opcional: ausente equivale a INSTITUCIONAL.
+  modalidad?: ModalidadEncuesta
+  // Ids de las opciones vigentes del usuario actual (solo ACADEMICA).
+  miRespuesta?: number[]
   nombre: string
   descripcion: string
   fechaInicio: string | null

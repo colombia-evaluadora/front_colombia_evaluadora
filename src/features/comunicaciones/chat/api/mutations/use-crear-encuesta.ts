@@ -7,6 +7,7 @@ import type {
   Conversacion,
   Encuesta,
   TipoPregunta,
+  ModalidadEncuesta,
   VisibilidadResultados,
 } from "@/features/comunicaciones/chat/api/types"
 
@@ -17,6 +18,7 @@ export interface PreguntaNueva {
 }
 
 export interface CrearEncuestaInput {
+  modalidad?: ModalidadEncuesta
   nombre: string
   descripcion: string
   fechaInicio: string | null
@@ -45,6 +47,8 @@ const cuerpoEncuesta = (v: Omit<CrearEncuestaInput, "participantes">) => ({
 async function crearEncuesta(v: CrearEncuestaInput) {
   return evalCol.postRow<Conversacion>("/comunicaciones/encuestas", {
     ...cuerpoEncuesta(v),
+    // La modalidad se fija al crear: editar no la manda.
+    ...(v.modalidad ? { MODALIDAD: v.modalidad } : {}),
     PARTICIPANTES: v.participantes,
   }, conBorrador(v.borradorId))
 }
@@ -85,6 +89,18 @@ export function useCrearEncuesta() {
   })
 }
 
+// Cierre anticipado de una encuesta ACADEMICA (la institucional responde 400).
+export function useCerrarEncuesta(conversacionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => evalCol.patchRow<Encuesta>(`/comunicaciones/conversaciones/${conversacionId}/encuesta/cerrar`, {}),
+    onSuccess: (encuesta) => {
+      queryClient.setQueryData(chatKeys.encuesta(conversacionId), encuesta)
+      return queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+    },
+  })
+}
+
 // Respuestas de la persona asignada; devuelve la encuesta con los conteos al día.
 export function useResponderEncuesta(conversacionId: number) {
   const queryClient = useQueryClient()
@@ -93,6 +109,10 @@ export function useResponderEncuesta(conversacionId: number) {
       evalCol.postRow<Encuesta>(`/comunicaciones/conversaciones/${conversacionId}/encuesta/respuestas`, {
         RESPUESTAS: respuestas.map((r) => ({ FK_PREGUNTA: r.preguntaId, OPCIONES: r.opcionIds, TEXTO: r.texto })),
       }),
-    onSuccess: (encuesta) => queryClient.setQueryData(chatKeys.encuesta(conversacionId), encuesta),
+    onSuccess: (encuesta) => {
+      queryClient.setQueryData(chatKeys.encuesta(conversacionId), encuesta)
+      // En la ACADEMICA la respuesta cambia: la vista individual no debe quedar con la anterior.
+      return queryClient.invalidateQueries({ queryKey: [...chatKeys.encuesta(conversacionId), "individuales"] })
+    },
   })
 }
