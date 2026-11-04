@@ -4,7 +4,7 @@ import { useCanGoBack, useNavigate, useRouter } from "@tanstack/react-router"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, ArrowsDownUpIcon, ClipboardAddIcon, InfoIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ArrowsDownUpIcon, ClipboardAddIcon, GavelIcon, InfoIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -261,6 +261,11 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
           action={
             caso.acceso_completo && (
               <div className="flex items-center gap-2">
+                {/* G.2.CAS.DIS.1: solo en el detalle, no en el menú de la fila. Sin backend hasta la 3.5. */}
+                <Button size="sm" variant="outline" disabled>
+                  <GavelIcon data-icon="inline-start" />
+                  Abrir proceso disciplinario
+                </Button>
                 <Button size="sm" variant="outline" disabled={!(abierto && access.puedeSupervisar)} onClick={() => abrir("tipo", resumen)}>
                   <ArrowsDownUpIcon data-icon="inline-start" />
                   Cambiar tipo
