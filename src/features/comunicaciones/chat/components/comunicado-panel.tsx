@@ -244,6 +244,7 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
         <DialogHeader>
           <DialogTitle>Anular comunicado</DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={anular.isError ? anular.error : null} />
         <p className="text-sm text-muted-foreground">
           Se anulará {c.titulo}. Dejará de mostrarse a los destinatarios y no se puede revertir; los correos ya
           enviados no se retiran.
@@ -265,7 +266,6 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
             </p>
           )}
         </div>
-        <ErrorNoticeBanner error={anular.isError ? anular.error : null} />
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
             Volver
@@ -308,12 +308,12 @@ function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunicado; on
         <DialogHeader>
           <DialogTitle>Cancelar comunicado programado</DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
         <p className="text-sm text-muted-foreground">
           Se cancelará {c.titulo}, programado para el{" "}
           {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' hh:mm a")}. Pasará a Cancelado (estado final) y no se
           publicará.
         </p>
-        <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
             Volver

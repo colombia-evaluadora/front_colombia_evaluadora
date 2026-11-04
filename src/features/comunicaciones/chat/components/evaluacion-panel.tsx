@@ -252,6 +252,7 @@ function CalificarDialog({
         <DialogHeader>
           <DialogTitle>{entrega.estudiante}</DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={calificar.isError ? calificar.error : null} />
         <ol className="-mx-1 min-h-0 flex-1 space-y-5 overflow-y-auto px-1">
           {e.preguntas.map((p, i) => (
             <li key={p.id}>
@@ -265,7 +266,6 @@ function CalificarDialog({
             </li>
           ))}
         </ol>
-        <ErrorNoticeBanner error={calificar.isError ? calificar.error : null} />
         <DialogFooter className="items-center">
           {faltan && (
             <p className="mr-auto text-xs text-muted-foreground">

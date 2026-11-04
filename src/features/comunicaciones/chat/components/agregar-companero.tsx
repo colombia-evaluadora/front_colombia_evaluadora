@@ -50,6 +50,7 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
           <DialogHeader>
             <DialogTitle>Nuevo mensaje directo</DialogTitle>
           </DialogHeader>
+          <ErrorNoticeBanner error={abrir.isError ? abrir.error : null} />
 
           <label className="relative block rounded-lg border px-4 pt-3.5 pb-2.5 focus-within:border-primary">
             <span className="absolute -top-2.5 left-3 bg-popover px-1 text-sm font-medium">Para</span>
@@ -62,7 +63,6 @@ export function AgregarCompanero({ onCreado }: { onCreado: (id: number) => void 
             />
           </label>
 
-          <ErrorNoticeBanner error={abrir.isError ? abrir.error : null} />
 
           <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
             {personas.isPending ? (

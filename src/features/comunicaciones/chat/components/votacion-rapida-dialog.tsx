@@ -81,6 +81,7 @@ export function VotacionRapidaDialog({
         <DialogHeader>
           <DialogTitle>{editar ? "Editar la votación rápida" : "Crear una Votación rápida"}</DialogTitle>
         </DialogHeader>
+        <ErrorNoticeBanner error={mutacion.isError ? mutacion.error : null} />
 
         <form
           id={FORM_ID}
@@ -127,7 +128,6 @@ export function VotacionRapidaDialog({
         {editar && (
           <p className="text-xs text-muted-foreground">Al guardar se reinician los votos y el tiempo.</p>
         )}
-        <ErrorNoticeBanner error={mutacion.isError ? mutacion.error : null} />
 
         {/* Los botones aparecen cuando ya hay una pregunta escrita. */}
         <form.Subscribe selector={(st) => st.values.pregunta.trim() !== ""}>
